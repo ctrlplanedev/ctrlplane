@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/persistence"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,6 +18,8 @@ import (
 )
 
 var tracer = otel.Tracer("persistence/store")
+
+const saveBatchSize = 500
 
 var _ persistence.Store = (*Store)(nil)
 
@@ -32,70 +35,95 @@ func NewStore(ctx context.Context) (*Store, error) {
 	return &Store{conn: conn}, nil
 }
 
-func (s *Store) upsertChangelogEntry(ctx context.Context, tx pgx.Tx, change persistence.Change) error {
-	ctx, span := tracer.Start(ctx, "upsertChangelogEntry")
+func (s *Store) upsertChangelogEntries(ctx context.Context, queries *db.Queries, changes []persistence.Change) error {
+	ctx, span := tracer.Start(ctx, "upsertChangelogEntries")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("change.type", string(change.ChangeType)))
-	span.SetAttributes(attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)))
-	span.SetAttributes(attribute.Int64("change.timestamp", change.Timestamp.Unix()))
+	span.SetAttributes(attribute.Int("batch.size", len(changes)))
 
-	entityType, entityID := change.Entity.CompactionKey()
-
-	entityData, err := json.Marshal(change.Entity)
-	if err != nil {
-		return fmt.Errorf("failed to marshal entity: %w", err)
+	if len(changes) == 0 {
+		return nil
 	}
 
-	sql := `
-		INSERT INTO changelog_entry
-			(workspace_id, entity_type, entity_id, entity_data, created_at)
-		VALUES 
-			($1, $2, $3, $4, $5)
-		ON CONFLICT (workspace_id, entity_type, entity_id)
-		DO UPDATE SET 
-			entity_data = EXCLUDED.entity_data
-	`
+	params := make([]db.UpsertChangelogEntryParams, 0, len(changes))
+	for _, change := range changes {
+		workspaceID, err := uuid.Parse(change.Namespace)
+		if err != nil {
+			return fmt.Errorf("failed to parse workspace ID: %w", err)
+		}
 
-	_, err = tx.Exec(ctx, sql,
-		change.Namespace,
-		entityType,
-		entityID,
-		entityData,
-		change.Timestamp,
-	)
-	if err != nil {
-		span.RecordError(err)
+		entityType, entityID := change.Entity.CompactionKey()
+
+		entityData, err := json.Marshal(change.Entity)
+		if err != nil {
+			return fmt.Errorf("failed to marshal entity: %w", err)
+		}
+
+		params = append(params, db.UpsertChangelogEntryParams{
+			WorkspaceID: workspaceID,
+			EntityType:  entityType,
+			EntityID:    entityID,
+			EntityData:  entityData,
+			CreatedAt:   pgtype.Timestamptz{Time: change.Timestamp, Valid: true},
+		})
+	}
+
+	results := queries.UpsertChangelogEntry(ctx, params)
+	var batchErr error
+	results.Exec(func(i int, err error) {
+		if err != nil && batchErr == nil {
+			batchErr = err
+		}
+	})
+	if batchErr != nil {
+		span.RecordError(batchErr)
 		span.SetStatus(codes.Error, "failed to upsert changelog entry")
+		return fmt.Errorf("failed to upsert changelog entry: %w", batchErr)
 	}
-	return err
+
+	return nil
 }
 
-func (s *Store) deleteChangelogEntry(ctx context.Context, tx pgx.Tx, change persistence.Change) error {
-	ctx, span := tracer.Start(ctx, "deleteChangelogEntry")
+func (s *Store) deleteChangelogEntries(ctx context.Context, queries *db.Queries, changes []persistence.Change) error {
+	ctx, span := tracer.Start(ctx, "deleteChangelogEntries")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("change.type", string(change.ChangeType)))
-	span.SetAttributes(attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)))
-	span.SetAttributes(attribute.Int64("change.timestamp", change.Timestamp.Unix()))
+	span.SetAttributes(attribute.Int("batch.size", len(changes)))
 
-	entityType, entityID := change.Entity.CompactionKey()
-
-	sql := `
-		DELETE FROM changelog_entry
-		WHERE workspace_id = $1 AND entity_type = $2 AND entity_id = $3
-	`
-
-	_, err := tx.Exec(ctx, sql,
-		change.Namespace,
-		entityType,
-		entityID,
-	)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to delete changelog entry")
+	if len(changes) == 0 {
+		return nil
 	}
-	return err
+
+	params := make([]db.DeleteChangelogEntryParams, 0, len(changes))
+	for _, change := range changes {
+		workspaceID, err := uuid.Parse(change.Namespace)
+		if err != nil {
+			return fmt.Errorf("failed to parse workspace ID: %w", err)
+		}
+
+		entityType, entityID := change.Entity.CompactionKey()
+
+		params = append(params, db.DeleteChangelogEntryParams{
+			WorkspaceID: workspaceID,
+			EntityType:  entityType,
+			EntityID:    entityID,
+		})
+	}
+
+	results := queries.DeleteChangelogEntry(ctx, params)
+	var batchErr error
+	results.Exec(func(i int, err error) {
+		if err != nil && batchErr == nil {
+			batchErr = err
+		}
+	})
+	if batchErr != nil {
+		span.RecordError(batchErr)
+		span.SetStatus(codes.Error, "failed to delete changelog entry")
+		return fmt.Errorf("failed to delete changelog entry: %w", batchErr)
+	}
+
+	return nil
 }
 
 func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
@@ -113,24 +141,37 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	setEntries := make([]persistence.Change, 0)
+	unsetEntries := make([]persistence.Change, 0)
+
 	for _, change := range changes {
 		switch change.ChangeType {
 		case persistence.ChangeTypeSet:
-			if err := s.upsertChangelogEntry(ctx, tx, change); err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "failed to upsert change")
-				return fmt.Errorf("failed to upsert change: %w", err)
-			}
+			setEntries = append(setEntries, change)
 		case persistence.ChangeTypeUnset:
-			if err := s.deleteChangelogEntry(ctx, tx, change); err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "failed to delete change")
-				return fmt.Errorf("failed to delete change: %w", err)
-			}
+			unsetEntries = append(unsetEntries, change)
 		default:
 			span.RecordError(fmt.Errorf("unknown change type: %s", change.ChangeType))
 			span.SetStatus(codes.Error, "unknown change type")
 			return fmt.Errorf("unknown change type: %s", change.ChangeType)
+		}
+	}
+
+	queries := db.New(tx)
+
+	for _, chunk := range concurrency.Chunk(setEntries, saveBatchSize) {
+		if err := s.upsertChangelogEntries(ctx, queries, chunk); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to upsert changes")
+			return fmt.Errorf("failed to upsert changes: %w", err)
+		}
+	}
+
+	for _, chunk := range concurrency.Chunk(unsetEntries, saveBatchSize) {
+		if err := s.deleteChangelogEntries(ctx, queries, chunk); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to delete changes")
+			return fmt.Errorf("failed to delete changes: %w", err)
 		}
 	}
 
@@ -149,33 +190,22 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 
 	span.SetAttributes(attribute.String("namespace", namespace))
 
-	sql := `
-		SELECT entity_type, entity_id, entity_data, created_at
-		FROM changelog_entry
-		WHERE workspace_id = $1
-		ORDER BY created_at ASC
-	`
+	workspaceID, err := uuid.Parse(namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse workspace ID: %w", err)
+	}
 
-	rows, err := s.conn.Query(ctx, sql, namespace)
+	queries := db.New(s.conn)
+	rows, err := queries.ListChangelogEntriesByWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query changelog entries: %w", err)
 	}
-	defer rows.Close()
 
 	var changes persistence.Changes
+	jsonEntityRegistry := memory.GlobalRegistry()
 
-	jsonEntityRegistry := repository.GlobalRegistry()
-
-	for rows.Next() {
-		var entityType, entityID string
-		var entityData []byte
-		var createdAt time.Time
-
-		if err := rows.Scan(&entityType, &entityID, &entityData, &createdAt); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
-		}
-
-		entity, err := jsonEntityRegistry.Unmarshal(entityType, entityData)
+	for _, row := range rows {
+		entity, err := jsonEntityRegistry.Unmarshal(row.EntityType, row.EntityData)
 		if err != nil {
 			continue
 		}
@@ -184,12 +214,8 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 			Namespace:  namespace,
 			ChangeType: persistence.ChangeTypeSet, // All loaded entities are "set" type
 			Entity:     entity,
-			Timestamp:  createdAt,
+			Timestamp:  row.CreatedAt.Time,
 		})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	return changes, nil

@@ -10,11 +10,12 @@ import (
 	"workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_DeploymentVersionCreation(t *testing.T) {
-	dv1Id := "dv1"
-	dv2Id := "dv2"
+	dv1Id := uuid.New().String()
+	dv2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -25,15 +26,22 @@ func TestEngine_DeploymentVersionCreation(t *testing.T) {
 		),
 	)
 
-	engineDv1, _ := engine.Workspace().DeploymentVersions().Get(dv1Id)
-	engineDv2, _ := engine.Workspace().DeploymentVersions().Get(dv2Id)
+	engineDv1, ok := engine.Workspace().DeploymentVersions().Get(dv1Id)
+	if !ok || engineDv1 == nil {
+		t.Fatalf("deployment version %s not found", dv1Id)
+	}
+
+	engineDv2, ok := engine.Workspace().DeploymentVersions().Get(dv2Id)
+	if !ok || engineDv2 == nil {
+		t.Fatalf("deployment version %s not found", dv2Id)
+	}
 
 	if engineDv1.Id != dv1Id {
-		t.Fatalf("deployment versions have the same id")
+		t.Fatalf("expected deployment version id %s, got %s", dv1Id, engineDv1.Id)
 	}
 
 	if engineDv2.Id != dv2Id {
-		t.Fatalf("deployment versions have the same id")
+		t.Fatalf("expected deployment version id %s, got %s", dv2Id, engineDv2.Id)
 	}
 }
 
@@ -112,6 +120,15 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 		if job.Status != oapi.JobStatusPending {
 			t.Errorf("job %s has incorrect status: expected PENDING, got %v", job.Id, job.Status)
 		}
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, job.DispatchContext.Environment)
+		assert.NotNil(t, job.DispatchContext.Resource)
+		assert.NotNil(t, job.DispatchContext.Version)
+		assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	}
 }
 
@@ -233,6 +250,16 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 		job = j
 		break
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 
 	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !ok {
@@ -408,6 +435,7 @@ func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 	if job.Status != oapi.JobStatusInvalidJobAgent {
 		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
 	}
+	assert.Nil(t, job.DispatchContext)
 
 	if job.JobAgentId != "" {
 		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
@@ -432,12 +460,7 @@ func TestEngine_DeploymentVersionWithFilteredReleaseTargets(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"key":      "tier",
-					"value":    "production",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["tier"] == "production"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("prod"),
@@ -516,22 +539,12 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 			integration.WithEnvironment(
 				integration.EnvironmentID(envDevId),
 				integration.EnvironmentName("development"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"key":      "env",
-					"value":    "dev",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(envProdId),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"key":      "env",
-					"value":    "prod",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -662,6 +675,18 @@ func TestEngine_DeploymentVersionJobsWithJobAgentConfig(t *testing.T) {
 	if config["deploy_script"] != "/scripts/deploy.sh" {
 		t.Errorf("expected deploy_script=/scripts/deploy.sh, got %v", config["deploy_script"])
 	}
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
+	assert.Equal(t, float64(300), job.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, float64(3), job.DispatchContext.JobAgentConfig["retries"])
+	assert.Equal(t, "/scripts/deploy.sh", job.DispatchContext.JobAgentConfig["deploy_script"])
 }
 
 // TestEngine_ConcurrentDeploymentVersionCreation tests creating multiple deployment versions

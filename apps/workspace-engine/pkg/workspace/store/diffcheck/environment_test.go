@@ -13,7 +13,6 @@ func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
 	desc := "test description"
 	old := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: &desc,
 		CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		Id:          "env-123",
@@ -21,7 +20,6 @@ func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
 
 	new := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: &desc,
 		CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		Id:          "env-123",
@@ -33,8 +31,7 @@ func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
 
 func TestHasEnvironmentChanges_NilInputs(t *testing.T) {
 	sample := &oapi.Environment{
-		Name:     "sample",
-		SystemId: "sys-1",
+		Name: "sample",
 	}
 
 	t.Run("nil-old", func(t *testing.T) {
@@ -77,59 +74,36 @@ func TestHasEnvironmentChangesBasic_DetectsChanges(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:             "staging",
-		SystemId:         "sys-old",
 		Description:      &oldDesc,
 		ResourceSelector: oldSelector,
 	}
 
 	new := &oapi.Environment{
 		Name:             "production",
-		SystemId:         "sys-new",
 		Description:      &newDesc,
 		ResourceSelector: newSelector,
 	}
 
 	changes := hasEnvironmentChangesBasic(old, new)
 	assert.True(t, changes["name"])
-	assert.True(t, changes["systemid"])
 	assert.True(t, changes["description"])
 	assert.True(t, changes["resourceselector"])
 }
 
 func TestHasEnvironmentChanges_NameChanged(t *testing.T) {
 	old := &oapi.Environment{
-		Name:     "staging",
-		SystemId: "sys-123",
-		Id:       "env-123",
+		Name: "staging",
+		Id:   "env-123",
 	}
 
 	new := &oapi.Environment{
-		Name:     "production",
-		SystemId: "sys-123",
-		Id:       "env-123",
+		Name: "production",
+		Id:   "env-123",
 	}
 
 	changes := HasEnvironmentChanges(old, new)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["name"], "Should detect name change")
-}
-
-func TestHasEnvironmentChanges_SystemIdChanged(t *testing.T) {
-	old := &oapi.Environment{
-		Name:     "production",
-		SystemId: "sys-123",
-		Id:       "env-123",
-	}
-
-	new := &oapi.Environment{
-		Name:     "production",
-		SystemId: "sys-456",
-		Id:       "env-123",
-	}
-
-	changes := HasEnvironmentChanges(old, new)
-	assert.Len(t, changes, 1, "Should have exactly 1 change")
-	assert.True(t, changes["systemid"], "Should detect systemId change")
 }
 
 func TestHasEnvironmentChanges_DescriptionChanged(t *testing.T) {
@@ -138,14 +112,12 @@ func TestHasEnvironmentChanges_DescriptionChanged(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: &oldDesc,
 		Id:          "env-123",
 	}
 
 	new := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: &newDesc,
 		Id:          "env-123",
 	}
@@ -160,14 +132,12 @@ func TestHasEnvironmentChanges_DescriptionNilToSet(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: nil,
 		Id:          "env-123",
 	}
 
 	new := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: &newDesc,
 		Id:          "env-123",
 	}
@@ -182,14 +152,12 @@ func TestHasEnvironmentChanges_DescriptionSetToNil(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: &oldDesc,
 		Id:          "env-123",
 	}
 
 	new := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-123",
 		Description: nil,
 		Id:          "env-123",
 	}
@@ -217,14 +185,12 @@ func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:             "production",
-		SystemId:         "sys-123",
 		ResourceSelector: oldSelector,
 		Id:               "env-123",
 	}
 
 	new := &oapi.Environment{
 		Name:             "production",
-		SystemId:         "sys-123",
 		ResourceSelector: newSelector,
 		Id:               "env-123",
 	}
@@ -252,14 +218,12 @@ func TestHasEnvironmentChanges_ResourceSelectorNilToSet(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:             "production",
-		SystemId:         "sys-123",
 		ResourceSelector: nil,
 		Id:               "env-123",
 	}
 
 	new := &oapi.Environment{
 		Name:             "production",
-		SystemId:         "sys-123",
 		ResourceSelector: newSelector,
 		Id:               "env-123",
 	}
@@ -275,7 +239,6 @@ func TestHasEnvironmentChanges_MultipleChanges(t *testing.T) {
 
 	old := &oapi.Environment{
 		Name:        "staging",
-		SystemId:    "sys-123",
 		Description: &oldDesc,
 		Id:          "env-123",
 		CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -283,16 +246,14 @@ func TestHasEnvironmentChanges_MultipleChanges(t *testing.T) {
 
 	new := &oapi.Environment{
 		Name:        "production",
-		SystemId:    "sys-456",
 		Description: &newDesc,
 		Id:          "env-123",                                   // Same ID (should be ignored)
 		CreatedAt:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), // Different CreatedAt (should be ignored)
 	}
 
 	changes := HasEnvironmentChanges(old, new)
-	assert.Len(t, changes, 3, "Should detect 3 changes (name, systemId, description)")
+	assert.Len(t, changes, 2, "Should detect 2 changes (name, description)")
 	assert.True(t, changes["name"], "Should detect name change")
-	assert.True(t, changes["systemid"], "Should detect systemId change")
 	assert.True(t, changes["description"], "Should detect description change")
 	assert.False(t, changes["id"], "Should ignore id change")
 	assert.False(t, changes["createdat"], "Should ignore createdAt change")
@@ -300,15 +261,13 @@ func TestHasEnvironmentChanges_MultipleChanges(t *testing.T) {
 
 func TestHasEnvironmentChanges_IdIgnored(t *testing.T) {
 	old := &oapi.Environment{
-		Name:     "production",
-		SystemId: "sys-123",
-		Id:       "env-old",
+		Name: "production",
+		Id:   "env-old",
 	}
 
 	new := &oapi.Environment{
-		Name:     "production",
-		SystemId: "sys-123",
-		Id:       "env-new",
+		Name: "production",
+		Id:   "env-new",
 	}
 
 	changes := HasEnvironmentChanges(old, new)
@@ -319,14 +278,12 @@ func TestHasEnvironmentChanges_IdIgnored(t *testing.T) {
 func TestHasEnvironmentChanges_CreatedAtIgnored(t *testing.T) {
 	old := &oapi.Environment{
 		Name:      "production",
-		SystemId:  "sys-123",
 		Id:        "env-123",
 		CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	new := &oapi.Environment{
 		Name:      "production",
-		SystemId:  "sys-123",
 		Id:        "env-123",
 		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
@@ -339,14 +296,12 @@ func TestHasEnvironmentChanges_CreatedAtIgnored(t *testing.T) {
 func TestHasEnvironmentChanges_SystemFieldsIgnoredWithOtherChanges(t *testing.T) {
 	old := &oapi.Environment{
 		Name:      "staging",
-		SystemId:  "sys-123",
 		Id:        "env-old",
 		CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	new := &oapi.Environment{
 		Name:      "production",
-		SystemId:  "sys-123",
 		Id:        "env-new",
 		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}

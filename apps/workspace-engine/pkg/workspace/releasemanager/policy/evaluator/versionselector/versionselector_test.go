@@ -21,22 +21,21 @@ func setupTestStore(t *testing.T) (*store.Store, context.Context) {
 	return s, ctx
 }
 
-func createTestDeployment(ctx context.Context, s *store.Store) *oapi.Deployment {
+func createTestDeployment(ctx context.Context, s *store.Store) (*oapi.Deployment, string) {
+	systemID := uuid.New().String()
 	deployment := &oapi.Deployment{
-		Id:       uuid.New().String(),
-		Name:     "test-deployment",
-		Slug:     "test-deployment",
-		SystemId: uuid.New().String(),
+		Id:   uuid.New().String(),
+		Name: "test-deployment",
+		Slug: "test-deployment",
 	}
 	_ = s.Deployments.Upsert(ctx, deployment)
-	return deployment
+	return deployment, systemID
 }
 
 func createTestEnvironment(ctx context.Context, s *store.Store, systemID string) *oapi.Environment {
 	env := &oapi.Environment{
-		Id:       uuid.New().String(),
-		Name:     "staging",
-		SystemId: systemID,
+		Id:   uuid.New().String(),
+		Name: "staging",
 	}
 	_ = s.Environments.Upsert(ctx, env)
 	return env
@@ -64,14 +63,6 @@ func createTestVersion(ctx context.Context, s *store.Store, deploymentID string,
 	}
 	s.DeploymentVersions.Upsert(ctx, version.Id, version)
 	return version
-}
-
-func createTestReleaseTarget(deployment *oapi.Deployment, environment *oapi.Environment, resource *oapi.Resource) *oapi.ReleaseTarget {
-	return &oapi.ReleaseTarget{
-		DeploymentId:  deployment.Id,
-		EnvironmentId: environment.Id,
-		ResourceId:    resource.Id,
-	}
 }
 
 func TestNewEvaluator(t *testing.T) {
@@ -141,13 +132,12 @@ func TestScopeFields(t *testing.T) {
 func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	deployment, systemID := createTestDeployment(ctx, s)
+	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, map[string]string{"tier": "staging"})
 
 	t.Run("allows version when CEL expression matches", func(t *testing.T) {
 		version := createTestVersion(ctx, s, deployment.Id, "v2.1.0", nil)
-		releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{
@@ -164,9 +154,10 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -178,7 +169,6 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 
 	t.Run("blocks version when CEL expression does not match", func(t *testing.T) {
 		version := createTestVersion(ctx, s, deployment.Id, "v1.5.0", nil)
-		releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{
@@ -195,9 +185,10 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -210,11 +201,10 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	deployment, systemID := createTestDeployment(ctx, s)
+	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, nil)
 	version := createTestVersion(ctx, s, deployment.Id, "v2.0.0", nil)
-	releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 	t.Run("allows version for matching environment", func(t *testing.T) {
 		selector := &oapi.Selector{}
@@ -232,9 +222,10 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -258,9 +249,10 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -272,11 +264,10 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	deployment, systemID := createTestDeployment(ctx, s)
+	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, map[string]string{"tier": "production", "region": "us-west"})
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
-	releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 	t.Run("allows version when resource metadata matches", func(t *testing.T) {
 		selector := &oapi.Selector{}
@@ -294,9 +285,10 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -320,9 +312,10 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -334,11 +327,10 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	deployment, systemID := createTestDeployment(ctx, s)
+	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, map[string]string{"canary": "true"})
 	version := createTestVersion(ctx, s, deployment.Id, "v2.5.0-canary", map[string]string{"channel": "beta"})
-	releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 	t.Run("allows version when all conditions match", func(t *testing.T) {
 		selector := &oapi.Selector{}
@@ -356,9 +348,10 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -382,9 +375,10 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			Environment:   environment,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -396,11 +390,10 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 func TestEvaluate_InvalidCEL(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	deployment, systemID := createTestDeployment(ctx, s)
+	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, nil)
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
-	releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{
@@ -417,9 +410,10 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 	eval := NewEvaluator(s, rule)
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		Environment:   environment,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: environment,
+		Resource:    resource,
+		Deployment:  deployment,
 	}
 
 	result := eval.Evaluate(ctx, scope)
@@ -428,91 +422,13 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 	assert.Contains(t, result.Message, "failed to compile")
 }
 
-func TestEvaluate_MissingDeployment(t *testing.T) {
-	s, ctx := setupTestStore(t)
-
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
-	resource := createTestResource(ctx, s, nil)
-	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
-
-	// Create release target with non-existent deployment ID
-	releaseTarget := &oapi.ReleaseTarget{
-		DeploymentId:  uuid.New().String(),
-		EnvironmentId: environment.Id,
-		ResourceId:    resource.Id,
-	}
-
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-	rule := &oapi.PolicyRule{
-		Id: "versionSelector",
-		VersionSelector: &oapi.VersionSelectorRule{
-			Selector: *selector,
-		},
-	}
-
-	eval := NewEvaluator(s, rule)
-
-	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		Environment:   environment,
-		ReleaseTarget: releaseTarget,
-	}
-
-	result := eval.Evaluate(ctx, scope)
-
-	assert.False(t, result.Allowed)
-	assert.Contains(t, result.Message, "deployment not found")
-}
-
-func TestEvaluate_MissingResource(t *testing.T) {
-	s, ctx := setupTestStore(t)
-
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
-	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
-
-	// Create release target with non-existent resource ID
-	releaseTarget := &oapi.ReleaseTarget{
-		DeploymentId:  deployment.Id,
-		EnvironmentId: environment.Id,
-		ResourceId:    uuid.New().String(),
-	}
-
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-	rule := &oapi.PolicyRule{
-		Id: "versionSelector",
-		VersionSelector: &oapi.VersionSelectorRule{
-			Selector: *selector,
-		},
-	}
-
-	eval := NewEvaluator(s, rule)
-
-	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		Environment:   environment,
-		ReleaseTarget: releaseTarget,
-	}
-
-	result := eval.Evaluate(ctx, scope)
-
-	assert.False(t, result.Allowed)
-	assert.Contains(t, result.Message, "resource not found")
-}
-
 func TestEvaluate_WithDescription(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
-	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	deployment, systemID := createTestDeployment(ctx, s)
+	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, nil)
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
-	releaseTarget := createTestReleaseTarget(deployment, environment, resource)
 
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{
@@ -531,9 +447,10 @@ func TestEvaluate_WithDescription(t *testing.T) {
 	eval := NewEvaluator(s, rule)
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		Environment:   environment,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: environment,
+		Resource:    resource,
+		Deployment:  deployment,
 	}
 
 	result := eval.Evaluate(ctx, scope)

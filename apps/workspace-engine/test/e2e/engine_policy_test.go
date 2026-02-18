@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
@@ -19,11 +21,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -61,10 +59,10 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 }
 
 func TestEngine_PolicyDeploymentSelector(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	e1ID := "e1-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -131,10 +129,10 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 }
 
 func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
-	d1ID := "d1-1"
-	e1ID := "e1-1"
-	r1ID := "r1-1"
-	e2ID := "e2-2"
+	d1ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
+	e2ID := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -219,18 +217,14 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create two resources with different metadata
 	r1 := c.NewResource(workspaceID)
@@ -298,36 +292,28 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	d1.Name = "deployment-prod"
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-dev"
 	d2.ResourceSelector = &oapi.Selector{}
 	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d2)
 
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-us-east"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-us-west"
 	e2Selector := &oapi.Selector{}
-	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e2Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e2.ResourceSelector = e2Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e2)
 
 	// Create two resources
 	r1 := c.NewResource(workspaceID)
@@ -404,10 +390,10 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 }
 
 func TestEngine_PolicyMultipleSelectors(t *testing.T) {
-	d1ID := "deployment-prod"
-	d2ID := "deployment-staging"
-	e1ID := "env-1"
-	r1ID := "resource-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -423,11 +409,7 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -488,24 +470,20 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	d1.Name = "deployment-prod"
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-dev"
 	d2.ResourceSelector = &oapi.Selector{}
 	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d2)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -568,18 +546,14 @@ func TestEngine_PolicyDelete(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -631,18 +605,14 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	d1.Name = "deployment-prod-high"
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -707,18 +677,14 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 	// Create a deployment
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-dev"
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -754,18 +720,14 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 
 	// Create a deployment
 	d1 := c.NewDeployment(sys.Id)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -791,12 +753,12 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 }
 
 func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	d3ID := "d3-1"
-	e1ID := "e1-1"
-	e2ID := "e2-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	d3ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	e2ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -886,10 +848,10 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
-	d1ID := "deployment-prod"
-	d2ID := "deployment-staging"
-	e1ID := "env-1"
-	r1ID := "resource-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithPolicy(
@@ -909,11 +871,7 @@ func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

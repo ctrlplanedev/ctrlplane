@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewDeploymentVariableValues(store *Store) *DeploymentVariableValues {
@@ -11,7 +11,7 @@ func NewDeploymentVariableValues(store *Store) *DeploymentVariableValues {
 }
 
 type DeploymentVariableValues struct {
-	repo  *repository.InMemoryStore
+	repo  *memory.InMemory
 	store *Store
 }
 

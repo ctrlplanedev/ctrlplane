@@ -5,84 +5,40 @@ import (
 	"testing"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_DeploymentSelectorAndCondition tests AND conditions in deployment selectors.
 // KNOWN ISSUE: AND conditions don't work correctly - they match deployments that only
 // satisfy one condition instead of requiring all conditions to be true.
 func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	d3ID := "d3-1"
-	r1ID := "r1-1"
-	r2ID := "r2-1"
-	r3ID := "r3-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	d3ID := uuid.New().String()
+	r1ID := uuid.New().String()
+	r2ID := uuid.New().String()
+	r3ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod-web"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
+				integration.DeploymentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("web")`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-prod-api"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
+				integration.DeploymentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("web")`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d3ID),
 				integration.DeploymentName("deployment-dev-web"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
+				integration.DeploymentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("web")`),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -142,12 +98,12 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 // KNOWN ISSUE: AND conditions don't work correctly - they match environments that only
 // satisfy one condition instead of requiring all conditions to be true.
 func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
-	e1ID := "e1-1"
-	e2ID := "e2-1"
-	e3ID := "e3-1"
-	r1ID := "r1-1"
-	r2ID := "r2-1"
-	r3ID := "r3-1"
+	e1ID := uuid.New().String()
+	e2ID := uuid.New().String()
+	e3ID := uuid.New().String()
+	r1ID := uuid.New().String()
+	r2ID := uuid.New().String()
+	r3ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -157,59 +113,17 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("us-east")`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-prod-us-west"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("us-east")`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e3ID),
 				integration.EnvironmentName("env-dev-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("us-east")`),
 			),
 		),
 		integration.WithResource(
@@ -269,11 +183,11 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 // KNOWN ISSUE: AND conditions don't work correctly - they match deployments that only
 // satisfy one condition instead of requiring all conditions to be true.
 func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	d3ID := "d3-1"
-	e1ID := "e1-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	d3ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -360,11 +274,11 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 // KNOWN ISSUE: AND conditions don't work correctly - they match environments that only
 // satisfy one condition instead of requiring all conditions to be true.
 func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
-	d1ID := "d1-1"
-	e1ID := "e1-1"
-	e2ID := "e2-1"
-	e3ID := "e3-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	e2ID := uuid.New().String()
+	e3ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -375,29 +289,17 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-prod-us-west"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e3ID),
 				integration.EnvironmentName("env-dev-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -462,12 +364,12 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 // TestEngine_PolicyComplexAndConditions tests complex AND conditions across
 // deployments, environments, and resources in policy selectors.
 func TestEngine_PolicyComplexAndConditions(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	d3ID := "d3-1"
-	e1ID := "e1-1"
-	e2ID := "e2-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	d3ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	e2ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(

@@ -2,7 +2,6 @@ import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
   boolean,
-  integer,
   pgTable,
   text,
   timestamp,
@@ -14,14 +13,11 @@ import { z } from "zod";
 
 import { role } from "./rbac.js";
 import { resource } from "./resource.js";
-import { system } from "./system.js";
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  googleServiceAccountEmail: text("google_service_account_email"),
-  awsRoleArn: text("aws_role_arn"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -55,7 +51,6 @@ export type Workspace = InferSelectModel<typeof workspace>;
 
 export const workspaceRelations = relations(workspace, ({ many }) => ({
   resources: many(resource),
-  systems: many(system),
 }));
 
 export const workspaceEmailDomainMatching = pgTable(
@@ -94,16 +89,4 @@ export const createWorkspaceEmailDomainMatching = createInsertSchema(
   domain: true,
   verificationEmail: true,
   createdAt: true,
-});
-
-export const workspaceSnapshot = pgTable("workspace_snapshot", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspace.id, { onDelete: "cascade" }),
-  path: text("path").notNull(),
-  timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
-  partition: integer("partition").notNull(),
-  offset: integer("offset").default(0).notNull(),
-  numPartitions: integer("num_partitions").notNull(),
 });

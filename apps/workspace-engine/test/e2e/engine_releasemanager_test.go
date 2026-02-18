@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_ReleaseManager_CompleteFlow tests the complete flow of the release manager:
@@ -143,6 +144,17 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	if job.JobAgentId != jobAgentId {
 		t.Errorf("job job_agent_id = %s, want %s", job.JobAgentId, jobAgentId)
 	}
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.Equal(t, environmentId, job.DispatchContext.Environment.Id)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.Equal(t, resourceId, job.DispatchContext.Resource.Id)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.2.3", job.DispatchContext.Version.Tag)
 
 	variables := release.Variables
 
@@ -222,6 +234,8 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	if jobConfig["replicas"] != float64(3) {
 		t.Errorf("job config replicas = %v, want 3", jobConfig["replicas"])
 	}
+	assert.Equal(t, "production", job.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(3), job.DispatchContext.JobAgentConfig["replicas"])
 }
 
 // TestEngine_ReleaseManager_WithReferenceVariables tests release manager with variables that reference other resources
@@ -231,6 +245,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	environmentId := uuid.New().String()
 	appId := uuid.New().String()
 	dbId := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -294,7 +309,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 		),
 		// Relationship rule: app -> database
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("app-to-db"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("app-to-database"),
 			integration.RelationshipRuleReference("database"),
 			integration.RelationshipRuleFromType("resource"),
@@ -356,6 +371,17 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	if appJob.Status != oapi.JobStatusPending {
 		t.Errorf("expected job status PENDING, got %v", appJob.Status)
 	}
+	assert.NotNil(t, appJob.DispatchContext)
+	assert.Equal(t, jobAgentId, appJob.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, appJob.DispatchContext.Release)
+	assert.NotNil(t, appJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, appJob.DispatchContext.Deployment.Id)
+	assert.NotNil(t, appJob.DispatchContext.Environment)
+	assert.Equal(t, environmentId, appJob.DispatchContext.Environment.Id)
+	assert.NotNil(t, appJob.DispatchContext.Resource)
+	assert.Equal(t, appId, appJob.DispatchContext.Resource.Id)
+	assert.NotNil(t, appJob.DispatchContext.Version)
+	assert.Equal(t, "v2.0.0", appJob.DispatchContext.Version.Tag)
 
 	// Verify the release exists
 	release, releaseExists := engine.Workspace().Releases().Get(appJob.ReleaseId)
@@ -518,6 +544,16 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 		if job.Status != oapi.JobStatusPending {
 			t.Errorf("job %s has status %v, want PENDING", job.Id, job.Status)
 		}
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, job.DispatchContext.Environment)
+		assert.Equal(t, environmentId, job.DispatchContext.Environment.Id)
+		assert.NotNil(t, job.DispatchContext.Resource)
+		assert.NotNil(t, job.DispatchContext.Version)
+		assert.Equal(t, "v3.0.0", job.DispatchContext.Version.Tag)
 
 		// Verify job has correct deployment and environment
 		if release.ReleaseTarget.DeploymentId != deploymentId {

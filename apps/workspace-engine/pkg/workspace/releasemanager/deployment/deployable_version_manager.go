@@ -242,6 +242,9 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 		return nil
 	}
 
+	resource, _ := m.store.Resources.Get(m.releaseTarget.ResourceId)
+	deployment, _ := m.store.Deployments.Get(m.releaseTarget.DeploymentId)
+
 	evaluators, err := m.getEvaluators(ctx, policies)
 	if err != nil {
 		return nil
@@ -262,8 +265,9 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 	span.SetAttributes(attribute.Int("bypasses.versions_with_skips", len(bypassesByVersion)))
 
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		ReleaseTarget: m.releaseTarget,
+		Environment: environment,
+		Resource:    resource,
+		Deployment:  deployment,
 	}
 
 	var firstResults []*oapi.RuleEvaluation

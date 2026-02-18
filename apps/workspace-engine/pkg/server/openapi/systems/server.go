@@ -28,19 +28,19 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 		return
 	}
 
-	environments := ws.Environments().Items()
-	environmentsList := make([]*oapi.Environment, 0, len(environments))
-	for _, environment := range environments {
-		if environment.SystemId == systemId {
-			environmentsList = append(environmentsList, environment)
+	envIDs := ws.SystemEnvironments().GetEnvironmentIDsForSystem(systemId)
+	environmentsList := make([]*oapi.Environment, 0, len(envIDs))
+	for _, eid := range envIDs {
+		if env, ok := ws.Environments().Get(eid); ok {
+			environmentsList = append(environmentsList, env)
 		}
 	}
 
-	deployments := ws.Deployments().Items()
-	deploymentsList := make([]*oapi.Deployment, 0, len(deployments))
-	for _, deployment := range deployments {
-		if deployment.SystemId == systemId {
-			deploymentsList = append(deploymentsList, deployment)
+	depIDs := ws.SystemDeployments().GetDeploymentIDsForSystem(systemId)
+	deploymentsList := make([]*oapi.Deployment, 0, len(depIDs))
+	for _, did := range depIDs {
+		if dep, ok := ws.Deployments().Get(did); ok {
+			deploymentsList = append(deploymentsList, dep)
 		}
 	}
 

@@ -31,14 +31,15 @@ local openapi = import '../lib/openapi.libsonnet';
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
       matrix: openapi.schemaRef('WorkflowJobMatrix'),
+      'if': { type: 'string', description: 'CEL expression to determine if the job should run' },
     },
   },
 
   WorkflowStringInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['string'] },
       default: { type: 'string' },
     },
@@ -46,9 +47,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowNumberInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['number'] },
       default: { type: 'number' },
     },
@@ -56,19 +57,29 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowBooleanInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['boolean'] },
       default: { type: 'boolean' },
     },
   },
 
+  WorkflowObjectInput: {
+    type: 'object',
+    required: ['key', 'type'],
+    properties: {
+      key: { type: 'string' },
+      type: { type: 'string', enum: ['object'] },
+      default: { type: 'object', additionalProperties: true },
+    },
+  },
+
   WorkflowManualArrayInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['array'] },
       default: { type: 'array', items: { type: 'object', additionalProperties: true } },
     },
@@ -76,9 +87,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowSelectorArrayInput: {
     type: 'object',
-    required: ['name', 'type', 'selector'],
+    required: ['key', 'type', 'selector'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['array'] },
       selector: {
         type: 'object',
@@ -104,6 +115,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('WorkflowNumberInput'),
       openapi.schemaRef('WorkflowBooleanInput'),
       openapi.schemaRef('WorkflowArrayInput'),
+      openapi.schemaRef('WorkflowObjectInput'),
     ],
   },
 
@@ -115,10 +127,11 @@ local openapi = import '../lib/openapi.libsonnet';
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
       matrix: openapi.schemaRef('WorkflowJobMatrix'),
+      'if': { type: 'string', description: 'CEL expression to determine if the job should run' },
     },
   },
 
-  CreateWorkflowTemplate: {
+  CreateWorkflow: {
     type: 'object',
     required: ['name', 'inputs', 'jobs'],
     properties: {
@@ -134,7 +147,23 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowTemplate: {
+  UpdateWorkflow: {
+    type: 'object',
+    required: ['name', 'inputs', 'jobs'],
+    properties: {
+      name: { type: 'string' },
+      inputs: {
+        type: 'array',
+        items: openapi.schemaRef('WorkflowInput'),
+      },
+      jobs: {
+        type: 'array',
+        items: openapi.schemaRef('CreateWorkflowJobTemplate'),
+      },
+    },
+  },
+
+  Workflow: {
     type: 'object',
     required: ['id', 'name', 'inputs', 'jobs'],
     properties: {
@@ -151,12 +180,12 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  Workflow: {
+  WorkflowRun: {
     type: 'object',
-    required: ['id', 'workflowTemplateId', 'inputs'],
+    required: ['id', 'workflowId', 'inputs'],
     properties: {
       id: { type: 'string' },
-      workflowTemplateId: { type: 'string' },
+      workflowId: { type: 'string' },
       inputs: {
         type: 'object',
         additionalProperties: true,

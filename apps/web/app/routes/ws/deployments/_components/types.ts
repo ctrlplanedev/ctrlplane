@@ -37,8 +37,8 @@ export type DeploymentDetail = {
   name: string;
   slug: string;
   description?: string;
-  systemId: string;
-  systemName: string;
+  systemIds: string[];
+  systemNames: string[];
   environments: Environment[];
   versions: DeploymentVersion[];
   releaseTargets: ReleaseTarget[];

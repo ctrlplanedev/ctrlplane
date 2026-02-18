@@ -22,9 +22,15 @@ const upsertResourceProvider: AsyncTypedHandler<
       target: [resourceProvider.workspaceId, resourceProvider.name],
       set: { name },
     })
-    .returning();
+    .returning().then(takeFirstOrNull);
 
-  res.status(200).json(provider[0]);
+  if (provider == null) {
+    res.status(500).json({ error: "Failed to upsert resource provider" });
+    return;
+  }
+
+
+  res.status(202).json(provider);
 };
 
 const getResourceProviderByName: AsyncTypedHandler<
@@ -99,7 +105,6 @@ const setResourceProviderResources: AsyncTypedHandler<
   res.status(202).json({
     ok: true,
     batchId,
-    resources,
     method: "cached",
   });
 };

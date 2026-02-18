@@ -73,18 +73,26 @@ func (jv *JobVerification) CompactionKey() (string, string) {
 	return "job_verification", jv.Id
 }
 
-func (wt *WorkflowTemplate) CompactionKey() (string, string) {
-	return "workflow_template", wt.Id
+func (wt *Workflow) CompactionKey() (string, string) {
+	return "workflow", wt.Id
 }
 
 func (wtt *WorkflowJobTemplate) CompactionKey() (string, string) {
 	return "workflow_job_template", wtt.Id
 }
 
-func (w *Workflow) CompactionKey() (string, string) {
-	return "workflow", w.Id
+func (w *WorkflowRun) CompactionKey() (string, string) {
+	return "workflow_run", w.Id
 }
 
 func (wt *WorkflowJob) CompactionKey() (string, string) {
 	return "workflow_job", wt.Id
+}
+
+func (l *SystemDeploymentLink) CompactionKey() (string, string) {
+	return "system_deployment_link", l.SystemId + ":" + l.DeploymentId
+}
+
+func (l *SystemEnvironmentLink) CompactionKey() (string, string) {
+	return "system_environment_link", l.SystemId + ":" + l.EnvironmentId
 }

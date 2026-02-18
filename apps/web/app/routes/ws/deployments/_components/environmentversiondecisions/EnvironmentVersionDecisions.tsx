@@ -1,5 +1,4 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import {
   Dialog,
   DialogContent,
@@ -9,9 +8,9 @@ import {
 import { DeploymentVersion } from "./DeploymentVersion";
 
 type EnvironmentVersionDecisionsProps = {
-  environment: WorkspaceEngine["schemas"]["Environment"];
+  environment: { id: string; name: string };
   deploymentId: string;
-  versions: WorkspaceEngine["schemas"]["DeploymentVersion"][];
+  versions: { id: string; name?: string; tag?: string }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };

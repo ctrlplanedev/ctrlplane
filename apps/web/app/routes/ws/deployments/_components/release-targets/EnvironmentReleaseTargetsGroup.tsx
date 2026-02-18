@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
@@ -14,12 +15,10 @@ import { RedeployAllDialog } from "./RedeployAllDialog";
 import { VerificationStatusBadge, verificationSummary } from "./Verifications";
 
 type ReleaseTargetSummary = WorkspaceEngine["schemas"]["ReleaseTargetSummary"];
-type Resource = WorkspaceEngine["schemas"]["ResourceSummary"];
 
-type Environment = WorkspaceEngine["schemas"]["Environment"];
 type EnvironmentReleaseTargetsGroupProps = {
   releaseTargets: ReleaseTargetSummary[];
-  environment: Environment;
+  environment: { id: string; name: string };
 };
 
 type ReleaseTargetRowProps = {
@@ -64,8 +63,7 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
     currentVersionTag === desiredVersionTag || rt.desiredVersion == null;
 
   const jobStatus = rt.latestJob?.status;
-  const isProgressing =
-    jobStatus === "inProgress" || jobStatus === "pending";
+  const isProgressing = jobStatus === "inProgress" || jobStatus === "pending";
   const isUnhealthy =
     jobStatus === "failure" ||
     jobStatus === "invalidJobAgent" ||
@@ -124,10 +122,10 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
   );
 }
 
-export function EnvironmentReleaseTargetsGroup({
-  releaseTargets,
-  environment,
-}: EnvironmentReleaseTargetsGroupProps) {
+export function EnvironmentReleaseTargetsGroup(
+  props: EnvironmentReleaseTargetsGroupProps,
+) {
+  const { releaseTargets, environment } = props;
   const [open, setOpen] = useState(true);
   const rts = open ? releaseTargets : [];
 
@@ -152,10 +150,7 @@ export function EnvironmentReleaseTargetsGroup({
         </TableCell>
       </TableRow>
       {rts.map((rt) => (
-        <ReleaseTargetRow
-          key={rt.releaseTarget.resourceId}
-          rt={rt}
-        />
+        <ReleaseTargetRow key={rt.releaseTarget.resourceId} rt={rt} />
       ))}
     </Fragment>
   );

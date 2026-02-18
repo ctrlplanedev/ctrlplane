@@ -41,18 +41,18 @@ export default function Environments() {
   const environmentsQuery = trpc.environment.list.useQuery({
     workspaceId: workspace.id,
   });
-  const environments = environmentsQuery.data?.items ?? [];
+  const environments = environmentsQuery.data ?? [];
 
   const systemsQuery = trpc.system.list.useQuery({
     workspaceId: workspace.id,
   });
-  const systems = systemsQuery.data?.items ?? [];
+  const systems = systemsQuery.data ?? [];
   const filteredEnvironments = environments.filter((e) => {
     if (searchQuery) {
       return e.name.toLowerCase().includes(searchQuery.toLowerCase());
     }
     if (systemFilter !== "all") {
-      return e.systemId === systemFilter;
+      return e.systemEnvironments.some((se) => se.systemId === systemFilter);
     }
     return true;
   });
@@ -132,12 +132,19 @@ export default function Environments() {
           {filteredEnvironments.map((environment) => (
             <EnvironmentCard
               key={environment.id}
-              environment={environment}
-              system={
-                systems.find(
-                  (system) => system.id === environment.systemId,
-                ) ?? { id: "", name: "" }
-              }
+              environment={{
+                ...environment,
+                description: environment.description ?? "",
+                resourceSelector: environment.resourceSelector ?? "",
+                systemIds: environment.systemEnvironments.map(
+                  (se) => se.systemId,
+                ),
+              }}
+              systems={systems.filter((system) =>
+                environment.systemEnvironments.some(
+                  (se) => se.systemId === system.id,
+                ),
+              )}
             />
           ))}
         </div>

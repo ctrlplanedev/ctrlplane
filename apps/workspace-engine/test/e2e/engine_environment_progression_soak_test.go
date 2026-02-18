@@ -9,18 +9,19 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_EnvironmentProgression_SoakTimeNotMet tests that a deployment version
 // is blocked from progressing to production when the soak time in staging hasn't elapsed
 func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "env-staging"
-	prodEnvID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -117,12 +118,12 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 // TestEngine_EnvironmentProgression_SoakTimeMet tests that a deployment version
 // progresses to production after the soak time in staging has elapsed
 func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "env-staging"
-	prodEnvID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -215,13 +216,13 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 // TestEngine_EnvironmentProgression_MultipleDependencyEnvironments tests environment
 // progression with multiple dependency environments (OR logic)
 func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingUsEastID := "env-staging-us-east"
-	stagingUsWestID := "env-staging-us-west"
-	prodEnvID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingUsEastID := uuid.New().String()
+	stagingUsWestID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -317,14 +318,14 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 // TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage tests
 // soak time with success percentage requirements
 func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "env-staging"
-	prodEnvID := "env-prod"
-	resource1ID := "resource-1"
-	resource2ID := "resource-2"
-	resource3ID := "resource-3"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	resource3ID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -431,12 +432,12 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 // TestEngine_EnvironmentProgression_MaximumAge tests that old successful deployments
 // are rejected based on maximum age
 func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "env-staging"
-	prodEnvID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -524,12 +525,12 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 // TestEngine_EnvironmentProgression_MultipleVersions tests that jobs from different
 // versions don't interfere with each other's environment progression logic
 func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "env-staging"
-	prodEnvID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

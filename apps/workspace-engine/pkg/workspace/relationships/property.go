@@ -99,8 +99,6 @@ func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (
 			return convertValue(*deployment.Description)
 		}
 		return nil, fmt.Errorf("description is nil")
-	case "system_id", "systemid":
-		return convertValue(deployment.SystemId)
 	case "job_agent_id", "jobagentid":
 		if deployment.JobAgentId != nil {
 			return convertValue(*deployment.JobAgentId)
@@ -147,8 +145,6 @@ func getEnvironmentProperty(environment *oapi.Environment, propertyPath []string
 			return convertValue(*environment.Description)
 		}
 		return nil, fmt.Errorf("description is nil")
-	case "system_id", "systemid":
-		return convertValue(environment.SystemId)
 	default:
 		return getPropertyReflection(environment, propertyPath)
 	}

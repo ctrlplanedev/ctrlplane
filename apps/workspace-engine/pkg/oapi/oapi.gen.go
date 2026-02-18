@@ -87,20 +87,21 @@ const (
 
 // Defines values for JobUpdateEventFieldsToUpdate.
 const (
-	JobUpdateEventFieldsToUpdateCompletedAt    JobUpdateEventFieldsToUpdate = "completedAt"
-	JobUpdateEventFieldsToUpdateCreatedAt      JobUpdateEventFieldsToUpdate = "createdAt"
-	JobUpdateEventFieldsToUpdateExternalId     JobUpdateEventFieldsToUpdate = "externalId"
-	JobUpdateEventFieldsToUpdateId             JobUpdateEventFieldsToUpdate = "id"
-	JobUpdateEventFieldsToUpdateJobAgentConfig JobUpdateEventFieldsToUpdate = "jobAgentConfig"
-	JobUpdateEventFieldsToUpdateJobAgentId     JobUpdateEventFieldsToUpdate = "jobAgentId"
-	JobUpdateEventFieldsToUpdateMessage        JobUpdateEventFieldsToUpdate = "message"
-	JobUpdateEventFieldsToUpdateMetadata       JobUpdateEventFieldsToUpdate = "metadata"
-	JobUpdateEventFieldsToUpdateReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
-	JobUpdateEventFieldsToUpdateStartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
-	JobUpdateEventFieldsToUpdateStatus         JobUpdateEventFieldsToUpdate = "status"
-	JobUpdateEventFieldsToUpdateTraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
-	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
-	JobUpdateEventFieldsToUpdateWorkflowJobId  JobUpdateEventFieldsToUpdate = "workflowJobId"
+	JobUpdateEventFieldsToUpdateCompletedAt     JobUpdateEventFieldsToUpdate = "completedAt"
+	JobUpdateEventFieldsToUpdateCreatedAt       JobUpdateEventFieldsToUpdate = "createdAt"
+	JobUpdateEventFieldsToUpdateDispatchContext JobUpdateEventFieldsToUpdate = "dispatchContext"
+	JobUpdateEventFieldsToUpdateExternalId      JobUpdateEventFieldsToUpdate = "externalId"
+	JobUpdateEventFieldsToUpdateId              JobUpdateEventFieldsToUpdate = "id"
+	JobUpdateEventFieldsToUpdateJobAgentConfig  JobUpdateEventFieldsToUpdate = "jobAgentConfig"
+	JobUpdateEventFieldsToUpdateJobAgentId      JobUpdateEventFieldsToUpdate = "jobAgentId"
+	JobUpdateEventFieldsToUpdateMessage         JobUpdateEventFieldsToUpdate = "message"
+	JobUpdateEventFieldsToUpdateMetadata        JobUpdateEventFieldsToUpdate = "metadata"
+	JobUpdateEventFieldsToUpdateReleaseId       JobUpdateEventFieldsToUpdate = "releaseId"
+	JobUpdateEventFieldsToUpdateStartedAt       JobUpdateEventFieldsToUpdate = "startedAt"
+	JobUpdateEventFieldsToUpdateStatus          JobUpdateEventFieldsToUpdate = "status"
+	JobUpdateEventFieldsToUpdateTraceToken      JobUpdateEventFieldsToUpdate = "traceToken"
+	JobUpdateEventFieldsToUpdateUpdatedAt       JobUpdateEventFieldsToUpdate = "updatedAt"
+	JobUpdateEventFieldsToUpdateWorkflowJobId   JobUpdateEventFieldsToUpdate = "workflowJobId"
 )
 
 // Defines values for JobVerificationStatus.
@@ -194,6 +195,11 @@ const (
 // Defines values for WorkflowNumberInputType.
 const (
 	Number WorkflowNumberInputType = "number"
+)
+
+// Defines values for WorkflowObjectInputType.
+const (
+	Object WorkflowObjectInputType = "object"
 )
 
 // Defines values for WorkflowSelectorArrayInputSelectorEntityType.
@@ -292,21 +298,18 @@ type Deployment struct {
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
 	Slug             string            `json:"slug"`
-	SystemId         string            `json:"systemId"`
 }
 
-// DeploymentAndSystem defines model for DeploymentAndSystem.
-type DeploymentAndSystem struct {
+// DeploymentAndSystems defines model for DeploymentAndSystems.
+type DeploymentAndSystems struct {
 	Deployment Deployment `json:"deployment"`
-	System     System     `json:"system"`
+	Systems    []System   `json:"systems"`
 }
 
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
 type DeploymentDependencyRule struct {
-	DependsOnDeploymentSelector Selector `json:"dependsOnDeploymentSelector"`
-
-	// Reference Reference to the entity that this rule depends on
-	Reference *string `json:"reference,omitempty"`
+	// DependsOn CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.
+	DependsOn string `json:"dependsOn"`
 }
 
 // DeploymentVariable defines model for DeploymentVariable.
@@ -371,6 +374,21 @@ type DeploymentWithVariables struct {
 	Variables  []DeploymentVariableWithValues `json:"variables"`
 }
 
+// DispatchContext defines model for DispatchContext.
+type DispatchContext struct {
+	Deployment     *Deployment              `json:"deployment,omitempty"`
+	Environment    *Environment             `json:"environment,omitempty"`
+	JobAgent       JobAgent                 `json:"jobAgent"`
+	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
+	Release        *Release                 `json:"release,omitempty"`
+	Resource       *Resource                `json:"resource,omitempty"`
+	Variables      *map[string]LiteralValue `json:"variables,omitempty"`
+	Version        *DeploymentVersion       `json:"version,omitempty"`
+	Workflow       *Workflow                `json:"workflow,omitempty"`
+	WorkflowJob    *WorkflowJob             `json:"workflowJob,omitempty"`
+	WorkflowRun    *WorkflowRun             `json:"workflowRun,omitempty"`
+}
+
 // EntityRelation defines model for EntityRelation.
 type EntityRelation struct {
 	Direction RelationDirection `json:"direction"`
@@ -390,7 +408,6 @@ type Environment struct {
 	Metadata         map[string]string `json:"metadata"`
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
-	SystemId         string            `json:"systemId"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -497,20 +514,21 @@ type IntegerValue = int
 
 // Job defines model for Job.
 type Job struct {
-	CompletedAt    *time.Time        `json:"completedAt,omitempty"`
-	CreatedAt      time.Time         `json:"createdAt"`
-	ExternalId     *string           `json:"externalId,omitempty"`
-	Id             string            `json:"id"`
-	JobAgentConfig JobAgentConfig    `json:"jobAgentConfig"`
-	JobAgentId     string            `json:"jobAgentId"`
-	Message        *string           `json:"message,omitempty"`
-	Metadata       map[string]string `json:"metadata"`
-	ReleaseId      string            `json:"releaseId"`
-	StartedAt      *time.Time        `json:"startedAt,omitempty"`
-	Status         JobStatus         `json:"status"`
-	TraceToken     *string           `json:"traceToken,omitempty"`
-	UpdatedAt      time.Time         `json:"updatedAt"`
-	WorkflowJobId  string            `json:"workflowJobId"`
+	CompletedAt     *time.Time        `json:"completedAt,omitempty"`
+	CreatedAt       time.Time         `json:"createdAt"`
+	DispatchContext *DispatchContext  `json:"dispatchContext,omitempty"`
+	ExternalId      *string           `json:"externalId,omitempty"`
+	Id              string            `json:"id"`
+	JobAgentConfig  JobAgentConfig    `json:"jobAgentConfig"`
+	JobAgentId      string            `json:"jobAgentId"`
+	Message         *string           `json:"message,omitempty"`
+	Metadata        map[string]string `json:"metadata"`
+	ReleaseId       string            `json:"releaseId"`
+	StartedAt       *time.Time        `json:"startedAt,omitempty"`
+	Status          JobStatus         `json:"status"`
+	TraceToken      *string           `json:"traceToken,omitempty"`
+	UpdatedAt       time.Time         `json:"updatedAt"`
+	WorkflowJobId   string            `json:"workflowJobId"`
 }
 
 // JobAgent defines model for JobAgent.
@@ -827,6 +845,13 @@ type ReleaseTargetAndState struct {
 	State         ReleaseTargetState `json:"state"`
 }
 
+// ReleaseTargetPreview defines model for ReleaseTargetPreview.
+type ReleaseTargetPreview struct {
+	Deployment  Deployment  `json:"deployment"`
+	Environment Environment `json:"environment"`
+	System      System      `json:"system"`
+}
+
 // ReleaseTargetState defines model for ReleaseTargetState.
 type ReleaseTargetState struct {
 	CurrentRelease *Release              `json:"currentRelease,omitempty"`
@@ -875,6 +900,16 @@ type Resource struct {
 	UpdatedAt   *time.Time             `json:"updatedAt,omitempty"`
 	Version     string                 `json:"version"`
 	WorkspaceId string                 `json:"workspaceId"`
+}
+
+// ResourcePreviewRequest defines model for ResourcePreviewRequest.
+type ResourcePreviewRequest struct {
+	Config     map[string]interface{} `json:"config"`
+	Identifier string                 `json:"identifier"`
+	Kind       string                 `json:"kind"`
+	Metadata   map[string]string      `json:"metadata"`
+	Name       string                 `json:"name"`
+	Version    string                 `json:"version"`
 }
 
 // ResourceProvider defines model for ResourceProvider.
@@ -999,6 +1034,18 @@ type System struct {
 	Metadata    *map[string]string `json:"metadata,omitempty"`
 	Name        string             `json:"name"`
 	WorkspaceId string             `json:"workspaceId"`
+}
+
+// SystemDeploymentLink defines model for SystemDeploymentLink.
+type SystemDeploymentLink struct {
+	DeploymentId string `json:"deploymentId"`
+	SystemId     string `json:"systemId"`
+}
+
+// SystemEnvironmentLink defines model for SystemEnvironmentLink.
+type SystemEnvironmentLink struct {
+	EnvironmentId string `json:"environmentId"`
+	SystemId      string `json:"systemId"`
 }
 
 // TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.
@@ -1166,9 +1213,10 @@ type VersionSummary struct {
 
 // Workflow defines model for Workflow.
 type Workflow struct {
-	Id                 string                 `json:"id"`
-	Inputs             map[string]interface{} `json:"inputs"`
-	WorkflowTemplateId string                 `json:"workflowTemplateId"`
+	Id     string                `json:"id"`
+	Inputs []WorkflowInput       `json:"inputs"`
+	Jobs   []WorkflowJobTemplate `json:"jobs"`
+	Name   string                `json:"name"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.
@@ -1179,7 +1227,7 @@ type WorkflowArrayInput struct {
 // WorkflowBooleanInput defines model for WorkflowBooleanInput.
 type WorkflowBooleanInput struct {
 	Default *bool                    `json:"default,omitempty"`
-	Name    string                   `json:"name"`
+	Key     string                   `json:"key"`
 	Type    WorkflowBooleanInputType `json:"type"`
 }
 
@@ -1199,8 +1247,8 @@ type WorkflowJob struct {
 	Index  int                    `json:"index"`
 
 	// Ref Reference to the job agent
-	Ref        string `json:"ref"`
-	WorkflowId string `json:"workflowId"`
+	Ref           string `json:"ref"`
+	WorkflowRunId string `json:"workflowRunId"`
 }
 
 // WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.
@@ -1228,8 +1276,11 @@ type WorkflowJobTemplate struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
-	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
-	Name   string                 `json:"name"`
+
+	// If CEL expression to determine if the job should run
+	If     *string            `json:"if,omitempty"`
+	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
+	Name   string             `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
@@ -1244,14 +1295,14 @@ type WorkflowJobWithJobs struct {
 	Jobs   []Job                  `json:"jobs"`
 
 	// Ref Reference to the job agent
-	Ref        string `json:"ref"`
-	WorkflowId string `json:"workflowId"`
+	Ref           string `json:"ref"`
+	WorkflowRunId string `json:"workflowRunId"`
 }
 
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
 type WorkflowManualArrayInput struct {
 	Default *[]map[string]interface{}    `json:"default,omitempty"`
-	Name    string                       `json:"name"`
+	Key     string                       `json:"key"`
 	Type    WorkflowManualArrayInputType `json:"type"`
 }
 
@@ -1261,16 +1312,41 @@ type WorkflowManualArrayInputType string
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
 	Default *float32                `json:"default,omitempty"`
-	Name    string                  `json:"name"`
+	Key     string                  `json:"key"`
 	Type    WorkflowNumberInputType `json:"type"`
 }
 
 // WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
 type WorkflowNumberInputType string
 
+// WorkflowObjectInput defines model for WorkflowObjectInput.
+type WorkflowObjectInput struct {
+	Default *map[string]interface{} `json:"default,omitempty"`
+	Key     string                  `json:"key"`
+	Type    WorkflowObjectInputType `json:"type"`
+}
+
+// WorkflowObjectInputType defines model for WorkflowObjectInput.Type.
+type WorkflowObjectInputType string
+
+// WorkflowRun defines model for WorkflowRun.
+type WorkflowRun struct {
+	Id         string                 `json:"id"`
+	Inputs     map[string]interface{} `json:"inputs"`
+	WorkflowId string                 `json:"workflowId"`
+}
+
+// WorkflowRunWithJobs defines model for WorkflowRunWithJobs.
+type WorkflowRunWithJobs struct {
+	Id         string                 `json:"id"`
+	Inputs     map[string]interface{} `json:"inputs"`
+	Jobs       []WorkflowJobWithJobs  `json:"jobs"`
+	WorkflowId string                 `json:"workflowId"`
+}
+
 // WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
 type WorkflowSelectorArrayInput struct {
-	Name     string `json:"name"`
+	Key      string `json:"key"`
 	Selector struct {
 		Default    *Selector                                    `json:"default,omitempty"`
 		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
@@ -1287,28 +1363,12 @@ type WorkflowSelectorArrayInputType string
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
 	Default *string                 `json:"default,omitempty"`
-	Name    string                  `json:"name"`
+	Key     string                  `json:"key"`
 	Type    WorkflowStringInputType `json:"type"`
 }
 
 // WorkflowStringInputType defines model for WorkflowStringInput.Type.
 type WorkflowStringInputType string
-
-// WorkflowTemplate defines model for WorkflowTemplate.
-type WorkflowTemplate struct {
-	Id     string                `json:"id"`
-	Inputs []WorkflowInput       `json:"inputs"`
-	Jobs   []WorkflowJobTemplate `json:"jobs"`
-	Name   string                `json:"name"`
-}
-
-// WorkflowWithJobs defines model for WorkflowWithJobs.
-type WorkflowWithJobs struct {
-	Id                 string                 `json:"id"`
-	Inputs             map[string]interface{} `json:"inputs"`
-	Jobs               []WorkflowJobWithJobs  `json:"jobs"`
-	WorkflowTemplateId string                 `json:"workflowTemplateId"`
-}
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
 type ValidateResourceSelectorJSONBody struct {
@@ -1435,6 +1495,15 @@ type GetRelationshipRulesParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// PreviewReleaseTargetsForResourceParams defines parameters for PreviewReleaseTargetsForResource.
+type PreviewReleaseTargetsForResourceParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetJobsForReleaseTargetParams defines parameters for GetJobsForReleaseTarget.
 type GetJobsForReleaseTargetParams struct {
 	// Limit Maximum number of items to return
@@ -1512,8 +1581,8 @@ type ListSystemsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// GetWorkflowTemplatesParams defines parameters for GetWorkflowTemplates.
-type GetWorkflowTemplatesParams struct {
+// ListWorkflowsParams defines parameters for ListWorkflows.
+type ListWorkflowsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1521,8 +1590,8 @@ type GetWorkflowTemplatesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// GetWorkflowsByTemplateParams defines parameters for GetWorkflowsByTemplate.
-type GetWorkflowsByTemplateParams struct {
+// GetWorkflowRunsParams defines parameters for GetWorkflowRuns.
+type GetWorkflowRunsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1538,6 +1607,9 @@ type EvaluatePoliciesJSONRequestBody = EvaluationScope
 
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
+
+// PreviewReleaseTargetsForResourceJSONRequestBody defines body for PreviewReleaseTargetsForResource for application/json ContentType.
+type PreviewReleaseTargetsForResourceJSONRequestBody = ResourcePreviewRequest
 
 // CacheBatchJSONRequestBody defines body for CacheBatch for application/json ContentType.
 type CacheBatchJSONRequestBody CacheBatchJSONBody
@@ -2507,6 +2579,32 @@ func (t *WorkflowInput) MergeWorkflowArrayInput(v WorkflowArrayInput) error {
 	return err
 }
 
+// AsWorkflowObjectInput returns the union data inside the WorkflowInput as a WorkflowObjectInput
+func (t WorkflowInput) AsWorkflowObjectInput() (WorkflowObjectInput, error) {
+	var body WorkflowObjectInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowObjectInput overwrites any union data inside the WorkflowInput as the provided WorkflowObjectInput
+func (t *WorkflowInput) FromWorkflowObjectInput(v WorkflowObjectInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowObjectInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowObjectInput
+func (t *WorkflowInput) MergeWorkflowObjectInput(v WorkflowObjectInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t WorkflowInput) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -2683,6 +2781,9 @@ type ServerInterface interface {
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
 	EvaluateReleaseTarget(c *gin.Context, workspaceId string)
+	// Preview release targets for a resource
+	// (POST /v1/workspaces/{workspaceId}/release-targets/resource-preview)
+	PreviewReleaseTargetsForResource(c *gin.Context, workspaceId string, params PreviewReleaseTargetsForResourceParams)
 	// Get the desired release for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release)
 	GetReleaseTargetDesiredRelease(c *gin.Context, workspaceId string, releaseTargetKey string)
@@ -2743,15 +2844,15 @@ type ServerInterface interface {
 	// Get system
 	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
 	GetSystem(c *gin.Context, workspaceId string, systemId string)
-	// Get all workflow templates
-	// (GET /v1/workspaces/{workspaceId}/workflow-templates)
-	GetWorkflowTemplates(c *gin.Context, workspaceId string, params GetWorkflowTemplatesParams)
-	// Get a workflow template
-	// (GET /v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId})
-	GetWorkflowTemplate(c *gin.Context, workspaceId string, workflowTemplateId string)
-	// Get all workflows for a workflow template
-	// (GET /v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows)
-	GetWorkflowsByTemplate(c *gin.Context, workspaceId string, workflowTemplateId string, params GetWorkflowsByTemplateParams)
+	// List workflows
+	// (GET /v1/workspaces/{workspaceId}/workflows)
+	ListWorkflows(c *gin.Context, workspaceId string, params ListWorkflowsParams)
+	// Get a workflow
+	// (GET /v1/workspaces/{workspaceId}/workflows/{workflowId})
+	GetWorkflow(c *gin.Context, workspaceId string, workflowId string)
+	// Get all workflow runs for a workflow
+	// (GET /v1/workspaces/{workspaceId}/workflows/{workflowId}/runs)
+	GetWorkflowRuns(c *gin.Context, workspaceId string, workflowId string, params GetWorkflowRunsParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -4051,6 +4152,49 @@ func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 	siw.Handler.EvaluateReleaseTarget(c, workspaceId)
 }
 
+// PreviewReleaseTargetsForResource operation middleware
+func (siw *ServerInterfaceWrapper) PreviewReleaseTargetsForResource(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PreviewReleaseTargetsForResourceParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PreviewReleaseTargetsForResource(c, workspaceId, params)
+}
+
 // GetReleaseTargetDesiredRelease operation middleware
 func (siw *ServerInterfaceWrapper) GetReleaseTargetDesiredRelease(c *gin.Context) {
 
@@ -4799,8 +4943,8 @@ func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
 	siw.Handler.GetSystem(c, workspaceId, systemId)
 }
 
-// GetWorkflowTemplates operation middleware
-func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
+// ListWorkflows operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkflows(c *gin.Context) {
 
 	var err error
 
@@ -4814,7 +4958,7 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetWorkflowTemplatesParams
+	var params ListWorkflowsParams
 
 	// ------------- Optional query parameter "limit" -------------
 
@@ -4839,11 +4983,11 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetWorkflowTemplates(c, workspaceId, params)
+	siw.Handler.ListWorkflows(c, workspaceId, params)
 }
 
-// GetWorkflowTemplate operation middleware
-func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
+// GetWorkflow operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflow(c *gin.Context) {
 
 	var err error
 
@@ -4856,12 +5000,12 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
 		return
 	}
 
-	// ------------- Path parameter "workflowTemplateId" -------------
-	var workflowTemplateId string
+	// ------------- Path parameter "workflowId" -------------
+	var workflowId string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "workflowTemplateId", c.Param("workflowTemplateId"), &workflowTemplateId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowId", c.Param("workflowId"), &workflowId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowTemplateId: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowId: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -4872,11 +5016,11 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetWorkflowTemplate(c, workspaceId, workflowTemplateId)
+	siw.Handler.GetWorkflow(c, workspaceId, workflowId)
 }
 
-// GetWorkflowsByTemplate operation middleware
-func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
+// GetWorkflowRuns operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflowRuns(c *gin.Context) {
 
 	var err error
 
@@ -4889,17 +5033,17 @@ func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
 		return
 	}
 
-	// ------------- Path parameter "workflowTemplateId" -------------
-	var workflowTemplateId string
+	// ------------- Path parameter "workflowId" -------------
+	var workflowId string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "workflowTemplateId", c.Param("workflowTemplateId"), &workflowTemplateId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowId", c.Param("workflowId"), &workflowId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowTemplateId: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowId: %w", err), http.StatusBadRequest)
 		return
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetWorkflowsByTemplateParams
+	var params GetWorkflowRunsParams
 
 	// ------------- Optional query parameter "limit" -------------
 
@@ -4924,7 +5068,7 @@ func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetWorkflowsByTemplate(c, workspaceId, workflowTemplateId, params)
+	siw.Handler.GetWorkflowRuns(c, workspaceId, workflowId, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -4988,6 +5132,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/resource-preview", wrapper.PreviewReleaseTargetsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/desired-release", wrapper.GetReleaseTargetDesiredRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
@@ -5008,7 +5153,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates", wrapper.GetWorkflowTemplates)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates/:workflowTemplateId", wrapper.GetWorkflowTemplate)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates/:workflowTemplateId/workflows", wrapper.GetWorkflowsByTemplate)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows", wrapper.ListWorkflows)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId", wrapper.GetWorkflow)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.GetWorkflowRuns)
 }

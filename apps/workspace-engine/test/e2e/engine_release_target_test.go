@@ -3,16 +3,19 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
-	d1Id := "d1-id"
-	e1Id := "e1-id"
-	r1Id := "r1-id"
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	r1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -25,11 +28,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 	)
@@ -88,7 +87,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
-	e1Id := "e1-id"
+	e1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -97,11 +96,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(),
@@ -126,7 +121,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
-	r1Id := "r1-id"
+	r1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -134,11 +129,7 @@ func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -170,21 +161,11 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-prod-only"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -209,9 +190,9 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
-	d1Id := "d1-id"
-	r1Id := "r1-id"
-	r2Id := "r2-id"
+	d1Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -219,11 +200,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 				integration.DeploymentID(d1Id),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -247,11 +224,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	}
 
 	// Update deployment to add a match-all selector
-	d1.ResourceSelector = c.NewJsonSelector(map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	})
+	d1.ResourceSelector = c.NewCelSelector("true")
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Both resources should match - 2 release targets
@@ -261,12 +234,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	}
 
 	// Update deployment to add a selector for prod only
-	d1.ResourceSelector = c.NewJsonSelector(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	})
+	d1.ResourceSelector = c.NewCelSelector(`resource.metadata["env"] == "prod"`)
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Now only prod resource should match - 1 release target
@@ -297,10 +265,10 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
-	sys1Id := "sys1-id"
-	sys2Id := "sys2-id"
-	d1Id := "d1-id"
-	e1Id := "e1-id"
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -314,11 +282,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-sys1"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(),
@@ -331,20 +295,16 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	sys2.Name = "system-2"
 	engine.PushEvent(ctx, handler.SystemCreate, sys2)
 
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	e1, _ := engine.Workspace().Environments().Get(e1Id)
-
 	// Verify release target was created
 	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
 
-	// Move deployment to system 2 - should remove release target
+	// Move deployment to system 2 via unlink/link - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
-	d1Updated := *d1 // Create a copy of the deployment value
-	d1Updated.SystemId = sys2.Id
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": sys1Id, "deploymentId": d1Id})
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 0 {
@@ -352,9 +312,8 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
-	e1Updated := *e1 // Create a copy of the environment value
-	e1Updated.SystemId = sys2.Id
-	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
+	engine.PushEvent(ctx, handler.SystemEnvironmentUnlinked, map[string]string{"systemId": sys1Id, "environmentId": e1Id})
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": sys2Id, "environmentId": e1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
@@ -363,12 +322,12 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
-	d1Id := "d1-id"
-	d2Id := "d2-id"
-	e1Id := "e1-id"
-	e2Id := "e2-id"
-	r1Id := "r1-id"
-	r2Id := "r2-id"
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -385,20 +344,12 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-dev"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2Id),
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -462,36 +413,21 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
-	r3Id := "r3-id"
+	r3Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-prod"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-critical"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "critical",
-					"key":      "priority",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["priority"] == "critical"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "us-east-1",
-					"key":      "region",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["region"] == "us-east-1"`),
 			),
 		),
 		// Resource 1: prod + us-east-1 + critical (matches both deployments and environment)
@@ -560,7 +496,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
-	envId := "env-1"
+	envId := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -588,11 +524,7 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	}
 
 	// Now add a selector to the environment to match all resources
-	e1.ResourceSelector = c.NewJsonSelector(map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	})
+	e1.ResourceSelector = c.NewCelSelector("true")
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	// Now release targets should be created
@@ -603,9 +535,9 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
-	sysId := "sys-1"
-	d1Id := "d1-1"
-	e1Id := "e1-1"
+	sysId := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(sysId),
@@ -651,12 +583,12 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
-	sysId := "sys-id"
-	d1Id := "d1-id"
-	d2Id := "d2-id"
-	e1Id := "e1-id"
-	e2Id := "e2-id"
-	r1Id := "r1-id"
+	sysId := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -674,20 +606,12 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-1"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2Id),
 				integration.EnvironmentName("env-2"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -765,7 +689,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	d3.Name = "deployment-3"
 	d3.ResourceSelector = &oapi.Selector{}
 	_ = d3.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d3)
 
 	// Should have 1 release target now (d3 × e1 × r1)
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
@@ -779,5 +703,606 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after deleting all environments, got %d", len(releaseTargets))
+	}
+}
+
+func TestEngine_ReleaseTargetSharedAcrossMultipleSystems(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentName("shared-deployment"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentName("shared-env"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1Id),
+			integration.ResourceName("resource-1"),
+		),
+		integration.WithResource(
+			integration.ResourceID(r2Id),
+			integration.ResourceName("resource-2"),
+		),
+	)
+	ctx := context.Background()
+
+	// Verify initial state: 1 deployment × 1 environment × 2 resources = 2 release targets
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets initially, got %d", len(releaseTargets))
+	}
+
+	// Create system-2
+	sys2 := c.NewSystem(engine.Workspace().ID)
+	sys2.Id = sys2Id
+	sys2.Name = "system-2"
+	engine.PushEvent(ctx, handler.SystemCreate, sys2)
+
+	// Update deployment to belong to both systems
+	d1, _ := engine.Workspace().Deployments().Get(d1Id)
+	d1Updated := *d1
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+
+	// Update environment to belong to both systems
+	e1, _ := engine.Workspace().Environments().Get(e1Id)
+	e1Updated := *e1
+	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
+
+	// Should still be 2 release targets (deduplicated), NOT 4
+	// The same (deployment, environment, resource) triple should not be duplicated
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets (deduplicated across systems), got %d", len(releaseTargets))
+	}
+
+	// Verify the release targets reference the correct entities
+	for _, rt := range releaseTargets {
+		if rt.DeploymentId != d1Id {
+			t.Fatalf("expected deployment %s, got %s", d1Id, rt.DeploymentId)
+		}
+		if rt.EnvironmentId != e1Id {
+			t.Fatalf("expected environment %s, got %s", e1Id, rt.EnvironmentId)
+		}
+		if rt.ResourceId != r1Id && rt.ResourceId != r2Id {
+			t.Fatalf("unexpected resource %s", rt.ResourceId)
+		}
+	}
+}
+
+func TestEngine_ReleaseTargetMultipleSystemsPartialOverlap(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	dAId := uuid.New().String()
+	dBId := uuid.New().String()
+	eXId := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+
+	// Create system-1 with deployment-A and environment-X
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(dAId),
+				integration.DeploymentName("deployment-A"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(eXId),
+				integration.EnvironmentName("environment-X"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1Id),
+			integration.ResourceName("resource-1"),
+		),
+		integration.WithResource(
+			integration.ResourceID(r2Id),
+			integration.ResourceName("resource-2"),
+		),
+	)
+	ctx := context.Background()
+
+	// Initial: deployment-A × environment-X × 2 resources = 2 release targets
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets initially, got %d", len(releaseTargets))
+	}
+
+	// Create system-2
+	sys2 := c.NewSystem(engine.Workspace().ID)
+	sys2.Id = sys2Id
+	sys2.Name = "system-2"
+	engine.PushEvent(ctx, handler.SystemCreate, sys2)
+
+	// Create deployment-B in system-2
+	dB := c.NewDeployment(sys2Id)
+	dB.Id = dBId
+	dB.Name = "deployment-B"
+	dB.Slug = "deployment-B"
+	dB.ResourceSelector = &oapi.Selector{}
+	_ = dB.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	engine.PushDeploymentCreateWithLink(ctx, sys2Id, dB)
+
+	// At this point environment-X is only in system-1, so deployment-B has no
+	// matching environment yet. Still 2 release targets.
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets before sharing environment, got %d", len(releaseTargets))
+	}
+
+	// Link environment-X to system-2 as well (it's already in system-1)
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": sys2Id, "environmentId": eXId})
+
+	// Now: deployment-A × environment-X × 2 resources = 2 targets
+	//    + deployment-B × environment-X × 2 resources = 2 targets
+	// Total = 4 release targets
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 4 {
+		t.Fatalf("expected 4 release targets with partial overlap, got %d", len(releaseTargets))
+	}
+
+	// Verify the distribution: 2 for deployment-A, 2 for deployment-B
+	countByDeployment := make(map[string]int)
+	for _, rt := range releaseTargets {
+		countByDeployment[rt.DeploymentId]++
+	}
+	if countByDeployment[dAId] != 2 {
+		t.Fatalf("expected 2 release targets for deployment-A, got %d", countByDeployment[dAId])
+	}
+	if countByDeployment[dBId] != 2 {
+		t.Fatalf("expected 2 release targets for deployment-B, got %d", countByDeployment[dBId])
+	}
+}
+
+func TestEngine_ReleaseTargetMultipleSystemsJobCreation(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	versionId := uuid.New().String()
+	jobAgentId := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+
+	// Create system-1 with the deployment (linked to job agent + version),
+	// environment-1, and the job agent
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(integration.JobAgentID(jobAgentId)),
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentName("multi-system-deploy"),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(integration.DeploymentVersionID(versionId)),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentName("env-system-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1Id),
+			integration.ResourceName("resource-1"),
+		),
+		integration.WithResource(
+			integration.ResourceID(r2Id),
+			integration.ResourceName("resource-2"),
+		),
+	)
+	ctx := context.Background()
+
+	// Create system-2
+	sys2 := c.NewSystem(engine.Workspace().ID)
+	sys2.Id = sys2Id
+	sys2.Name = "system-2"
+	engine.PushEvent(ctx, handler.SystemCreate, sys2)
+
+	// Create environment-2 in system-2
+	e2 := c.NewEnvironment(sys2Id)
+	e2.Id = e2Id
+	e2.Name = "env-system-2"
+	e2.ResourceSelector = &oapi.Selector{}
+	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	engine.PushEnvironmentCreateWithLink(ctx, sys2Id, e2)
+
+	// Link deployment to system-2 (already linked to system-1 from setup)
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
+
+	// Wait for jobs to be created
+	time.Sleep(500 * time.Millisecond)
+
+	// Expected: 1 deployment × 2 environments × 2 resources = 4 release targets
+	ws := engine.Workspace()
+	releaseTargets, err := ws.ReleaseTargets().Items()
+	if err != nil {
+		t.Fatalf("failed to get release targets: %v", err)
+	}
+	if len(releaseTargets) != 4 {
+		t.Fatalf("expected 4 release targets, got %d", len(releaseTargets))
+	}
+
+	// Verify distribution by environment
+	countByEnv := make(map[string]int)
+	for _, rt := range releaseTargets {
+		countByEnv[rt.EnvironmentId]++
+	}
+	if countByEnv[e1Id] != 2 {
+		t.Fatalf("expected 2 release targets for env-system-1, got %d", countByEnv[e1Id])
+	}
+	if countByEnv[e2Id] != 2 {
+		t.Fatalf("expected 2 release targets for env-system-2, got %d", countByEnv[e2Id])
+	}
+
+	// Verify each release target has at least one job
+	jobCount := 0
+	for _, rt := range releaseTargets {
+		jobs := ws.Jobs().GetJobsForReleaseTarget(rt)
+		if len(jobs) == 0 {
+			resource, _ := ws.Resources().Get(rt.ResourceId)
+			env, _ := ws.Environments().Get(rt.EnvironmentId)
+			t.Errorf("expected jobs for release target (env=%s, resource=%s), got none",
+				env.Name, resource.Name)
+		}
+		jobCount += len(jobs)
+	}
+
+	if jobCount != 4 {
+		t.Errorf("expected 4 jobs total (one per release target), got %d", jobCount)
+	}
+}
+
+func TestEngine_ReleaseTargetSharedSystemRemoval(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
+
+	// Create system-1 with the deployment and environment-1
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentName("shared-deployment"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentName("env-system-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1Id),
+			integration.ResourceName("resource-1"),
+		),
+	)
+	ctx := context.Background()
+
+	// Initial: 1 deployment × 1 environment × 1 resource = 1 release target
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target initially, got %d", len(releaseTargets))
+	}
+
+	// Create system-2
+	sys2 := c.NewSystem(engine.Workspace().ID)
+	sys2.Id = sys2Id
+	sys2.Name = "system-2"
+	engine.PushEvent(ctx, handler.SystemCreate, sys2)
+
+	// Create environment-2 in system-2
+	e2 := c.NewEnvironment(sys2Id)
+	e2.Id = e2Id
+	e2.Name = "env-system-2"
+	e2.ResourceSelector = &oapi.Selector{}
+	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	engine.PushEnvironmentCreateWithLink(ctx, sys2Id, e2)
+
+	// Link deployment to system-2 (already linked to system-1 from setup)
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
+
+	// Now: deployment × env-1 × resource + deployment × env-2 × resource = 2 release targets
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets after adding system-2, got %d", len(releaseTargets))
+	}
+
+	// Unlink deployment from system-2 (keep only system-1)
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
+
+	// Now only env-1 (in system-1) should match the deployment.
+	// env-2 is only in system-2, which the deployment no longer belongs to.
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target after removing system-2, got %d", len(releaseTargets))
+	}
+
+	// Verify the remaining target is for env-1
+	var rt *oapi.ReleaseTarget
+	for _, target := range releaseTargets {
+		rt = target
+		break
+	}
+	if rt.EnvironmentId != e1Id {
+		t.Fatalf("expected remaining release target for env-system-1, got environment %s", rt.EnvironmentId)
+	}
+	if rt.ResourceId != r1Id {
+		t.Fatalf("expected remaining release target for resource-1, got resource %s", rt.ResourceId)
+	}
+}
+
+func TestEngine_ReleaseTargetSystemDeletionWithSharedEntities(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	r1Id := uuid.New().String()
+
+	// Create system-1 with deployment and environment
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentName("shared-deployment"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentName("shared-env"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1Id),
+			integration.ResourceName("resource-1"),
+		),
+	)
+	ctx := context.Background()
+
+	// Create system-2 and add deployment + environment to both systems
+	sys2 := c.NewSystem(engine.Workspace().ID)
+	sys2.Id = sys2Id
+	sys2.Name = "system-2"
+	engine.PushEvent(ctx, handler.SystemCreate, sys2)
+
+	d1, _ := engine.Workspace().Deployments().Get(d1Id)
+	d1Updated := *d1
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+
+	e1, _ := engine.Workspace().Environments().Get(e1Id)
+	e1Updated := *e1
+	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
+
+	// Verify 1 release target (deduplicated)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
+	}
+
+	// Delete system-1 — the current cascade behavior removes all associated
+	// deployments and environments even if they belong to other systems.
+	sys1, _ := engine.Workspace().Systems().Get(sys1Id)
+	engine.PushEvent(ctx, handler.SystemDelete, sys1)
+
+	// Deployment and environment are removed by the cascade
+	_, dOk := engine.Workspace().Deployments().Get(d1Id)
+	if dOk {
+		t.Fatalf("deployment should be removed by system deletion cascade")
+	}
+
+	_, eOk := engine.Workspace().Environments().Get(e1Id)
+	if eOk {
+		t.Fatalf("environment should be removed by system deletion cascade")
+	}
+
+	// All release targets should be removed
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets after system deletion cascade, got %d", len(releaseTargets))
+	}
+}
+
+func TestEngine_ReleaseTargetNewResourceWithMultiSystemSetup(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+
+	// Create system-1 with deployment and environment-1
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentName("multi-sys-deployment"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentName("env-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+	)
+	ctx := context.Background()
+
+	// Create system-2 with environment-2
+	sys2 := c.NewSystem(engine.Workspace().ID)
+	sys2.Id = sys2Id
+	sys2.Name = "system-2"
+	engine.PushEvent(ctx, handler.SystemCreate, sys2)
+
+	e2 := c.NewEnvironment(sys2Id)
+	e2.Id = e2Id
+	e2.Name = "env-2"
+	e2.ResourceSelector = &oapi.Selector{}
+	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	engine.PushEnvironmentCreateWithLink(ctx, sys2Id, e2)
+
+	// Link deployment to system-2 (already linked to system-1 from setup)
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
+
+	// No resources yet — 0 release targets
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets with no resources, got %d", len(releaseTargets))
+	}
+
+	// Add resource-1 — should fan out across both environments
+	r1 := c.NewResource(engine.Workspace().ID)
+	r1.Name = "resource-1"
+	engine.PushEvent(ctx, handler.ResourceCreate, r1)
+
+	// Expected: 1 deployment × 2 environments × 1 resource = 2 release targets
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets after adding resource-1, got %d", len(releaseTargets))
+	}
+
+	// Add resource-2 — should also fan out across both environments
+	r2 := c.NewResource(engine.Workspace().ID)
+	r2.Name = "resource-2"
+	engine.PushEvent(ctx, handler.ResourceCreate, r2)
+
+	// Expected: 1 deployment × 2 environments × 2 resources = 4 release targets
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 4 {
+		t.Fatalf("expected 4 release targets after adding resource-2, got %d", len(releaseTargets))
+	}
+
+	// Verify distribution: 2 per environment
+	countByEnv := make(map[string]int)
+	for _, rt := range releaseTargets {
+		countByEnv[rt.EnvironmentId]++
+	}
+	if countByEnv[e1Id] != 2 {
+		t.Fatalf("expected 2 release targets for env-1, got %d", countByEnv[e1Id])
+	}
+	if countByEnv[e2Id] != 2 {
+		t.Fatalf("expected 2 release targets for env-2, got %d", countByEnv[e2Id])
+	}
+}
+
+func TestEngine_ReleaseTargetThreeSystemsIntersection(t *testing.T) {
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	sys3Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	r1Id := uuid.New().String()
+
+	// Create system-1 with deployment, and system-2 with environment.
+	// Initially they don't share a system, so no release targets.
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sys1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentName("deploy-sys1-sys2"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+		),
+		integration.WithSystem(
+			integration.SystemID(sys2Id),
+			integration.SystemName("system-2"),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentName("env-sys2-sys3"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1Id),
+			integration.ResourceName("resource-1"),
+		),
+	)
+	ctx := context.Background()
+
+	// Create system-3
+	sys3 := c.NewSystem(engine.Workspace().ID)
+	sys3.Id = sys3Id
+	sys3.Name = "system-3"
+	engine.PushEvent(ctx, handler.SystemCreate, sys3)
+
+	// Deployment is in [sys1], environment is in [sys2] — no overlap, 0 release targets
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets (no system overlap), got %d", len(releaseTargets))
+	}
+
+	// Link deployment to sys2 (already in sys1) — now intersects with environment at sys2
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
+
+	// Should produce 1 release target: deployment and environment intersect at sys2
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target (intersection at sys2), got %d", len(releaseTargets))
+	}
+
+	var rt *oapi.ReleaseTarget
+	for _, target := range releaseTargets {
+		rt = target
+		break
+	}
+	if rt.DeploymentId != d1Id {
+		t.Fatalf("expected deployment %s, got %s", d1Id, rt.DeploymentId)
+	}
+	if rt.EnvironmentId != e1Id {
+		t.Fatalf("expected environment %s, got %s", e1Id, rt.EnvironmentId)
+	}
+
+	// Link environment to sys3 (already in sys2) — still intersects with deployment at sys2
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": sys3Id, "environmentId": e1Id})
+
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target (still intersection at sys2), got %d", len(releaseTargets))
+	}
+
+	// Unlink deployment from sys2 — deployment[sys1] ∩ environment[sys2,sys3] = empty
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
+
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets after removing intersection system, got %d", len(releaseTargets))
+	}
+
+	// Link deployment to sys3 — deployment[sys1,sys3] ∩ environment[sys2,sys3] = sys3
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys3Id, "deploymentId": d1Id})
+
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target (intersection at sys3), got %d", len(releaseTargets))
 	}
 }

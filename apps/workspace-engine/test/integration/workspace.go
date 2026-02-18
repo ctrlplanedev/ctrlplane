@@ -4,18 +4,43 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/jobagents/testrunner"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
 
 var globalTraceStore = spanstore.NewInMemoryStore()
+
+// noopProducer is a no-op messaging.Producer used in tests to avoid
+// connecting to a real Kafka broker.
+type noopProducer struct{}
+
+func (noopProducer) Publish([]byte, []byte) error                   { return nil }
+func (noopProducer) PublishToPartition([]byte, []byte, int32) error { return nil }
+func (noopProducer) Flush(int) int                                  { return 0 }
+func (noopProducer) Close() error                                   { return nil }
+
+// overrideTestRunnerProducer replaces the TestRunner in the workspace's
+// job agent registry with one that uses a no-op Kafka producer, preventing
+// real Kafka connections during tests.
+func overrideTestRunnerProducer(ws *workspace.Workspace) {
+	ws.JobAgentRegistry().Register(
+		testrunner.NewWithOptions(ws.Store(), testrunner.Options{
+			ProducerFactory: func() (messaging.Producer, error) {
+				return noopProducer{}, nil
+			},
+		}),
+	)
+}
 
 func init() {
 	manager.Configure(
@@ -28,6 +53,22 @@ func init() {
 	)
 }
 
+// UseDBBacking returns true when the USE_DATABASE_BACKING environment variable
+// is set to a non-empty value. When enabled, NewTestWorkspace transparently
+// creates workspaces backed by a real PostgreSQL database instead of in-memory
+// stores.
+//
+// Run tests with DB backing:
+//
+//	USE_DATABASE_BACKING=1 go test ./test/e2e/...
+//
+// Optionally set POSTGRES_URL (defaults to postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane):
+//
+//	USE_DATABASE_BACKING=1 POSTGRES_URL=postgresql://... go test ./test/e2e/...
+func UseDBBacking() bool {
+	return os.Getenv("USE_DATABASE_BACKING") != ""
+}
+
 type TestWorkspace struct {
 	t             *testing.T
 	workspace     *workspace.Workspace
@@ -35,6 +76,12 @@ type TestWorkspace struct {
 	traceStore    *spanstore.InMemoryStore
 }
 
+// NewTestWorkspace creates a TestWorkspace for use in tests.
+//
+// By default it uses a purely in-memory store. When the USE_DATABASE_BACKING
+// environment variable is set, it automatically creates a workspace backed by
+// a real PostgreSQL database (with proper UUID workspace IDs, DB records, and
+// cleanup). If the database is unreachable the test is skipped.
 func NewTestWorkspace(
 	t *testing.T,
 	options ...WorkspaceOption,
@@ -44,11 +91,26 @@ func NewTestWorkspace(
 	}
 	t.Helper()
 
+	if UseDBBacking() {
+		return newDBTestWorkspace(t, options...)
+	}
+
+	return newMemoryTestWorkspace(t, options...)
+}
+
+func newMemoryTestWorkspace(
+	t *testing.T,
+	options ...WorkspaceOption,
+) *TestWorkspace {
+	t.Helper()
+
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
 	ws, err := manager.GetOrLoad(context.Background(), workspaceID)
 	if err != nil {
 		t.Fatalf("failed to get or create workspace: %v", err)
 	}
+
+	overrideTestRunnerProducer(ws)
 
 	tw := &TestWorkspace{}
 	tw.t = t
@@ -113,6 +175,30 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 		tw.t.Fatalf("failed to listen and route event: %v", err)
 	}
 
+	return tw
+}
+
+// PushDeploymentCreateWithLink pushes a DeploymentCreate event followed by a
+// SystemDeploymentLinked event, establishing the system-deployment association.
+func (tw *TestWorkspace) PushDeploymentCreateWithLink(ctx context.Context, systemId string, d *oapi.Deployment) *TestWorkspace {
+	tw.t.Helper()
+	tw.PushEvent(ctx, handler.DeploymentCreate, d)
+	tw.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{
+		"systemId":     systemId,
+		"deploymentId": d.Id,
+	})
+	return tw
+}
+
+// PushEnvironmentCreateWithLink pushes an EnvironmentCreate event followed by a
+// SystemEnvironmentLinked event, establishing the system-environment association.
+func (tw *TestWorkspace) PushEnvironmentCreateWithLink(ctx context.Context, systemId string, e *oapi.Environment) *TestWorkspace {
+	tw.t.Helper()
+	tw.PushEvent(ctx, handler.EnvironmentCreate, e)
+	tw.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{
+		"systemId":      systemId,
+		"environmentId": e.Id,
+	})
 	return tw
 }
 

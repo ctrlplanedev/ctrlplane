@@ -70,4 +70,56 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}': {
+    put: {
+      summary: 'Link deployment to system',
+      operationId: 'linkDeploymentToSystem',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+    delete: {
+      summary: 'Unlink deployment from system',
+      operationId: 'unlinkDeploymentFromSystem',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}': {
+    put: {
+      summary: 'Link environment to system',
+      operationId: 'linkEnvironmentToSystem',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.environmentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+    delete: {
+      summary: 'Unlink environment from system',
+      operationId: 'unlinkEnvironmentFromSystem',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.environmentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

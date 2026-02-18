@@ -62,12 +62,13 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  ResourceProviderRequestAccepted: {
+  ResourceProviderSetRequestAccepted: {
     type: 'object',
-    required: ['id', 'message'],
+    required: ['ok', 'method'],
     properties: {
-      id: { type: 'string' },
-      message: { type: 'string' },
+      ok: { type: 'boolean' },
+      batchId: { type: 'string' },
+      method: { type: 'string' },
     },
   },
 }

@@ -58,6 +58,7 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
 	assert.Empty(t, originalJob.JobAgentId, "expected empty job agent ID")
+	assert.Nil(t, originalJob.DispatchContext)
 
 	// Store original job details for later verification
 	originalJobID := originalJob.Id
@@ -101,6 +102,15 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 
 	// Verify new job uses the configured job agent
 	assert.Equal(t, jobAgentID, newPendingJob.JobAgentId, "expected new job to use configured job agent")
+	assert.NotNil(t, newPendingJob.DispatchContext)
+	assert.Equal(t, jobAgentID, newPendingJob.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, newPendingJob.DispatchContext.Release)
+	assert.NotNil(t, newPendingJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, newPendingJob.DispatchContext.Deployment.Id)
+	assert.NotNil(t, newPendingJob.DispatchContext.Environment)
+	assert.NotNil(t, newPendingJob.DispatchContext.Resource)
+	assert.NotNil(t, newPendingJob.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", newPendingJob.DispatchContext.Version.Tag)
 
 	// Verify new job has different ID from original
 	assert.NotEqual(t, originalJobID, newPendingJob.Id, "expected new job to have different ID from original InvalidJobAgent job")
@@ -165,6 +175,7 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	}
 
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
+	assert.Nil(t, originalJob.DispatchContext)
 
 	originalJobID := originalJob.Id
 	originalReleaseID := originalJob.ReleaseId
@@ -210,6 +221,15 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 
 	// Verify new job uses the configured job agent
 	assert.Equal(t, jobAgentID, newPendingJob.JobAgentId, "expected new job to use configured job agent")
+	assert.NotNil(t, newPendingJob.DispatchContext)
+	assert.Equal(t, jobAgentID, newPendingJob.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, newPendingJob.DispatchContext.Release)
+	assert.NotNil(t, newPendingJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, newPendingJob.DispatchContext.Deployment.Id)
+	assert.NotNil(t, newPendingJob.DispatchContext.Environment)
+	assert.NotNil(t, newPendingJob.DispatchContext.Resource)
+	assert.NotNil(t, newPendingJob.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", newPendingJob.DispatchContext.Version.Tag)
 
 	// Verify job agent config was merged correctly (deployment config overrides agent defaults)
 	config := newPendingJob.JobAgentConfig
@@ -224,6 +244,10 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	replicas, ok := config["replicas"].(float64)
 	assert.True(t, ok, "expected replicas to be a float64")
 	assert.Equal(t, float64(3), replicas, "expected merged config replicas to be 3 (from deployment)")
+
+	assert.Equal(t, float64(600), newPendingJob.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, "default", newPendingJob.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(3), newPendingJob.DispatchContext.JobAgentConfig["replicas"])
 
 	// Step 5: Verify original InvalidJobAgent job preserved
 	originalJobStillExists := false
@@ -285,6 +309,7 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 	for _, j := range allJobs {
 		if j.Status == oapi.JobStatusInvalidJobAgent {
 			invalidJobAgentCount++
+			assert.Nil(t, j.DispatchContext)
 		}
 	}
 
@@ -317,6 +342,15 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 			pendingJobsCount++
 			// Verify each pending job uses the configured job agent
 			assert.Equal(t, jobAgentID, j.JobAgentId, "expected pending job to use configured job agent")
+			assert.NotNil(t, j.DispatchContext)
+			assert.Equal(t, jobAgentID, j.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, j.DispatchContext.Release)
+			assert.NotNil(t, j.DispatchContext.Deployment)
+			assert.Equal(t, deploymentID, j.DispatchContext.Deployment.Id)
+			assert.NotNil(t, j.DispatchContext.Environment)
+			assert.NotNil(t, j.DispatchContext.Resource)
+			assert.NotNil(t, j.DispatchContext.Version)
+			assert.Equal(t, "v1.0.0", j.DispatchContext.Version.Tag)
 		case oapi.JobStatusInvalidJobAgent:
 			invalidJobAgentCountAfter++
 		}

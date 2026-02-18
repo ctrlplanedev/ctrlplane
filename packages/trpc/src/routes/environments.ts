@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { asc, eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -10,22 +12,22 @@ import { protectedProcedure, router } from "../trpc.js";
 
 export const environmentRouter = router({
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid(), environmentId: z.string() }))
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+    .input(z.object({ environmentId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const { environmentId } = input;
 
-      if (!result.data) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Environment not found",
-        });
-      }
+      const environment = await ctx.db.query.environment.findFirst({
+        where: eq(schema.environment.id, environmentId),
+        with: {
+          systemEnvironments: {
+            with: {
+              system: true,
+            },
+          },
+        },
+      });
 
-      return result.data;
+      return environment;
     }),
 
   resources: protectedProcedure
@@ -87,16 +89,17 @@ export const environmentRouter = router({
           .perform(Permission.EnvironmentList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ input }) => {
-      const { workspaceId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments",
-        {
-          params: { query: { limit: 1000, offset: 0 }, path: { workspaceId } },
+    .query(async ({ input, ctx }) => {
+      const environments = await ctx.db.query.environment.findMany({
+        where: eq(schema.environment.workspaceId, input.workspaceId),
+        limit: 1000,
+        offset: 0,
+        with: {
+          systemEnvironments: true,
         },
-      );
-
-      return result.data;
+        orderBy: asc(schema.environment.name),
+      });
+      return environments;
     }),
 
   update: protectedProcedure
@@ -167,7 +170,7 @@ export const environmentRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        systemId: z.string(),
+        systemIds: z.array(z.string()).min(1),
         name: z.string().min(1).max(255),
         description: z.string().max(500).optional(),
         metadata: z.record(z.string(), z.string()).optional(),

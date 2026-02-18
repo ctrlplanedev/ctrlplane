@@ -9,19 +9,19 @@ func (e *RelatableEntity) GetType() RelatableEntityType {
 		return ""
 	}
 
-	// Check for distinguishing fields
-	// Deployment has "slug" field
+	// Check for distinguishing fields.
+	// Deployment has "slug" field.
 	if _, hasSlug := data["slug"]; hasSlug {
 		return "deployment"
 	}
 
-	// Resource has "kind" field
+	// Resource has "kind" field.
 	if _, hasKind := data["kind"]; hasKind {
 		return "resource"
 	}
 
-	// Environment has "systemId" but no "slug" or "kind"
-	if _, hasSystemId := data["systemId"]; hasSystemId {
+	// Environment has "createdAt" but no "slug" or "kind".
+	if _, has := data["createdAt"]; has {
 		return "environment"
 	}
 

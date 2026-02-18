@@ -7,10 +7,19 @@ import (
 	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, error) {
-	existsInDB, err := db.WorkspaceExists(c.Request.Context(), workspaceId)
+	ctx := c.Request.Context()
+	uuidWorkspaceId, err := uuid.Parse(workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	existsInDB, err := db.
+		GetQueries(ctx).
+		WorkspaceExists(ctx, uuidWorkspaceId)
 	if err != nil {
 		return nil, err
 	}

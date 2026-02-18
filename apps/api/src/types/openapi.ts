@@ -496,6 +496,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/release-targets/resource-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview release targets for a resource
+         * @description Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.
+         */
+        post: operations["previewReleaseTargetsForResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
         parameters: {
             query?: never;
@@ -772,7 +792,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/workflow-templates": {
+    "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -780,13 +800,81 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** Link deployment to system */
+        put: operations["linkDeploymentToSystem"];
+        post?: never;
+        /** Unlink deployment from system */
+        delete: operations["unlinkDeploymentFromSystem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link environment to system */
+        put: operations["linkEnvironmentToSystem"];
+        post?: never;
+        /** Unlink environment from system */
+        delete: operations["unlinkEnvironmentFromSystem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workflows
+         * @description Returns a list of workflows.
+         */
+        get: operations["listWorkflows"];
         put?: never;
         /**
-         * Create a workflow template
-         * @description Creates a workflow template.
+         * Create a workflow
+         * @description Creates a workflow.
          */
-        post: operations["createWorkflowTemplate"];
+        post: operations["createWorkflow"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/workflows/{workflowId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a workflow
+         * @description Gets a workflow by ID.
+         */
+        get: operations["getWorkflow"];
+        /**
+         * Update a workflow
+         * @description Updates a workflow template.
+         */
+        put: operations["updateWorkflow"];
+        post?: never;
+        /**
+         * Delete a workflow
+         * @description Deletes a workflow.
+         */
+        delete: operations["deleteWorkflow"];
         options?: never;
         head?: never;
         patch?: never;
@@ -821,7 +909,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
         };
         CreateDeploymentVersionRequest: {
             config?: {
@@ -846,7 +933,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
         };
         CreatePolicyRequest: {
             description?: string;
@@ -883,20 +969,22 @@ export interface components {
             name: string;
             slug?: string;
         };
+        CreateWorkflow: {
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            name: string;
+        };
         CreateWorkflowJobTemplate: {
             /** @description Configuration for the job agent */
             config: {
                 [key: string]: unknown;
             };
+            /** @description CEL expression to determine if the job should run */
+            if?: string;
             matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
             ref: string;
-        };
-        CreateWorkflowTemplate: {
-            inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
-            name: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -961,14 +1049,14 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
         };
-        DeploymentAndSystem: {
+        DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
-            system: components["schemas"]["System"];
+            systems: components["schemas"]["System"][];
         };
         DeploymentDependencyRule: {
-            dependsOnDeploymentSelector: components["schemas"]["Selector"];
+            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+            dependsOn: string;
         };
         DeploymentRequestAccepted: {
             id: string;
@@ -1042,6 +1130,21 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
+        DispatchContext: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            jobAgent: components["schemas"]["JobAgent"];
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            release?: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+            variables?: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version?: components["schemas"]["DeploymentVersion"];
+            workflow?: components["schemas"]["Workflow"];
+            workflowJob?: components["schemas"]["WorkflowJob"];
+            workflowRun?: components["schemas"]["WorkflowRun"];
+        };
         Environment: {
             /** Format: date-time */
             createdAt: string;
@@ -1052,7 +1155,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1137,6 +1239,7 @@ export interface components {
             completedAt?: string;
             /** Format: date-time */
             createdAt: string;
+            dispatchContext?: components["schemas"]["DispatchContext"];
             externalId?: string;
             id: string;
             jobAgentConfig: {
@@ -1164,6 +1267,9 @@ export interface components {
             name: string;
             type: string;
         };
+        JobAgentConfig: {
+            [key: string]: unknown;
+        };
         JobAgentRequestAccepted: {
             id: string;
             message: string;
@@ -1177,7 +1283,7 @@ export interface components {
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
-            fieldsToUpdate?: ("completedAt" | "createdAt" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
+            fieldsToUpdate?: ("completedAt" | "createdAt" | "dispatchContext" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
             id?: string;
             job: components["schemas"]["Job"];
         } & (unknown | unknown);
@@ -1363,6 +1469,11 @@ export interface components {
             environmentId: string;
             resourceId: string;
         };
+        ReleaseTargetPreview: {
+            deployment: components["schemas"]["Deployment"];
+            environment: components["schemas"]["Environment"];
+            system: components["schemas"]["System"];
+        };
         ReleaseTargetState: {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
@@ -1390,6 +1501,18 @@ export interface components {
             version: string;
             workspaceId: string;
         };
+        ResourcePreviewRequest: {
+            config: {
+                [key: string]: unknown;
+            };
+            identifier: string;
+            kind: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            version: string;
+        };
         ResourceProvider: {
             /** Format: date-time */
             createdAt: string;
@@ -1401,10 +1524,6 @@ export interface components {
             name: string;
             /** Format: uuid */
             workspaceId: string;
-        };
-        ResourceProviderRequestAccepted: {
-            id: string;
-            message: string;
         };
         ResourceProviderResource: {
             config: {
@@ -1425,6 +1544,11 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             version: string;
+        };
+        ResourceProviderSetRequestAccepted: {
+            batchId?: string;
+            method: string;
+            ok: boolean;
         };
         ResourceRequestAccepted: {
             id: string;
@@ -1529,6 +1653,11 @@ export interface components {
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag?: string;
         };
+        UpdateWorkflow: {
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            name: string;
+        };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
             name?: string;
@@ -1547,7 +1676,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
         };
         UpsertDeploymentVariableRequest: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -1584,7 +1712,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
         };
         UpsertJobAgentRequest: {
             config: {
@@ -1640,7 +1767,7 @@ export interface components {
             slug?: string;
         };
         UpsertUserApprovalRecordRequest: {
-            environmentIds?: string[];
+            environmentIds: string[];
             reason?: string;
             status: components["schemas"]["ApprovalStatus"];
         };
@@ -1733,19 +1860,18 @@ export interface components {
         };
         Workflow: {
             id: string;
-            inputs: {
-                [key: string]: unknown;
-            };
-            workflowTemplateId: string;
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["WorkflowJobTemplate"][];
+            name: string;
         };
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
         WorkflowBooleanInput: {
             default?: boolean;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "boolean";
         };
-        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"];
+        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"] | components["schemas"]["WorkflowObjectInput"];
         WorkflowJob: {
             /** @description Configuration for the job agent */
             config: {
@@ -1774,6 +1900,8 @@ export interface components {
                 [key: string]: unknown;
             };
             id: string;
+            /** @description CEL expression to determine if the job should run */
+            if?: string;
             matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
@@ -1783,18 +1911,33 @@ export interface components {
             default?: {
                 [key: string]: unknown;
             }[];
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "array";
         };
         WorkflowNumberInput: {
             default?: number;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "number";
         };
+        WorkflowObjectInput: {
+            default?: {
+                [key: string]: unknown;
+            };
+            key: string;
+            /** @enum {string} */
+            type: "object";
+        };
+        WorkflowRun: {
+            id: string;
+            inputs: {
+                [key: string]: unknown;
+            };
+            workflowId: string;
+        };
         WorkflowSelectorArrayInput: {
-            name: string;
+            key: string;
             selector: {
                 default?: components["schemas"]["Selector"];
                 /** @enum {string} */
@@ -1805,15 +1948,9 @@ export interface components {
         };
         WorkflowStringInput: {
             default?: string;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "string";
-        };
-        WorkflowTemplate: {
-            id: string;
-            inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["WorkflowJobTemplate"][];
-            name: string;
         };
         Workspace: {
             /** @description AWS IAM role ARN for integrations */
@@ -2241,7 +2378,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["DeploymentAndSystem"][];
+                        items: components["schemas"]["DeploymentAndSystems"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */
@@ -3806,6 +3943,55 @@ export interface operations {
             };
         };
     };
+    previewReleaseTargetsForResource: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourcePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ReleaseTargetPreview"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getReleaseTargetDesiredRelease: {
         parameters: {
             query?: never;
@@ -4011,7 +4197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                    "application/json": components["schemas"]["ResourceProvider"];
                 };
             };
             /** @description Invalid request */
@@ -4076,7 +4262,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                    "application/json": components["schemas"]["ResourceProviderSetRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -4589,7 +4775,232 @@ export interface operations {
             };
         };
     };
-    createWorkflowTemplate: {
+    linkDeploymentToSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlinkDeploymentFromSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    linkEnvironmentToSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlinkEnvironmentFromSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listWorkflows: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Workflow"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createWorkflow: {
         parameters: {
             query?: never;
             header?: never;
@@ -4601,7 +5012,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateWorkflowTemplate"];
+                "application/json": components["schemas"]["CreateWorkflow"];
             };
         };
         responses: {
@@ -4611,11 +5022,144 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowTemplate"];
+                    "application/json": components["schemas"]["Workflow"];
                 };
             };
             /** @description Invalid request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the workflow */
+                workflowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workflow"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the workflow */
+                workflowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkflow"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workflow"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the workflow */
+                workflowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Workflow deleted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workflow"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

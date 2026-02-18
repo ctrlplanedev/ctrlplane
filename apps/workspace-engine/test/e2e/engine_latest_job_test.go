@@ -9,6 +9,7 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,18 +48,20 @@ func findJobForVersion(engine *integration.TestWorkspace, versionTag string) *oa
 
 // newBaseTestWorkspace creates a workspace with one deployment, one environment,
 // and one resource — the minimal setup for a single release target.
-func newBaseTestWorkspace(t *testing.T) *integration.TestWorkspace {
+func newBaseTestWorkspace(t *testing.T) (*integration.TestWorkspace, string) {
 	t.Helper()
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 	return integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
-			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentID(jobAgentID),
 		),
 		integration.WithSystem(
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
-				integration.DeploymentID("deployment-1"),
+				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
-				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
@@ -69,7 +72,7 @@ func newBaseTestWorkspace(t *testing.T) *integration.TestWorkspace {
 		integration.WithResource(
 			integration.ResourceName("resource-1"),
 		),
-	)
+	), deploymentID
 }
 
 // --------------------------------------------------------------------------
@@ -79,7 +82,7 @@ func newBaseTestWorkspace(t *testing.T) *integration.TestWorkspace {
 // TestEngine_LatestJob_NilWhenNoJobs verifies that LatestJob is nil when no
 // deployment versions (and therefore no jobs) exist.
 func TestEngine_LatestJob_NilWhenNoJobs(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, _ := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	rt := getReleaseTarget(t, engine)
@@ -92,11 +95,11 @@ func TestEngine_LatestJob_NilWhenNoJobs(t *testing.T) {
 // a deployment version (which triggers job creation), LatestJob is populated
 // with the pending job.
 func TestEngine_LatestJob_PopulatedAfterVersionCreate(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -106,17 +109,25 @@ func TestEngine_LatestJob_PopulatedAfterVersionCreate(t *testing.T) {
 	require.NotNil(t, state.LatestJob, "LatestJob should be populated after job creation")
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status,
 		"LatestJob should be in pending state after version create")
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Release)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 }
 
 // TestEngine_LatestJob_ReflectsStatusTransitions verifies that LatestJob
 // correctly tracks a job through pending → in-progress → successful.
 func TestEngine_LatestJob_ReflectsStatusTransitions(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	// Create a version → pending job.
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -126,6 +137,12 @@ func TestEngine_LatestJob_ReflectsStatusTransitions(t *testing.T) {
 	state := getState(t, ctx, engine, rt)
 	require.NotNil(t, state.LatestJob)
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 
 	job := findJobForVersion(engine, "v1.0.0")
 	require.NotNil(t, job, "job for v1.0.0 must exist")
@@ -154,12 +171,12 @@ func TestEngine_LatestJob_ReflectsStatusTransitions(t *testing.T) {
 // TestEngine_LatestJob_PointsToNewestJob verifies that when multiple jobs
 // exist (multiple versions deployed), LatestJob points to the newest one.
 func TestEngine_LatestJob_PointsToNewestJob(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	// Deploy v1 and complete it.
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -172,7 +189,7 @@ func TestEngine_LatestJob_PointsToNewestJob(t *testing.T) {
 
 	// Deploy v2 — creates a new pending job.
 	v2 := c.NewDeploymentVersion()
-	v2.DeploymentId = "deployment-1"
+	v2.DeploymentId = deploymentID
 	v2.Tag = "v2.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
@@ -188,18 +205,22 @@ func TestEngine_LatestJob_PointsToNewestJob(t *testing.T) {
 		"LatestJob should point to the newest job (v2.0.0)")
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status,
 		"LatestJob should reflect the pending v2.0.0 job")
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v2.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 }
 
 // TestEngine_LatestJob_ReflectsFailedJob verifies that LatestJob correctly
 // reports a failed job status (and doesn't fall back to the previous
 // successful job).
 func TestEngine_LatestJob_ReflectsFailedJob(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	// Deploy v1 and complete it successfully.
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -212,7 +233,7 @@ func TestEngine_LatestJob_ReflectsFailedJob(t *testing.T) {
 
 	// Deploy v2 and fail it.
 	v2 := c.NewDeploymentVersion()
-	v2.DeploymentId = "deployment-1"
+	v2.DeploymentId = deploymentID
 	v2.Tag = "v2.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
@@ -238,11 +259,11 @@ func TestEngine_LatestJob_ReflectsFailedJob(t *testing.T) {
 // index is refreshed when a job status changes via HandleJobUpdated. This is
 // the critical path: HandleJobUpdated → DirtyCurrentAndJob → RecomputeState.
 func TestEngine_LatestJob_UpdatedAfterJobStatusChange(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -253,6 +274,11 @@ func TestEngine_LatestJob_UpdatedAfterJobStatusChange(t *testing.T) {
 	require.NotNil(t, state.LatestJob)
 	initialJobID := state.LatestJob.Job.Id
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
 
 	// Update job to successful.
 	job := findJobForVersion(engine, "v1.0.0")
@@ -277,11 +303,11 @@ func TestEngine_LatestJob_UpdatedAfterJobStatusChange(t *testing.T) {
 // and CurrentRelease are consistent: when the latest job is successful, the
 // CurrentRelease should match the same version.
 func TestEngine_LatestJob_ConsistentWithCurrentRelease(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -310,12 +336,12 @@ func TestEngine_LatestJob_ConsistentWithCurrentRelease(t *testing.T) {
 // the latest job fails, LatestJob reflects the failed job while
 // CurrentRelease still points to the last successful deployment.
 func TestEngine_LatestJob_DivergentFromCurrentReleaseOnFailure(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 
 	// Deploy v1 successfully.
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -328,7 +354,7 @@ func TestEngine_LatestJob_DivergentFromCurrentReleaseOnFailure(t *testing.T) {
 
 	// Deploy v2, then fail it.
 	v2 := c.NewDeploymentVersion()
-	v2.DeploymentId = "deployment-1"
+	v2.DeploymentId = deploymentID
 	v2.Tag = "v2.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
@@ -361,16 +387,18 @@ func TestEngine_LatestJob_DivergentFromCurrentReleaseOnFailure(t *testing.T) {
 // LatestJob is tracked independently per release target: completing a job
 // on one target doesn't affect the other.
 func TestEngine_LatestJob_MultipleReleaseTargetsIndependent(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
-			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentID(jobAgentID),
 		),
 		integration.WithSystem(
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
-				integration.DeploymentID("deployment-1"),
+				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
-				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
@@ -390,7 +418,7 @@ func TestEngine_LatestJob_MultipleReleaseTargetsIndependent(t *testing.T) {
 
 	// Create version → jobs for both release targets.
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
@@ -408,6 +436,12 @@ func TestEngine_LatestJob_MultipleReleaseTargetsIndependent(t *testing.T) {
 			"LatestJob should be populated for every release target after version create (resource=%s)", rt.ResourceId)
 		assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status,
 			"LatestJob should be pending before any updates (resource=%s)", rt.ResourceId)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+		assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+		assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 	}
 
 	// Pick one job to complete and identify the release targets.
@@ -458,19 +492,25 @@ func TestEngine_LatestJob_MultipleReleaseTargetsIndependent(t *testing.T) {
 //	v1 created (pending) → v1 succeeds → v2 created (pending) → v2 fails →
 //	v3 created (pending) → v3 succeeds
 func TestEngine_LatestJob_ThreeVersionLifecycle(t *testing.T) {
-	engine := newBaseTestWorkspace(t)
+	engine, deploymentID := newBaseTestWorkspace(t)
 	ctx := context.Background()
 	rt := getReleaseTarget(t, engine)
 
 	// ---- v1 created ----
 	v1 := c.NewDeploymentVersion()
-	v1.DeploymentId = "deployment-1"
+	v1.DeploymentId = deploymentID
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
 	state := getState(t, ctx, engine, rt)
 	require.NotNil(t, state.LatestJob)
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 	job1 := findJobForVersion(engine, "v1.0.0")
 	require.NotNil(t, job1)
 	assert.Equal(t, job1.Id, state.LatestJob.Job.Id)
@@ -488,7 +528,7 @@ func TestEngine_LatestJob_ThreeVersionLifecycle(t *testing.T) {
 
 	// ---- v2 created (new pending job) ----
 	v2 := c.NewDeploymentVersion()
-	v2.DeploymentId = "deployment-1"
+	v2.DeploymentId = deploymentID
 	v2.Tag = "v2.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
@@ -519,7 +559,7 @@ func TestEngine_LatestJob_ThreeVersionLifecycle(t *testing.T) {
 
 	// ---- v3 created (new pending job) ----
 	v3 := c.NewDeploymentVersion()
-	v3.DeploymentId = "deployment-1"
+	v3.DeploymentId = deploymentID
 	v3.Tag = "v3.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v3)
 

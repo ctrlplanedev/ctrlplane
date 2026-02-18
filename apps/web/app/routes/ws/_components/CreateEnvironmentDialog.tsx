@@ -108,9 +108,11 @@ export function CreateEnvironmentDialog({
 
   const onSubmit = form.handleSubmit(async (data) => {
     const workspaceId = workspace.id;
+    const { systemId: selectedSystemId, ...rest } = data;
     await createEnvironmentMutation.mutateAsync({
       workspaceId,
-      ...data,
+      ...rest,
+      systemIds: [selectedSystemId],
       resourceSelectorCel: data.celExpression,
     });
   });
@@ -151,7 +153,7 @@ export function CreateEnvironmentDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {systemsData?.items.map(
+                        {systemsData?.map(
                           (system: { id: string; name: string }) => (
                             <SelectItem key={system.id} value={system.id}>
                               {system.name}

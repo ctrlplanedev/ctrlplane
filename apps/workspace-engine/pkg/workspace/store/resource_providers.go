@@ -4,46 +4,54 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 type ResourceProviders struct {
-	repo      *repository.InMemoryStore
+	repo      repository.ResourceProviderRepo
 	resources *Resources
 	store     *Store
 }
 
 func NewResourceProviders(store *Store) *ResourceProviders {
 	return &ResourceProviders{
-		repo:      store.repo,
+		repo:      store.repo.ResourceProviders(),
 		resources: store.Resources,
 		store:     store,
 	}
 }
 
+// SetRepo replaces the underlying ResourceProviderRepo implementation.
+func (r *ResourceProviders) SetRepo(repo repository.ResourceProviderRepo) {
+	r.repo = repo
+}
+
 func (r *ResourceProviders) Get(id string) (*oapi.ResourceProvider, bool) {
-	return r.repo.ResourceProviders.Get(id)
+	return r.repo.Get(id)
 }
 
 func (r *ResourceProviders) Items() map[string]*oapi.ResourceProvider {
-	return r.repo.ResourceProviders.Items()
+	return r.repo.Items()
 }
 
 func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvider *oapi.ResourceProvider) {
-	r.repo.ResourceProviders.Set(id, resourceProvider)
+	if err := r.repo.Set(resourceProvider); err != nil {
+		log.Error("Failed to upsert resource provider", "error", err)
+	}
 	r.store.changeset.RecordUpsert(resourceProvider)
 }
 
 func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
-	resourceProvider, ok := r.repo.ResourceProviders.Get(id)
+	resourceProvider, ok := r.repo.Get(id)
 	if !ok {
 		return nil
 	}
 
-	// Remove the resource provider from the repository.
-	r.repo.ResourceProviders.Remove(id)
+	if err := r.repo.Remove(id); err != nil {
+		return err
+	}
 
-	// Iterate over all resources and unset their ProviderId if they were using the deleted provider.
-	// This ensures that resources no longer reference a provider that has been deleted.
 	for _, resource := range r.resources.Items() {
 		if resource.ProviderId != nil && *resource.ProviderId == id {
 			resource.ProviderId = nil

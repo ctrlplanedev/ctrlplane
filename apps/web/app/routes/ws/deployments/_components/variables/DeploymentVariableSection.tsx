@@ -110,7 +110,6 @@ export function DeploymentVariableSection({
     onSuccess: () => {
       toast.success(`Variable "${variable.variable.key}" deleted`);
       utils.deployment.get.invalidate({
-        workspaceId: workspace.id,
         deploymentId: deploymentId ?? "",
       });
     },

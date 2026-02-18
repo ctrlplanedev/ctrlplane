@@ -21,9 +21,8 @@ func setupStore(versionId string, environmentId string, approvers []string) *sto
 
 	// Create test environment
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(context.Background(), env)
 
@@ -184,9 +183,8 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	environmentId := "env-1"
 	// Create test environment
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -304,9 +302,8 @@ func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 
 	// Create test environment
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -371,9 +368,8 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 	environmentId := "env-1"
 
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -426,9 +422,8 @@ func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
 	environmentId := "env-1"
 
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -480,9 +475,8 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
 	environmentId := "env-1"
 
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -524,9 +518,8 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
 	environmentId := "env-1"
 
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -565,9 +558,8 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	environmentId := "env-1"
 
 	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	_ = st.Environments.Upsert(ctx, env)
 
@@ -638,7 +630,6 @@ func TestAnyApprovalEvaluator_OlderVersionAllowed(t *testing.T) {
 	deployment := &oapi.Deployment{
 		Id:         "deploy-1",
 		Name:       "my-app",
-		SystemId:   "system-1",
 		JobAgentId: &jobAgentId,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)

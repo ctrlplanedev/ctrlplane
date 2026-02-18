@@ -74,20 +74,14 @@ func (t *TFE) Type() string {
 	return "tfe"
 }
 
-func (t *TFE) Supports() types.Capabilities {
-	return types.Capabilities{
-		Workflows:   false,
-		Deployments: true,
-	}
-}
-
-func (t *TFE) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
+func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
+	dispatchCtx := job.DispatchContext
 	address, token, organization, template, err := t.parseJobAgentConfig(dispatchCtx.JobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
 
-	workspace, err := t.getTemplatedWorkspace(dispatchCtx.Job, template)
+	workspace, err := t.getTemplatedWorkspace(job, template)
 	if err != nil {
 		return fmt.Errorf("failed to generate workspace from template: %w", err)
 	}
@@ -96,36 +90,36 @@ func (t *TFE) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) e
 		ctx := context.WithoutCancel(ctx)
 		client, err := t.getClient(address, token)
 		if err != nil {
-			t.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to create Terraform Cloud client: %s", err.Error()))
+			t.sendJobFailureEvent(job, fmt.Sprintf("failed to create Terraform Cloud client: %s", err.Error()))
 			return
 		}
 
 		targetWorkspace, err := t.upsertWorkspace(ctx, client, organization, workspace)
 		if err != nil {
-			t.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to upsert workspace: %s", err.Error()))
+			t.sendJobFailureEvent(job, fmt.Sprintf("failed to upsert workspace: %s", err.Error()))
 			return
 		}
 
 		if len(workspace.Variables) > 0 {
 			if err := t.syncVariables(ctx, client, targetWorkspace.ID, workspace.Variables); err != nil {
-				t.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to sync variables: %s", err.Error()))
+				t.sendJobFailureEvent(job, fmt.Sprintf("failed to sync variables: %s", err.Error()))
 				return
 			}
 		}
 
-		run, err := t.createRun(ctx, client, targetWorkspace.ID, dispatchCtx.Job.Id)
+		run, err := t.createRun(ctx, client, targetWorkspace.ID, job.Id)
 		if err != nil {
-			t.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to create run: %s", err.Error()))
+			t.sendJobFailureEvent(job, fmt.Sprintf("failed to create run: %s", err.Error()))
 			return
 		}
 
-		verification := newTFERunVerification(t.verifications, dispatchCtx.Job, address, token, run.ID)
+		verification := newTFERunVerification(t.verifications, job, address, token, run.ID)
 		if err := verification.StartVerification(ctx); err != nil {
-			t.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to start verification: %s", err.Error()))
+			t.sendJobFailureEvent(job, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
 		}
 
-		t.sendJobUpdateEvent(address, organization, targetWorkspace.Name, run, dispatchCtx)
+		t.sendJobUpdateEvent(address, organization, targetWorkspace.Name, run, job)
 	}()
 
 	return nil
@@ -257,14 +251,14 @@ func (t *TFE) createRun(ctx context.Context, client *tfe.Client, workspaceID, jo
 	return run, nil
 }
 
-func (t *TFE) sendJobFailureEvent(context types.DispatchContext, message string) error {
+func (t *TFE) sendJobFailureEvent(job *oapi.Job, message string) error {
 	workspaceId := t.store.ID()
 
 	now := time.Now().UTC()
 	eventPayload := oapi.JobUpdateEvent{
-		Id: &context.Job.Id,
+		Id: &job.Id,
 		Job: oapi.Job{
-			Id:          context.Job.Id,
+			Id:          job.Id,
 			Status:      oapi.JobStatusFailure,
 			Message:     &message,
 			UpdatedAt:   now,
@@ -299,7 +293,7 @@ func (t *TFE) sendJobFailureEvent(context types.DispatchContext, message string)
 	return nil
 }
 
-func (t *TFE) sendJobUpdateEvent(address, organization, workspaceName string, run *tfe.Run, context types.DispatchContext) error {
+func (t *TFE) sendJobUpdateEvent(address, organization, workspaceName string, run *tfe.Run, job *oapi.Job) error {
 	workspaceId := t.store.ID()
 
 	runUrl := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", address, organization, workspaceName, run.ID)
@@ -321,14 +315,14 @@ func (t *TFE) sendJobUpdateEvent(address, organization, workspaceName string, ru
 	}
 
 	newJobMetadata := make(map[string]string)
-	maps.Copy(newJobMetadata, context.Job.Metadata)
+	maps.Copy(newJobMetadata, job.Metadata)
 	newJobMetadata[string("ctrlplane/links")] = string(linksJSON)
 
 	now := time.Now().UTC()
 	eventPayload := oapi.JobUpdateEvent{
-		Id: &context.Job.Id,
+		Id: &job.Id,
 		Job: oapi.Job{
-			Id:          context.Job.Id,
+			Id:          job.Id,
 			Metadata:    newJobMetadata,
 			Status:      oapi.JobStatusSuccessful,
 			UpdatedAt:   now,

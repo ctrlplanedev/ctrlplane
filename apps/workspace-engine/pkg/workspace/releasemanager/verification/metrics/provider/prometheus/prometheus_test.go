@@ -719,10 +719,9 @@ func TestResolveProviderTemplates(t *testing.T) {
 
 	providerCtx := &provider.ProviderContext{
 		Deployment: &oapi.Deployment{
-			Id:       "d1",
-			Name:     "api",
-			Slug:     "api",
-			SystemId: "s1",
+			Id:   "d1",
+			Name: "api",
+			Slug: "api",
 		},
 		Variables: map[string]any{
 			"host":   "prometheus.internal",

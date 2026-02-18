@@ -5,14 +5,156 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type DeploymentVersionStatus string
+
+const (
+	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
+	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
+	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
+	DeploymentVersionStatusRejected DeploymentVersionStatus = "rejected"
+	DeploymentVersionStatusPaused   DeploymentVersionStatus = "paused"
+)
+
+func (e *DeploymentVersionStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = DeploymentVersionStatus(s)
+	case string:
+		*e = DeploymentVersionStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for DeploymentVersionStatus: %T", src)
+	}
+	return nil
+}
+
+type NullDeploymentVersionStatus struct {
+	DeploymentVersionStatus DeploymentVersionStatus
+	Valid                   bool // Valid is true if DeploymentVersionStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullDeploymentVersionStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.DeploymentVersionStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.DeploymentVersionStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullDeploymentVersionStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.DeploymentVersionStatus), nil
+}
+
+type ChangelogEntry struct {
+	WorkspaceID uuid.UUID
+	EntityType  string
+	EntityID    string
+	EntityData  []byte
+	CreatedAt   pgtype.Timestamptz
+}
+
+type Deployment struct {
+	ID               uuid.UUID
+	Name             string
+	Description      string
+	JobAgentID       uuid.UUID
+	JobAgentConfig   map[string]any
+	ResourceSelector pgtype.Text
+	Metadata         map[string]string
+	WorkspaceID      uuid.UUID
+}
+
+type DeploymentVersion struct {
+	ID             uuid.UUID
+	Name           string
+	Tag            string
+	Config         map[string]any
+	JobAgentConfig map[string]any
+	DeploymentID   uuid.UUID
+	Metadata       map[string]string
+	Status         DeploymentVersionStatus
+	Message        pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	WorkspaceID    uuid.UUID
+}
+
+type Environment struct {
+	ID               uuid.UUID
+	Name             string
+	Description      pgtype.Text
+	ResourceSelector string
+	Metadata         map[string]string
+	CreatedAt        pgtype.Timestamptz
+	WorkspaceID      uuid.UUID
+}
+
+type JobAgent struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Type        string
+	Config      map[string]any
+}
+
+type Resource struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	LockedAt    pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+type ResourceProvider struct {
+	ID          uuid.UUID
+	Name        string
+	WorkspaceID uuid.UUID
+	CreatedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
 type System struct {
-	ID          pgtype.UUID
-	WorkspaceID pgtype.UUID
+	ID          uuid.UUID
 	Name        string
 	Description string
-	CreatedAt   pgtype.Timestamp
-	UpdatedAt   pgtype.Timestamp
+	WorkspaceID uuid.UUID
+	Metadata    []byte
+}
+
+type SystemDeployment struct {
+	SystemID     uuid.UUID
+	DeploymentID uuid.UUID
+	CreatedAt    pgtype.Timestamptz
+}
+
+type SystemEnvironment struct {
+	SystemID      uuid.UUID
+	EnvironmentID uuid.UUID
+	CreatedAt     pgtype.Timestamptz
+}
+
+type Workspace struct {
+	ID        uuid.UUID
+	Name      string
+	Slug      string
+	CreatedAt pgtype.Timestamptz
 }

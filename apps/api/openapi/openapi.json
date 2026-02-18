@@ -72,15 +72,11 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
-               "systemId",
-               "slug",
-               "name"
+               "name",
+               "slug"
             ],
             "type": "object"
          },
@@ -137,13 +133,9 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
-               "systemId",
                "name"
             ],
             "type": "object"
@@ -259,32 +251,7 @@
             ],
             "type": "object"
          },
-         "CreateWorkflowJobTemplate": {
-            "properties": {
-               "config": {
-                  "additionalProperties": true,
-                  "description": "Configuration for the job agent",
-                  "type": "object"
-               },
-               "matrix": {
-                  "$ref": "#/components/schemas/WorkflowJobMatrix"
-               },
-               "name": {
-                  "type": "string"
-               },
-               "ref": {
-                  "description": "Reference to the job agent",
-                  "type": "string"
-               }
-            },
-            "required": [
-               "name",
-               "ref",
-               "config"
-            ],
-            "type": "object"
-         },
-         "CreateWorkflowTemplate": {
+         "CreateWorkflow": {
             "properties": {
                "inputs": {
                   "items": {
@@ -306,6 +273,35 @@
                "name",
                "inputs",
                "jobs"
+            ],
+            "type": "object"
+         },
+         "CreateWorkflowJobTemplate": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "description": "Configuration for the job agent",
+                  "type": "object"
+               },
+               "if": {
+                  "description": "CEL expression to determine if the job should run",
+                  "type": "string"
+               },
+               "matrix": {
+                  "$ref": "#/components/schemas/WorkflowJobMatrix"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "ref": {
+                  "description": "Reference to the job agent",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "ref",
+               "config"
             ],
             "type": "object"
          },
@@ -430,43 +426,43 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
                "slug",
-               "systemId",
                "jobAgentConfig"
             ],
             "type": "object"
          },
-         "DeploymentAndSystem": {
+         "DeploymentAndSystems": {
             "properties": {
                "deployment": {
                   "$ref": "#/components/schemas/Deployment"
                },
-               "system": {
-                  "$ref": "#/components/schemas/System"
+               "systems": {
+                  "items": {
+                     "$ref": "#/components/schemas/System"
+                  },
+                  "type": "array"
                }
             },
             "required": [
                "deployment",
-               "system"
+               "systems"
             ],
             "type": "object"
          },
          "DeploymentDependencyRule": {
             "properties": {
-               "dependsOnDeploymentSelector": {
-                  "$ref": "#/components/schemas/Selector"
+               "dependsOn": {
+                  "description": "CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.",
+                  "type": "string"
                }
             },
             "required": [
-               "dependsOnDeploymentSelector"
+               "dependsOn"
             ],
             "type": "object"
          },
@@ -693,6 +689,51 @@
             ],
             "type": "object"
          },
+         "DispatchContext": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "jobAgent": {
+                  "$ref": "#/components/schemas/JobAgent"
+               },
+               "jobAgentConfig": {
+                  "$ref": "#/components/schemas/JobAgentConfig"
+               },
+               "release": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/Resource"
+               },
+               "variables": {
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/LiteralValue"
+                  },
+                  "type": "object"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               },
+               "workflow": {
+                  "$ref": "#/components/schemas/Workflow"
+               },
+               "workflowJob": {
+                  "$ref": "#/components/schemas/WorkflowJob"
+               },
+               "workflowRun": {
+                  "$ref": "#/components/schemas/WorkflowRun"
+               }
+            },
+            "required": [
+               "jobAgent",
+               "jobAgentConfig"
+            ],
+            "type": "object"
+         },
          "Environment": {
             "properties": {
                "createdAt": {
@@ -716,15 +757,11 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
-               "systemId",
                "createdAt"
             ],
             "type": "object"
@@ -897,6 +934,9 @@
                   "format": "date-time",
                   "type": "string"
                },
+               "dispatchContext": {
+                  "$ref": "#/components/schemas/DispatchContext"
+               },
                "externalId": {
                   "type": "string"
                },
@@ -974,6 +1014,10 @@
             ],
             "type": "object"
          },
+         "JobAgentConfig": {
+            "additionalProperties": true,
+            "type": "object"
+         },
          "JobAgentRequestAccepted": {
             "properties": {
                "id": {
@@ -1045,6 +1089,7 @@
                      "enum": [
                         "completedAt",
                         "createdAt",
+                        "dispatchContext",
                         "externalId",
                         "id",
                         "jobAgentConfig",
@@ -1618,6 +1663,25 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetPreview": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "system": {
+                  "$ref": "#/components/schemas/System"
+               }
+            },
+            "required": [
+               "system",
+               "deployment",
+               "environment"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetState": {
             "properties": {
                "currentRelease": {
@@ -1691,6 +1755,41 @@
             ],
             "type": "object"
          },
+         "ResourcePreviewRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "version",
+               "kind",
+               "identifier",
+               "config",
+               "metadata"
+            ],
+            "type": "object"
+         },
          "ResourceProvider": {
             "properties": {
                "createdAt": {
@@ -1720,21 +1819,6 @@
                "workspaceId",
                "name",
                "createdAt"
-            ],
-            "type": "object"
-         },
-         "ResourceProviderRequestAccepted": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "message": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "message"
             ],
             "type": "object"
          },
@@ -1787,6 +1871,24 @@
                "createdAt",
                "config",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceProviderSetRequestAccepted": {
+            "properties": {
+               "batchId": {
+                  "type": "string"
+               },
+               "method": {
+                  "type": "string"
+               },
+               "ok": {
+                  "type": "boolean"
+               }
+            },
+            "required": [
+               "ok",
+               "method"
             ],
             "type": "object"
          },
@@ -2028,6 +2130,31 @@
             ],
             "type": "object"
          },
+         "UpdateWorkflow": {
+            "properties": {
+               "inputs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
+               },
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "inputs",
+               "jobs"
+            ],
+            "type": "object"
+         },
          "UpdateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -2072,15 +2199,11 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
-               "systemId",
-               "slug",
-               "name"
+               "name",
+               "slug"
             ],
             "type": "object"
          },
@@ -2175,13 +2298,9 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
-               "systemId",
                "name"
             ],
             "type": "object"
@@ -2366,7 +2485,8 @@
                }
             },
             "required": [
-               "status"
+               "status",
+               "environmentIds"
             ],
             "type": "object"
          },
@@ -2584,17 +2704,26 @@
                   "type": "string"
                },
                "inputs": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
                },
-               "workflowTemplateId": {
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
                   "type": "string"
                }
             },
             "required": [
                "id",
-               "workflowTemplateId",
-               "inputs"
+               "name",
+               "inputs",
+               "jobs"
             ],
             "type": "object"
          },
@@ -2613,7 +2742,7 @@
                "default": {
                   "type": "boolean"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2624,7 +2753,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
@@ -2642,6 +2771,9 @@
                },
                {
                   "$ref": "#/components/schemas/WorkflowArrayInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowObjectInput"
                }
             ]
          },
@@ -2718,6 +2850,10 @@
                "id": {
                   "type": "string"
                },
+               "if": {
+                  "description": "CEL expression to determine if the job should run",
+                  "type": "string"
+               },
                "matrix": {
                   "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
@@ -2746,7 +2882,7 @@
                   },
                   "type": "array"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2757,7 +2893,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
@@ -2767,7 +2903,7 @@
                "default": {
                   "type": "number"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2778,14 +2914,56 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowObjectInput": {
+            "properties": {
+               "default": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "key": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "object"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "key",
+               "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowRun": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "inputs": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "workflowId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "inputs"
             ],
             "type": "object"
          },
          "WorkflowSelectorArrayInput": {
             "properties": {
-               "name": {
+               "key": {
                   "type": "string"
                },
                "selector": {
@@ -2815,7 +2993,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type",
                "selector"
             ],
@@ -2826,7 +3004,7 @@
                "default": {
                   "type": "string"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2837,37 +3015,8 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
-            ],
-            "type": "object"
-         },
-         "WorkflowTemplate": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "inputs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowInput"
-                  },
-                  "type": "array"
-               },
-               "jobs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowJobTemplate"
-                  },
-                  "type": "array"
-               },
-               "name": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "name",
-               "inputs",
-               "jobs"
             ],
             "type": "object"
          },
@@ -3433,7 +3582,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/DeploymentAndSystem"
+                                    "$ref": "#/components/schemas/DeploymentAndSystems"
                                  },
                                  "type": "array"
                               },
@@ -5880,6 +6029,105 @@
             "summary": "Upsert relationship"
          }
       },
+      "/v1/workspaces/{workspaceId}/release-targets/resource-preview": {
+         "post": {
+            "description": "Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.",
+            "operationId": "previewReleaseTargetsForResource",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ResourcePreviewRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ReleaseTargetPreview"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Preview release targets for a resource"
+         }
+      },
       "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
          "get": {
             "description": "Returns the desired release for a release target {releaseTargetKey}.",
@@ -6206,7 +6454,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
+                           "$ref": "#/components/schemas/ResourceProvider"
                         }
                      }
                   },
@@ -6313,7 +6561,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
+                           "$ref": "#/components/schemas/ResourceProviderSetRequestAccepted"
                         }
                      }
                   },
@@ -7175,10 +7423,364 @@
             "summary": "Upsert system"
          }
       },
-      "/v1/workspaces/{workspaceId}/workflow-templates": {
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}": {
+         "delete": {
+            "operationId": "unlinkDeploymentFromSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Unlink deployment from system"
+         },
+         "put": {
+            "operationId": "linkDeploymentToSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Link deployment to system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}": {
+         "delete": {
+            "operationId": "unlinkEnvironmentFromSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Unlink environment from system"
+         },
+         "put": {
+            "operationId": "linkEnvironmentToSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Link environment to system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/workflows": {
+         "get": {
+            "description": "Returns a list of workflows.",
+            "operationId": "listWorkflows",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Workflow"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "List workflows",
+            "tags": [
+               "Workflows"
+            ]
+         },
          "post": {
-            "description": "Creates a workflow template.",
-            "operationId": "createWorkflowTemplate",
+            "description": "Creates a workflow.",
+            "operationId": "createWorkflow",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7194,7 +7796,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/CreateWorkflowTemplate"
+                        "$ref": "#/components/schemas/CreateWorkflow"
                      }
                   }
                },
@@ -7205,7 +7807,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowTemplate"
+                           "$ref": "#/components/schemas/Workflow"
                         }
                      }
                   },
@@ -7222,7 +7824,199 @@
                   "description": "Invalid request"
                }
             },
-            "summary": "Create a workflow template",
+            "summary": "Create a workflow",
+            "tags": [
+               "Workflows"
+            ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}": {
+         "delete": {
+            "description": "Deletes a workflow.",
+            "operationId": "deleteWorkflow",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the workflow",
+                  "in": "path",
+                  "name": "workflowId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Workflow"
+                        }
+                     }
+                  },
+                  "description": "Workflow deleted"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Delete a workflow",
+            "tags": [
+               "Workflows"
+            ]
+         },
+         "get": {
+            "description": "Gets a workflow by ID.",
+            "operationId": "getWorkflow",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the workflow",
+                  "in": "path",
+                  "name": "workflowId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Workflow"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get a workflow",
+            "tags": [
+               "Workflows"
+            ]
+         },
+         "put": {
+            "description": "Updates a workflow template.",
+            "operationId": "updateWorkflow",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the workflow",
+                  "in": "path",
+                  "name": "workflowId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpdateWorkflow"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Workflow"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Update a workflow",
             "tags": [
                "Workflows"
             ]

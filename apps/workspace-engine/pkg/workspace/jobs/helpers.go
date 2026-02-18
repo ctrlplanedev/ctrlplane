@@ -2,36 +2,20 @@ package jobs
 
 import (
 	"encoding/json"
-	"maps"
+	"fmt"
+	"workspace-engine/pkg/oapi"
 )
 
-func toMap(v any) (map[string]any, error) {
-	if v == nil {
-		return map[string]any{}, nil
+// mergeJobAgentConfig merges the given job agent configs into a single config.
+// The configs are merged in the order they are provided, with later configs overriding earlier ones.
+func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {
+	mergedConfig := make(map[string]any)
+	for _, config := range configs {
+		deepMerge(mergedConfig, config)
 	}
-	if m, ok := v.(map[string]any); ok {
-		return m, nil
-	}
-	if m, ok := v.(map[string]any); ok {
-		out := make(map[string]any, len(m))
-		maps.Copy(out, m)
-		return out, nil
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	var out map[string]any
-	if err := json.Unmarshal(b, &out); err != nil {
-		return nil, err
-	}
-	if out == nil {
-		out = map[string]any{}
-	}
-	return out, nil
+	return mergedConfig, nil
 }
 
-// deepMerge recursively merges src into dst.
 func deepMerge(dst, src map[string]any) {
 	for k, v := range src {
 		if sm, ok := v.(map[string]any); ok {
@@ -40,6 +24,18 @@ func deepMerge(dst, src map[string]any) {
 				continue
 			}
 		}
-		dst[k] = v // overwrite
+		dst[k] = v
 	}
+}
+
+func deepCopy[T any](src T) (T, error) {
+	var dst T
+	b, err := json.Marshal(src)
+	if err != nil {
+		return dst, fmt.Errorf("deep copy marshal: %w", err)
+	}
+	if err := json.Unmarshal(b, &dst); err != nil {
+		return dst, fmt.Errorf("deep copy unmarshal: %w", err)
+	}
+	return dst, nil
 }

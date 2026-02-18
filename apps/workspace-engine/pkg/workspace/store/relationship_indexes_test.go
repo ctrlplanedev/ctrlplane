@@ -114,7 +114,7 @@ func TestRelationshipIndexes_AddRuleAndRecompute(t *testing.T) {
 		Id: "r1", Name: "app", WorkspaceId: "ws-test", Kind: "pod", Version: "v1",
 	})
 	upsertDeployment(t, s, &oapi.Deployment{
-		Id: "d1", Name: "app", Slug: "d1", SystemId: "sys-1",
+		Id: "d1", Name: "app", Slug: "d1",
 		JobAgentConfig: map[string]any{},
 	})
 
@@ -155,7 +155,7 @@ func TestRelationshipIndexes_DirtyEntity(t *testing.T) {
 		Id: "r1", Name: "old-name", WorkspaceId: "ws-test", Kind: "pod", Version: "v1",
 	})
 	upsertDeployment(t, s, &oapi.Deployment{
-		Id: "d1", Name: "app", Slug: "d1", SystemId: "sys-1",
+		Id: "d1", Name: "app", Slug: "d1",
 		JobAgentConfig: map[string]any{},
 	})
 
@@ -201,7 +201,7 @@ func TestRelationshipIndexes_RemoveRule(t *testing.T) {
 		Id: "r1", Name: "app", WorkspaceId: "ws-test", Kind: "pod", Version: "v1",
 	})
 	upsertDeployment(t, s, &oapi.Deployment{
-		Id: "d1", Name: "app", Slug: "d1", SystemId: "sys-1",
+		Id: "d1", Name: "app", Slug: "d1",
 		JobAgentConfig: map[string]any{},
 	})
 
@@ -258,7 +258,7 @@ func TestRelationshipIndexes_AddEntity(t *testing.T) {
 
 	// Add a deployment after rule is set up
 	upsertDeployment(t, s, &oapi.Deployment{
-		Id: "d1", Name: "app", Slug: "d1", SystemId: "sys-1",
+		Id: "d1", Name: "app", Slug: "d1",
 		JobAgentConfig: map[string]any{},
 	})
 	s.RelationshipIndexes.AddEntity(ctx, "d1")
@@ -276,7 +276,7 @@ func TestRelationshipIndexes_RemoveEntity(t *testing.T) {
 		Id: "r1", Name: "app", WorkspaceId: "ws-test", Kind: "pod", Version: "v1",
 	})
 	upsertDeployment(t, s, &oapi.Deployment{
-		Id: "d1", Name: "app", Slug: "d1", SystemId: "sys-1",
+		Id: "d1", Name: "app", Slug: "d1",
 		JobAgentConfig: map[string]any{},
 	})
 

@@ -1,47 +1,47 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  '/v1/workspaces/{workspaceId}/workflow-templates': {
+  '/v1/workspaces/{workspaceId}/workflows': {
     get: {
-      summary: 'Get all workflow templates',
-      operationId: 'getWorkflowTemplates',
-      description: 'Gets all workflow templates for a workspace.',
+      summary: 'List workflows',
+      operationId: 'listWorkflows',
+      description: 'Returns a list of workflows.',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('WorkflowTemplate'))
+      responses: openapi.paginatedResponse(openapi.schemaRef('Workflow'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}': {
+  '/v1/workspaces/{workspaceId}/workflows/{workflowId}': {
     get: {
-      summary: 'Get a workflow template',
-      operationId: 'getWorkflowTemplate',
-      description: 'Gets a workflow template.',
+      summary: 'Get a workflow',
+      operationId: 'getWorkflow',
+      description: 'Gets a workflow by ID.',
       parameters: [
         openapi.workspaceIdParam(),
-        openapi.workflowTemplateIdParam(),
+        openapi.workflowIdParam(),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('WorkflowTemplate'), 'Get workflow template')
+      responses: openapi.okResponse(openapi.schemaRef('Workflow'), 'Get workflow')
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows': {
+  '/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs': {
     get: {
-      summary: 'Get all workflows for a workflow template',
-      operationId: 'getWorkflowsByTemplate',
-      description: 'Gets all workflows for a workflow template.',
+      summary: 'Get all workflow runs for a workflow',
+      operationId: 'getWorkflowRuns',
+      description: 'Gets all workflow runs for a workflow by ID.',
       parameters: [
         openapi.workspaceIdParam(),
-        openapi.workflowTemplateIdParam(),
+        openapi.workflowIdParam(),
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('WorkflowWithJobs'))
+      responses: openapi.paginatedResponse(openapi.schemaRef('WorkflowRunWithJobs'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

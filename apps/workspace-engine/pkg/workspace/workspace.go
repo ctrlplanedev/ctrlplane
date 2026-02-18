@@ -133,6 +133,14 @@ func (w *Workspace) Systems() *store.Systems {
 	return w.store.Systems
 }
 
+func (w *Workspace) SystemDeployments() *store.SystemDeployments {
+	return w.store.SystemDeployments
+}
+
+func (w *Workspace) SystemEnvironments() *store.SystemEnvironments {
+	return w.store.SystemEnvironments
+}
+
 func (w *Workspace) Jobs() *store.Jobs {
 	return w.store.Jobs
 }
@@ -185,16 +193,16 @@ func (w *Workspace) Relations() *store.Relations {
 	return w.store.Relations
 }
 
-func (w *Workspace) WorkflowTemplates() *store.WorkflowTemplates {
-	return w.store.WorkflowTemplates
+func (w *Workspace) Workflows() *store.Workflows {
+	return w.store.Workflows
 }
 
 func (w *Workspace) WorkflowJobTemplates() *store.WorkflowJobTemplates {
 	return w.store.WorkflowJobTemplates
 }
 
-func (w *Workspace) Workflows() *store.Workflows {
-	return w.store.Workflows
+func (w *Workspace) WorkflowRuns() *store.WorkflowRuns {
+	return w.store.WorkflowRuns
 }
 
 func (w *Workspace) WorkflowJobs() *store.WorkflowJobs {

@@ -44,10 +44,7 @@ const useUpdateVersionStatus = (versionId: string) => {
 
   const utils = trpc.useUtils();
   const invalidateVersions = () =>
-    utils.deployment.versions.invalidate({
-      workspaceId,
-      deploymentId,
-    });
+    utils.deployment.versions.invalidate({ deploymentId });
 
   const updateStatus = (status: VersionStatus) =>
     updateVersionStatus

@@ -136,6 +136,19 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 	return r
 }
 
+func shareSystem(a, b []string) bool {
+	set := make(map[string]struct{}, len(a))
+	for _, id := range a {
+		set[id] = struct{}{}
+	}
+	for _, id := range b {
+		if _, ok := set[id]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 // findDependencyEnvironments finds all environments matching the selector
 func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	ctx context.Context,
@@ -145,10 +158,12 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 
 	// Iterate through all environments
 	envItems := e.store.Environments.Items()
+	envSystemIDs := e.store.SystemEnvironments.GetSystemIDsForEnvironment(environment.Id)
 	for _, env := range envItems {
-		// By default, only check environments in the same system
+		// By default, only check environments that share at least one system
 		// This prevents accidental cross-system dependencies
-		if env.SystemId != environment.SystemId {
+		candidateSystemIDs := e.store.SystemEnvironments.GetSystemIDsForEnvironment(env.Id)
+		if !shareSystem(candidateSystemIDs, envSystemIDs) {
 			continue
 		}
 

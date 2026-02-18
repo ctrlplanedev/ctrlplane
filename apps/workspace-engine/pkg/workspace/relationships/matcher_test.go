@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewPropertyMatcher tests the PropertyMatcher constructor
@@ -582,18 +584,19 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "resource to deployment by workspace_id",
+			name: "resource to deployment by name",
 			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
+				Name:        "my-deploy",
 				WorkspaceId: "workspace-1",
 			}),
 			to: NewDeploymentEntity(&oapi.Deployment{
-				Id:       "deployment-1",
-				SystemId: "workspace-1",
+				Id:   "deployment-1",
+				Name: "my-deploy",
 			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
-				FromProperty: []string{"workspace_id"},
-				ToProperty:   []string{"system_id"},
+				FromProperty: []string{"name"},
+				ToProperty:   []string{"name"},
 				Operator:     "equals",
 			}),
 			expected: true,
@@ -606,9 +609,8 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 				WorkspaceId: "workspace-1",
 			}),
 			to: NewEnvironmentEntity(&oapi.Environment{
-				Id:       "env-1",
-				Name:     "production",
-				SystemId: "system-1",
+				Id:   "env-1",
+				Name: "production",
 			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
@@ -620,14 +622,12 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 		{
 			name: "deployment to environment name contains",
 			from: NewDeploymentEntity(&oapi.Deployment{
-				Id:       "deployment-1",
-				Name:     "my-production-deploy",
-				SystemId: "system-1",
+				Id:   "deployment-1",
+				Name: "my-production-deploy",
 			}),
 			to: NewEnvironmentEntity(&oapi.Environment{
-				Id:       "env-1",
-				Name:     "production",
-				SystemId: "system-1",
+				Id:   "env-1",
+				Name: "production",
 			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
@@ -990,9 +990,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment id",
 			deployment: &oapi.Deployment{
-				Id:       "deploy-123",
-				Name:     "My Deployment",
-				SystemId: "system-1",
+				Id:   "deploy-123",
+				Name: "My Deployment",
 			},
 			propertyPath: []string{"id"},
 			wantValue:    "deploy-123",
@@ -1001,9 +1000,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment name",
 			deployment: &oapi.Deployment{
-				Id:       "deploy-123",
-				Name:     "My Deployment",
-				SystemId: "system-1",
+				Id:   "deploy-123",
+				Name: "My Deployment",
 			},
 			propertyPath: []string{"name"},
 			wantValue:    "My Deployment",
@@ -1012,9 +1010,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment slug",
 			deployment: &oapi.Deployment{
-				Id:       "deploy-123",
-				Slug:     "my-deployment",
-				SystemId: "system-1",
+				Id:   "deploy-123",
+				Slug: "my-deployment",
 			},
 			propertyPath: []string{"slug"},
 			wantValue:    "my-deployment",
@@ -1025,7 +1022,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:          "deploy-123",
 				Description: &description,
-				SystemId:    "system-1",
 			},
 			propertyPath: []string{"description"},
 			wantValue:    "Test deployment",
@@ -1034,29 +1030,24 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment system_id",
 			deployment: &oapi.Deployment{
-				Id:       "deploy-123",
-				SystemId: "system-456",
+				Id: "deploy-123",
 			},
 			propertyPath: []string{"system_id"},
-			wantValue:    "system-456",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "get deployment systemid (case variant)",
 			deployment: &oapi.Deployment{
-				Id:       "deploy-123",
-				SystemId: "system-789",
+				Id: "deploy-123",
 			},
 			propertyPath: []string{"systemid"},
-			wantValue:    "system-789",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "get deployment job_agent_id",
 			deployment: &oapi.Deployment{
 				Id:         "deploy-123",
 				JobAgentId: &jobAgentId,
-				SystemId:   "system-1",
 			},
 			propertyPath: []string{"job_agent_id"},
 			wantValue:    "agent-123",
@@ -1066,7 +1057,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			name: "get nested job_agent_config",
 			deployment: &oapi.Deployment{
 				Id:             "deploy-123",
-				SystemId:       "system-1",
 				JobAgentConfig: customJobAgentConfigMap,
 			},
 			propertyPath: []string{"job_agent_config", "kubernetes", "namespace"},
@@ -1078,7 +1068,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:          "deploy-123",
 				Description: nil,
-				SystemId:    "system-1",
 			},
 			propertyPath: []string{"description"},
 			wantErr:      true,
@@ -1088,7 +1077,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:         "deploy-123",
 				JobAgentId: nil,
-				SystemId:   "system-1",
 			},
 			propertyPath: []string{"job_agent_id"},
 			wantErr:      true,
@@ -1127,9 +1115,8 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 		{
 			name: "get environment id",
 			environment: &oapi.Environment{
-				Id:       "env-123",
-				Name:     "Production",
-				SystemId: "system-1",
+				Id:   "env-123",
+				Name: "Production",
 			},
 			propertyPath: []string{"id"},
 			wantValue:    "env-123",
@@ -1138,9 +1125,8 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 		{
 			name: "get environment name",
 			environment: &oapi.Environment{
-				Id:       "env-123",
-				Name:     "Production",
-				SystemId: "system-1",
+				Id:   "env-123",
+				Name: "Production",
 			},
 			propertyPath: []string{"name"},
 			wantValue:    "Production",
@@ -1151,7 +1137,6 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 			environment: &oapi.Environment{
 				Id:          "env-123",
 				Description: &description,
-				SystemId:    "system-1",
 			},
 			propertyPath: []string{"description"},
 			wantValue:    "Test environment",
@@ -1160,29 +1145,24 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 		{
 			name: "get environment system_id",
 			environment: &oapi.Environment{
-				Id:       "env-123",
-				SystemId: "system-456",
+				Id: "env-123",
 			},
 			propertyPath: []string{"system_id"},
-			wantValue:    "system-456",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "get environment systemid (case variant)",
 			environment: &oapi.Environment{
-				Id:       "env-123",
-				SystemId: "system-789",
+				Id: "env-123",
 			},
 			propertyPath: []string{"systemid"},
-			wantValue:    "system-789",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "nil description",
 			environment: &oapi.Environment{
 				Id:          "env-123",
 				Description: nil,
-				SystemId:    "system-1",
 			},
 			propertyPath: []string{"description"},
 			wantErr:      true,
@@ -1291,6 +1271,287 @@ func TestGetPropertyValue_TypeVariants(t *testing.T) {
 			tt.checkValue(t, got)
 		})
 	}
+}
+
+// TestMatches_PropertyMatcher tests the top-level Matches function with property matchers
+func TestMatches_PropertyMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+
+	// Build a PropertiesMatcher and set it in a RelationshipRule_Matcher
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "region"},
+				ToProperty:   []string{"metadata", "region"},
+				Operator:     "equals",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.True(t, result, "Should match when regions are equal")
+}
+
+// TestMatches_PropertyMatcher_NoMatch tests Matches with non-matching properties
+func TestMatches_PropertyMatcher_NoMatch(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "eu-west-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "region"},
+				ToProperty:   []string{"metadata", "region"},
+				Operator:     "equals",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.False(t, result, "Should not match when regions differ")
+}
+
+// TestMatches_CelMatcher tests the Matches function with a CEL matcher
+func TestMatches_CelMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewDeploymentEntity(&oapi.Deployment{
+		Id:   "deployment-1",
+		Name: "web-server",
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromCelMatcher(oapi.CelMatcher{
+		Cel: "from.name == to.name",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.True(t, result, "Should match when names are equal via CEL")
+}
+
+// TestMatches_CelMatcher_NoMatch tests Matches with non-matching CEL
+func TestMatches_CelMatcher_NoMatch(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewDeploymentEntity(&oapi.Deployment{
+		Id:   "deployment-1",
+		Name: "api-server",
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromCelMatcher(oapi.CelMatcher{
+		Cel: "from.name == to.name",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.False(t, result, "Should not match when names differ via CEL")
+}
+
+// TestMatches_NoMatcher tests Matches with empty/invalid matcher
+func TestMatches_NoMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		WorkspaceId: "workspace-1",
+	})
+
+	// Empty matcher (no properties, no cel)
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create empty matcher: %v", err)
+	}
+
+	// When no properties are specified, falls through to CelMatcher which also has no cel
+	// This should return true (match by selectors only)
+	result := Matches(context.Background(), matcher, from, to)
+	assert.True(t, result, "Empty matcher should match (selectors only)")
+}
+
+// TestMatchesWithCache_PropertyMatcher tests MatchesWithCache with property matchers
+func TestMatchesWithCache_PropertyMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "region"},
+				ToProperty:   []string{"metadata", "region"},
+				Operator:     "equals",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
+
+	// Without cache
+	result := MatchesWithCache(context.Background(), matcher, from, to, nil)
+	assert.True(t, result)
+
+	// With cache
+	cache := BuildEntityMapCache([]*oapi.RelatableEntity{from, to})
+	result = MatchesWithCache(context.Background(), matcher, from, to, cache)
+	assert.True(t, result)
+}
+
+// TestMatchesWithCache_CelMatcher tests MatchesWithCache with CEL matchers and cache
+func TestMatchesWithCache_CelMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewDeploymentEntity(&oapi.Deployment{
+		Id:   "deployment-1",
+		Name: "web-server",
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromCelMatcher(oapi.CelMatcher{
+		Cel: "from.name == to.name",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL matcher: %v", err)
+	}
+
+	// Without cache
+	result := MatchesWithCache(context.Background(), matcher, from, to, nil)
+	assert.True(t, result)
+
+	// With cache
+	cache := BuildEntityMapCache([]*oapi.RelatableEntity{from, to})
+	result = MatchesWithCache(context.Background(), matcher, from, to, cache)
+	assert.True(t, result)
+
+	// With partial cache (only from)
+	partialCache := EntityMapCache{
+		from.GetID(): cache[from.GetID()],
+	}
+	result = MatchesWithCache(context.Background(), matcher, from, to, partialCache)
+	assert.True(t, result)
+}
+
+// TestBuildEntityMapCache tests building an entity map cache
+func TestBuildEntityMapCache(t *testing.T) {
+	entities := []*oapi.RelatableEntity{
+		NewResourceEntity(&oapi.Resource{
+			Id:          "resource-1",
+			Name:        "server-1",
+			WorkspaceId: "workspace-1",
+		}),
+		NewDeploymentEntity(&oapi.Deployment{
+			Id:   "deployment-1",
+			Name: "deploy-1",
+		}),
+		NewEnvironmentEntity(&oapi.Environment{
+			Id:   "env-1",
+			Name: "production",
+		}),
+	}
+
+	cache := BuildEntityMapCache(entities)
+	assert.Len(t, cache, 3)
+	assert.Contains(t, cache, "resource-1")
+	assert.Contains(t, cache, "deployment-1")
+	assert.Contains(t, cache, "env-1")
+
+	// Verify map contents
+	resourceMap := cache["resource-1"]
+	assert.NotNil(t, resourceMap)
+	assert.Equal(t, "server-1", resourceMap["name"])
+}
+
+// TestEntityToMap tests the deprecated EntityToMap function
+func TestEntityToMap(t *testing.T) {
+	resource := &oapi.Resource{
+		Id:          "resource-1",
+		Name:        "server-1",
+		WorkspaceId: "workspace-1",
+	}
+
+	m, err := EntityToMap(resource)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	assert.Equal(t, "server-1", m["name"])
+
+	// Deployment
+	deployment := &oapi.Deployment{
+		Id:   "dep-1",
+		Name: "deploy-1",
+	}
+	m, err = EntityToMap(deployment)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	assert.Equal(t, "deploy-1", m["name"])
+
+	// Environment
+	env := &oapi.Environment{
+		Id:   "env-1",
+		Name: "production",
+	}
+	m, err = EntityToMap(env)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	assert.Equal(t, "production", m["name"])
 }
 
 // TestGetPropertyValue_EdgeCases tests edge cases and error conditions

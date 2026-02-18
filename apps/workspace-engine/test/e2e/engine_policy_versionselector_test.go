@@ -8,18 +8,19 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_VersionSelectorPolicy_CEL_BasicMatching tests that a version selector
 // policy using CEL expressions correctly filters deployment versions
 func TestEngine_VersionSelectorPolicy_CEL_BasicMatching(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "env-staging"
-	prodEnvID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -117,11 +118,11 @@ func TestEngine_VersionSelectorPolicy_CEL_BasicMatching(t *testing.T) {
 // TestEngine_VersionSelectorPolicy_BlockingVersion tests that a version selector
 // policy correctly blocks versions that don't match the selector
 func TestEngine_VersionSelectorPolicy_BlockingVersion(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -197,12 +198,12 @@ func TestEngine_VersionSelectorPolicy_BlockingVersion(t *testing.T) {
 // TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies tests that version selector
 // policies work correctly when combined with other policy types
 func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	versionSelectorPolicyID := "policy-version"
-	approvalPolicyID := "policy-approval"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	versionSelectorPolicyID := uuid.New().String()
+	approvalPolicyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

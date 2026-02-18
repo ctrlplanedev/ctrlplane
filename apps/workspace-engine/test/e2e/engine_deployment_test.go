@@ -8,12 +8,13 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_DeploymentCreation(t *testing.T) {
-	deploymentID1 := "1"
-	deploymentID2 := "2"
+	deploymentID1 := uuid.New().String()
+	deploymentID2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -22,12 +23,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID1),
 				integration.DeploymentName("deployment-has-filter"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID2),
@@ -59,13 +55,11 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	}
 
 	r1 := c.NewResource(engine.Workspace().ID)
-	r1.Id = "r1"
 	r1.Name = "r1"
 	r1.Metadata = map[string]string{"env": "dev"}
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	r2 := c.NewResource(engine.Workspace().ID)
-	r2.Id = "r2"
 	r2.Name = "r2"
 	r2.Metadata = map[string]string{"env": "qa"}
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
@@ -99,11 +93,11 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 }
 
 func TestEngine_DeploymentJobAgentConfiguration(t *testing.T) {
-	jobAgentID1 := "job-agent-1"
-	jobAgentID2 := "job-agent-2"
-	deploymentID1 := "deployment-with-agent-1"
-	deploymentID2 := "deployment-with-agent-2"
-	deploymentID3 := "deployment-no-agent"
+	jobAgentID1 := uuid.New().String()
+	jobAgentID2 := uuid.New().String()
+	deploymentID1 := uuid.New().String()
+	deploymentID2 := uuid.New().String()
+	deploymentID3 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -170,9 +164,9 @@ func TestEngine_DeploymentJobAgentConfiguration(t *testing.T) {
 }
 
 func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentIDWithAgent := "deployment-with-agent"
-	deploymentIDNoAgent := "deployment-no-agent"
+	jobAgentID := uuid.New().String()
+	deploymentIDWithAgent := uuid.New().String()
+	deploymentIDNoAgent := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -228,6 +222,15 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 			if job.JobAgentId != jobAgentID {
 				t.Fatalf("job for deployment with agent has wrong job agent: got %s, want %s", job.JobAgentId, jobAgentID)
 			}
+
+			assert.NotNil(t, job.DispatchContext, "dispatched job should have DispatchContext")
+			assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Release)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentIDWithAgent, job.DispatchContext.Deployment.Id)
+			assert.NotNil(t, job.DispatchContext.Environment)
+			assert.NotNil(t, job.DispatchContext.Resource)
+			assert.NotNil(t, job.DispatchContext.Version)
 		}
 		if release.ReleaseTarget.DeploymentId == deploymentIDNoAgent {
 			jobsNoAgent++
@@ -246,8 +249,8 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 }
 
 func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -313,12 +316,24 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 	if timeout, ok := jobConfig["timeout"].(float64); !ok || timeout != 300 {
 		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig["timeout"])
 	}
+
+	// Verify DispatchContext is populated with correct config
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "custom-namespace", job.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(300), job.DispatchContext.JobAgentConfig["timeout"])
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
 }
 
 func TestEngine_DeploymentJobAgentUpdate(t *testing.T) {
-	jobAgentID1 := "job-agent-1"
-	jobAgentID2 := "job-agent-2"
-	deploymentID := "deployment-1"
+	jobAgentID1 := uuid.New().String()
+	jobAgentID2 := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -360,12 +375,10 @@ func TestEngine_DeploymentJobAgentUpdate(t *testing.T) {
 }
 
 func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
-	// Test scenario: Multiple deployments in the same system with different job agents
-	// should create jobs with their respective job agents
-	jobAgentK8s := "job-agent-k8s"
-	jobAgentDocker := "job-agent-docker"
-	deploymentK8s := "deployment-k8s"
-	deploymentDocker := "deployment-docker"
+	jobAgentK8s := uuid.New().String()
+	jobAgentDocker := uuid.New().String()
+	deploymentK8s := uuid.New().String()
+	deploymentDocker := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -427,12 +440,20 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 			if job.JobAgentId != jobAgentK8s {
 				t.Fatalf("k8s deployment job has wrong agent: got %s, want %s", job.JobAgentId, jobAgentK8s)
 			}
+			assert.NotNil(t, job.DispatchContext)
+			assert.Equal(t, jobAgentK8s, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentK8s, job.DispatchContext.Deployment.Id)
 		}
 		if release.ReleaseTarget.DeploymentId == deploymentDocker {
 			dockerJobFound = true
 			if job.JobAgentId != jobAgentDocker {
 				t.Fatalf("docker deployment job has wrong agent: got %s, want %s", job.JobAgentId, jobAgentDocker)
 			}
+			assert.NotNil(t, job.DispatchContext)
+			assert.Equal(t, jobAgentDocker, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentDocker, job.DispatchContext.Deployment.Id)
 		}
 	}
 
@@ -445,8 +466,8 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 }
 
 func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -510,11 +531,20 @@ func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
 
 	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job (the old one should be preserved)")
 	assert.Equal(t, 1, len(pendingJobs), "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
+
+	// Verify the retriggered pending job has DispatchContext
+	for _, job := range pendingJobs {
+		assert.NotNil(t, job.DispatchContext, "retriggered job should have DispatchContext")
+		assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	}
 }
 
 func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -600,8 +630,8 @@ func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.
 }
 
 func TestEngine_DeploymentRemoval(t *testing.T) {
-	deploymentID1 := "deployment-1"
-	deploymentID2 := "deployment-2"
+	deploymentID1 := uuid.New().String()
+	deploymentID2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -654,7 +684,7 @@ func TestEngine_DeploymentRemoval(t *testing.T) {
 }
 
 func TestEngine_DeploymentRemovalWithReleaseTargets(t *testing.T) {
-	deploymentID := "deployment-to-remove"
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -727,8 +757,8 @@ func TestEngine_DeploymentRemovalWithReleaseTargets(t *testing.T) {
 }
 
 func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-with-jobs"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -776,6 +806,12 @@ func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
 		if release.ReleaseTarget.DeploymentId == deploymentID {
 			deploymentJobs++
 			jobsForDeployment = append(jobsForDeployment, job.Id)
+
+			assert.NotNil(t, job.DispatchContext, "pending job should have DispatchContext")
+			assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Release)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
 		}
 	}
 
@@ -805,9 +841,9 @@ func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
 }
 
 func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
-	deploymentID1 := "deployment-1"
-	deploymentID2 := "deployment-2"
-	resourceID := "resource-1"
+	deploymentID1 := uuid.New().String()
+	deploymentID2 := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -816,12 +852,7 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID1),
 				integration.DeploymentName("deployment-1"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "web",
-					"key":      "tier",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["tier"] == "web"`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID2),
@@ -888,10 +919,9 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 }
 
 func TestEngine_DeploymentRemovalMultiple(t *testing.T) {
-	// Test removing multiple deployments
-	deployment1 := "deployment-1"
-	deployment2 := "deployment-2"
-	deployment3 := "deployment-3"
+	deployment1 := uuid.New().String()
+	deployment2 := uuid.New().String()
+	deployment3 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -952,7 +982,8 @@ func BenchmarkEngine_DeploymentCreation(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		engine.PushEvent(ctx, handler.DeploymentCreate, c.NewDeployment(workspaceID))
+		deployment := c.NewDeployment(workspaceID)
+		engine.PushDeploymentCreateWithLink(ctx, workspaceID, deployment)
 	}
 }
 
@@ -966,7 +997,7 @@ func BenchmarkEngine_DeploymentRemoval(b *testing.B) {
 	for i := range b.N {
 		deployment := c.NewDeployment(workspaceID)
 		deployments[i] = deployment
-		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+		engine.PushDeploymentCreateWithLink(ctx, workspaceID, deployment)
 	}
 
 	b.ResetTimer()

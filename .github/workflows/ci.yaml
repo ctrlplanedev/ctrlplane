@@ -30,18 +30,6 @@ jobs:
       - name: Lint
         run: pnpm lint && pnpm lint:ws
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./tooling/github/setup
-
-      - name: Run Tests
-        run: turbo test --filter=@ctrlplane/rule-engine
-
   format:
     name: Format
     runs-on: ubuntu-latest

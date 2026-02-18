@@ -13,24 +13,31 @@ import (
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, environment *oapi.Environment) ([]*oapi.ReleaseTarget, error) {
-	deployments := ws.Systems().Deployments(environment.SystemId)
+	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, deployment := range deployments {
-		resources, err := ws.Deployments().Resources(ctx, deployment.Id)
-		if err != nil {
-			return nil, err
-		}
-		for _, resource := range resources {
-			isMatch, err := selector.Match(ctx, environment.ResourceSelector, resource)
+	for _, systemID := range ws.SystemEnvironments().GetSystemIDsForEnvironment(environment.Id) {
+		deployments := ws.Systems().Deployments(systemID)
+		for _, deployment := range deployments {
+			resources, err := ws.Deployments().Resources(ctx, deployment.Id)
 			if err != nil {
 				return nil, err
 			}
-			if isMatch {
-				releaseTargets = append(releaseTargets, &oapi.ReleaseTarget{
-					EnvironmentId: environment.Id,
-					DeploymentId:  deployment.Id,
-					ResourceId:    resource.Id,
-				})
+			for _, resource := range resources {
+				isMatch, err := selector.Match(ctx, environment.ResourceSelector, resource)
+				if err != nil {
+					return nil, err
+				}
+				if isMatch {
+					rt := &oapi.ReleaseTarget{
+						EnvironmentId: environment.Id,
+						DeploymentId:  deployment.Id,
+						ResourceId:    resource.Id,
+					}
+					if _, ok := seen[rt.Key()]; !ok {
+						seen[rt.Key()] = struct{}{}
+						releaseTargets = append(releaseTargets, rt)
+					}
+				}
 			}
 		}
 	}

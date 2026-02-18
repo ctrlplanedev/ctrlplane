@@ -32,7 +32,7 @@
   jobIdParam():: self.stringParam('jobId', 'ID of the job'),
   nameParam():: self.stringParam('name', 'Name of the resource provider'),
   relationshipRuleIdParam():: self.stringParam('relationshipRuleId', 'ID of the relationship rule'),
-  workflowTemplateIdParam():: self.stringParam('workflowTemplateId', 'ID of the workflow template'),
+  workflowIdParam():: self.stringParam('workflowId', 'ID of the workflow'),
   
   entityTypeParam():: {
     name: 'entityType',

@@ -33,12 +33,12 @@ export const appRouter = router({
   validate: validateRouter,
   jobs: jobsRouter,
   relationships: relationshipsRouter,
+  github: githubRouter,
   policies: policiesRouter,
   policySkips: policySkipsRouter,
   redeploy: redeployRouter,
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
-  github: githubRouter,
   releaseTargets: releaseTargetsRouter,
   workflows: workflowsRouter,
 });

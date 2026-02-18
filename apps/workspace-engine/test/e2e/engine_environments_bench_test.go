@@ -32,7 +32,7 @@ func BenchmarkEnvironments_Get(b *testing.B) {
 	env.Name = "test-env"
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -88,7 +88,7 @@ func benchmarkEnvironmentsItems(b *testing.B, numEnvironments int) {
 		env.Name = fmt.Sprintf("env-%d", i)
 		env.ResourceSelector = &oapi.Selector{}
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 	}
 
 	b.ReportAllocs()
@@ -126,7 +126,7 @@ func BenchmarkEnvironments_Upsert(b *testing.B) {
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
 		b.StartTimer()
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 		b.StopTimer()
 	}
 }
@@ -170,7 +170,7 @@ func benchmarkEnvironmentsResources(b *testing.B, numResources int) {
 	env.Name = "test-env"
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	// Create resources
 	kinds := []string{"application", "database", "cache", "service", "vpc"}
@@ -222,7 +222,7 @@ func BenchmarkEnvironments_HasResource(b *testing.B) {
 	env.Id = envID
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	// Create resource
 	resourceID := uuid.New().String()
@@ -289,7 +289,7 @@ func benchmarkEnvironmentsRecomputeResources(b *testing.B, numResources int) {
 	env.Id = envID
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "metadata.tier == 'frontend'"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	// Create resources
 	tiers := []string{"frontend", "backend", "database"}
@@ -338,7 +338,7 @@ func BenchmarkEnvironments_Remove(b *testing.B) {
 		env.Id = envID
 		env.ResourceSelector = &oapi.Selector{}
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -383,7 +383,7 @@ func BenchmarkEnvironments_MultipleResourceSelectors(b *testing.B) {
 		env.Name = fmt.Sprintf("env-%d", i)
 		env.ResourceSelector = &oapi.Selector{}
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: selectors[i]})
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 	}
 
 	// Create diverse resources
@@ -440,7 +440,7 @@ func BenchmarkEnvironments_ConcurrentAccess(b *testing.B) {
 	env.Id = envID
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	// Create resources
 	for i := 0; i < 100; i++ {
@@ -521,7 +521,7 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 		}
 
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 	}
 
 	// Create 5000 resources
@@ -611,7 +611,7 @@ func benchmarkEnvironmentsResourceSelector(b *testing.B, selector string, numRes
 	env.Id = envID
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: selector})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	// Create resources
 	kinds := []string{"application", "database", "cache", "service", "vpc"}

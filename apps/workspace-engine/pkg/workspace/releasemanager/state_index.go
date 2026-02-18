@@ -28,15 +28,18 @@ type StateIndex struct {
 }
 
 // NewStateIndex creates a new StateIndex with three independent ComputedIndexes.
+// All three indexes use parallel evaluation during Recompute to speed up
+// restore and bulk recomputation.
 func NewStateIndex(s *store.Store, planner *deployment.Planner) *StateIndex {
 	si := &StateIndex{
 		store:   s,
 		planner: planner,
 	}
 
-	si.desiredRelease = computeindex.New(si.computeDesiredRelease)
-	si.currentRelease = computeindex.New(si.computeCurrentRelease)
-	si.latestJob = computeindex.New(si.computeLatestJob)
+	parallel := computeindex.WithAutoConcurrency()
+	si.desiredRelease = computeindex.New(si.computeDesiredRelease, parallel)
+	si.currentRelease = computeindex.New(si.computeCurrentRelease, parallel)
+	si.latestJob = computeindex.New(si.computeLatestJob, parallel)
 
 	return si
 }
@@ -202,7 +205,6 @@ func (si *StateIndex) RestoreAll(ctx context.Context) {
 	}
 
 	si.Recompute(ctx)
-	log.Info("state index restored", "release_targets", len(targets))
 }
 
 // --- Recompute ---

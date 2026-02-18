@@ -88,10 +88,10 @@ export default [
 
       route("workflows", "routes/ws/workflows.tsx"),
       route("workflows", "routes/ws/workflows/_layout.tsx", [
-        route(":workflowTemplateId", "routes/ws/workflows/page.$workflowTemplateId.tsx"),
+        route(":workflowId", "routes/ws/workflows/page.$workflowId.tsx"),
         route(
-          ":workflowTemplateId/:workflowId",
-          "routes/ws/workflows/page.$workflowTemplateId.$workflowId.tsx",
+          ":workflowId/:workflowRunId",
+          "routes/ws/workflows/page.$workflowId.$workflowRunId.tsx",
         ),
       ]),
 

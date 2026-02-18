@@ -2,6 +2,7 @@ package deploymentwindow
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -31,19 +32,16 @@ func setupReleaseTarget(t *testing.T, st *store.Store) (context.Context, *oapi.R
 	t.Helper()
 
 	ctx := context.Background()
-	systemID := uuid.New().String()
 	deployment := &oapi.Deployment{
-		Id:       uuid.New().String(),
-		Name:     "test-deployment",
-		Slug:     "test-deployment",
-		SystemId: systemID,
+		Id:   uuid.New().String(),
+		Name: "test-deployment",
+		Slug: "test-deployment",
 	}
 	require.NoError(t, st.Deployments.Upsert(ctx, deployment))
 
 	environment := &oapi.Environment{
-		Id:       uuid.New().String(),
-		Name:     "test-environment",
-		SystemId: systemID,
+		Id:   uuid.New().String(),
+		Name: "test-environment",
 	}
 	require.NoError(t, st.Environments.Upsert(ctx, environment))
 
@@ -106,7 +104,11 @@ func setupScopeWithDeployedTarget(t *testing.T, st *store.Store) (context.Contex
 	ctx, releaseTarget := setupReleaseTarget(t, st)
 	seedSuccessfulRelease(t, ctx, st, releaseTarget)
 
-	return ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
+	return ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+	}
 }
 
 func TestDeploymentWindowEvaluator_NewEvaluator_NilRule(t *testing.T) {
@@ -318,7 +320,11 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, releaseTarget := setupReleaseTarget(t, st)
-	scope := evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
+	scope := evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+	}
 	result := eval.Evaluate(ctx, scope)
 
 	assert.True(t, result.Allowed, "expected allowed when no deployment exists")
@@ -1003,6 +1009,62 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowOutside(t *testing
 	assert.Equal(t, "deny", result.Details["window_type"])
 	assert.Equal(t, int32(1), result.Details["duration_minutes"])
 	assert.Equal(t, "Europe/London", result.Details["timezone"])
+}
+
+func TestDeploymentWindowEvaluator_DailyBYHOUR_DetectsInsideWindow(t *testing.T) {
+	st := setupStore()
+
+	now := time.Now()
+	windowStartHour := now.Add(-2 * time.Hour).UTC().Hour()
+
+	rruleStr := fmt.Sprintf("FREQ=DAILY;BYHOUR=%d;BYMINUTE=0;BYSECOND=0", windowStartHour)
+
+	rule := &oapi.PolicyRule{
+		Id: "rule-byhour",
+		DeploymentWindow: &oapi.DeploymentWindowRule{
+			Rrule:           rruleStr,
+			DurationMinutes: 240,
+			AllowWindow:     boolPtr(true),
+		},
+	}
+
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "expected non-nil evaluator")
+
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
+
+	assert.True(t, result.Allowed, "expected allowed: we are inside the allow window (BYHOUR started 2h ago, duration 4h)")
+	assert.Contains(t, result.Message, "within allowed deployment window")
+	assert.Equal(t, "allow", result.Details["window_type"])
+}
+
+func TestDeploymentWindowEvaluator_DailyBYHOUR_DenyWindow_DetectsInsideWindow(t *testing.T) {
+	st := setupStore()
+
+	now := time.Now()
+	windowStartHour := now.Add(-1 * time.Hour).UTC().Hour()
+
+	rruleStr := fmt.Sprintf("FREQ=DAILY;BYHOUR=%d;BYMINUTE=0;BYSECOND=0", windowStartHour)
+
+	rule := &oapi.PolicyRule{
+		Id: "rule-byhour-deny",
+		DeploymentWindow: &oapi.DeploymentWindowRule{
+			Rrule:           rruleStr,
+			DurationMinutes: 180,
+			AllowWindow:     boolPtr(false),
+		},
+	}
+
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "expected non-nil evaluator")
+
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
+
+	assert.False(t, result.Allowed, "expected denied: we are inside the deny window (BYHOUR started 1h ago, duration 3h)")
+	assert.Contains(t, result.Message, "within deny window")
+	assert.Equal(t, "deny", result.Details["window_type"])
 }
 
 func TestDeploymentWindowEvaluator_TimeRemainingFormat(t *testing.T) {

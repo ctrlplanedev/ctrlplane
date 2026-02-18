@@ -322,7 +322,6 @@ func SystemID(id string) SystemOption {
 func WithDeployment(options ...DeploymentOption) SystemOption {
 	return func(ws *TestWorkspace, s *oapi.System, eb *eventsBuilder) {
 		d := c.NewDeployment(s.Id)
-		d.SystemId = s.Id
 
 		dvEB := newEventsBuilder()
 		for _, option := range options {
@@ -334,6 +333,11 @@ func WithDeployment(options ...DeploymentOption) SystemOption {
 			Data: d,
 		})
 
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.SystemDeploymentLinked,
+			Data: map[string]string{"systemId": s.Id, "deploymentId": d.Id},
+		})
+
 		// Add deployment version events after deployment
 		eb.postEvents = append(eb.postEvents, dvEB.postEvents...)
 	}
@@ -342,7 +346,6 @@ func WithDeployment(options ...DeploymentOption) SystemOption {
 func WithEnvironment(options ...EnvironmentOption) SystemOption {
 	return func(ws *TestWorkspace, s *oapi.System, eb *eventsBuilder) {
 		e := c.NewEnvironment(s.Id)
-		e.SystemId = s.Id
 
 		for _, option := range options {
 			option(ws, e)
@@ -351,6 +354,11 @@ func WithEnvironment(options ...EnvironmentOption) SystemOption {
 		eb.postEvents = append(eb.postEvents, event{
 			Type: handler.EnvironmentCreate,
 			Data: e,
+		})
+
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.SystemEnvironmentLinked,
+			Data: map[string]string{"systemId": s.Id, "environmentId": e.Id},
 		})
 	}
 }
@@ -482,6 +490,12 @@ func DeploymentVersionStatus(status oapi.DeploymentVersionStatus) DeploymentVers
 func DeploymentVersionMessage(message string) DeploymentVersionOption {
 	return func(_ *TestWorkspace, dv *oapi.DeploymentVersion) {
 		dv.Message = &message
+	}
+}
+
+func DeploymentVersionMetadata(metadata map[string]string) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVersion) {
+		dv.Metadata = metadata
 	}
 }
 
@@ -822,6 +836,33 @@ func WithRuleRetryWithBackoff(maxRetries int32, backoffSeconds int32, strategy o
 	}
 }
 
+// ===== DeploymentWindowRule Options =====
+
+// WithRuleDeploymentWindow configures a deployment window rule that controls when
+// deployments are allowed based on a recurring time window.
+func WithRuleDeploymentWindow(rrule string, durationMinutes int32) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.DeploymentWindow = &oapi.DeploymentWindowRule{
+			Rrule:           rrule,
+			DurationMinutes: durationMinutes,
+		}
+		return nil
+	}
+}
+
+// WithRuleDeploymentWindowFull configures a deployment window rule with all options.
+func WithRuleDeploymentWindowFull(rrule string, durationMinutes int32, timezone *string, allowWindow *bool) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.DeploymentWindow = &oapi.DeploymentWindowRule{
+			Rrule:           rrule,
+			DurationMinutes: durationMinutes,
+			Timezone:        timezone,
+			AllowWindow:     allowWindow,
+		}
+		return nil
+	}
+}
+
 // ===== VersionCooldownRule Options =====
 
 // WithRuleVersionCooldown configures a version cooldown rule that limits how frequently
@@ -879,13 +920,9 @@ func WithRuleRollbackOnVerificationFailure() PolicyRuleOption {
 
 type DeploymentDependencyRuleOption func(*TestWorkspace, *oapi.DeploymentDependencyRule) error
 
-func DeploymentDependencyRuleDependsOnDeploymentSelector(cel string) DeploymentDependencyRuleOption {
+func DeploymentDependencyRuleDependsOn(cel string) DeploymentDependencyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.DeploymentDependencyRule) error {
-		sel := &oapi.Selector{}
-		if err := sel.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
-			return err
-		}
-		r.DependsOnDeploymentSelector = *sel
+		r.DependsOn = cel
 		return nil
 	}
 }
@@ -1262,35 +1299,35 @@ func DeploymentVariableValueReferenceValue(reference string, path []string) Depl
 
 // ===== Workflow Options =====
 
-type WorkflowTemplateOption func(*TestWorkspace, *oapi.WorkflowTemplate)
+type WorkflowOption func(*TestWorkspace, *oapi.Workflow)
 
-func WithWorkflowTemplate(options ...WorkflowTemplateOption) WorkspaceOption {
+func WithWorkflow(options ...WorkflowOption) WorkspaceOption {
 	return func(ws *TestWorkspace) error {
-		wft := c.NewWorkflowTemplate(ws.workspace.ID)
+		wft := c.NewWorkflow(ws.workspace.ID)
 		for _, option := range options {
 			option(ws, wft)
 		}
-		ws.PushEvent(context.Background(), handler.WorkflowTemplateCreate, wft)
+		ws.PushEvent(context.Background(), handler.WorkflowCreate, wft)
 		return nil
 	}
 }
 
-func WorkflowTemplateName(name string) WorkflowTemplateOption {
-	return func(_ *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WorkflowName(name string) WorkflowOption {
+	return func(_ *TestWorkspace, wft *oapi.Workflow) {
 		wft.Name = name
 	}
 }
 
-func WorkflowTemplateID(id string) WorkflowTemplateOption {
-	return func(_ *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WorkflowID(id string) WorkflowOption {
+	return func(_ *TestWorkspace, wft *oapi.Workflow) {
 		wft.Id = id
 	}
 }
 
 type WorkflowInputOption func(*TestWorkspace, *oapi.WorkflowInput)
 
-func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		input := c.NewStringWorkflowInput(wft.Id)
 		for _, option := range options {
 			option(ws, input)
@@ -1299,12 +1336,12 @@ func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowTemplateOpt
 	}
 }
 
-func WorkflowStringInputName(name string) WorkflowInputOption {
+func WorkflowStringInputKey(key string) WorkflowInputOption {
 	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
 		curr, _ := input.MarshalJSON()
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
-		cfg["name"] = name
+		cfg["key"] = key
 		new, _ := json.Marshal(cfg)
 		_ = input.UnmarshalJSON(new)
 	}
@@ -1321,8 +1358,8 @@ func WorkflowStringInputDefault(defaultValue string) WorkflowInputOption {
 	}
 }
 
-func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		input := c.NewNumberWorkflowInput(wft.Id)
 		for _, option := range options {
 			option(ws, input)
@@ -1331,12 +1368,12 @@ func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowTemplateOpt
 	}
 }
 
-func WorkflowNumberInputName(name string) WorkflowInputOption {
+func WorkflowNumberInputKey(key string) WorkflowInputOption {
 	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
 		curr, _ := input.MarshalJSON()
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
-		cfg["name"] = name
+		cfg["key"] = key
 		new, _ := json.Marshal(cfg)
 		_ = input.UnmarshalJSON(new)
 	}
@@ -1353,8 +1390,8 @@ func WorkflowNumberInputDefault(defaultValue float32) WorkflowInputOption {
 	}
 }
 
-func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		input := c.NewBooleanWorkflowInput(wft.Id)
 		for _, option := range options {
 			option(ws, input)
@@ -1363,12 +1400,12 @@ func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowTemplateOp
 	}
 }
 
-func WorkflowBooleanInputName(name string) WorkflowInputOption {
+func WorkflowBooleanInputKey(key string) WorkflowInputOption {
 	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
 		curr, _ := input.MarshalJSON()
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
-		cfg["name"] = name
+		cfg["key"] = key
 		new, _ := json.Marshal(cfg)
 		_ = input.UnmarshalJSON(new)
 	}
@@ -1387,8 +1424,8 @@ func WorkflowBooleanInputDefault(defaultValue bool) WorkflowInputOption {
 
 type WorkflowJobTemplateOption func(*TestWorkspace, *oapi.WorkflowJobTemplate)
 
-func WithWorkflowJobTemplate(options ...WorkflowJobTemplateOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowJobTemplate(options ...WorkflowJobTemplateOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		jobTemplate := c.NewWorkflowJobTemplate(wft.Id)
 		for _, option := range options {
 			option(ws, jobTemplate)

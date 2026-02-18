@@ -6,10 +6,12 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_SystemInitialState(t *testing.T) {
-	systemId := "test-system"
+	systemId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -34,8 +36,8 @@ func TestEngine_SystemInitialState(t *testing.T) {
 }
 
 func TestEngine_SystemDeploymentMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -63,9 +65,9 @@ func TestEngine_SystemDeploymentMaterializedViews(t *testing.T) {
 	d3 := c.NewDeployment(s2.Id)
 	d3.Name = "deployment-1-s2"
 
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
+	engine.PushDeploymentCreateWithLink(ctx, s1.Id, d1)
+	engine.PushDeploymentCreateWithLink(ctx, s1.Id, d2)
+	engine.PushDeploymentCreateWithLink(ctx, s2.Id, d3)
 
 	// Verify materialized view for system 1 deployments
 	s1Deployments := engine.Workspace().Systems().Deployments(s1.Id)
@@ -92,8 +94,8 @@ func TestEngine_SystemDeploymentMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemEnvironmentMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -113,29 +115,19 @@ func TestEngine_SystemEnvironmentMaterializedViews(t *testing.T) {
 	// Create environments for system 1
 	e1 := c.NewEnvironment(s1.Id)
 	e1.Name = "environment-dev-s1"
-	e1.ResourceSelector = c.NewJsonSelector(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	})
+	e1.ResourceSelector = c.NewCelSelector(`resource.metadata["env"] == "dev"`)
 
 	e2 := c.NewEnvironment(s1.Id)
 	e2.Name = "environment-prod-s1"
-	e2.ResourceSelector = c.NewJsonSelector(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	})
+	e2.ResourceSelector = c.NewCelSelector(`resource.metadata["env"] == "prod"`)
 
 	// Create environment for system 2
 	e3 := c.NewEnvironment(s2.Id)
 	e3.Name = "environment-staging-s2"
 
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e3)
+	engine.PushEnvironmentCreateWithLink(ctx, s1.Id, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, s1.Id, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, s2.Id, e3)
 
 	// Verify materialized view for system 1 environments
 	s1Environments := engine.Workspace().Systems().Environments(s1.Id)
@@ -162,10 +154,10 @@ func TestEngine_SystemEnvironmentMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemDeploymentUpdateMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	d1Id := "deployment-1"
-	d2Id := "deployment-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -185,43 +177,37 @@ func TestEngine_SystemDeploymentUpdateMaterializedViews(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	s1, _ := engine.Workspace().Systems().Get(s1Id)
-	s2, _ := engine.Workspace().Systems().Get(s2Id)
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	// d2, _ := engine.Workspace().Deployments().Get(d2Id)
 
-	// Update deployment d1 to move it to system 2
-	newD1 := c.NewDeployment(s1.Id)
-	newD1.Id = d1.Id
-	newD1.SystemId = s2.Id
-	engine.PushEvent(ctx, handler.DeploymentUpdate, newD1)
+	// Move deployment d1 from system 1 to system 2
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": s1Id, "deploymentId": d1Id})
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": s2Id, "deploymentId": d1Id})
 
-	// System 2 should now have 2 deployment
-	s1Deployments := engine.Workspace().Systems().Deployments(s1.Id)
+	// System 1 should now have 0 deployments
+	s1Deployments := engine.Workspace().Systems().Deployments(s1Id)
 	if len(s1Deployments) != 0 {
 		t.Fatalf("after update, system 1 deployments count is %d, want 0", len(s1Deployments))
 	}
 
-	if _, ok := s1Deployments[d1.Id]; ok {
+	if _, ok := s1Deployments[d1Id]; ok {
 		t.Fatalf("deployment d1 should not be in system s1 materialized view after update")
 	}
 
-	// System 2 should now have 1 deployment
-	s2Deployments := engine.Workspace().Systems().Deployments(s2.Id)
+	// System 2 should now have 2 deployments
+	s2Deployments := engine.Workspace().Systems().Deployments(s2Id)
 	if len(s2Deployments) != 2 {
 		t.Fatalf("after update, system s2 deployments count is %d, want 2", len(s2Deployments))
 	}
 
-	if _, ok := s2Deployments[d1.Id]; !ok {
+	if _, ok := s2Deployments[d1Id]; !ok {
 		t.Fatalf("deployment d1 should be in system s2 materialized view after update")
 	}
 }
 
 func TestEngine_SystemEnvironmentUpdateMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	e1Id := "environment-1"
-	e2Id := "environment-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -241,46 +227,40 @@ func TestEngine_SystemEnvironmentUpdateMaterializedViews(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	s1, _ := engine.Workspace().Systems().Get(s1Id)
-	s2, _ := engine.Workspace().Systems().Get(s2Id)
-	e1, _ := engine.Workspace().Environments().Get(e1Id)
-	// e2, _ := engine.Workspace().Environments().Get(e2Id)
 
-	// Update environment e1 to move it to system 2
-	newE1 := c.NewEnvironment(s1.Id)
-	newE1.Id = e1.Id
-	newE1.SystemId = s2.Id
-	engine.PushEvent(ctx, handler.EnvironmentUpdate, newE1)
+	// Move environment e1 from system 1 to system 2
+	engine.PushEvent(ctx, handler.SystemEnvironmentUnlinked, map[string]string{"systemId": s1Id, "environmentId": e1Id})
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": s2Id, "environmentId": e1Id})
 
-	// Verify materialized views updated - system 1 should now have 1 environment
-	s1Environments := engine.Workspace().Systems().Environments(s1.Id)
+	// System 1 should now have 0 environments
+	s1Environments := engine.Workspace().Systems().Environments(s1Id)
 	if len(s1Environments) != 0 {
 		t.Fatalf("after update, system s1 environments count is %d, want 0", len(s1Environments))
 	}
 
-	if _, ok := s1Environments[e1.Id]; ok {
+	if _, ok := s1Environments[e1Id]; ok {
 		t.Fatalf("environment e1 should not be in system s1 materialized view after update")
 	}
 
-	// System 2 should now have 2 environment
-	s2Environments := engine.Workspace().Systems().Environments(s2.Id)
+	// System 2 should now have 2 environments
+	s2Environments := engine.Workspace().Systems().Environments(s2Id)
 	if len(s2Environments) != 2 {
 		t.Fatalf("after update, system s2 environments count is %d, want 2", len(s2Environments))
 	}
 
-	if _, ok := s2Environments[e1.Id]; !ok {
+	if _, ok := s2Environments[e1Id]; !ok {
 		t.Fatalf("environment e1 should be in system s2 materialized view after update")
 	}
 }
 
 func TestEngine_SystemDeletionCascade(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	d1Id := "deployment-1"
-	d2Id := "deployment-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
 
-	e1Id := "environment-1"
-	e2Id := "environment-2"
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -342,7 +322,7 @@ func TestEngine_SystemDeletionCascade(t *testing.T) {
 }
 
 func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
-	systemId := "1"
+	systemId := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(systemId),
@@ -350,28 +330,13 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "critical",
-					"key":      "priority",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["priority"] == "critical"`),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "stage",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["stage"] == "dev"`),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "stage",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["stage"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -434,7 +399,7 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteSimple(t *testing.T) {
-	systemId := "test-system"
+	systemId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -466,7 +431,7 @@ func TestEngine_SystemDeleteSimple(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
-	systemId := "test-system"
+	systemId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -510,9 +475,9 @@ func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteMultiple(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	s3Id := "system-3"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	s3Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -577,9 +542,9 @@ func TestEngine_SystemDeleteMultiple(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteOnlyDeployments(t *testing.T) {
-	systemId := "test-system"
-	d1Id := "deployment-1"
-	d2Id := "deployment-2"
+	systemId := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -619,9 +584,9 @@ func TestEngine_SystemDeleteOnlyDeployments(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteOnlyEnvironments(t *testing.T) {
-	systemId := "test-system"
-	e1Id := "environment-1"
-	e2Id := "environment-2"
+	systemId := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(

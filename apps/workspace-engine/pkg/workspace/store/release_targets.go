@@ -6,7 +6,7 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/repository/indexstore"
+	"workspace-engine/pkg/workspace/store/repository/memory/indexstore"
 
 	"go.opentelemetry.io/otel"
 )

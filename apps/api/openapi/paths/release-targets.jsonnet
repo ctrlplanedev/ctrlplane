@@ -59,4 +59,27 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/release-targets/resource-preview': {
+    post: {
+      summary: 'Preview release targets for a resource',
+      operationId: 'previewReleaseTargetsForResource',
+      description: 'Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('ResourcePreviewRequest'),
+          },
+        },
+      },
+      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTargetPreview'))
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

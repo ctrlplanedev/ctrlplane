@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
@@ -35,14 +36,14 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	d1.JobAgentConfig = jobAgentConfig
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1.ResourceSelector = &oapi.Selector{}
 	_ = e1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource - this creates a release target
 	r1 := c.NewResource(workspaceID)
@@ -109,6 +110,23 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	if cfg["deploymentConfig"] != jobAgentConfig["deploymentConfig"] {
 		t.Fatalf("expected job job_agent_config deploymentConfig %s, got %s", jobAgentConfig["deploymentConfig"], cfg["deploymentConfig"])
 	}
+
+	// Verify DispatchContext
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgent.Id, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "test-deployment-config", job.DispatchContext.JobAgentConfig["deploymentConfig"])
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.Equal(t, d1.Id, job.DispatchContext.Release.ReleaseTarget.DeploymentId)
+	assert.Equal(t, e1.Id, job.DispatchContext.Release.ReleaseTarget.EnvironmentId)
+	assert.Equal(t, r1.Id, job.DispatchContext.Release.ReleaseTarget.ResourceId)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, d1.Id, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.Equal(t, e1.Id, job.DispatchContext.Environment.Id)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.Equal(t, r1.Id, job.DispatchContext.Resource.Id)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 }
 
 func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
@@ -130,20 +148,20 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create two environments with selectors to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
 	e1.ResourceSelector = &oapi.Selector{}
 	_ = e1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
 	e2.ResourceSelector = &oapi.Selector{}
 	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e2)
 
 	// Create three resources
 	r1 := c.NewResource(workspaceID)
@@ -186,7 +204,7 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 		t.Fatalf("expected %d pending jobs after deployment version creation, got %d", expectedJobs, len(pendingJobs))
 	}
 
-	// Verify all jobs are PENDING
+	// Verify all jobs are PENDING with correct DispatchContext
 	for _, job := range pendingJobs {
 		if job.Status != oapi.JobStatusPending {
 			t.Fatalf("expected job status PENDING, got %v", job.Status)
@@ -198,6 +216,15 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 		if release.ReleaseTarget.DeploymentId != d1.Id {
 			t.Fatalf("expected job deployment_id %s, got %s", d1.Id, release.ReleaseTarget.DeploymentId)
 		}
+
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgent.Id, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, d1.Id, job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, job.DispatchContext.Environment)
+		assert.NotNil(t, job.DispatchContext.Resource)
+		assert.NotNil(t, job.DispatchContext.Version)
 	}
 }
 
@@ -219,27 +246,17 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
 	d1Selector := &oapi.Selector{}
-	_ = d1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = d1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	d1.ResourceSelector = d1Selector
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment with a resource selector
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create resources with different metadata
 	r1 := c.NewResource(workspaceID)
@@ -324,7 +341,7 @@ func TestEngine_NoJobsCreatedWithoutReleaseTargets(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create a deployment version without any environments or resources
 	dv1 := c.NewDeploymentVersion()
@@ -367,7 +384,7 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
@@ -375,7 +392,7 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	e1Selector := &oapi.Selector{}
 	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -424,7 +441,7 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	// No JobAgentId set
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
@@ -432,7 +449,7 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	e1Selector := &oapi.Selector{}
 	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -473,6 +490,9 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	if job.JobAgentId != "" {
 		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
 	}
+
+	// InvalidJobAgent jobs should not have DispatchContext (dispatch was never called)
+	assert.Nil(t, job.DispatchContext, "InvalidJobAgent job should not have DispatchContext")
 
 	// Verify no pending jobs (InvalidJobAgent jobs are not pending)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
@@ -559,6 +579,10 @@ func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
 	if len(cfg) != 0 {
 		t.Errorf("expected empty job agent config, got %v", cfg)
 	}
+
+	// InvalidJobAgent jobs should not have DispatchContext
+	assert.Nil(t, job.DispatchContext, "InvalidJobAgent job should not have DispatchContext")
+
 	// Verify job is NOT in pending state
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {
@@ -631,14 +655,14 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-2"
 	d2.JobAgentId = &jobAgent.Id
 	d2.ResourceSelector = &oapi.Selector{}
 	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d2)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
@@ -646,7 +670,7 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	e1Selector := &oapi.Selector{}
 	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create two resources
 	r1 := c.NewResource(workspaceID)
@@ -733,9 +757,10 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJobIfRetryIsConfigured(t *testi
 	// can create a new job IF a retry policy with smart defaults is configured.
 	// Without a policy (strict mode), cancelled jobs would block redeployment.
 	// This demonstrates the value of explicit retry policies for infrastructure churn scenarios.
-	jobAgentId := "job-agent-1"
-	deploymentId := "deployment-1"
-	resourceId := "resource-1"
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	resourceId := uuid.New().String()
+	environmentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -751,7 +776,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJobIfRetryIsConfigured(t *testi
 				),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentID("env-prod"),
+				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("env-prod"),
 				integration.EnvironmentCelResourceSelector("true"),
 			),
@@ -834,9 +859,10 @@ func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
 	// The cancelled job counts as an attempt, preventing new job creation.
 	// To allow redeployment after resource deletion, users must configure an
 	// explicit retry policy with smart defaults.
-	jobAgentId := "job-agent-1"
-	deploymentId := "deployment-1"
-	resourceId := "resource-1"
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	resourceId := uuid.New().String()
+	environmentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -852,7 +878,7 @@ func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
 				),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentID("env-prod"),
+				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("env-prod"),
 				integration.EnvironmentCelResourceSelector("true"),
 			),
@@ -914,13 +940,13 @@ func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
 }
 
 func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
-	d1Id := "deployment-1"
-	dv1Id := "dv1"
-	e1Id := "env-dev"
-	e2Id := "env-prod"
-	r1Id := "resource-dev"
-	r2Id := "resource-prod"
-	jobAgentId := "job-agent-1"
+	d1Id := uuid.New().String()
+	dv1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+	jobAgentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -940,22 +966,12 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentName(e1Id),
 				integration.EnvironmentID(e1Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName(e2Id),
 				integration.EnvironmentID(e2Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -970,10 +986,10 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 		),
 	)
 
-	e1, _ := engine.Workspace().Environments().Get("env-dev")
-	e2, _ := engine.Workspace().Environments().Get("env-prod")
-	r1, _ := engine.Workspace().Resources().Get("resource-dev")
-	r2, _ := engine.Workspace().Resources().Get("resource-prod")
+	e1, _ := engine.Workspace().Environments().Get(e1Id)
+	e2, _ := engine.Workspace().Environments().Get(e2Id)
+	r1, _ := engine.Workspace().Resources().Get(r1Id)
+	r2, _ := engine.Workspace().Resources().Get(r2Id)
 
 	// Verify release targets (2 targets: 1 for dev, 1 for prod)
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
@@ -1017,11 +1033,11 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 }
 
 func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
-	jobAgentId := "job-agent-1"
+	jobAgentId := uuid.New().String()
 
-	r1Id := "resource-1"
-	r2Id := "resource-2"
-	dv1Id := "dv1"
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+	dv1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -1046,8 +1062,8 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 		integration.WithResource(integration.ResourceID(r2Id)),
 	)
 
-	r1, _ := engine.Workspace().Resources().Get("resource-1")
-	r2, _ := engine.Workspace().Resources().Get("resource-2")
+	r1, _ := engine.Workspace().Resources().Get(r1Id)
+	r2, _ := engine.Workspace().Resources().Get(r2Id)
 	ctx := context.Background()
 
 	// Verify 2 jobs were created
@@ -1135,32 +1151,22 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "dev"`})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
 	e2Selector := &oapi.Selector{}
-	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = e2Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	e2.ResourceSelector = e2Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e2)
 
 	// Create resources
 	r1 := c.NewResource(workspaceID)

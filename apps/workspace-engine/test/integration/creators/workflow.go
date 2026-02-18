@@ -7,54 +7,54 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewWorkflowTemplate(workspaceID string) *oapi.WorkflowTemplate {
+func NewWorkflow(workspaceID string) *oapi.Workflow {
 	id := uuid.New().String()
 	idSubstring := id[:8]
 
-	workflowTemplate := &oapi.WorkflowTemplate{
+	workflow := &oapi.Workflow{
 		Id:     id,
 		Name:   fmt.Sprintf("workflow-template-%s", idSubstring),
 		Inputs: []oapi.WorkflowInput{},
 		Jobs:   []oapi.WorkflowJobTemplate{},
 	}
 
-	return workflowTemplate
+	return workflow
 }
 
-func NewStringWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
+func NewStringWorkflowInput(workflowID string) *oapi.WorkflowInput {
 	input := &oapi.WorkflowInput{}
 	name := fmt.Sprintf("test-input-%s", uuid.New().String()[:8])
 	_ = input.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    name,
+		Key:     name,
 		Type:    oapi.String,
 		Default: nil,
 	})
 	return input
 }
 
-func NewNumberWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
+func NewNumberWorkflowInput(workflowID string) *oapi.WorkflowInput {
 	input := &oapi.WorkflowInput{}
 	name := fmt.Sprintf("test-input-%s", uuid.New().String()[:8])
 	_ = input.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
-		Name:    name,
+		Key:     name,
 		Type:    oapi.Number,
 		Default: nil,
 	})
 	return input
 }
 
-func NewBooleanWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
+func NewBooleanWorkflowInput(workflowID string) *oapi.WorkflowInput {
 	input := &oapi.WorkflowInput{}
 	name := fmt.Sprintf("test-input-%s", uuid.New().String()[:8])
 	_ = input.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
-		Name:    name,
+		Key:     name,
 		Type:    oapi.Boolean,
 		Default: nil,
 	})
 	return input
 }
 
-func NewWorkflowJobTemplate(workflowTemplateID string) *oapi.WorkflowJobTemplate {
+func NewWorkflowJobTemplate(workflowID string) *oapi.WorkflowJobTemplate {
 	id := uuid.New().String()
 	idSubstring := id[:8]
 	jobTemplate := &oapi.WorkflowJobTemplate{

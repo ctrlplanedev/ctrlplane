@@ -8,16 +8,19 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_PolicyPriorityChange_MidDeployment tests that changing policy
 // priority during an active deployment affects subsequent evaluations.
 func TestEngine_PolicyPriorityChange_MidDeployment(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -92,11 +95,11 @@ func TestEngine_PolicyPriorityChange_MidDeployment(t *testing.T) {
 // TestEngine_PolicyEnabledToggle_ActiveDeployments tests that disabling a policy
 // during active deployments allows blocked deployments to proceed.
 func TestEngine_PolicyEnabledToggle_ActiveDeployments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -158,11 +161,11 @@ func TestEngine_PolicyEnabledToggle_ActiveDeployments(t *testing.T) {
 // TestEngine_PolicyRulesUpdate_ExistingApprovals tests that changing approval
 // requirements mid-process affects whether existing approvals are sufficient.
 func TestEngine_PolicyRulesUpdate_ExistingApprovals(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -260,12 +263,12 @@ func TestEngine_PolicyRulesUpdate_ExistingApprovals(t *testing.T) {
 // TestEngine_PolicySelectorUpdate_ReleaseTargetScope tests that updating
 // policy selectors changes which release targets are affected.
 func TestEngine_PolicySelectorUpdate_ReleaseTargetScope(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environment1ID := "env-prod"
-	environment2ID := "env-dev"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environment1ID := uuid.New().String()
+	environment2ID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -364,11 +367,11 @@ func TestEngine_PolicySelectorUpdate_ReleaseTargetScope(t *testing.T) {
 // TestEngine_PolicyDelete_WithPendingApprovals tests that deleting a policy
 // allows previously blocked deployments to proceed.
 func TestEngine_PolicyDelete_WithPendingApprovals(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -444,11 +447,11 @@ func TestEngine_PolicyDelete_WithPendingApprovals(t *testing.T) {
 // TestEngine_PolicyAdded_RetroactiveBlocking tests that adding a new policy
 // can block new deployments but doesn't affect already running jobs.
 func TestEngine_PolicyAdded_RetroactiveBlocking(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-new"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -488,6 +491,7 @@ func TestEngine_PolicyAdded_RetroactiveBlocking(t *testing.T) {
 	if v1Job.Status == oapi.JobStatusCancelled {
 		t.Fatalf("v1.0.0 job should not be cancelled")
 	}
+	assert.NotNil(t, v1Job.DispatchContext)
 
 	// Now add a policy requiring approval
 	policy := c.NewPolicy(engine.Workspace().ID)

@@ -190,48 +190,44 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
                "slug",
-               "systemId",
                "jobAgentConfig",
                "metadata"
             ],
             "type": "object"
          },
-         "DeploymentAndSystem": {
+         "DeploymentAndSystems": {
             "properties": {
                "deployment": {
                   "$ref": "#/components/schemas/Deployment"
                },
-               "system": {
-                  "$ref": "#/components/schemas/System"
+               "systems": {
+                  "items": {
+                     "$ref": "#/components/schemas/System"
+                  },
+                  "type": "array"
                }
             },
             "required": [
                "deployment",
-               "system"
+               "systems"
             ],
             "type": "object"
          },
          "DeploymentDependencyRule": {
             "properties": {
-               "dependsOnDeploymentSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "reference": {
-                  "description": "Reference to the entity that this rule depends on",
+               "dependsOn": {
+                  "description": "CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.",
                   "type": "string"
                }
             },
             "required": [
-               "dependsOnDeploymentSelector"
+               "dependsOn"
             ],
             "type": "object"
          },
@@ -413,6 +409,51 @@
             ],
             "type": "object"
          },
+         "DispatchContext": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "jobAgent": {
+                  "$ref": "#/components/schemas/JobAgent"
+               },
+               "jobAgentConfig": {
+                  "$ref": "#/components/schemas/JobAgentConfig"
+               },
+               "release": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/Resource"
+               },
+               "variables": {
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/LiteralValue"
+                  },
+                  "type": "object"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               },
+               "workflow": {
+                  "$ref": "#/components/schemas/Workflow"
+               },
+               "workflowJob": {
+                  "$ref": "#/components/schemas/WorkflowJob"
+               },
+               "workflowRun": {
+                  "$ref": "#/components/schemas/WorkflowRun"
+               }
+            },
+            "required": [
+               "jobAgent",
+               "jobAgentConfig"
+            ],
+            "type": "object"
+         },
          "EntityRelation": {
             "properties": {
                "direction": {
@@ -464,15 +505,11 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemId": {
-                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
-               "systemId",
                "createdAt",
                "metadata"
             ],
@@ -700,6 +737,9 @@
                   "format": "date-time",
                   "type": "string"
                },
+               "dispatchContext": {
+                  "$ref": "#/components/schemas/DispatchContext"
+               },
                "externalId": {
                   "type": "string"
                },
@@ -865,6 +905,7 @@
                      "enum": [
                         "completedAt",
                         "createdAt",
+                        "dispatchContext",
                         "externalId",
                         "id",
                         "jobAgentConfig",
@@ -1588,6 +1629,25 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetPreview": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "system": {
+                  "$ref": "#/components/schemas/System"
+               }
+            },
+            "required": [
+               "system",
+               "deployment",
+               "environment"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetState": {
             "properties": {
                "currentRelease": {
@@ -1740,6 +1800,41 @@
                "identifier",
                "createdAt",
                "workspaceId",
+               "config",
+               "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourcePreviewRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "version",
+               "kind",
+               "identifier",
                "config",
                "metadata"
             ],
@@ -2021,6 +2116,36 @@
                "id",
                "workspaceId",
                "name"
+            ],
+            "type": "object"
+         },
+         "SystemDeploymentLink": {
+            "properties": {
+               "deploymentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "SystemEnvironmentLink": {
+            "properties": {
+               "environmentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "environmentId"
             ],
             "type": "object"
          },
@@ -2334,17 +2459,26 @@
                   "type": "string"
                },
                "inputs": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
                },
-               "workflowTemplateId": {
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
                   "type": "string"
                }
             },
             "required": [
                "id",
-               "workflowTemplateId",
-               "inputs"
+               "name",
+               "inputs",
+               "jobs"
             ],
             "type": "object"
          },
@@ -2363,7 +2497,7 @@
                "default": {
                   "type": "boolean"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2374,7 +2508,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
@@ -2392,6 +2526,9 @@
                },
                {
                   "$ref": "#/components/schemas/WorkflowArrayInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowObjectInput"
                }
             ]
          },
@@ -2412,13 +2549,13 @@
                   "description": "Reference to the job agent",
                   "type": "string"
                },
-               "workflowId": {
+               "workflowRunId": {
                   "type": "string"
                }
             },
             "required": [
                "id",
-               "workflowId",
+               "workflowRunId",
                "index",
                "ref",
                "config"
@@ -2466,6 +2603,10 @@
                   "type": "object"
                },
                "id": {
+                  "type": "string"
+               },
+               "if": {
+                  "description": "CEL expression to determine if the job should run",
                   "type": "string"
                },
                "matrix": {
@@ -2517,7 +2658,7 @@
                   },
                   "type": "array"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2528,7 +2669,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
@@ -2538,7 +2679,7 @@
                "default": {
                   "type": "number"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2549,14 +2690,77 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
          },
+         "WorkflowObjectInput": {
+            "properties": {
+               "default": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "key": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "object"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "key",
+               "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowRun": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "inputs": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "workflowId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "inputs"
+            ],
+            "type": "object"
+         },
+         "WorkflowRunWithJobs": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowRun"
+               },
+               {
+                  "properties": {
+                     "jobs": {
+                        "items": {
+                           "$ref": "#/components/schemas/WorkflowJobWithJobs"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "jobs"
+                  ],
+                  "type": "object"
+               }
+            ]
+         },
          "WorkflowSelectorArrayInput": {
             "properties": {
-               "name": {
+               "key": {
                   "type": "string"
                },
                "selector": {
@@ -2586,7 +2790,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type",
                "selector"
             ],
@@ -2597,7 +2801,7 @@
                "default": {
                   "type": "string"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2608,60 +2812,10 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
-         },
-         "WorkflowTemplate": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "inputs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowInput"
-                  },
-                  "type": "array"
-               },
-               "jobs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowJobTemplate"
-                  },
-                  "type": "array"
-               },
-               "name": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "name",
-               "inputs",
-               "jobs"
-            ],
-            "type": "object"
-         },
-         "WorkflowWithJobs": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/Workflow"
-               },
-               {
-                  "properties": {
-                     "jobs": {
-                        "items": {
-                           "$ref": "#/components/schemas/WorkflowJobWithJobs"
-                        },
-                        "type": "array"
-                     }
-                  },
-                  "required": [
-                     "jobs"
-                  ],
-                  "type": "object"
-               }
-            ]
          }
       }
    },
@@ -2935,7 +3089,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/DeploymentAndSystem"
+                                    "$ref": "#/components/schemas/DeploymentAndSystems"
                                  },
                                  "type": "array"
                               },
@@ -4442,7 +4596,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/JobWithRelease"
+                                    "$ref": "#/components/schemas/Job"
                                  },
                                  "type": "array"
                               },
@@ -5286,6 +5440,105 @@
                }
             },
             "summary": "Evaluate policies for a release target"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/resource-preview": {
+         "post": {
+            "description": "Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.",
+            "operationId": "previewReleaseTargetsForResource",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ResourcePreviewRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ReleaseTargetPreview"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Preview release targets for a resource"
          }
       },
       "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
@@ -6744,10 +6997,10 @@
             "summary": "Get system"
          }
       },
-      "/v1/workspaces/{workspaceId}/workflow-templates": {
+      "/v1/workspaces/{workspaceId}/workflows": {
          "get": {
-            "description": "Gets all workflow templates for a workspace.",
-            "operationId": "getWorkflowTemplates",
+            "description": "Returns a list of workflows.",
+            "operationId": "listWorkflows",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6790,7 +7043,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/WorkflowTemplate"
+                                    "$ref": "#/components/schemas/Workflow"
                                  },
                                  "type": "array"
                               },
@@ -6840,13 +7093,13 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Get all workflow templates"
+            "summary": "List workflows"
          }
       },
-      "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}": {
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}": {
          "get": {
-            "description": "Gets a workflow template.",
-            "operationId": "getWorkflowTemplate",
+            "description": "Gets a workflow by ID.",
+            "operationId": "getWorkflow",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6858,9 +7111,9 @@
                   }
                },
                {
-                  "description": "ID of the workflow template",
+                  "description": "ID of the workflow",
                   "in": "path",
-                  "name": "workflowTemplateId",
+                  "name": "workflowId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -6872,11 +7125,11 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowTemplate"
+                           "$ref": "#/components/schemas/Workflow"
                         }
                      }
                   },
-                  "description": "Get workflow template"
+                  "description": "Get workflow"
                },
                "400": {
                   "content": {
@@ -6899,13 +7152,13 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Get a workflow template"
+            "summary": "Get a workflow"
          }
       },
-      "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows": {
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
          "get": {
-            "description": "Gets all workflows for a workflow template.",
-            "operationId": "getWorkflowsByTemplate",
+            "description": "Gets all workflow runs for a workflow by ID.",
+            "operationId": "getWorkflowRuns",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6917,9 +7170,9 @@
                   }
                },
                {
-                  "description": "ID of the workflow template",
+                  "description": "ID of the workflow",
                   "in": "path",
-                  "name": "workflowTemplateId",
+                  "name": "workflowId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -6957,7 +7210,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/WorkflowWithJobs"
+                                    "$ref": "#/components/schemas/WorkflowRunWithJobs"
                                  },
                                  "type": "array"
                               },
@@ -7007,7 +7260,7 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Get all workflows for a workflow template"
+            "summary": "Get all workflow runs for a workflow"
          }
       }
    }

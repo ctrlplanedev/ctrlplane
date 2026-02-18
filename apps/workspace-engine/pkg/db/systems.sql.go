@@ -8,40 +8,56 @@ package db
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
-const listSystemsByWorkspaceID = `-- name: ListSystemsByWorkspaceID :many
-SELECT
-    s.id,
-    s.workspace_id,
-    s.name,
-    s.description
-FROM system s
-WHERE s.workspace_id = $1
+const deleteSystem = `-- name: DeleteSystem :exec
+DELETE FROM system WHERE id = $1
 `
 
-type ListSystemsByWorkspaceIDRow struct {
-	ID          pgtype.UUID
-	WorkspaceID pgtype.UUID
-	Name        string
-	Description string
+func (q *Queries) DeleteSystem(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteSystem, id)
+	return err
 }
 
-func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID pgtype.UUID) ([]ListSystemsByWorkspaceIDRow, error) {
+const getSystemByID = `-- name: GetSystemByID :one
+SELECT id, name, description, workspace_id, metadata FROM system WHERE id = $1
+`
+
+func (q *Queries) GetSystemByID(ctx context.Context, id uuid.UUID) (System, error) {
+	row := q.db.QueryRow(ctx, getSystemByID, id)
+	var i System
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WorkspaceID,
+		&i.Metadata,
+	)
+	return i, err
+}
+
+const listSystemsByWorkspaceID = `-- name: ListSystemsByWorkspaceID :many
+SELECT id, name, description, workspace_id, metadata
+FROM system
+WHERE workspace_id = $1
+`
+
+func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]System, error) {
 	rows, err := q.db.Query(ctx, listSystemsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListSystemsByWorkspaceIDRow
+	var items []System
 	for rows.Next() {
-		var i ListSystemsByWorkspaceIDRow
+		var i System
 		if err := rows.Scan(
 			&i.ID,
-			&i.WorkspaceID,
 			&i.Name,
 			&i.Description,
+			&i.WorkspaceID,
+			&i.Metadata,
 		); err != nil {
 			return nil, err
 		}
@@ -51,4 +67,40 @@ func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID pgty
 		return nil, err
 	}
 	return items, nil
+}
+
+const upsertSystem = `-- name: UpsertSystem :one
+INSERT INTO system (id, name, description, workspace_id, metadata)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO UPDATE
+SET name = EXCLUDED.name, description = EXCLUDED.description,
+    workspace_id = EXCLUDED.workspace_id, metadata = EXCLUDED.metadata
+RETURNING id, name, description, workspace_id, metadata
+`
+
+type UpsertSystemParams struct {
+	ID          uuid.UUID
+	Name        string
+	Description string
+	WorkspaceID uuid.UUID
+	Metadata    []byte
+}
+
+func (q *Queries) UpsertSystem(ctx context.Context, arg UpsertSystemParams) (System, error) {
+	row := q.db.QueryRow(ctx, upsertSystem,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.WorkspaceID,
+		arg.Metadata,
+	)
+	var i System
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WorkspaceID,
+		&i.Metadata,
+	)
+	return i, err
 }

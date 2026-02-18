@@ -70,7 +70,6 @@ func (c *ResourceProviderCache) initCache() {
 		}
 
 		c.cache = cache
-		log.Info("Initialized resource provider batch cache")
 	})
 }
 

@@ -9,11 +9,12 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_ResourceVariableCreation(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -90,7 +91,7 @@ func TestEngine_ResourceVariableCreation(t *testing.T) {
 }
 
 func TestEngine_ResourceVariableReferenceValue(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -128,7 +129,7 @@ func TestEngine_ResourceVariableReferenceValue(t *testing.T) {
 }
 
 func TestEngine_ResourceVariableUpdate(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -169,7 +170,7 @@ func TestEngine_ResourceVariableUpdate(t *testing.T) {
 }
 
 func TestEngine_ResourceVariableDelete(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -219,7 +220,7 @@ func TestEngine_ResourceVariableDelete(t *testing.T) {
 }
 
 func TestEngine_ResourceVariableLiteralValue(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -263,12 +264,14 @@ func TestEngine_ResourceVariableLiteralValue(t *testing.T) {
 }
 
 func TestEngine_ResourceVariablesBulkUpdate_RemoveVariable(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
+	jobAgentID := uuid.New().String()
+	dvID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
 		integration.WithJobAgent(
-			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("my-job-agent"),
 		),
 		integration.WithSystem(
@@ -279,11 +282,11 @@ func TestEngine_ResourceVariablesBulkUpdate_RemoveVariable(t *testing.T) {
 			),
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-1"),
-				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable("env"),
 				integration.WithDeploymentVersion(
-					integration.DeploymentVersionID("deployment-version-1"),
+					integration.DeploymentVersionID(dvID),
 				),
 			),
 		),
@@ -319,12 +322,14 @@ func TestEngine_ResourceVariablesBulkUpdate_RemoveVariable(t *testing.T) {
 }
 
 func TestEngine_ResourceVariablesBulkUpdate_AddVariable(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
 		integration.WithJobAgent(
-			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("my-job-agent"),
 		),
 		integration.WithSystem(
@@ -334,9 +339,9 @@ func TestEngine_ResourceVariablesBulkUpdate_AddVariable(t *testing.T) {
 				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
-				integration.DeploymentID("deployment-1"),
+				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("deployment-1"),
-				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable("env"),
 				integration.WithDeploymentVariable("app_name"),
@@ -352,7 +357,7 @@ func TestEngine_ResourceVariablesBulkUpdate_AddVariable(t *testing.T) {
 	ctx := context.Background()
 
 	dv := c.NewDeploymentVersion()
-	dv.DeploymentId = "deployment-1"
+	dv.DeploymentId = deploymentID
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	pendingJobs := engine.Workspace().Jobs().GetPending()
@@ -418,12 +423,14 @@ func TestEngine_ResourceVariablesBulkUpdate_AddVariable(t *testing.T) {
 }
 
 func TestEngine_ResourceVariablesBulkUpdate_UpdateVariable(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
 		integration.WithJobAgent(
-			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("my-job-agent"),
 		),
 		integration.WithSystem(
@@ -433,9 +440,9 @@ func TestEngine_ResourceVariablesBulkUpdate_UpdateVariable(t *testing.T) {
 				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
-				integration.DeploymentID("deployment-1"),
+				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("deployment-1"),
-				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable("env"),
 			),
@@ -450,7 +457,7 @@ func TestEngine_ResourceVariablesBulkUpdate_UpdateVariable(t *testing.T) {
 	ctx := context.Background()
 
 	dv := c.NewDeploymentVersion()
-	dv.DeploymentId = "deployment-1"
+	dv.DeploymentId = deploymentID
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	pendingJobs := engine.Workspace().Jobs().GetPending()

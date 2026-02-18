@@ -49,7 +49,7 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 	scope evaluator.EvaluatorScope,
 ) *oapi.RuleEvaluation {
 	version := scope.Version
-	releaseTarget := scope.ReleaseTarget
+	releaseTarget := scope.ReleaseTarget()
 
 	if version.Status == oapi.DeploymentVersionStatusReady {
 		return results.NewAllowedResult("Version is ready").

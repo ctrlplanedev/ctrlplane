@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewPolicies(store *Store) *Policies {
@@ -15,7 +15,7 @@ func NewPolicies(store *Store) *Policies {
 }
 
 type Policies struct {
-	repo  *repository.InMemoryStore
+	repo  *memory.InMemory
 	store *Store
 }
 

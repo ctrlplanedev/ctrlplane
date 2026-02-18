@@ -35,7 +35,6 @@ func createTestEnvironment(systemID, id, name string) *oapi.Environment {
 		Id:               id,
 		Name:             name,
 		Description:      &description,
-		SystemId:         systemID,
 		ResourceSelector: selector,
 		CreatedAt:        time.Now(),
 	}
@@ -51,7 +50,6 @@ func createTestDeployment(_, systemID, id, name string) *oapi.Deployment {
 		Id:               id,
 		Name:             name,
 		Slug:             name,
-		SystemId:         systemID,
 		Description:      &description,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,

@@ -24,7 +24,7 @@ function useEnvironmentsSearch() {
     workspaceId: workspace.id,
   });
 
-  return { environments: data?.items ?? [], isLoading };
+  return { environments: data ?? [], isLoading };
 }
 
 export function EnvironmentFilter() {

@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/repository"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 )
 
@@ -14,7 +15,7 @@ var deploymentsTracer = otel.Tracer("workspace/store/deployments")
 
 func NewDeployments(store *Store) *Deployments {
 	deployments := &Deployments{
-		repo:  store.repo,
+		repo:  store.repo.Deployments(),
 		store: store,
 	}
 
@@ -22,37 +23,44 @@ func NewDeployments(store *Store) *Deployments {
 }
 
 type Deployments struct {
-	repo  *repository.InMemoryStore
+	repo  repository.DeploymentRepo
 	store *Store
 }
 
+// SetRepo replaces the underlying DeploymentRepo implementation.
+func (e *Deployments) SetRepo(repo repository.DeploymentRepo) {
+	e.repo = repo
+}
+
 func (e *Deployments) Get(id string) (*oapi.Deployment, bool) {
-	return e.repo.Deployments.Get(id)
+	return e.repo.Get(id)
 }
 
 func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) error {
 	_, span := deploymentsTracer.Start(ctx, "UpsertDeployment")
 	defer span.End()
 
-	e.repo.Deployments.Set(deployment.Id, deployment)
+	if err := e.repo.Set(deployment); err != nil {
+		log.Error("Failed to upsert deployment", "error", err)
+	}
 	e.store.changeset.RecordUpsert(deployment)
 
 	return nil
 }
 
 func (e *Deployments) Remove(ctx context.Context, id string) {
-	deployment, ok := e.repo.Deployments.Get(id)
+	deployment, ok := e.repo.Get(id)
 	if !ok || deployment == nil {
 		return
 	}
 
-	e.repo.Deployments.Remove(id)
+	e.repo.Remove(id)
 	e.store.changeset.RecordDelete(deployment)
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {
 	vars := make(map[string]*oapi.DeploymentVariable)
-	for _, variable := range e.repo.DeploymentVariables.Items() {
+	for _, variable := range e.store.repo.DeploymentVariables.Items() {
 		if variable.DeploymentId == deploymentId {
 			vars[variable.Key] = variable
 		}
@@ -61,7 +69,7 @@ func (e *Deployments) Variables(deploymentId string) map[string]*oapi.Deployment
 }
 
 func (e *Deployments) Items() map[string]*oapi.Deployment {
-	return e.repo.Deployments.Items()
+	return e.repo.Items()
 }
 
 func (e *Deployments) Resources(ctx context.Context, deploymentId string) ([]*oapi.Resource, error) {

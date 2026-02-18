@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { asc, eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -15,21 +17,20 @@ export const systemsRouter = router({
           .perform(Permission.SystemList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.object({ workspaceId: z.string() }))
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/systems",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-            },
-            query: { limit: 1000, offset: 0 },
-          },
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ input, ctx }) => {
+      const systems = await ctx.db.query.system.findMany({
+        where: eq(schema.system.workspaceId, input.workspaceId),
+        limit: 1000,
+        offset: 0,
+        with: {
+          systemDeployments: true,
+          systemEnvironments: true,
         },
-      );
+        orderBy: [asc(schema.system.name), asc(schema.system.id)],
+      });
 
-      return response.data;
+      return systems;
     }),
 
   create: protectedProcedure

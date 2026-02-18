@@ -71,12 +71,38 @@ const getReleaseTargetState: AsyncTypedHandler<
   res.status(200).json(stateResponse.data);
 };
 
+const previewReleaseTargetsForResource: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/release-targets/resource-preview",
+  "post"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { limit, offset } = req.query;
+
+  const previewResponse = await getClientFor(workspaceId).POST(
+    "/v1/workspaces/{workspaceId}/release-targets/resource-preview",
+    {
+      params: {
+        path: { workspaceId },
+        query: { limit, offset },
+      },
+      body: req.body,
+    },
+  );
+
+  if (previewResponse.error != null)
+    throw new ApiError(
+      previewResponse.error.error ?? "Failed to preview release targets",
+      previewResponse.response.status,
+    );
+
+  res.status(200).json(previewResponse.data);
+};
+
 const releaseTargetKeyRouter = Router({ mergeParams: true })
   .get("/jobs", asyncHandler(getReleaseTargetJobs))
   .get("/desired-release", asyncHandler(getReleaseTargetDesiredRelease))
   .get("/state", asyncHandler(getReleaseTargetState));
 
-export const releaseTargetsRouter = Router({ mergeParams: true }).use(
-  "/:releaseTargetKey",
-  releaseTargetKeyRouter,
-);
+export const releaseTargetsRouter = Router({ mergeParams: true })
+  .post("/resource-preview", asyncHandler(previewReleaseTargetsForResource))
+  .use("/:releaseTargetKey", releaseTargetKeyRouter);

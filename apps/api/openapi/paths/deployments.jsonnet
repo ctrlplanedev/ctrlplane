@@ -10,7 +10,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentAndSystem')),
+      responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentAndSystems')),
     },
     post: {
       summary: 'Create deployment',

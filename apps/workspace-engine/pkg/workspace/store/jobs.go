@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewJobs(store *Store) *Jobs {
@@ -16,7 +16,7 @@ func NewJobs(store *Store) *Jobs {
 }
 
 type Jobs struct {
-	repo  *repository.InMemoryStore
+	repo  *memory.InMemory
 	store *Store
 }
 
@@ -31,6 +31,15 @@ func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
 
 func (j *Jobs) Get(id string) (*oapi.Job, bool) {
 	return j.repo.Jobs.Get(id)
+}
+
+func (j *Jobs) Remove(ctx context.Context, id string) {
+	job, ok := j.repo.Jobs.Get(id)
+	if !ok || job == nil {
+		return
+	}
+	_ = j.repo.Jobs.Remove(id)
+	j.store.changeset.RecordDelete(job)
 }
 
 func (j *Jobs) GetPending() map[string]*oapi.Job {

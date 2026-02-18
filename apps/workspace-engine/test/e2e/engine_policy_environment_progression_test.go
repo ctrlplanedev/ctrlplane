@@ -9,16 +9,17 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_PolicyEnvironmentProgression_TriggersGradualRollout(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	qaEnvironmentID := "qa-environment"
-	prodEnvironmentID := "prod-environment"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	qaEnvironmentID := uuid.New().String()
+	prodEnvironmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	minSuccessPercentage := float32(100)
 
@@ -109,14 +110,14 @@ func TestEngine_PolicyEnvironmentProgression_TriggersGradualRollout(t *testing.T
 }
 
 func TestEngine_PolicyEnvironmentProgression_OnlyTriggersWhenThresholdCrossed(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	qaEnvironmentID := "qa-environment"
-	prodEnvironmentID := "prod-environment"
-	resource1ID := "resource-1"
-	resource2ID := "resource-2"
-	resource3ID := "resource-3"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	qaEnvironmentID := uuid.New().String()
+	prodEnvironmentID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	resource3ID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	minSuccessPercentage := float32(100)
 
@@ -233,13 +234,13 @@ func TestEngine_PolicyEnvironmentProgression_OnlyTriggersWhenThresholdCrossed(t 
 }
 
 func TestEngine_PolicyEnvironmentProgression_TriggersAtPartialThreshold(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	qaEnvironmentID := "qa-environment"
-	prodEnvironmentID := "prod-environment"
-	resource1ID := "resource-1"
-	resource2ID := "resource-2"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	qaEnvironmentID := uuid.New().String()
+	prodEnvironmentID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	minSuccessPercentage := float32(50)
 
@@ -345,13 +346,13 @@ func TestEngine_PolicyEnvironmentProgression_TriggersAtPartialThreshold(t *testi
 }
 
 func TestEngine_PolicyEnvironmentProgression_TriggersGradualRolloutStart(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	qaEnvironmentID := "qa-environment"
-	prodEnvironmentID := "prod-environment"
-	resourceID := "resource-1"
-	envProgressionPolicyID := "env-progression-policy"
-	gradualRolloutPolicyID := "gradual-rollout-policy"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	qaEnvironmentID := uuid.New().String()
+	prodEnvironmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	envProgressionPolicyID := uuid.New().String()
+	gradualRolloutPolicyID := uuid.New().String()
 
 	minSuccessPercentage := float32(100)
 	timeScaleInterval := int32(60)

@@ -5,7 +5,6 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
-	"workspace-engine/pkg/workspace"
 
 	"github.com/gin-gonic/gin"
 )
@@ -90,58 +89,26 @@ func (s *Jobs) GetJobWithRelease(c *gin.Context, workspaceId string, jobId strin
 	})
 }
 
-func (s *Jobs) getJobWithRelease(ws *workspace.Workspace, job *oapi.Job) *oapi.JobWithRelease {
-	release, ok := ws.Releases().Get(job.ReleaseId)
-	if !ok {
-		return nil
-	}
-
-	environment, ok := ws.Environments().Get(release.ReleaseTarget.EnvironmentId)
-	if !ok {
-		return nil
-	}
-
-	deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
-	if !ok {
-		return nil
-	}
-
-	resource, ok := ws.Resources().Get(release.ReleaseTarget.ResourceId)
-	if !ok {
-		return nil
-	}
-
-	return &oapi.JobWithRelease{
-		Job:         *job,
-		Release:     *release,
-		Environment: environment,
-		Deployment:  deployment,
-		Resource:    resource,
-	}
-}
-
-func (s *Jobs) getFilteredJobs(ws *workspace.Workspace, allJobs []*oapi.Job, params oapi.GetJobsParams) ([]*oapi.JobWithRelease, error) {
-	filteredJobs := make([]*oapi.JobWithRelease, 0)
+func (s *Jobs) getFilteredJobs(allJobs []*oapi.Job, params oapi.GetJobsParams) ([]*oapi.Job, error) {
+	filteredJobs := make([]*oapi.Job, 0)
 
 	for _, job := range allJobs {
-		jobWithRelease := s.getJobWithRelease(ws, job)
-		if jobWithRelease == nil {
+		if job.DispatchContext == nil {
+			continue
+		}
+		if params.ResourceId != nil && job.DispatchContext.Resource.Id != *params.ResourceId {
 			continue
 		}
 
-		if params.ResourceId != nil && jobWithRelease.Resource.Id != *params.ResourceId {
+		if params.EnvironmentId != nil && job.DispatchContext.Environment.Id != *params.EnvironmentId {
 			continue
 		}
 
-		if params.EnvironmentId != nil && jobWithRelease.Environment.Id != *params.EnvironmentId {
+		if params.DeploymentId != nil && job.DispatchContext.Deployment.Id != *params.DeploymentId {
 			continue
 		}
 
-		if params.DeploymentId != nil && jobWithRelease.Deployment.Id != *params.DeploymentId {
-			continue
-		}
-
-		filteredJobs = append(filteredJobs, jobWithRelease)
+		filteredJobs = append(filteredJobs, job)
 	}
 
 	return filteredJobs, nil
@@ -179,7 +146,7 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 
 	hasFilterParams := params.ResourceId != nil || params.EnvironmentId != nil || params.DeploymentId != nil
 	if hasFilterParams {
-		filteredJobs, err := s.getFilteredJobs(ws, items, params)
+		filteredJobs, err := s.getFilteredJobs(items, params)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to get filtered jobs: " + err.Error(),
@@ -204,19 +171,13 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 	start := min(offset, total)
 	end := min(start+limit, total)
 
-	jobsWithRelease := make([]*oapi.JobWithRelease, 0, end-start)
-
-	for _, job := range items[start:end] {
-		jobWithRelease := s.getJobWithRelease(ws, job)
-		if jobWithRelease != nil {
-			jobsWithRelease = append(jobsWithRelease, jobWithRelease)
-		}
-	}
+	paginatedJobs := make([]*oapi.Job, 0, end-start)
+	paginatedJobs = append(paginatedJobs, items[start:end]...)
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  jobsWithRelease,
+		"items":  paginatedJobs,
 	})
 }

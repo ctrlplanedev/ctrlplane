@@ -6,10 +6,12 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_ResourceProviderCreation(t *testing.T) {
-	providerID := "provider-1"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -43,7 +45,7 @@ func TestEngine_ResourceProviderCreation(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderUpdate(t *testing.T) {
-	providerID := "provider-1"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -90,7 +92,7 @@ func TestEngine_ResourceProviderUpdate(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderDelete(t *testing.T) {
-	providerID := "provider-1"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -120,10 +122,10 @@ func TestEngine_ResourceProviderDelete(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderDelete_NullsResourceProviderID(t *testing.T) {
-	providerID := "provider-1"
-	resource1ID := "resource-1"
-	resource2ID := "resource-2"
-	resource3ID := "resource-3"
+	providerID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	resource3ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -211,9 +213,9 @@ func TestEngine_ResourceProviderDelete_NullsResourceProviderID(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderItems(t *testing.T) {
-	provider1ID := "provider-1"
-	provider2ID := "provider-2"
-	provider3ID := "provider-3"
+	provider1ID := uuid.New().String()
+	provider2ID := uuid.New().String()
+	provider3ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -266,10 +268,10 @@ func TestEngine_ResourceProviderItems(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderMultipleDeletes(t *testing.T) {
-	provider1ID := "provider-1"
-	provider2ID := "provider-2"
-	resource1ID := "resource-1"
-	resource2ID := "resource-2"
+	provider1ID := uuid.New().String()
+	provider2ID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,

@@ -294,10 +294,9 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 				Value:    "api",
 			},
 			deployment: oapi.Deployment{
-				Id:       "1",
-				Name:     "api-deployment",
-				SystemId: "sys1",
-				Slug:     "api-deployment",
+				Id:   "1",
+				Name: "api-deployment",
+				Slug: "api-deployment",
 				JobAgentConfig: oapi.JobAgentConfig{
 					"region": "us-east-1",
 				},
@@ -315,7 +314,6 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 			deployment: oapi.Deployment{
 				Id:             "2",
 				Name:           "Production API",
-				SystemId:       "sys1",
 				Slug:           "prod-api",
 				JobAgentConfig: oapi.JobAgentConfig{},
 			},
@@ -332,7 +330,6 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 			deployment: oapi.Deployment{
 				Id:             "3",
 				Name:           "Staging API",
-				SystemId:       "sys1",
 				Slug:           "staging-api",
 				JobAgentConfig: oapi.JobAgentConfig{},
 			},
@@ -378,7 +375,6 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 			environment: oapi.Environment{
 				Id:        "1",
 				Name:      "production",
-				SystemId:  "sys1",
 				CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			wantMatch: true,
@@ -394,7 +390,6 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 			environment: oapi.Environment{
 				Id:        "2",
 				Name:      "staging",
-				SystemId:  "sys1",
 				CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			wantMatch: false,
@@ -410,7 +405,6 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 			environment: oapi.Environment{
 				Id:        "3",
 				Name:      "production-us-east",
-				SystemId:  "sys1",
 				CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			wantMatch: true,
@@ -801,7 +795,6 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 			deployment: oapi.Deployment{
 				Id:             "1",
 				Name:           "api-deployment",
-				SystemId:       "sys1",
 				Slug:           "api-deployment",
 				JobAgentConfig: oapi.JobAgentConfig{},
 			},
@@ -814,7 +807,6 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 			deployment: oapi.Deployment{
 				Id:             "2",
 				Name:           "Production API",
-				SystemId:       "sys1",
 				Slug:           "prod-api",
 				JobAgentConfig: oapi.JobAgentConfig{},
 			},
@@ -827,7 +819,6 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 			deployment: oapi.Deployment{
 				Id:             "3",
 				Name:           "Staging API",
-				SystemId:       "sys1",
 				Slug:           "staging-api",
 				JobAgentConfig: oapi.JobAgentConfig{},
 			},
@@ -869,7 +860,6 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 			environment: oapi.Environment{
 				Id:        "1",
 				Name:      "production",
-				SystemId:  "sys1",
 				CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			wantMatch: true,
@@ -881,7 +871,6 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 			environment: oapi.Environment{
 				Id:        "2",
 				Name:      "staging",
-				SystemId:  "sys1",
 				CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			wantMatch: false,
@@ -893,7 +882,6 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 			environment: oapi.Environment{
 				Id:        "3",
 				Name:      "production-us-east",
-				SystemId:  "sys1",
 				CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			wantMatch: true,

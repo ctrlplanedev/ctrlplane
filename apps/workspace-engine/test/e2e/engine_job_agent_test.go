@@ -7,10 +7,13 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_JobAgentCreation(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -45,9 +48,9 @@ func TestEngine_JobAgentCreation(t *testing.T) {
 }
 
 func TestEngine_JobAgentMultipleCreation(t *testing.T) {
-	jobAgentID1 := "job-agent-1"
-	jobAgentID2 := "job-agent-2"
-	jobAgentID3 := "job-agent-3"
+	jobAgentID1 := uuid.New().String()
+	jobAgentID2 := uuid.New().String()
+	jobAgentID3 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -101,7 +104,7 @@ func TestEngine_JobAgentMultipleCreation(t *testing.T) {
 }
 
 func TestEngine_JobAgentUpdate(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -141,10 +144,10 @@ func TestEngine_JobAgentUpdate(t *testing.T) {
 }
 
 func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "environment-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -209,6 +212,21 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 		t.Fatalf("job agent config retries mismatch: got %v, want 3", config["retries"])
 	}
 
+	// Verify DispatchContext on initial job
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "default", job.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(300), job.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, float64(3), job.DispatchContext.JobAgentConfig["retries"])
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.Equal(t, environmentID, job.DispatchContext.Environment.Id)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.Equal(t, resourceID, job.DispatchContext.Resource.Id)
+	assert.NotNil(t, job.DispatchContext.Version)
+
 	job.Status = oapi.JobStatusSuccessful
 	engine.Workspace().Jobs().Upsert(ctx, job)
 
@@ -252,10 +270,20 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 	if updatedConfig["retries"] != float64(5) {
 		t.Fatalf("job agent config retries mismatch: got %v, want 5", updatedConfig["retries"])
 	}
+
+	// Verify DispatchContext on reconciled job reflects updated config
+	assert.NotNil(t, updatedJob.DispatchContext)
+	assert.Equal(t, jobAgentID, updatedJob.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "custom-namespace", updatedJob.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(600), updatedJob.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, float64(5), updatedJob.DispatchContext.JobAgentConfig["retries"])
+	assert.NotNil(t, updatedJob.DispatchContext.Release)
+	assert.NotNil(t, updatedJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, updatedJob.DispatchContext.Deployment.Id)
 }
 
 func TestEngine_JobAgentDelete(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -290,7 +318,7 @@ func TestEngine_JobAgentDelete(t *testing.T) {
 }
 
 func TestEngine_JobAgentWithConfig(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
@@ -349,7 +377,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 }
 
 func TestEngine_JobAgentConfigUpdate(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
@@ -388,8 +416,8 @@ func TestEngine_JobAgentConfigUpdate(t *testing.T) {
 }
 
 func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -439,11 +467,20 @@ func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
 	if job.JobAgentId != jobAgentID {
 		t.Fatalf("job job agent mismatch: got %s, want %s", job.JobAgentId, jobAgentID)
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
 }
 
 func TestEngine_JobAgentDeleteAffectsDeployments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -526,10 +563,10 @@ func TestEngine_JobAgentTypes(t *testing.T) {
 }
 
 func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
-	jobAgentID := "shared-agent"
-	deploymentID1 := "deployment-1"
-	deploymentID2 := "deployment-2"
-	deploymentID3 := "deployment-3"
+	jobAgentID := uuid.New().String()
+	deploymentID1 := uuid.New().String()
+	deploymentID2 := uuid.New().String()
+	deploymentID3 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -600,11 +637,16 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 		if job.JobAgentId != jobAgentID {
 			t.Fatalf("job should use agent %s, got %s", jobAgentID, job.JobAgentId)
 		}
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.NotNil(t, job.DispatchContext.Version)
 	}
 }
 
 func TestEngine_JobAgentEmptyConfig(t *testing.T) {
-	jobAgentID := "job-agent-empty-config"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
@@ -634,8 +676,6 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 }
 
 func TestEngine_JobAgentNameUniqueness(t *testing.T) {
-	// Note: Job agent names are NOT enforced to be unique in the engine
-	// This test verifies that multiple agents can have the same name (by ID is what matters)
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
 
@@ -654,20 +694,36 @@ func TestEngine_JobAgentNameUniqueness(t *testing.T) {
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja1)
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja2)
 
-	// Verify both agents exist with the same name but different IDs
 	allAgents := engine.Workspace().JobAgents().Items()
-	if len(allAgents) != 2 {
-		t.Fatalf("expected 2 job agents, got %d", len(allAgents))
-	}
 
-	retrievedJa1, _ := engine.Workspace().JobAgents().Get(ja1.Id)
-	retrievedJa2, _ := engine.Workspace().JobAgents().Get(ja2.Id)
+	if integration.UseDBBacking() {
+		// The database enforces UNIQUE(workspace_id, name), so the second
+		// insert with the same name is rejected and only the first agent
+		// persists.
+		if len(allAgents) != 1 {
+			t.Fatalf("expected 1 job agent (DB unique constraint), got %d", len(allAgents))
+		}
+		retrievedJa1, ok := engine.Workspace().JobAgents().Get(ja1.Id)
+		if !ok {
+			t.Fatal("first job agent should still exist")
+		}
+		if retrievedJa1.Name != sameName {
+			t.Fatal("agent should have the original name")
+		}
+	} else {
+		// In-memory store does not enforce name uniqueness; both agents coexist.
+		if len(allAgents) != 2 {
+			t.Fatalf("expected 2 job agents, got %d", len(allAgents))
+		}
 
-	if retrievedJa1.Name != sameName || retrievedJa2.Name != sameName {
-		t.Fatal("both agents should have the same name")
-	}
+		retrievedJa1, _ := engine.Workspace().JobAgents().Get(ja1.Id)
+		retrievedJa2, _ := engine.Workspace().JobAgents().Get(ja2.Id)
 
-	if retrievedJa1.Id == retrievedJa2.Id {
-		t.Fatal("agents should have different IDs")
+		if retrievedJa1.Name != sameName || retrievedJa2.Name != sameName {
+			t.Fatal("both agents should have the same name")
+		}
+		if retrievedJa1.Id == retrievedJa2.Id {
+			t.Fatal("agents should have different IDs")
+		}
 	}
 }

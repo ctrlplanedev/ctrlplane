@@ -278,7 +278,7 @@ export function DeploymentCardViewButton() {
 type LazyLoadDeploymentCardProps = {
   className?: string;
   deployment: { id: string; name: string; description?: string };
-  system: { id: string; name: string };
+  systems: Array<{ id: string; name: string }>;
 };
 
 export const HealthStatusBadge: React.FC<{
@@ -385,7 +385,7 @@ export const SyncProgressBadge: React.FC<{ synced: number; total: number }> = ({
 
 export function LazyLoadDeploymentCard({
   deployment,
-  system,
+  systems,
   className,
 }: LazyLoadDeploymentCardProps) {
   const { workspace } = useWorkspace();
@@ -397,11 +397,11 @@ export function LazyLoadDeploymentCard({
   );
 
   const versions = trpc.deployment.versions.useQuery(
-    { workspaceId: workspace.id, deploymentId: deployment.id, limit: 1000 },
+    { deploymentId: deployment.id, limit: 1000 },
     { enabled: inView },
   );
 
-  const last24hDeployments = versions.data?.items.filter((version) => {
+  const last24hDeployments = versions.data?.filter((version) => {
     const createdAt = new Date(version.createdAt);
     const twentyFourHoursAgo = subHours(new Date(), 24);
     return isAfter(createdAt, twentyFourHoursAgo);
@@ -411,7 +411,7 @@ export function LazyLoadDeploymentCard({
 
   const releaseTargets = rtQuery.data?.items ?? [];
 
-  const latestVersion = versions.data?.items[0];
+  const latestVersion = versions.data?.[0];
   const deploymentsLast24h = last24hDeployments?.length ?? 0;
 
   const isOutOfSync = releaseTargets.some(
@@ -445,7 +445,7 @@ export function LazyLoadDeploymentCard({
     >
       <DeploymentCardHeader
         name={deployment.name}
-        systemName={system.name}
+        systemName={systems.map((s) => s.name).join(", ") || undefined}
         description={deployment.description}
       />
       <DeploymentCardContent>

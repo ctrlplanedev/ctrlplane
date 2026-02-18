@@ -151,9 +151,8 @@ func TestEvaluatePolicy(t *testing.T) {
 	ctx := context.Background()
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		SystemId: "system-1",
-		Name:     "production",
+		Id:   "env-1",
+		Name: "production",
 	}
 
 	version := &oapi.DeploymentVersion{
@@ -170,9 +169,10 @@ func TestEvaluatePolicy(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 
 	tests := []struct {
@@ -379,9 +379,8 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 	manager := New(st)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		SystemId: "system-1",
-		Name:     "production",
+		Id:   "env-1",
+		Name: "production",
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -400,9 +399,10 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 
 	policy := &oapi.Policy{

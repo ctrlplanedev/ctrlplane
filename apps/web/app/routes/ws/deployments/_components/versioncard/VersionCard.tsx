@@ -1,3 +1,4 @@
+import _ from "lodash";
 import {
   AlertCircle,
   CheckCircle2,
@@ -9,26 +10,24 @@ import {
 import prettyMs from "pretty-ms";
 import { useSearchParams } from "react-router";
 
-import _ from "lodash";
-
 import type { ReleaseTargetWithState } from "../types";
 import { Badge } from "~/components/ui/badge";
-import { Separator } from "~/components/ui/separator";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
+import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
-import { VersionDropdown } from "./VersionDropdown";
 import { useDeploymentStats } from "./useDeploymentStats";
+import { VersionDropdown } from "./VersionDropdown";
 
 type DeploymentVersion = {
   id: string;
   name?: string;
   tag: string;
   status: DeploymentVersionStatus;
-  createdAt: string;
+  createdAt: string | Date;
 };
 
 type DeploymentVersionStatus =
@@ -45,7 +44,7 @@ type VersionCardProps = {
     name?: string;
     tag: string;
     status: DeploymentVersionStatus;
-    createdAt: string;
+    createdAt: Date;
   };
   currentReleaseTargets: ReleaseTargetWithState[];
   desiredReleaseTargets: ReleaseTargetWithState[];
@@ -85,19 +84,25 @@ const getVersionStatusIcon = (status: DeploymentVersionStatus) => {
   }
 };
 
-const useHasActiveDeployments = (currentReleaseTargets: ReleaseTargetWithState[], version: DeploymentVersion, desiredReleaseTargets: ReleaseTargetWithState[]) => {
+const useHasActiveDeployments = (
+  currentReleaseTargets: ReleaseTargetWithState[],
+  version: DeploymentVersion,
+  desiredReleaseTargets: ReleaseTargetWithState[],
+) => {
   const [searchParams] = useSearchParams();
   const versionId = searchParams.get("version");
-  return currentReleaseTargets.length > 0 ||
+  return (
+    currentReleaseTargets.length > 0 ||
     versionId === version.id ||
-    desiredReleaseTargets.length > 0;
-}
+    desiredReleaseTargets.length > 0
+  );
+};
 
 type NoActiveDeploymentsProps = {
   version: DeploymentVersion;
   isSelected: boolean;
   onSelect?: () => void;
-}
+};
 
 const NoActiveDeployments: React.FC<NoActiveDeploymentsProps> = ({
   onSelect,
@@ -244,14 +249,18 @@ const DeploymentIssues: React.FC<{
       {pending > 0 && (
         <Popover>
           <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <div className="flex cursor-pointer items-center gap-1.5 text-xs">
               <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
               <span className="text-muted-foreground">
                 {pending} waiting to deploy
               </span>
             </div>
           </PopoverTrigger>
-          <PopoverContent side="bottom" className="max-w-64 text-sm" onClick={(e) => e.stopPropagation()}>
+          <PopoverContent
+            side="bottom"
+            className="max-w-64 text-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <PendingPopoverContent targets={pendingTargets} />
           </PopoverContent>
         </Popover>
@@ -259,14 +268,18 @@ const DeploymentIssues: React.FC<{
       {failed > 0 && (
         <Popover>
           <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <div className="flex cursor-pointer items-center gap-1.5 text-xs">
               <XCircle className="h-3.5 w-3.5 shrink-0 text-red-600" />
               <span className="text-red-600">
                 {failed} deployment{failed !== 1 ? "s" : ""} failed
               </span>
             </div>
           </PopoverTrigger>
-          <PopoverContent side="bottom" className="max-w-64 text-sm" onClick={(e) => e.stopPropagation()}>
+          <PopoverContent
+            side="bottom"
+            className="max-w-64 text-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <FailedPopoverContent targets={failedTargets} />
           </PopoverContent>
         </Popover>
@@ -275,12 +288,15 @@ const DeploymentIssues: React.FC<{
   );
 };
 
-const EnvironmentCount: React.FC<{ environmentCount: number }> = ({ environmentCount }) => {
+const EnvironmentCount: React.FC<{ environmentCount: number }> = ({
+  environmentCount,
+}) => {
   if (environmentCount === 0) return null;
   return (
     <div>
       <Badge variant="outline" className="text-xs">
-        {environmentCount} {environmentCount === 1 ? "environment" : "environments"}
+        {environmentCount}{" "}
+        {environmentCount === 1 ? "environment" : "environments"}
       </Badge>
     </div>
   );

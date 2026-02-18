@@ -1,10 +1,14 @@
-import { useWorkspace } from "~/components/WorkspaceProvider";
 import { trpc } from "~/api/trpc";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "~/components/ui/breadcrumb";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "~/components/ui/breadcrumb";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
-import { WorkflowTemplateCard } from "./workflows/_components/WorkflowTemplateCard";
-
+import { useWorkspace } from "~/components/WorkspaceProvider";
+import { WorkflowCard } from "./workflows/_components/WorkflowCard";
 
 export function meta() {
   return [
@@ -34,28 +38,28 @@ function PageHeader() {
         </Breadcrumb>
       </div>
     </header>
-  )
+  );
 }
 
-export default function WorkflowTemplates() {
+export default function Workflows() {
   const { workspace } = useWorkspace();
 
-  const { data } = trpc.workflows.templates.list.useQuery({  
+  const { data } = trpc.workflows.list.useQuery({
     workspaceId: workspace.id,
     limit: 100,
     offset: 0,
   });
 
-  const workflowTemplates = data?.items ?? [];
+  const workflows = data?.items ?? [];
 
   return (
     <>
       <PageHeader />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-        {workflowTemplates.map((workflowTemplate) => (
-          <WorkflowTemplateCard key={workflowTemplate.id} workflowTemplate={workflowTemplate} />
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
+        {workflows.map((workflow) => (
+          <WorkflowCard key={workflow.id} workflow={workflow} />
         ))}
       </div>
     </>
-  )
+  );
 }

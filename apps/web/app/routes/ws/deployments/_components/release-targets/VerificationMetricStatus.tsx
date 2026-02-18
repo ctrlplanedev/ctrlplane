@@ -49,7 +49,7 @@ export function getVerificationStatus(metric: VerificationMetricStatusType): {
       message: "Waiting for measurements",
     };
 
-  const failureLimit = metric.failureThreshold ?? 0;
+  const failureLimit = metric.failureThreshold;
   const successThreshold = metric.successThreshold;
 
   const { failedCount, consecutiveSuccessCount } = calculateMeasurementCounts(
@@ -103,12 +103,10 @@ export function VerificationMetricStatus({
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   )[0];
 
-  const timeAgo =
-    latestMeasurement?.measuredAt != null
-      ? formatDistanceToNowStrict(new Date(latestMeasurement.measuredAt), {
-          addSuffix: true,
-        })
-      : null;
+  const timeAgo = formatDistanceToNowStrict(
+    new Date(latestMeasurement.measuredAt),
+    { addSuffix: true },
+  );
 
   return (
     <div className="flex flex-col items-end text-right">

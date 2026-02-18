@@ -13,6 +13,89 @@ on:
       - .github/workflows/apps-workspace-engine.yaml
 
 jobs:
+  tests-with-db:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    # Add PostgreSQL service for integration tests
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ctrlplane_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: ctrlplane_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: apps/workspace-engine
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Set up Node.js for migrations
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Install dependencies for migrations
+        working-directory: ./
+        run: |
+          pnpm install --filter @ctrlplane/db --frozen-lockfile
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U ctrlplane_test; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+
+      - name: Run migrations
+        working-directory: packages/db
+        env:
+          POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
+        run: pnpm exec drizzle-kit migrate
+
+      - name: Run DB package tests
+        working-directory: apps/workspace-engine
+        env:
+          POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
+          USE_DATABASE_BACKING: "1"
+        run: go test -race ./pkg/db/... ./test/e2e/...
+
   tests:
     runs-on: ubuntu-latest
     permissions:

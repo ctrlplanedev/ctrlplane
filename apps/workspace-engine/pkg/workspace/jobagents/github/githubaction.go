@@ -16,7 +16,11 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("workspace-engine/jobagents/github")
 
 var _ types.Dispatchable = &GithubAction{}
 
@@ -32,15 +36,9 @@ func (a *GithubAction) Type() string {
 	return "github-app"
 }
 
-func (a *GithubAction) Supports() types.Capabilities {
-	return types.Capabilities{
-		Workflows:   true,
-		Deployments: true,
-	}
-}
-
 // Dispatch implements types.Dispatchable.
-func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
+func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
+	dispatchCtx := job.DispatchContext
 	cfg, err := a.parseJobAgentConfig(dispatchCtx.JobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
@@ -57,16 +55,21 @@ func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchC
 	}
 
 	go func() {
-		ctx := context.WithoutCancel(ctx)
-		if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
+		parentSpanCtx := trace.SpanContextFromContext(ctx)
+		asyncCtx, span := tracer.Start(context.Background(), "GithubAction.AsyncDispatch",
+			trace.WithLinks(trace.Link{SpanContext: parentSpanCtx}),
+		)
+		defer span.End()
+
+		if _, err := client.Actions.CreateWorkflowDispatchEventByID(asyncCtx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
 			Ref:    ref,
-			Inputs: map[string]any{"job_id": dispatchCtx.Job.Id},
+			Inputs: map[string]any{"job_id": job.Id},
 		}); err != nil {
 			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
-			dispatchCtx.Job.Status = oapi.JobStatusInvalidIntegration
-			dispatchCtx.Job.UpdatedAt = time.Now()
-			dispatchCtx.Job.Message = &message
-			a.store.Jobs.Upsert(ctx, dispatchCtx.Job)
+			job.Status = oapi.JobStatusInvalidIntegration
+			job.UpdatedAt = time.Now()
+			job.Message = &message
+			a.store.Jobs.Upsert(asyncCtx, job)
 		}
 	}()
 

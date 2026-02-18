@@ -156,3 +156,16 @@ func (j *Job) GetTestRunnerJobAgentConfig() (*TestRunnerJobAgentConfig, error) {
 	}
 	return &cfg, nil
 }
+
+func (d *DispatchContext) Map() map[string]any {
+	data, err := json.Marshal(d)
+	if err != nil {
+		return nil
+	}
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil
+	}
+
+	return result
+}

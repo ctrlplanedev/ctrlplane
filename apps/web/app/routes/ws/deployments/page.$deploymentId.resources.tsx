@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useDebounce } from "react-use";
 import { toast } from "sonner";
 
-import type { Deployment } from "./_components/types";
 import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -31,17 +30,12 @@ const useResources = (selector: string) => {
   return resourcesQuery.data?.items ?? [];
 };
 
-function getCelSelector(deployment: Deployment) {
-  if (deployment.resourceSelector == null) return "false";
-  if ("cel" in deployment.resourceSelector)
-    return deployment.resourceSelector.cel;
-  return "true";
-}
-
 function SelectorWithResources() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
-  const [selector, setSelector] = useState(getCelSelector(deployment));
+  const [selector, setSelector] = useState(
+    deployment.resourceSelector ?? "false",
+  );
 
   const [selectorDebounced, setSelectorDebounced] = useState(selector);
   useDebounce(() => setSelectorDebounced(selector), 1_000, [selector]);
@@ -68,7 +62,7 @@ function SelectorWithResources() {
           />
         </div>
         <Button
-          className="h-[2.5rem]"
+          className="h-10"
           onClick={() =>
             onResourceSelectorChange(selector).then(() =>
               toast.success(
@@ -78,7 +72,7 @@ function SelectorWithResources() {
           }
           disabled={
             updateDeployment.isPending ||
-            getCelSelector(deployment) === selector
+            deployment.resourceSelector === selector
           }
         >
           Save

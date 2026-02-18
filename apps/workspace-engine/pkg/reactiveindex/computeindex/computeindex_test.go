@@ -3,6 +3,7 @@ package computeindex
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"testing"
@@ -487,4 +488,120 @@ func TestGenericTypePointer(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, v)
 	assert.Equal(t, "v1.0-deploy-1", v.Version)
+}
+
+// --- Parallel recompute tests ---
+
+func TestParallelRecompute_BasicCorrectness(t *testing.T) {
+	store := newTestStore()
+	for i := 0; i < 100; i++ {
+		id := fmt.Sprintf("e%d", i)
+		store.set(id, fmt.Sprintf("value-%d", i))
+	}
+
+	idx := New(store.computeFunc, WithConcurrency(4))
+	for i := 0; i < 100; i++ {
+		idx.AddEntity(fmt.Sprintf("e%d", i))
+	}
+
+	n := idx.Recompute(context.Background())
+	assert.Equal(t, 100, n)
+
+	for i := 0; i < 100; i++ {
+		id := fmt.Sprintf("e%d", i)
+		v, ok := idx.Get(id)
+		require.True(t, ok, "entity %s missing", id)
+		assert.Equal(t, fmt.Sprintf("value-%d", i), v)
+	}
+}
+
+func TestParallelRecompute_ErrorsDoNotOverwriteValues(t *testing.T) {
+	store := newTestStore()
+	store.set("good", "ok")
+
+	idx := New(store.computeFunc, WithConcurrency(4))
+	idx.AddEntity("good")
+	idx.AddEntity("missing") // will error
+
+	n := idx.Recompute(context.Background())
+	assert.Equal(t, 2, n)
+
+	v, ok := idx.Get("good")
+	require.True(t, ok)
+	assert.Equal(t, "ok", v)
+
+	_, ok = idx.Get("missing")
+	assert.False(t, ok)
+}
+
+func TestParallelRecompute_ConcurrentSafety(t *testing.T) {
+	store := newTestStore()
+	for i := 0; i < 200; i++ {
+		store.set(fmt.Sprintf("e%d", i), fmt.Sprintf("v%d", i))
+	}
+
+	idx := New(store.computeFunc, WithConcurrency(8))
+
+	var wg sync.WaitGroup
+	ctx := context.Background()
+
+	for i := 0; i < 200; i++ {
+		idx.AddEntity(fmt.Sprintf("e%d", i))
+	}
+
+	// Concurrent recomputes + reads + dirties
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			idx.Recompute(ctx)
+		}()
+	}
+
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			idx.Get(fmt.Sprintf("e%d", n))
+		}(i)
+	}
+
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			idx.DirtyEntity(fmt.Sprintf("e%d", n))
+		}(i)
+	}
+
+	wg.Wait()
+	idx.Recompute(ctx)
+}
+
+func TestParallelRecompute_SingleEntity(t *testing.T) {
+	store := newTestStore()
+	store.set("only", "one")
+
+	idx := New(store.computeFunc, WithConcurrency(4))
+	idx.AddEntity("only")
+
+	n := idx.Recompute(context.Background())
+	assert.Equal(t, 1, n)
+
+	v, ok := idx.Get("only")
+	require.True(t, ok)
+	assert.Equal(t, "one", v)
+}
+
+func TestWithAutoConcurrency(t *testing.T) {
+	store := newTestStore()
+	store.set("e1", "v1")
+
+	idx := New(store.computeFunc, WithAutoConcurrency())
+	idx.AddEntity("e1")
+	idx.Recompute(context.Background())
+
+	v, ok := idx.Get("e1")
+	require.True(t, ok)
+	assert.Equal(t, "v1", v)
 }

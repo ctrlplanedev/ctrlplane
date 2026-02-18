@@ -37,6 +37,25 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ResourcePreviewRequest: {
+    type: 'object',
+    required: ['name', 'version', 'kind', 'identifier', 'config', 'metadata'],
+    properties: {
+      name: { type: 'string' },
+      version: { type: 'string' },
+      kind: { type: 'string' },
+      identifier: { type: 'string' },
+      config: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
+    },
+  },
+
   ResourceProvider: {
     type: 'object',
     required: ['id', 'workspaceId', 'name', 'createdAt', 'metadata'],
@@ -64,12 +83,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Environment: {
     type: 'object',
-    required: ['id', 'name', 'systemId', 'createdAt', 'metadata'],
+    required: ['id', 'name', 'createdAt', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       description: { type: 'string' },
-      systemId: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
@@ -229,6 +247,16 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ReleaseTargetPreview: {
+    type: 'object',
+    required: ['system', 'deployment', 'environment'],
+    properties: {
+      system: openapi.schemaRef('System'),
+      deployment: openapi.schemaRef('Deployment'),
+      environment: openapi.schemaRef('Environment'),
+    },
+  },
+
   GithubEntity: {
     type: 'object',
     required: ['installationId', 'slug'],
@@ -244,5 +272,23 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('Environment'),
       openapi.schemaRef('Resource'),
     ],
+  },
+
+  SystemDeploymentLink: {
+    type: 'object',
+    required: ['systemId', 'deploymentId'],
+    properties: {
+      systemId: { type: 'string' },
+      deploymentId: { type: 'string' },
+    },
+  },
+
+  SystemEnvironmentLink: {
+    type: 'object',
+    required: ['systemId', 'environmentId'],
+    properties: {
+      systemId: { type: 'string' },
+      environmentId: { type: 'string' },
+    },
   },
 }

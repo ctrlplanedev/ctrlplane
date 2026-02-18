@@ -27,9 +27,9 @@ type MemoizedEvaluator struct {
 //	memoized := NewMemoized(approvalEval, ScopeEnvironment|ScopeVersion)
 //
 //	// Will evaluate once
-//	result1, _ := memoized.Evaluate(ctx, EvaluatorScope{env1, v1, target1, nil})
-//	// Will return cached (same env+version, target ignored)
-//	result2, _ := memoized.Evaluate(ctx, EvaluatorScope{env1, v1, target2, nil})
+//	result1 := memoized.Evaluate(ctx, EvaluatorScope{Environment: env1, Version: v1, Resource: res1})
+//	// Will return cached (same env+version, resource ignored)
+//	result2 := memoized.Evaluate(ctx, EvaluatorScope{Environment: env1, Version: v1, Resource: res2})
 func NewMemoized(evaluator Evaluator, scopeFields ScopeFields) *MemoizedEvaluator {
 	return &MemoizedEvaluator{
 		evaluator:   evaluator,
@@ -104,8 +104,12 @@ func (m *MemoizedEvaluator) buildCacheKey(scope EvaluatorScope) string {
 		key += fmt.Sprintf("ver:%s|", scope.Version.Id)
 	}
 
-	if m.scopeFields&ScopeReleaseTarget != 0 && scope.ReleaseTarget != nil {
-		key += fmt.Sprintf("tgt:%s|", scope.ReleaseTarget.Key())
+	if m.scopeFields&ScopeResource != 0 && scope.Resource != nil {
+		key += fmt.Sprintf("res:%s|", scope.Resource.Id)
+	}
+
+	if m.scopeFields&ScopeDeployment != 0 && scope.Deployment != nil {
+		key += fmt.Sprintf("dep:%s|", scope.Deployment.Id)
 	}
 
 	if key == "" {
@@ -125,8 +129,11 @@ func (m *MemoizedEvaluator) buildMissingFieldsResult(scope EvaluatorScope) *oapi
 	if m.scopeFields&ScopeVersion != 0 && scope.Version == nil {
 		missing = append(missing, "Version")
 	}
-	if m.scopeFields&ScopeReleaseTarget != 0 && scope.ReleaseTarget == nil {
-		missing = append(missing, "ReleaseTarget")
+	if m.scopeFields&ScopeResource != 0 && scope.Resource == nil {
+		missing = append(missing, "Resource")
+	}
+	if m.scopeFields&ScopeDeployment != 0 && scope.Deployment == nil {
+		missing = append(missing, "Deployment")
 	}
 
 	message := fmt.Sprintf("Evaluator requires %s but scope is missing: %s",
@@ -147,11 +154,11 @@ func (m *MemoizedEvaluator) scopeFieldsString() string {
 	if m.scopeFields&ScopeVersion != 0 {
 		fields = append(fields, "Version")
 	}
-	if m.scopeFields&ScopeReleaseTarget != 0 {
-		fields = append(fields, "ReleaseTarget")
+	if m.scopeFields&ScopeResource != 0 {
+		fields = append(fields, "Resource")
 	}
-	if m.scopeFields&ScopeRelease != 0 {
-		fields = append(fields, "Release")
+	if m.scopeFields&ScopeDeployment != 0 {
+		fields = append(fields, "Deployment")
 	}
 	return strings.Join(fields, "+")
 }

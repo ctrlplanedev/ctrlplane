@@ -82,15 +82,11 @@ func (r *MeasurementRecorder) UpdateMessage(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	verification, ok := r.store.JobVerifications.Get(verificationID)
-	if !ok {
-		return fmt.Errorf("verification not found: %s", verificationID)
-	}
-
-	verification.Message = &message
-	r.store.JobVerifications.Upsert(ctx, verification)
-
-	return nil
+	_, err := r.store.JobVerifications.Update(ctx, verificationID, func(v *oapi.JobVerification) *oapi.JobVerification {
+		v.Message = &message
+		return v
+	})
+	return err
 }
 
 // appendMeasurement creates a deep copy of the verification and appends the measurement.

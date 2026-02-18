@@ -65,10 +65,6 @@ func hasEnvironmentChangesBasic(old, new *oapi.Environment) map[string]bool {
 		changed["name"] = true
 	}
 
-	if old.SystemId != new.SystemId {
-		changed["systemid"] = true
-	}
-
 	// Compare Description (pointer field)
 	if (old.Description == nil && new.Description != nil) ||
 		(old.Description != nil && new.Description == nil) ||

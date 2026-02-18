@@ -94,9 +94,6 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 	if old.Slug != new.Slug {
 		changed["slug"] = true
 	}
-	if old.SystemId != new.SystemId {
-		changed["systemid"] = true
-	}
 
 	// Compare Description (pointer field)
 	if (old.Description == nil && new.Description != nil) ||

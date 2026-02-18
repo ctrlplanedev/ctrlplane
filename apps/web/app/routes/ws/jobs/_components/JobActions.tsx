@@ -239,7 +239,7 @@ function ViewTraceAction({
 export function JobActions({
   job,
 }: {
-  job: WorkspaceEngine["schemas"]["JobWithRelease"];
+  job: WorkspaceEngine["schemas"]["Job"];
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -250,11 +250,11 @@ export function JobActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <CopyJobIdAction jobId={job.job.id} onClose={() => setOpen(false)} />
-        <ViewTraceAction jobId={job.job.id} onClose={() => setOpen(false)} />
+        <CopyJobIdAction jobId={job.id} onClose={() => setOpen(false)} />
+        <ViewTraceAction jobId={job.id} onClose={() => setOpen(false)} />
         <UpdateJobStatusAction
-          jobId={job.job.id}
-          currentStatus={job.job.status}
+          jobId={job.id}
+          currentStatus={job.status}
           onClose={() => setOpen(false)}
         />
       </DropdownMenuContent>

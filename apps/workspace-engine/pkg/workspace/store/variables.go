@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 type Variables struct {
-	repo  *repository.InMemoryStore
+	repo  *memory.InMemory
 	store *Store
 }
 

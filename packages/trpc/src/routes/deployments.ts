@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { asc, desc, eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -34,26 +36,29 @@ const deploymentJobAgentConfig = z.union([
 
 export const deploymentsRouter = router({
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
+    .input(z.object({ deploymentId: z.uuid() }))
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "workspace", id: input.workspaceId }),
+          .on({ type: "deployment", id: input.deploymentId }),
     })
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
+    .query(async ({ input, ctx }) => {
+      const deployment = await ctx.db.query.deployment.findFirst({
+        where: eq(schema.deployment.id, input.deploymentId),
+        with: {
+          systemDeployments: {
+            with: {
+              system: {
+                with: {
+                  systemEnvironments: true,
+                },
+              },
             },
           },
         },
-      );
-      return response.data;
+      });
+      return deployment;
     }),
 
   list: protectedProcedure
@@ -64,17 +69,21 @@ export const deploymentsRouter = router({
           .perform(Permission.DeploymentList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments",
-        {
-          params: {
-            path: { workspaceId: input.workspaceId },
-            query: { limit: 1000, offset: 0 },
+    .query(async ({ input, ctx }) => {
+      const deployments = await ctx.db.query.deployment.findMany({
+        where: eq(schema.deployment.workspaceId, input.workspaceId),
+        limit: 1000,
+        offset: 0,
+        with: {
+          systemDeployments: {
+            with: {
+              system: true,
+            },
           },
         },
-      );
-      return response.data;
+        orderBy: asc(schema.deployment.name),
+      });
+      return deployments;
     }),
 
   releaseTargets: protectedProcedure
@@ -121,35 +130,31 @@ export const deploymentsRouter = router({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentVersionList)
-          .on({ type: "workspace", id: input.workspaceId }),
+          .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(
       z.object({
-        workspaceId: z.string(),
-        deploymentId: z.string(),
+        deploymentId: z.uuid(),
         limit: z.number().min(1).max(1000).default(1000),
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-        {
-          params: {
-            path: input,
-            query: { limit: 5_000, offset: 0 },
-          },
-        },
-      );
+    .query(async ({ input, ctx }) => {
+      const versions = await ctx.db.query.deploymentVersion.findMany({
+        where: eq(schema.deploymentVersion.deploymentId, input.deploymentId),
+        limit: input.limit,
+        offset: input.offset,
+        orderBy: desc(schema.deploymentVersion.createdAt),
+      });
 
-      return response.data;
+      return versions;
     }),
 
   create: protectedProcedure
     .input(
       z.object({
         workspaceId: z.uuid(),
-        systemId: z.string(),
+        systemIds: z.array(z.string()).min(1),
         name: z.string().min(3).max(255),
         slug: z.string().min(3).max(255),
         description: z.string().max(255).optional(),
@@ -280,6 +285,23 @@ export const deploymentsRouter = router({
       });
 
       return updateData;
+    }),
+
+  variables: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), deploymentId: z.string() }))
+    .query(async ({ input }) => {
+      const response = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+              deploymentId: input.deploymentId,
+            },
+          },
+        },
+      );
+      return response.data?.variables ?? [];
     }),
 
   createVersion: protectedProcedure

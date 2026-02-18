@@ -48,10 +48,32 @@ func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oap
 		Id:               id,
 		Name:             name,
 		Slug:             name,
-		SystemId:         systemID,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,
 		JobAgentConfig:   oapi.JobAgentConfig{},
+	}
+}
+
+func createTestEnvironmentForExecutor(id, systemID, name string) *oapi.Environment {
+	selector := &oapi.Selector{}
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	return &oapi.Environment{
+		Id:               id,
+		Name:             name,
+		ResourceSelector: selector,
+	}
+}
+
+func createTestResourceForExecutor(id, name, workspaceID string) *oapi.Resource {
+	return &oapi.Resource{
+		Id:          id,
+		Name:        name,
+		Kind:        "",
+		Identifier:  name,
+		CreatedAt:   time.Now(),
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		WorkspaceId: workspaceID,
 	}
 }
 
@@ -94,6 +116,12 @@ func TestExecuteRelease_Success(t *testing.T) {
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
 
+	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	_ = testStore.Environments.Upsert(ctx, environment)
+
+	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
+
 	// Create release
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
 
@@ -124,7 +152,6 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup test data - deployment with no job agent
-	systemID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
@@ -136,7 +163,6 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 	deployment := &oapi.Deployment{
 		Id:               deploymentID,
 		Name:             "test-deployment",
-		SystemId:         systemID,
 		ResourceSelector: selector,
 		JobAgentId:       nil, // No job agent
 		JobAgentConfig:   oapi.JobAgentConfig{},
@@ -236,6 +262,12 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
+
+	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	_ = testStore.Environments.Upsert(ctx, environment)
+
+	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	// Create and execute multiple releases
 	releases := []*oapi.Release{

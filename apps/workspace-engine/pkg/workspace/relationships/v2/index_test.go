@@ -63,11 +63,10 @@ func (m *mockStore) addResource(r *oapi.Resource) {
 
 func (m *mockStore) addDeployment(d *oapi.Deployment) {
 	m.entityMaps[d.Id] = map[string]any{
-		"type":     "deployment",
-		"id":       d.Id,
-		"name":     d.Name,
-		"slug":     d.Slug,
-		"systemId": d.SystemId,
+		"type": "deployment",
+		"id":   d.Id,
+		"name": d.Name,
+		"slug": d.Slug,
 	}
 }
 
@@ -86,7 +85,6 @@ func makeDeployment(id, name string) *oapi.Deployment {
 		Id:             id,
 		Name:           name,
 		Slug:           id,
-		SystemId:       "system-1",
 		JobAgentConfig: map[string]any{},
 	}
 }

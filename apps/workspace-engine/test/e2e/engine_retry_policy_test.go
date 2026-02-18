@@ -8,13 +8,15 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_RetryPolicy_DefaultBehavior tests that without a retry policy,
 // ALL job statuses count as one attempt (truly strict behavior)
 func TestEngine_RetryPolicy_DefaultBehavior(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -105,8 +107,8 @@ func TestEngine_RetryPolicy_DefaultBehavior(t *testing.T) {
 // TestEngine_RetryPolicy_SmartDefaults tests that when a retry policy IS configured,
 // smart defaults apply (cancelled/skipped don't count)
 func TestEngine_RetryPolicy_SmartDefaults(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -191,8 +193,8 @@ func TestEngine_RetryPolicy_SmartDefaults(t *testing.T) {
 
 // TestEngine_RetryPolicy_WithMaxRetries tests retry policy with maxRetries > 0
 func TestEngine_RetryPolicy_WithMaxRetries(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -296,8 +298,8 @@ func TestEngine_RetryPolicy_WithMaxRetries(t *testing.T) {
 // TestEngine_RetryPolicy_SuccessDoesNotCountWithRetries tests that with maxRetries > 0,
 // successful jobs don't count toward the retry limit
 func TestEngine_RetryPolicy_SuccessDoesNotCountWithRetries(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -367,8 +369,8 @@ func TestEngine_RetryPolicy_SuccessDoesNotCountWithRetries(t *testing.T) {
 // TestEngine_RetryPolicy_InvalidJobAgentCounts tests that invalidJobAgent status
 // counts toward retry limit (smart default)
 func TestEngine_RetryPolicy_InvalidJobAgentCounts(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

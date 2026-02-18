@@ -19,17 +19,11 @@ import { DeploymentsNavbarTabs } from "./DeploymentsNavbarTabs";
 
 const useNoVersions = () => {
   const { deployment } = useDeployment();
-  const { workspace } = useWorkspace();
   const versionsQuery = trpc.deployment.versions.useQuery(
-    {
-      workspaceId: workspace.id,
-      deploymentId: deployment.id,
-      limit: 1000,
-      offset: 0,
-    },
+    { deploymentId: deployment.id },
     { refetchInterval: 5000 },
   );
-  return !versionsQuery.isLoading && versionsQuery.data?.items.length === 0;
+  return !versionsQuery.isLoading && versionsQuery.data?.length === 0;
 };
 
 export function DeploymentPageHeader() {

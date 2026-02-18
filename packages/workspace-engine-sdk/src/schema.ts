@@ -678,6 +678,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/release-targets/resource-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview release targets for a resource
+         * @description Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.
+         */
+        post: operations["previewReleaseTargetsForResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
         parameters: {
             query?: never;
@@ -1072,7 +1092,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/workflow-templates": {
+    "/v1/workspaces/{workspaceId}/workflows": {
         parameters: {
             query?: never;
             header?: never;
@@ -1080,10 +1100,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get all workflow templates
-         * @description Gets all workflow templates for a workspace.
+         * List workflows
+         * @description Returns a list of workflows.
          */
-        get: operations["getWorkflowTemplates"];
+        get: operations["listWorkflows"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1092,7 +1112,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}": {
+    "/v1/workspaces/{workspaceId}/workflows/{workflowId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1100,10 +1120,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a workflow template
-         * @description Gets a workflow template.
+         * Get a workflow
+         * @description Gets a workflow by ID.
          */
-        get: operations["getWorkflowTemplate"];
+        get: operations["getWorkflow"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1112,7 +1132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows": {
+    "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1120,10 +1140,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get all workflows for a workflow template
-         * @description Gets all workflows for a workflow template.
+         * Get all workflow runs for a workflow
+         * @description Gets all workflow runs for a workflow by ID.
          */
-        get: operations["getWorkflowsByTemplate"];
+        get: operations["getWorkflowRuns"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1215,16 +1235,14 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
         };
-        DeploymentAndSystem: {
+        DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
-            system: components["schemas"]["System"];
+            systems: components["schemas"]["System"][];
         };
         DeploymentDependencyRule: {
-            dependsOnDeploymentSelector: components["schemas"]["Selector"];
-            /** @description Reference to the entity that this rule depends on */
-            reference?: string;
+            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+            dependsOn: string;
         };
         DeploymentVariable: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -1284,6 +1302,21 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
+        DispatchContext: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            jobAgent: components["schemas"]["JobAgent"];
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            release?: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+            variables?: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version?: components["schemas"]["DeploymentVersion"];
+            workflow?: components["schemas"]["Workflow"];
+            workflowJob?: components["schemas"]["WorkflowJob"];
+            workflowRun?: components["schemas"]["WorkflowRun"];
+        };
         EntityRelation: {
             direction: components["schemas"]["RelationDirection"];
             entity: components["schemas"]["RelatableEntity"];
@@ -1302,7 +1335,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1409,6 +1441,7 @@ export interface components {
             completedAt?: string;
             /** Format: date-time */
             createdAt: string;
+            dispatchContext?: components["schemas"]["DispatchContext"];
             externalId?: string;
             id: string;
             jobAgentConfig: components["schemas"]["JobAgentConfig"];
@@ -1454,7 +1487,7 @@ export interface components {
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
-            fieldsToUpdate?: ("completedAt" | "createdAt" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "message" | "metadata" | "releaseId" | "startedAt" | "status" | "traceToken" | "updatedAt" | "workflowJobId")[];
+            fieldsToUpdate?: ("completedAt" | "createdAt" | "dispatchContext" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "message" | "metadata" | "releaseId" | "startedAt" | "status" | "traceToken" | "updatedAt" | "workflowJobId")[];
             id?: string;
             job: components["schemas"]["Job"];
         } & (unknown | unknown);
@@ -1687,6 +1720,11 @@ export interface components {
             releaseTarget: components["schemas"]["ReleaseTarget"];
             state: components["schemas"]["ReleaseTargetState"];
         };
+        ReleaseTargetPreview: {
+            deployment: components["schemas"]["Deployment"];
+            environment: components["schemas"]["Environment"];
+            system: components["schemas"]["System"];
+        };
         ReleaseTargetState: {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
@@ -1734,6 +1772,18 @@ export interface components {
             updatedAt?: string;
             version: string;
             workspaceId: string;
+        };
+        ResourcePreviewRequest: {
+            config: {
+                [key: string]: unknown;
+            };
+            identifier: string;
+            kind: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            version: string;
         };
         ResourceProvider: {
             /** Format: date-time */
@@ -1852,6 +1902,14 @@ export interface components {
             };
             name: string;
             workspaceId: string;
+        };
+        SystemDeploymentLink: {
+            deploymentId: string;
+            systemId: string;
+        };
+        SystemEnvironmentLink: {
+            environmentId: string;
+            systemId: string;
         };
         TerraformCloudJobAgentConfig: {
             /** @description Terraform Cloud address (e.g. https://app.terraform.io). */
@@ -1990,19 +2048,18 @@ export interface components {
         };
         Workflow: {
             id: string;
-            inputs: {
-                [key: string]: unknown;
-            };
-            workflowTemplateId: string;
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["WorkflowJobTemplate"][];
+            name: string;
         };
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
         WorkflowBooleanInput: {
             default?: boolean;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "boolean";
         };
-        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"];
+        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"] | components["schemas"]["WorkflowObjectInput"];
         WorkflowJob: {
             /** @description Configuration for the job agent */
             config: {
@@ -2012,7 +2069,7 @@ export interface components {
             index: number;
             /** @description Reference to the job agent */
             ref: string;
-            workflowId: string;
+            workflowRunId: string;
         };
         WorkflowJobAgentConfig: {
             config: {
@@ -2031,6 +2088,8 @@ export interface components {
                 [key: string]: unknown;
             };
             id: string;
+            /** @description CEL expression to determine if the job should run */
+            if?: string;
             matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
@@ -2043,18 +2102,36 @@ export interface components {
             default?: {
                 [key: string]: unknown;
             }[];
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "array";
         };
         WorkflowNumberInput: {
             default?: number;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "number";
         };
+        WorkflowObjectInput: {
+            default?: {
+                [key: string]: unknown;
+            };
+            key: string;
+            /** @enum {string} */
+            type: "object";
+        };
+        WorkflowRun: {
+            id: string;
+            inputs: {
+                [key: string]: unknown;
+            };
+            workflowId: string;
+        };
+        WorkflowRunWithJobs: components["schemas"]["WorkflowRun"] & {
+            jobs: components["schemas"]["WorkflowJobWithJobs"][];
+        };
         WorkflowSelectorArrayInput: {
-            name: string;
+            key: string;
             selector: {
                 default?: components["schemas"]["Selector"];
                 /** @enum {string} */
@@ -2065,18 +2142,9 @@ export interface components {
         };
         WorkflowStringInput: {
             default?: string;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "string";
-        };
-        WorkflowTemplate: {
-            id: string;
-            inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["WorkflowJobTemplate"][];
-            name: string;
-        };
-        WorkflowWithJobs: components["schemas"]["Workflow"] & {
-            jobs: components["schemas"]["WorkflowJobWithJobs"][];
         };
     };
     responses: never;
@@ -2229,7 +2297,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["DeploymentAndSystem"][];
+                        items: components["schemas"]["DeploymentAndSystems"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */
@@ -3082,7 +3150,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["JobWithRelease"][];
+                        items: components["schemas"]["Job"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */
@@ -3637,6 +3705,55 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    previewReleaseTargetsForResource: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourcePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ReleaseTargetPreview"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4524,7 +4641,7 @@ export interface operations {
             };
         };
     };
-    getWorkflowTemplates: {
+    listWorkflows: {
         parameters: {
             query?: {
                 /** @description Maximum number of items to return */
@@ -4548,7 +4665,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["WorkflowTemplate"][];
+                        items: components["schemas"]["Workflow"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */
@@ -4578,27 +4695,27 @@ export interface operations {
             };
         };
     };
-    getWorkflowTemplate: {
+    getWorkflow: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
-                /** @description ID of the workflow template */
-                workflowTemplateId: string;
+                /** @description ID of the workflow */
+                workflowId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Get workflow template */
+            /** @description Get workflow */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowTemplate"];
+                    "application/json": components["schemas"]["Workflow"];
                 };
             };
             /** @description Invalid request */
@@ -4621,7 +4738,7 @@ export interface operations {
             };
         };
     };
-    getWorkflowsByTemplate: {
+    getWorkflowRuns: {
         parameters: {
             query?: {
                 /** @description Maximum number of items to return */
@@ -4633,8 +4750,8 @@ export interface operations {
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
-                /** @description ID of the workflow template */
-                workflowTemplateId: string;
+                /** @description ID of the workflow */
+                workflowId: string;
             };
             cookie?: never;
         };
@@ -4647,7 +4764,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["WorkflowWithJobs"][];
+                        items: components["schemas"]["WorkflowRunWithJobs"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

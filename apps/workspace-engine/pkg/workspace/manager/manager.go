@@ -84,6 +84,7 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 			return nil, err
 		}
 
+		setStatusMessage("Restoring release manager")
 		if err := ws.ReleaseManager().Restore(ctx); err != nil {
 			workspaceStatus.SetError(err)
 			span.RecordError(err)

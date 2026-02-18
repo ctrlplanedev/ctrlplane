@@ -46,9 +46,8 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 	// Create environment
 	environmentId := uuid.New().String()
 	environment := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: systemId,
+		Id:   environmentId,
+		Name: "test-env",
 	}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
@@ -58,10 +57,9 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 	// Create deployment
 	deploymentId := uuid.New().String()
 	deployment := &oapi.Deployment{
-		Id:       deploymentId,
-		Name:     "test-deployment",
-		Slug:     "test-deployment",
-		SystemId: systemId,
+		Id:   deploymentId,
+		Name: "test-deployment",
+		Slug: "test-deployment",
 	}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})

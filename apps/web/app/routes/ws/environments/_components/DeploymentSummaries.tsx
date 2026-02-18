@@ -157,7 +157,6 @@ function DeploymentSummaryCard({
     >
       <DeploymentCardHeader
         name={deployment.name}
-        systemName={deployment.systemId}
         description={deployment.description}
       />
       <DeploymentCardContent>

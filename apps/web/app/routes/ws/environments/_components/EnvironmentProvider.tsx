@@ -4,10 +4,16 @@ import { createContext, useContext } from "react";
 type Environment = {
   id: string;
   name: string;
-  systemId: string;
-  description?: string;
-  resourceSelector?: { cel?: string; json?: Record<string, unknown> };
-  createdAt: string;
+  systemEnvironments: Array<{
+    systemId: string;
+    system: {
+      id: string;
+      name: string;
+    };
+  }>;
+  description?: string | null;
+  resourceSelector?: string | null;
+  createdAt: Date;
 };
 
 type EnvironmentContextType = {

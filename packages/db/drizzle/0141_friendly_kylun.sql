@@ -1,0 +1,1 @@
+ALTER TYPE "public"."deployment_version_status" ADD VALUE 'paused';

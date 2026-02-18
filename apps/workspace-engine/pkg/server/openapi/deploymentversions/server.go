@@ -32,14 +32,20 @@ func (s *DeploymentVersions) GetDeploymentVersion(c *gin.Context, workspaceId st
 	c.JSON(http.StatusOK, deploymentVersion)
 }
 
-func getSystemEnvironments(ws *workspace.Workspace, systemId string) []*oapi.Environment {
+func getSystemsEnvironments(ws *workspace.Workspace, systemIds []string) []*oapi.Environment {
+	seen := make(map[string]struct{})
 	environments := make([]*oapi.Environment, 0)
-	for _, environment := range ws.Environments().Items() {
-		if environment.SystemId == systemId {
-			environments = append(environments, environment)
+	for _, sid := range systemIds {
+		for _, eid := range ws.SystemEnvironments().GetEnvironmentIDsForSystem(sid) {
+			if _, ok := seen[eid]; ok {
+				continue
+			}
+			seen[eid] = struct{}{}
+			if env, ok := ws.Environments().Get(eid); ok {
+				environments = append(environments, env)
+			}
 		}
 	}
-
 	return environments
 }
 
@@ -142,7 +148,8 @@ func (s *DeploymentVersions) GetDeploymentVersionJobsList(c *gin.Context, worksp
 		return
 	}
 
-	environments := getSystemEnvironments(ws, deployment.SystemId)
+	deploymentSystemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id)
+	environments := getSystemsEnvironments(ws, deploymentSystemIDs)
 	releaseTargets, err := getDeploymentReleaseTargets(c, ws, deployment.Id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

@@ -193,7 +193,7 @@ func (e *VersionCooldownEvaluator) Evaluate(
 	interval := time.Duration(e.rule.IntervalSeconds) * time.Second
 
 	// Resolve the reference version once (cached across candidate versions).
-	ref := e.resolveReferenceVersion(ctx, scope.ReleaseTarget)
+	ref := e.resolveReferenceVersion(ctx, scope.ReleaseTarget())
 
 	if ref.version == nil {
 		return results.NewAllowedResult("No previous version deployed - cooldown not applicable").

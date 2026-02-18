@@ -102,10 +102,13 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
+		resource, _ := e.store.Resources.Get(releaseTarget.ResourceId)
+		deployment, _ := e.store.Deployments.Get(releaseTarget.DeploymentId)
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: releaseTarget,
+			Environment: environment,
+			Version:     version,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
 

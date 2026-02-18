@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewResourceVariables(store *Store) *ResourceVariables {
@@ -16,7 +16,7 @@ func NewResourceVariables(store *Store) *ResourceVariables {
 }
 
 type ResourceVariables struct {
-	repo  *repository.InMemoryStore
+	repo  *memory.InMemory
 	store *Store
 }
 

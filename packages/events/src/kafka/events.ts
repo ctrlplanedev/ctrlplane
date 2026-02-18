@@ -1,4 +1,3 @@
-import type * as schema from "@ctrlplane/db/schema";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 export enum Event {
@@ -7,6 +6,11 @@ export enum Event {
   SystemCreated = "system.created",
   SystemUpdated = "system.updated",
   SystemDeleted = "system.deleted",
+
+  SystemDeploymentLinked = "system-deployment.linked",
+  SystemDeploymentUnlinked = "system-deployment.unlinked",
+  SystemEnvironmentLinked = "system-environment.linked",
+  SystemEnvironmentUnlinked = "system-environment.unlinked",
 
   ResourceCreated = "resource.created",
   ResourceUpdated = "resource.updated",
@@ -69,37 +73,21 @@ export enum Event {
 
   ResourceProviderSetResources = "resource-provider.set-resources",
 
-  WorkflowTemplateCreated = "workflow-template.created",
   WorkflowCreated = "workflow.created",
+  WorkflowUpdated = "workflow.updated",
+  WorkflowDeleted = "workflow.deleted",
+  WorkflowRunCreated = "workflow-run.created",
 }
-
-export type FullPolicy = schema.Policy & {
-  targets: schema.PolicyTarget[];
-  denyWindows: schema.PolicyRuleDenyWindow[];
-  deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
-  versionAnyApprovals: schema.PolicyRuleAnyApproval | null;
-  versionUserApprovals: schema.PolicyRuleUserApproval[];
-  versionRoleApprovals: schema.PolicyRuleRoleApproval[];
-  concurrency: schema.PolicyRuleConcurrency | null;
-  environmentVersionRollout: schema.PolicyRuleEnvironmentVersionRollout | null;
-  maxRetries: schema.PolicyRuleMaxRetries | null;
-};
-
-export type FullResource = schema.Resource & {
-  metadata: Record<string, string>;
-};
-
-export type FullReleaseTarget = schema.ReleaseTarget & {
-  resource: FullResource;
-  environment: schema.Environment;
-  deployment: schema.Deployment;
-};
 
 export type GoEventPayload = {
   [Event.WorkspaceSave]: object;
   [Event.SystemCreated]: WorkspaceEngine["schemas"]["System"];
   [Event.SystemUpdated]: WorkspaceEngine["schemas"]["System"];
   [Event.SystemDeleted]: WorkspaceEngine["schemas"]["System"];
+  [Event.SystemDeploymentLinked]: WorkspaceEngine["schemas"]["SystemDeploymentLink"];
+  [Event.SystemDeploymentUnlinked]: WorkspaceEngine["schemas"]["SystemDeploymentLink"];
+  [Event.SystemEnvironmentLinked]: WorkspaceEngine["schemas"]["SystemEnvironmentLink"];
+  [Event.SystemEnvironmentUnlinked]: WorkspaceEngine["schemas"]["SystemEnvironmentLink"];
   [Event.ResourceCreated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceUpdated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceDeleted]: WorkspaceEngine["schemas"]["Resource"];
@@ -143,8 +131,10 @@ export type GoEventPayload = {
     providerId: string;
     batchId: string;
   };
-  [Event.WorkflowTemplateCreated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
   [Event.WorkflowCreated]: WorkspaceEngine["schemas"]["Workflow"];
+  [Event.WorkflowUpdated]: WorkspaceEngine["schemas"]["Workflow"];
+  [Event.WorkflowDeleted]: WorkspaceEngine["schemas"]["Workflow"];
+  [Event.WorkflowRunCreated]: WorkspaceEngine["schemas"]["WorkflowRun"];
 };
 
 export type GoMessage<T extends keyof GoEventPayload> = {

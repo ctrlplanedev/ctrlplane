@@ -1,3 +1,5 @@
+import { trpc } from "~/api/trpc";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { DeploymentPageHeader } from "./_components/DeploymentPageHeader";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentVariableSection } from "./_components/variables/DeploymentVariableSection";
@@ -10,8 +12,13 @@ export function meta() {
 }
 
 function VariablesTable() {
+  const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
-  const { variables } = deployment;
+
+  const { data: variables = [] } = trpc.deployment.variables.useQuery({
+    workspaceId: workspace.id,
+    deploymentId: deployment.id,
+  });
 
   if (variables.length === 0) {
     return (
