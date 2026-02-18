@@ -68,7 +68,7 @@ func seedSuccessfulRelease(
 	ctx context.Context,
 	st *store.Store,
 	releaseTarget *oapi.ReleaseTarget,
-) {
+) *oapi.DeploymentVersion {
 	t.Helper()
 
 	versionCreatedAt := time.Now().Add(-2 * time.Hour)
@@ -96,6 +96,24 @@ func seedSuccessfulRelease(
 		CreatedAt:   completedAt,
 	}
 	st.Jobs.Upsert(ctx, job)
+
+	return version
+}
+
+func createCandidateVersion(
+	ctx context.Context,
+	st *store.Store,
+	deploymentId string,
+	tag string,
+) *oapi.DeploymentVersion {
+	version := &oapi.DeploymentVersion{
+		Id:           uuid.New().String(),
+		DeploymentId: deploymentId,
+		Tag:          tag,
+		CreatedAt:    time.Now(),
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+	return version
 }
 
 func setupScopeWithDeployedTarget(t *testing.T, st *store.Store) (context.Context, evaluator.EvaluatorScope) {
@@ -103,9 +121,28 @@ func setupScopeWithDeployedTarget(t *testing.T, st *store.Store) (context.Contex
 
 	ctx, releaseTarget := setupReleaseTarget(t, st)
 	seedSuccessfulRelease(t, ctx, st, releaseTarget)
+	candidateVersion := createCandidateVersion(ctx, st, releaseTarget.DeploymentId, "v2.0.0")
 
 	return ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Version:     candidateVersion,
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+	}
+}
+
+func setupScopeWithPreviouslyDeployedVersion(
+	t *testing.T,
+	st *store.Store,
+) (context.Context, evaluator.EvaluatorScope) {
+	t.Helper()
+
+	ctx, releaseTarget := setupReleaseTarget(t, st)
+	deployedVersion := seedSuccessfulRelease(t, ctx, st, releaseTarget)
+
+	return ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Version:     deployedVersion,
 		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
 		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
@@ -163,8 +200,9 @@ func TestDeploymentWindowEvaluator_ScopeFields(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	// Deployment window needs release target to check for existing deployments
-	assert.Equal(t, evaluator.ScopeReleaseTarget, eval.ScopeFields())
+	// Deployment window needs release target + version to evaluate whether this
+	// candidate version has already been deployed for the target.
+	assert.Equal(t, evaluator.ScopeVersion|evaluator.ScopeReleaseTarget, eval.ScopeFields())
 }
 
 func TestDeploymentWindowEvaluator_RuleType(t *testing.T) {
@@ -320,8 +358,10 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, releaseTarget := setupReleaseTarget(t, st)
+	candidateVersion := createCandidateVersion(ctx, st, releaseTarget.DeploymentId, "v1.0.0")
 	scope := evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Version:     candidateVersion,
 		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
 		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
@@ -330,6 +370,31 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 	assert.True(t, result.Allowed, "expected allowed when no deployment exists")
 	assert.Contains(t, result.Message, "deployment window ignored")
 	assert.Equal(t, "first_deployment", result.Details["reason"])
+}
+
+func TestDeploymentWindowEvaluator_IgnoresWindowForPreviouslyDeployedVersion(t *testing.T) {
+	st := setupStore()
+
+	// Outside this allow window by default, so this would normally be blocked.
+	rule := &oapi.PolicyRule{
+		Id: "rule-1",
+		DeploymentWindow: &oapi.DeploymentWindowRule{
+			Rrule:           "FREQ=YEARLY;COUNT=1;DTSTART=20200101T000000Z",
+			DurationMinutes: 1,
+			AllowWindow:     boolPtr(true),
+		},
+	}
+
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "expected non-nil evaluator")
+
+	ctx, scope := setupScopeWithPreviouslyDeployedVersion(t, st)
+	result := eval.Evaluate(ctx, scope)
+
+	assert.True(t, result.Allowed, "expected allowed when candidate version was previously deployed")
+	assert.Contains(t, result.Message, "deployment window ignored")
+	assert.Equal(t, "version_previously_deployed", result.Details["reason"])
+	assert.Equal(t, scope.Version.Id, result.Details["version_id"])
 }
 
 func TestDeploymentWindowEvaluator_NextEvaluationTime(t *testing.T) {

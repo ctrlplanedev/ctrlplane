@@ -69,10 +69,11 @@ func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Eva
 	})
 }
 
-// ScopeFields returns ReleaseTarget since deployment window evaluation needs to
-// know if the target has a deployed version already.
+// ScopeFields returns Version + ReleaseTarget since deployment window evaluation
+// needs to know whether this specific version has already been deployed to this
+// target.
 func (e *DeploymentWindowEvaluator) ScopeFields() evaluator.ScopeFields {
-	return evaluator.ScopeReleaseTarget
+	return evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
 }
 
 // RuleType returns the rule type identifier for bypass matching.
@@ -106,6 +107,34 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%dh %dm", hours, minutes)
 }
 
+func (e *DeploymentWindowEvaluator) hasPreviouslyDeployedVersion(
+	releaseTarget *oapi.ReleaseTarget,
+	versionId string,
+) bool {
+	if releaseTarget == nil || versionId == "" {
+		return false
+	}
+
+	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	for _, job := range jobs {
+		if job.Status != oapi.JobStatusSuccessful || job.CompletedAt == nil {
+			continue
+		}
+
+		release, ok := e.store.Releases.Get(job.ReleaseId)
+		if !ok || release == nil || release.Version.Id != versionId {
+			continue
+		}
+
+		verificationStatus := e.store.JobVerifications.GetJobVerificationStatus(job.Id)
+		if verificationStatus == "" || verificationStatus == oapi.JobVerificationStatusPassed {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Evaluate checks if the current time is within a deployment window.
 func (e *DeploymentWindowEvaluator) Evaluate(
 	ctx context.Context,
@@ -114,7 +143,17 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 	_, span := tracer.Start(ctx, "DeploymentWindowEvaluator.Evaluate")
 	defer span.End()
 
-	_, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, scope.ReleaseTarget())
+	releaseTarget := scope.ReleaseTarget()
+	candidateVersion := scope.Version
+	if candidateVersion != nil && e.hasPreviouslyDeployedVersion(releaseTarget, candidateVersion.Id) {
+		return results.NewAllowedResult("Version was previously deployed to this release target - deployment window ignored").
+			WithDetail("reason", "version_previously_deployed").
+			WithDetail("version_id", candidateVersion.Id).
+			WithDetail("version_tag", candidateVersion.Tag).
+			WithDetail("release_target", releaseTarget.Key())
+	}
+
+	_, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
 	if err != nil {
 		return results.NewAllowedResult("No previous version deployed - deployment window ignored").
 			WithDetail("reason", "first_deployment")
