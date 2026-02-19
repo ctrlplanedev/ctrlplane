@@ -87,10 +87,10 @@ func (s *DeploymentAgentsSelector) SelectAgents() ([]*oapi.JobAgent, error) {
 
 	jobAgents := make([]*oapi.JobAgent, 0)
 	for _, deploymentJobAgent := range *s.deployment.JobAgents {
-		if deploymentJobAgent.If != "" {
-			program, err := jobAgentIfEnv.Compile(deploymentJobAgent.If)
+		if deploymentJobAgent.Selector != "" {
+			program, err := jobAgentIfEnv.Compile(deploymentJobAgent.Selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to compile job agent if expression %q: %w", deploymentJobAgent.If, err)
+				return nil, fmt.Errorf("failed to compile job agent if expression %q: %w", deploymentJobAgent.Selector, err)
 			}
 			result, err := celutil.EvalBool(program, celCtx)
 			if err != nil {

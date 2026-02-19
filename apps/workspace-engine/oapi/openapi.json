@@ -242,18 +242,18 @@
                "config": {
                   "$ref": "#/components/schemas/JobAgentConfig"
                },
-               "if": {
-                  "description": "CEL expression to determine if the job agent should be used",
+               "ref": {
                   "type": "string"
                },
-               "ref": {
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should be used",
                   "type": "string"
                }
             },
             "required": [
                "ref",
                "config",
-               "if"
+               "selector"
             ],
             "type": "object"
          },

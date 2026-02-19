@@ -1089,8 +1089,8 @@ func TestEngine_DeploymentJobAgentsArray_WithIfConditionFilters(t *testing.T) {
 				integration.DeploymentName("conditional-deploy"),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
-					{Ref: agentK8s, If: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
-					{Ref: agentDocker, If: "true", Config: oapi.JobAgentConfig{}},
+					{Ref: agentK8s, Selector: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentDocker, Selector: "true", Config: oapi.JobAgentConfig{}},
 				}),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -1147,8 +1147,8 @@ func TestEngine_DeploymentJobAgentsArray_IfConditionExcludesAgent(t *testing.T) 
 				integration.DeploymentName("filtered-deploy"),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
-					{Ref: agentK8s, If: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
-					{Ref: agentDocker, If: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentK8s, Selector: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentDocker, Selector: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
 				}),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -1205,8 +1205,8 @@ func TestEngine_DeploymentJobAgentsArray_AllConditionsFalse(t *testing.T) {
 				integration.DeploymentName("no-match-deploy"),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
-					{Ref: agentA, If: `environment.name == "staging"`, Config: oapi.JobAgentConfig{}},
-					{Ref: agentB, If: `environment.name == "staging"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentA, Selector: `environment.name == "staging"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentB, Selector: `environment.name == "staging"`, Config: oapi.JobAgentConfig{}},
 				}),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -1262,8 +1262,8 @@ func TestEngine_DeploymentJobAgentsArray_MultipleResourcesDifferentAgents(t *tes
 				integration.DeploymentName("multi-cloud-deploy"),
 				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
-					{Ref: agentGCP, If: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
-					{Ref: agentAWS, If: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentGCP, Selector: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentAWS, Selector: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
 				}),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),

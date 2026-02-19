@@ -316,10 +316,10 @@ type DeploymentDependencyRule struct {
 // DeploymentJobAgent defines model for DeploymentJobAgent.
 type DeploymentJobAgent struct {
 	Config JobAgentConfig `json:"config"`
+	Ref    string         `json:"ref"`
 
-	// If CEL expression to determine if the job agent should be used
-	If  string `json:"if"`
-	Ref string `json:"ref"`
+	// Selector CEL expression to determine if the job agent should be used
+	Selector string `json:"selector"`
 }
 
 // DeploymentVariable defines model for DeploymentVariable.

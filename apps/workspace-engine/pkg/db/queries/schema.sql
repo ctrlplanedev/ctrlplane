@@ -19,6 +19,7 @@ CREATE TABLE deployment (
     description TEXT NOT NULL DEFAULT '',
     job_agent_id UUID,
     job_agent_config JSONB NOT NULL DEFAULT '{}',
+    job_agents JSONB NOT NULL DEFAULT '[]',
     resource_selector TEXT DEFAULT 'false',
     metadata JSONB NOT NULL DEFAULT '{}',
     workspace_id UUID REFERENCES workspace(id)

@@ -268,7 +268,7 @@ func TestSelectAgents_CEL_TrueLiteral(t *testing.T) {
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
-	ja := []oapi.DeploymentJobAgent{{Ref: agentID, If: "true", Config: oapi.JobAgentConfig{}}}
+	ja := []oapi.DeploymentJobAgent{{Ref: agentID, Selector: "true", Config: oapi.JobAgentConfig{}}}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
 
@@ -292,7 +292,7 @@ func TestSelectAgents_CEL_FalseLiteral(t *testing.T) {
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
-	ja := []oapi.DeploymentJobAgent{{Ref: agentID, If: "false", Config: oapi.JobAgentConfig{}}}
+	ja := []oapi.DeploymentJobAgent{{Ref: agentID, Selector: "false", Config: oapi.JobAgentConfig{}}}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
 
@@ -343,8 +343,8 @@ func TestSelectAgents_CEL_MixedConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ja := []oapi.DeploymentJobAgent{
-				{Ref: agentA, If: tt.ifA, Config: oapi.JobAgentConfig{}},
-				{Ref: agentB, If: tt.ifB, Config: oapi.JobAgentConfig{}},
+				{Ref: agentA, Selector: tt.ifA, Config: oapi.JobAgentConfig{}},
+				{Ref: agentB, Selector: tt.ifB, Config: oapi.JobAgentConfig{}},
 			}
 			deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 			release := makeRelease(deployment.Id, envID, resID)
@@ -376,9 +376,9 @@ func TestSelectAgents_CEL_AllTrue(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: ids[0], If: "true", Config: oapi.JobAgentConfig{}},
-		{Ref: ids[1], If: "true", Config: oapi.JobAgentConfig{}},
-		{Ref: ids[2], If: "true", Config: oapi.JobAgentConfig{}},
+		{Ref: ids[0], Selector: "true", Config: oapi.JobAgentConfig{}},
+		{Ref: ids[1], Selector: "true", Config: oapi.JobAgentConfig{}},
+		{Ref: ids[2], Selector: "true", Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -408,9 +408,9 @@ func TestSelectAgents_CEL_AllFalse(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: ids[0], If: "false", Config: oapi.JobAgentConfig{}},
-		{Ref: ids[1], If: "false", Config: oapi.JobAgentConfig{}},
-		{Ref: ids[2], If: "false", Config: oapi.JobAgentConfig{}},
+		{Ref: ids[0], Selector: "false", Config: oapi.JobAgentConfig{}},
+		{Ref: ids[1], Selector: "false", Config: oapi.JobAgentConfig{}},
+		{Ref: ids[2], Selector: "false", Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -435,7 +435,7 @@ func TestSelectAgents_CEL_ResourceMetadataMatch(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{"region": "us-east-1"}))
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentID, If: `resource.metadata.region == "us-east-1"`, Config: oapi.JobAgentConfig{}},
+		{Ref: agentID, Selector: `resource.metadata.region == "us-east-1"`, Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -461,7 +461,7 @@ func TestSelectAgents_CEL_ResourceMetadataNoMatch(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{"region": "eu-west-1"}))
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentID, If: `resource.metadata.region == "us-east-1"`, Config: oapi.JobAgentConfig{}},
+		{Ref: agentID, Selector: `resource.metadata.region == "us-east-1"`, Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -486,7 +486,7 @@ func TestSelectAgents_CEL_EnvironmentNameMatch(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentID, If: `environment.name == "production"`, Config: oapi.JobAgentConfig{}},
+		{Ref: agentID, Selector: `environment.name == "production"`, Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -512,7 +512,7 @@ func TestSelectAgents_CEL_DeploymentNameMatch(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentID, If: `deployment.name == "my-deploy"`, Config: oapi.JobAgentConfig{}},
+		{Ref: agentID, Selector: `deployment.name == "my-deploy"`, Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "my-deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -538,7 +538,7 @@ func TestSelectAgents_CEL_EnvironmentNotInStore(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
 	missingEnvID := uuid.New().String()
-	ja := []oapi.DeploymentJobAgent{{Ref: agentID, If: "true", Config: oapi.JobAgentConfig{}}}
+	ja := []oapi.DeploymentJobAgent{{Ref: agentID, Selector: "true", Config: oapi.JobAgentConfig{}}}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, missingEnvID, resID)
 
@@ -562,7 +562,7 @@ func TestSelectAgents_CEL_ResourceNotInStore(t *testing.T) {
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
 
 	missingResID := uuid.New().String()
-	ja := []oapi.DeploymentJobAgent{{Ref: agentID, If: "true", Config: oapi.JobAgentConfig{}}}
+	ja := []oapi.DeploymentJobAgent{{Ref: agentID, Selector: "true", Config: oapi.JobAgentConfig{}}}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, missingResID)
 
@@ -587,7 +587,7 @@ func TestSelectAgents_CEL_InvalidSyntax(t *testing.T) {
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
-	ja := []oapi.DeploymentJobAgent{{Ref: agentID, If: "!@#$", Config: oapi.JobAgentConfig{}}}
+	ja := []oapi.DeploymentJobAgent{{Ref: agentID, Selector: "!@#$", Config: oapi.JobAgentConfig{}}}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
 
@@ -613,8 +613,8 @@ func TestSelectAgents_CEL_FirstPassesSecondBadRef(t *testing.T) {
 
 	missingRef := uuid.New().String()
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentA, If: "true", Config: oapi.JobAgentConfig{}},
-		{Ref: missingRef, If: "true", Config: oapi.JobAgentConfig{}},
+		{Ref: agentA, Selector: "true", Config: oapi.JobAgentConfig{}},
+		{Ref: missingRef, Selector: "true", Config: oapi.JobAgentConfig{}},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
