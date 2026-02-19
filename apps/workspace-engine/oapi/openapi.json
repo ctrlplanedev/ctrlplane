@@ -2954,6 +2954,124 @@
             "summary": "List workspace IDs"
          }
       },
+      "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}": {
+         "get": {
+            "description": "Returns a specific deployment variable value by ID.",
+            "operationId": "getDeploymentVariableValue",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable value",
+                  "in": "path",
+                  "name": "valueId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariableValue"
+                        }
+                     }
+                  },
+                  "description": "The requested deployment variable value"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment variable value"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}": {
+         "get": {
+            "description": "Returns a specific deployment variable by ID.",
+            "operationId": "getDeploymentVariable",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariable"
+                        }
+                     }
+                  },
+                  "description": "The requested deployment variable"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment variable"
+         }
+      },
       "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list": {
          "get": {
             "description": "Returns jobs grouped by environment and release target for a deployment version.",

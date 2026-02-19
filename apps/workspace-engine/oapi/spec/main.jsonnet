@@ -16,6 +16,7 @@
     (import 'paths/relationship.jsonnet') +
     (import 'paths/deployment.jsonnet') +
     (import 'paths/deployment-version.jsonnet') +
+    (import 'paths/deployment-variable.jsonnet') +
     (import 'paths/environment.jsonnet') +
     (import 'paths/system.jsonnet') +
     (import 'paths/job-agents.jsonnet') +

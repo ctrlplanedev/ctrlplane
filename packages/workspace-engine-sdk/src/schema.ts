@@ -41,6 +41,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get deployment variable value
+     * @description Returns a specific deployment variable value by ID.
+     */
+    get: operations["getDeploymentVariableValue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get deployment variable
+     * @description Returns a specific deployment variable by ID.
+     */
+    get: operations["getDeploymentVariable"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list": {
     parameters: {
       query?: never;
@@ -2333,6 +2373,92 @@ export interface operations {
           "application/json": {
             workspaceIds?: string[];
           };
+        };
+      };
+    };
+  };
+  getDeploymentVariableValue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description ID of the deployment variable value */
+        valueId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The requested deployment variable value */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVariableValue"];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getDeploymentVariable: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description ID of the deployment variable */
+        variableId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The requested deployment variable */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVariable"];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
