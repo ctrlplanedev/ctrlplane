@@ -194,14 +194,14 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
   }
 
   // Transform request body to workspace-engine schema
-  const deploymentVariableValue: WorkspaceEngine["schemas"]["DeploymentVariableValue"] =
-  {
-    id: valueId,
-    deploymentVariableId: variableId,
-    priority: body.priority,
-    resourceSelector: body.resourceSelector ?? undefined,
-    value: body.value,
-  };
+  const deploymentVariableValue:
+    WorkspaceEngine["schemas"]["DeploymentVariableValue"] = {
+      id: valueId,
+      deploymentVariableId: variableId,
+      priority: body.priority,
+      resourceSelector: body.resourceSelector ?? undefined,
+      value: body.value,
+    };
 
   await sendGoEvent({
     workspaceId,
@@ -210,7 +210,10 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
     data: deploymentVariableValue,
   });
 
-  res.status(204).end();
+  res.status(202).json({
+    id: valueId,
+    message: "Deployment variable value update requested",
+  });
 };
 
 const deleteDeploymentVariableValue: AsyncTypedHandler<
