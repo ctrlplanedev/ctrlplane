@@ -54,3 +54,4 @@ jobs:
       image-name: ctrlplane/relay
       dockerfile: apps/relay/Dockerfile
       context: apps/relay
+      platform: "linux/amd64"

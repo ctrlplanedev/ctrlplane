@@ -21,3 +21,4 @@ jobs:
     with:
       image-name: ctrlplane/web
       dockerfile: apps/web/Dockerfile
+      platform: "linux/amd64"
