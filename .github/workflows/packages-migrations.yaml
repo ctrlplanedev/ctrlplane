@@ -21,3 +21,4 @@ jobs:
     with:
       image-name: ctrlplane/migrations
       dockerfile: packages/db/Dockerfile
+      platform: "linux/amd64"
