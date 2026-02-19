@@ -19,7 +19,10 @@ const listPolicies: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Failed to list policies", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Failed to list policies",
+      response.response.status,
+    );
 
   res.status(200).json({ items: response.data.policies ?? [] });
   return;
@@ -37,7 +40,10 @@ const deletePolicy: AsyncTypedHandler<
   );
 
   if (policy.error != null)
-    throw new ApiError(policy.error.error ?? "Policy not found", policy.response.status);
+    throw new ApiError(
+      policy.error.error ?? "Policy not found",
+      policy.response.status,
+    );
 
   try {
     await sendGoEvent({
@@ -49,10 +55,7 @@ const deletePolicy: AsyncTypedHandler<
   } catch {
     throw new ApiError("Failed to delete policy", 500);
   }
-  res.status(202).json({
-    id: policyId,
-    message: "Policy delete requested",
-  });
+  res.status(202).json(policy.data);
 };
 
 const upsertPolicy: AsyncTypedHandler<
@@ -101,10 +104,7 @@ const upsertPolicy: AsyncTypedHandler<
     throw new ApiError("Failed to update policy", 500);
   }
 
-  res.status(202).json({
-    id: policyId,
-    message: "Policy update requested",
-  });
+  res.status(202).json(policy);
 };
 
 const getPolicy: AsyncTypedHandler<
@@ -120,7 +120,10 @@ const getPolicy: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Policy not found", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Policy not found",
+      response.response.status,
+    );
 
   res.status(200).json(response.data);
   return;
@@ -156,10 +159,7 @@ const createPolicy: AsyncTypedHandler<
     throw new ApiError("Failed to create policy", 500);
   }
 
-  res.status(202).json({
-    id: policy.id,
-    message: "Policy creation requested",
-  });
+  res.status(202).json(policy);
 };
 
 export const policiesRouter = Router({ mergeParams: true })

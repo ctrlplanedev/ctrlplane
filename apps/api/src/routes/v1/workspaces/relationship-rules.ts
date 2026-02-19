@@ -7,6 +7,28 @@ import { v4 as uuidv4 } from "uuid";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
+const listRelationshipRules: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/relationship-rules",
+  "get"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { offset, limit } = req.query;
+
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/relationship-rules",
+    { params: { path: { workspaceId }, query: { offset, limit } } },
+  );
+
+  if (response.error != null)
+    throw new ApiError(
+      response.error.error ?? "Failed to list relationship rules",
+      response.response.status,
+    );
+
+  res.status(200).json(response.data);
+  return;
+};
+
 const createRelationshipRule: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/relationship-rules",
   "post"
@@ -42,7 +64,10 @@ const getRelationshipRule: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Relationship rule not found", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Relationship rule not found",
+      response.response.status,
+    );
 
   res.status(200).json(response.data);
 };
@@ -99,6 +124,7 @@ const upsertRelationshipRule: AsyncTypedHandler<
 };
 
 export const relationshipRulesRouter = Router({ mergeParams: true })
+  .get("/", asyncHandler(listRelationshipRules))
   .post("/", asyncHandler(createRelationshipRule))
   .get("/:relationshipRuleId", asyncHandler(getRelationshipRule))
   .put("/:relationshipRuleId", asyncHandler(upsertRelationshipRule))

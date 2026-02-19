@@ -44,4 +44,42 @@ local openapi = import '../lib/openapi.libsonnet';
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
+
+  SystemDeploymentLink: {
+    type: 'object',
+    required: ['systemId', 'deploymentId'],
+    properties: {
+      systemId: { type: 'string' },
+      deploymentId: { type: 'string' },
+    },
+  },
+
+  SystemEnvironmentLink: {
+    type: 'object',
+    required: ['systemId', 'environmentId'],
+    properties: {
+      systemId: { type: 'string' },
+      environmentId: { type: 'string' },
+    },
+  },
+
+  SystemWithLinkedEntities: {
+    allOf: [
+      openapi.schemaRef('System'),
+      {
+        type: 'object',
+        required: ['environments', 'deployments'],
+        properties: {
+          environments: {
+            type: 'array',
+            items: openapi.schemaRef('Environment'),
+          },
+          deployments: {
+            type: 'array',
+            items: openapi.schemaRef('Deployment'),
+          },
+        },
+      },
+    ],
+  },
 }

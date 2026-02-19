@@ -26,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.environmentIdParam(),
       ],
       responses: openapi.okResponse(
-                   openapi.schemaRef('Environment'),
+                   openapi.schemaRef('EnvironmentWithSystems'),
                    'The requested environment'
                  )
                  + openapi.notFoundResponse()

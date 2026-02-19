@@ -11,7 +11,7 @@ import (
 )
 
 func selectorFromString(s string) *oapi.Selector {
-	if s == "" || s == "false" {
+	if s == "" {
 		return nil
 	}
 	sel := &oapi.Selector{}

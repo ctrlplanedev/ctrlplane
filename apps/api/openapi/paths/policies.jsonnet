@@ -24,7 +24,7 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': { schema: openapi.schemaRef('CreatePolicyRequest') },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('PolicyRequestAccepted'))
+      responses: openapi.acceptedResponse(openapi.schemaRef('Policy'))
                  + openapi.badRequestResponse(),
     },
   },
@@ -45,7 +45,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.policyIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('PolicyRequestAccepted'), 'Policy updated')
+      responses: openapi.acceptedResponse(openapi.schemaRef('Policy'), 'Policy deleted')
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
@@ -62,7 +62,7 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': { schema: openapi.schemaRef('UpsertPolicyRequest') },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('PolicyRequestAccepted')) +
+      responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) +
                  openapi.badRequestResponse() +
                  openapi.notFoundResponse(),
     },

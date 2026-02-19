@@ -96,9 +96,21 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 		}
 	}
 
-	deploymentWithVariables := &oapi.DeploymentWithVariables{
+	systemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deploymentId)
+	systems := make([]oapi.System, 0, len(systemIDs))
+	for _, sid := range systemIDs {
+		system, ok := ws.Systems().Get(sid)
+		if !ok {
+			log.Warn("System not found for deployment", "deploymentId", deployment.Id, "systemId", sid)
+			continue
+		}
+		systems = append(systems, *system)
+	}
+
+	deploymentWithVariables := &oapi.DeploymentWithVariablesAndSystems{
 		Deployment: *deployment,
 		Variables:  variables,
+		Systems:    systems,
 	}
 
 	c.JSON(http.StatusOK, deploymentWithVariables)

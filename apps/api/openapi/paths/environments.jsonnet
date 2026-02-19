@@ -37,7 +37,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('Environment'))
+      responses: openapi.okResponse(openapi.schemaRef('EnvironmentWithSystems'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

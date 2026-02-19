@@ -38,8 +38,10 @@
       (import 'schemas/relationship.jsonnet') +
       (import 'schemas/jobs.jsonnet') +
       (import 'schemas/deployments.jsonnet') +
+      (import 'schemas/environments.jsonnet') +
       (import 'schemas/verification.jsonnet') +
       (import 'schemas/resourcevariables.jsonnet') +
+      (import 'schemas/systems.jsonnet') +
       (import 'schemas/workflows.jsonnet'),
   },
 }

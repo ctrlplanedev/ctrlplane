@@ -378,9 +378,10 @@ type DeploymentWindowRule struct {
 	Timezone *string `json:"timezone,omitempty"`
 }
 
-// DeploymentWithVariables defines model for DeploymentWithVariables.
-type DeploymentWithVariables struct {
+// DeploymentWithVariablesAndSystems defines model for DeploymentWithVariablesAndSystems.
+type DeploymentWithVariablesAndSystems struct {
 	Deployment Deployment                     `json:"deployment"`
+	Systems    []System                       `json:"systems"`
 	Variables  []DeploymentVariableWithValues `json:"variables"`
 }
 
@@ -437,6 +438,17 @@ type EnvironmentProgressionRule struct {
 type EnvironmentSummary struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// EnvironmentWithSystems defines model for EnvironmentWithSystems.
+type EnvironmentWithSystems struct {
+	CreatedAt        time.Time         `json:"createdAt"`
+	Description      *string           `json:"description,omitempty"`
+	Id               string            `json:"id"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
+	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	Systems          []System          `json:"systems"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -2854,6 +2866,12 @@ type ServerInterface interface {
 	// Get system
 	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
 	GetSystem(c *gin.Context, workspaceId string, systemId string)
+	// Get deployment system link
+	// (GET /v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId})
+	GetDeploymentSystemLink(c *gin.Context, workspaceId string, systemId string, deploymentId string)
+	// Get environment system link
+	// (GET /v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId})
+	GetEnvironmentSystemLink(c *gin.Context, workspaceId string, systemId string, environmentId string)
 	// List workflows
 	// (GET /v1/workspaces/{workspaceId}/workflows)
 	ListWorkflows(c *gin.Context, workspaceId string, params ListWorkflowsParams)
@@ -4953,6 +4971,90 @@ func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
 	siw.Handler.GetSystem(c, workspaceId, systemId)
 }
 
+// GetDeploymentSystemLink operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentSystemLink(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "systemId" -------------
+	var systemId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "systemId", c.Param("systemId"), &systemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter systemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentSystemLink(c, workspaceId, systemId, deploymentId)
+}
+
+// GetEnvironmentSystemLink operation middleware
+func (siw *ServerInterfaceWrapper) GetEnvironmentSystemLink(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "systemId" -------------
+	var systemId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "systemId", c.Param("systemId"), &systemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter systemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "environmentId" -------------
+	var environmentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetEnvironmentSystemLink(c, workspaceId, systemId, environmentId)
+}
+
 // ListWorkflows operation middleware
 func (siw *ServerInterfaceWrapper) ListWorkflows(c *gin.Context) {
 
@@ -5163,6 +5265,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId/deployments/:deploymentId", wrapper.GetDeploymentSystemLink)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId/environments/:environmentId", wrapper.GetEnvironmentSystemLink)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows", wrapper.ListWorkflows)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId", wrapper.GetWorkflow)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.GetWorkflowRuns)

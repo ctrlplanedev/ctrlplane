@@ -77,7 +77,15 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 	// Store original timestamps for later comparison
 	r2OriginalCreatedAt := r2.CreatedAt
 
-	// Now SET with only resource 2 and a new resource 3
+	// Now SET with resource 2 (modified) and a new resource 3.
+	// Use a new object to avoid pointer aliasing with the in-memory store.
+	resource2Updated := &oapi.Resource{
+		Identifier: "res-2",
+		Name:       "Resource 2 Updated",
+		Kind:       "TestKind",
+		Config:     map[string]interface{}{},
+		Metadata:   map[string]string{},
+	}
 	resource3 := &oapi.Resource{
 		Identifier: "res-3",
 		Name:       "Resource 3",
@@ -86,7 +94,7 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 		Metadata:   map[string]string{},
 	}
 
-	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{resource2, resource3})
+	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{resource2Updated, resource3})
 
 	// Verify resource 1 was deleted
 	_, exists = ws.Resources().GetByIdentifier("res-1")

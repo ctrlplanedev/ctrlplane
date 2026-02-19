@@ -67,12 +67,13 @@ local jobAgentConfig = {
     },
   },
 
-  DeploymentWithVariables: {
+  DeploymentWithVariablesAndSystems: {
     type: 'object',
-    required: ['deployment', 'variables'],
+    required: ['deployment', 'variables', 'systems'],
     properties: {
       deployment: openapi.schemaRef('Deployment'),
       variables: { type: 'array', items: openapi.schemaRef('DeploymentVariableWithValues') },
+      systems: { type: 'array', items: openapi.schemaRef('System') },
     },
   },
 

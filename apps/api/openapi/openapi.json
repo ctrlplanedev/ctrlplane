@@ -671,10 +671,16 @@
             ],
             "type": "object"
          },
-         "DeploymentWithVariables": {
+         "DeploymentWithVariablesAndSystems": {
             "properties": {
                "deployment": {
                   "$ref": "#/components/schemas/Deployment"
+               },
+               "systems": {
+                  "items": {
+                     "$ref": "#/components/schemas/System"
+                  },
+                  "type": "array"
                },
                "variables": {
                   "items": {
@@ -685,7 +691,8 @@
             },
             "required": [
                "deployment",
-               "variables"
+               "variables",
+               "systems"
             ],
             "type": "object"
          },
@@ -817,6 +824,27 @@
                "message"
             ],
             "type": "object"
+         },
+         "EnvironmentWithSystems": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               {
+                  "properties": {
+                     "systems": {
+                        "items": {
+                           "$ref": "#/components/schemas/System"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "systems"
+                  ],
+                  "type": "object"
+               }
+            ]
          },
          "Error": {
             "properties": {
@@ -1308,21 +1336,6 @@
                "metadata",
                "priority",
                "enabled"
-            ],
-            "type": "object"
-         },
-         "PolicyRequestAccepted": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "message": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "message"
             ],
             "type": "object"
          },
@@ -2047,6 +2060,36 @@
             ],
             "type": "object"
          },
+         "SystemDeploymentLink": {
+            "properties": {
+               "deploymentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "SystemEnvironmentLink": {
+            "properties": {
+               "environmentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "environmentId"
+            ],
+            "type": "object"
+         },
          "SystemRequestAccepted": {
             "properties": {
                "id": {
@@ -2061,6 +2104,34 @@
                "message"
             ],
             "type": "object"
+         },
+         "SystemWithLinkedEntities": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/System"
+               },
+               {
+                  "properties": {
+                     "deployments": {
+                        "items": {
+                           "$ref": "#/components/schemas/Deployment"
+                        },
+                        "type": "array"
+                     },
+                     "environments": {
+                        "items": {
+                           "$ref": "#/components/schemas/Environment"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "environments",
+                     "deployments"
+                  ],
+                  "type": "object"
+               }
+            ]
          },
          "TerraformCloudRunMetricProvider": {
             "properties": {
@@ -3736,7 +3807,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentWithVariables"
+                           "$ref": "#/components/schemas/DeploymentWithVariablesAndSystems"
                         }
                      }
                   },
@@ -4864,7 +4935,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Environment"
+                           "$ref": "#/components/schemas/EnvironmentWithSystems"
                         }
                      }
                   },
@@ -5600,7 +5671,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/PolicyRequestAccepted"
+                           "$ref": "#/components/schemas/Policy"
                         }
                      }
                   },
@@ -5648,11 +5719,11 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/PolicyRequestAccepted"
+                           "$ref": "#/components/schemas/Policy"
                         }
                      }
                   },
-                  "description": "Policy updated"
+                  "description": "Policy deleted"
                },
                "400": {
                   "content": {
@@ -5770,7 +5841,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/PolicyRequestAccepted"
+                           "$ref": "#/components/schemas/Policy"
                         }
                      }
                   },
@@ -5801,6 +5872,103 @@
          }
       },
       "/v1/workspaces/{workspaceId}/relationship-rules": {
+         "get": {
+            "description": "Returns all relationship rules for the specified workspace.",
+            "operationId": "getRelationshipRules",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/RelationshipRule"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get relationship rules for a given workspace"
+         },
          "post": {
             "operationId": "createRelationshipRule",
             "parameters": [
@@ -7347,7 +7515,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/System"
+                           "$ref": "#/components/schemas/SystemWithLinkedEntities"
                         }
                      }
                   },
@@ -7489,6 +7657,71 @@
             },
             "summary": "Unlink deployment from system"
          },
+         "get": {
+            "operationId": "getDeploymentSystemLink",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemDeploymentLink"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment system link"
+         },
          "put": {
             "operationId": "linkDeploymentToSystem",
             "parameters": [
@@ -7620,6 +7853,71 @@
                }
             },
             "summary": "Unlink environment from system"
+         },
+         "get": {
+            "operationId": "getEnvironmentSystemLink",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemEnvironmentLink"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get environment system link"
          },
          "put": {
             "operationId": "linkEnvironmentToSystem",

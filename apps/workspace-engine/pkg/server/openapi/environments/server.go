@@ -33,7 +33,28 @@ func (s *Environments) GetEnvironment(c *gin.Context, workspaceId string, enviro
 		return
 	}
 
-	c.JSON(http.StatusOK, environment)
+	systemIDs := ws.SystemEnvironments().GetSystemIDsForEnvironment(environmentId)
+	systems := make([]oapi.System, 0, len(systemIDs))
+	for _, sid := range systemIDs {
+		system, ok := ws.Systems().Get(sid)
+		if !ok {
+			log.Warn("System not found for environment", "environmentId", environmentId, "systemId", sid)
+			continue
+		}
+		systems = append(systems, *system)
+	}
+
+	environmentWithSystems := &oapi.EnvironmentWithSystems{
+		CreatedAt:        environment.CreatedAt,
+		Description:      environment.Description,
+		Id:               environment.Id,
+		Metadata:         environment.Metadata,
+		Name:             environment.Name,
+		ResourceSelector: environment.ResourceSelector,
+		Systems:          systems,
+	}
+
+	c.JSON(http.StatusOK, environmentWithSystems)
 }
 
 func (s *Environments) ListEnvironments(c *gin.Context, workspaceId string, params oapi.ListEnvironmentsParams) {

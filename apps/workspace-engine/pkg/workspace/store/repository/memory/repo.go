@@ -211,6 +211,54 @@ func (a *resourceRepoAdapter) GetByIdentifier(identifier string) (*oapi.Resource
 	return nil, false
 }
 
+func (a *resourceRepoAdapter) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource {
+	wanted := make(map[string]struct{}, len(identifiers))
+	for _, id := range identifiers {
+		wanted[id] = struct{}{}
+	}
+	result := make(map[string]*oapi.Resource, len(identifiers))
+	for item := range a.store.IterBuffered() {
+		if _, ok := wanted[item.Val.Identifier]; ok {
+			result[item.Val.Identifier] = item.Val
+		}
+	}
+	return result
+}
+
+func (a *resourceRepoAdapter) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+	wanted := make(map[string]struct{}, len(identifiers))
+	for _, id := range identifiers {
+		wanted[id] = struct{}{}
+	}
+	result := make(map[string]*repository.ResourceSummary, len(identifiers))
+	for item := range a.store.IterBuffered() {
+		if _, ok := wanted[item.Val.Identifier]; ok {
+			r := item.Val
+			result[r.Identifier] = &repository.ResourceSummary{
+				Id:         r.Id,
+				Identifier: r.Identifier,
+				ProviderId: r.ProviderId,
+				Version:    r.Version,
+				Name:       r.Name,
+				Kind:       r.Kind,
+				CreatedAt:  r.CreatedAt,
+				UpdatedAt:  r.UpdatedAt,
+			}
+		}
+	}
+	return result
+}
+
+func (a *resourceRepoAdapter) ListByProviderID(providerID string) []*oapi.Resource {
+	var result []*oapi.Resource
+	for item := range a.store.IterBuffered() {
+		if item.Val.ProviderId != nil && *item.Val.ProviderId == providerID {
+			result = append(result, item.Val)
+		}
+	}
+	return result
+}
+
 func (a *resourceRepoAdapter) Set(entity *oapi.Resource) error {
 	a.store.Set(entity.Id, entity)
 	return nil

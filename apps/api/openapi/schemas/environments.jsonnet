@@ -43,4 +43,17 @@ local openapi = import '../lib/openapi.libsonnet';
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
+  
+  EnvironmentWithSystems: {
+    allOf: [
+      openapi.schemaRef('Environment'),
+      {
+        type: 'object',
+        required: ['systems'],
+        properties: {
+          systems: { type: 'array', items: openapi.schemaRef('System') },
+        },
+      },
+    ],
+  },
 }
