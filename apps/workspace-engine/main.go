@@ -17,6 +17,7 @@ import (
 	dbpersistence "workspace-engine/pkg/db/persistence"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/kafka"
+	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/registry"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
@@ -242,13 +243,14 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Initialize Kafka producer for ticker
+	// Initialize shared Kafka producer used by the ticker and all job agents
 	producer, err := kafka.NewProducer(kafka.Brokers)
 	if err != nil {
 		log.Fatal("Failed to create Kafka producer", "error", err)
 		panic(err)
 	}
-	defer producer.Close()
+	messaging.InitProducer(producer)
+	defer messaging.CloseProducer()
 
 	consumer, err := kafka.NewConsumer(kafka.Brokers, kafka.Topic)
 	if err != nil {

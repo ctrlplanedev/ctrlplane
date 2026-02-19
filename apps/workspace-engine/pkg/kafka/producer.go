@@ -14,7 +14,5 @@ func NewProducer(brokers string) (messaging.Producer, error) {
 		"compression.type":         "snappy",
 		"message.send.max.retries": 10,
 		"retry.backoff.ms":         100,
-
-		// "debug": "cgrp,broker,protocol",
 	})
 }
