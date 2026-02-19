@@ -25,23 +25,51 @@ Version cooldown helps you:
 
 ## Configuration
 
-Add a version cooldown rule to your policy:
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "batch_deployments" {
+  name     = "Batch Deployments"
+  selector = "environment.name == 'production'"
 
-```yaml
-policies:
-  - name: batch-deployments
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - versionCooldown:
-          interval: 1h
+  version_cooldown {
+    duration = "1h"
+  }
+}
 ```
+
+The Terraform provider accepts a Go duration string for `duration` (e.g.,
+`"1h"`, `"30m"`, `"90s"`). This is converted to seconds internally.
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Batch Deployments",
+    "selector": "environment.name == '\''production'\''",
+    "rules": [
+      {
+        "versionCooldown": {
+          "intervalSeconds": 3600
+        }
+      }
+    ]
+  }'
+```
+
+The API accepts `intervalSeconds` as an integer representing the minimum seconds
+that must pass.
+</Tab>
+</Tabs>
 
 ## Properties
 
-| Property          | Type    | Required | Description                                                                                                                                        |
-| ----------------- | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `intervalSeconds` | integer | Yes      | Minimum seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment (0 to disable) |
+<ParamField path="versionCooldown.intervalSeconds" type="integer" required>
+  Minimum seconds that must pass since the currently deployed (or in-progress)
+  version was created before allowing another deployment. Set to `0` to disable.
+</ParamField>
 
 ## How It Works
 
@@ -50,6 +78,7 @@ deployed (or in-progress) version was created, not the time gap between version
 creation times:
 
 1. **Find reference version**: The currently deployed or in-progress version
+   (in-progress takes precedence)
 2. **Calculate elapsed time**: Time since the reference version was created
    (using current time)
 3. **Apply cooldown**: If elapsed time >= interval, allow any version;
@@ -76,14 +105,8 @@ At 13:05 (65min elapsed since v1.0):
   Candidate v1.4 (created 13:00): ALLOWED - 65min elapsed
 ```
 
-**Note**: The cooldown checks elapsed time since the reference version (v1.0)
-was created, not the time gap between version creation times. Once 60 minutes
-have passed since v1.0 was created, any version (newer or older) can be
-deployed.
-
-**Key point**: Once the cooldown period has elapsed, any version can be
-deployed, regardless of when it was created. This enables batching rapid
-releases.
+Once the cooldown period has elapsed, **any** version can be deployed,
+regardless of when it was created. This enables batching rapid releases.
 
 ## Common Patterns
 
@@ -91,97 +114,150 @@ releases.
 
 Deploy at most once per hour:
 
-```yaml
-policies:
-  - name: hourly-deployments
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - versionCooldown:
-          intervalSeconds: 3600 # 1 hour
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "hourly_deployments" {
+  name     = "Hourly Deployments"
+  selector = "environment.name == 'production'"
+
+  version_cooldown {
+    duration = "1h"
+  }
+}
 ```
-
-### Daily Batching
-
-For stable environments that only need daily updates:
-
-```yaml
-policies:
-  - name: daily-deployments
-    selectors:
-      - environment: environment.name == "production"
-      - deployment: deployment.metadata.update_frequency == "daily"
-    rules:
-      - versionCooldown:
-          interval: 1d
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Hourly Deployments",
+  "selector": "environment.name == 'production'",
+  "rules": [
+    { "versionCooldown": { "intervalSeconds": 3600 } }
+  ]
+}
 ```
+</Tab>
+</Tabs>
 
 ### Per-Environment Cooldown
 
 Different intervals for different environments:
 
-```yaml
-policies:
-  # Staging: 15 minute cooldown
-  - name: staging-cooldown
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - versionCooldown:
-          intervalSeconds: 900
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "staging_cooldown" {
+  name     = "Staging Cooldown"
+  selector = "environment.name == 'staging'"
 
-  # Production: 1 hour cooldown
-  - name: production-cooldown
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - versionCooldown:
-          intervalSeconds: 3600
+  version_cooldown {
+    duration = "15m"
+  }
+}
+
+resource "ctrlplane_policy" "production_cooldown" {
+  name     = "Production Cooldown"
+  selector = "environment.name == 'production'"
+
+  version_cooldown {
+    duration = "1h"
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+[
+  {
+    "name": "Staging Cooldown",
+    "selector": "environment.name == 'staging'",
+    "rules": [
+      { "versionCooldown": { "intervalSeconds": 900 } }
+    ]
+  },
+  {
+    "name": "Production Cooldown",
+    "selector": "environment.name == 'production'",
+    "rules": [
+      { "versionCooldown": { "intervalSeconds": 3600 } }
+    ]
+  }
+]
+```
+</Tab>
+</Tabs>
 
 ### Combined with Other Rules
 
 Use cooldown alongside other policy rules:
 
-```yaml
-policies:
-  - name: production-controlled-release
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      # Batch rapid releases
-      - versionCooldown:
-          intervalSeconds: 1800 # 30 minutes
+```hcl
+resource "ctrlplane_policy" "production_controlled_release" {
+  name     = "Production Controlled Release"
+  selector = "environment.name == 'production'"
 
-      # Require approval
-      - approval:
-          required: 1
+  version_cooldown {
+    duration = "30m"
+  }
 
-      # Roll out gradually
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300
+  any_approval {
+    min_approvals = 1
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
 
 ### With Deployment Windows
 
 Combine cooldown with deployment windows for comprehensive control:
 
-```yaml
-policies:
-  - name: controlled-production
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      # Only deploy during business hours
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
-          durationMinutes: 480
-          timezone: "America/New_York"
+```hcl
+resource "ctrlplane_policy" "controlled_production" {
+  name     = "Controlled Production"
+  selector = "environment.name == 'production'"
 
-      # Batch releases to at most every 2 hours
-      - versionCooldown:
-          intervalSeconds: 7200
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
+    duration_minutes = 480
+    timezone         = "America/New_York"
+  }
+
+  version_cooldown {
+    duration = "2h"
+  }
+}
+```
+
+### Weekly Scheduled Deployments
+
+Deploy updates on a specific day (e.g., every Monday):
+
+```hcl
+resource "ctrlplane_policy" "monday_deployments" {
+  name     = "Monday Deployments"
+  selector = "deployment.name == 'datadog-agent'"
+
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0"
+    duration_minutes = 1440
+    timezone         = "America/New_York"
+    allow_window     = true
+  }
+
+  version_cooldown {
+    duration = "120h"
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear-normalized"
+    time_scale_interval = 82800
+  }
+}
 ```
 
 ## Behavior Details
@@ -221,82 +297,6 @@ If a deployment is in progress, the cooldown uses that version as the reference:
 
 - Prevents deploying a newer version while one is still rolling out
 - Ensures sequential deployments respect the interval
-
-## Use Cases
-
-### High-Frequency CI/CD
-
-For services with frequent commits:
-
-```yaml
-# Service deploys 20+ times per hour to staging
-# Batch to every 30 minutes for production
-policies:
-  - name: ci-batching
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - versionCooldown:
-          intervalSeconds: 1800
-```
-
-### Monorepo Deployments
-
-When multiple services share a repository and get versioned together:
-
-```yaml
-# Many services update simultaneously
-# Stagger deployments to reduce infrastructure load
-policies:
-  - name: monorepo-stagger
-    selectors:
-      - deployment: deployment.metadata.source == "monorepo"
-    rules:
-      - versionCooldown:
-          intervalSeconds: 600 # 10 minutes
-```
-
-### Cost Optimization
-
-Reduce deployment frequency to save on infrastructure costs:
-
-```yaml
-# Non-critical services don't need instant updates
-policies:
-  - name: cost-optimized
-    selectors:
-      - deployment: deployment.metadata.tier == "standard"
-    rules:
-      - versionCooldown:
-          intervalSeconds: 14400 # 4 hours
-```
-
-### Weekly Scheduled Deployments
-
-Deploy updates on a specific day (e.g., every Monday):
-
-```yaml
-policies:
-  - name: monday-deployments
-    selectors:
-      - deployment: deployment.name == "datadog-agent"
-    rules:
-      # Only deploy on Mondays (all day)
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0"
-          durationMinutes: 1440 # 24 hours
-          timezone: "America/New_York"
-          allowWindow: true
-
-      # 5-day cooldown ensures weekly cadence
-      - versionCooldown:
-          intervalSeconds: 432000 # 5 days
-
-      # Normalized rollout fits within window
-      - gradualRollout:
-          rolloutType: linear-normalized
-          timeScaleInterval: 82800 # 23 hours
-```
 
 ## Best Practices
 

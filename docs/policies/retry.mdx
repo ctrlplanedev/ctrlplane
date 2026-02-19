@@ -31,29 +31,60 @@ Retry rules help you:
 
 ## Configuration
 
-Add a retry rule to your policy:
-
-```yaml
-policies:
-  - name: retry-on-failure
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - retry:
-          maxRetries: 3
+<Tabs>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Retry on Failure",
+    "selector": "environment.name == '\''production'\''",
+    "rules": [
+      {
+        "retry": {
+          "maxRetries": 3
+        }
+      }
+    ]
+  }'
 ```
+</Tab>
+</Tabs>
+
+<Note>
+  Retry rules are not yet supported in the Terraform provider. Use the REST API
+  to configure retry behavior.
+</Note>
 
 ## Properties
 
-| Property          | Type    | Required | Default              | Description                                         |
-| ----------------- | ------- | -------- | -------------------- | --------------------------------------------------- |
-| `maxRetries`      | integer | Yes      | -                    | Maximum retry attempts (0 = no retries)             |
-| `retryOnStatuses` | array   | No       | failure, invalid\*   | Job statuses that trigger retry                     |
-| `backoffSeconds`  | integer | No       | 0                    | Seconds to wait between retries                     |
-| `backoffStrategy` | string  | No       | linear               | Backoff strategy: `linear` or `exponential`         |
-| `maxBackoffSeconds` | integer | No     | -                    | Maximum backoff cap (for exponential)               |
+<ParamField path="retry.maxRetries" type="integer" required>
+  Maximum retry attempts. `0` means no retries (1 attempt total), `3` means up
+  to 4 attempts (1 initial + 3 retries).
+</ParamField>
 
-\* Default statuses: `failure`, `invalidIntegration`, `invalidJobAgent`
+<ParamField path="retry.retryOnStatuses" type="array">
+  Job statuses that trigger a retry. Defaults to `["failure",
+  "invalidIntegration", "invalidJobAgent"]` when `maxRetries > 0`. When
+  `maxRetries = 0`, also includes `"successful"` to enforce deploy-once
+  semantics.
+</ParamField>
+
+<ParamField path="retry.backoffSeconds" type="integer" default="0">
+  Seconds to wait between retry attempts. If not set, retries are allowed
+  immediately after job completion.
+</ParamField>
+
+<ParamField path="retry.backoffStrategy" type="string" default="linear">
+  Backoff strategy: `linear` (constant delay) or `exponential` (doubling delay
+  with each retry using `backoffSeconds * 2^(attempt-1)`).
+</ParamField>
+
+<ParamField path="retry.maxBackoffSeconds" type="integer">
+  Maximum backoff cap in seconds (for exponential backoff). If not set, no
+  maximum is enforced.
+</ParamField>
 
 ## Job Statuses
 
@@ -68,113 +99,121 @@ The following job statuses can be used in `retryOnStatuses`:
 | `invalidIntegration` | Integration configuration error          |
 | `invalidJobAgent`    | Job agent configuration error            |
 
+<Note>
+  Cancelled and skipped jobs never count toward the retry limit by default,
+  allowing redeployment after manual cancellation.
+</Note>
+
 ## Common Patterns
 
 ### Basic Retry
 
 Retry failed jobs up to 3 times:
 
-```yaml
-policies:
-  - name: basic-retry
-    rules:
-      - retry:
-          maxRetries: 3
+```json
+{
+  "retry": {
+    "maxRetries": 3
+  }
+}
 ```
 
 ### Retry with Backoff
 
 Wait between retry attempts:
 
-```yaml
-policies:
-  - name: retry-with-delay
-    rules:
-      - retry:
-          maxRetries: 3
-          backoffSeconds: 30 # Wait 30 seconds between retries
+```json
+{
+  "retry": {
+    "maxRetries": 3,
+    "backoffSeconds": 30
+  }
+}
 ```
 
 ### Exponential Backoff
 
 Increase wait time with each retry:
 
-```yaml
-policies:
-  - name: exponential-retry
-    rules:
-      - retry:
-          maxRetries: 5
-          backoffSeconds: 10
-          backoffStrategy: exponential
-          maxBackoffSeconds: 300 # Cap at 5 minutes
+```json
+{
+  "retry": {
+    "maxRetries": 5,
+    "backoffSeconds": 10,
+    "backoffStrategy": "exponential",
+    "maxBackoffSeconds": 300
+  }
+}
 ```
 
-With exponential backoff, wait times are: 10s → 20s → 40s → 80s → 160s (capped at 300s)
+With exponential backoff, wait times are: 10s → 20s → 40s → 80s → 160s (capped
+at 300s)
 
-### No Retries (Strict)
+### No Retries (Deploy-Once)
 
-Disable retries for critical deployments:
+Disable retries for critical deployments. When `maxRetries` is `0`, the default
+`retryOnStatuses` also includes `"successful"`, enforcing deploy-once semantics:
 
-```yaml
-policies:
-  - name: no-retry-production
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - retry:
-          maxRetries: 0
+```json
+{
+  "name": "No Retry Production",
+  "selector": "environment.name == 'production'",
+  "rules": [
+    {
+      "retry": { "maxRetries": 0 }
+    }
+  ]
+}
 ```
 
 ### Retry Specific Statuses
 
 Only retry on specific failure types:
 
-```yaml
-policies:
-  - name: retry-transient-only
-    rules:
-      - retry:
-          maxRetries: 3
-          retryOnStatuses:
-            - failure
-            - invalidIntegration
-          backoffSeconds: 60
+```json
+{
+  "retry": {
+    "maxRetries": 3,
+    "retryOnStatuses": ["failure", "invalidIntegration"],
+    "backoffSeconds": 60
+  }
+}
 ```
 
 ### Environment-Specific Retry
 
 Different retry behavior per environment:
 
-```yaml
-policies:
-  # Development: Many quick retries
-  - name: dev-retry
-    selectors:
-      - environment: environment.name == "development"
-    rules:
-      - retry:
-          maxRetries: 5
-          backoffSeconds: 5
-
-  # Staging: Moderate retries
-  - name: staging-retry
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - retry:
-          maxRetries: 3
-          backoffSeconds: 30
-
-  # Production: Limited retries with longer backoff
-  - name: production-retry
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - retry:
-          maxRetries: 2
-          backoffSeconds: 60
-          backoffStrategy: exponential
+```json
+[
+  {
+    "name": "Dev Retry",
+    "selector": "environment.name == 'development'",
+    "rules": [
+      { "retry": { "maxRetries": 5, "backoffSeconds": 5 } }
+    ]
+  },
+  {
+    "name": "Staging Retry",
+    "selector": "environment.name == 'staging'",
+    "rules": [
+      { "retry": { "maxRetries": 3, "backoffSeconds": 30 } }
+    ]
+  },
+  {
+    "name": "Production Retry",
+    "selector": "environment.name == 'production'",
+    "rules": [
+      {
+        "retry": {
+          "maxRetries": 2,
+          "backoffSeconds": 60,
+          "backoffStrategy": "exponential"
+        }
+      }
+    ]
+  }
+]
 ```
 
 ## Backoff Strategies
@@ -216,7 +255,8 @@ Ctrlplane checks if retries remain (`attempt < maxRetries + 1`).
 
 ### 3. Backoff Wait
 
-If `backoffSeconds` is configured, Ctrlplane waits before the next attempt.
+If `backoffSeconds` is configured, Ctrlplane waits before the next attempt. The
+`nextEvaluationTime` is set to indicate when the retry will be allowed.
 
 ### 4. Retry Attempt
 
@@ -256,6 +296,5 @@ The process continues until success or all retries are exhausted.
 ## Next Steps
 
 - [Policies Overview](./overview) - Learn about policy structure
-- [Verification](./verification) - Add health checks after deployment
 - [Environment Progression](./environment-progression) - Control promotion flow
-
+- [Version Cooldown](./version-cooldown) - Batch frequent releases
