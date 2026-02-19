@@ -16,8 +16,10 @@ func Publish(key []byte, value []byte) error {
 }
 
 func CloseProducer() error {
-	if sharedProducer != nil {
-		return sharedProducer.Close()
+	if sharedProducer == nil {
+		return nil
 	}
-	return nil
+	err := sharedProducer.Close()
+	sharedProducer = nil
+	return err
 }
