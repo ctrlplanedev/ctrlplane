@@ -25,3 +25,4 @@ jobs:
     with:
       image-name: ctrlplane/api
       dockerfile: apps/api/Dockerfile
+      platform: "linux/amd64"
