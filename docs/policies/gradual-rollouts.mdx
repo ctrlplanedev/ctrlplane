@@ -21,30 +21,53 @@ production), gradual rollouts let you:
 
 ## Configuration
 
-Add a gradual rollout rule to your policy:
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_rollout" {
+  name     = "Production Rollout"
+  selector = "environment.name == 'production'"
 
-```yaml
-policies:
-  - name: production-rollout
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300 # seconds between batches
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Rollout",
+    "selector": "environment.name == '\''production'\''",
+    "rules": [
+      {
+        "gradualRollout": {
+          "rolloutType": "linear",
+          "timeScaleInterval": 300
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
 
 ## Properties
 
 <ParamField path="gradualRollout.rolloutType" type="string" required>
-  The rollout strategy to use. Options: - `linear` — Deploy to each target at a
-  fixed interval - `linear-normalized` — Space deployments evenly within the
-  time window
+  The rollout strategy to use:
+
+  - `linear` — Deploy to each target at a fixed interval
+  - `linear-normalized` — Space deployments evenly within the time window
 </ParamField>
 
 <ParamField path="gradualRollout.timeScaleInterval" type="integer" required>
-  For `linear`: seconds between each target deployment. For `linear-normalized`:
-  total seconds to complete the rollout.
+  For `linear`: seconds between each target deployment. For
+  `linear-normalized`: total seconds to complete the rollout.
 </ParamField>
 
 ## Rollout Types
@@ -53,11 +76,26 @@ policies:
 
 Deploy to each target at a fixed interval:
 
-```yaml
-gradualRollout:
-  rolloutType: linear
-  timeScaleInterval: 300 # 5 minutes between each target
+<Tabs>
+<Tab title="Terraform">
+```hcl
+gradual_rollout {
+  rollout_type        = "linear"
+  time_scale_interval = 300
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "gradualRollout": {
+    "rolloutType": "linear",
+    "timeScaleInterval": 300
+  }
+}
+```
+</Tab>
+</Tabs>
 
 **Example with 5 targets**:
 
@@ -74,11 +112,26 @@ t+20m:  Target 5 deployed
 Deployments are spaced evenly so that the last target is scheduled at or before
 the `timeScaleInterval`:
 
-```yaml
-gradualRollout:
-  rolloutType: linear-normalized
-  timeScaleInterval: 600 # Complete rollout within 10 minutes
+<Tabs>
+<Tab title="Terraform">
+```hcl
+gradual_rollout {
+  rollout_type        = "linear-normalized"
+  time_scale_interval = 600
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "gradualRollout": {
+    "rolloutType": "linear-normalized",
+    "timeScaleInterval": 600
+  }
+}
+```
+</Tab>
+</Tabs>
 
 **Example with 5 targets and 10 minute window**:
 
@@ -90,107 +143,104 @@ t+6m:   Target 4 deployed
 t+8m:   Target 5 deployed
 ```
 
-## Combining with Verification
+## How Rollout Start Time Is Determined
 
-Gradual rollouts work well with verification rules. You can verify each batch
-before proceeding:
+The gradual rollout evaluator determines its start time by looking at other
+policy rules that must be satisfied first:
 
-```yaml
-policies:
-  - name: production-canary
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 600
-      - verification:
-          metrics:
-            - name: error-rate
-              interval: 1m
-              count: 5
-              provider:
-                type: datadog
-                apiKey: "{{.variables.dd_api_key}}"
-                appKey: "{{.variables.dd_app_key}}"
-                query: sum:errors{service:{{.resource.name}},env:prod}
-              successCondition: result.value < 0.01
-              failureLimit: 1
-```
+1. **Approval rules** - Uses the `satisfiedAt` time when approvals were met
+2. **Environment progression rules** - Uses the `satisfiedAt` time when
+   progression criteria were met
+3. **Policy skip overrides** - Uses the skip creation time
+4. **Deployment windows** - Allow windows push the start to the window opening;
+   deny windows push the start past the window closing
+
+If no approval or progression rules exist, the rollout starts from the version
+creation time. The rollout start is the **latest** time at which all
+prerequisites were met.
+
+Target ordering within a rollout is determined by a consistent hash of the
+release target key and version ID, ensuring deterministic but varied ordering
+across different versions.
 
 ## Common Patterns
 
 ### Conservative Production Rollout
 
-Long intervals with thorough verification:
+Long intervals with approval:
 
-```yaml
-policies:
-  - name: conservative-rollout
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 900 # 15 minutes between targets
-      - verification:
-          metrics:
-            - name: health-check
-              interval: 1m
-              count: 10
-              provider:
-                type: http
-                url: "http://{{.resource.name}}/health"
-              successCondition: result.ok
-              failureLimit: 2
+```hcl
+resource "ctrlplane_policy" "conservative_rollout" {
+  name     = "Conservative Rollout"
+  selector = "environment.name == 'production'"
+
+  any_approval {
+    min_approvals = 1
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 900
+  }
+}
 ```
 
 ### Fast Staging Rollout
 
 Quick rollout for non-production environments:
 
-```yaml
-policies:
-  - name: staging-rollout
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - gradualRollout:
-          rolloutType: linear-normalized
-          timeScaleInterval: 120 # Complete within 2 minutes
+```hcl
+resource "ctrlplane_policy" "staging_rollout" {
+  name     = "Staging Rollout"
+  selector = "environment.name == 'staging'"
+
+  gradual_rollout {
+    rollout_type        = "linear-normalized"
+    time_scale_interval = 120
+  }
+}
 ```
 
 ### Critical Service Rollout
 
 Extra cautious rollout for critical services:
 
-```yaml
-policies:
-  - name: critical-service-rollout
-    selectors:
-      - deployment: deployment.metadata.tier == "critical"
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 2
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 1800 # 30 minutes between targets
-      - verification:
-          metrics:
-            - name: error-rate
-              interval: 2m
-              count: 10
-              provider:
-                type: datadog
-                apiKey: "{{.variables.dd_api_key}}"
-                appKey: "{{.variables.dd_app_key}}"
-                query: sum:errors{service:{{.resource.name}}}
-              successCondition: result.value < 0.001
-              failureLimit: 1
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "critical_service_rollout" {
+  name     = "Critical Service Rollout"
+  selector = "deployment.metadata['tier'] == 'critical' && environment.name == 'production'"
+
+  any_approval {
+    min_approvals = 2
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 1800
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Critical Service Rollout",
+  "selector": "deployment.metadata['tier'] == 'critical' && environment.name == 'production'",
+  "rules": [
+    { "anyApproval": { "minApprovals": 2 } },
+    {
+      "gradualRollout": {
+        "rolloutType": "linear",
+        "timeScaleInterval": 1800
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ## Best Practices
 
@@ -213,5 +263,6 @@ policies:
 
 ## Next Steps
 
-- [Verification](./verification) - Add health checks between rollout batches
 - [Policies Overview](./overview) - Learn about policy structure
+- [Deployment Window](./deployment-window) - Time-based deployment control
+- [Version Cooldown](./version-cooldown) - Batch frequent releases

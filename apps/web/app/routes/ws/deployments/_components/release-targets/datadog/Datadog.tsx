@@ -47,7 +47,7 @@ function TruncatedCode({ children }: { children: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <code className="block min-w-0 overflow-hidden truncate rounded bg-muted px-1.5 py-0.5 font-mono">
+        <code className="max-w-80 truncate rounded bg-muted px-1.5 py-0.5 text-right font-mono">
           {children}
         </code>
       </TooltipTrigger>
@@ -74,31 +74,31 @@ function ProviderInfo({
   const queryEntries = Object.entries(queries ?? {});
 
   return (
-    <div className="flex min-w-0 flex-col gap-1 text-xs">
+    <div className="flex flex-col gap-1 text-xs">
       {queryEntries.map(([name, query]) => (
-        <div key={name} className="flex min-w-0 justify-between gap-4">
+        <div key={name} className="flex gap-4">
           <span className="shrink-0 text-muted-foreground">Query ({name})</span>
           <TruncatedCode>{query}</TruncatedCode>
         </div>
       ))}
       {formula != null && (
-        <div className="flex min-w-0 justify-between gap-4">
+        <div className="flex gap-4">
           <span className="shrink-0 text-muted-foreground">Formula</span>
           <TruncatedCode>{formula}</TruncatedCode>
         </div>
       )}
-      <div className="flex min-w-0 justify-between gap-4">
+      <div className="flex gap-4">
         <span className="shrink-0 text-muted-foreground">Condition</span>
         <TruncatedCode>{successCondition}</TruncatedCode>
       </div>
       {aggregator != null && (
-        <div className="flex justify-between gap-4">
+        <div className="flex gap-4">
           <span className="shrink-0 text-muted-foreground">Aggregator</span>
           <span className="text-muted-foreground">{aggregator}</span>
         </div>
       )}
       {site != null && (
-        <div className="flex justify-between gap-4">
+        <div className="flex gap-4">
           <span className="shrink-0 text-muted-foreground">Site</span>
           <span className="text-muted-foreground">{site}</span>
         </div>

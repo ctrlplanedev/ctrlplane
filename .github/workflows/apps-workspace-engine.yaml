@@ -137,3 +137,4 @@ jobs:
       image-name: ctrlplane/workspace-engine
       dockerfile: apps/workspace-engine/Dockerfile
       context: apps/workspace-engine
+      platform: "linux/amd64"

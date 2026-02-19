@@ -35,29 +35,63 @@ Deployment windows help you:
 
 ## Configuration
 
-Add a deployment window rule to your policy:
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "business_hours_only" {
+  name     = "Business Hours Only"
+  selector = "environment.name == 'production'"
 
-```yaml
-policies:
-  - name: business-hours-only
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
-          durationMinutes: 480 # 8 hours (9am-5pm)
-          timezone: "America/New_York"
-          allowWindow: true
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
+    duration_minutes = 480
+    timezone         = "America/New_York"
+    allow_window     = true
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Business Hours Only",
+    "selector": "environment.name == '\''production'\''",
+    "rules": [
+      {
+        "deploymentWindow": {
+          "rrule": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0",
+          "durationMinutes": 480,
+          "timezone": "America/New_York",
+          "allowWindow": true
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
 
 ## Properties
 
-| Property          | Type    | Required | Default | Description                                                                                  |
-| ----------------- | ------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
-| `rrule`           | string  | Yes      | -       | RFC 5545 recurrence rule defining when windows start                                         |
-| `durationMinutes` | integer | Yes      | -       | Duration of each window in minutes                                                           |
-| `timezone`        | string  | No       | UTC     | IANA timezone for the rrule (e.g., "America/New_York")                                       |
-| `allowWindow`     | boolean | No       | true    | If true, deployments only allowed during window. If false, deployments blocked during window |
+<ParamField path="deploymentWindow.rrule" type="string" required>
+  RFC 5545 recurrence rule defining when windows start.
+</ParamField>
+
+<ParamField path="deploymentWindow.durationMinutes" type="integer" required>
+  Duration of each window in minutes.
+</ParamField>
+
+<ParamField path="deploymentWindow.timezone" type="string" default="UTC">
+  IANA timezone for the rrule (e.g., `"America/New_York"`).
+</ParamField>
+
+<ParamField path="deploymentWindow.allowWindow" type="boolean" default="true">
+  If `true`, deployments are only allowed during the window. If `false`,
+  deployments are blocked during the window (deny window).
+</ParamField>
 
 ## Understanding rrules
 
@@ -86,28 +120,60 @@ RFC 5545 recurrence rules define repeating patterns. Common components:
 When `allowWindow: true` (default), deployments are **only allowed during** the
 defined window:
 
-```yaml
-rules:
-  - deploymentWindow:
-      rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
-      durationMinutes: 480
-      timezone: "America/New_York"
-      allowWindow: true # Deployments only during 9am-5pm weekdays
+<Tabs>
+<Tab title="Terraform">
+```hcl
+deployment_window {
+  rrule            = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
+  duration_minutes = 480
+  timezone         = "America/New_York"
+  allow_window     = true
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "deploymentWindow": {
+    "rrule": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0",
+    "durationMinutes": 480,
+    "timezone": "America/New_York",
+    "allowWindow": true
+  }
+}
+```
+</Tab>
+</Tabs>
 
 ### Deny Windows (Blackouts)
 
 When `allowWindow: false`, deployments are **blocked during** the defined
 window:
 
-```yaml
-rules:
-  - deploymentWindow:
-      rrule: "FREQ=WEEKLY;BYDAY=SU;BYHOUR=0;BYMINUTE=0"
-      durationMinutes: 360
-      timezone: "America/New_York"
-      allowWindow: false # Block deployments Sunday 12am-6am
+<Tabs>
+<Tab title="Terraform">
+```hcl
+deployment_window {
+  rrule            = "FREQ=WEEKLY;BYDAY=SU;BYHOUR=0;BYMINUTE=0"
+  duration_minutes = 360
+  timezone         = "America/New_York"
+  allow_window     = false
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "deploymentWindow": {
+    "rrule": "FREQ=WEEKLY;BYDAY=SU;BYHOUR=0;BYMINUTE=0",
+    "durationMinutes": 360,
+    "timezone": "America/New_York",
+    "allowWindow": false
+  }
+}
+```
+</Tab>
+</Tabs>
 
 ## Common Patterns
 
@@ -115,124 +181,141 @@ rules:
 
 Allow deployments only during business hours:
 
-```yaml
-policies:
-  - name: business-hours-deployments
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
-          durationMinutes: 480
-          timezone: "America/New_York"
+```hcl
+resource "ctrlplane_policy" "business_hours_deployments" {
+  name     = "Business Hours Deployments"
+  selector = "environment.name == 'production'"
+
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
+    duration_minutes = 480
+    timezone         = "America/New_York"
+  }
+}
 ```
 
 ### Maintenance Window Blackout
 
 Block deployments during scheduled maintenance:
 
-```yaml
-policies:
-  - name: maintenance-blackout
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0"
-          durationMinutes: 240 # 4-hour maintenance window
-          timezone: "UTC"
-          allowWindow: false
+```hcl
+resource "ctrlplane_policy" "maintenance_blackout" {
+  name     = "Maintenance Blackout"
+  selector = "environment.name == 'production'"
+
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0"
+    duration_minutes = 240
+    timezone         = "UTC"
+    allow_window     = false
+  }
+}
 ```
 
 ### Weekend Freeze
 
 Prevent deployments over weekends:
 
-```yaml
-policies:
-  - name: weekend-freeze
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=SA;BYHOUR=0;BYMINUTE=0"
-          durationMinutes: 2880 # 48 hours (entire weekend)
-          timezone: "America/New_York"
-          allowWindow: false
+```hcl
+resource "ctrlplane_policy" "weekend_freeze" {
+  name     = "Weekend Freeze"
+  selector = "environment.name == 'production'"
+
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=SA;BYHOUR=0;BYMINUTE=0"
+    duration_minutes = 2880
+    timezone         = "America/New_York"
+    allow_window     = false
+  }
+}
 ```
 
 ### Late Night Deployments Only
 
 For services that require off-peak deployments:
 
-```yaml
-policies:
-  - name: off-peak-deployments
-    selectors:
-      - deployment: deployment.metadata.requires_off_peak == "true"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=DAILY;BYHOUR=2;BYMINUTE=0"
-          durationMinutes: 180 # 2am-5am daily
-          timezone: "America/New_York"
-```
+```hcl
+resource "ctrlplane_policy" "off_peak_deployments" {
+  name     = "Off-Peak Deployments"
+  selector = "deployment.metadata['requires_off_peak'] == 'true'"
 
-### Multiple Windows
-
-Combine multiple window rules for complex schedules:
-
-```yaml
-policies:
-  # Primary deployment window
-  - name: primary-window
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=TU,WE,TH;BYHOUR=10;BYMINUTE=0"
-          durationMinutes: 360
-          timezone: "America/New_York"
-
-  # Maintenance blackout
-  - name: maintenance-blackout
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=SU;BYHOUR=0;BYMINUTE=0"
-          durationMinutes: 360
-          timezone: "America/New_York"
-          allowWindow: false
+  deployment_window {
+    rrule            = "FREQ=DAILY;BYHOUR=2;BYMINUTE=0"
+    duration_minutes = 180
+    timezone         = "America/New_York"
+  }
+}
 ```
 
 ### Combined with Other Rules
 
 Use deployment windows alongside other policy rules:
 
-```yaml
-policies:
-  - name: production-controlled-release
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
-      - deploymentWindow:
-          rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
-          durationMinutes: 480
-          timezone: "America/New_York"
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_controlled_release" {
+  name     = "Production Controlled Release"
+  selector = "environment.name == 'production'"
+
+  any_approval {
+    min_approvals = 1
+  }
+
+  deployment_window {
+    rrule            = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0"
+    duration_minutes = 480
+    timezone         = "America/New_York"
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Production Controlled Release",
+  "selector": "environment.name == 'production'",
+  "rules": [
+    { "anyApproval": { "minApprovals": 1 } },
+    {
+      "deploymentWindow": {
+        "rrule": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0",
+        "durationMinutes": 480,
+        "timezone": "America/New_York",
+        "allowWindow": true
+      }
+    },
+    {
+      "gradualRollout": {
+        "rolloutType": "linear",
+        "timeScaleInterval": 300
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ## Behavior Details
+
+### First Deployment Exemption
+
+If a release target has never had a deployment before, deployment window rules
+are bypassed. This ensures that initial deployments are not blocked by window
+restrictions.
 
 ### Window Evaluation
 
 - Deployments are evaluated against the current time
 - If outside an allow window (or inside a deny window), the deployment waits
-- Ctrlplane automatically re-evaluates when the window state changes
+- Ctrlplane automatically re-evaluates when the window state changes, using the
+  computed `nextEvaluationTime`
 
 ### Gradual Rollout Integration
 

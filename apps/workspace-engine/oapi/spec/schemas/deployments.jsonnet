@@ -11,8 +11,19 @@ local openapi = import '../lib/openapi.libsonnet';
       description: { type: 'string' },
       jobAgentId: { type: 'string' },
       jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
+      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: openapi.schemaRef('Selector'),
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
+    },
+  },
+
+  DeploymentJobAgent: {
+    type: 'object',
+    required: ['ref', 'config', 'selector'],
+    properties: {
+      ref: { type: 'string' },
+      config: openapi.schemaRef('JobAgentConfig'),
+      selector: { type: 'string', description: 'CEL expression to determine if the job agent should be used' },
     },
   },
 

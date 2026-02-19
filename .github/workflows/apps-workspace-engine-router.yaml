@@ -20,3 +20,4 @@ jobs:
       image-name: ctrlplane/workspace-engine-router
       dockerfile: apps/workspace-engine-router/Dockerfile
       context: apps/workspace-engine-router
+      platform: "linux/amd64"

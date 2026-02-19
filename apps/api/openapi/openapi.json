@@ -58,6 +58,12 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "jobAgents": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentJobAgent"
+                  },
+                  "type": "array"
+               },
                "metadata": {
                   "additionalProperties": {
                      "type": "string"
@@ -412,6 +418,12 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "jobAgents": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentJobAgent"
+                  },
+                  "type": "array"
+               },
                "metadata": {
                   "additionalProperties": {
                      "type": "string"
@@ -463,6 +475,26 @@
             },
             "required": [
                "dependsOn"
+            ],
+            "type": "object"
+         },
+         "DeploymentJobAgent": {
+            "properties": {
+               "config": {
+                  "$ref": "#/components/schemas/JobAgentConfig"
+               },
+               "ref": {
+                  "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should be used",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "ref",
+               "config",
+               "selector"
             ],
             "type": "object"
          },
@@ -2255,6 +2287,12 @@
                },
                "jobAgentId": {
                   "type": "string"
+               },
+               "jobAgents": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentJobAgent"
+                  },
+                  "type": "array"
                },
                "metadata": {
                   "additionalProperties": {

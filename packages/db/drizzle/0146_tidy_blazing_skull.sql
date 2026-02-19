@@ -1,0 +1,1 @@
+ALTER TABLE "deployment" ADD COLUMN "job_agents" jsonb DEFAULT '[]' NOT NULL;

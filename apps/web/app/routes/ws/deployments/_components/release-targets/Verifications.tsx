@@ -174,7 +174,9 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
           {isPrometheus && (
             <PrometheusIcon className="h-4 w-4 text-orange-500" />
           )}
-          {isDatadog && <SiDatadog className="h-4 w-4 fill-[#632CA6]" />}
+          {isDatadog && (
+            <SiDatadog className="h-4 w-4 [&>path]:fill-[#632CA6]" />
+          )}
           <span className="text-sm font-medium">{metric.name}</span>
           <div className="grow" />
           <VerificationMetricStatus metric={metric} />
