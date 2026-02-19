@@ -98,18 +98,71 @@ Job agents perform the actual deployment:
 
 ### 4. Verification Validates
 
-After deployment, verification checks health:
+After deployment, verification checks health metrics (error rates, latency,
+etc.) and automatically determines whether the release should proceed or roll
+back. See [Verification](../policies/verification/overview) for details.
 
-```yaml
-verification:
-  metrics:
-    - name: error-rate
-      provider:
-        type: datadog
-        queries:
-          errors: "sum:errors{service:api}.as_rate()"
-      successCondition: result.queries.errors < 0.01
+## Defining a Deployment
+
+A deployment connects _what_ (your service) with _how_ (the job agent that
+executes it). You can define deployments via Terraform, CLI, or API.
+
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_deployment" "api" {
+  name              = "API Service"
+  resource_selector = "resource.kind == 'Kubernetes' && resource.metadata['status'] == 'running'"
+
+  metadata = {
+    team    = "backend"
+    service = "api"
+  }
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+
+    github {
+      owner       = "my-org"
+      repo        = "api-service"
+      workflow_id = 12345678
+    }
+  }
+}
+
+resource "ctrlplane_deployment_system_link" "api" {
+  deployment_id = ctrlplane_deployment.api.id
+  system_id     = ctrlplane_system.example.id
+}
 ```
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API Service",
+    "slug": "api-service",
+    "resourceSelector": "resource.kind == '\''Kubernetes'\''",
+    "jobAgents": [
+      {
+        "ref": "github-actions-agent",
+        "config": {
+          "owner": "my-org",
+          "repo": "api-service",
+          "workflow": "deploy.yml"
+        }
+      }
+    ],
+    "metadata": { "team": "backend" }
+  }'
+```
+</Tab>
+</Tabs>
+
+See [Deployments](../concepts/deployments) for the full reference on
+properties, versions, variables, and more.
 
 ## Policies
 
@@ -131,7 +184,7 @@ Policies control how releases flow through environments:
     icon="chart-line"
     href="../policies/gradual-rollouts"
   >
-    Deploy to percentage of targets
+    Stagger deployments across targets
   </Card>
   <Card
     title="Verification"
@@ -139,6 +192,37 @@ Policies control how releases flow through environments:
     href="../policies/verification/overview"
   >
     Validate deployment health
+  </Card>
+  <Card
+    title="Deployment Dependency"
+    icon="link"
+    href="../policies/deployment-dependency"
+  >
+    Enforce ordering between deployments
+  </Card>
+  <Card
+    title="Deployment Window"
+    icon="clock"
+    href="../policies/deployment-window"
+  >
+    Time-based deployment scheduling
+  </Card>
+  <Card
+    title="Version Cooldown"
+    icon="hourglass"
+    href="../policies/version-cooldown"
+  >
+    Batch frequent releases
+  </Card>
+  <Card
+    title="Version Selector"
+    icon="filter"
+    href="../policies/version-selector"
+  >
+    Control which versions can deploy
+  </Card>
+  <Card title="Retry" icon="rotate-right" href="../policies/retry">
+    Automatic retry on failure
   </Card>
 </CardGroup>
 
