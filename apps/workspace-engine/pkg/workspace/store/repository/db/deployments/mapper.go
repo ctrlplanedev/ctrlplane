@@ -55,6 +55,14 @@ func ToOapi(row db.Deployment) *oapi.Deployment {
 		jobAgentId = &s
 	}
 
+	var jobAgents *[]oapi.DeploymentJobAgent
+	if len(row.JobAgents) > 0 {
+		var agents []oapi.DeploymentJobAgent
+		if err := json.Unmarshal(row.JobAgents, &agents); err == nil && len(agents) > 0 {
+			jobAgents = &agents
+		}
+	}
+
 	var resourceSelector *oapi.Selector
 	if row.ResourceSelector.Valid {
 		resourceSelector = selectorFromString(row.ResourceSelector.String)
@@ -66,6 +74,7 @@ func ToOapi(row db.Deployment) *oapi.Deployment {
 		Description:      descPtr,
 		JobAgentId:       jobAgentId,
 		JobAgentConfig:   jobAgentConfig,
+		JobAgents:        jobAgents,
 		ResourceSelector: resourceSelector,
 		Metadata:         metadata,
 	}
@@ -102,6 +111,13 @@ func ToUpsertParams(d *oapi.Deployment) (db.UpsertDeploymentParams, error) {
 		jobAgentConfig = make(map[string]any)
 	}
 
+	jobAgentsJSON := []byte("[]")
+	if d.JobAgents != nil && len(*d.JobAgents) > 0 {
+		if b, err := json.Marshal(d.JobAgents); err == nil {
+			jobAgentsJSON = b
+		}
+	}
+
 	selStr := selectorToString(d.ResourceSelector)
 	resourceSelector := pgtype.Text{String: selStr, Valid: true}
 
@@ -111,6 +127,7 @@ func ToUpsertParams(d *oapi.Deployment) (db.UpsertDeploymentParams, error) {
 		Description:      description,
 		JobAgentID:       jobAgentID,
 		JobAgentConfig:   jobAgentConfig,
+		JobAgents:        jobAgentsJSON,
 		ResourceSelector: resourceSelector,
 		Metadata:         metadata,
 		WorkspaceID:      uuid.Nil, // set by caller

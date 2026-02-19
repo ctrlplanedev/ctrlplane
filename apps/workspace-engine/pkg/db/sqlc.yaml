@@ -52,6 +52,9 @@ sql:
           - column: "deployment.job_agent_config"
             go_type:
               type: "map[string]any"
+          - column: "deployment.job_agents"
+            go_type:
+              type: "[]byte"
           - column: "deployment.metadata"
             go_type:
               type: "map[string]string"

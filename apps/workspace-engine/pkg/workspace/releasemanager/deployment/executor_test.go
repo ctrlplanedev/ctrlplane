@@ -126,11 +126,12 @@ func TestExecuteRelease_Success(t *testing.T) {
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
 
 	// Execute release
-	job, err := executor.ExecuteRelease(ctx, release, nil)
+	jobs, err := executor.ExecuteRelease(ctx, release, nil)
 
 	// Assertions
 	require.NoError(t, err)
-	require.NotNil(t, job)
+	require.Len(t, jobs, 1)
+	job := jobs[0]
 	assert.Equal(t, release.ID(), job.ReleaseId)
 	assert.Equal(t, oapi.JobStatusPending, job.Status)
 	assert.Equal(t, jobAgentID, job.JobAgentId)
@@ -147,7 +148,7 @@ func TestExecuteRelease_Success(t *testing.T) {
 	assert.Equal(t, job.ReleaseId, storedJob.ReleaseId)
 }
 
-func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
+func TestExecuteRelease_NoJobAgentConfigured(t *testing.T) {
 	executor, testStore := setupTestExecutor(t)
 	ctx := context.Background()
 
@@ -173,18 +174,15 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
 
 	// Execute release
-	job, err := executor.ExecuteRelease(ctx, release, nil)
+	jobs, err := executor.ExecuteRelease(ctx, release, nil)
 
-	// Assertions
 	require.NoError(t, err)
-	require.NotNil(t, job)
-	assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
-	assert.Equal(t, "", job.JobAgentId)
+	require.Len(t, jobs, 1)
+	require.Equal(t, oapi.JobStatusInvalidJobAgent, jobs[0].Status)
 
-	// Verify job was persisted with InvalidJobAgent status
-	storedJob, exists := testStore.Jobs.Get(job.Id)
+	// Verify release was still persisted
+	_, exists := testStore.Releases.Get(release.ID())
 	require.True(t, exists)
-	assert.Equal(t, oapi.JobStatusInvalidJobAgent, storedJob.Status)
 }
 
 func TestExecuteRelease_DeploymentNotFound(t *testing.T) {
@@ -200,11 +198,11 @@ func TestExecuteRelease_DeploymentNotFound(t *testing.T) {
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
 
 	// Execute release - should fail because deployment doesn't exist
-	job, err := executor.ExecuteRelease(ctx, release, nil)
+	jobs, err := executor.ExecuteRelease(ctx, release, nil)
 
 	// Assertions
 	require.Error(t, err)
-	assert.Nil(t, job)
+	assert.Nil(t, jobs)
 	assert.Contains(t, err.Error(), "deployment")
 }
 
@@ -228,11 +226,12 @@ func TestExecuteRelease_SkipsDispatchForInvalidJobAgent(t *testing.T) {
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
 
 	// Execute release
-	job, err := executor.ExecuteRelease(ctx, release, nil)
+	jobs, err := executor.ExecuteRelease(ctx, release, nil)
 
 	// Assertions
 	require.NoError(t, err)
-	require.NotNil(t, job)
+	require.Len(t, jobs, 1)
+	job := jobs[0]
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
 
 	// Give a moment for any async operations to complete
@@ -257,7 +256,7 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 	jobAgentID := uuid.New().String()
 
 	// Create necessary entities
-	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "github")
+	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "test-runner")
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
@@ -276,18 +275,18 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 		createTestRelease(deploymentID, environmentID, resourceID, uuid.New().String(), "v3.0.0"),
 	}
 
-	jobs := make([]*oapi.Job, 0, len(releases))
+	allJobs := make([]*oapi.Job, 0, len(releases))
 	for _, release := range releases {
-		job, err := executor.ExecuteRelease(ctx, release, nil)
+		jobs, err := executor.ExecuteRelease(ctx, release, nil)
 		require.NoError(t, err)
-		require.NotNil(t, job)
-		jobs = append(jobs, job)
+		require.Len(t, jobs, 1)
+		allJobs = append(allJobs, jobs[0])
 	}
 
 	// Verify all releases and jobs were persisted
-	assert.Len(t, jobs, 3)
+	assert.Len(t, allJobs, 3)
 
-	for i, job := range jobs {
+	for i, job := range allJobs {
 		// Verify each job has correct release ID
 		assert.Equal(t, releases[i].ID(), job.ReleaseId)
 

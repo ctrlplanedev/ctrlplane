@@ -42,9 +42,11 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentVpcID),
+			integration.JobAgentName("VPC Agent"),
 		),
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentClusterID),
+			integration.JobAgentName("Cluster Agent"),
 		),
 		integration.WithSystem(
 			integration.WithDeployment(
