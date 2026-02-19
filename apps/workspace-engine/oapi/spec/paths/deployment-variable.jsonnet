@@ -10,7 +10,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.stringParam('variableId', 'ID of the deployment variable'),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('DeploymentVariable'), 'The requested deployment variable')
+      responses: openapi.okResponse(openapi.schemaRef('DeploymentVariableWithValues'), 'The requested deployment variable')
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

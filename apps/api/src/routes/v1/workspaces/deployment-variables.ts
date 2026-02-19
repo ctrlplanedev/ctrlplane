@@ -93,7 +93,7 @@ const deleteDeploymentVariable: AsyncTypedHandler<
       response.response.status,
     );
 
-  const variable = response.data;
+  const { variable } = response.data;
 
   await sendGoEvent({
     workspaceId,

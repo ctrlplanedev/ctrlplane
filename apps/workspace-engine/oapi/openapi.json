@@ -3042,7 +3042,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentVariable"
+                           "$ref": "#/components/schemas/DeploymentVariableWithValues"
                         }
                      }
                   },

@@ -2440,7 +2440,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["DeploymentVariable"];
+          "application/json": components["schemas"]["DeploymentVariableWithValues"];
         };
       };
       /** @description Invalid request */

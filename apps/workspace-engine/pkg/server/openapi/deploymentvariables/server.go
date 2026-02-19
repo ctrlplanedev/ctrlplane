@@ -2,6 +2,7 @@ package deploymentvariables
 
 import (
 	"net/http"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,18 @@ func (s *DeploymentVariables) GetDeploymentVariable(c *gin.Context, workspaceId 
 		return
 	}
 
-	c.JSON(http.StatusOK, variable)
+	valuesMap := ws.DeploymentVariables().Values(variableId)
+	values := make([]oapi.DeploymentVariableValue, 0, len(valuesMap))
+	for _, v := range valuesMap {
+		if v != nil {
+			values = append(values, *v)
+		}
+	}
+
+	c.JSON(http.StatusOK, oapi.DeploymentVariableWithValues{
+		Variable: *variable,
+		Values:   values,
+	})
 }
 
 func (s *DeploymentVariables) GetDeploymentVariableValue(c *gin.Context, workspaceId string, valueId string) {
