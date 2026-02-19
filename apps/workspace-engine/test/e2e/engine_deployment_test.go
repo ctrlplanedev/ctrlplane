@@ -1321,3 +1321,364 @@ func TestEngine_DeploymentJobAgentsArray_MultipleResourcesDifferentAgents(t *tes
 	assert.Equal(t, 1, gcpJobs, "GCP agent should have 1 job (for gcp-server)")
 	assert.Equal(t, 1, awsJobs, "AWS agent should have 1 job (for aws-server)")
 }
+
+// ===== Error / Edge Case E2E Tests =====
+
+func TestEngine_DeploymentJobAgentsArray_NonExistentAgentRef(t *testing.T) {
+	realAgentID := uuid.New().String()
+	fakeAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(realAgentID),
+			integration.JobAgentName("Real Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("bad-ref-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: realAgentID, Config: oapi.JobAgentConfig{}},
+					{Ref: fakeAgentID, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status,
+				"should create an InvalidJobAgent job when agent ref doesn't exist")
+			assert.NotNil(t, job.Message)
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"should have exactly 1 job with InvalidJobAgent status for the failed selector")
+}
+
+func TestEngine_DeploymentJobAgentsArray_AllRefsNonExistent(t *testing.T) {
+	fakeAgent1 := uuid.New().String()
+	fakeAgent2 := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("all-bad-refs-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: fakeAgent1, Config: oapi.JobAgentConfig{}},
+					{Ref: fakeAgent2, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
+			assert.NotNil(t, job.Message)
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"should have 1 InvalidJobAgent job when all agent refs are non-existent")
+}
+
+func TestEngine_DeploymentJobAgentsArray_InvalidCelSelector(t *testing.T) {
+	agentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentID),
+			integration.JobAgentName("Valid Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("bad-cel-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: agentID, Selector: "this is not valid cel !!!", Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status,
+				"invalid CEL selector should produce an InvalidJobAgent job")
+			assert.NotNil(t, job.Message)
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"should have 1 InvalidJobAgent job for invalid CEL selector")
+}
+
+func TestEngine_DeploymentJobAgentsArray_ValidAgentFollowedByNonExistent(t *testing.T) {
+	validAgentID := uuid.New().String()
+	fakeAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(validAgentID),
+			integration.JobAgentName("Valid Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("mixed-agents-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: validAgentID, Selector: "true", Config: oapi.JobAgentConfig{}},
+					{Ref: fakeAgentID, Selector: "true", Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status,
+				"when any agent ref fails, the entire selection fails with InvalidJobAgent")
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"should have 1 InvalidJobAgent job — the non-existent ref poisons the whole batch")
+}
+
+func TestEngine_DeploymentJobAgentsArray_NonExistentAgentFilteredOutBySelector(t *testing.T) {
+	validAgentID := uuid.New().String()
+	fakeAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(validAgentID),
+			integration.JobAgentName("Valid Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("filtered-bad-ref-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: validAgentID, Selector: "true", Config: oapi.JobAgentConfig{}},
+					{Ref: fakeAgentID, Selector: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("gcp-resource"),
+			integration.ResourceMetadata(map[string]string{"cloud": "gcp"}),
+		),
+	)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	deploymentJobs := 0
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, validAgentID, job.JobAgentId,
+				"only the valid agent should have a pending job")
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"non-existent agent filtered out by selector should not cause an error")
+}
+
+func TestEngine_DeploymentLegacyJobAgent_NonExistentRef(t *testing.T) {
+	fakeAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("legacy-bad-ref"),
+				integration.DeploymentJobAgent(fakeAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status,
+				"legacy JobAgentId pointing to non-existent agent should produce InvalidJobAgent")
+			assert.NotNil(t, job.Message)
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"should have 1 InvalidJobAgent job for non-existent legacy agent ref")
+}
+
+func TestEngine_DeploymentJobAgentsArray_EmptyArray(t *testing.T) {
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("empty-agents-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status,
+				"empty agents array should produce InvalidJobAgent (no agent configured)")
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs,
+		"should have 1 InvalidJobAgent job for empty agents array")
+}
