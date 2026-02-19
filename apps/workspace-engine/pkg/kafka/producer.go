@@ -1,18 +1,15 @@
 package kafka
 
 import (
+	"fmt"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
-
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func NewProducer(brokers string) (messaging.Producer, error) {
-	return confluent.NewConfluent(brokers).CreateProducer(Topic, &kafka.ConfigMap{
-		"bootstrap.servers":        Brokers,
-		"enable.idempotence":       true,
-		"compression.type":         "snappy",
-		"message.send.max.retries": 10,
-		"retry.backoff.ms":         100,
-	})
+func NewProducer() (messaging.Producer, error) {
+	cfg, err := confluent.BaseProducerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build producer config: %w", err)
+	}
+	return confluent.NewConfluent(Brokers).CreateProducer(Topic, cfg)
 }

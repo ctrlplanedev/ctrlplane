@@ -244,7 +244,7 @@ func main() {
 	defer cancel()
 
 	// Initialize shared Kafka producer used by the ticker and all job agents
-	producer, err := kafka.NewProducer(kafka.Brokers)
+	producer, err := kafka.NewProducer()
 	if err != nil {
 		log.Fatal("Failed to create Kafka producer", "error", err)
 		panic(err)
