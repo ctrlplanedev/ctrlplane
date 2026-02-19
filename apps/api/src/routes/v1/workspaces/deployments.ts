@@ -118,6 +118,7 @@ const postDeployment: AsyncTypedHandler<
     metadata: {},
     ...body,
     jobAgentConfig: body.jobAgentConfig ?? {},
+    jobAgents: body.jobAgents ?? [],
   };
 
   const isValid = await validResourceSelector(body.resourceSelector);
@@ -163,6 +164,7 @@ const upsertDeployment: AsyncTypedHandler<
           ...body,
           id: deploymentId,
           jobAgentConfig: body.jobAgentConfig ?? {},
+          jobAgents: body.jobAgents ?? [],
         },
       });
     } catch {
@@ -188,6 +190,7 @@ const upsertDeployment: AsyncTypedHandler<
         ...body,
         metadata: body.metadata ?? {},
         jobAgentConfig: body.jobAgentConfig ?? {},
+        jobAgents: body.jobAgents ?? deployment.jobAgents ?? [],
       },
     });
   } catch {

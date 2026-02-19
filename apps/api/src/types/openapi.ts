@@ -909,6 +909,7 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1049,6 +1050,7 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1063,6 +1065,12 @@ export interface components {
         DeploymentDependencyRule: {
             /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
             dependsOn: string;
+        };
+        DeploymentJobAgent: {
+            config: components["schemas"]["JobAgentConfig"];
+            ref: string;
+            /** @description CEL expression to determine if the job agent should be used */
+            selector: string;
         };
         DeploymentRequestAccepted: {
             id: string;
@@ -1688,6 +1696,7 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
