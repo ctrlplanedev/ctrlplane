@@ -629,7 +629,7 @@ func TestSelectAgents_CEL_FirstPassesSecondBadRef(t *testing.T) {
 
 // ===== Group 6: Priority / precedence =====
 
-func TestSelectAgents_LegacyTakesPrecedenceOverJobAgents(t *testing.T) {
+func TestSelectAgents_JobAgentsTakesPrecedenceOverLegacy(t *testing.T) {
 	s := newTestStore()
 	ctx := context.Background()
 
@@ -648,6 +648,45 @@ func TestSelectAgents_LegacyTakesPrecedenceOverJobAgents(t *testing.T) {
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", strPtr(legacyAgentID), &ja)
 	release := makeRelease(deployment.Id, envID, resID)
+
+	sel := NewDeploymentAgentsSelector(s, deployment, release)
+	agents, err := sel.SelectAgents()
+
+	require.NoError(t, err)
+	require.Len(t, agents, 1)
+	assert.Equal(t, newAgentID, agents[0].Id)
+	assert.Equal(t, "new-agent", agents[0].Name)
+}
+
+func TestSelectAgents_LegacyFallbackWhenJobAgentsNil(t *testing.T) {
+	s := newTestStore()
+	ctx := context.Background()
+
+	legacyAgentID := uuid.New().String()
+	s.JobAgents.Upsert(ctx, makeJobAgent(legacyAgentID, "legacy-agent", "runner"))
+
+	deployment := makeDeployment(uuid.New().String(), "deploy", strPtr(legacyAgentID), nil)
+	release := makeRelease(deployment.Id, uuid.New().String(), uuid.New().String())
+
+	sel := NewDeploymentAgentsSelector(s, deployment, release)
+	agents, err := sel.SelectAgents()
+
+	require.NoError(t, err)
+	require.Len(t, agents, 1)
+	assert.Equal(t, legacyAgentID, agents[0].Id)
+	assert.Equal(t, "legacy-agent", agents[0].Name)
+}
+
+func TestSelectAgents_LegacyFallbackWhenJobAgentsEmpty(t *testing.T) {
+	s := newTestStore()
+	ctx := context.Background()
+
+	legacyAgentID := uuid.New().String()
+	s.JobAgents.Upsert(ctx, makeJobAgent(legacyAgentID, "legacy-agent", "runner"))
+
+	empty := &[]oapi.DeploymentJobAgent{}
+	deployment := makeDeployment(uuid.New().String(), "deploy", strPtr(legacyAgentID), empty)
+	release := makeRelease(deployment.Id, uuid.New().String(), uuid.New().String())
 
 	sel := NewDeploymentAgentsSelector(s, deployment, release)
 	agents, err := sel.SelectAgents()

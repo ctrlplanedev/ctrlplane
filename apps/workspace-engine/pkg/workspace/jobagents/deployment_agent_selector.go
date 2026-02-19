@@ -64,14 +64,18 @@ func (s *DeploymentAgentsSelector) buildCelContext() (map[string]any, error) {
 }
 
 func (s *DeploymentAgentsSelector) SelectAgents() ([]*oapi.JobAgent, error) {
+	if s.deployment.JobAgents != nil && len(*s.deployment.JobAgents) > 0 {
+		return s.selectFromJobAgents()
+	}
+
 	if s.deployment.JobAgentId != nil && *s.deployment.JobAgentId != "" {
 		return s.getLegacyJobAgent()
 	}
 
-	if s.deployment.JobAgents == nil || len(*s.deployment.JobAgents) == 0 {
-		return []*oapi.JobAgent{}, nil
-	}
+	return []*oapi.JobAgent{}, nil
+}
 
+func (s *DeploymentAgentsSelector) selectFromJobAgents() ([]*oapi.JobAgent, error) {
 	celCtx, err := s.buildCelContext()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build cel context: %w", err)
