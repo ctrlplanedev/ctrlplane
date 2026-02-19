@@ -6,6 +6,16 @@ local jobAgentConfig = {
 };
 
 {
+  DeploymentJobAgent: {
+    type: 'object',
+    required: ['ref', 'config', 'selector'],
+    properties: {
+      ref: { type: 'string' },
+      config: openapi.schemaRef('JobAgentConfig'),
+      selector: { type: 'string', description: 'CEL expression to determine if the job agent should be used' },
+    },
+  },
+
   CreateDeploymentRequest: {
     type: 'object',
     required: ['name', 'slug'],
@@ -15,6 +25,7 @@ local jobAgentConfig = {
       description: { type: 'string' },
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
+      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: openapi.schemaRef('Selector'),
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
@@ -29,6 +40,7 @@ local jobAgentConfig = {
       description: { type: 'string' },
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
+      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: openapi.schemaRef('Selector'),
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
@@ -53,6 +65,7 @@ local jobAgentConfig = {
       description: { type: 'string' },
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
+      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: openapi.schemaRef('Selector'),
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },

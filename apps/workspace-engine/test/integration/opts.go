@@ -390,6 +390,12 @@ func DeploymentJobAgent(jobAgentID string) DeploymentOption {
 	}
 }
 
+func DeploymentJobAgents(agents []oapi.DeploymentJobAgent) DeploymentOption {
+	return func(_ *TestWorkspace, d *oapi.Deployment, _ *eventsBuilder) {
+		d.JobAgents = &agents
+	}
+}
+
 func DeploymentCelResourceSelector(cel string) DeploymentOption {
 	return func(_ *TestWorkspace, d *oapi.Deployment, _ *eventsBuilder) {
 		s := &oapi.Selector{}

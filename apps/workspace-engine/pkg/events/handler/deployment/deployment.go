@@ -3,18 +3,14 @@ package deployment
 import (
 	"context"
 	"encoding/json"
-	"sort"
-	"time"
+	"fmt"
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
@@ -137,7 +133,7 @@ func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets 
 	return nil
 }
 
-func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
+func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget, skipEligibilityCheck bool) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
 		for _, rt := range releaseTargets {
 			ws.ReleaseManager().DirtyDesiredRelease(rt)
@@ -147,10 +143,46 @@ func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *
 		for _, releaseTarget := range releaseTargets {
 			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
+				releasemanager.WithSkipEligibilityCheck(skipEligibilityCheck),
 			)
 		}
 	}
 	return nil
+}
+
+func getOldDeployment(ws *workspace.Workspace, deploymentID string) (oapi.Deployment, error) {
+	oldDeployment, ok := ws.Deployments().Get(deploymentID)
+	if !ok {
+		return oapi.Deployment{}, fmt.Errorf("deployment %s not found", deploymentID)
+	}
+	if oldDeployment == nil {
+		return oapi.Deployment{}, fmt.Errorf("deployment %s not found", deploymentID)
+	}
+	return *oldDeployment, nil
+}
+
+func isJobAgentConfigurationChanged(oldDeployment *oapi.Deployment, newDeployment *oapi.Deployment) bool {
+	oldAgentId := ""
+	if oldDeployment.JobAgentId != nil {
+		oldAgentId = *oldDeployment.JobAgentId
+	}
+	newAgentId := ""
+	if newDeployment.JobAgentId != nil {
+		newAgentId = *newDeployment.JobAgentId
+	}
+	if oldAgentId != newAgentId {
+		return true
+	}
+
+	oldConfig, _ := json.Marshal(oldDeployment.JobAgentConfig)
+	newConfig, _ := json.Marshal(newDeployment.JobAgentConfig)
+	if string(oldConfig) != string(newConfig) {
+		return true
+	}
+
+	oldAgents, _ := json.Marshal(oldDeployment.JobAgents)
+	newAgents, _ := json.Marshal(newDeployment.JobAgents)
+	return string(oldAgents) != string(newAgents)
 }
 
 func HandleDeploymentUpdated(
@@ -161,6 +193,11 @@ func HandleDeploymentUpdated(
 	deployment := &oapi.Deployment{}
 	if err := json.Unmarshal(event.Data, deployment); err != nil {
 		return err
+	}
+
+	oldDeployment, err := getOldDeployment(ws, deployment.Id)
+	if err != nil {
+		return HandleDeploymentCreated(ctx, ws, event)
 	}
 
 	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
@@ -190,17 +227,11 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
-	err = reconcileTargets(ctx, ws, deployment, addedReleaseTargets)
-	if err != nil {
-		return err
+	if isJobAgentConfigurationChanged(&oldDeployment, deployment) {
+		return reconcileTargets(ctx, ws, deployment, releaseTargets, true)
 	}
 
-	jobsToRetrigger := getJobsToRetrigger(ws, deployment)
-	if len(jobsToRetrigger) > 0 {
-		retriggerInvalidJobAgentJobs(ctx, ws, jobsToRetrigger)
-	}
-
-	return nil
+	return reconcileTargets(ctx, ws, deployment, addedReleaseTargets, false)
 }
 
 func HandleDeploymentDeleted(
@@ -226,94 +257,4 @@ func HandleDeploymentDeleted(
 	}
 
 	return nil
-}
-
-type jobWithReleaseTarget struct {
-	Job           *oapi.Job
-	ReleaseTarget *oapi.ReleaseTarget
-}
-
-func getAllJobsWithReleaseTarget(ws *workspace.Workspace, deployment *oapi.Deployment) []*jobWithReleaseTarget {
-	allJobs := ws.Jobs().Items()
-	jobsSlice := make([]*jobWithReleaseTarget, 0)
-	for _, job := range allJobs {
-		release, ok := ws.Releases().Get(job.ReleaseId)
-		if !ok || release == nil {
-			continue
-		}
-
-		if release.ReleaseTarget.DeploymentId != deployment.Id {
-			continue
-		}
-
-		jobsSlice = append(jobsSlice, &jobWithReleaseTarget{Job: job, ReleaseTarget: &release.ReleaseTarget})
-	}
-	sort.Slice(jobsSlice, func(i, j int) bool {
-		return jobsSlice[i].Job.CreatedAt.Before(jobsSlice[j].Job.CreatedAt)
-	})
-	return jobsSlice
-}
-
-func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []*oapi.Job {
-	latestJobs := make(map[string]*oapi.Job)
-	jobsSlice := getAllJobsWithReleaseTarget(ws, deployment)
-
-	for _, jobWithReleaseTarget := range jobsSlice {
-		latestJobs[jobWithReleaseTarget.ReleaseTarget.Key()] = jobWithReleaseTarget.Job
-	}
-
-	jobsToRetrigger := make([]*oapi.Job, 0)
-	for _, job := range latestJobs {
-		if job.Status == oapi.JobStatusInvalidJobAgent {
-			jobsToRetrigger = append(jobsToRetrigger, job)
-		}
-	}
-	return jobsToRetrigger
-}
-
-// retriggerInvalidJobAgentJobs creates new Pending jobs for all releases that currently have InvalidJobAgent jobs
-// Note: This is an explicit retrigger operation for configuration fixes, so we bypass normal
-// eligibility checks (like retry limits). The old InvalidJobAgent job remains for history.
-func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
-	// Create job factory and dispatcher
-	jobFactory := jobs.NewFactory(ws.Store())
-
-	for _, job := range jobsToRetrigger {
-		// Get the release for this job
-		release, ok := ws.Releases().Get(job.ReleaseId)
-		if !ok || release == nil {
-			continue
-		}
-
-		// Create a new job for this release (bypassing eligibility checks for explicit retrigger)
-		newJob, err := jobFactory.CreateJobForRelease(ctx, release, nil)
-		if err != nil {
-			log.Error("failed to create job for release during retrigger",
-				"releaseId", release.ID(),
-				"deploymentId", release.ReleaseTarget.DeploymentId,
-				"error", err.Error())
-			continue
-		}
-
-		// Upsert the new job
-		ws.Jobs().Upsert(ctx, newJob)
-
-		log.Info("created new job for previously invalid job agent",
-			"newJobId", newJob.Id,
-			"originalJobId", job.Id,
-			"releaseId", release.ID(),
-			"deploymentId", release.ReleaseTarget.DeploymentId,
-			"status", newJob.Status)
-
-		// Dispatch the job asynchronously if it's not InvalidJobAgent
-		if newJob.Status != oapi.JobStatusInvalidJobAgent {
-			if err := ws.JobAgentRegistry().Dispatch(ctx, newJob); err != nil {
-				message := err.Error()
-				newJob.Status = oapi.JobStatusInvalidIntegration
-				newJob.UpdatedAt = time.Now()
-				newJob.Message = &message
-				ws.Jobs().Upsert(ctx, newJob)
-			}
-		}
-	}
 }

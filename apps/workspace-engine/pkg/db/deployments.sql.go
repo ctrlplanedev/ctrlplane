@@ -45,7 +45,7 @@ func (q *Queries) DeleteSystemDeploymentByDeploymentID(ctx context.Context, depl
 }
 
 const getDeploymentByID = `-- name: GetDeploymentByID :one
-SELECT id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id
+SELECT id, name, description, job_agent_id, job_agent_config, job_agents, resource_selector, metadata, workspace_id
 FROM deployment
 WHERE id = $1
 `
@@ -59,6 +59,7 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 		&i.Description,
 		&i.JobAgentID,
 		&i.JobAgentConfig,
+		&i.JobAgents,
 		&i.ResourceSelector,
 		&i.Metadata,
 		&i.WorkspaceID,
@@ -115,7 +116,7 @@ func (q *Queries) GetSystemIDsForDeployment(ctx context.Context, deploymentID uu
 }
 
 const listDeploymentsBySystemID = `-- name: ListDeploymentsBySystemID :many
-SELECT d.id, d.name, d.description, d.job_agent_id, d.job_agent_config, d.resource_selector, d.metadata, d.workspace_id
+SELECT d.id, d.name, d.description, d.job_agent_id, d.job_agent_config, d.job_agents, d.resource_selector, d.metadata, d.workspace_id
 FROM deployment d
 INNER JOIN system_deployment sd ON sd.deployment_id = d.id
 WHERE sd.system_id = $1
@@ -136,6 +137,7 @@ func (q *Queries) ListDeploymentsBySystemID(ctx context.Context, systemID uuid.U
 			&i.Description,
 			&i.JobAgentID,
 			&i.JobAgentConfig,
+			&i.JobAgents,
 			&i.ResourceSelector,
 			&i.Metadata,
 			&i.WorkspaceID,
@@ -151,7 +153,7 @@ func (q *Queries) ListDeploymentsBySystemID(ctx context.Context, systemID uuid.U
 }
 
 const listDeploymentsByWorkspaceID = `-- name: ListDeploymentsByWorkspaceID :many
-SELECT id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id
+SELECT id, name, description, job_agent_id, job_agent_config, job_agents, resource_selector, metadata, workspace_id
 FROM deployment
 WHERE workspace_id = $1
 LIMIT COALESCE($2::int, 5000)
@@ -177,6 +179,7 @@ func (q *Queries) ListDeploymentsByWorkspaceID(ctx context.Context, arg ListDepl
 			&i.Description,
 			&i.JobAgentID,
 			&i.JobAgentConfig,
+			&i.JobAgents,
 			&i.ResourceSelector,
 			&i.Metadata,
 			&i.WorkspaceID,
@@ -192,13 +195,14 @@ func (q *Queries) ListDeploymentsByWorkspaceID(ctx context.Context, arg ListDepl
 }
 
 const upsertDeployment = `-- name: UpsertDeployment :one
-INSERT INTO deployment (id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO deployment (id, name, description, job_agent_id, job_agent_config, job_agents, resource_selector, metadata, workspace_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (id) DO UPDATE
 SET name = EXCLUDED.name, description = EXCLUDED.description, job_agent_id = EXCLUDED.job_agent_id,
-    job_agent_config = EXCLUDED.job_agent_config, resource_selector = EXCLUDED.resource_selector,
+    job_agent_config = EXCLUDED.job_agent_config, job_agents = EXCLUDED.job_agents,
+    resource_selector = EXCLUDED.resource_selector,
     metadata = EXCLUDED.metadata, workspace_id = EXCLUDED.workspace_id
-RETURNING id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id
+RETURNING id, name, description, job_agent_id, job_agent_config, job_agents, resource_selector, metadata, workspace_id
 `
 
 type UpsertDeploymentParams struct {
@@ -207,6 +211,7 @@ type UpsertDeploymentParams struct {
 	Description      string
 	JobAgentID       uuid.UUID
 	JobAgentConfig   map[string]any
+	JobAgents        []byte
 	ResourceSelector pgtype.Text
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
@@ -219,6 +224,7 @@ func (q *Queries) UpsertDeployment(ctx context.Context, arg UpsertDeploymentPara
 		arg.Description,
 		arg.JobAgentID,
 		arg.JobAgentConfig,
+		arg.JobAgents,
 		arg.ResourceSelector,
 		arg.Metadata,
 		arg.WorkspaceID,
@@ -230,6 +236,7 @@ func (q *Queries) UpsertDeployment(ctx context.Context, arg UpsertDeploymentPara
 		&i.Description,
 		&i.JobAgentID,
 		&i.JobAgentConfig,
+		&i.JobAgents,
 		&i.ResourceSelector,
 		&i.Metadata,
 		&i.WorkspaceID,

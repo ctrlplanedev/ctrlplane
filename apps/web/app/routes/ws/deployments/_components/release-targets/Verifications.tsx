@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { Fragment, useState } from "react";
+import { SiDatadog } from "@icons-pack/react-simple-icons";
 import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
 import { ChevronRight } from "lucide-react";
@@ -19,9 +20,11 @@ import {
 import { cn } from "~/lib/utils";
 import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
 import { isArgoCDMeasurement } from "./argocd/argocd-metric";
+import { DatadogVerificationDisplay } from "./datadog/Datadog";
+import { isDatadogProvider } from "./datadog/datadog-metric";
 import { PrometheusVerificationDisplay } from "./prometheus/Prometheus";
-import { PrometheusIcon } from "./prometheus/PrometheusIcon";
 import { isPrometheusProvider } from "./prometheus/prometheus-metric";
+import { PrometheusIcon } from "./prometheus/PrometheusIcon";
 import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
 type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
@@ -156,6 +159,7 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
   const isArgoCD =
     latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
   const isPrometheus = isPrometheusProvider(metric.provider);
+  const isDatadog = isDatadogProvider(metric.provider);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -170,6 +174,9 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
           {isPrometheus && (
             <PrometheusIcon className="h-4 w-4 text-orange-500" />
           )}
+          {isDatadog && (
+            <SiDatadog className="h-4 w-4 [&>path]:fill-[#632CA6]" />
+          )}
           <span className="text-sm font-medium">{metric.name}</span>
           <div className="grow" />
           <VerificationMetricStatus metric={metric} />
@@ -179,7 +186,8 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
         {isArgoCD && <ArgoCDVerificationDisplay metric={metric} />}
         {isPrometheus && <PrometheusVerificationDisplay metric={metric} />}
-        {!isArgoCD && !isPrometheus && (
+        {isDatadog && <DatadogVerificationDisplay metric={metric} />}
+        {!isArgoCD && !isPrometheus && !isDatadog && (
           <>
             <MetricSummaryDisplay metric={metric} />
             {sortedMeasurements.map((measurement, idx) => (

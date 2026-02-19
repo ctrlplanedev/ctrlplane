@@ -909,6 +909,7 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1049,6 +1050,7 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1063,6 +1065,12 @@ export interface components {
         DeploymentDependencyRule: {
             /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
             dependsOn: string;
+        };
+        DeploymentJobAgent: {
+            config: components["schemas"]["JobAgentConfig"];
+            ref: string;
+            /** @description CEL expression to determine if the job agent should be used */
+            selector: string;
         };
         DeploymentRequestAccepted: {
             id: string;
@@ -1347,10 +1355,6 @@ export interface components {
             /** @description CEL expression for matching release targets. Use "true" to match all targets. */
             selector: string;
             workspaceId: string;
-        };
-        PolicyRequestAccepted: {
-            id: string;
-            message: string;
         };
         PolicyRule: {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
@@ -1692,6 +1696,7 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -3649,7 +3654,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyRequestAccepted"];
+                    "application/json": components["schemas"]["Policy"];
                 };
             };
             /** @description Invalid request */
@@ -3730,7 +3735,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyRequestAccepted"];
+                    "application/json": components["schemas"]["Policy"];
                 };
             };
             /** @description Invalid request */
@@ -3767,13 +3772,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Policy updated */
+            /** @description Policy deleted */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyRequestAccepted"];
+                    "application/json": components["schemas"]["Policy"];
                 };
             };
             /** @description Invalid request */

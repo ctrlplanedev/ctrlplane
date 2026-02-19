@@ -10,17 +10,18 @@ WHERE workspace_id = $1
 LIMIT COALESCE(sqlc.narg('limit')::int, 5000);
 
 -- name: ListDeploymentsBySystemID :many
-SELECT d.id, d.name, d.description, d.job_agent_id, d.job_agent_config, d.resource_selector, d.metadata, d.workspace_id
+SELECT d.id, d.name, d.description, d.job_agent_id, d.job_agent_config, d.job_agents, d.resource_selector, d.metadata, d.workspace_id
 FROM deployment d
 INNER JOIN system_deployment sd ON sd.deployment_id = d.id
 WHERE sd.system_id = $1;
 
 -- name: UpsertDeployment :one
-INSERT INTO deployment (id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO deployment (id, name, description, job_agent_id, job_agent_config, job_agents, resource_selector, metadata, workspace_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (id) DO UPDATE
 SET name = EXCLUDED.name, description = EXCLUDED.description, job_agent_id = EXCLUDED.job_agent_id,
-    job_agent_config = EXCLUDED.job_agent_config, resource_selector = EXCLUDED.resource_selector,
+    job_agent_config = EXCLUDED.job_agent_config, job_agents = EXCLUDED.job_agents,
+    resource_selector = EXCLUDED.resource_selector,
     metadata = EXCLUDED.metadata, workspace_id = EXCLUDED.workspace_id
 RETURNING *;
 

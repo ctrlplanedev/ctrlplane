@@ -83,19 +83,15 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
         </div>
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
-          <JobStatusBadge
-            message={rt.latestJob?.message}
-            status={
-              (rt.latestJob?.status ??
-                "unknown") as keyof typeof JobStatusDisplayName
-            }
-          />
-          <VerificationStatusBadge
-            summaries={summaries}
-            verifications={verifications}
-          />
-        </div>
+        {rt.latestJob != null && (
+          <div className="flex items-center gap-2">
+            {<JobStatusBadge {...rt.latestJob} />}
+            <VerificationStatusBadge
+              summaries={summaries}
+              verifications={verifications}
+            />
+          </div>
+        )}
       </TableCell>
       <JobLinks links={rt.latestJob?.links} />
       <TableCell
