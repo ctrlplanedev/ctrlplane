@@ -243,14 +243,14 @@ func main() {
 	defer cancel()
 
 	// Initialize Kafka producer for ticker
-	producer, err := kafka.NewProducer(kafka.Brokers)
+	producer, err := kafka.NewProducer()
 	if err != nil {
 		log.Fatal("Failed to create Kafka producer", "error", err)
 		panic(err)
 	}
 	defer producer.Close()
 
-	consumer, err := kafka.NewConsumer(kafka.Brokers, kafka.Topic)
+	consumer, err := kafka.NewConsumer(kafka.Topic)
 	if err != nil {
 		log.Fatal("Failed to create Kafka consumer", "error", err)
 		panic(err)

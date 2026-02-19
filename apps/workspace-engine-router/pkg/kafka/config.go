@@ -9,14 +9,14 @@ import (
 	kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func BaseConfig() *kafka.ConfigMap {
+func BaseConfig() (*kafka.ConfigMap, error) {
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers": config.Global.KafkaBrokers,
 	}
 	if err := applySASL(cfg); err != nil {
-		log.Fatal("invalid Kafka SASL configuration", "error", err)
+		return nil, fmt.Errorf("invalid Kafka SASL configuration: %w", err)
 	}
-	return cfg
+	return cfg, nil
 }
 
 func applySASL(cfg *kafka.ConfigMap) error {

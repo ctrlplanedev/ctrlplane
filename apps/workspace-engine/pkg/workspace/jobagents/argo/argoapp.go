@@ -314,5 +314,9 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 }
 
 func (a *ArgoApplication) getKafkaProducer() (messaging.Producer, error) {
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, confluent.BaseProducerConfig())
+	cfg, err := confluent.BaseProducerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build producer config: %w", err)
+	}
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, cfg)
 }

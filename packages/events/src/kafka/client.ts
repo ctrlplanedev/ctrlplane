@@ -48,7 +48,10 @@ const fetchOAuthToken = async (): Promise<OauthbearerProviderResponse> => {
     access_token: string;
     expires_in: number;
   };
-  return { value: data.access_token };
+  return {
+    value: data.access_token,
+    lifetime: Date.now() + data.expires_in * 1000,
+  };
 };
 
 const buildSaslConfig = (): SASLOptions | undefined => {
@@ -82,19 +85,20 @@ const buildSaslConfig = (): SASLOptions | undefined => {
   }
 };
 
+validateSaslConfig();
+
 let kafka: Kafka | null = null;
 let producer: Producer | null = null;
 
 const getKafka = () => {
   if (kafka != null) return kafka;
 
-  validateSaslConfig();
-
   const sasl = buildSaslConfig();
   kafka = new Kafka({
     clientId: "ctrlplane-events",
     brokers: env.KAFKA_BROKERS.split(","),
-    ...(sasl != null ? { ssl: true, sasl } : {}),
+    ssl: env.KAFKA_SSL_ENABLED,
+    ...(sasl != null ? { sasl } : {}),
   });
   return kafka;
 };

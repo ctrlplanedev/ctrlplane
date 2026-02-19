@@ -157,7 +157,11 @@ func (t *TestRunner) getKafkaProducer() (messaging.Producer, error) {
 	if t.producerFactory != nil {
 		return t.producerFactory()
 	}
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, confluent.BaseProducerConfig())
+	cfg, err := confluent.BaseProducerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build producer config: %w", err)
+	}
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, cfg)
 }
 
 func (t *TestRunner) sendJobUpdateEvent(job *oapi.Job, status oapi.JobStatus, message string) error {

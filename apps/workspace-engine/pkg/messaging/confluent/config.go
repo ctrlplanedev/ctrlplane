@@ -9,7 +9,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func BaseProducerConfig() *kafka.ConfigMap {
+func BaseProducerConfig() (*kafka.ConfigMap, error) {
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Global.KafkaBrokers,
 		"enable.idempotence":       true,
@@ -18,16 +18,15 @@ func BaseProducerConfig() *kafka.ConfigMap {
 		"retry.backoff.ms":         100,
 	}
 	if err := applySASL(cfg); err != nil {
-		log.Fatal("invalid Kafka SASL configuration", "error", err)
+		return nil, fmt.Errorf("invalid Kafka SASL configuration: %w", err)
 	}
-	return cfg
+	return cfg, nil
 }
 
-func BaseConsumerConfig() *kafka.ConfigMap {
+func BaseConsumerConfig() (*kafka.ConfigMap, error) {
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":               config.Global.KafkaBrokers,
 		"group.id":                        config.Global.KafkaGroupID,
-		"auto.offset.reset":               "earliest",
 		"enable.auto.commit":              false,
 		"partition.assignment.strategy":    "cooperative-sticky",
 		"session.timeout.ms":              3000,
@@ -35,9 +34,9 @@ func BaseConsumerConfig() *kafka.ConfigMap {
 		"go.application.rebalance.enable": true,
 	}
 	if err := applySASL(cfg); err != nil {
-		log.Fatal("invalid Kafka SASL configuration", "error", err)
+		return nil, fmt.Errorf("invalid Kafka SASL configuration: %w", err)
 	}
-	return cfg
+	return cfg, nil
 }
 
 func applySASL(cfg *kafka.ConfigMap) error {

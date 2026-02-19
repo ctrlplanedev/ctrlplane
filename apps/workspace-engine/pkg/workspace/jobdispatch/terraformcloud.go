@@ -296,7 +296,11 @@ func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, re
 }
 
 func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error) {
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, confluent.BaseProducerConfig())
+	cfg, err := confluent.BaseProducerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build producer config: %w", err)
+	}
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, cfg)
 }
 
 func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config *oapi.TerraformCloudJobAgentConfig, workspaceName string) error {

@@ -1,10 +1,15 @@
 package kafka
 
 import (
+	"fmt"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
 )
 
-func NewProducer(brokers string) (messaging.Producer, error) {
-	return confluent.NewConfluent(brokers).CreateProducer(Topic, confluent.BaseProducerConfig())
+func NewProducer() (messaging.Producer, error) {
+	cfg, err := confluent.BaseProducerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build producer config: %w", err)
+	}
+	return confluent.NewConfluent(Brokers).CreateProducer(Topic, cfg)
 }

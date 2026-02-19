@@ -11,6 +11,10 @@ const saslMechanisms = [
 export const env = createEnv({
   server: {
     KAFKA_BROKERS: z.string().default("localhost:9092"),
+    KAFKA_SSL_ENABLED: z
+      .string()
+      .default("true")
+      .transform((v) => v === "true"),
     KAFKA_SASL_ENABLED: z
       .string()
       .default("false")

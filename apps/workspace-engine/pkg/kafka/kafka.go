@@ -22,11 +22,14 @@ var (
 	Brokers = config.Global.KafkaBrokers
 )
 
-func NewConsumer(brokers string, topic string) (messaging.Consumer, error) {
-	cfg := confluent.BaseConsumerConfig()
+func NewConsumer(topic string) (messaging.Consumer, error) {
+	cfg, err := confluent.BaseConsumerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build consumer config: %w", err)
+	}
 	_ = cfg.SetKey("auto.offset.reset", "latest")
 	_ = cfg.SetKey("max.poll.interval.ms", 900_000)
-	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, topic, cfg)
+	return confluent.NewConfluent(Brokers).CreateConsumer(GroupID, topic, cfg)
 }
 
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
