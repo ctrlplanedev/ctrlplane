@@ -40,6 +40,17 @@ func NewExecutor(store *store.Store, jobAgentRegistry *jobagents.Registry) *Exec
 	}
 }
 
+func (e *Executor) updateJobWithFailure(ctx context.Context, job *oapi.Job, err error) (*oapi.Job, error) {
+	job.Status = oapi.JobStatusFailure
+	message := err.Error()
+	job.Message = &message
+	now := time.Now().UTC()
+	job.CompletedAt = &now
+	job.UpdatedAt = now
+	e.store.Jobs.Upsert(ctx, job)
+	return job, nil
+}
+
 func (e *Executor) dispatchJobForAgent(ctx context.Context, release *oapi.Release, agent *oapi.JobAgent) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "createJobForAgent",
 		oteltrace.WithAttributes(
@@ -67,7 +78,7 @@ func (e *Executor) dispatchJobForAgent(ctx context.Context, release *oapi.Releas
 	if err := e.jobAgentRegistry.Dispatch(ctx, newJob); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to dispatch job")
-		return nil, err
+		return e.updateJobWithFailure(ctx, newJob, err)
 	}
 
 	return newJob, nil
@@ -137,7 +148,6 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to create job")
-			return nil, err
 		}
 
 		newJobs = append(newJobs, newJob)

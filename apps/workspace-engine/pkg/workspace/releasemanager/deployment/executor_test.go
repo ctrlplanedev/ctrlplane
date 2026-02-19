@@ -176,7 +176,6 @@ func TestExecuteRelease_NoJobAgentConfigured(t *testing.T) {
 	// Execute release
 	jobs, err := executor.ExecuteRelease(ctx, release, nil)
 
-	// No job agent configured and no jobAgents list — returns empty jobs
 	require.NoError(t, err)
 	require.Len(t, jobs, 1)
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, jobs[0].Status)

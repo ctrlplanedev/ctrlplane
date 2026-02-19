@@ -8,11 +8,6 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var jobAgentIfEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("release", "deployment", "environment", "resource").
-	WithStandardExtensions().
-	BuildCached(12 * time.Hour)
-
 type DeploymentAgentsSelector struct {
 	store      *store.Store
 	deployment *oapi.Deployment
@@ -80,6 +75,14 @@ func (s *DeploymentAgentsSelector) SelectAgents() ([]*oapi.JobAgent, error) {
 	celCtx, err := s.buildCelContext()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build cel context: %w", err)
+	}
+
+	jobAgentIfEnv, err := celutil.NewEnvBuilder().
+		WithMapVariables("release", "deployment", "environment", "resource").
+		WithStandardExtensions().
+		BuildCached(12 * time.Hour)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build job agent if cel environment: %w", err)
 	}
 
 	jobAgents := make([]*oapi.JobAgent, 0)

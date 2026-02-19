@@ -29,6 +29,7 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
+// NoAgentConfiguredJob creates a job for a release with no job agent configured.
 func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
 	message := fmt.Sprintf("No job agent configured for deployment '%s'", deploymentName)
 	if action != nil {
@@ -52,6 +53,7 @@ func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName str
 	}
 }
 
+// InvalidDeploymentAgentsJob creates a job for a release with invalid deployment agents.
 func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, action *trace.Action) *oapi.Job {
 	message := fmt.Sprintf("Invalid deployment agents for deployment '%s'", deploymentName)
 	if action != nil {
@@ -259,6 +261,7 @@ func (f *Factory) buildWorkflowJobDispatchContext(wfJob *oapi.WorkflowJob, jobAg
 	}, nil
 }
 
+// CreateJobForWorkflowJob creates a job for a given workflow job.
 func (f *Factory) CreateJobForWorkflowJob(ctx context.Context, wfJob *oapi.WorkflowJob) (*oapi.Job, error) {
 	jobAgent, exists := f.store.JobAgents.Get(wfJob.Ref)
 	if !exists {
