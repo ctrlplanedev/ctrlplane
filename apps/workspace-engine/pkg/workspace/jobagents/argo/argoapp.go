@@ -10,9 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
@@ -233,12 +231,6 @@ func (a *ArgoApplication) sendJobFailureEvent(job *oapi.Job, message string) err
 			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
 		},
 	}
-	producer, err := a.getKafkaProducer()
-	if err != nil {
-		return fmt.Errorf("failed to create Kafka producer: %w", err)
-	}
-	defer producer.Close()
-
 	event := map[string]any{
 		"eventType":   "job.updated",
 		"workspaceId": workspaceId,
@@ -249,7 +241,7 @@ func (a *ArgoApplication) sendJobFailureEvent(job *oapi.Job, message string) err
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
-	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+	if err := messaging.Publish([]byte(workspaceId), eventBytes); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 	return nil
@@ -291,11 +283,6 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
 		},
 	}
-	producer, err := a.getKafkaProducer()
-	if err != nil {
-		return fmt.Errorf("failed to create Kafka producer: %w", err)
-	}
-	defer producer.Close()
 
 	event := map[string]any{
 		"eventType":   "job.updated",
@@ -307,16 +294,8 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
-	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+	if err := messaging.Publish([]byte(workspaceId), eventBytes); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 	return nil
-}
-
-func (a *ArgoApplication) getKafkaProducer() (messaging.Producer, error) {
-	cfg, err := confluent.BaseProducerConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build producer config: %w", err)
-	}
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, cfg)
 }
