@@ -4,19 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
-	"time"
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
@@ -263,110 +257,4 @@ func HandleDeploymentDeleted(
 	}
 
 	return nil
-}
-
-type jobWithReleaseTarget struct {
-	Job           *oapi.Job
-	ReleaseTarget *oapi.ReleaseTarget
-}
-
-func getAllJobsWithReleaseTarget(ws *workspace.Workspace, deployment *oapi.Deployment) []*jobWithReleaseTarget {
-	allJobs := ws.Jobs().Items()
-	jobsSlice := make([]*jobWithReleaseTarget, 0)
-	for _, job := range allJobs {
-		release, ok := ws.Releases().Get(job.ReleaseId)
-		if !ok || release == nil {
-			continue
-		}
-
-		if release.ReleaseTarget.DeploymentId != deployment.Id {
-			continue
-		}
-
-		jobsSlice = append(jobsSlice, &jobWithReleaseTarget{Job: job, ReleaseTarget: &release.ReleaseTarget})
-	}
-	sort.Slice(jobsSlice, func(i, j int) bool {
-		return jobsSlice[i].Job.CreatedAt.Before(jobsSlice[j].Job.CreatedAt)
-	})
-	return jobsSlice
-}
-
-func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []*oapi.Job {
-	latestJobs := make(map[string]*oapi.Job)
-	jobsSlice := getAllJobsWithReleaseTarget(ws, deployment)
-
-	for _, jobWithReleaseTarget := range jobsSlice {
-		latestJobs[jobWithReleaseTarget.ReleaseTarget.Key()] = jobWithReleaseTarget.Job
-	}
-
-	jobsToRetrigger := make([]*oapi.Job, 0)
-	for _, job := range latestJobs {
-		if job.Status == oapi.JobStatusInvalidJobAgent {
-			jobsToRetrigger = append(jobsToRetrigger, job)
-		}
-	}
-	return jobsToRetrigger
-}
-
-// retriggerInvalidJobAgentJobs creates new Pending jobs for all releases that currently have InvalidJobAgent jobs
-// Note: This is an explicit retrigger operation for configuration fixes, so we bypass normal
-// eligibility checks (like retry limits). The old InvalidJobAgent job remains for history.
-func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
-	jobFactory := jobs.NewFactory(ws.Store())
-
-	for _, job := range jobsToRetrigger {
-		release, ok := ws.Releases().Get(job.ReleaseId)
-		if !ok || release == nil {
-			continue
-		}
-
-		deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
-		if !ok || deployment == nil {
-			continue
-		}
-
-		agents, err := jobagents.NewDeploymentAgentsSelector(ws.Store(), deployment, release).SelectAgents()
-		if err != nil {
-			log.Error("failed to select agents for release during retrigger",
-				"releaseId", release.ID(),
-				"deploymentId", release.ReleaseTarget.DeploymentId,
-				"error", err.Error())
-			continue
-		}
-
-		if len(agents) == 0 {
-			continue
-		}
-
-		for _, agent := range agents {
-			newJob, err := jobFactory.CreateJobForRelease(ctx, release, agent, nil)
-			if err != nil {
-				log.Error("failed to create job for release during retrigger",
-					"releaseId", release.ID(),
-					"deploymentId", release.ReleaseTarget.DeploymentId,
-					"agentId", agent.Id,
-					"error", err.Error())
-				continue
-			}
-
-			ws.Jobs().Upsert(ctx, newJob)
-			log.Info("created new job for previously invalid job agent",
-				"newJobId", newJob.Id,
-				"originalJobId", job.Id,
-				"releaseId", release.ID(),
-				"deploymentId", release.ReleaseTarget.DeploymentId,
-				"agentId", agent.Id,
-				"status", newJob.Status)
-
-			if newJob.Status != oapi.JobStatusInvalidJobAgent {
-				if err := ws.JobAgentRegistry().Dispatch(ctx, newJob); err != nil {
-					message := err.Error()
-					newJob.Status = oapi.JobStatusInvalidIntegration
-					newJob.UpdatedAt = time.Now()
-					newJob.Message = &message
-					ws.Jobs().Upsert(ctx, newJob)
-				}
-			}
-		}
-	}
 }
