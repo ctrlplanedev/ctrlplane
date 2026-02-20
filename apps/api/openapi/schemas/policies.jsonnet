@@ -90,6 +90,7 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
       verification: openapi.schemaRef('VerificationRule'),
       versionCooldown: openapi.schemaRef('VersionCooldownRule'),
+      versionSelector: openapi.schemaRef('VersionSelectorRule'),
       retry: openapi.schemaRef('RetryRule'),
     },
   },
@@ -103,6 +104,18 @@ local openapi = import '../lib/openapi.libsonnet';
         format: 'int32',
         minimum: 0,
         description: 'Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.',
+      },
+    },
+  },
+
+  VersionSelectorRule: {
+    type: 'object',
+    required: ['selector'],
+    properties: {
+      selector: openapi.schemaRef('Selector'),
+      description: {
+        type: 'string',
+        description: 'Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"',
       },
     },
   },

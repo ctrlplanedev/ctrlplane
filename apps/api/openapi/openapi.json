@@ -1405,6 +1405,9 @@
                },
                "versionCooldown": {
                   "$ref": "#/components/schemas/VersionCooldownRule"
+               },
+               "versionSelector": {
+                  "$ref": "#/components/schemas/VersionSelectorRule"
                }
             },
             "required": [
@@ -2812,6 +2815,21 @@
             },
             "required": [
                "intervalSeconds"
+            ],
+            "type": "object"
+         },
+         "VersionSelectorRule": {
+            "properties": {
+               "description": {
+                  "description": "Human-readable description of what this version selector does. Example: \"Only deploy v2.x versions to staging environments\"",
+                  "type": "string"
+               },
+               "selector": {
+                  "$ref": "#/components/schemas/Selector"
+               }
+            },
+            "required": [
+               "selector"
             ],
             "type": "object"
          },

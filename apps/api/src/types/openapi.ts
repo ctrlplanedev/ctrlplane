@@ -1348,6 +1348,7 @@ export interface components {
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
+            versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         PrometheusMetricProvider: {
             /**
@@ -1866,6 +1867,11 @@ export interface components {
              * @description Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
              */
             intervalSeconds: number;
+        };
+        VersionSelectorRule: {
+            /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
+            description?: string;
+            selector: components["schemas"]["Selector"];
         };
         Workflow: {
             id: string;
