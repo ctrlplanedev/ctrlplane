@@ -39,20 +39,15 @@ deploymentId: dep_xyz
 environmentId: env_prod
 resourceId: res_cluster1
 versionId: ver_v123
-jobId: job_789
-status: active
 createdAt: "2024-01-15T12:00:00Z"
-updatedAt: "2024-01-15T12:05:00Z"
 ```
 
-### Release Status
+Releases do not carry their own status field. Instead, the state of a release
+is determined by the **Release Target State**, which tracks:
 
-- **`pending`** - Waiting for policies (approval, environment progression)
-- **`approved`** - Policies satisfied, job created
-- **`active`** - Job is currently executing
-- **`completed`** - Job finished successfully
-- **`failed`** - Job failed
-- **`cancelled`** - Release was cancelled
+- **Desired release** — the release that policies have selected for deployment
+- **Current release** — the release whose job completed successfully (with passing verifications)
+- **Latest job** — the most recent job created for this target, along with its status and verifications
 
 ### How Releases are Created
 
@@ -87,17 +82,15 @@ Releases are created automatically by Ctrlplane when:
 ```
           [Version Created]
                  ↓
-           [Release Created]
-                 ↓
-        [Policy Evaluation]
+       [Policy Evaluation]
          ↓               ↓
-    [Blocked]      [Pending] ←→ [User Action]
+    [Blocked]      [Passes] ←→ [User Action]
                         ↓
-                  [Approved]
+              [Release Created]
                         ↓
                  [Job Created]
                         ↓
-                    [Active]
+               [Job Executes]
          ↓                        ↓
     [Completed]              [Failed]
 ```
@@ -107,7 +100,7 @@ Releases are created automatically by Ctrlplane when:
 **Via Web UI**:
 1. Navigate to deployment
 2. Click "Releases" tab
-3. See all releases with their status
+3. See all releases with their current and desired state
 
 **Via CLI**:
 ```bash
@@ -372,7 +365,7 @@ Ctrlplane finds release targets:
 - API Service → Production → cluster-1
 - API Service → Production → cluster-2
 
-Creates 2 releases, both status `pending` (waiting for approval policy).
+Creates 2 releases. Production releases are blocked by the approval policy.
 
 ### 3. User Approves
 
@@ -380,7 +373,7 @@ Creates 2 releases, both status `pending` (waiting for approval policy).
 ctrlc api approve release rel_123
 ```
 
-Both releases move to `approved` status.
+Both releases are now eligible for job creation.
 
 ### 4. Ctrlplane Creates Jobs
 
@@ -388,7 +381,7 @@ Two jobs created:
 - `job_1` for cluster-1
 - `job_2` for cluster-2
 
-Both status: `pending`
+Both jobs start with status: `pending`
 
 ### 5. Job Agent Polls
 
@@ -413,9 +406,10 @@ await kubectl.apply(manifest);
 await job.update({ status: 'completed' });
 ```
 
-### 7. Releases Updated
+### 7. Jobs Complete
 
-Both releases now status: `completed`
+Both jobs complete successfully. The release target state updates: the release
+becomes the **current release** for each target.
 
 ## Release Sequencing
 
@@ -489,7 +483,7 @@ When jobs fail:
 
 ## Troubleshooting
 
-### Releases stuck in pending
+### Releases not progressing
 - Check if policies require approval
 - Review policy evaluation results
 - Verify environment progression requirements met
