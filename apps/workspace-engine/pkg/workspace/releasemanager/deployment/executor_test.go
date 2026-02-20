@@ -148,6 +148,74 @@ func TestExecuteRelease_Success(t *testing.T) {
 	assert.Equal(t, job.ReleaseId, storedJob.ReleaseId)
 }
 
+func TestExecuteRelease_MultipleDeploymentJobAgents_MergesSelectedAgentConfig(t *testing.T) {
+	executor, testStore := setupTestExecutor(t)
+	ctx := context.Background()
+
+	workspaceID := uuid.New().String()
+	systemID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	versionID := uuid.New().String()
+	selectedAgentID := uuid.New().String()
+	otherAgentID := uuid.New().String()
+
+	selectedAgent := createTestJobAgent(selectedAgentID, workspaceID, "selected-agent", "argocd")
+	selectedAgent.Config = oapi.JobAgentConfig{
+		"template": "agent-template",
+		"timeout":  30,
+	}
+	otherAgent := createTestJobAgent(otherAgentID, workspaceID, "other-agent", "argocd")
+	otherAgent.Config = oapi.JobAgentConfig{
+		"template": "other-template",
+	}
+	testStore.JobAgents.Upsert(ctx, selectedAgent)
+	testStore.JobAgents.Upsert(ctx, otherAgent)
+
+	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", selectedAgentID)
+	deployment.JobAgentConfig = oapi.JobAgentConfig{
+		"template": "deployment-template",
+		"retries":  3,
+	}
+	deployment.JobAgents = &[]oapi.DeploymentJobAgent{
+		{
+			Ref:      selectedAgentID,
+			Selector: "true",
+			Config: oapi.JobAgentConfig{
+				"template": "selected-deployment-agent-template",
+				"timeout":  60,
+			},
+		},
+		{
+			Ref:      otherAgentID,
+			Selector: "false",
+			Config: oapi.JobAgentConfig{
+				"template": "should-not-be-used",
+			},
+		},
+	}
+	_ = testStore.Deployments.Upsert(ctx, deployment)
+
+	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	_ = testStore.Environments.Upsert(ctx, environment)
+
+	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
+
+	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
+
+	jobs, err := executor.ExecuteRelease(ctx, release, nil)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	job := jobs[0]
+	assert.Equal(t, selectedAgentID, job.JobAgentId)
+	assert.Equal(t, "selected-deployment-agent-template", job.JobAgentConfig["template"])
+	assert.Equal(t, 60, job.JobAgentConfig["timeout"])
+	assert.Equal(t, 3, job.JobAgentConfig["retries"])
+}
+
 func TestExecuteRelease_NoJobAgentConfigured(t *testing.T) {
 	executor, testStore := setupTestExecutor(t)
 	ctx := context.Background()

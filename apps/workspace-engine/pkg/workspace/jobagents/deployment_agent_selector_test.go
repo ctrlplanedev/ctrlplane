@@ -696,3 +696,113 @@ func TestSelectAgents_LegacyFallbackWhenJobAgentsEmpty(t *testing.T) {
 	assert.Equal(t, legacyAgentID, agents[0].Id)
 	assert.Equal(t, "legacy-agent", agents[0].Name)
 }
+
+func TestSelectAgents_Legacy_ConfigResolvedWithDeploymentAndVersion(t *testing.T) {
+	s := newTestStore()
+	ctx := context.Background()
+
+	legacyAgentID := uuid.New().String()
+	agent := makeJobAgent(legacyAgentID, "legacy-agent", "runner")
+	agent.Config = oapi.JobAgentConfig{
+		"template":  "agent-template",
+		"shared":    "agent",
+		"agentOnly": true,
+	}
+	s.JobAgents.Upsert(ctx, agent)
+
+	deployment := makeDeployment(uuid.New().String(), "deploy", strPtr(legacyAgentID), nil)
+	deployment.JobAgentConfig = oapi.JobAgentConfig{
+		"template":       "deployment-template",
+		"shared":         "deployment",
+		"deploymentOnly": true,
+	}
+	release := makeRelease(deployment.Id, uuid.New().String(), uuid.New().String())
+	release.Version.JobAgentConfig = oapi.JobAgentConfig{
+		"template":    "version-template",
+		"shared":      "version",
+		"versionOnly": true,
+	}
+
+	sel := NewDeploymentAgentsSelector(s, deployment, release)
+	agents, err := sel.SelectAgents()
+
+	require.NoError(t, err)
+	require.Len(t, agents, 1)
+	assert.Equal(t, "version-template", agents[0].Config["template"])
+	assert.Equal(t, "version", agents[0].Config["shared"])
+	assert.Equal(t, true, agents[0].Config["agentOnly"])
+	assert.Equal(t, true, agents[0].Config["deploymentOnly"])
+	assert.Equal(t, true, agents[0].Config["versionOnly"])
+}
+
+func TestSelectAgents_JobAgents_ConfigResolvedWithSelectedAgentOverride(t *testing.T) {
+	s := newTestStore()
+	ctx := context.Background()
+
+	selectedAgentID := uuid.New().String()
+	otherAgentID := uuid.New().String()
+	envID := uuid.New().String()
+	resID := uuid.New().String()
+
+	selectedAgent := makeJobAgent(selectedAgentID, "selected-agent", "runner")
+	selectedAgent.Config = oapi.JobAgentConfig{
+		"template":  "agent-template",
+		"shared":    "agent",
+		"agentOnly": "yes",
+	}
+	otherAgent := makeJobAgent(otherAgentID, "other-agent", "runner")
+	otherAgent.Config = oapi.JobAgentConfig{
+		"template": "other-template",
+	}
+	s.JobAgents.Upsert(ctx, selectedAgent)
+	s.JobAgents.Upsert(ctx, otherAgent)
+	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
+	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{"cloud": "gcp"}))
+
+	ja := []oapi.DeploymentJobAgent{
+		{
+			Ref:      selectedAgentID,
+			Selector: `resource.metadata.cloud == "gcp"`,
+			Config: oapi.JobAgentConfig{
+				"template":     "selected-template",
+				"shared":       "selected",
+				"selectorOnly": "yes",
+				"timeout":      120,
+			},
+		},
+		{
+			Ref:      otherAgentID,
+			Selector: `resource.metadata.cloud == "aws"`,
+			Config: oapi.JobAgentConfig{
+				"template": "should-not-be-used",
+			},
+		},
+	}
+
+	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
+	deployment.JobAgentConfig = oapi.JobAgentConfig{
+		"template":       "deployment-template",
+		"shared":         "deployment",
+		"deploymentOnly": "yes",
+	}
+
+	release := makeRelease(deployment.Id, envID, resID)
+	release.Version.JobAgentConfig = oapi.JobAgentConfig{
+		"shared":      "version",
+		"versionOnly": "yes",
+	}
+
+	sel := NewDeploymentAgentsSelector(s, deployment, release)
+	agents, err := sel.SelectAgents()
+
+	require.NoError(t, err)
+	require.Len(t, agents, 1)
+	assert.Equal(t, selectedAgentID, agents[0].Id)
+	assert.Equal(t, "selected-template", agents[0].Config["template"])
+	assert.Equal(t, "version", agents[0].Config["shared"])
+	assert.Equal(t, "yes", agents[0].Config["agentOnly"])
+	assert.Equal(t, "yes", agents[0].Config["deploymentOnly"])
+	assert.Equal(t, "yes", agents[0].Config["selectorOnly"])
+	assert.Equal(t, 120, agents[0].Config["timeout"])
+	assert.Equal(t, "yes", agents[0].Config["versionOnly"])
+}
