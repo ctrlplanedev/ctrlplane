@@ -15,7 +15,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       rules: {
         type: 'array',
-        items: openapi.schemaRef('PolicyRule'),
+        items: openapi.schemaRef('CreatePolicyRule'),
       },
       metadata: {
         type: 'object',
@@ -39,7 +39,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       rules: {
         type: 'array',
-        items: openapi.schemaRef('PolicyRule'),
+        items: openapi.schemaRef('CreatePolicyRule'),
       },
       metadata: {
         type: 'object',
@@ -73,6 +73,21 @@ local openapi = import '../lib/openapi.libsonnet';
         additionalProperties: { type: 'string' },
         description: 'Arbitrary metadata for the policy (record<string, string>)',
       },
+    },
+  },
+
+  CreatePolicyRule: {
+    type: 'object',
+    properties: {
+      anyApproval: openapi.schemaRef('AnyApprovalRule'),
+      environmentProgression: openapi.schemaRef('EnvironmentProgressionRule'),
+      gradualRollout: openapi.schemaRef('GradualRolloutRule'),
+      deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
+      deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
+      verification: openapi.schemaRef('VerificationRule'),
+      versionCooldown: openapi.schemaRef('VersionCooldownRule'),
+      versionSelector: openapi.schemaRef('VersionSelectorRule'),
+      retry: openapi.schemaRef('RetryRule'),
     },
   },
 

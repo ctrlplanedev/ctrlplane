@@ -169,7 +169,7 @@
                },
                "rules": {
                   "items": {
-                     "$ref": "#/components/schemas/PolicyRule"
+                     "$ref": "#/components/schemas/CreatePolicyRule"
                   },
                   "type": "array"
                },
@@ -181,6 +181,38 @@
             "required": [
                "name"
             ],
+            "type": "object"
+         },
+         "CreatePolicyRule": {
+            "properties": {
+               "anyApproval": {
+                  "$ref": "#/components/schemas/AnyApprovalRule"
+               },
+               "deploymentDependency": {
+                  "$ref": "#/components/schemas/DeploymentDependencyRule"
+               },
+               "deploymentWindow": {
+                  "$ref": "#/components/schemas/DeploymentWindowRule"
+               },
+               "environmentProgression": {
+                  "$ref": "#/components/schemas/EnvironmentProgressionRule"
+               },
+               "gradualRollout": {
+                  "$ref": "#/components/schemas/GradualRolloutRule"
+               },
+               "retry": {
+                  "$ref": "#/components/schemas/RetryRule"
+               },
+               "verification": {
+                  "$ref": "#/components/schemas/VerificationRule"
+               },
+               "versionCooldown": {
+                  "$ref": "#/components/schemas/VersionCooldownRule"
+               },
+               "versionSelector": {
+                  "$ref": "#/components/schemas/VersionSelectorRule"
+               }
+            },
             "type": "object"
          },
          "CreateRelationshipRuleRequest": {
@@ -2474,7 +2506,7 @@
                },
                "rules": {
                   "items": {
-                     "$ref": "#/components/schemas/PolicyRule"
+                     "$ref": "#/components/schemas/CreatePolicyRule"
                   },
                   "type": "array"
                },

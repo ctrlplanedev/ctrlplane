@@ -930,9 +930,20 @@ export interface components {
             };
             name: string;
             priority?: number;
-            rules?: components["schemas"]["PolicyRule"][];
+            rules?: components["schemas"]["CreatePolicyRule"][];
             /** @description CEL expression for matching release targets. Use "true" to match all targets. */
             selector?: string;
+        };
+        CreatePolicyRule: {
+            anyApproval?: components["schemas"]["AnyApprovalRule"];
+            deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
+            deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
+            environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
+            gradualRollout?: components["schemas"]["GradualRolloutRule"];
+            retry?: components["schemas"]["RetryRule"];
+            verification?: components["schemas"]["VerificationRule"];
+            versionCooldown?: components["schemas"]["VersionCooldownRule"];
+            versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         CreateRelationshipRuleRequest: {
             description?: string;
@@ -1742,7 +1753,7 @@ export interface components {
             };
             name: string;
             priority: number;
-            rules: components["schemas"]["PolicyRule"][];
+            rules: components["schemas"]["CreatePolicyRule"][];
             /** @description CEL expression for matching release targets. Use "true" to match all targets. */
             selector: string;
         };

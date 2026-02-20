@@ -76,17 +76,23 @@ const upsertPolicy: AsyncTypedHandler<
   if (!policyIdResult.success)
     throw new ApiError("Invalid policy ID: must be a valid UUID v4", 400);
 
-  // Build the complete policy object
+  const createdAt = existingPolicy.data?.createdAt ?? new Date().toISOString();
+
   const policy: WorkspaceEngine["schemas"]["Policy"] = {
     id: policyId,
     workspaceId,
-    createdAt: existingPolicy.data?.createdAt ?? new Date().toISOString(),
+    createdAt,
     name: body.name,
     description: body.description,
     priority: body.priority,
     enabled: body.enabled,
     metadata: body.metadata,
-    rules: body.rules,
+    rules: body.rules.map((rule) => ({
+      ...rule,
+      id: uuidv4(),
+      policyId,
+      createdAt,
+    })),
     selector: body.selector,
   };
 
@@ -136,16 +142,24 @@ const createPolicy: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
+  const policyId = uuidv4();
+  const createdAt = new Date().toISOString();
+
   const policy: WorkspaceEngine["schemas"]["Policy"] = {
-    id: uuidv4(),
+    id: policyId,
     workspaceId,
     enabled: true,
     priority: 0,
-    createdAt: new Date().toISOString(),
+    createdAt,
     metadata: {},
     selector: "true",
     ...body,
-    rules: body.rules ?? [],
+    rules: (body.rules ?? []).map((rule) => ({
+      ...rule,
+      id: uuidv4(),
+      policyId,
+      createdAt,
+    })),
   };
 
   try {
