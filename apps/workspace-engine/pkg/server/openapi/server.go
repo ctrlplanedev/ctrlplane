@@ -3,6 +3,7 @@ package openapi
 import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/deployments"
+	"workspace-engine/pkg/server/openapi/deploymentvariables"
 	"workspace-engine/pkg/server/openapi/deploymentversions"
 	"workspace-engine/pkg/server/openapi/environments"
 	"workspace-engine/pkg/server/openapi/githubentities"
@@ -31,6 +32,7 @@ type Server struct {
 	jobs.Jobs
 	deployments.Deployments
 	deploymentversions.DeploymentVersions
+	deploymentvariables.DeploymentVariables
 	environments.Environments
 	releasetargets.ReleaseTargets
 	policies.Policies

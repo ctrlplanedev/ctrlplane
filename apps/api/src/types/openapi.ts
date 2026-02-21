@@ -82,6 +82,62 @@ export interface paths {
         patch: operations["updateWorkspace"];
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get deployment variable value
+         * @description Returns a specific variable value override by ID.
+         */
+        get: operations["getDeploymentVariableValue"];
+        /**
+         * Upsert deployment variable value
+         * @description Creates or updates a variable value override by ID.
+         */
+        put: operations["requestDeploymentVariableValueUpsert"];
+        post?: never;
+        /**
+         * Delete deployment variable value
+         * @description Deletes a variable value override by ID.
+         */
+        delete: operations["requestDeploymentVariableValueDeletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get deployment variable
+         * @description Returns a specific deployment variable by ID.
+         */
+        get: operations["getDeploymentVariable"];
+        /**
+         * Upsert deployment variable
+         * @description Creates or updates a deployment variable by ID.
+         */
+        put: operations["requestDeploymentVariableUpdate"];
+        post?: never;
+        /**
+         * Delete deployment variable
+         * @description Deletes a deployment variable by ID.
+         */
+        delete: operations["requestDeploymentVariableDeletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records": {
         parameters: {
             query?: never;
@@ -144,89 +200,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List deployment variables
+         * List deployment variables by deployment
          * @description Returns a list of variables for a deployment, including their configured values.
          */
-        get: operations["listDeploymentVariables"];
+        get: operations["listDeploymentVariablesByDeployment"];
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get deployment variable
-         * @description Returns a specific deployment variable by ID, including its configured values.
-         */
-        get: operations["getDeploymentVariable"];
-        /**
-         * Upsert deployment variable
-         * @description Creates or updates a deployment variable by ID.
-         */
-        put: operations["requestDeploymentVariableUpdate"];
-        post?: never;
-        /**
-         * Delete deployment variable
-         * @description Deletes a deployment variable by ID.
-         */
-        delete: operations["requestDeploymentVariableDeletion"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List deployment variable values
-         * @description Returns a list of value overrides for a specific deployment variable.
-         */
-        get: operations["listDeploymentVariableValues"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values/{valueId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get deployment variable value
-         * @description Returns a specific variable value override by ID.
-         */
-        get: operations["getDeploymentVariableValue"];
-        /**
-         * Upsert deployment variable value
-         * @description Creates or updates a variable value override by ID.
-         */
-        put: operations["requestDeploymentVariableValueUpsert"];
-        post?: never;
-        /**
-         * Delete deployment variable value
-         * @description Deletes a variable value override by ID.
-         */
-        delete: operations["requestDeploymentVariableValueDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -950,9 +930,20 @@ export interface components {
             };
             name: string;
             priority?: number;
-            rules?: components["schemas"]["PolicyRule"][];
+            rules?: components["schemas"]["CreatePolicyRule"][];
             /** @description CEL expression for matching release targets. Use "true" to match all targets. */
             selector?: string;
+        };
+        CreatePolicyRule: {
+            anyApproval?: components["schemas"]["AnyApprovalRule"];
+            deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
+            deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
+            environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
+            gradualRollout?: components["schemas"]["GradualRolloutRule"];
+            retry?: components["schemas"]["RetryRule"];
+            verification?: components["schemas"]["VerificationRule"];
+            versionCooldown?: components["schemas"]["VersionCooldownRule"];
+            versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         CreateRelationshipRuleRequest: {
             description?: string;
@@ -1368,6 +1359,7 @@ export interface components {
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
+            versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         PrometheusMetricProvider: {
             /**
@@ -1706,10 +1698,12 @@ export interface components {
         };
         UpsertDeploymentVariableRequest: {
             defaultValue?: components["schemas"]["LiteralValue"];
+            deploymentId: string;
             description?: string;
             key: string;
         };
         UpsertDeploymentVariableValueRequest: {
+            deploymentVariableId: string;
             /** Format: int64 */
             priority: number;
             resourceSelector?: components["schemas"]["Selector"];
@@ -1759,7 +1753,7 @@ export interface components {
             };
             name: string;
             priority: number;
-            rules: components["schemas"]["PolicyRule"][];
+            rules: components["schemas"]["CreatePolicyRule"][];
             /** @description CEL expression for matching release targets. Use "true" to match all targets. */
             selector: string;
         };
@@ -1884,6 +1878,11 @@ export interface components {
              * @description Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
              */
             intervalSeconds: number;
+        };
+        VersionSelectorRule: {
+            /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
+            description?: string;
+            selector: components["schemas"]["Selector"];
         };
         Workflow: {
             id: string;
@@ -2334,6 +2333,272 @@ export interface operations {
             };
         };
     };
+    getDeploymentVariableValue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the variable value */
+                valueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The requested variable value */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVariableValue"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestDeploymentVariableValueUpsert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the variable value */
+                valueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertDeploymentVariableValueRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestDeploymentVariableValueDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the variable value */
+                valueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getDeploymentVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment variable */
+                variableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The requested deployment variable */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVariableWithValues"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestDeploymentVariableUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment variable */
+                variableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertDeploymentVariableRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestDeploymentVariableDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment variable */
+                variableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     requestUserApprovalRecordUpsert: {
         parameters: {
             query?: never;
@@ -2559,7 +2824,7 @@ export interface operations {
             };
         };
     };
-    listDeploymentVariables: {
+    listDeploymentVariablesByDeployment: {
         parameters: {
             query?: {
                 /** @description Maximum number of items to return */
@@ -2593,330 +2858,6 @@ export interface operations {
                         /** @description Total number of items available */
                         total: number;
                     };
-                };
-            };
-        };
-    };
-    getDeploymentVariable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The requested deployment variable */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariableWithValues"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    requestDeploymentVariableUpdate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertDeploymentVariableRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    requestDeploymentVariableDeletion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listDeploymentVariableValues: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return */
-                limit?: number;
-                /** @description Number of items to skip */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["DeploymentVariableValue"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
-                };
-            };
-        };
-    };
-    getDeploymentVariableValue: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-                /** @description ID of the variable value */
-                valueId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The requested variable value */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariableValue"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    requestDeploymentVariableValueUpsert: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-                /** @description ID of the variable value */
-                valueId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertDeploymentVariableValueRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    requestDeploymentVariableValueDeletion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-                /** @description ID of the deployment variable */
-                variableId: string;
-                /** @description ID of the variable value */
-                valueId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

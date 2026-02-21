@@ -162,23 +162,17 @@ Release Target = Deployment × Environment × Resource
 A **Release** is an instance of deploying a specific Version to a Release
 Target.
 
-| Property        | Description                    |
-| --------------- | ------------------------------ |
-| `versionId`     | Which version to deploy        |
-| `deploymentId`  | Which deployment               |
-| `environmentId` | Which environment              |
-| `resourceId`    | Which resource                 |
-| `status`        | Current release status         |
-| `jobId`         | The job executing this release |
+| Property        | Description                              |
+| --------------- | ---------------------------------------- |
+| `versionId`     | Which version to deploy                  |
+| `deploymentId`  | Which deployment                         |
+| `environmentId` | Which environment                        |
+| `resourceId`    | Which resource                           |
+| `createdAt`     | When the release was created             |
 
-**Release lifecycle**:
-
-1. `pending` — Waiting for policies (approval, progression)
-2. `approved` — Policies passed, job created
-3. `active` — Job is executing
-4. `completed` — Job finished successfully
-5. `failed` — Job failed
-6. `cancelled` — Release was cancelled
+Releases do not carry their own status. The state of a release is inferred from
+the **Release Target State** — which tracks the desired release, current release,
+and latest job for each target.
 
 ## Job
 

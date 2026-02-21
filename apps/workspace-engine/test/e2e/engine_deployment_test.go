@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEngine_DeploymentCreation(t *testing.T) {
@@ -1181,6 +1182,103 @@ func TestEngine_DeploymentJobAgentsArray_IfConditionExcludesAgent(t *testing.T) 
 	assert.True(t, jobAgentIDs[agentK8s], "k8s agent should match (cloud=gcp)")
 	assert.False(t, jobAgentIDs[agentDocker], "docker agent should NOT match (cloud!=aws)")
 	assert.Equal(t, 1, len(jobAgentIDs), "only one agent should produce a job")
+}
+
+func TestEngine_DeploymentJobAgentsArray_SelectedAgentConfigMergedIntoFinalJobConfig(t *testing.T) {
+	agentGCP := uuid.New().String()
+	agentAWS := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentGCP),
+			integration.JobAgentName("GCP Agent"),
+			integration.JobAgentConfig(map[string]any{
+				"template":  "agent-template",
+				"serverUrl": "https://argocd.example.com",
+				"apiKey":    "token-abc",
+				"shared":    "agent",
+				"agentOnly": "yes",
+			}),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(agentAWS),
+			integration.JobAgentName("AWS Agent"),
+			integration.JobAgentConfig(map[string]any{
+				"template": "aws-agent-template",
+			}),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("multi-agent-merge-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{
+						Ref:      agentGCP,
+						Selector: `resource.metadata.cloud == "gcp"`,
+						Config: oapi.JobAgentConfig{
+							"template":     "selected-template",
+							"shared":       "selected",
+							"selectorOnly": "yes",
+							"timeout":      120,
+						},
+					},
+					{
+						Ref:      agentAWS,
+						Selector: `resource.metadata.cloud == "aws"`,
+						Config: oapi.JobAgentConfig{
+							"template":     "should-not-be-used",
+							"selectorOnly": "no",
+						},
+					},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("gcp-resource"),
+			integration.ResourceMetadata(map[string]string{"cloud": "gcp"}),
+		),
+	)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	var deploymentJobs []*oapi.Job
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found for job %s", job.Id)
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs = append(deploymentJobs, job)
+		}
+	}
+
+	require.Len(t, deploymentJobs, 1, "only the selected deployment agent should create one job")
+	job := deploymentJobs[0]
+	assert.Equal(t, agentGCP, job.JobAgentId)
+
+	// Final config should merge:
+	// jobAgent.Config + selected DeploymentJobAgent.Config
+	assert.Equal(t, "selected-template", job.JobAgentConfig["template"])
+	assert.Equal(t, "selected", job.JobAgentConfig["shared"])
+	assert.Equal(t, "yes", job.JobAgentConfig["agentOnly"])
+	assert.Equal(t, "yes", job.JobAgentConfig["selectorOnly"])
+	assert.Equal(t, float64(120), job.JobAgentConfig["timeout"])
+
+	require.NotNil(t, job.DispatchContext)
+	assert.Equal(t, agentGCP, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "selected-template", job.DispatchContext.JobAgentConfig["template"])
+	assert.Equal(t, "selected", job.DispatchContext.JobAgentConfig["shared"])
 }
 
 func TestEngine_DeploymentJobAgentsArray_AllConditionsFalse(t *testing.T) {

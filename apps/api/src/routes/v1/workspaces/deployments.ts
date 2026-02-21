@@ -8,7 +8,7 @@ import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { validResourceSelector } from "../valid-selector.js";
-import { deploymentVariablesRouter } from "./deployment-variables.js";
+import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
 
 const listDeployments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments",
@@ -260,4 +260,4 @@ export const deploymentsRouter = Router({ mergeParams: true })
   .delete("/:deploymentId", asyncHandler(deleteDeployment))
   .get("/:deploymentId/versions", asyncHandler(listDeploymentVersions))
   .post("/:deploymentId/versions", asyncHandler(createDeploymentVersion))
-  .use("/:deploymentId/variables", deploymentVariablesRouter);
+  .use("/:deploymentId/variables", listDeploymentVariablesByDeploymentRouter);

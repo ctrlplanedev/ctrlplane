@@ -2707,6 +2707,12 @@ type ServerInterface interface {
 	// List workspace IDs
 	// (GET /v1/workspaces)
 	ListWorkspaceIds(c *gin.Context)
+	// Get deployment variable value
+	// (GET /v1/workspaces/{workspaceId}/deployment-variable-values/{valueId})
+	GetDeploymentVariableValue(c *gin.Context, workspaceId string, valueId string)
+	// Get deployment variable
+	// (GET /v1/workspaces/{workspaceId}/deployment-variables/{variableId})
+	GetDeploymentVariable(c *gin.Context, workspaceId string, variableId string)
 	// Get deployment version jobs list
 	// (GET /v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list)
 	GetDeploymentVersionJobsList(c *gin.Context, workspaceId string, versionId string)
@@ -2916,6 +2922,72 @@ func (siw *ServerInterfaceWrapper) ListWorkspaceIds(c *gin.Context) {
 	}
 
 	siw.Handler.ListWorkspaceIds(c)
+}
+
+// GetDeploymentVariableValue operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentVariableValue(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "valueId" -------------
+	var valueId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "valueId", c.Param("valueId"), &valueId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter valueId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentVariableValue(c, workspaceId, valueId)
+}
+
+// GetDeploymentVariable operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentVariable(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "variableId" -------------
+	var variableId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "variableId", c.Param("variableId"), &variableId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter variableId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentVariable(c, workspaceId, variableId)
 }
 
 // GetDeploymentVersionJobsList operation middleware
@@ -5212,6 +5284,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-variable-values/:valueId", wrapper.GetDeploymentVariableValue)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-variables/:variableId", wrapper.GetDeploymentVariable)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-versions/:versionId/jobs-list", wrapper.GetDeploymentVersionJobsList)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
