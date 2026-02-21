@@ -69,6 +69,12 @@ func (pc *PartitionCounter) queryPartitionCount() (int32, error) {
 	}
 	defer adminClient.Close()
 
+	if IsGCPProvider() {
+		if err := setGCPToken(adminClient); err != nil {
+			return 0, fmt.Errorf("failed to set GCP token on admin client: %w", err)
+		}
+	}
+
 	// Get metadata for the topic
 	metadata, err := adminClient.GetMetadata(&pc.topic, false, 5000)
 	if err != nil {

@@ -65,14 +65,22 @@ func applySASL(cfg *kafka.ConfigMap) error {
 		_ = cfg.SetKey("sasl.username", config.Global.KafkaSASLUsername)
 		_ = cfg.SetKey("sasl.password", config.Global.KafkaSASLPassword)
 	case "OAUTHBEARER":
-		if config.Global.KafkaSASLOAuthBearerTokenURL == "" {
-			return fmt.Errorf("KAFKA_SASL_MECHANISM=OAUTHBEARER requires: KAFKA_SASL_OAUTHBEARER_TOKEN_URL")
+		provider := config.Global.KafkaSASLOAuthBearerProvider
+		switch provider {
+		case "gcp":
+			log.Info("Using GCP ADC for OAUTHBEARER tokens")
+		case "oidc":
+			if config.Global.KafkaSASLOAuthBearerTokenURL == "" {
+				return fmt.Errorf("KAFKA_SASL_MECHANISM=OAUTHBEARER with provider=oidc requires: KAFKA_SASL_OAUTHBEARER_TOKEN_URL")
+			}
+			_ = cfg.SetKey("sasl.oauthbearer.method", config.Global.KafkaSASLOAuthBearerMethod)
+			_ = cfg.SetKey("sasl.oauthbearer.client.id", config.Global.KafkaSASLOAuthBearerClientID)
+			_ = cfg.SetKey("sasl.oauthbearer.client.secret", config.Global.KafkaSASLOAuthBearerClientSecret)
+			_ = cfg.SetKey("sasl.oauthbearer.token.endpoint.url", config.Global.KafkaSASLOAuthBearerTokenURL)
+			_ = cfg.SetKey("sasl.oauthbearer.scope", config.Global.KafkaSASLOAuthBearerScope)
+		default:
+			return fmt.Errorf("unknown KAFKA_SASL_OAUTHBEARER_PROVIDER: %s (supported: oidc, gcp)", provider)
 		}
-		_ = cfg.SetKey("sasl.oauthbearer.method", config.Global.KafkaSASLOAuthBearerMethod)
-		_ = cfg.SetKey("sasl.oauthbearer.client.id", config.Global.KafkaSASLOAuthBearerClientID)
-		_ = cfg.SetKey("sasl.oauthbearer.client.secret", config.Global.KafkaSASLOAuthBearerClientSecret)
-		_ = cfg.SetKey("sasl.oauthbearer.token.endpoint.url", config.Global.KafkaSASLOAuthBearerTokenURL)
-		_ = cfg.SetKey("sasl.oauthbearer.scope", config.Global.KafkaSASLOAuthBearerScope)
 	default:
 		return fmt.Errorf("unknown KAFKA_SASL_MECHANISM: %s (supported: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, OAUTHBEARER)", mechanism)
 	}

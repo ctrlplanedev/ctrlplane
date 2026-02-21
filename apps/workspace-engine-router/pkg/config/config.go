@@ -27,6 +27,7 @@ type Config struct {
 	KafkaSASLOAuthBearerClientID  string `envconfig:"KAFKA_SASL_OAUTHBEARER_CLIENT_ID" default:""`
 	KafkaSASLOAuthBearerClientSecret string `envconfig:"KAFKA_SASL_OAUTHBEARER_CLIENT_SECRET" default:""`
 	KafkaSASLOAuthBearerScope     string `envconfig:"KAFKA_SASL_OAUTHBEARER_SCOPE" default:""`
+	KafkaSASLOAuthBearerProvider  string `envconfig:"KAFKA_SASL_OAUTHBEARER_PROVIDER" default:"oidc"`
 
 	// Worker health configuration
 	WorkerHeartbeatTimeout time.Duration `envconfig:"WORKER_HEARTBEAT_TIMEOUT" default:"30s"`

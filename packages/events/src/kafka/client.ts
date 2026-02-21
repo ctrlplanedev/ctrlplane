@@ -4,23 +4,18 @@ import type {
   Producer,
   SASLOptions,
 } from "kafkajs";
+import { GoogleAuth } from "google-auth-library";
 import { Kafka } from "kafkajs";
 
 import { logger, SpanStatusCode } from "@ctrlplane/logger";
 
 import type { GoEventPayload, GoMessage } from "./events.js";
-import { env, validateSaslConfig } from "../config.js";
+import { env } from "../config.js";
 import { createSpanWrapper } from "../span.js";
 
 const log = logger.child({ component: "kafka-client" });
 
-/**
- * Fetches an OAuth2 access token using the standard client credentials grant
- * (RFC 6749 Section 4.4). The token endpoint, client ID, client secret, and
- * scope are all read from env vars so this works with any OIDC-compliant
- * provider (Google, AWS, Azure, Confluent, etc.).
- */
-const fetchOAuthToken = async (): Promise<OauthbearerProviderResponse> => {
+const fetchOIDCToken = async (): Promise<OauthbearerProviderResponse> => {
   const tokenUrl = env.KAFKA_SASL_OAUTHBEARER_TOKEN_URL!;
   const body = new URLSearchParams({ grant_type: "client_credentials" });
 
@@ -49,6 +44,19 @@ const fetchOAuthToken = async (): Promise<OauthbearerProviderResponse> => {
   return { value: data.access_token };
 };
 
+const gcpAuth = new GoogleAuth({
+  scopes:
+    env.KAFKA_SASL_OAUTHBEARER_SCOPE ??
+    "https://www.googleapis.com/auth/cloud-platform",
+});
+
+const fetchGCPToken = async (): Promise<OauthbearerProviderResponse> => {
+  const client = await gcpAuth.getClient();
+  const { token } = await client.getAccessToken();
+  if (!token) throw new Error("Failed to get GCP access token via ADC");
+  return { value: token };
+};
+
 const buildSaslConfig = (): SASLOptions | undefined => {
   if (!env.KAFKA_SASL_ENABLED) return undefined;
 
@@ -75,12 +83,13 @@ const buildSaslConfig = (): SASLOptions | undefined => {
     case "oauthbearer":
       return {
         mechanism: "oauthbearer",
-        oauthBearerProvider: fetchOAuthToken,
+        oauthBearerProvider:
+          env.KAFKA_SASL_OAUTHBEARER_PROVIDER === "gcp"
+            ? fetchGCPToken
+            : fetchOIDCToken,
       };
   }
 };
-
-validateSaslConfig();
 
 let kafka: Kafka | null = null;
 let producer: Producer | null = null;

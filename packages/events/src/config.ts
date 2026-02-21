@@ -13,19 +13,26 @@ export const env = createEnv({
     KAFKA_BROKERS: z.string().default("localhost:9092"),
     KAFKA_SSL_ENABLED: z
       .string()
-      .default("true")
+      .default("false")
       .transform((v) => v === "true"),
     KAFKA_SASL_ENABLED: z
       .string()
       .default("false")
       .transform((v) => v === "true"),
-    KAFKA_SASL_MECHANISM: z.enum(saslMechanisms).default("oauthbearer"),
+    KAFKA_SASL_MECHANISM: z
+      .string()
+      .default("oauthbearer")
+      .transform((v) => v.toLowerCase())
+      .pipe(z.enum(saslMechanisms)),
     KAFKA_SASL_USERNAME: z.string().optional(),
     KAFKA_SASL_PASSWORD: z.string().optional(),
     KAFKA_SASL_OAUTHBEARER_TOKEN_URL: z.string().optional(),
     KAFKA_SASL_OAUTHBEARER_CLIENT_ID: z.string().optional(),
     KAFKA_SASL_OAUTHBEARER_CLIENT_SECRET: z.string().optional(),
     KAFKA_SASL_OAUTHBEARER_SCOPE: z.string().optional(),
+    KAFKA_SASL_OAUTHBEARER_PROVIDER: z
+      .enum(["oidc", "gcp"])
+      .default("oidc"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
@@ -49,7 +56,10 @@ export function validateSaslConfig(): void {
       if (!env.KAFKA_SASL_PASSWORD) missing.push("KAFKA_SASL_PASSWORD");
       break;
     case "oauthbearer":
-      if (!env.KAFKA_SASL_OAUTHBEARER_TOKEN_URL)
+      if (
+        env.KAFKA_SASL_OAUTHBEARER_PROVIDER === "oidc" &&
+        !env.KAFKA_SASL_OAUTHBEARER_TOKEN_URL
+      )
         missing.push("KAFKA_SASL_OAUTHBEARER_TOKEN_URL");
       break;
   }
@@ -59,3 +69,5 @@ export function validateSaslConfig(): void {
       `KAFKA_SASL_MECHANISM=${mechanism} requires: ${missing.join(", ")}`,
     );
 }
+
+validateSaslConfig();

@@ -197,6 +197,9 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 				assignedPartitions = remaining
 				log.Info("Partitions after revoke", "partitions", assignedPartitions)
 
+			case kafka.OAuthBearerTokenRefresh:
+				handleOAuthBearerTokenRefresh(c.consumer)
+
 			case kafka.Error:
 				log.Error("Received Kafka error while waiting for assignment", "error", e)
 				return nil, fmt.Errorf("consumer error while waiting for assignment: %w", e)
@@ -214,32 +217,54 @@ func extractPartitionNumbers(assignment []kafka.TopicPartition) []int32 {
 	return partitions
 }
 
-// ReadMessage reads the next message with a timeout
-// Returns ErrTimeout if no message is available within the timeout duration
+// ReadMessage reads the next message with a timeout.
+// Uses Poll() internally so we can handle OAuthBearerTokenRefresh events
+// that would otherwise be swallowed by the library's ReadMessage().
 func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error) {
 	if c.closed {
 		return nil, fmt.Errorf("consumer is closed")
 	}
 
-	msg, err := c.consumer.ReadMessage(timeout)
-	if err != nil {
-		// Check if it's a timeout error
-		if kafkaErr, ok := err.(kafka.Error); ok {
-			if kafkaErr.Code() == kafka.ErrTimedOut {
+	deadline := time.Now().Add(timeout)
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return nil, messaging.ErrTimeout
+		}
+
+		pollMs := int(remaining.Milliseconds())
+		if pollMs < 1 {
+			pollMs = 1
+		}
+
+		ev := c.consumer.Poll(pollMs)
+		if ev == nil {
+			return nil, messaging.ErrTimeout
+		}
+
+		switch e := ev.(type) {
+		case *kafka.Message:
+			if e.TopicPartition.Error != nil {
+				return nil, fmt.Errorf("error reading message: %w", e.TopicPartition.Error)
+			}
+			return &messaging.Message{
+				Key:       e.Key,
+				Value:     e.Value,
+				Partition: e.TopicPartition.Partition,
+				Offset:    int64(e.TopicPartition.Offset),
+				Timestamp: e.Timestamp,
+			}, nil
+		case kafka.Error:
+			if e.Code() == kafka.ErrTimedOut {
 				return nil, messaging.ErrTimeout
 			}
+			return nil, fmt.Errorf("error reading message: %w", e)
+		case kafka.OAuthBearerTokenRefresh:
+			handleOAuthBearerTokenRefresh(c.consumer)
+		default:
+			continue
 		}
-		return nil, fmt.Errorf("error reading message: %w", err)
 	}
-
-	// Convert kafka.Message to messaging.Message
-	return &messaging.Message{
-		Key:       msg.Key,
-		Value:     msg.Value,
-		Partition: msg.TopicPartition.Partition,
-		Offset:    int64(msg.TopicPartition.Offset),
-		Timestamp: msg.Timestamp,
-	}, nil
 }
 
 // CommitMessage commits the offset for a message

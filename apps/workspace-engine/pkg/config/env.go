@@ -34,6 +34,7 @@ type Config struct {
 	KafkaSASLOAuthBearerClientID  string `envconfig:"KAFKA_SASL_OAUTHBEARER_CLIENT_ID" default:""`
 	KafkaSASLOAuthBearerClientSecret string `envconfig:"KAFKA_SASL_OAUTHBEARER_CLIENT_SECRET" default:""`
 	KafkaSASLOAuthBearerScope     string `envconfig:"KAFKA_SASL_OAUTHBEARER_SCOPE" default:""`
+	KafkaSASLOAuthBearerProvider  string `envconfig:"KAFKA_SASL_OAUTHBEARER_PROVIDER" default:"oidc"`
 
 	OTELServiceName          string `envconfig:"OTEL_SERVICE_NAME" default:"ctrlplane/workspace-engine"`
 	OTELExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"localhost:4318"`
