@@ -12,7 +12,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -160,13 +159,11 @@ func (d *TestRunnerDispatcher) getKafkaProducer() (messaging.Producer, error) {
 	if d.producerFactory != nil {
 		return d.producerFactory()
 	}
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
-		"bootstrap.servers":        config.Global.KafkaBrokers,
-		"enable.idempotence":       true,
-		"compression.type":         "snappy",
-		"message.send.max.retries": 10,
-		"retry.backoff.ms":         100,
-	})
+	cfg, err := confluent.BaseProducerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build producer config: %w", err)
+	}
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, cfg)
 }
 
 func (d *TestRunnerDispatcher) sendJobUpdateEvent(job *oapi.Job, status oapi.JobStatus, message string) error {

@@ -31,6 +31,7 @@
     "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "date-fns": "^4.1.0",
+    "google-auth-library": "^10.5.0",
     "kafkajs": "^2.2.4",
     "lodash": "catalog:",
     "ts-is-present": "catalog:",

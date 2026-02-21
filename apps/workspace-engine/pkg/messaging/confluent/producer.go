@@ -39,7 +39,6 @@ func NewProducer(brokers string, topic string, config *kafka.ConfigMap) (*Produc
 		return nil, err
 	}
 
-	// Handle delivery reports in the background
 	go func() {
 		for e := range p.Events() {
 			switch ev := e.(type) {
@@ -55,6 +54,8 @@ func NewProducer(brokers string, topic string, config *kafka.ConfigMap) (*Produc
 						"partition", ev.TopicPartition.Partition,
 						"offset", ev.TopicPartition.Offset)
 				}
+			case kafka.OAuthBearerTokenRefresh:
+				handleOAuthBearerTokenRefresh(p)
 			}
 		}
 	}()

@@ -59,13 +59,21 @@ func (pc *PartitionCounter) GetPartitionCount() (int32, error) {
 // queryPartitionCount queries Kafka for the number of partitions
 func (pc *PartitionCounter) queryPartitionCount() (int32, error) {
 	// Create an AdminClient to query metadata
-	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{
-		"bootstrap.servers": pc.brokers,
-	})
+	cfg, err := BaseConfig()
+	if err != nil {
+		return 0, fmt.Errorf("failed to build kafka config: %w", err)
+	}
+	adminClient, err := kafka.NewAdminClient(cfg)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create admin client: %w", err)
 	}
 	defer adminClient.Close()
+
+	if IsGCPProvider() {
+		if err := setGCPToken(adminClient); err != nil {
+			return 0, fmt.Errorf("failed to set GCP token on admin client: %w", err)
+		}
+	}
 
 	// Get metadata for the topic
 	metadata, err := adminClient.GetMetadata(&pc.topic, false, 5000)

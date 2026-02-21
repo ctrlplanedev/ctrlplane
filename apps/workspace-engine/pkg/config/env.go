@@ -24,6 +24,17 @@ type Config struct {
 	KafkaGroupID       string `envconfig:"KAFKA_GROUP_ID" default:"workspace-engine"`
 	KafkaTopic         string `envconfig:"KAFKA_TOPIC" default:"workspace-events"`
 	KafkaConsumerTopic string `envconfig:"KAFKA_CONSUMER_TOPIC" default:"workspace-events"`
+	KafkaSASLEnabled              bool   `envconfig:"KAFKA_SASL_ENABLED" default:"false"`
+	KafkaSecurityProtocol         string `envconfig:"KAFKA_SECURITY_PROTOCOL" default:"SASL_SSL"`
+	KafkaSASLMechanism            string `envconfig:"KAFKA_SASL_MECHANISM" default:"OAUTHBEARER"`
+	KafkaSASLUsername             string `envconfig:"KAFKA_SASL_USERNAME" default:""`
+	KafkaSASLPassword             string `envconfig:"KAFKA_SASL_PASSWORD" default:""`
+	KafkaSASLOAuthBearerMethod    string `envconfig:"KAFKA_SASL_OAUTHBEARER_METHOD" default:"oidc"`
+	KafkaSASLOAuthBearerTokenURL  string `envconfig:"KAFKA_SASL_OAUTHBEARER_TOKEN_URL" default:""`
+	KafkaSASLOAuthBearerClientID  string `envconfig:"KAFKA_SASL_OAUTHBEARER_CLIENT_ID" default:""`
+	KafkaSASLOAuthBearerClientSecret string `envconfig:"KAFKA_SASL_OAUTHBEARER_CLIENT_SECRET" default:""`
+	KafkaSASLOAuthBearerScope     string `envconfig:"KAFKA_SASL_OAUTHBEARER_SCOPE" default:""`
+	KafkaSASLOAuthBearerProvider  string `envconfig:"KAFKA_SASL_OAUTHBEARER_PROVIDER" default:"oidc"`
 
 	OTELServiceName          string `envconfig:"OTEL_SERVICE_NAME" default:"ctrlplane/workspace-engine"`
 	OTELExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"localhost:4318"`
