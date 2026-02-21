@@ -39,19 +39,14 @@ const fetchOAuthToken = async (): Promise<OauthbearerProviderResponse> => {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(
-      `OAuth token request failed (${res.status}): ${text}`,
-    );
+    throw new Error(`OAuth token request failed (${res.status}): ${text}`);
   }
 
   const data = (await res.json()) as {
     access_token: string;
     expires_in: number;
   };
-  return {
-    value: data.access_token,
-    lifetime: Date.now() + data.expires_in * 1000,
-  };
+  return { value: data.access_token };
 };
 
 const buildSaslConfig = (): SASLOptions | undefined => {
