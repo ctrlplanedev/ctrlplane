@@ -5,8 +5,10 @@ import (
 	_ "net/http/pprof"
 
 	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/svc"
+	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/routerregistrar"
 	"workspace-engine/svc/workspaceconsumer"
@@ -50,6 +52,9 @@ func main() {
 		workspaceticker.New(producer),
 		wsConsumer,
 		routerregistrar.New(config.Global, wsConsumer.Consumer()),
+
+		// Controllers
+		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 	)
 
 	if err := runner.Run(ctx); err != nil {
