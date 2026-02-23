@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents/configs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
@@ -77,20 +78,7 @@ func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, a
 	}
 }
 
-func (f *Factory) buildJobAgentConfig(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
-	agentConfig := jobAgent.Config
-	deploymentConfig := deployment.JobAgentConfig
-	versionConfig := release.Version.JobAgentConfig
-
-	mergedConfig, err := mergeJobAgentConfig(agentConfig, deploymentConfig, versionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to merge job agent configs: %w", err)
-	}
-
-	return mergedConfig, nil
-}
-
-func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent, mergedConfig oapi.JobAgentConfig) (*oapi.DispatchContext, error) {
+func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.DispatchContext, error) {
 	environment, exists := f.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
 	if !exists {
 		return nil, fmt.Errorf("environment %s not found", release.ReleaseTarget.EnvironmentId)
@@ -130,14 +118,14 @@ func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.D
 		Environment:    envCopy,
 		Resource:       resourceCopy,
 		JobAgent:       *agentCopy,
-		JobAgentConfig: mergedConfig,
+		JobAgentConfig: jobAgent.Config,
 		Version:        &releaseCopy.Version,
 		Variables:      &releaseCopy.Variables,
 	}, nil
 }
 
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
-// The job is configured with merged settings from JobAgent + Deployment.
+// The job uses the resolved settings already present on the selected job agent.
 func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release, jobAgent *oapi.JobAgent, action *trace.Action) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "CreateJobForRelease",
 		oteltrace.WithAttributes(
@@ -174,7 +162,6 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 
 	if action != nil {
 		configMsg := "Applied default job agent configuration"
-
 		action.AddStep("Configure job", trace.StepResultPass, configMsg)
 	}
 
@@ -190,12 +177,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("version_tag", release.Version.Tag)
 	}
 
-	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get merged job agent config: %w", err)
-	}
-
-	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent, mergedConfig)
+	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
 	}
@@ -204,7 +186,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 		Id:              jobId,
 		ReleaseId:       release.ID(),
 		JobAgentId:      jobAgent.Id,
-		JobAgentConfig:  mergedConfig,
+		JobAgentConfig:  jobAgent.Config,
 		Status:          oapi.JobStatusPending,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
@@ -216,7 +198,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 func (f *Factory) buildWorkflowJobConfig(wfJob *oapi.WorkflowJob, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
 	agentConfig := jobAgent.Config
 	workflowJobConfig := wfJob.Config
-	mergedConfig, err := mergeJobAgentConfig(agentConfig, workflowJobConfig)
+	mergedConfig, err := configs.Merge(agentConfig, workflowJobConfig)
 	if err != nil {
 		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
 	}

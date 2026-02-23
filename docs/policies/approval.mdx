@@ -32,28 +32,53 @@ Approval rules help you:
 
 ## Configuration
 
-Add an approval rule to your policy:
-
-```hcl Terraform
+<Tabs>
+<Tab title="Terraform">
+```hcl
 resource "ctrlplane_policy" "production_approval" {
   name        = "Production Approval Policy"
-  description = "Production Approval Policy"
+  description = "Require approval for production deployments"
 
-  selector {
-    environments = "environment.metadata['requires-approval'] == 'true'"
-  }
+  selector = "environment.metadata['requires-approval'] == 'true'"
 
-  approval {
-    required = 1
+  any_approval {
+    min_approvals = 1
   }
 }
 ```
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Approval Policy",
+    "description": "Require approval for production deployments",
+    "selector": "environment.metadata['\''requires-approval'\''] == '\''true'\''",
+    "rules": [
+      {
+        "anyApproval": {
+          "minApprovals": 1
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
 
 ## Properties
 
-<ParamField path="approval.required" type="integer" required>
+<ParamField path="anyApproval.minApprovals" type="integer" required>
   Minimum number of approvals required before the deployment can proceed.
 </ParamField>
+
+## Grandfathering
+
+Versions that were created **before** an approval rule was added to a policy are
+automatically allowed through (grandfathered in). This prevents newly added
+approval rules from blocking already-in-flight releases.
 
 ## Common Patterns
 
@@ -61,97 +86,108 @@ resource "ctrlplane_policy" "production_approval" {
 
 Basic approval gate for production deployments:
 
-```hcl Terraform
+<Tabs>
+<Tab title="Terraform">
+```hcl
 resource "ctrlplane_policy" "production_gate" {
-  name        = "Production Gate Policy"
-  description = "Production Gate Policy"
+  name     = "Production Gate Policy"
+  selector = "environment.metadata['requires-approval'] == 'true'"
 
-  selector {
-    environments = "environment.metadata['requires-approval'] == 'true'"
-  }
-
-  approval {
-    required = 1
+  any_approval {
+    min_approvals = 1
   }
 }
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Production Gate Policy",
+  "selector": "environment.metadata['requires-approval'] == 'true'",
+  "rules": [
+    {
+      "anyApproval": { "minApprovals": 1 }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ### Multiple Approvals for Critical Services
 
 Require multiple sign-offs for high-risk deployments:
 
-```hcl Terraform
+<Tabs>
+<Tab title="Terraform">
+```hcl
 resource "ctrlplane_policy" "critical_service_approval" {
-  name        = "Critical Service Approval Policy"
-  description = "Critical Service Approval Policy"
+  name     = "Critical Service Approval Policy"
+  selector = "environment.metadata['requires-approval'] == 'true'"
 
-  selector {
-    environments = "environment.metadata['requires-approval'] == 'true'"
-  }
-
-  approval {
-    required = 2
+  any_approval {
+    min_approvals = 2
   }
 }
 ```
-
-### Approval with Verification
-
-Combine approval with post-deployment verification:
-
-```hcl Terraform
-resource "ctrlplane_policy" "production_full_gates" {
-  name        = "Production Full Gates Policy"
-  description = "Production Full Gates Policy"
-
-  selector {
-    environments = "environment.metadata['requires-approval'] == 'true'"
-  }
-
-  approval {
-    required = 1
-  }
-
-  verification {
-    metrics = [
-      {
-        name = "health-check"
-        interval = "30s"
-        count = 5
-        provider = {
-          type = "http"
-          url = "http://{{.resource.name}}/health"
-        }
-        successCondition = "result.ok"
-      }
-    ]
-  }
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Critical Service Approval Policy",
+  "selector": "environment.metadata['requires-approval'] == 'true'",
+  "rules": [
+    {
+      "anyApproval": { "minApprovals": 2 }
+    }
+  ]
 }
 ```
+</Tab>
+</Tabs>
 
 ### Approval with Gradual Rollout
 
 Approve once, then roll out gradually:
 
-```hcl Terraform
+<Tabs>
+<Tab title="Terraform">
+```hcl
 resource "ctrlplane_policy" "controlled_production_release" {
-  name        = "Controlled Production Release Policy"
-  description = "Controlled Production Release Policy"
+  name     = "Controlled Production Release"
+  selector = "environment.metadata['requires-approval'] == 'true'"
 
-  selector {
-    environments = "environment.metadata['requires-approval'] == 'true'"
+  any_approval {
+    min_approvals = 1
   }
 
-  approval {
-    required = 1
-  }
-
-  gradualRollout {
-    rolloutType      = "linear"
-    timeScaleInterval = 300 # 5 minutes between each target
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
   }
 }
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Controlled Production Release",
+  "selector": "environment.metadata['requires-approval'] == 'true'",
+  "rules": [
+    {
+      "anyApproval": { "minApprovals": 1 }
+    },
+    {
+      "gradualRollout": {
+        "rolloutType": "linear",
+        "timeScaleInterval": 300
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ## Approval Workflow
 
@@ -197,5 +233,5 @@ any remaining policy rules.
 ## Next Steps
 
 - [Policies Overview](./overview) - Learn about policy structure
-- [Verification](./verification) - Add automated health checks
 - [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
+- [Environment Progression](./environment-progression) - Enforce deployment order

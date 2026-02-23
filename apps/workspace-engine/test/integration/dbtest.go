@@ -123,8 +123,6 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 		}
 	})
 
-	overrideTestRunnerProducer(ws)
-
 	tw := &TestWorkspace{
 		t:             t,
 		workspace:     ws,

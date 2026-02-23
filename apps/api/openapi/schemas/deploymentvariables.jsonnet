@@ -54,8 +54,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   UpsertDeploymentVariableRequest: {
     type: 'object',
-    required: ['key'],
+    required: ['deploymentId', 'key'],
     properties: {
+      deploymentId: { type: 'string' },
       key: { type: 'string' },
       description: { type: 'string' },
       defaultValue: openapi.schemaRef('LiteralValue'),
@@ -64,8 +65,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   UpsertDeploymentVariableValueRequest: {
     type: 'object',
-    required: ['priority', 'value'],
+    required: ['deploymentVariableId', 'priority', 'value'],
     properties: {
+      deploymentVariableId: { type: 'string' },
       priority: { type: 'integer', format: 'int64' },
       resourceSelector: openapi.schemaRef('Selector'),
       value: openapi.schemaRef('Value'),

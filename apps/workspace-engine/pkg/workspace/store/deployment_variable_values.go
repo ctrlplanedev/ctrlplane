@@ -19,6 +19,10 @@ func (d *DeploymentVariableValues) Items() map[string]*oapi.DeploymentVariableVa
 	return d.repo.DeploymentVariableValues.Items()
 }
 
+func (d *DeploymentVariableValues) Get(id string) (*oapi.DeploymentVariableValue, bool) {
+	return d.repo.DeploymentVariableValues.Get(id)
+}
+
 func (d *DeploymentVariableValues) Upsert(ctx context.Context, id string, deploymentVariableValue *oapi.DeploymentVariableValue) {
 	d.repo.DeploymentVariableValues.Set(id, deploymentVariableValue)
 	d.store.changeset.RecordUpsert(deploymentVariableValue)

@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
+import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -34,6 +35,25 @@ const deploymentJobAgentConfig = z.union([
   deploymentCustomConfig,
 ]);
 
+const getAgentsArrayWithLegacyAgent = (
+  deployment: typeof schema.deployment.$inferSelect,
+) => {
+  const agentsArray = deployment.jobAgents;
+  const agentsArrayWithLegacyAgent = [
+    ...agentsArray,
+    deployment.jobAgentId != null &&
+    deployment.jobAgentId !== "" &&
+    deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
+      ? {
+          ref: deployment.jobAgentId,
+          config: deployment.jobAgentConfig,
+          selector: "true",
+        }
+      : null,
+  ].filter(isPresent);
+  return agentsArrayWithLegacyAgent;
+};
+
 export const deploymentsRouter = router({
   get: protectedProcedure
     .input(z.object({ deploymentId: z.uuid() }))
@@ -58,7 +78,17 @@ export const deploymentsRouter = router({
           },
         },
       });
-      return deployment;
+
+      if (deployment == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment not found",
+        });
+
+      return {
+        ...deployment,
+        jobAgents: getAgentsArrayWithLegacyAgent(deployment),
+      };
     }),
 
   list: protectedProcedure
@@ -83,7 +113,10 @@ export const deploymentsRouter = router({
         },
         orderBy: asc(schema.deployment.name),
       });
-      return deployments;
+      return deployments.map((deployment) => ({
+        ...deployment,
+        jobAgents: getAgentsArrayWithLegacyAgent(deployment),
+      }));
     }),
 
   releaseTargets: protectedProcedure

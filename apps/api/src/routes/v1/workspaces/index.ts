@@ -2,6 +2,10 @@ import { asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
 import { deploymentVersionsRouter } from "./deployment-versions.js";
+import {
+  deploymentVariablesRouter,
+  deploymentVariableValuesRouter,
+} from "./deployment-variables.js";
 import { deploymentsRouter } from "./deployments.js";
 import { environmentsRouter } from "./environments.js";
 import {
@@ -38,6 +42,8 @@ export const createWorkspacesRouter = (): Router =>
     .use("/:workspaceId/systems", systemRouter)
     .use("/:workspaceId/resource-providers", resourceProvidersRouter)
     .use("/:workspaceId/deployments", deploymentsRouter)
+    .use("/:workspaceId/deployment-variables", deploymentVariablesRouter)
+    .use("/:workspaceId/deployment-variable-values", deploymentVariableValuesRouter)
     .use("/:workspaceId/environments", environmentsRouter)
     .use("/:workspaceId/policies", policiesRouter)
     .use("/:workspaceId/deployment-versions", deploymentVersionsRouter)

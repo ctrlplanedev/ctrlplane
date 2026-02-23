@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/jobagents/testrunner"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
@@ -29,20 +28,8 @@ func (noopProducer) PublishToPartition([]byte, []byte, int32) error { return nil
 func (noopProducer) Flush(int) int                                  { return 0 }
 func (noopProducer) Close() error                                   { return nil }
 
-// overrideTestRunnerProducer replaces the TestRunner in the workspace's
-// job agent registry with one that uses a no-op Kafka producer, preventing
-// real Kafka connections during tests.
-func overrideTestRunnerProducer(ws *workspace.Workspace) {
-	ws.JobAgentRegistry().Register(
-		testrunner.NewWithOptions(ws.Store(), testrunner.Options{
-			ProducerFactory: func() (messaging.Producer, error) {
-				return noopProducer{}, nil
-			},
-		}),
-	)
-}
-
 func init() {
+	messaging.InitProducer(noopProducer{})
 	manager.Configure(
 		manager.WithPersistentStore(memory.NewStore()),
 		manager.WithWorkspaceCreateOptions(
@@ -109,8 +96,6 @@ func newMemoryTestWorkspace(
 	if err != nil {
 		t.Fatalf("failed to get or create workspace: %v", err)
 	}
-
-	overrideTestRunnerProducer(ws)
 
 	tw := &TestWorkspace{}
 	tw.t = t

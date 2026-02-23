@@ -10,16 +10,12 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
-
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
 	argocdapplication "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
@@ -235,12 +231,6 @@ func (a *ArgoApplication) sendJobFailureEvent(job *oapi.Job, message string) err
 			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
 		},
 	}
-	producer, err := a.getKafkaProducer()
-	if err != nil {
-		return fmt.Errorf("failed to create Kafka producer: %w", err)
-	}
-	defer producer.Close()
-
 	event := map[string]any{
 		"eventType":   "job.updated",
 		"workspaceId": workspaceId,
@@ -251,7 +241,7 @@ func (a *ArgoApplication) sendJobFailureEvent(job *oapi.Job, message string) err
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
-	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+	if err := messaging.Publish([]byte(workspaceId), eventBytes); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 	return nil
@@ -293,11 +283,6 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
 		},
 	}
-	producer, err := a.getKafkaProducer()
-	if err != nil {
-		return fmt.Errorf("failed to create Kafka producer: %w", err)
-	}
-	defer producer.Close()
 
 	event := map[string]any{
 		"eventType":   "job.updated",
@@ -309,18 +294,8 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
-	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+	if err := messaging.Publish([]byte(workspaceId), eventBytes); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 	return nil
-}
-
-func (a *ArgoApplication) getKafkaProducer() (messaging.Producer, error) {
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
-		"bootstrap.servers":        config.Global.KafkaBrokers,
-		"enable.idempotence":       true,
-		"compression.type":         "snappy",
-		"message.send.max.retries": 10,
-		"retry.backoff.ms":         100,
-	})
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents/configs"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -27,7 +28,29 @@ func (s *DeploymentAgentsSelector) getLegacyJobAgent() ([]*oapi.JobAgent, error)
 	if !exists {
 		return nil, fmt.Errorf("job agent %s not found", *s.deployment.JobAgentId)
 	}
-	return []*oapi.JobAgent{jobAgent}, nil
+
+	resolvedAgent, err := s.withResolvedConfig(jobAgent, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve config for job agent %s: %w", jobAgent.Id, err)
+	}
+
+	return []*oapi.JobAgent{resolvedAgent}, nil
+}
+
+func (s *DeploymentAgentsSelector) withResolvedConfig(jobAgent *oapi.JobAgent, deploymentJobAgentConfig oapi.JobAgentConfig) (*oapi.JobAgent, error) {
+	mergedConfig, err := configs.Merge(
+		jobAgent.Config,
+		s.deployment.JobAgentConfig,
+		deploymentJobAgentConfig,
+		s.release.Version.JobAgentConfig,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	jobAgentWithConfig := *jobAgent
+	jobAgentWithConfig.Config = mergedConfig
+	return &jobAgentWithConfig, nil
 }
 
 func (s *DeploymentAgentsSelector) buildCelContext() (map[string]any, error) {
@@ -64,14 +87,18 @@ func (s *DeploymentAgentsSelector) buildCelContext() (map[string]any, error) {
 }
 
 func (s *DeploymentAgentsSelector) SelectAgents() ([]*oapi.JobAgent, error) {
+	if s.deployment.JobAgents != nil && len(*s.deployment.JobAgents) > 0 {
+		return s.selectFromJobAgents()
+	}
+
 	if s.deployment.JobAgentId != nil && *s.deployment.JobAgentId != "" {
 		return s.getLegacyJobAgent()
 	}
 
-	if s.deployment.JobAgents == nil || len(*s.deployment.JobAgents) == 0 {
-		return []*oapi.JobAgent{}, nil
-	}
+	return []*oapi.JobAgent{}, nil
+}
 
+func (s *DeploymentAgentsSelector) selectFromJobAgents() ([]*oapi.JobAgent, error) {
 	celCtx, err := s.buildCelContext()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build cel context: %w", err)
@@ -104,7 +131,11 @@ func (s *DeploymentAgentsSelector) SelectAgents() ([]*oapi.JobAgent, error) {
 		if !agentExists {
 			return nil, fmt.Errorf("job agent %s not found", deploymentJobAgent.Ref)
 		}
-		jobAgents = append(jobAgents, jobAgent)
+		resolvedAgent, err := s.withResolvedConfig(jobAgent, deploymentJobAgent.Config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve config for job agent %s: %w", deploymentJobAgent.Ref, err)
+		}
+		jobAgents = append(jobAgents, resolvedAgent)
 	}
 	return jobAgents, nil
 }

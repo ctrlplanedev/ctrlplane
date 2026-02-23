@@ -28,23 +28,59 @@ Deployment dependency rules help you:
 
 ## Configuration
 
-Add a deployment dependency rule to your policy:
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "api_requires_database" {
+  name     = "API Requires Database"
+  selector = "deployment.name == 'api-service'"
 
-```yaml
-policies:
-  - name: api-requires-database
-    selectors:
-      - deployment: deployment.name == "api-service"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name == "database-migration"
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'database-migration'"
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API Requires Database",
+    "selector": "deployment.name == '\''api-service'\''",
+    "rules": [
+      {
+        "deploymentDependency": {
+          "dependsOn": "deployment.name == '\''database-migration'\''"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
 
 ## Properties
 
-| Property    | Type   | Required | Description                                                                                              |
-| ----------- | ------ | -------- | -------------------------------------------------------------------------------------------------------- |
-| `dependsOn` | string | Yes      | CEL expression to match upstream deployment(s) that must have a successful release before proceeding.    |
+<ParamField path="deploymentDependency.dependsOn" type="string" required>
+  CEL expression to match upstream deployment(s) that must have a successful
+  release before this deployment can proceed.
+</ParamField>
+
+## How It Works
+
+1. **Release created** - A new version is released for a deployment with
+   dependency rules.
+2. **Dependency check** - Ctrlplane evaluates the `dependsOn` CEL expression to
+   find matching upstream deployments.
+3. **Same-resource resolution** - For each matching upstream deployment,
+   Ctrlplane looks for a release target on the **same resource** as the current
+   target. This means the dependency is resolved per-resource, not globally.
+4. **Status evaluation** - Each upstream release target must have a latest
+   completed job with a successful status.
+5. **Deployment allowed** - Once all upstream dependencies are satisfied, the
+   deployment can proceed.
 
 ## Common Patterns
 
@@ -52,148 +88,203 @@ policies:
 
 Ensure database migrations complete before API deploys:
 
-```yaml
-policies:
-  - name: api-requires-db-migration
-    selectors:
-      - deployment: deployment.name == "api-service"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name == "database-migration"
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "api_requires_db" {
+  name     = "API Requires DB Migration"
+  selector = "deployment.name == 'api-service'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'database-migration'"
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "API Requires DB Migration",
+  "selector": "deployment.name == 'api-service'",
+  "rules": [
+    {
+      "deploymentDependency": {
+        "dependsOn": "deployment.name == 'database-migration'"
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ### Service Dependency Chain
 
 Create a chain of dependencies:
 
-```yaml
-policies:
-  # API depends on database
-  - name: api-depends-on-db
-    selectors:
-      - deployment: deployment.name == "api-service"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name == "database-migration"
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "api_depends_on_db" {
+  name     = "API Depends on DB"
+  selector = "deployment.name == 'api-service'"
 
-  # Frontend depends on API
-  - name: frontend-depends-on-api
-    selectors:
-      - deployment: deployment.name == "frontend"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name == "api-service"
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'database-migration'"
+  }
+}
+
+resource "ctrlplane_policy" "frontend_depends_on_api" {
+  name     = "Frontend Depends on API"
+  selector = "deployment.name == 'frontend'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'api-service'"
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+[
+  {
+    "name": "API Depends on DB",
+    "selector": "deployment.name == 'api-service'",
+    "rules": [
+      {
+        "deploymentDependency": {
+          "dependsOn": "deployment.name == 'database-migration'"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Frontend Depends on API",
+    "selector": "deployment.name == 'frontend'",
+    "rules": [
+      {
+        "deploymentDependency": {
+          "dependsOn": "deployment.name == 'api-service'"
+        }
+      }
+    ]
+  }
+]
+```
+</Tab>
+</Tabs>
 
 ### Shared Library Dependencies
 
 Ensure shared libraries are deployed before dependent services:
 
-```yaml
-policies:
-  - name: services-require-shared-lib
-    selectors:
-      - deployment: deployment.metadata.usesSharedLib == "true"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.metadata.type == "shared-library"
+```hcl
+resource "ctrlplane_policy" "services_require_shared_lib" {
+  name     = "Services Require Shared Lib"
+  selector = "deployment.metadata['usesSharedLib'] == 'true'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.metadata['type'] == 'shared-library'"
+  }
+}
 ```
 
 ### Infrastructure First
 
 Deploy infrastructure changes before application updates:
 
-```yaml
-policies:
-  - name: app-requires-infrastructure
-    selectors:
-      - deployment: deployment.metadata.type == "application"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.metadata.type == "infrastructure"
+```hcl
+resource "ctrlplane_policy" "app_requires_infrastructure" {
+  name     = "App Requires Infrastructure"
+  selector = "deployment.metadata['type'] == 'application'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.metadata['type'] == 'infrastructure'"
+  }
+}
 ```
 
 ### Multi-Service Dependency
 
-Depend on multiple services:
+Depend on multiple services using CEL `in` operator:
 
-```yaml
-policies:
-  - name: gateway-requires-services
-    selectors:
-      - deployment: deployment.name == "api-gateway"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name in ["auth-service", "user-service", "billing-service"]
+```hcl
+resource "ctrlplane_policy" "gateway_requires_services" {
+  name     = "Gateway Requires Backend Services"
+  selector = "deployment.name == 'api-gateway'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name in ['auth-service', 'user-service', 'billing-service']"
+  }
+}
 ```
-
-### By Team or Domain
-
-Dependencies based on metadata:
-
-```yaml
-policies:
-  - name: frontend-requires-backend
-    selectors:
-      - deployment: deployment.metadata.layer == "frontend"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.metadata.layer == "backend"
-```
-
-## Dependency Resolution
-
-### 1. Release Created
-
-A new version is released for a deployment with dependency rules.
-
-### 2. Dependency Check
-
-Ctrlplane identifies all deployments matching the `dependsOn` CEL expression.
-
-### 3. Status Evaluation
-
-For each dependency, Ctrlplane checks if the same version (or compatible
-version) has been successfully deployed.
-
-### 4. Deployment Allowed
-
-Once all dependencies are satisfied, the deployment can proceed.
 
 ## Combining with Other Rules
 
 ### With Environment Progression
 
-```yaml
-policies:
-  - name: api-full-gates
-    selectors:
-      - deployment: deployment.name == "api-service"
-      - environment: environment.name == "production"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name == "database-migration"
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: staging
-      - approval:
-          required: 1
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "api_full_gates" {
+  name     = "API Full Gates"
+  selector = "deployment.name == 'api-service' && environment.name == 'production'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'database-migration'"
+  }
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'staging'"
+  }
+
+  any_approval {
+    min_approvals = 1
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "API Full Gates",
+  "selector": "deployment.name == 'api-service' && environment.name == 'production'",
+  "rules": [
+    {
+      "deploymentDependency": {
+        "dependsOn": "deployment.name == 'database-migration'"
+      }
+    },
+    {
+      "environmentProgression": {
+        "dependsOnEnvironmentSelector": "environment.name == 'staging'"
+      }
+    },
+    {
+      "anyApproval": { "minApprovals": 1 }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ### With Gradual Rollout
 
-```yaml
-policies:
-  - name: frontend-controlled-release
-    selectors:
-      - deployment: deployment.name == "frontend"
-    rules:
-      - deploymentDependency:
-          dependsOn: deployment.name == "api-service"
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300
+```hcl
+resource "ctrlplane_policy" "frontend_controlled_release" {
+  name     = "Frontend Controlled Release"
+  selector = "deployment.name == 'frontend'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'api-service'"
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
 
 ## Best Practices
@@ -231,7 +322,8 @@ If a deployment is blocked waiting for dependencies:
 
 1. Check the dependency deployment's status
 2. Verify the CEL expression matches the expected deployment
-3. Ensure the dependency version is compatible
+3. Remember that dependencies are resolved **per-resource** -- the upstream
+   deployment must have a successful release on the same resource
 4. Review the dependency deployment's success status
 
 ### Circular Dependencies

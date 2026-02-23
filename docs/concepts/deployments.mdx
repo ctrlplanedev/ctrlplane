@@ -26,122 +26,174 @@ Each deployment can have multiple **versions** (builds, releases) that get deplo
 
 ## Deployment Properties
 
-```yaml
-id: dep_abc123
-systemId: sys_xyz789
-name: API Service
-slug: api-service
-description: Main backend API service
-jobAgentId: agent_123
-jobAgentConfig:
-  workflow: deploy.yml
-  owner: my-org
-  repo: api-service
-resourceSelector:
-  type: kind
-  operator: equals
-  value: kubernetes-cluster
-createdAt: "2024-01-15T10:00:00Z"
-metadata:
-  team: backend
-  language: nodejs
-```
+| Property           | Type     | Required | Description                                              |
+| ------------------ | -------- | -------- | -------------------------------------------------------- |
+| `id`               | string   | Auto     | Unique identifier                                        |
+| `name`             | string   | Yes      | Human-readable display name                              |
+| `slug`             | string   | Yes      | URL-friendly identifier, unique within the workspace     |
+| `description`      | string   | No       | What this deployment does                                |
+| `resourceSelector` | string   | No       | CEL expression limiting which resources can be targeted  |
+| `jobAgents`        | array    | No       | Job agent configurations (see below)                     |
+| `metadata`         | object   | No       | Key-value pairs for classification                       |
 
 ### name
+
 Human-readable display name for the deployment.
 
-**Examples**:
-- "API Service"
-- "Frontend Application"
-- "Payment Processor"
-- "User Service"
+**Examples**: "API Service", "Frontend Application", "Payment Processor"
 
 ### slug
-URL-friendly identifier, unique within the system.
+
+URL-friendly identifier, unique within the workspace. In the Terraform provider,
+the slug is auto-generated from the `name` field.
+
+**Examples**: `api-service`, `frontend-app`, `payment-processor`
+
+### resourceSelector
+
+A CEL expression that limits which resources this deployment can target. If
+specified, only resources matching this expression will have release targets
+created.
 
 **Examples**:
-- `api-service`
-- `frontend-app`
-- `payment-processor`
 
-### systemId
-The system this deployment belongs to. Deployments are scoped to systems.
-
-### jobAgentId
-The ID of the job agent that will execute deployment jobs.
-
-**Required**: Every deployment must have a job agent configured.
-
-### jobAgentConfig
-Configuration passed to the job agent when executing deployments. The structure depends on the agent type.
-
-**GitHub Actions Agent**:
-```yaml
-workflow: deploy.yml
-owner: my-github-org
-repo: my-repo
-ref: main
+```
+resource.kind == "Kubernetes"
 ```
 
-**Kubernetes Agent**:
-```yaml
-manifest: |
-  apiVersion: batch/v1
-  kind: Job
-  ...
+```
+resource.version == 'ctrlplane.dev/kubernetes/cluster/v1' && resource.metadata['kubernetes/status'] == 'running'
 ```
 
-**ArgoCD Agent**:
-```yaml
-application: my-app
-server: https://argocd.example.com
+```
+resource.metadata['region'] == 'us-east-1'
 ```
 
-### resourceSelector (Optional)
-Limits which resources this deployment can target. If specified, only resources matching this selector can receive this deployment.
+If not specified, the deployment can target any resource in its environments.
 
-**Use Cases**:
-- Kubernetes-only deployments: Match `kind: kubernetes-cluster`
-- Region-specific: Match `metadata.region: us-east-1`
-- Team-specific: Match `metadata.team: platform`
+### jobAgents
 
-**Example - Kubernetes only**:
-```yaml
-type: kind
-operator: equals
-value: kubernetes-cluster
-```
+An array of job agent configurations that execute deployment jobs. Each entry
+specifies which agent to use and how to configure it, with optional routing
+via selectors.
 
-If not specified, the deployment can target any resource.
+| Field      | Type   | Required | Description                                        |
+| ---------- | ------ | -------- | -------------------------------------------------- |
+| `ref`      | string | Yes      | Job agent reference identifier                     |
+| `config`   | object | Yes      | Agent-specific configuration                       |
+| `selector` | string | No       | CEL expression for routing to specific resources   |
 
-### description
-Optional description of what this deployment does.
+When multiple job agents are configured, the `selector` field determines which
+agent handles which resources. This enables patterns like using ArgoCD for
+some clusters and GitHub Actions for others within the same deployment.
 
 ### metadata
-Optional key-value pairs for classification.
 
-**Common Metadata**:
-```yaml
-team: backend
-language: nodejs
-repository: github.com/org/api-service
+Optional key-value pairs for classification and policy matching:
+
+```json
+{
+  "team": "backend",
+  "language": "nodejs",
+  "tier": "critical"
+}
 ```
+
+Metadata can be referenced in policy selectors (e.g.,
+`deployment.metadata['tier'] == 'critical'`).
 
 ## Creating a Deployment
 
-### Via Web UI
+### Via Terraform
 
-1. Navigate to your system
-2. Click "Deployments" tab
-3. Click "Create Deployment"
-4. Fill in:
-   - Name: "API Service"
-   - Slug: "api-service"
-   - Description: "Main backend API"
-   - Job Agent: Select from dropdown
-   - Job Agent Config: JSON configuration
-   - Resource Selector: (optional)
-5. Click "Create"
+<Tabs>
+<Tab title="GitHub Actions Agent">
+```hcl
+resource "ctrlplane_deployment" "api" {
+  name              = "API Service"
+  resource_selector = "resource.version == 'ctrlplane.dev/kubernetes/cluster/v1' && resource.metadata['kubernetes/status'] == 'running'"
+
+  metadata = {
+    team    = "backend"
+    service = "api"
+  }
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+
+    github {
+      owner       = "my-org"
+      repo        = "api-service"
+      workflow_id = 12345678
+    }
+  }
+}
+
+resource "ctrlplane_deployment_system_link" "api" {
+  deployment_id = ctrlplane_deployment.api.id
+  system_id     = ctrlplane_system.main.id
+}
+```
+</Tab>
+<Tab title="ArgoCD Agent">
+```hcl
+resource "ctrlplane_deployment" "operator" {
+  name              = "Weights & Biases Operator"
+  resource_selector = "resource.version == 'ctrlplane.dev/kubernetes/cluster/v1' && resource.metadata['kubernetes/status'] == 'running'"
+  metadata          = {}
+
+  job_agent {
+    id = ctrlplane_job_agent.argocd.id
+
+    argocd {
+      template = file("${path.module}/templates/application.yaml")
+    }
+  }
+}
+
+resource "ctrlplane_deployment_system_link" "operator" {
+  deployment_id = ctrlplane_deployment.operator.id
+  system_id     = ctrlplane_system.main.id
+}
+```
+</Tab>
+</Tabs>
+
+<Note>
+  Deployments must be linked to a system using `ctrlplane_deployment_system_link`.
+  This is a separate resource that associates a deployment with a system.
+</Note>
+
+### Via REST API
+
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API Service",
+    "slug": "api-service",
+    "description": "Main backend API service",
+    "resourceSelector": "resource.kind == '\''Kubernetes'\''",
+    "jobAgents": [
+      {
+        "ref": "github-actions-agent",
+        "config": {
+          "workflow": "deploy.yml",
+          "owner": "my-org",
+          "repo": "api-service"
+        }
+      }
+    ],
+    "metadata": {
+      "team": "backend",
+      "language": "nodejs"
+    }
+  }'
+```
+
+The API returns `202 Accepted` with the deployment `id`. Reads are available
+immediately via `GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}`.
 
 ### Via CLI (YAML)
 
@@ -157,7 +209,7 @@ jobAgentConfig:
   workflow: deploy.yml
   owner: my-org
   repo: api-service
-resourceSelector: resource.kind == "KubernetesCluster"
+resourceSelector: resource.kind == "Kubernetes"
 ```
 
 ```bash
@@ -166,6 +218,51 @@ ctrlc apply -f deployment.yaml
 
 ### Multiple Deployments
 
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_deployment" "api" {
+  name              = "API Service"
+  resource_selector = "resource.kind == 'Kubernetes'"
+  metadata          = { service = "api" }
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+    github {
+      owner       = "my-org"
+      repo        = "api-service"
+      workflow_id = 12345678
+    }
+  }
+}
+
+resource "ctrlplane_deployment" "frontend" {
+  name              = "Frontend App"
+  resource_selector = "resource.kind == 'Kubernetes'"
+  metadata          = { service = "frontend" }
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+    github {
+      owner       = "my-org"
+      repo        = "frontend-app"
+      workflow_id = 87654321
+    }
+  }
+}
+
+resource "ctrlplane_deployment_system_link" "api" {
+  deployment_id = ctrlplane_deployment.api.id
+  system_id     = ctrlplane_system.main.id
+}
+
+resource "ctrlplane_deployment_system_link" "frontend" {
+  deployment_id = ctrlplane_deployment.frontend.id
+  system_id     = ctrlplane_system.main.id
+}
+```
+</Tab>
+<Tab title="CLI">
 ```yaml
 # deployments.yaml
 ---
@@ -193,31 +290,128 @@ jobAgentConfig:
 ```bash
 ctrlc apply -f deployments.yaml
 ```
+</Tab>
+</Tabs>
+
+## Job Agent Configuration
+
+Each `job_agent` block (Terraform) or entry in the `jobAgents` array (API)
+configures how a specific agent executes deployments. The Terraform provider
+supports typed provider blocks for each agent type.
+
+### GitHub Actions
+
+```hcl
+job_agent {
+  id = ctrlplane_job_agent.github.id
+
+  github {
+    owner       = "my-org"
+    repo        = "api-service"
+    workflow_id = 12345678
+    ref         = "main"
+  }
+}
+```
+
+| Attribute         | Type   | Description                                   |
+| ----------------- | ------ | --------------------------------------------- |
+| `owner`           | string | GitHub repository owner                       |
+| `repo`            | string | GitHub repository name                        |
+| `workflow_id`     | int    | GitHub Actions workflow ID                    |
+| `ref`             | string | Git ref to run on (defaults to `"main"`)      |
+| `installation_id` | int    | GitHub App installation ID                    |
+
+### ArgoCD
+
+```hcl
+job_agent {
+  id = ctrlplane_job_agent.argocd.id
+
+  argocd {
+    template   = file("${path.module}/application.yaml")
+    server_url = "https://argocd.example.com"
+  }
+}
+```
+
+| Attribute    | Type   | Description                         |
+| ------------ | ------ | ----------------------------------- |
+| `template`   | string | ArgoCD Application template         |
+| `server_url` | string | ArgoCD server address               |
+| `api_key`    | string | ArgoCD API token (sensitive)        |
+
+### Terraform Cloud
+
+```hcl
+job_agent {
+  id = ctrlplane_job_agent.tfc.id
+
+  terraform_cloud {
+    organization = "my-org"
+    template     = file("${path.module}/workspace.json")
+    token        = var.tfc_token
+  }
+}
+```
+
+| Attribute      | Type   | Description                              |
+| -------------- | ------ | ---------------------------------------- |
+| `organization` | string | Terraform Cloud organization name        |
+| `template`     | string | Workspace template                       |
+| `address`      | string | Terraform Cloud address                  |
+| `token`        | string | API token (sensitive)                    |
+
+### Agent Routing with Selectors
+
+When a deployment uses multiple job agents, use `selector` to route to specific
+resources:
+
+```hcl
+resource "ctrlplane_deployment" "app" {
+  name              = "Application"
+  resource_selector = "resource.kind == 'Kubernetes'"
+
+  job_agent {
+    id       = ctrlplane_job_agent.argocd.id
+    selector = "resource.metadata['cluster-type'] == 'managed'"
+
+    argocd {
+      template = file("${path.module}/managed-app.yaml")
+    }
+  }
+
+  job_agent {
+    id       = ctrlplane_job_agent.github.id
+    selector = "resource.metadata['cluster-type'] == 'self-hosted'"
+
+    github {
+      owner       = "my-org"
+      repo        = "app-deploy"
+      workflow_id = 12345678
+    }
+  }
+}
+```
 
 ## Deployment Versions
 
-Versions represent specific builds or releases of your deployment. They are typically created by your CI system after building.
+Versions represent specific builds or releases of your deployment. They are
+typically created by your CI system after building.
 
 ### Version Properties
 
-```yaml
-id: ver_abc123
-deploymentId: dep_abc123
-tag: v1.2.3
-name: Release 1.2.3
-status: ready
-config:
-  imageTag: v1.2.3
-  buildNumber: "456"
-jobAgentConfig:
-  imageTag: my-org/api-service:v1.2.3
-metadata:
-  git_commit: abc123def
-  git_branch: main
-  build_number: "456"
-dependencies: []
-createdAt: "2024-01-15T12:00:00Z"
-```
+| Property         | Type   | Required | Description                                      |
+| ---------------- | ------ | -------- | ------------------------------------------------ |
+| `id`             | string | Auto     | Unique identifier                                |
+| `deploymentId`   | string | Auto     | Parent deployment                                |
+| `tag`            | string | Yes      | Version tag (e.g., `"v1.2.3"`, git SHA)          |
+| `name`           | string | No       | Human-readable name                              |
+| `status`         | string | No       | `building`, `ready`, or `failed`                 |
+| `config`         | object | No       | General version configuration, visible in UI     |
+| `jobAgentConfig` | object | No       | Execution config (overrides deployment's config) |
+| `metadata`       | object | No       | Custom key-value pairs                           |
+| `createdAt`      | string | Auto     | Creation timestamp                               |
 
 ### Creating Versions (from CI)
 
@@ -239,6 +433,29 @@ After your CI builds an artifact, create a version in Ctrlplane:
       --metadata build/number=${{ github.run_number }}
 ```
 
+Or via the REST API:
+
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tag": "v1.2.3",
+    "name": "Release 1.2.3",
+    "status": "ready",
+    "config": {
+      "buildNumber": "456"
+    },
+    "jobAgentConfig": {
+      "imageTag": "my-org/api-service:v1.2.3"
+    },
+    "metadata": {
+      "git_commit": "abc123def",
+      "git_branch": "main"
+    }
+  }'
+```
+
 ### Version Status
 
 Versions have a status field:
@@ -258,53 +475,84 @@ Or simpler:
 ### Version Config vs Job Agent Config
 
 **config**: General version configuration, visible in UI
-```yaml
-config:
-  buildNumber: "456"
-  gitCommit: abc123
+```json
+{
+  "buildNumber": "456",
+  "gitCommit": "abc123"
+}
 ```
 
-**jobAgentConfig**: Specific configuration for job execution (overrides deployment's jobAgentConfig)
-```yaml
-jobAgentConfig:
-  imageTag: my-org/api-service:v1.2.3
-  helmValues:
-    replicas: 3
+**jobAgentConfig**: Specific configuration for job execution (merged with the
+deployment's job agent config at runtime)
+```json
+{
+  "imageTag": "my-org/api-service:v1.2.3",
+  "helmValues": {
+    "replicas": 3
+  }
+}
 ```
-
-### Version Dependencies
-
-Versions can declare dependencies on other deployment versions. Use the API for versions with dependencies:
-
-```bash
-curl -X POST "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions" \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tag": "v1.2.3",
-    "status": "ready",
-    "dependencies": [
-      {
-        "deploymentId": "dep_database",
-        "versionId": "ver_db_v2"
-      }
-    ]
-  }'
-```
-
-Ctrlplane can enforce that dependencies are deployed first before deploying this version.
 
 ## Deployment Variables
 
-Variables allow environment-specific or version-specific configuration.
+Variables allow environment-specific or resource-specific configuration that
+gets resolved at job creation time and passed to the job agent.
 
-### Creating Deployment Variables
+### Via Terraform
 
-Variables can be configured via the Web UI or API:
+The Terraform provider has dedicated resources for deployment variables and
+their values:
+
+```hcl
+resource "ctrlplane_deployment_variable" "replica_count" {
+  deployment_id = ctrlplane_deployment.api.id
+  key           = "REPLICA_COUNT"
+  description   = "Number of replicas to run"
+  default_value = "1"
+}
+
+resource "ctrlplane_deployment_variable_value" "replica_count_prod" {
+  deployment_id     = ctrlplane_deployment.api.id
+  variable_id       = ctrlplane_deployment_variable.replica_count.id
+  priority          = 0
+  resource_selector = "resource.metadata['environment'] == 'production'"
+  literal_value     = "5"
+}
+```
+
+#### Reference Values
+
+Variable values can reference data from the workspace or resource metadata
+instead of using literal values:
+
+```hcl
+resource "ctrlplane_deployment_variable" "size" {
+  deployment_id = ctrlplane_deployment.redis.id
+  key           = "size"
+  description   = "The size of the Redis deployment"
+  default_value = "small"
+}
+
+resource "ctrlplane_deployment_variable_value" "size_from_workspace" {
+  deployment_id     = ctrlplane_deployment.redis.id
+  variable_id       = ctrlplane_deployment_variable.size.id
+  priority          = 0
+  resource_selector = "resource.version == 'ctrlplane.dev/kubernetes/cluster/v1'"
+
+  reference_value = {
+    reference = "workspace"
+    path      = ["metadata", "size"]
+  }
+}
+```
+
+### Via REST API
+
+**Create a variable:**
 
 ```bash
-curl -X POST "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables" \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+curl -X PUT https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId} \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "key": "REPLICA_COUNT",
@@ -312,24 +560,14 @@ curl -X POST "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variab
   }'
 ```
 
-### Setting Environment-Specific Values
+**Set an environment-specific value:**
 
 ```bash
-# Value for development
-curl -X POST "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values" \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+curl -X PUT https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values/{valueId} \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "environmentId": "env_dev",
-    "value": "1"
-  }'
-
-# Value for production
-curl -X POST "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values" \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "environmentId": "env_prod",
+    "priority": 0,
     "value": "5"
   }'
 ```
@@ -368,7 +606,7 @@ Given:
 
 Release Targets Created:
 1. API Service → Development → dev-cluster
-2. API Service → Staging → staging-cluster  
+2. API Service → Staging → staging-cluster
 3. API Service → Production → prod-cluster-1
 4. API Service → Production → prod-cluster-2
 5. API Service → Production → prod-cluster-3
@@ -377,16 +615,14 @@ Each release target can receive deployment versions independently.
 
 ### Filtering Release Targets
 
-Use deployment's `resourceSelector` to limit which targets are created:
+Use the deployment's `resourceSelector` to limit which targets are created:
 
-```yaml
-resourceSelector:
-  type: kind
-  operator: equals
-  value: kubernetes-cluster
+```
+resource.version == 'ctrlplane.dev/kubernetes/cluster/v1' && resource.metadata['kubernetes/status'] == 'running'
 ```
 
-Now only Kubernetes resources will have release targets for this deployment.
+Only resources matching this CEL expression will have release targets for this
+deployment.
 
 ## Deployment Lifecycle
 
@@ -408,6 +644,83 @@ The configured job agent picks up the job and executes the deployment.
 ### 6. Status Updated
 The job reports status back to Ctrlplane.
 
+## REST API Reference
+
+### Deployment CRUD
+
+**Create:**
+
+```
+POST /v1/workspaces/{workspaceId}/deployments
+```
+
+**Get:**
+
+```
+GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}
+```
+
+**Update:**
+
+```
+PUT /v1/workspaces/{workspaceId}/deployments/{deploymentId}
+```
+
+**Delete:**
+
+```
+DELETE /v1/workspaces/{workspaceId}/deployments/{deploymentId}
+```
+
+**List:**
+
+```
+GET /v1/workspaces/{workspaceId}/deployments
+```
+
+### Versions
+
+**Create version:**
+
+```
+POST /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions
+```
+
+**List versions:**
+
+```
+GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions
+```
+
+**Update version:**
+
+```
+PATCH /v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}
+```
+
+### Variables
+
+**Upsert variable:**
+
+```
+PUT /v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}
+```
+
+**Upsert variable value:**
+
+```
+PUT /v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values/{valueId}
+```
+
+## Terraform Provider Reference
+
+| Resource                                   | Description                                    |
+| ------------------------------------------ | ---------------------------------------------- |
+| `ctrlplane_deployment`                     | The deployment itself                          |
+| `ctrlplane_deployment_system_link`         | Links a deployment to a system                 |
+| `ctrlplane_deployment_variable`            | Defines a deployment variable                  |
+| `ctrlplane_deployment_variable_value`      | Sets a value for a variable (with selectors)   |
+
 ## Viewing Deployment Status
 
 ### Via Web UI
@@ -421,28 +734,62 @@ The job reports status back to Ctrlplane.
 
 ### Via API
 
-**Get deployment details**:
+**Get deployment details:**
+
 ```bash
-curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId} \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+curl https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments/{deploymentId} \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-**List versions**:
-```bash
-curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
-```
+**List versions:**
 
-**List releases**:
 ```bash
-curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/releases \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+curl https://api.ctrlplane.com/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Common Patterns
 
 ### Microservices
 
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_deployment" "user_service" {
+  name              = "User Service"
+  resource_selector = "resource.kind == 'Kubernetes'"
+  metadata          = { service = "user" }
+
+  job_agent {
+    id = ctrlplane_job_agent.argocd.id
+    argocd { template = file("${path.module}/user-service.yaml") }
+  }
+}
+
+resource "ctrlplane_deployment" "order_service" {
+  name              = "Order Service"
+  resource_selector = "resource.kind == 'Kubernetes'"
+  metadata          = { service = "order" }
+
+  job_agent {
+    id = ctrlplane_job_agent.argocd.id
+    argocd { template = file("${path.module}/order-service.yaml") }
+  }
+}
+
+resource "ctrlplane_deployment" "payment_service" {
+  name              = "Payment Service"
+  resource_selector = "resource.kind == 'Kubernetes'"
+  metadata          = { service = "payment" }
+
+  job_agent {
+    id = ctrlplane_job_agent.argocd.id
+    argocd { template = file("${path.module}/payment-service.yaml") }
+  }
+}
+```
+</Tab>
+<Tab title="CLI">
 ```yaml
 # microservices.yaml
 ---
@@ -450,94 +797,88 @@ type: Deployment
 name: User Service
 slug: user-service
 jobAgent:
-  ref: kubernetes-agent
+  ref: argocd-agent
 ---
 type: Deployment
 name: Order Service
 slug: order-service
 jobAgent:
-  ref: kubernetes-agent
+  ref: argocd-agent
 ---
 type: Deployment
 name: Payment Service
 slug: payment-service
 jobAgent:
-  ref: kubernetes-agent
+  ref: argocd-agent
 ```
 
 ```bash
 ctrlc apply -f microservices.yaml
 ```
-
-### Frontend + Backend
-
-```yaml
-# fullstack.yaml
----
-type: Deployment
-name: API Service
-slug: api-service
-jobAgent:
-  ref: kubernetes-agent
-resourceSelector: resource.kind == "KubernetesCluster"
----
-type: Deployment
-name: Frontend App
-slug: frontend-app
-jobAgent:
-  ref: github-actions-agent
-```
-
-```bash
-ctrlc apply -f fullstack.yaml
-```
+</Tab>
+</Tabs>
 
 ### Database + Application
 
-```yaml
-# app-with-migrations.yaml
----
-type: Deployment
-name: Database Migration
-slug: database-migration
-description: Run database migrations before API deployment
-jobAgent:
-  ref: kubernetes-agent
----
-type: Deployment
-name: API Service
-slug: api-service
-description: API depends on migrations completing first
-jobAgent:
-  ref: kubernetes-agent
+```hcl
+resource "ctrlplane_deployment" "database_migration" {
+  name              = "Database Migration"
+  resource_selector = "resource.kind == 'Kubernetes'"
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+    github {
+      owner       = "my-org"
+      repo        = "migrations"
+      workflow_id = 11111111
+    }
+  }
+}
+
+resource "ctrlplane_deployment" "api_service" {
+  name              = "API Service"
+  resource_selector = "resource.kind == 'Kubernetes'"
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+    github {
+      owner       = "my-org"
+      repo        = "api-service"
+      workflow_id = 22222222
+    }
+  }
+}
 ```
 
-```bash
-ctrlc apply -f app-with-migrations.yaml
-```
+Use a [Deployment Dependency](../policies/deployment-dependency) policy to
+ensure migrations complete before the API deploys.
 
 ### Multi-Platform
 
-```yaml
-# multi-platform.yaml
----
-type: Deployment
-name: Web Service
-slug: web-service
-jobAgent:
-  ref: kubernetes-agent
-resourceSelector: resource.kind == "KubernetesCluster"
----
-type: Deployment
-name: Lambda Function
-slug: lambda-function
-jobAgent:
-  ref: github-actions-agent
-resourceSelector: resource.kind == "AWSLambda"
-```
+```hcl
+resource "ctrlplane_deployment" "web_service" {
+  name              = "Web Service"
+  resource_selector = "resource.kind == 'Kubernetes'"
 
-```bash
-ctrlc apply -f multi-platform.yaml
+  job_agent {
+    id = ctrlplane_job_agent.argocd.id
+    argocd { template = file("${path.module}/web.yaml") }
+  }
+}
+
+resource "ctrlplane_deployment" "lambda_function" {
+  name              = "Lambda Function"
+  resource_selector = "resource.kind == 'AWSLambda'"
+
+  job_agent {
+    id = ctrlplane_job_agent.github.id
+    github {
+      owner       = "my-org"
+      repo        = "lambda-deploy"
+      workflow_id = 33333333
+    }
+  }
+}
 ```
 
 ## Best Practices
@@ -563,23 +904,9 @@ ctrlc apply -f multi-platform.yaml
 
 **Do**:
 - ✅ Use version's `jobAgentConfig` for version-specific values (like image tags)
-- ✅ Use deployment's `jobAgentConfig` for stable configuration
+- ✅ Use deployment's job agent config for stable configuration
 - ✅ Keep sensitive data in secrets (not in config)
-
-**Example**:
-```yaml
-# Deployment jobAgentConfig (stable)
-jobAgentConfig:
-  workflow: deploy.yml
-  owner: my-org
-  repo: api-service
-```
-
-```yaml
-# Version jobAgentConfig (version-specific)
-jobAgentConfig:
-  imageTag: my-org/api-service:v1.2.3
-```
+- ✅ Use agent `selector` when routing to different resource types
 
 ### Version Tags
 
@@ -595,17 +922,19 @@ jobAgentConfig:
 
 ### Resource Selectors
 
-Use resource selectors to:
+Use CEL resource selectors to:
 - Limit Kubernetes deployments to Kubernetes resources
+- Filter by resource status (e.g., `resource.metadata['status'] == 'running'`)
 - Separate platform-specific deployments
 - Control which resources can receive a deployment
 
 ## Troubleshooting
 
 ### No release targets created
-- Check resource selector matches some resources
+- Check `resourceSelector` CEL expression matches some resources
 - Verify environments have matching resources
-- Ensure deployment and environments are in same system
+- Ensure deployment is linked to a system (via `ctrlplane_deployment_system_link`
+  in Terraform)
 
 ### Jobs not being created for new versions
 - Check version status is `ready`
@@ -614,8 +943,9 @@ Use resource selectors to:
 - Check release target exists
 
 ### Job agent config not working
-- Verify jobAgentConfig structure matches agent type
-- Check version's jobAgentConfig overrides correctly
+- Verify job agent block matches the agent type (e.g., `github {}` for GitHub
+  Actions agents)
+- Check version's `jobAgentConfig` overrides correctly
 - Review job agent logs for configuration errors
 
 ## Next Steps
@@ -624,4 +954,4 @@ Use resource selectors to:
 - [Release Targets](./release-targets) - How the deployment matrix works
 - [CI/CD Integration](../integrations/cicd) - Integrate with your CI system
 - [Job Agents](../integrations/job-agents/github) - Configure deployment executors
-
+- [Policies](../policies/overview) - Control when and how deployments proceed

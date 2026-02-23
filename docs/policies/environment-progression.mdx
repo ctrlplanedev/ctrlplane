@@ -29,29 +29,49 @@ Environment progression rules help you:
 
 ## Configuration
 
-Add an environment progression rule to your policy:
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "staging_requires_qa" {
+  name     = "Staging Requires QA"
+  selector = "environment.name == 'staging'"
 
-```yaml
-policies:
-  - name: staging-requires-qa
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: qa
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'qa'"
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```bash
+curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Staging Requires QA",
+    "selector": "environment.name == '\''staging'\''",
+    "rules": [
+      {
+        "environmentProgression": {
+          "dependsOnEnvironmentSelector": "environment.name == '\''qa'\''"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
 
 ## Properties
 
 <ParamField
   path="environmentProgression.dependsOnEnvironmentSelector"
-  type="object"
+  type="string"
   required
 >
-  Selector for the prerequisite environment(s). The release must be successfully
-  deployed to environments matching this selector before proceeding.
+  CEL expression or selector matching the prerequisite environment(s). The
+  release must be successfully deployed to environments matching this selector
+  before proceeding.
 </ParamField>
 
 <ParamField
@@ -64,7 +84,7 @@ policies:
 </ParamField>
 
 <ParamField path="environmentProgression.successStatuses" type="array">
-  Job statuses considered successful. Defaults to standard success statuses.
+  Job statuses considered successful. Defaults to `["successful"]`.
 </ParamField>
 
 <ParamField
@@ -81,109 +101,222 @@ policies:
   deployment is older than this, progression is blocked until redeployed.
 </ParamField>
 
+## How It Works
+
+1. **Find dependency environments** - Ctrlplane finds all environments matching
+   the selector that share at least one system with the current environment.
+   This prevents cross-system dependency issues.
+2. **Evaluate pass rate** - For each dependency environment, Ctrlplane checks
+   if the success percentage of release targets meets the threshold.
+3. **Check soak time** - If `minimumSoakTimeMinutes` is configured, Ctrlplane
+   verifies that enough time has elapsed since the most recent successful job.
+4. **Check freshness** - If `maximumAgeHours` is configured, Ctrlplane ensures
+   the dependency deployment is not too old.
+5. **OR logic across environments** - If the selector matches multiple
+   environments, the rule passes if **at least one** of them satisfies all
+   criteria.
+
 ## Common Patterns
 
 ### Simple Linear Progression
 
 Enforce QA → Staging → Production order:
 
-```yaml
-policies:
-  # Staging requires QA success
-  - name: staging-requires-qa
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: qa
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "staging_requires_qa" {
+  name     = "Staging Requires QA"
+  selector = "environment.name == 'staging'"
 
-  # Production requires Staging success
-  - name: production-requires-staging
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: staging
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'qa'"
+  }
+}
+
+resource "ctrlplane_policy" "production_requires_staging" {
+  name     = "Production Requires Staging"
+  selector = "environment.name == 'production'"
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'staging'"
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+[
+  {
+    "name": "Staging Requires QA",
+    "selector": "environment.name == 'staging'",
+    "rules": [
+      {
+        "environmentProgression": {
+          "dependsOnEnvironmentSelector": "environment.name == 'qa'"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Production Requires Staging",
+    "selector": "environment.name == 'production'",
+    "rules": [
+      {
+        "environmentProgression": {
+          "dependsOnEnvironmentSelector": "environment.name == 'staging'"
+        }
+      }
+    ]
+  }
+]
+```
+</Tab>
+</Tabs>
 
 ### Soak Time Requirements
 
 Require the release to "soak" in staging before production:
 
-```yaml
-policies:
-  - name: production-soak-requirement
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: staging
-          minimumSoakTimeMinutes: 60 # 1 hour soak in staging
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_soak_requirement" {
+  name     = "Production Soak Requirement"
+  selector = "environment.name == 'production'"
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'staging'"
+    minimum_sock_time_minutes       = 60
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Production Soak Requirement",
+  "selector": "environment.name == 'production'",
+  "rules": [
+    {
+      "environmentProgression": {
+        "dependsOnEnvironmentSelector": "environment.name == 'staging'",
+        "minimumSockTimeMinutes": 60
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ### Freshness Requirements
 
 Block promotion if the staging deployment is too old:
 
-```yaml
-policies:
-  - name: production-freshness
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: staging
-          maximumAgeHours: 24 # Must be deployed to staging within last 24 hours
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_freshness" {
+  name     = "Production Freshness"
+  selector = "environment.name == 'production'"
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'staging'"
+    maximum_age_hours               = 24
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Production Freshness",
+  "selector": "environment.name == 'production'",
+  "rules": [
+    {
+      "environmentProgression": {
+        "dependsOnEnvironmentSelector": "environment.name == 'staging'",
+        "maximumAgeHours": 24
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ### Partial Success Threshold
 
 Allow promotion when most (not all) targets succeed:
 
-```yaml
-policies:
-  - name: staging-partial-success
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: qa
-          minimumSuccessPercentage: 80 # 80% of QA targets must succeed
+```hcl
+resource "ctrlplane_policy" "staging_partial_success" {
+  name     = "Staging Partial Success"
+  selector = "environment.name == 'staging'"
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'qa'"
+    minimum_success_percentage      = 80
+  }
+}
 ```
 
 ### Complete Pipeline with All Options
 
 Full-featured production gate:
 
-```yaml
-policies:
-  - name: production-full-gate
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
-      - environmentProgression:
-          dependsOnEnvironmentSelector:
-            matchLabels:
-              name: staging
-          minimumSuccessPercentage: 100
-          minimumSoakTimeMinutes: 30
-          maximumAgeHours: 48
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_full_gate" {
+  name     = "Production Full Gate"
+  selector = "environment.name == 'production'"
+
+  any_approval {
+    min_approvals = 1
+  }
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'staging'"
+    minimum_success_percentage      = 100
+    minimum_sock_time_minutes       = 30
+    maximum_age_hours               = 48
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Production Full Gate",
+  "selector": "environment.name == 'production'",
+  "rules": [
+    { "anyApproval": { "minApprovals": 1 } },
+    {
+      "environmentProgression": {
+        "dependsOnEnvironmentSelector": "environment.name == 'staging'",
+        "minimumSuccessPercentage": 100,
+        "minimumSockTimeMinutes": 30,
+        "maximumAgeHours": 48
+      }
+    },
+    {
+      "gradualRollout": {
+        "rolloutType": "linear",
+        "timeScaleInterval": 300
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ## Progression Lifecycle
 
@@ -210,34 +343,6 @@ If `minimumSoakTimeMinutes` is set, the clock starts after success.
 
 Once all criteria are met, the version can proceed to the next environment.
 
-## Environment Selector Examples
-
-### By Name
-
-```yaml
-dependsOnEnvironmentSelector:
-  matchLabels:
-    name: staging
-```
-
-### By Multiple Names
-
-```yaml
-dependsOnEnvironmentSelector:
-  matchExpression:
-    - key: name
-      operator: In
-      values: ["qa", "integration"]
-```
-
-### By Metadata
-
-```yaml
-dependsOnEnvironmentSelector:
-  matchLabels:
-    tier: lower
-```
-
 ## Best Practices
 
 ### Timing Guidelines
@@ -260,5 +365,5 @@ dependsOnEnvironmentSelector:
 ## Next Steps
 
 - [Policies Overview](./overview) - Learn about policy structure
-- [Verification](./verification) - Add automated health checks
 - [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
+- [Deployment Dependency](./deployment-dependency) - Cross-deployment gates

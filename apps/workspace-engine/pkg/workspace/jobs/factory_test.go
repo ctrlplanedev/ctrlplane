@@ -343,13 +343,13 @@ func TestFactory_CreateJobForRelease_DispatchContextVariablesPointsToReleaseVari
 	require.Equal(t, "my-app", val)
 }
 
-func TestFactory_CreateJobForRelease_MergesJobAgentConfig(t *testing.T) {
+func TestFactory_CreateJobForRelease_UsesResolvedJobAgentConfig(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
 
 	jobAgentId := "agent-1"
 
-	agentConfig := mustCreateJobAgentConfig(t, `{"shared": "from_agent", "agent_only": "yes"}`)
+	agentConfig := mustCreateJobAgentConfig(t, `{"shared": "resolved", "agent_only": "yes"}`)
 	deployConfig := mustCreateJobAgentConfig(t, `{"shared": "from_deploy", "deploy_only": "yes"}`)
 	versionConfig := oapi.JobAgentConfig{"shared": "from_version", "version_only": "yes"}
 
@@ -377,11 +377,202 @@ func TestFactory_CreateJobForRelease_MergesJobAgentConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	// Version config wins for "shared" since it's applied last
-	require.Equal(t, "from_version", job.JobAgentConfig["shared"])
+	// Factory should now use the already-resolved config on the agent as-is.
+	require.Equal(t, "resolved", job.JobAgentConfig["shared"])
 	require.Equal(t, "yes", job.JobAgentConfig["agent_only"])
-	require.Equal(t, "yes", job.JobAgentConfig["deploy_only"])
-	require.Equal(t, "yes", job.JobAgentConfig["version_only"])
+	require.Nil(t, job.JobAgentConfig["deploy_only"])
+	require.Nil(t, job.JobAgentConfig["version_only"])
+}
+
+func TestFactory_CreateJobForRelease_DeploymentTemplateOverridesAgentTemplate(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	agentConfig := mustCreateJobAgentConfig(t, `{
+		"serverUrl": "argocd.example.com",
+		"apiKey": "agent-token",
+		"template": "agent-template"
+	}`)
+	deployConfig := mustCreateJobAgentConfig(t, `{
+		"template": "deployment-template"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "argocd", agentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deployConfig)
+
+	environment := &oapi.Environment{
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
+	}
+	resource := &oapi.Resource{
+		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
+		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+	}
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+	_ = st.Environments.Upsert(ctx, environment)
+	st.Resources.Upsert(ctx, resource)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, "agent-template", job.JobAgentConfig["template"])
+	require.Equal(t, "argocd.example.com", job.JobAgentConfig["serverUrl"])
+	require.Equal(t, "agent-token", job.JobAgentConfig["apiKey"])
+}
+
+func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentTemplate(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentID := "agent-1"
+
+	agentConfig := mustCreateJobAgentConfig(t, `{
+		"serverUrl": "argocd.example.com",
+		"apiKey": "agent-token",
+		"template": "agent-template"
+	}`)
+	deployConfig := mustCreateJobAgentConfig(t, `{
+		"template": "deployment-template"
+	}`)
+	versionConfig := oapi.JobAgentConfig{
+		"template": "version-template",
+	}
+
+	jobAgent := createTestJobAgent(t, jobAgentID, "argocd", agentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentID, deployConfig)
+
+	environment := &oapi.Environment{
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
+	}
+	resource := &oapi.Resource{
+		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
+		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+	}
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+	_ = st.Environments.Upsert(ctx, environment)
+	st.Resources.Upsert(ctx, resource)
+
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, "agent-template", job.JobAgentConfig["template"])
+	require.Equal(t, "argocd.example.com", job.JobAgentConfig["serverUrl"])
+	require.Equal(t, "agent-token", job.JobAgentConfig["apiKey"])
+}
+
+func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeploymentAgentsConfigured(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	selectedAgentID := "agent-selected"
+	otherAgentID := "agent-other"
+
+	selectedAgentConfig := mustCreateJobAgentConfig(t, `{
+		"serverUrl": "selected.example.com",
+		"apiKey": "selected-token",
+		"template": "selected-agent-template"
+	}`)
+	otherAgentConfig := mustCreateJobAgentConfig(t, `{
+		"template": "other-agent-template"
+	}`)
+	deployConfig := mustCreateJobAgentConfig(t, `{
+		"template": "deployment-template"
+	}`)
+
+	selectedAgent := createTestJobAgent(t, selectedAgentID, "argocd", selectedAgentConfig)
+	otherAgent := createTestJobAgent(t, otherAgentID, "argocd", otherAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &selectedAgentID, deployConfig)
+	deployment.JobAgents = &[]oapi.DeploymentJobAgent{
+		{Ref: selectedAgentID, Selector: "true", Config: oapi.JobAgentConfig{}},
+		{Ref: otherAgentID, Selector: "false", Config: oapi.JobAgentConfig{}},
+	}
+
+	environment := &oapi.Environment{
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
+	}
+	resource := &oapi.Resource{
+		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
+		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+	}
+
+	st.JobAgents.Upsert(ctx, selectedAgent)
+	st.JobAgents.Upsert(ctx, otherAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+	_ = st.Environments.Upsert(ctx, environment)
+	st.Resources.Upsert(ctx, resource)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, selectedAgent, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, "selected-agent-template", job.JobAgentConfig["template"])
+	require.Equal(t, "selected.example.com", job.JobAgentConfig["serverUrl"])
+	require.Equal(t, "selected-token", job.JobAgentConfig["apiKey"])
+}
+
+func TestFactory_CreateJobForRelease_UsesResolvedConfigWithoutReMerge(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentID := "agent-selected"
+
+	agentConfig := mustCreateJobAgentConfig(t, `{
+		"template": "agent-template",
+		"timeout": 30
+	}`)
+	deployConfig := mustCreateJobAgentConfig(t, `{
+		"template": "deployment-template",
+		"retries": 2
+	}`)
+	resolvedConfig := mustCreateJobAgentConfig(t, `{
+		"template": "selected-deployment-agent-template",
+		"timeout": 60,
+		"retries": 2
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentID, "argocd", agentConfig)
+	jobAgent.Config = resolvedConfig
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentID, deployConfig)
+
+	environment := &oapi.Environment{
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
+	}
+	resource := &oapi.Resource{
+		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
+		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+	}
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+	_ = st.Environments.Upsert(ctx, environment)
+	st.Resources.Upsert(ctx, resource)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, "selected-deployment-agent-template", job.JobAgentConfig["template"])
+	require.Equal(t, float64(60), job.JobAgentConfig["timeout"])
+	require.Equal(t, float64(2), job.JobAgentConfig["retries"])
 }
 
 func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testing.T) {
@@ -694,7 +885,7 @@ func TestFactory_CreateJobForRelease_DeepMergesNestedConfig(t *testing.T) {
 	nested, ok := job.JobAgentConfig["nested"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, float64(1), nested["a"])
-	require.Equal(t, float64(3), nested["b"]) // deployment overrides agent
-	require.Equal(t, float64(4), nested["c"])
+	require.Equal(t, float64(2), nested["b"])
+	require.Nil(t, nested["c"])
 	require.Equal(t, "agent", job.JobAgentConfig["top_level"])
 }

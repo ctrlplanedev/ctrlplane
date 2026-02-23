@@ -41,151 +41,268 @@ With policies, you can:
 A policy consists of:
 
 1. **Name & Description** - Identify and document the policy's purpose
-2. **Selectors** - Define which releases the policy applies to
-3. **Rules** - Specify the behavior or requirements
+2. **Selector** - A CEL expression defining which release targets the policy
+   applies to
+3. **Rules** - One or more rules specifying behavior or requirements
+4. **Priority** - Higher priority policies are evaluated first
+5. **Metadata** - Arbitrary key-value pairs for organization
 
-```yaml
-policies:
-  - name: production-gates
-    description: Require verification and approval for production
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - verification:
-          metrics:
-            - name: health-check
-              # ... metric configuration
-      - approval:
-          required: 1
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_gates" {
+  name        = "Production Gates"
+  description = "Require approval and gradual rollout for production"
+  priority    = 10
+  enabled     = true
+
+  selector = "environment.name == 'production'"
+
+  any_approval {
+    min_approvals = 1
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "Production Gates",
+  "description": "Require approval and gradual rollout for production",
+  "priority": 10,
+  "enabled": true,
+  "selector": "environment.name == 'production'",
+  "rules": [
+    {
+      "anyApproval": { "minApprovals": 1 }
+    },
+    {
+      "gradualRollout": {
+        "rolloutType": "linear",
+        "timeScaleInterval": 300
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
 
 ## Policy Selectors
 
-Selectors determine which releases a policy applies to. Policies only affect
-releases that match **all** specified selectors.
+The `selector` field is a CEL expression that determines which release targets
+a policy applies to. Policies only affect releases that match the selector.
 
 ### Environment Selector
 
 Target releases going to specific environments:
 
-```yaml
-selectors:
-  # Single environment
-  - environment: environment.name == "production"
-
-  # Multiple environments
-  - environment: environment.name in ["staging", "production"]
-
-  # Pattern matching
-  - environment: environment.name.startsWith("prod-")
+```
+environment.name == "production"
+environment.name in ["staging", "production"]
+environment.name.startsWith("prod-")
+environment.metadata['tier'] == "critical"
 ```
 
 ### Resource Selector
 
 Target releases for specific resources:
 
-```yaml
-selectors:
-  # By resource kind
-  - resource: resource.kind == "Kubernetes"
-
-  # By resource metadata
-  - resource: resource.metadata.region == "us-east-1"
-
-  # By resource name pattern
-  - resource: resource.name.contains("critical")
+```
+resource.kind == "Kubernetes"
+resource.metadata['region'] == "us-east-1"
+resource.name.contains("critical")
 ```
 
 ### Deployment Selector
 
 Target releases for specific deployments:
 
-```yaml
-selectors:
-  # By deployment name
-  - deployment: deployment.name == "api-service"
-
-  # By deployment metadata
-  - deployment: deployment.metadata.team == "platform"
+```
+deployment.name == "api-service"
+deployment.metadata['team'] == "platform"
 ```
 
 ### Combined Selectors
 
-Combine multiple selectors (all must match):
+Combine conditions with `&&` (AND) and `||` (OR):
 
-```yaml
-selectors:
-  - environment: environment.name == "production"
-  - deployment: deployment.metadata.tier == "critical"
-  - resource: resource.kind == "Kubernetes"
+```
+environment.name == "production" && deployment.metadata['tier'] == "critical"
 ```
 
 ## Policy Rules
 
-Rules define what the policy enforces. Multiple rules can be combined in a
-single policy.
-
-### Verification Rule
-
-Run automated checks after deployment:
-
-```yaml
-rules:
-  - verification:
-      metrics:
-        - name: error-rate
-          interval: 1m
-          count: 5
-          provider:
-            type: datadog
-            apiKey: "{{.variables.dd_api_key}}"
-            appKey: "{{.variables.dd_app_key}}"
-            query: sum:errors{service:{{.resource.name}}}
-          successCondition: result.value < 0.01
-```
-
-See [Verification](./verification) for detailed configuration options.
-
-### Gradual Rollout Rule
-
-Control the pace of deployments across multiple targets:
-
-```yaml
-rules:
-  - gradualRollout:
-      rolloutType: linear
-      timeScaleInterval: 300 # 5 minutes between batches
-```
-
-See [Gradual Rollouts](./gradual-rollouts) for detailed configuration options.
+Rules define what the policy enforces. A single policy can contain multiple
+rules across different types. Each rule in the `rules` array contains exactly
+one rule type.
 
 ### Approval Rule
 
 Require manual approval before deployment:
 
-```yaml
-rules:
-  - approval:
-      required: 1 # Number of approvals needed
-      allowedUsers:
-        - user@example.com
-      allowedGroups:
-        - platform-team
+| API Field                 | Terraform Attribute | Description               |
+| ------------------------- | ------------------- | ------------------------- |
+| `anyApproval.minApprovals`| `min_approvals`     | Number of approvals needed|
+
+See [Approval](./approval) for details.
+
+### Environment Progression Rule
+
+Require successful deployment to a prerequisite environment:
+
+| API Field                                             | Terraform Attribute                  | Description                         |
+| ----------------------------------------------------- | ------------------------------------ | ----------------------------------- |
+| `environmentProgression.dependsOnEnvironmentSelector` | `depends_on_environment_selector`    | CEL matching prerequisite env       |
+| `environmentProgression.minimumSuccessPercentage`     | `minimum_success_percentage`         | Required success % (0-100)          |
+| `environmentProgression.minimumSockTimeMinutes`       | `minimum_sock_time_minutes`          | Soak time after success             |
+| `environmentProgression.maximumAgeHours`              | `maximum_age_hours`                  | Max age of dependency deployment    |
+
+See [Environment Progression](./environment-progression) for details.
+
+### Gradual Rollout Rule
+
+Control the pace of deployments across multiple targets:
+
+| API Field                          | Terraform Attribute    | Description                           |
+| ---------------------------------- | ---------------------- | ------------------------------------- |
+| `gradualRollout.rolloutType`       | `rollout_type`         | `"linear"` or `"linear-normalized"`   |
+| `gradualRollout.timeScaleInterval` | `time_scale_interval`  | Seconds between targets / total time  |
+
+See [Gradual Rollouts](./gradual-rollouts) for details.
+
+### Deployment Dependency Rule
+
+Require upstream deployments to succeed first:
+
+| API Field                     | Terraform Attribute    | Description                     |
+| ----------------------------- | ---------------------- | ------------------------------- |
+| `deploymentDependency.dependsOn` | `depends_on_selector` | CEL matching upstream deployment|
+
+See [Deployment Dependency](./deployment-dependency) for details.
+
+### Deployment Window Rule
+
+Control when deployments are allowed using time-based schedules:
+
+| API Field                         | Terraform Attribute | Description                            |
+| --------------------------------- | ------------------- | -------------------------------------- |
+| `deploymentWindow.rrule`          | `rrule`             | RFC 5545 recurrence rule               |
+| `deploymentWindow.durationMinutes`| `duration_minutes`  | Window duration in minutes             |
+| `deploymentWindow.timezone`       | `timezone`          | IANA timezone                          |
+| `deploymentWindow.allowWindow`    | `allow_window`      | Allow during window (deny if false)    |
+
+See [Deployment Window](./deployment-window) for details.
+
+### Version Cooldown Rule
+
+Batch frequent releases by enforcing a minimum time between deployments:
+
+| API Field                          | Terraform Attribute | Description                        |
+| ---------------------------------- | ------------------- | ---------------------------------- |
+| `versionCooldown.intervalSeconds`  | `duration`          | Minimum time between deploys       |
+
+See [Version Cooldown](./version-cooldown) for details.
+
+### Retry Rule
+
+Configure automatic retry behavior for failed jobs:
+
+| API Field                   | Terraform Attribute | Description                          |
+| --------------------------- | ------------------- | ------------------------------------ |
+| `retry.maxRetries`          | *Not available*     | Maximum retry attempts               |
+| `retry.backoffSeconds`      | *Not available*     | Seconds between retries              |
+| `retry.backoffStrategy`     | *Not available*     | `"linear"` or `"exponential"`        |
+| `retry.maxBackoffSeconds`   | *Not available*     | Backoff cap                          |
+| `retry.retryOnStatuses`     | *Not available*     | Which statuses trigger retry         |
+
+See [Retry](./retry) for details.
+
+### Version Selector Rule
+
+Filter which versions can deploy to specific targets:
+
+| API Field                       | Terraform Attribute | Description                      |
+| ------------------------------- | ------------------- | -------------------------------- |
+| `versionSelector.selector`      | *Not available*     | CEL expression or JSON selector  |
+| `versionSelector.description`   | *Not available*     | Human-readable description       |
+
+See [Version Selector](./version-selector) for details.
+
+### Verification Rule
+
+Run automated checks after deployment:
+
+See [Verification](./verification) for detailed configuration options.
+
+## Terraform Provider Reference
+
+The Terraform provider supports the following policy blocks:
+
+| Block                      | Description                                    |
+| -------------------------- | ---------------------------------------------- |
+| `any_approval`             | Require manual approvals                       |
+| `environment_progression`  | Require success in prerequisite environments   |
+| `gradual_rollout`          | Stagger deployments over time                  |
+| `deployment_dependency`    | Require upstream deployments to succeed first  |
+| `deployment_window`        | Time-based deployment scheduling               |
+| `version_cooldown`         | Batch frequent releases                        |
+| `verification`             | Automated health checks                        |
+
+<Note>
+  `retry` and `version_selector` are not yet available in the Terraform
+  provider. Use the REST API for these rule types.
+</Note>
+
+## REST API Reference
+
+**Create a policy:**
+
 ```
+POST /v1/workspaces/{workspaceId}/policies
+```
+
+**Get/Update/Delete a policy:**
+
+```
+GET    /v1/workspaces/{workspaceId}/policies/{policyId}
+PUT    /v1/workspaces/{workspaceId}/policies/{policyId}
+DELETE /v1/workspaces/{workspaceId}/policies/{policyId}
+```
+
+**List policies:**
+
+```
+GET /v1/workspaces/{workspaceId}/policies
+```
+
+Each rule in the `rules` array is an object with exactly one rule-type key
+(e.g., `anyApproval`, `gradualRollout`, `deploymentWindow`).
 
 ## Policy Evaluation
 
 When a release is created, Ctrlplane:
 
-1. **Finds matching policies** - Evaluates selectors against the release
+1. **Finds matching policies** - Evaluates the `selector` CEL expression
+   against each release target
 2. **Merges rules** - Combines rules from all matching policies
-3. **Applies rules** - Enforces each rule type in order
+3. **Applies rules** - Enforces each rule type
 
-### Rule Execution Order
+### Rule Interactions
 
-1. **Approval rules** - Must be satisfied first
-2. **Gradual rollout rules** - Control deployment timing
-3. **Verification rules** - Run after deployment completes
+- **Approval + Gradual Rollout**: The rollout start time is determined by when
+  the approval was satisfied
+- **Environment Progression + Gradual Rollout**: The rollout waits until
+  progression criteria are met
+- **Deployment Window + Gradual Rollout**: Allow windows push the rollout start
+  to the window opening; deny windows pause the rollout
+- **Version Cooldown + Deployment Window**: Both must be satisfied -- cooldown
+  determines which version, window determines when
 
 ## Common Patterns
 
@@ -193,92 +310,95 @@ When a release is created, Ctrlplane:
 
 Different requirements per environment:
 
-```yaml
-policies:
-  # QA: Light verification
-  - name: qa-policy
-    selectors:
-      - environment: environment.name == "qa"
-    rules:
-      - verification:
-          metrics:
-            - name: smoke-test
-              interval: 30s
-              count: 3
-              provider:
-                type: http
-                url: "http://{{.resource.name}}/health"
-              successCondition: result.ok
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "staging_policy" {
+  name     = "Staging Policy"
+  selector = "environment.name == 'staging'"
 
-  # Staging: More thorough verification
-  - name: staging-policy
-    selectors:
-      - environment: environment.name == "staging"
-    rules:
-      - verification:
-          metrics:
-            - name: integration-tests
-              interval: 1m
-              count: 5
-              provider:
-                type: http
-                url: "http://test-runner/run?service={{.resource.name}}"
-              successCondition: result.json.passed == true
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'qa'"
+  }
+}
 
-  # Production: Full gates
-  - name: production-policy
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300
-      - verification:
-          metrics:
-            - name: error-rate
-              interval: 2m
-              count: 5
-              provider:
-                type: datadog
-                apiKey: "{{.variables.dd_api_key}}"
-                appKey: "{{.variables.dd_app_key}}"
-                query: sum:errors{service:{{.resource.name}},env:prod}
-              successCondition: result.value < 0.01
+resource "ctrlplane_policy" "production_policy" {
+  name     = "Production Policy"
+  selector = "environment.name == 'production'"
+
+  any_approval {
+    min_approvals = 1
+  }
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'staging'"
+    minimum_sock_time_minutes       = 30
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
+  }
+}
 ```
+</Tab>
+<Tab title="API">
+```json
+[
+  {
+    "name": "Staging Policy",
+    "selector": "environment.name == 'staging'",
+    "rules": [
+      {
+        "environmentProgression": {
+          "dependsOnEnvironmentSelector": "environment.name == 'qa'"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Production Policy",
+    "selector": "environment.name == 'production'",
+    "rules": [
+      { "anyApproval": { "minApprovals": 1 } },
+      {
+        "environmentProgression": {
+          "dependsOnEnvironmentSelector": "environment.name == 'staging'",
+          "minimumSockTimeMinutes": 30
+        }
+      },
+      {
+        "gradualRollout": {
+          "rolloutType": "linear",
+          "timeScaleInterval": 300
+        }
+      }
+    ]
+  }
+]
+```
+</Tab>
+</Tabs>
 
 ### Critical Service Protection
 
 Extra protection for critical services:
 
-```yaml
-policies:
-  - name: critical-service-gates
-    selectors:
-      - deployment: deployment.metadata.tier == "critical"
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 2
-          allowedGroups:
-            - sre-team
-            - service-owners
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 600 # 10 minutes
-      - verification:
-          metrics:
-            - name: error-rate
-              interval: 1m
-              count: 10
-              provider:
-                type: datadog
-                apiKey: "{{.variables.dd_api_key}}"
-                appKey: "{{.variables.dd_app_key}}"
-                query: sum:errors{service:{{.resource.name}}}
-              successCondition: result.value < 0.001
-              failureLimit: 1
+```hcl
+resource "ctrlplane_policy" "critical_service_gates" {
+  name     = "Critical Service Gates"
+  selector = "deployment.metadata['tier'] == 'critical' && environment.name == 'production'"
+  priority = 20
+
+  any_approval {
+    min_approvals = 2
+  }
+
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 600
+  }
+}
 ```
 
 ## Best Practices
@@ -289,6 +409,7 @@ policies:
 - ✅ Document policy purpose in description
 - ✅ Start with permissive policies and tighten over time
 - ✅ Test policies in lower environments first
+- ✅ Use `priority` to control evaluation order for overlapping policies
 
 ### Selector Design
 
@@ -303,6 +424,7 @@ policies:
 - ✅ Use verification to catch issues before they impact users
 - ✅ Require approvals for high-risk deployments
 - ✅ Use gradual rollouts for large-scale deployments
+- ✅ Combine complementary rules (e.g., approval + gradual rollout)
 
 ## Next Steps
 
@@ -313,7 +435,5 @@ policies:
   order
 - [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
 - [Retry](./retry) - Configure automatic retry behavior
-- [Verification](./verification) - Automated post-deployment checks
 - [Version Cooldown](./version-cooldown) - Batch frequent releases
 - [Version Selector](./version-selector) - Filter deployable versions
-- [Selectors](../concepts/selectors) - Deep dive into selector syntax

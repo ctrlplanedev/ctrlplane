@@ -2,17 +2,15 @@ import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 import { trpc } from "~/api/trpc";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { useDeployment } from "../../_components/DeploymentProvider";
 
-export const useJobAgent = () => {
+export const useJobAgent = (jobAgentId: string) => {
   const { workspace } = useWorkspace();
-  const { deployment } = useDeployment();
-  const jobAgentQuery = trpc.jobAgents.get.useQuery(
-    { workspaceId: workspace.id, jobAgentId: deployment.jobAgentId ?? "" },
-    { enabled: deployment.jobAgentId != null },
-  );
+  const jobAgentQuery = trpc.jobAgents.get.useQuery({
+    workspaceId: workspace.id,
+    jobAgentId,
+  });
 
-  return jobAgentQuery.data ?? null;
+  return { jobAgent: jobAgentQuery.data, isLoading: jobAgentQuery.isLoading };
 };
 
 export const useAllJobAgents = () => {
