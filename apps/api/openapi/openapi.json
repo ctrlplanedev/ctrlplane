@@ -2506,7 +2506,7 @@
                },
                "rules": {
                   "items": {
-                     "$ref": "#/components/schemas/CreatePolicyRule"
+                     "$ref": "#/components/schemas/UpsertPolicyRule"
                   },
                   "type": "array"
                },
@@ -2523,6 +2523,47 @@
                "enabled",
                "metadata"
             ],
+            "type": "object"
+         },
+         "UpsertPolicyRule": {
+            "properties": {
+               "anyApproval": {
+                  "$ref": "#/components/schemas/AnyApprovalRule"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "deploymentDependency": {
+                  "$ref": "#/components/schemas/DeploymentDependencyRule"
+               },
+               "deploymentWindow": {
+                  "$ref": "#/components/schemas/DeploymentWindowRule"
+               },
+               "environmentProgression": {
+                  "$ref": "#/components/schemas/EnvironmentProgressionRule"
+               },
+               "gradualRollout": {
+                  "$ref": "#/components/schemas/GradualRolloutRule"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "policyId": {
+                  "type": "string"
+               },
+               "retry": {
+                  "$ref": "#/components/schemas/RetryRule"
+               },
+               "verification": {
+                  "$ref": "#/components/schemas/VerificationRule"
+               },
+               "versionCooldown": {
+                  "$ref": "#/components/schemas/VersionCooldownRule"
+               },
+               "versionSelector": {
+                  "$ref": "#/components/schemas/VersionSelectorRule"
+               }
+            },
             "type": "object"
          },
          "UpsertRelationshipRuleRequest": {
