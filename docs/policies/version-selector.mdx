@@ -32,6 +32,19 @@ Version selector rules help you:
 ## Configuration
 
 <Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "production_stable" {
+  name     = "Production Stable Only"
+  selector = "environment.name == 'production'"
+
+  version_selector {
+    selector    = "!version.tag.contains('-rc')"
+    description = "Only stable versions (no release candidates)"
+  }
+}
+```
+</Tab>
 <Tab title="API">
 ```bash
 curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
@@ -52,11 +65,6 @@ curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
 ```
 </Tab>
 </Tabs>
-
-<Note>
-  Version selector rules are not yet supported in the Terraform provider. Use
-  the REST API to configure version selectors.
-</Note>
 
 ## Properties
 
