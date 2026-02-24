@@ -89,9 +89,9 @@ const upsertPolicy: AsyncTypedHandler<
     metadata: body.metadata,
     rules: body.rules.map((rule) => ({
       ...rule,
-      id: uuidv4(),
+      id: rule.id ?? uuidv4(),
       policyId,
-      createdAt,
+      createdAt: rule.createdAt ?? createdAt,
     })),
     selector: body.selector,
   };

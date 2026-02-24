@@ -1753,9 +1753,23 @@ export interface components {
             };
             name: string;
             priority: number;
-            rules: components["schemas"]["CreatePolicyRule"][];
+            rules: components["schemas"]["UpsertPolicyRule"][];
             /** @description CEL expression for matching release targets. Use "true" to match all targets. */
             selector: string;
+        };
+        UpsertPolicyRule: {
+            anyApproval?: components["schemas"]["AnyApprovalRule"];
+            createdAt?: string;
+            deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
+            deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
+            environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
+            gradualRollout?: components["schemas"]["GradualRolloutRule"];
+            id?: string;
+            policyId?: string;
+            retry?: components["schemas"]["RetryRule"];
+            verification?: components["schemas"]["VerificationRule"];
+            versionCooldown?: components["schemas"]["VersionCooldownRule"];
+            versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         UpsertRelationshipRuleRequest: {
             description?: string;
