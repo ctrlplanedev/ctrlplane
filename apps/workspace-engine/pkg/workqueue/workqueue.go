@@ -2,6 +2,7 @@ package workqueue
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -78,6 +79,9 @@ type EnqueueParams struct {
 	Kind        string
 	ScopeType   string
 	ScopeID     string
+	PayloadType string
+	PayloadKey  string
+	Payload     any
 	EventTS     time.Time
 	Priority    int16
 	NotBefore   time.Time
@@ -112,12 +116,19 @@ type RetryParams struct {
 	RetryBackoff time.Duration
 }
 
+type Payload struct {
+	Type  string
+	Key   string
+	Value json.RawMessage
+}
+
 type Item struct {
 	ID           int64
 	WorkspaceID  string
 	Kind         string
 	ScopeType    string
 	ScopeID      string
+	Payloads     []Payload
 	EventTS      time.Time
 	Priority     int16
 	NotBefore    time.Time
