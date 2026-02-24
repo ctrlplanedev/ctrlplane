@@ -115,16 +115,16 @@ func TestDeploymentWindowEvaluator_NewEvaluator_NilRule(t *testing.T) {
 	st := setupStore()
 
 	// Nil policy rule
-	eval := NewEvaluator(st, nil)
+	eval := NewEvaluatorFromStore(st, nil)
 	assert.Nil(t, eval, "expected nil evaluator for nil policy rule")
 
 	// Nil deployment window in rule
 	rule := &oapi.PolicyRule{Id: "rule-1"}
-	eval = NewEvaluator(st, rule)
+	eval = NewEvaluatorFromStore(st, rule)
 	assert.Nil(t, eval, "expected nil evaluator for rule without deployment window")
 
 	// Nil store
-	eval = NewEvaluator(nil, &oapi.PolicyRule{
+	eval = NewEvaluatorFromStore(nil, &oapi.PolicyRule{
 		Id: "rule-1",
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=DAILY",
@@ -145,7 +145,7 @@ func TestDeploymentWindowEvaluator_NewEvaluator_InvalidRRule(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	assert.Nil(t, eval, "expected nil evaluator for invalid rrule")
 }
 
@@ -160,7 +160,7 @@ func TestDeploymentWindowEvaluator_ScopeFields(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	// Deployment window needs release target to check for existing deployments
@@ -178,7 +178,7 @@ func TestDeploymentWindowEvaluator_RuleType(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	assert.Equal(t, evaluator.RuleTypeDeploymentWindow, eval.RuleType())
@@ -195,7 +195,7 @@ func TestDeploymentWindowEvaluator_RuleId(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	assert.Equal(t, "test-rule-123", eval.RuleId())
@@ -215,7 +215,7 @@ func TestDeploymentWindowEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -240,7 +240,7 @@ func TestDeploymentWindowEvaluator_AllowWindow_DefaultTrue(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -263,7 +263,7 @@ func TestDeploymentWindowEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -292,7 +292,7 @@ func TestDeploymentWindowEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -316,7 +316,7 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, releaseTarget := setupReleaseTarget(t, st)
@@ -345,7 +345,7 @@ func TestDeploymentWindowEvaluator_NextEvaluationTime(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -368,7 +368,7 @@ func TestDeploymentWindowEvaluator_ResultDetails(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -395,7 +395,7 @@ func TestDeploymentWindowEvaluator_Timezone(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator with valid timezone")
 
 	// Test with invalid timezone (should fall back to UTC)
@@ -409,7 +409,7 @@ func TestDeploymentWindowEvaluator_Timezone(t *testing.T) {
 		},
 	}
 
-	eval2 := NewEvaluator(st, rule2)
+	eval2 := NewEvaluatorFromStore(st, rule2)
 	require.NotNil(t, eval2, "expected non-nil evaluator with invalid timezone (falls back to UTC)")
 }
 
@@ -444,7 +444,7 @@ func TestDeploymentWindowEvaluator_Timezone_VariousTimezones(t *testing.T) {
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for timezone: %s", tz)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -468,7 +468,7 @@ func TestDeploymentWindowEvaluator_Timezone_NilTimezone(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator with nil timezone")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -491,7 +491,7 @@ func TestDeploymentWindowEvaluator_Timezone_EmptyString(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator with empty timezone string")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -527,7 +527,7 @@ func TestDeploymentWindowEvaluator_Timezone_InvalidTimezones(t *testing.T) {
 			}
 
 			// Should still create evaluator (falls back to UTC)
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator even with invalid timezone: %s", tz)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -564,7 +564,7 @@ func TestDeploymentWindowEvaluator_Timezone_USBusinessHours(t *testing.T) {
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s timezone", tc.name)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -602,7 +602,7 @@ func TestDeploymentWindowEvaluator_Timezone_EuropeanBusinessHours(t *testing.T) 
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s timezone", tc.name)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -639,7 +639,7 @@ func TestDeploymentWindowEvaluator_Timezone_AsiaPacificBusinessHours(t *testing.
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s timezone", tc.name)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -677,7 +677,7 @@ func TestDeploymentWindowEvaluator_Timezone_MaintenanceWindowWithTimezone(t *tes
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s", tc.description)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -713,7 +713,7 @@ func TestDeploymentWindowEvaluator_Timezone_DSTAwareTimezones(t *testing.T) {
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for DST-aware timezone: %s", tz)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -748,7 +748,7 @@ func TestDeploymentWindowEvaluator_Timezone_NonDSTTimezones(t *testing.T) {
 				},
 			}
 
-			eval := NewEvaluator(st, rule)
+			eval := NewEvaluatorFromStore(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for non-DST timezone: %s", tz)
 
 			ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -769,7 +769,7 @@ func TestDeploymentWindowEvaluator_Complexity(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	assert.Equal(t, 2, eval.Complexity())
@@ -820,7 +820,7 @@ func TestDeploymentWindowEvaluator_WeeklyBusinessHours(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator for business hours rule")
 
 	// Just verify it can evaluate without error
@@ -844,7 +844,7 @@ func TestDeploymentWindowEvaluator_MaintenanceWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator for maintenance window rule")
 
 	// Just verify it can evaluate without error
@@ -867,7 +867,7 @@ func TestDeploymentWindowEvaluator_ActionRequired(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -890,7 +890,7 @@ func TestDeploymentWindowEvaluator_MemoizationWorks(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -916,7 +916,7 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_AllowWindowInside(t *testing
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -953,7 +953,7 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowInside(t *testing.
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -991,7 +991,7 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowOutside(t *testing
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -1028,7 +1028,7 @@ func TestDeploymentWindowEvaluator_DailyBYHOUR_DetectsInsideWindow(t *testing.T)
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -1056,7 +1056,7 @@ func TestDeploymentWindowEvaluator_DailyBYHOUR_DenyWindow_DetectsInsideWindow(t 
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
@@ -1080,7 +1080,7 @@ func TestDeploymentWindowEvaluator_TimeRemainingFormat(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)

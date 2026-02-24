@@ -47,7 +47,7 @@ func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 		gradualrollout.NewEvaluatorFromStore(m.store, rule),
 		versionselector.NewEvaluator(rule),
 		deploymentdependency.NewEvaluator(m.store, rule),
-		deploymentwindow.NewEvaluator(m.store, rule),
+		deploymentwindow.NewEvaluatorFromStore(m.store, rule),
 		versioncooldown.NewEvaluatorFromStore(m.store, rule),
 	)
 }
@@ -59,13 +59,7 @@ func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
 }
 
 func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
-	return evaluator.CollectEvaluators(
-		deploymentwindow.NewSummaryEvaluator(m.store, rule),
-		approval.NewEvaluatorFromStore(m.store, rule),
-		environmentprogression.NewEvaluatorFromStore(m.store, rule),
-		gradualrollout.NewSummaryEvaluatorFromStore(m.store, rule),
-		versioncooldown.NewSummaryEvaluatorFromStore(m.store, rule),
-	)
+	return EvaluatorsForSummary(m.store, rule)
 }
 
 // evalTask pairs an evaluator with the rule ID it belongs to, so results can

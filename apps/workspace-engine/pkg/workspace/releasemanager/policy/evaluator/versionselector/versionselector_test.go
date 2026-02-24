@@ -71,21 +71,7 @@ func TestNewEvaluator(t *testing.T) {
 		assert.Nil(t, eval)
 	})
 
-	t.Run("returns nil when store is nil", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-		rule := &oapi.PolicyRule{
-			Id: "versionSelector",
-			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
-			},
-		}
-		eval := NewEvaluator(rule)
-		assert.Nil(t, eval)
-	})
-
-	t.Run("returns evaluator when both rule and store are provided", func(t *testing.T) {
+	t.Run("returns evaluator when rule has version selector", func(t *testing.T) {
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 

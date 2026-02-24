@@ -20,23 +20,30 @@ var _ evaluator.Evaluator = &DeploymentWindowEvaluator{}
 // DeploymentWindowEvaluator evaluates whether the current time is within a deployment window
 // defined by an rrule pattern.
 type DeploymentWindowEvaluator struct {
-	store    *store.Store
+	getters  Getters
 	ruleId   string
 	rule     *oapi.DeploymentWindowRule
 	rrule    *rrule.RRule
 	location *time.Location
 }
 
+// NewEvaluatorFromStore creates a new DeploymentWindowEvaluator from a store and policy rule.
+func NewEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if store == nil {
+		return nil
+	}
+	return NewEvaluator(&storeGetters{store: store}, policyRule)
+}
+
 // NewEvaluator creates a new DeploymentWindowEvaluator from a policy rule.
 // Returns nil if the rule doesn't contain a deployment window configuration.
-func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
-	if policyRule == nil || policyRule.DeploymentWindow == nil || store == nil {
+func NewEvaluator(getters Getters, policyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if policyRule == nil || policyRule.DeploymentWindow == nil || getters == nil {
 		return nil
 	}
 
 	rule := policyRule.DeploymentWindow
 
-	// Parse timezone, default to UTC
 	loc := time.UTC
 	if rule.Timezone != nil && *rule.Timezone != "" {
 		parsedLoc, err := time.LoadLocation(*rule.Timezone)
@@ -45,15 +52,11 @@ func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Eva
 		}
 	}
 
-	// Parse the rrule string
 	r, err := rrule.StrToRRule(rule.Rrule)
 	if err != nil {
-		// Return nil if rrule is invalid - this will be filtered out by CollectEvaluators
 		return nil
 	}
 
-	// Set DTSTART far enough in the past to find previous occurrences
-	// that might still have open windows (matching the utility functions).
 	duration := time.Duration(rule.DurationMinutes) * time.Minute
 	lookbackStart := time.Now().In(loc).Add(-duration).Add(-24 * time.Hour * 7)
 	if r.OrigOptions.Dtstart.IsZero() || r.OrigOptions.Dtstart.After(lookbackStart) {
@@ -61,7 +64,7 @@ func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Eva
 	}
 
 	return evaluator.WithMemoization(&DeploymentWindowEvaluator{
-		store:    store,
+		getters:  getters,
 		ruleId:   policyRule.Id,
 		rule:     rule,
 		rrule:    r,
@@ -114,8 +117,7 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 	_, span := tracer.Start(ctx, "DeploymentWindowEvaluator.Evaluate")
 	defer span.End()
 
-	_, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, scope.ReleaseTarget())
-	if err != nil {
+	if !e.getters.HasCurrentRelease(ctx, scope.ReleaseTarget()) {
 		return results.NewAllowedResult("No previous version deployed - deployment window ignored").
 			WithDetail("reason", "first_deployment")
 	}

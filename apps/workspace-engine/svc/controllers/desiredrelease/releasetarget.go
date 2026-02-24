@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/google/uuid"
 )
@@ -51,4 +52,20 @@ func (rt *ReleaseTarget) Environment(ctx context.Context) (db.Environment, error
 
 func (rt *ReleaseTarget) Resource(ctx context.Context) (db.Resource, error) {
 	return db.Resource{}, fmt.Errorf("not implemented")
+}
+
+func (rt *ReleaseTarget) Scope(ctx context.Context) (evaluator.EvaluatorScope, error) {
+	_, err := rt.Environment(ctx)
+	if err != nil {
+		return evaluator.EvaluatorScope{}, err
+	}
+	_, err = rt.Resource(ctx)
+	if err != nil {
+		return evaluator.EvaluatorScope{}, err
+	}
+	_, err = rt.Deployment(ctx)
+	if err != nil {
+		return evaluator.EvaluatorScope{}, err
+	}
+	return evaluator.EvaluatorScope{}, nil
 }

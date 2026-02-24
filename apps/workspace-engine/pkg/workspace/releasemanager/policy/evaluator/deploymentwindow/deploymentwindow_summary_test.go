@@ -16,15 +16,15 @@ func TestNewSummaryEvaluator_NilInputs(t *testing.T) {
 	st := setupStore()
 
 	// Nil rule
-	assert.Nil(t, NewSummaryEvaluator(st, nil))
+	assert.Nil(t, NewSummaryEvaluatorFromStore(st, nil))
 
 	// Nil store
 	rule := &oapi.PolicyRule{Id: "r1", DeploymentWindow: &oapi.DeploymentWindowRule{}}
-	assert.Nil(t, NewSummaryEvaluator(nil, rule))
+	assert.Nil(t, NewSummaryEvaluatorFromStore(nil, rule))
 
 	// No deployment window on rule
 	ruleNoWindow := &oapi.PolicyRule{Id: "r2"}
-	assert.Nil(t, NewSummaryEvaluator(st, ruleNoWindow))
+	assert.Nil(t, NewSummaryEvaluatorFromStore(st, ruleNoWindow))
 }
 
 func TestNewSummaryEvaluator_InvalidRRule(t *testing.T) {
@@ -37,7 +37,7 @@ func TestNewSummaryEvaluator_InvalidRRule(t *testing.T) {
 		},
 	}
 	// Invalid rrule should return nil
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	assert.Nil(t, eval)
 }
 
@@ -57,7 +57,7 @@ func TestSummaryEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	assert.Equal(t, evaluator.RuleTypeDeploymentWindow, eval.RuleType())
@@ -99,7 +99,7 @@ func TestSummaryEvaluator_AllowWindow_OutsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	// This might be nil if current time happens to be in that window, but very unlikely
 	if eval == nil {
 		t.Skip("rrule might not parse or window might match")
@@ -143,7 +143,7 @@ func TestSummaryEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	if eval == nil {
 		t.Skip("rrule might not parse")
 	}
@@ -184,7 +184,7 @@ func TestSummaryEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	version := &oapi.DeploymentVersion{
@@ -223,7 +223,7 @@ func TestSummaryEvaluator_WithTimezone(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	version := &oapi.DeploymentVersion{
@@ -261,7 +261,7 @@ func TestSummaryEvaluator_DefaultAllowWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval)
 
 	version := &oapi.DeploymentVersion{
