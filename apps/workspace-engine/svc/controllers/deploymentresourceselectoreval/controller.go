@@ -113,7 +113,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
-	kind := "deploymentresourceselectoreval"
+	kind := "deployment-resource-selector-eval"
 	controller := &Controller{}
 	worker, err := reconcile.NewWorker(
 		kind,
