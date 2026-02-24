@@ -469,8 +469,9 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -1648,8 +1649,9 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	minSuccessPercentage := float32(100.0)
 	policy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -2370,8 +2372,9 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 
 	// Create approval policy requiring 2 approvals, but only provide 1
 	approvalPolicy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
