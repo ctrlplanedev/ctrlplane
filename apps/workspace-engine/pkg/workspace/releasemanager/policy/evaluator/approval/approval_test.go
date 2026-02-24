@@ -46,7 +46,7 @@ func TestAnyApprovalEvaluator_EnoughApprovals(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3"})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	version := &oapi.DeploymentVersion{Id: versionId}
@@ -75,7 +75,7 @@ func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{"user-1"})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -103,7 +103,7 @@ func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{"user-1", "user-2"})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -130,7 +130,7 @@ func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -154,7 +154,7 @@ func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -207,7 +207,7 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Test version-1 (2 approvals, should pass)
@@ -241,7 +241,7 @@ func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{"user-1"})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -272,7 +272,7 @@ func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3", "user-4", "user-5"})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -340,7 +340,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 	})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -394,7 +394,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 	}
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -447,7 +447,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
 	})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -491,7 +491,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
 	})
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -530,7 +530,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
 	}
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	environment, _ := st.Environments.Get(environmentId)
 
@@ -597,7 +597,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	expectedSatisfiedAt := baseTime.Add(10 * time.Minute) // This is the 2nd approval chronologically
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
@@ -668,7 +668,7 @@ func TestAnyApprovalEvaluator_OlderVersionAllowed(t *testing.T) {
 		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
 		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	environment, _ := st.Environments.Get(environmentId)
@@ -707,7 +707,7 @@ func TestAnyApprovalEvaluator_EmptyRuleCreatedAt(t *testing.T) {
 		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
 		CreatedAt:   "",
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	environment, _ := st.Environments.Get(environmentId)
@@ -826,7 +826,7 @@ func TestParseTimestamp_BackwardsCompatibility_Integration(t *testing.T) {
 		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
 		CreatedAt:   "2025-11-04T01:39:37.265927", // No timezone suffix
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	environment, _ := st.Environments.Get(environmentId)
