@@ -112,7 +112,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Conte
 		return &scope.Version.CreatedAt
 	}
 
-	approvalEvaluator := approval.NewEvaluator(e.store, rule)
+	approvalEvaluator := approval.NewEvaluatorFromStore(e.store, rule)
 	if approvalEvaluator == nil {
 		return nil
 	}
