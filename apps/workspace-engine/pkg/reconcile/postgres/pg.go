@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/workqueue"
-	sqldb "workspace-engine/pkg/workqueue/postgres/db"
+	"workspace-engine/pkg/reconcile"
+	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -17,7 +17,7 @@ import (
 
 const defaultPriority int16 = 100
 
-// Queue implements workqueue.Queue using a two-table PostgreSQL model:
+// Queue implements reconcile.Queue using a two-table PostgreSQL model:
 // - reconcile_work_scope: leasing and scheduling per logical scope key
 // - reconcile_work_payload: payload variants attached to a scope
 type Queue struct {
@@ -44,12 +44,12 @@ func NewForKinds(pool *pgxpool.Pool, kinds ...string) *Queue {
 	}
 }
 
-func (q *Queue) Enqueue(ctx context.Context, params workqueue.EnqueueParams) error {
+func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) error {
 	if params.WorkspaceID == "" {
-		return workqueue.ErrMissingWorkspaceID
+		return reconcile.ErrMissingWorkspaceID
 	}
 	if params.Kind == "" {
-		return workqueue.ErrMissingKind
+		return reconcile.ErrMissingKind
 	}
 
 	eventTS := params.EventTS
@@ -97,18 +97,18 @@ func (q *Queue) Enqueue(ctx context.Context, params workqueue.EnqueueParams) err
 	return nil
 }
 
-func (q *Queue) Claim(ctx context.Context, params workqueue.ClaimParams) ([]workqueue.Item, error) {
+func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reconcile.Item, error) {
 	if params.WorkerID == "" {
-		return nil, workqueue.ErrMissingWorkerID
+		return nil, reconcile.ErrMissingWorkerID
 	}
 	if params.BatchSize <= 0 {
-		return nil, workqueue.ErrInvalidBatchSize
+		return nil, reconcile.ErrInvalidBatchSize
 	}
 	if params.LeaseDuration <= 0 {
-		return nil, workqueue.ErrInvalidLeaseDuration
+		return nil, reconcile.ErrInvalidLeaseDuration
 	}
 
-	items := make([]workqueue.Item, 0, params.BatchSize)
+	items := make([]reconcile.Item, 0, params.BatchSize)
 	if len(q.claimKinds) == 0 {
 		rows, err := q.queries.ClaimReconcileWorkItems(ctx, sqldb.ClaimReconcileWorkItemsParams{
 			BatchSize:    int32(params.BatchSize),
@@ -176,12 +176,12 @@ func (q *Queue) Claim(ctx context.Context, params workqueue.ClaimParams) ([]work
 	return items, nil
 }
 
-func (q *Queue) ExtendLease(ctx context.Context, params workqueue.ExtendLeaseParams) error {
+func (q *Queue) ExtendLease(ctx context.Context, params reconcile.ExtendLeaseParams) error {
 	if params.WorkerID == "" {
-		return workqueue.ErrMissingWorkerID
+		return reconcile.ErrMissingWorkerID
 	}
 	if params.LeaseDuration <= 0 {
-		return workqueue.ErrInvalidLeaseDuration
+		return reconcile.ErrInvalidLeaseDuration
 	}
 
 	rowsAffected, err := q.queries.ExtendReconcileWorkItemLease(ctx, sqldb.ExtendReconcileWorkItemLeaseParams{
@@ -193,7 +193,7 @@ func (q *Queue) ExtendLease(ctx context.Context, params workqueue.ExtendLeasePar
 		return fmt.Errorf("extend lease: %w", err)
 	}
 	if rowsAffected == 0 {
-		return workqueue.ErrClaimNotOwned
+		return reconcile.ErrClaimNotOwned
 	}
 	return nil
 }
@@ -244,13 +244,13 @@ func toClaimedItem(
 	claimedUntil pgtype.Timestamptz,
 	updatedAt pgtype.Timestamptz,
 	rawPayloads []byte,
-) (workqueue.Item, error) {
+) (reconcile.Item, error) {
 	payloads, err := decodeClaimedPayloads(rawPayloads)
 	if err != nil {
-		return workqueue.Item{}, err
+		return reconcile.Item{}, err
 	}
 
-	item := workqueue.Item{
+	item := reconcile.Item{
 		ID:           id,
 		WorkspaceID:  workspaceID,
 		Kind:         kind,
@@ -272,7 +272,7 @@ func toClaimedItem(
 	return item, nil
 }
 
-func decodeClaimedPayloads(rawPayloads []byte) ([]workqueue.Payload, error) {
+func decodeClaimedPayloads(rawPayloads []byte) ([]reconcile.Payload, error) {
 	if len(rawPayloads) == 0 {
 		return nil, nil
 	}
@@ -282,9 +282,9 @@ func decodeClaimedPayloads(rawPayloads []byte) ([]workqueue.Payload, error) {
 		return nil, err
 	}
 
-	payloads := make([]workqueue.Payload, 0, len(claimedPayloads))
+	payloads := make([]reconcile.Payload, 0, len(claimedPayloads))
 	for _, payload := range claimedPayloads {
-		payloads = append(payloads, workqueue.Payload{
+		payloads = append(payloads, reconcile.Payload{
 			Type:  payload.Type,
 			Key:   payload.Key,
 			Value: payload.Payload,
@@ -293,9 +293,9 @@ func decodeClaimedPayloads(rawPayloads []byte) ([]workqueue.Payload, error) {
 	return payloads, nil
 }
 
-func (q *Queue) AckSuccess(ctx context.Context, params workqueue.AckSuccessParams) (workqueue.AckSuccessResult, error) {
+func (q *Queue) AckSuccess(ctx context.Context, params reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
 	if params.WorkerID == "" {
-		return workqueue.AckSuccessResult{}, workqueue.ErrMissingWorkerID
+		return reconcile.AckSuccessResult{}, reconcile.ErrMissingWorkerID
 	}
 
 	result, err := q.queries.DeleteClaimedReconcileWorkItemIfUnchanged(ctx, sqldb.DeleteClaimedReconcileWorkItemIfUnchangedParams{
@@ -304,22 +304,22 @@ func (q *Queue) AckSuccess(ctx context.Context, params workqueue.AckSuccessParam
 		UpdatedAt: pgtype.Timestamptz{Time: params.ClaimedUpdatedAt, Valid: true},
 	})
 	if err != nil {
-		return workqueue.AckSuccessResult{}, fmt.Errorf("ack success delete claimed item: %w", err)
+		return reconcile.AckSuccessResult{}, fmt.Errorf("ack success delete claimed item: %w", err)
 	}
 	if !result.Owned {
-		return workqueue.AckSuccessResult{}, workqueue.ErrClaimNotOwned
+		return reconcile.AckSuccessResult{}, reconcile.ErrClaimNotOwned
 	}
-	return workqueue.AckSuccessResult{
+	return reconcile.AckSuccessResult{
 		Deleted: result.DeletedPayloadCount > 0 || result.ScopeDeleted,
 	}, nil
 }
 
-func (q *Queue) Retry(ctx context.Context, params workqueue.RetryParams) error {
+func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 	if params.WorkerID == "" {
-		return workqueue.ErrMissingWorkerID
+		return reconcile.ErrMissingWorkerID
 	}
 	if params.RetryBackoff <= 0 {
-		return workqueue.ErrInvalidRetryBackoff
+		return reconcile.ErrInvalidRetryBackoff
 	}
 
 	result, err := q.queries.RetryReconcileWorkItem(ctx, sqldb.RetryReconcileWorkItemParams{
@@ -332,7 +332,7 @@ func (q *Queue) Retry(ctx context.Context, params workqueue.RetryParams) error {
 		return fmt.Errorf("retry work item: %w", err)
 	}
 	if !result.Owned {
-		return workqueue.ErrClaimNotOwned
+		return reconcile.ErrClaimNotOwned
 	}
 	return nil
 }

@@ -11,8 +11,8 @@ import (
 
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workqueue"
-	"workspace-engine/pkg/workqueue/postgres"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/postgres"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,7 +22,7 @@ import (
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentresourceselectoreval")
-var _ workqueue.Processor = (*Controller)(nil)
+var _ reconcile.Processor = (*Controller)(nil)
 
 var celEnv, _ = celutil.NewEnvBuilder().
 	WithMapVariables("resource", "deployment").
@@ -31,8 +31,8 @@ var celEnv, _ = celutil.NewEnvBuilder().
 
 type Controller struct{}
 
-// Process implements [workqueue.Processor].
-func (c *Controller) Process(ctx context.Context, item workqueue.Item) error {
+// Process implements [reconcile.Processor].
+func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 	ctx, span := tracer.Start(ctx, "deploymentresourceselectoreval.Controller.Process")
 	defer span.End()
 
@@ -103,7 +103,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		"maxConcurrency", runtime.GOMAXPROCS(0),
 	)
 
-	nodeConfig := workqueue.NodeConfig{
+	nodeConfig := reconcile.NodeConfig{
 		WorkerID:        workerID,
 		BatchSize:       10,
 		PollInterval:    1 * time.Second,
@@ -115,7 +115,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 
 	kind := "deploymentresourceselectoreval"
 	controller := &Controller{}
-	worker, err := workqueue.NewWorker(
+	worker, err := reconcile.NewWorker(
 		kind,
 		postgres.NewForKinds(pgxPool, kind),
 		controller,

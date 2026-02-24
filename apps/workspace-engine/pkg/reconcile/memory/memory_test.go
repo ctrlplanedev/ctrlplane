@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"workspace-engine/pkg/workqueue"
+	reconcile "workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
 )
@@ -15,7 +15,7 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 	queue := New()
 	ctx := context.Background()
 
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: uuid.NewString(),
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -25,7 +25,7 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 		t.Fatalf("enqueue failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: time.Second,
@@ -37,15 +37,15 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 		t.Fatalf("expected one claimed item, got %d", len(items))
 	}
 
-	if err := queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{
 		ItemID:        items[0].ID,
 		WorkerID:      "worker-b",
 		LeaseDuration: time.Second,
-	}); !errors.Is(err, workqueue.ErrClaimNotOwned) {
+	}); !errors.Is(err, reconcile.ErrClaimNotOwned) {
 		t.Fatalf("expected ErrClaimNotOwned for wrong worker extend, got %v", err)
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           items[0].ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: items[0].UpdatedAt,
@@ -57,7 +57,7 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 		t.Fatal("expected deleted=true")
 	}
 
-	claimedAgain, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedAgain, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: time.Second,
@@ -76,7 +76,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	all := New()
 	filtered := all.ForKinds("deploymentresourceselectoreval")
 
-	err := all.Enqueue(ctx, workqueue.EnqueueParams{
+	err := all.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -89,7 +89,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		t.Fatalf("enqueue kind A failed: %v", err)
 	}
 
-	err = filtered.Enqueue(ctx, workqueue.EnqueueParams{
+	err = filtered.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "otherkind",
 		ScopeType:   "deployment",
@@ -102,7 +102,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		t.Fatalf("enqueue kind B failed: %v", err)
 	}
 
-	claimedFiltered, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	claimedFiltered, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: time.Second,
@@ -114,7 +114,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		t.Fatalf("expected only filtered kind, got %+v", claimedFiltered)
 	}
 
-	err = filtered.Retry(ctx, workqueue.RetryParams{
+	err = filtered.Retry(ctx, reconcile.RetryParams{
 		ItemID:       claimedFiltered[0].ID,
 		WorkerID:     "worker-filtered",
 		LastError:    "transient",
@@ -124,7 +124,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		t.Fatalf("retry failed: %v", err)
 	}
 
-	immediate, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	immediate, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: time.Second,
@@ -137,7 +137,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	}
 
 	time.Sleep(140 * time.Millisecond)
-	afterBackoff, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	afterBackoff, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: time.Second,
@@ -162,7 +162,7 @@ func TestQueue_AckLeavesNewerPayload(t *testing.T) {
 	workspaceID := uuid.NewString()
 	scopeID := uuid.NewString()
 
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -175,7 +175,7 @@ func TestQueue_AckLeavesNewerPayload(t *testing.T) {
 		t.Fatalf("enqueue failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: time.Second,
@@ -187,7 +187,7 @@ func TestQueue_AckLeavesNewerPayload(t *testing.T) {
 		t.Fatalf("expected one claimed item, got %d", len(items))
 	}
 
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -200,7 +200,7 @@ func TestQueue_AckLeavesNewerPayload(t *testing.T) {
 		t.Fatalf("re-enqueue failed: %v", err)
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           items[0].ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: items[0].UpdatedAt,
@@ -212,7 +212,7 @@ func TestQueue_AckLeavesNewerPayload(t *testing.T) {
 		t.Fatal("expected deleted=false when only newer payload exists")
 	}
 
-	remaining, err := queue.Claim(ctx, workqueue.ClaimParams{
+	remaining, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: time.Second,
@@ -229,23 +229,23 @@ func TestQueue_ValidationErrors(t *testing.T) {
 	queue := New()
 	ctx := context.Background()
 
-	if err := queue.Enqueue(ctx, workqueue.EnqueueParams{}); !errors.Is(err, workqueue.ErrMissingWorkspaceID) {
+	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{}); !errors.Is(err, reconcile.ErrMissingWorkspaceID) {
 		t.Fatalf("expected ErrMissingWorkspaceID, got %v", err)
 	}
-	if err := queue.Enqueue(ctx, workqueue.EnqueueParams{WorkspaceID: "bad", Kind: "k"}); err == nil {
+	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{WorkspaceID: "bad", Kind: "k"}); err == nil {
 		t.Fatal("expected workspace uuid parse error")
 	}
 
-	if _, err := queue.Claim(ctx, workqueue.ClaimParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if _, err := queue.Claim(ctx, reconcile.ClaimParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if _, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.Retry(ctx, workqueue.RetryParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if err := queue.Retry(ctx, reconcile.RetryParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
 }
