@@ -11,16 +11,16 @@ import (
 )
 
 type GradualRolloutEnvironmentSummaryEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.GradualRolloutRule
+	getters Getters
+	ruleId  string
+	rule    *oapi.GradualRolloutRule
 }
 
-func NewSummaryEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
+func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
 	if rule == nil || rule.GradualRollout == nil || store == nil {
 		return nil
 	}
-	return &GradualRolloutEnvironmentSummaryEvaluator{store: store, ruleId: rule.Id, rule: rule.GradualRollout}
+	return &GradualRolloutEnvironmentSummaryEvaluator{getters: &storeGetters{store: store}, ruleId: rule.Id, rule: rule.GradualRollout}
 }
 
 func (e *GradualRolloutEnvironmentSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -78,7 +78,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	environment := scope.Environment
 	version := scope.Version
 
-	allReleaseTargets, err := e.store.ReleaseTargets.Items()
+	allReleaseTargets, err := e.getters.GetReleaseTargets()
 	if err != nil {
 		return results.NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
 			WithDetail("error", err.Error())
@@ -102,15 +102,15 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
-		resource, _ := e.store.Resources.Get(releaseTarget.ResourceId)
-		deployment, _ := e.store.Deployments.Get(releaseTarget.DeploymentId)
+		resource, _ := e.getters.GetResource(releaseTarget.ResourceId)
+		deployment, _ := e.getters.GetDeployment(releaseTarget.DeploymentId)
 		scope := evaluator.EvaluatorScope{
 			Environment: environment,
 			Version:     version,
 			Resource:    resource,
 			Deployment:  deployment,
 		}
-		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
+		evaluation := e.getters.NewGradualRolloutEvaluator(&oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 		var targetTime *time.Time

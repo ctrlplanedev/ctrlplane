@@ -6,17 +6,16 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 type PassRateEvaluator struct {
-	store                    *store.Store
+	getters                  Getters
 	minimumSuccessPercentage float32
 	successStatuses          map[oapi.JobStatus]bool
 }
 
 func NewPassRateEvaluator(
-	store *store.Store,
+	getters Getters,
 	minimumSuccessPercentage float32,
 	successStatuses map[oapi.JobStatus]bool,
 ) evaluator.Evaluator {
@@ -24,7 +23,7 @@ func NewPassRateEvaluator(
 		successStatuses = map[oapi.JobStatus]bool{oapi.JobStatusSuccessful: true}
 	}
 	return evaluator.WithMemoization(&PassRateEvaluator{
-		store:                    store,
+		getters:                  getters,
 		minimumSuccessPercentage: minimumSuccessPercentage,
 		successStatuses:          successStatuses,
 	})
@@ -48,7 +47,7 @@ func (e *PassRateEvaluator) Complexity() int {
 }
 
 func (e *PassRateEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
-	tracker := NewReleaseTargetJobTracker(ctx, e.store, scope.Environment, scope.Version, e.successStatuses)
+	tracker := NewReleaseTargetJobTracker(ctx, e.getters, scope.Environment, scope.Version, e.successStatuses)
 	return e.EvaluateWithTracker(tracker)
 }
 

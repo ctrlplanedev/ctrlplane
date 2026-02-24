@@ -76,7 +76,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NoReleaseTargets(t *testing.T
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -122,7 +122,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -191,7 +191,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 	// Don't create any approvals - all targets should be denied/pending
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -245,7 +245,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) 
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -305,7 +305,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testin
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -361,7 +361,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -423,7 +423,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -471,7 +471,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -502,7 +502,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ScopeFields(t *testing.T) {
 	st := store.New("test-workspace", sc)
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	summaryEval, ok := eval.(*GradualRolloutEnvironmentSummaryEvaluator)
 	assert.True(t, ok, "should be able to cast to GradualRolloutEnvironmentSummaryEvaluator")
@@ -518,12 +518,12 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NilInputs(t *testing.T) {
 	st := store.New("test-workspace", sc)
 
 	// Nil rule
-	eval := NewSummaryEvaluator(st, nil)
+	eval := NewSummaryEvaluatorFromStore(st, nil)
 	assert.Nil(t, eval)
 
 	// Nil store
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval = NewSummaryEvaluator(nil, rule)
+	eval = NewSummaryEvaluatorFromStore(nil, rule)
 	assert.Nil(t, eval)
 }
 
@@ -564,7 +564,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinearNormalized, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -642,7 +642,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -694,7 +694,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -745,7 +745,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval(t *test
 	defer ClearTestTimeGetterFactory()
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 0) // Zero interval
-	eval := NewSummaryEvaluator(st, rule)
+	eval := NewSummaryEvaluatorFromStore(st, rule)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,

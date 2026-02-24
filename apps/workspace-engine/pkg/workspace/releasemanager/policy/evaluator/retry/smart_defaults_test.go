@@ -30,7 +30,7 @@ func TestRetryEvaluator_SmartDefault_OnlyCountsFailures(t *testing.T) {
 		MaxRetries: maxRetries,
 		// retryOnStatuses is nil - should default to [failure, invalidIntegration]
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	// Add a successful job - should NOT count toward retry limit
 	completedAt := time.Now()
@@ -75,7 +75,7 @@ func TestRetryEvaluator_SmartDefault_CountsInvalidIntegration(t *testing.T) {
 		MaxRetries: maxRetries,
 		// retryOnStatuses is nil - should default to [failure, invalidIntegration, invalidJobAgent]
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	// Add an invalidIntegration job - should count
 	completedAt := time.Now()
@@ -118,7 +118,7 @@ func TestRetryEvaluator_SmartDefault_DoesNotCountCancelled(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: maxRetries,
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	// Add multiple cancelled jobs - should NOT count
 	completedAt := time.Now()
@@ -156,7 +156,7 @@ func TestRetryEvaluator_SmartDefault_MixedStatuses(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: maxRetries,
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	completedAt := time.Now()
 
@@ -238,7 +238,7 @@ func TestRetryEvaluator_ExplicitStatuses_OverridesSmartDefault(t *testing.T) {
 		MaxRetries:      maxRetries,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	completedAt := time.Now()
 
@@ -284,7 +284,7 @@ func TestRetryEvaluator_ZeroMaxRetries_CountsSuccessfulAndErrors(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: maxRetries,
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	completedAt := time.Now()
 
@@ -317,7 +317,7 @@ func TestRetryEvaluator_ZeroMaxRetries_AllowsAfterCancelled(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: maxRetries,
 	}
-	evaluator := NewEvaluator(st, rule)
+	evaluator := NewEvaluatorFromStore(st, rule)
 
 	completedAt := time.Now()
 

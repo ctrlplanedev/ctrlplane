@@ -43,12 +43,12 @@ func New(store *store.Store) *Manager {
 func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		approval.NewEvaluatorFromStore(m.store, rule),
-		environmentprogression.NewEvaluator(m.store, rule),
-		gradualrollout.NewEvaluator(m.store, rule),
-		versionselector.NewEvaluator(m.store, rule),
+		environmentprogression.NewEvaluatorFromStore(m.store, rule),
+		gradualrollout.NewEvaluatorFromStore(m.store, rule),
+		versionselector.NewEvaluator(rule),
 		deploymentdependency.NewEvaluator(m.store, rule),
 		deploymentwindow.NewEvaluator(m.store, rule),
-		versioncooldown.NewEvaluator(m.store, rule),
+		versioncooldown.NewEvaluatorFromStore(m.store, rule),
 	)
 }
 
@@ -62,9 +62,9 @@ func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 	return evaluator.CollectEvaluators(
 		deploymentwindow.NewSummaryEvaluator(m.store, rule),
 		approval.NewEvaluatorFromStore(m.store, rule),
-		environmentprogression.NewEvaluator(m.store, rule),
-		gradualrollout.NewSummaryEvaluator(m.store, rule),
-		versioncooldown.NewSummaryEvaluator(m.store, rule),
+		environmentprogression.NewEvaluatorFromStore(m.store, rule),
+		gradualrollout.NewSummaryEvaluatorFromStore(m.store, rule),
+		versioncooldown.NewSummaryEvaluatorFromStore(m.store, rule),
 	)
 }
 

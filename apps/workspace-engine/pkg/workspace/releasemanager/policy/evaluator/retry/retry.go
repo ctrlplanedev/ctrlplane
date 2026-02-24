@@ -20,8 +20,8 @@ var _ evaluator.JobEvaluator = &RetryEvaluator{}
 // When backoff is configured, it calculates the required wait time between retries
 // and returns a Pending result if insufficient time has elapsed.
 type RetryEvaluator struct {
-	store *store.Store
-	rule  *oapi.RetryRule
+	getters Getters
+	rule    *oapi.RetryRule
 }
 
 // NewEvaluator creates a new retry evaluator.
@@ -29,8 +29,15 @@ type RetryEvaluator struct {
 //
 // If rule is nil, uses default behavior: maxRetries=0 (one attempt only),
 // counting all job statuses toward the limit.
-func NewEvaluator(store *store.Store, rule *oapi.RetryRule) evaluator.JobEvaluator {
+func NewEvaluatorFromStore(store *store.Store, rule *oapi.RetryRule) evaluator.JobEvaluator {
 	if store == nil {
+		return nil
+	}
+	return NewEvaluator(&storeGetters{store: store}, rule)
+}
+
+func NewEvaluator(getters Getters, rule *oapi.RetryRule) evaluator.JobEvaluator {
+	if getters == nil {
 		return nil
 	}
 
@@ -41,16 +48,13 @@ func NewEvaluator(store *store.Store, rule *oapi.RetryRule) evaluator.JobEvaluat
 			RetryOnStatuses: nil, // nil = count ALL statuses (strict mode)
 			BackoffSeconds:  nil,
 		}
-		// For no policy: keep RetryOnStatuses as nil to count all statuses
-		// Return early to skip smart defaults
 		return &RetryEvaluator{
-			store: store,
-			rule:  rule,
+			getters: getters,
+			rule:    rule,
 		}
 	}
 
 	// Smart defaults: Apply ONLY when an explicit policy is configured but retryOnStatuses is not specified
-	// Only count failures and config errors (don't count cancelled jobs!)
 	if rule.RetryOnStatuses == nil || len(*rule.RetryOnStatuses) == 0 {
 		defaultStatuses := []oapi.JobStatus{
 			oapi.JobStatusFailure,
@@ -58,8 +62,6 @@ func NewEvaluator(store *store.Store, rule *oapi.RetryRule) evaluator.JobEvaluat
 			oapi.JobStatusInvalidJobAgent,
 		}
 
-		// For maxRetries=0 with explicit policy: also count successful
-		// This preserves "deploy once" semantics while allowing retries after cancellation
 		if rule.MaxRetries == 0 {
 			defaultStatuses = append(defaultStatuses, oapi.JobStatusSuccessful)
 		}
@@ -67,12 +69,9 @@ func NewEvaluator(store *store.Store, rule *oapi.RetryRule) evaluator.JobEvaluat
 		rule.RetryOnStatuses = &defaultStatuses
 	}
 
-	// Note: We do NOT use memoization for JobEvaluators because job state
-	// can change between evaluations. The same release might be eligible initially,
-	// but after jobs are created/updated, the retry count changes.
 	return &RetryEvaluator{
-		store: store,
-		rule:  rule,
+		getters: getters,
+		rule:    rule,
 	}
 }
 
@@ -91,7 +90,7 @@ func (e *RetryEvaluator) Evaluate(
 	releaseTarget := release.ReleaseTarget
 
 	// Get all jobs for this release target
-	jobs := e.store.Jobs.GetJobsForReleaseTarget(&releaseTarget)
+	jobs := e.getters.GetJobsForReleaseTarget(&releaseTarget)
 
 	// Build a map of retryable statuses for efficient lookup
 	retryableStatuses := e.buildRetryableStatusMap()

@@ -22,22 +22,32 @@ var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentp
 var _ evaluator.Evaluator = &EnvironmentProgressionEvaluator{}
 
 type EnvironmentProgressionEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.EnvironmentProgressionRule
+	getters Getters
+	ruleId  string
+	rule    *oapi.EnvironmentProgressionRule
 }
 
-func NewEvaluator(
+func NewEvaluatorFromStore(
 	store *store.Store,
 	environmentProgressionRule *oapi.PolicyRule,
 ) evaluator.Evaluator {
-	if environmentProgressionRule == nil || environmentProgressionRule.EnvironmentProgression == nil || store == nil {
+	if store == nil {
+		return nil
+	}
+	return NewEvaluator(&storeGetters{store: store}, environmentProgressionRule)
+}
+
+func NewEvaluator(
+	getters Getters,
+	environmentProgressionRule *oapi.PolicyRule,
+) evaluator.Evaluator {
+	if environmentProgressionRule == nil || environmentProgressionRule.EnvironmentProgression == nil || getters == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&EnvironmentProgressionEvaluator{
-		store:  store,
-		ruleId: environmentProgressionRule.Id,
-		rule:   environmentProgressionRule.EnvironmentProgression,
+		getters: getters,
+		ruleId:  environmentProgressionRule.Id,
+		rule:    environmentProgressionRule.EnvironmentProgression,
 	})
 }
 
@@ -157,12 +167,10 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	var matchedEnvs []*oapi.Environment
 
 	// Iterate through all environments
-	envItems := e.store.Environments.Items()
-	envSystemIDs := e.store.SystemEnvironments.GetSystemIDsForEnvironment(environment.Id)
+	envItems := e.getters.GetEnvironments()
+	envSystemIDs := e.getters.GetSystemIDsForEnvironment(environment.Id)
 	for _, env := range envItems {
-		// By default, only check environments that share at least one system
-		// This prevents accidental cross-system dependencies
-		candidateSystemIDs := e.store.SystemEnvironments.GetSystemIDsForEnvironment(env.Id)
+		candidateSystemIDs := e.getters.GetSystemIDsForEnvironment(env.Id)
 		if !shareSystem(candidateSystemIDs, envSystemIDs) {
 			continue
 		}
@@ -213,16 +221,15 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 
 	// Create evaluators without memoization wrapper for internal use with shared tracker
 	passRateEvaluator := &PassRateEvaluator{
-		store:                    e.store,
+		getters:                  e.getters,
 		minimumSuccessPercentage: minSuccessPercentage,
 		successStatuses:          successStatuses,
 	}
 
-	// Set up soak time evaluator
 	var soakTimeEvaluator *SoakTimeEvaluator
 	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
 		soakTimeEvaluator = &SoakTimeEvaluator{
-			store:           e.store,
+			getters:         e.getters,
 			soakMinutes:     *e.rule.MinimumSockTimeMinutes,
 			successStatuses: successStatuses,
 			timeGetter:      func() time.Time { return time.Now() },
@@ -296,7 +303,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
 
-	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
+	tracker := NewReleaseTargetJobTracker(ctx, e.getters, environment, version, successStatuses)
 	if len(tracker.ReleaseTargets) == 0 {
 		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").WithSatisfiedAt(version.CreatedAt)
 	}

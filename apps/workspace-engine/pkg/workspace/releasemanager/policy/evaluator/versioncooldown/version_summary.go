@@ -11,16 +11,23 @@ import (
 )
 
 type VersionCooldownVersionSummaryEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.VersionCooldownRule
+	getters Getters
+	ruleId  string
+	rule    *oapi.VersionCooldownRule
 }
 
-func NewSummaryEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
-	if rule == nil || rule.VersionCooldown == nil || store == nil {
+func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
+	if store == nil {
 		return nil
 	}
-	return &VersionCooldownVersionSummaryEvaluator{store: store, ruleId: rule.Id, rule: rule.VersionCooldown}
+	return NewSummaryEvaluator(&storeGetters{store: store}, rule)
+}
+
+func NewSummaryEvaluator(getters Getters, rule *oapi.PolicyRule) evaluator.Evaluator {
+	if rule == nil || rule.VersionCooldown == nil || getters == nil {
+		return nil
+	}
+	return &VersionCooldownVersionSummaryEvaluator{getters: getters, ruleId: rule.Id, rule: rule.VersionCooldown}
 }
 
 func (e *VersionCooldownVersionSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -51,7 +58,7 @@ func pluralize(count int) string {
 func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
 	version := scope.Version
 
-	allReleaseTargets, err := e.store.ReleaseTargets.Items()
+	allReleaseTargets, err := e.getters.GetReleaseTargets()
 	if err != nil {
 		return results.NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
 			WithDetail("error", err.Error())
@@ -71,16 +78,16 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
-		environment, _ := e.store.Environments.Get(releaseTarget.EnvironmentId)
-		resource, _ := e.store.Resources.Get(releaseTarget.ResourceId)
-		deployment, _ := e.store.Deployments.Get(releaseTarget.DeploymentId)
+		environment, _ := e.getters.GetEnvironment(releaseTarget.EnvironmentId)
+		resource, _ := e.getters.GetResource(releaseTarget.ResourceId)
+		deployment, _ := e.getters.GetDeployment(releaseTarget.DeploymentId)
 		scope := evaluator.EvaluatorScope{
 			Environment: environment,
 			Version:     version,
 			Resource:    resource,
 			Deployment:  deployment,
 		}
-		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
+		evaluation := e.getters.NewVersionCooldownEvaluator(&oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 

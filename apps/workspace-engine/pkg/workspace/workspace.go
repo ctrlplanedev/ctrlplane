@@ -53,7 +53,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		NewOrchestrator(s).
 		RegisterAction(verificationaction.NewVerificationAction(ws.verificationManager)).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
-		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
+		RegisterAction(environmentprogression.NewEnvironmentProgressionActionFromStore(s, reconcileFn)).
 		RegisterAction(rollback.NewRollbackAction(s, ws.jobAgentRegistry))
 
 	ws.workflowActionOrchestrator = workflowmanager.

@@ -16,15 +16,15 @@ func TestNewSummaryEvaluator_NilInputs(t *testing.T) {
 	s, _ := setupTestStore(t)
 
 	// Nil rule
-	assert.Nil(t, NewSummaryEvaluator(s, nil))
+	assert.Nil(t, NewSummaryEvaluatorFromStore(s, nil))
 
 	// Nil store
 	rule := &oapi.PolicyRule{Id: "r1", VersionCooldown: &oapi.VersionCooldownRule{}}
-	assert.Nil(t, NewSummaryEvaluator(nil, rule))
+	assert.Nil(t, NewSummaryEvaluatorFromStore(nil, rule))
 
 	// No version cooldown on rule
 	ruleNoCooldown := &oapi.PolicyRule{Id: "r2"}
-	assert.Nil(t, NewSummaryEvaluator(s, ruleNoCooldown))
+	assert.Nil(t, NewSummaryEvaluatorFromStore(s, ruleNoCooldown))
 }
 
 func TestSummaryEvaluator_Metadata(t *testing.T) {
@@ -36,7 +36,7 @@ func TestSummaryEvaluator_Metadata(t *testing.T) {
 			IntervalSeconds: cooldownSeconds,
 		},
 	}
-	eval := NewSummaryEvaluator(s, rule)
+	eval := NewSummaryEvaluatorFromStore(s, rule)
 	require.NotNil(t, eval)
 	assert.Equal(t, evaluator.RuleTypeVersionCooldown, eval.RuleType())
 	assert.Equal(t, "vc-summary-1", eval.RuleId())
@@ -62,7 +62,7 @@ func TestSummaryEvaluator_NoReleaseTargets(t *testing.T) {
 			IntervalSeconds: cooldownSeconds,
 		},
 	}
-	eval := NewSummaryEvaluator(s, rule)
+	eval := NewSummaryEvaluatorFromStore(s, rule)
 	require.NotNil(t, eval)
 
 	scope := evaluator.EvaluatorScope{
@@ -100,7 +100,7 @@ func TestSummaryEvaluator_AllTargetsAllowed(t *testing.T) {
 			IntervalSeconds: cooldownSeconds,
 		},
 	}
-	eval := NewSummaryEvaluator(s, rule)
+	eval := NewSummaryEvaluatorFromStore(s, rule)
 	require.NotNil(t, eval)
 
 	scope := evaluator.EvaluatorScope{
@@ -173,7 +173,7 @@ func TestSummaryEvaluator_SomeTargetsDenied(t *testing.T) {
 			IntervalSeconds: cooldownSeconds,
 		},
 	}
-	eval := NewSummaryEvaluator(s, rule)
+	eval := NewSummaryEvaluatorFromStore(s, rule)
 	require.NotNil(t, eval)
 
 	scope := evaluator.EvaluatorScope{
