@@ -4,27 +4,33 @@ import (
 	"context"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewPolicies(store *Store) *Policies {
 	return &Policies{
-		repo:  store.repo,
+		repo:  store.repo.Policies(),
 		store: store,
 	}
 }
 
 type Policies struct {
-	repo  *memory.InMemory
+	repo  repository.PolicyRepo
 	store *Store
 }
 
+func (p *Policies) SetRepo(repo repository.PolicyRepo) {
+	p.repo = repo
+}
+
 func (p *Policies) Items() map[string]*oapi.Policy {
-	return p.repo.Policies.Items()
+	return p.repo.Items()
 }
 
 func (p *Policies) Get(id string) (*oapi.Policy, bool) {
-	return p.repo.Policies.Get(id)
+	return p.repo.Get(id)
 }
 
 func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
@@ -36,26 +42,29 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 		policy.CreatedAt = time.Now().Format(time.RFC3339)
 	}
 
-	for _, rule := range policy.Rules {
-		if rule.PolicyId == "" {
-			rule.PolicyId = policy.Id
+	for i := range policy.Rules {
+		if policy.Rules[i].PolicyId == "" {
+			policy.Rules[i].PolicyId = policy.Id
 		}
-
-		if rule.CreatedAt == "" {
-			rule.CreatedAt = policy.CreatedAt
+		if policy.Rules[i].CreatedAt == "" {
+			policy.Rules[i].CreatedAt = policy.CreatedAt
 		}
 	}
 
-	p.repo.Policies.Set(policy.Id, policy)
+	if err := p.repo.Set(policy); err != nil {
+		log.Error("Failed to upsert policy", "error", err)
+	}
 	p.store.changeset.RecordUpsert(policy)
 }
 
 func (p *Policies) Remove(ctx context.Context, id string) {
-	policy, ok := p.repo.Policies.Get(id)
+	policy, ok := p.repo.Get(id)
 	if !ok || policy == nil {
 		return
 	}
 
-	p.repo.Policies.Remove(id)
+	if err := p.repo.Remove(id); err != nil {
+		log.Error("Failed to remove policy", "error", err)
+	}
 	p.store.changeset.RecordDelete(policy)
 }

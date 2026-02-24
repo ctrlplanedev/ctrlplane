@@ -56,7 +56,7 @@ func New(wsId string) *InMemory {
 		DeploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
 		DeploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
 		environments:             createTypedStore[*oapi.Environment](router, "environment"),
-		Policies:                 createTypedStore[*oapi.Policy](router, "policy"),
+		policies:                 createTypedStore[*oapi.Policy](router, "policy"),
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		systems:                  createTypedStore[*oapi.System](router, "system"),
 		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
@@ -94,7 +94,7 @@ type InMemory struct {
 	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
 
 	environments     cmap.ConcurrentMap[string, *oapi.Environment]
-	Policies         cmap.ConcurrentMap[string, *oapi.Policy]
+	policies         cmap.ConcurrentMap[string, *oapi.Policy]
 	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
 	systems          cmap.ConcurrentMap[string, *oapi.System]
 	releases         *indexstore.Store[*oapi.Release]
@@ -427,6 +427,11 @@ func (a *systemEnvironmentRepoAdapter) Unlink(systemID, environmentID string) er
 	a.links.unlink(systemID, environmentID)
 	a.persisted.Remove(systemID + ":" + environmentID)
 	return nil
+}
+
+// Policies implements repository.Repo.
+func (s *InMemory) Policies() repository.PolicyRepo {
+	return &cmapRepoAdapter[*oapi.Policy]{store: &s.policies}
 }
 
 // SystemEnvironments implements repository.Repo.

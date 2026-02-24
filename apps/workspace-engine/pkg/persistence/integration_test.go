@@ -484,7 +484,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Environments.Get(environment.Id)
 	assert.True(t, ok, "Environment should be restored")
 
-	_, ok = testStore.Repo().Policies.Get(policy.Id)
+	_, ok = testStore.Repo().Policies().Get(policy.Id)
 	assert.True(t, ok, "Policy should be restored")
 
 	_, ok = testStore.JobAgents.Get(jobAgent.Id)

@@ -107,3 +107,12 @@ type ReleaseRepo interface {
 	Remove(id string) error
 	Items() map[string]*oapi.Release
 }
+
+// PolicyRepo defines the contract for policy storage.
+// Implementations handle both the policy and its associated rules.
+type PolicyRepo interface {
+	Get(id string) (*oapi.Policy, bool)
+	Set(entity *oapi.Policy) error
+	Remove(id string) error
+	Items() map[string]*oapi.Policy
+}

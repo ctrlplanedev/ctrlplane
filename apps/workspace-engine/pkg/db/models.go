@@ -109,6 +109,103 @@ type JobAgent struct {
 	Config      map[string]any
 }
 
+type Policy struct {
+	ID          uuid.UUID
+	Name        string
+	Description pgtype.Text
+	Selector    string
+	Metadata    map[string]string
+	Priority    int32
+	Enabled     bool
+	WorkspaceID uuid.UUID
+	CreatedAt   pgtype.Timestamptz
+}
+
+type PolicyRuleAnyApproval struct {
+	ID           uuid.UUID
+	PolicyID     uuid.UUID
+	MinApprovals int32
+	CreatedAt    pgtype.Timestamptz
+}
+
+type PolicyRuleDeploymentDependency struct {
+	ID        uuid.UUID
+	PolicyID  uuid.UUID
+	DependsOn string
+	CreatedAt pgtype.Timestamptz
+}
+
+type PolicyRuleDeploymentWindow struct {
+	ID              uuid.UUID
+	PolicyID        uuid.UUID
+	AllowWindow     pgtype.Bool
+	DurationMinutes int32
+	Rrule           string
+	Timezone        pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+}
+
+type PolicyRuleEnvironmentProgression struct {
+	ID                           uuid.UUID
+	PolicyID                     uuid.UUID
+	DependsOnEnvironmentSelector string
+	MaximumAgeHours              pgtype.Int4
+	MinimumSoakTimeMinutes       pgtype.Int4
+	MinimumSuccessPercentage     pgtype.Float4
+	SuccessStatuses              []string
+	CreatedAt                    pgtype.Timestamptz
+}
+
+type PolicyRuleGradualRollout struct {
+	ID                uuid.UUID
+	PolicyID          uuid.UUID
+	RolloutType       string
+	TimeScaleInterval int32
+	CreatedAt         pgtype.Timestamptz
+}
+
+type PolicyRuleRetry struct {
+	ID                uuid.UUID
+	PolicyID          uuid.UUID
+	MaxRetries        int32
+	BackoffSeconds    pgtype.Int4
+	BackoffStrategy   pgtype.Text
+	MaxBackoffSeconds pgtype.Int4
+	RetryOnStatuses   []string
+	CreatedAt         pgtype.Timestamptz
+}
+
+type PolicyRuleRollback struct {
+	ID                    uuid.UUID
+	PolicyID              uuid.UUID
+	OnJobStatuses         []string
+	OnVerificationFailure pgtype.Bool
+	CreatedAt             pgtype.Timestamptz
+}
+
+type PolicyRuleVerification struct {
+	ID        uuid.UUID
+	PolicyID  uuid.UUID
+	Metrics   []byte
+	TriggerOn pgtype.Text
+	CreatedAt pgtype.Timestamptz
+}
+
+type PolicyRuleVersionCooldown struct {
+	ID              uuid.UUID
+	PolicyID        uuid.UUID
+	IntervalSeconds int32
+	CreatedAt       pgtype.Timestamptz
+}
+
+type PolicyRuleVersionSelector struct {
+	ID          uuid.UUID
+	PolicyID    uuid.UUID
+	Description pgtype.Text
+	Selector    string
+	CreatedAt   pgtype.Timestamptz
+}
+
 type Release struct {
 	ID            uuid.UUID
 	ResourceID    uuid.UUID
