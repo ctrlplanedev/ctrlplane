@@ -1,11 +1,8 @@
 package desiredrelease
 
 import (
-	"context"
 	"fmt"
 	"strings"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/google/uuid"
 )
@@ -40,32 +37,4 @@ type ReleaseTarget struct {
 	DeploymentID  uuid.UUID `json:"deployment_id"`
 	EnvironmentID uuid.UUID `json:"environment_id"`
 	ResourceID    uuid.UUID `json:"resource_id"`
-}
-
-func (rt *ReleaseTarget) Deployment(ctx context.Context) (db.Deployment, error) {
-	return db.GetQueries(ctx).GetDeploymentByID(ctx, rt.DeploymentID)
-}
-
-func (rt *ReleaseTarget) Environment(ctx context.Context) (db.Environment, error) {
-	return db.GetQueries(ctx).GetEnvironmentByID(ctx, rt.EnvironmentID)
-}
-
-func (rt *ReleaseTarget) Resource(ctx context.Context) (db.Resource, error) {
-	return db.Resource{}, fmt.Errorf("not implemented")
-}
-
-func (rt *ReleaseTarget) Scope(ctx context.Context) (evaluator.EvaluatorScope, error) {
-	_, err := rt.Environment(ctx)
-	if err != nil {
-		return evaluator.EvaluatorScope{}, err
-	}
-	_, err = rt.Resource(ctx)
-	if err != nil {
-		return evaluator.EvaluatorScope{}, err
-	}
-	_, err = rt.Deployment(ctx)
-	if err != nil {
-		return evaluator.EvaluatorScope{}, err
-	}
-	return evaluator.EvaluatorScope{}, nil
 }
