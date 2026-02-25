@@ -8,27 +8,27 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/db/environments"
 	"workspace-engine/pkg/workspace/store/repository/db/jobagents"
 	"workspace-engine/pkg/workspace/store/repository/db/policies"
-	"workspace-engine/pkg/workspace/store/repository/db/userapprovalrecords"
 	"workspace-engine/pkg/workspace/store/repository/db/releases"
 	"workspace-engine/pkg/workspace/store/repository/db/resourceproviders"
 	"workspace-engine/pkg/workspace/store/repository/db/resources"
 	"workspace-engine/pkg/workspace/store/repository/db/systemdeployments"
 	"workspace-engine/pkg/workspace/store/repository/db/systemenvironments"
 	"workspace-engine/pkg/workspace/store/repository/db/systems"
+	"workspace-engine/pkg/workspace/store/repository/db/userapprovalrecords"
 )
 
 type DBRepo struct {
-	deploymentVersions repository.DeploymentVersionRepo
-	deployments        repository.DeploymentRepo
-	environments       repository.EnvironmentRepo
-	resources          repository.ResourceRepo
-	systems            repository.SystemRepo
-	jobAgents          repository.JobAgentRepo
-	resourceProviders  repository.ResourceProviderRepo
-	releases           repository.ReleaseRepo
-	systemDeployments  repository.SystemDeploymentRepo
-	systemEnvironments repository.SystemEnvironmentRepo
-	policies           repository.PolicyRepo
+	deploymentVersions  repository.DeploymentVersionRepo
+	deployments         repository.DeploymentRepo
+	environments        repository.EnvironmentRepo
+	resources           repository.ResourceRepo
+	systems             repository.SystemRepo
+	jobAgents           repository.JobAgentRepo
+	resourceProviders   repository.ResourceProviderRepo
+	releases            repository.ReleaseRepo
+	systemDeployments   repository.SystemDeploymentRepo
+	systemEnvironments  repository.SystemEnvironmentRepo
+	policies            repository.PolicyRepo
 	userApprovalRecords repository.UserApprovalRecordRepo
 }
 
@@ -82,17 +82,17 @@ func (d *DBRepo) UserApprovalRecords() repository.UserApprovalRecordRepo {
 
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
-		deploymentVersions: deploymentversions.NewRepo(ctx, workspaceID),
-		deployments:        deployments.NewRepo(ctx, workspaceID),
-		environments:       environments.NewRepo(ctx, workspaceID),
-		resources:          resources.NewRepo(ctx, workspaceID),
-		systems:            systems.NewRepo(ctx, workspaceID),
-		jobAgents:          jobagents.NewRepo(ctx, workspaceID),
-		resourceProviders:  resourceproviders.NewRepo(ctx, workspaceID),
-		releases:           releases.NewRepo(ctx, workspaceID),
-		systemDeployments:  systemdeployments.NewRepo(ctx),
-		systemEnvironments: systemenvironments.NewRepo(ctx),
-		policies:           policies.NewRepo(ctx, workspaceID),
+		deploymentVersions:  deploymentversions.NewRepo(ctx, workspaceID),
+		deployments:         deployments.NewRepo(ctx, workspaceID),
+		environments:        environments.NewRepo(ctx, workspaceID),
+		resources:           resources.NewRepo(ctx, workspaceID),
+		systems:             systems.NewRepo(ctx, workspaceID),
+		jobAgents:           jobagents.NewRepo(ctx, workspaceID),
+		resourceProviders:   resourceproviders.NewRepo(ctx, workspaceID),
+		releases:            releases.NewRepo(ctx, workspaceID),
+		systemDeployments:   systemdeployments.NewRepo(ctx),
+		systemEnvironments:  systemenvironments.NewRepo(ctx),
+		policies:            policies.NewRepo(ctx, workspaceID),
 		userApprovalRecords: userapprovalrecords.NewRepo(ctx),
 	}
 }

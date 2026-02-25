@@ -35,7 +35,7 @@ func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oa
 }
 
 func (u *UserApprovalRecords) Get(versionId, userId, environmentId string) (*oapi.UserApprovalRecord, bool) {
-	return u.repo.Get(versionId + "-" + userId + "-" + environmentId)
+	return u.repo.Get(versionId + userId + environmentId)
 }
 
 func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
