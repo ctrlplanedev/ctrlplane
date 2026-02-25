@@ -48,9 +48,10 @@ func ToUpsertParams(e *oapi.UserApprovalRecord) (db.UpsertUserApprovalRecordPara
 	var createdAt pgtype.Timestamptz
 	if e.CreatedAt != "" {
 		t, err := time.Parse(time.RFC3339, e.CreatedAt)
-		if err == nil {
-			createdAt = pgtype.Timestamptz{Time: t, Valid: true}
+		if err != nil {
+			return db.UpsertUserApprovalRecordParams{}, fmt.Errorf("parse created_at %q: %w", e.CreatedAt, err)
 		}
+		createdAt = pgtype.Timestamptz{Time: t, Valid: true}
 	}
 
 	return db.UpsertUserApprovalRecordParams{

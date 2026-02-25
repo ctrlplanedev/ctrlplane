@@ -2,12 +2,14 @@ package userapprovalrecords
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type Repo struct {
@@ -31,6 +33,9 @@ func (r *Repo) Get(key string) (*oapi.UserApprovalRecord, bool) {
 		EnvironmentID: environmentID,
 	})
 	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			log.Warn("Failed to get user approval record", "key", key, "error", err)
+		}
 		return nil, false
 	}
 
