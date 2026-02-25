@@ -11,15 +11,22 @@ import (
 var _ evaluator.Evaluator = &DeployableVersionStatusEvaluator{}
 
 type DeployableVersionStatusEvaluator struct {
-	store *store.Store
+	getters Getters
 }
 
-func NewEvaluator(store *store.Store) evaluator.Evaluator {
+func NewEvaluatorFromStore(store *store.Store) evaluator.Evaluator {
 	if store == nil {
 		return nil
 	}
+	return NewEvaluator(&storeGetters{store: store})
+}
+
+func NewEvaluator(getters Getters) evaluator.Evaluator {
+	if getters == nil {
+		return nil
+	}
 	return evaluator.WithMemoization(&DeployableVersionStatusEvaluator{
-		store: store,
+		getters: getters,
 	})
 }
 
@@ -61,7 +68,7 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 		// Paused versions are "grandfathered in" - they can continue on targets
 		// where they're already deployed, but cannot deploy to new targets.
 		// Check if this paused version has an existing release for this target.
-		releases := e.store.Releases.Items()
+		releases := e.getters.GetReleases()
 		for _, release := range releases {
 			if release == nil {
 				continue

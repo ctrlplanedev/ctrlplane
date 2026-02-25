@@ -66,8 +66,16 @@ func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) ev
 		return nil
 	}
 
+	return NewEvaluator(&storeGetters{store: store}, approvalRule)
+}
+
+func NewEvaluator(getters Getters, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
+	if approvalRule == nil || approvalRule.AnyApproval == nil || getters == nil {
+		return nil
+	}
+
 	return evaluator.WithMemoization(&AnyApprovalEvaluator{
-		getters:       &storeGetters{store: store},
+		getters:       getters,
 		ruleId:        approvalRule.Id,
 		rule:          approvalRule.AnyApproval,
 		ruleCreatedAt: approvalRule.CreatedAt,

@@ -54,7 +54,7 @@ func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 
 func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		deployableversions.NewEvaluator(m.store),
+		deployableversions.NewEvaluatorFromStore(m.store),
 	)
 }
 

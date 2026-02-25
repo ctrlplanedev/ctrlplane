@@ -16,7 +16,7 @@ import (
 
 func EvaluatorsForPolicy(store *store.Store, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		deployableversions.NewEvaluator(store),
+		deployableversions.NewEvaluatorFromStore(store),
 		approval.NewEvaluatorFromStore(store, rule),
 		environmentprogression.NewEvaluatorFromStore(store, rule),
 		gradualrollout.NewEvaluatorFromStore(store, rule),
