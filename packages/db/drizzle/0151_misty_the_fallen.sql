@@ -1,2 +1,0 @@
-ALTER TABLE "resource_variable" ADD COLUMN "workspace_id" uuid NOT NULL;--> statement-breakpoint
-ALTER TABLE "resource_variable" ADD CONSTRAINT "resource_variable_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE cascade ON UPDATE no action;

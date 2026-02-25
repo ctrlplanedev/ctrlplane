@@ -38,7 +38,7 @@ func (r *Repo) Get(key string) (*oapi.ResourceVariable, bool) {
 }
 
 func (r *Repo) Set(entity *oapi.ResourceVariable) error {
-	params, err := ToUpsertParams(r.workspaceID, entity)
+	params, err := ToUpsertParams(entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
 	}
@@ -102,7 +102,7 @@ func (r *Repo) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.Re
 	}
 
 	for _, rv := range toUpsert {
-		params, err := ToUpsertParams(r.workspaceID, rv)
+		params, err := ToUpsertParams(rv)
 		if err != nil {
 			return fmt.Errorf("convert to upsert params: %w", err)
 		}

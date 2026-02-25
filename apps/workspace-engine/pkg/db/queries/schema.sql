@@ -237,6 +237,5 @@ CREATE TABLE resource_variable (
     resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     key TEXT NOT NULL,
     value JSONB NOT NULL,
-    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
     PRIMARY KEY (resource_id, key)
 );

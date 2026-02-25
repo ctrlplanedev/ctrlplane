@@ -19,15 +19,10 @@ func ToOapi(row db.ResourceVariable) *oapi.ResourceVariable {
 	}
 }
 
-func ToUpsertParams(workspaceID string, e *oapi.ResourceVariable) (db.UpsertResourceVariableParams, error) {
+func ToUpsertParams(e *oapi.ResourceVariable) (db.UpsertResourceVariableParams, error) {
 	rid, err := uuid.Parse(e.ResourceId)
 	if err != nil {
 		return db.UpsertResourceVariableParams{}, fmt.Errorf("parse resource_id: %w", err)
-	}
-
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return db.UpsertResourceVariableParams{}, fmt.Errorf("parse workspace_id: %w", err)
 	}
 
 	valueBytes, err := e.Value.MarshalJSON()
@@ -36,10 +31,9 @@ func ToUpsertParams(workspaceID string, e *oapi.ResourceVariable) (db.UpsertReso
 	}
 
 	return db.UpsertResourceVariableParams{
-		ResourceID:  rid,
-		Key:         e.Key,
-		Value:       valueBytes,
-		WorkspaceID: wsID,
+		ResourceID: rid,
+		Key:        e.Key,
+		Value:      valueBytes,
 	}, nil
 }
 

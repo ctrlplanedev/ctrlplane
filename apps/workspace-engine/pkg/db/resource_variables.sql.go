@@ -37,7 +37,7 @@ func (q *Queries) DeleteResourceVariablesByResourceID(ctx context.Context, resou
 }
 
 const getResourceVariable = `-- name: GetResourceVariable :one
-SELECT resource_id, key, value, workspace_id
+SELECT resource_id, key, value
 FROM resource_variable
 WHERE resource_id = $1 AND key = $2
 `
@@ -50,17 +50,12 @@ type GetResourceVariableParams struct {
 func (q *Queries) GetResourceVariable(ctx context.Context, arg GetResourceVariableParams) (ResourceVariable, error) {
 	row := q.db.QueryRow(ctx, getResourceVariable, arg.ResourceID, arg.Key)
 	var i ResourceVariable
-	err := row.Scan(
-		&i.ResourceID,
-		&i.Key,
-		&i.Value,
-		&i.WorkspaceID,
-	)
+	err := row.Scan(&i.ResourceID, &i.Key, &i.Value)
 	return i, err
 }
 
 const listResourceVariablesByResourceID = `-- name: ListResourceVariablesByResourceID :many
-SELECT resource_id, key, value, workspace_id
+SELECT resource_id, key, value
 FROM resource_variable
 WHERE resource_id = $1
 `
@@ -74,12 +69,7 @@ func (q *Queries) ListResourceVariablesByResourceID(ctx context.Context, resourc
 	var items []ResourceVariable
 	for rows.Next() {
 		var i ResourceVariable
-		if err := rows.Scan(
-			&i.ResourceID,
-			&i.Key,
-			&i.Value,
-			&i.WorkspaceID,
-		); err != nil {
+		if err := rows.Scan(&i.ResourceID, &i.Key, &i.Value); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -91,9 +81,10 @@ func (q *Queries) ListResourceVariablesByResourceID(ctx context.Context, resourc
 }
 
 const listResourceVariablesByWorkspaceID = `-- name: ListResourceVariablesByWorkspaceID :many
-SELECT resource_id, key, value, workspace_id
-FROM resource_variable
-WHERE workspace_id = $1
+SELECT rv.resource_id, rv.key, rv.value
+FROM resource_variable rv
+INNER JOIN resource r ON r.id = rv.resource_id
+WHERE r.workspace_id = $1
 `
 
 func (q *Queries) ListResourceVariablesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ResourceVariable, error) {
@@ -105,12 +96,7 @@ func (q *Queries) ListResourceVariablesByWorkspaceID(ctx context.Context, worksp
 	var items []ResourceVariable
 	for rows.Next() {
 		var i ResourceVariable
-		if err := rows.Scan(
-			&i.ResourceID,
-			&i.Key,
-			&i.Value,
-			&i.WorkspaceID,
-		); err != nil {
+		if err := rows.Scan(&i.ResourceID, &i.Key, &i.Value); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -122,25 +108,19 @@ func (q *Queries) ListResourceVariablesByWorkspaceID(ctx context.Context, worksp
 }
 
 const upsertResourceVariable = `-- name: UpsertResourceVariable :exec
-INSERT INTO resource_variable (resource_id, key, value, workspace_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO resource_variable (resource_id, key, value)
+VALUES ($1, $2, $3)
 ON CONFLICT (resource_id, key) DO UPDATE
 SET value = EXCLUDED.value
 `
 
 type UpsertResourceVariableParams struct {
-	ResourceID  uuid.UUID
-	Key         string
-	Value       []byte
-	WorkspaceID uuid.UUID
+	ResourceID uuid.UUID
+	Key        string
+	Value      []byte
 }
 
 func (q *Queries) UpsertResourceVariable(ctx context.Context, arg UpsertResourceVariableParams) error {
-	_, err := q.db.Exec(ctx, upsertResourceVariable,
-		arg.ResourceID,
-		arg.Key,
-		arg.Value,
-		arg.WorkspaceID,
-	)
+	_, err := q.db.Exec(ctx, upsertResourceVariable, arg.ResourceID, arg.Key, arg.Value)
 	return err
 }
