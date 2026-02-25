@@ -62,6 +62,41 @@ func (r *Repo) Items() map[string]*oapi.ResourceVariable {
 	return make(map[string]*oapi.ResourceVariable)
 }
 
+func (r *Repo) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error {
+	tx, err := db.GetPool(r.ctx).Begin(r.ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(r.ctx)
+
+	q := db.New(tx)
+
+	for _, rv := range toRemove {
+		rid, err := uuid.Parse(rv.ResourceId)
+		if err != nil {
+			return fmt.Errorf("parse resource_id for remove: %w", err)
+		}
+		if err := q.DeleteResourceVariable(r.ctx, db.DeleteResourceVariableParams{
+			ResourceID: rid,
+			Key:        rv.Key,
+		}); err != nil {
+			return fmt.Errorf("delete resource variable %s-%s: %w", rv.ResourceId, rv.Key, err)
+		}
+	}
+
+	for _, rv := range toUpsert {
+		params, err := ToUpsertParams(rv)
+		if err != nil {
+			return fmt.Errorf("convert to upsert params: %w", err)
+		}
+		if err := q.UpsertResourceVariable(r.ctx, params); err != nil {
+			return fmt.Errorf("upsert resource variable %s-%s: %w", rv.ResourceId, rv.Key, err)
+		}
+	}
+
+	return tx.Commit(r.ctx)
+}
+
 func (r *Repo) GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error) {
 	rid, err := uuid.Parse(resourceID)
 	if err != nil {

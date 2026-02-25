@@ -124,6 +124,7 @@ type ResourceVariableRepo interface {
 	Remove(key string) error
 	Items() map[string]*oapi.ResourceVariable
 	GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error)
+	BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error
 }
 
 // UserApprovalRecordRepo defines the contract for user approval record storage.

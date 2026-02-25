@@ -495,6 +495,16 @@ func (a *resourceVariableRepoAdapter) Items() map[string]*oapi.ResourceVariable 
 	return a.store.Items()
 }
 
+func (a *resourceVariableRepoAdapter) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error {
+	for _, rv := range toRemove {
+		a.store.Remove(rv.ID())
+	}
+	for _, rv := range toUpsert {
+		a.store.Set(rv.ID(), rv)
+	}
+	return nil
+}
+
 func (a *resourceVariableRepoAdapter) GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error) {
 	var result []*oapi.ResourceVariable
 	for item := range a.store.IterBuffered() {

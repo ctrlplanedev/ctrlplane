@@ -29,6 +29,7 @@ func (r *ResourceVariables) SetRepo(repo repository.ResourceVariableRepo) {
 func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.ResourceVariable) {
 	if err := r.repo.Set(resourceVariable); err != nil {
 		log.Error("Failed to upsert resource variable", "error", err)
+		return
 	}
 	r.store.changeset.RecordUpsert(resourceVariable)
 }
@@ -45,6 +46,7 @@ func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key s
 
 	if err := r.repo.Remove(resourceId + "-" + key); err != nil {
 		log.Error("Failed to remove resource variable", "error", err)
+		return
 	}
 	r.store.changeset.RecordDelete(resourceVariable)
 }
@@ -60,46 +62,59 @@ func (r *ResourceVariables) BulkUpdate(ctx context.Context, resourceId string, v
 		currentVariables[v.Key] = v
 	}
 
-	hasChanges := false
+	var toUpsert []*oapi.ResourceVariable
+	var toRemove []*oapi.ResourceVariable
 
 	for key, currentVar := range currentVariables {
 		if _, ok := variables[key]; !ok {
-			hasChanges = true
-			if err := r.repo.Remove(resourceId + "-" + key); err != nil {
-				log.Error("Failed to remove resource variable", "error", err)
-			}
-			r.store.changeset.RecordDelete(currentVar)
+			toRemove = append(toRemove, currentVar)
 		}
 	}
 
 	for key, value := range variables {
 		newValue := oapi.NewValueFromLiteral(oapi.NewLiteralValue(value))
-		if currentVar, exists := currentVariables[key]; !exists {
-			hasChanges = true
-			r.Upsert(ctx, &oapi.ResourceVariable{
+		currentVar, exists := currentVariables[key]
+
+		if !exists {
+			toUpsert = append(toUpsert, &oapi.ResourceVariable{
 				ResourceId: resourceId,
 				Key:        key,
 				Value:      *newValue,
 			})
-		} else {
-			oldBytes, err := currentVar.Value.MarshalJSON()
-			if err != nil {
-				return false, err
-			}
-			newBytes, err := newValue.MarshalJSON()
-			if err != nil {
-				return false, err
-			}
+			continue
+		}
 
-			if !bytes.Equal(oldBytes, newBytes) {
-				hasChanges = true
-				currentVar.Value = *newValue
-				r.Upsert(ctx, currentVar)
-			}
+		oldBytes, err := currentVar.Value.MarshalJSON()
+		if err != nil {
+			return false, err
+		}
+		newBytes, err := newValue.MarshalJSON()
+		if err != nil {
+			return false, err
+		}
+		if !bytes.Equal(oldBytes, newBytes) {
+			currentVar.Value = *newValue
+			toUpsert = append(toUpsert, currentVar)
 		}
 	}
 
-	return hasChanges, nil
+	hasChanges := len(toUpsert) > 0 || len(toRemove) > 0
+	if !hasChanges {
+		return false, nil
+	}
+
+	if err := r.repo.BulkUpdate(toUpsert, toRemove); err != nil {
+		return false, err
+	}
+
+	for _, rv := range toRemove {
+		r.store.changeset.RecordDelete(rv)
+	}
+	for _, rv := range toUpsert {
+		r.store.changeset.RecordUpsert(rv)
+	}
+
+	return true, nil
 }
 
 func (r *ResourceVariables) Items() map[string]*oapi.ResourceVariable {
