@@ -150,20 +150,17 @@ export const policyRuleEnvironmentProgressionRelations = relations(
   }),
 );
 
-export const policyRuleGradualRollout = pgTable(
-  "policy_rule_gradual_rollout",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    policyId: uuid("policy_id")
-      .notNull()
-      .references(() => policy.id, { onDelete: "cascade" }),
-    rolloutType: text("rollout_type").notNull(),
-    timeScaleInterval: integer("time_scale_interval").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-);
+export const policyRuleGradualRollout = pgTable("policy_rule_gradual_rollout", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  policyId: uuid("policy_id")
+    .notNull()
+    .references(() => policy.id, { onDelete: "cascade" }),
+  rolloutType: text("rollout_type").notNull(),
+  timeScaleInterval: integer("time_scale_interval").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const policyRuleGradualRolloutRelations = relations(
   policyRuleGradualRollout,

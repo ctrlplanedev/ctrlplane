@@ -47,7 +47,10 @@ func (r *Repo) Get(id string) (*oapi.Policy, bool) {
 		return nil, false
 	}
 
-	rules := r.loadRules(uid)
+	rules, err := r.loadRules(uid)
+	if err != nil {
+		log.Warn("Failed to load rules for policy", "policy_id", id, "error", err)
+	}
 	return PolicyToOapi(row, rules), true
 }
 
@@ -63,25 +66,32 @@ func (r *Repo) Set(entity *oapi.Policy) error {
 	}
 	params.WorkspaceID = wsID
 
-	_, err = db.GetQueries(r.ctx).UpsertPolicy(r.ctx, params)
-	if err != nil {
-		return fmt.Errorf("upsert policy: %w", err)
-	}
-
 	policyID, err := uuid.Parse(entity.Id)
 	if err != nil {
 		return fmt.Errorf("parse policy id: %w", err)
 	}
 
-	if err := r.deleteAllRules(policyID); err != nil {
+	tx, err := db.GetPool(r.ctx).Begin(r.ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(r.ctx)
+
+	q := db.New(tx)
+
+	if _, err := q.UpsertPolicy(r.ctx, params); err != nil {
+		return fmt.Errorf("upsert policy: %w", err)
+	}
+
+	if err := r.deleteAllRulesWithQueries(q, policyID); err != nil {
 		return fmt.Errorf("delete existing rules: %w", err)
 	}
 
-	if err := r.insertRules(policyID, entity.Rules); err != nil {
+	if err := r.insertRulesWithQueries(q, policyID, entity.Rules); err != nil {
 		return fmt.Errorf("insert rules: %w", err)
 	}
 
-	return nil
+	return tx.Commit(r.ctx)
 }
 
 func (r *Repo) Remove(id string) error {
@@ -110,53 +120,79 @@ func (r *Repo) Items() map[string]*oapi.Policy {
 
 	result := make(map[string]*oapi.Policy, len(rows))
 	for _, row := range rows {
-		rules := r.loadRules(row.ID)
+		rules, err := r.loadRules(row.ID)
+		if err != nil {
+			log.Warn("Failed to load rules for policy", "policy_id", row.ID, "error", err)
+		}
 		p := PolicyToOapi(row, rules)
 		result[p.Id] = p
 	}
 	return result
 }
 
-func (r *Repo) loadRules(policyID uuid.UUID) RuleRows {
+func (r *Repo) loadRules(policyID uuid.UUID) (RuleRows, error) {
 	q := db.GetQueries(r.ctx)
 	var rows RuleRows
+	var errs []error
 
-	if v, err := q.ListAnyApprovalRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListAnyApprovalRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("any_approval: %w", err))
+	} else {
 		rows.AnyApproval = v
 	}
-	if v, err := q.ListDeploymentDependencyRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListDeploymentDependencyRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("deployment_dependency: %w", err))
+	} else {
 		rows.DeploymentDependency = v
 	}
-	if v, err := q.ListDeploymentWindowRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListDeploymentWindowRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("deployment_window: %w", err))
+	} else {
 		rows.DeploymentWindow = v
 	}
-	if v, err := q.ListEnvironmentProgressionRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListEnvironmentProgressionRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("environment_progression: %w", err))
+	} else {
 		rows.EnvironmentProgression = v
 	}
-	if v, err := q.ListGradualRolloutRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListGradualRolloutRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("gradual_rollout: %w", err))
+	} else {
 		rows.GradualRollout = v
 	}
-	if v, err := q.ListRetryRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListRetryRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("retry: %w", err))
+	} else {
 		rows.Retry = v
 	}
-	if v, err := q.ListRollbackRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListRollbackRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("rollback: %w", err))
+	} else {
 		rows.Rollback = v
 	}
-	if v, err := q.ListVerificationRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListVerificationRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("verification: %w", err))
+	} else {
 		rows.Verification = v
 	}
-	if v, err := q.ListVersionCooldownRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListVersionCooldownRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("version_cooldown: %w", err))
+	} else {
 		rows.VersionCooldown = v
 	}
-	if v, err := q.ListVersionSelectorRulesByPolicyID(r.ctx, policyID); err == nil {
+	if v, err := q.ListVersionSelectorRulesByPolicyID(r.ctx, policyID); err != nil {
+		errs = append(errs, fmt.Errorf("version_selector: %w", err))
+	} else {
 		rows.VersionSelector = v
 	}
 
-	return rows
+	if len(errs) > 0 {
+		return rows, fmt.Errorf("failed to load rules for policy %s: %v", policyID, errs)
+	}
+	return rows, nil
 }
 
-func (r *Repo) deleteAllRules(policyID uuid.UUID) error {
-	q := db.GetQueries(r.ctx)
+func (r *Repo) deleteAllRulesWithQueries(q *db.Queries, policyID uuid.UUID) error {
 	deleters := []func(context.Context, uuid.UUID) error{
 		q.DeleteAnyApprovalRulesByPolicyID,
 		q.DeleteDeploymentDependencyRulesByPolicyID,
@@ -177,8 +213,7 @@ func (r *Repo) deleteAllRules(policyID uuid.UUID) error {
 	return nil
 }
 
-func (r *Repo) insertRules(policyID uuid.UUID, rules []oapi.PolicyRule) error {
-	q := db.GetQueries(r.ctx)
+func (r *Repo) insertRulesWithQueries(q *db.Queries, policyID uuid.UUID, rules []oapi.PolicyRule) error {
 
 	for _, rule := range rules {
 		ruleID, err := uuid.Parse(rule.Id)

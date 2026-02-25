@@ -53,6 +53,7 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 
 	if err := p.repo.Set(policy); err != nil {
 		log.Error("Failed to upsert policy", "error", err)
+		return
 	}
 	p.store.changeset.RecordUpsert(policy)
 }
@@ -65,6 +66,7 @@ func (p *Policies) Remove(ctx context.Context, id string) {
 
 	if err := p.repo.Remove(id); err != nil {
 		log.Error("Failed to remove policy", "error", err)
+		return
 	}
 	p.store.changeset.RecordDelete(policy)
 }

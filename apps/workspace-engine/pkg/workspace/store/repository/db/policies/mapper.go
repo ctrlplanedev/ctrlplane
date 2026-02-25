@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -176,7 +177,10 @@ func PolicyToOapi(row db.Policy, rules RuleRows) *oapi.Policy {
 
 	for _, r := range rules.Verification {
 		var metrics []oapi.VerificationMetricSpec
-		_ = json.Unmarshal(r.Metrics, &metrics)
+		if err := json.Unmarshal(r.Metrics, &metrics); err != nil {
+			log.Error("Failed to unmarshal verification metrics", "error", err)
+			continue
+		}
 		if metrics == nil {
 			metrics = []oapi.VerificationMetricSpec{}
 		}
