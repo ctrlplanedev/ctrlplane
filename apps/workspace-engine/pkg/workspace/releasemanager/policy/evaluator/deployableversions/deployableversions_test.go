@@ -20,7 +20,7 @@ func setupStore() *store.Store {
 
 func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	version := &oapi.DeploymentVersion{
@@ -51,7 +51,7 @@ func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_PausedVersionWithoutRelease(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-2",
@@ -101,7 +101,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 	}
 	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     version,
@@ -120,7 +120,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 
 func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-4",
@@ -150,7 +150,7 @@ func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-5",
@@ -180,7 +180,7 @@ func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-6",
@@ -210,7 +210,7 @@ func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-7",
@@ -240,7 +240,7 @@ func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -278,7 +278,7 @@ func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	readyVersion := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -319,7 +319,7 @@ func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.
 
 func TestDeployableVersionStatusEvaluator_MissingFields(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	// Scope without version - should be denied by memoization wrapper
 	rt := &oapi.ReleaseTarget{
@@ -341,7 +341,7 @@ func TestDeployableVersionStatusEvaluator_MissingFields(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_ScopeFields(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	// Verify that the evaluator declares it needs Version and ReleaseTarget
 	scopeFields := eval.ScopeFields()
@@ -351,7 +351,7 @@ func TestDeployableVersionStatusEvaluator_ScopeFields(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
 	st := setupStore()
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -409,7 +409,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 	}
 	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	// Test target1 (has release) - should be allowed
 	scope1 := evaluator.EvaluatorScope{
@@ -449,7 +449,7 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 		Status: oapi.DeploymentVersionStatusReady,
 	}
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	scope1 := evaluator.EvaluatorScope{
 		Version:     version1,
@@ -482,7 +482,7 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 	_ = st.Releases.Upsert(ctx, release)
 
 	// Need fresh evaluator due to memoization
-	eval = NewEvaluator(st)
+	eval = NewEvaluatorFromStore(st)
 	result = eval.Evaluate(ctx, scope2)
 	assert.True(t, result.Allowed, "paused version with release should be allowed")
 
@@ -541,7 +541,7 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 	_ = st.Releases.Upsert(ctx, release1)
 	_ = st.Releases.Upsert(ctx, release2)
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	// Paused version on target1 (has release) - allowed
 	scope1 := evaluator.EvaluatorScope{
@@ -604,7 +604,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 	}
 	_ = st.Releases.Upsert(ctx, devRelease)
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	// Dev environment (has release) - allowed
 	devScope := evaluator.EvaluatorScope{
@@ -645,7 +645,7 @@ func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
 	}
 
 	// Store is empty (no releases)
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     version,
@@ -689,7 +689,7 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 	}
 	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     pausedVersion,
@@ -734,7 +734,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 	}
 	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	// Evaluate for target1 twice - should be cached
 	scope1a := evaluator.EvaluatorScope{
@@ -795,7 +795,7 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 		{oapi.DeploymentVersionStatusPaused, false, "paused without release should be denied"},
 	}
 
-	eval := NewEvaluator(st)
+	eval := NewEvaluatorFromStore(st)
 
 	for i, tc := range statuses {
 		t.Run(string(tc.status), func(t *testing.T) {
@@ -823,13 +823,13 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 				_ = st.Releases.Upsert(ctx, release)
 
 				// Need fresh evaluator due to memoization
-				evalWithRelease := NewEvaluator(st)
+				evalWithRelease := NewEvaluatorFromStore(st)
 				resultWithRelease := evalWithRelease.Evaluate(ctx, scope)
 				assert.True(t, resultWithRelease.Allowed, "paused with release should be allowed")
 
 				// Clean up for next iteration
 				st = setupStore()
-				eval = NewEvaluator(st)
+				eval = NewEvaluatorFromStore(st)
 			}
 
 			// Verify all results have proper details

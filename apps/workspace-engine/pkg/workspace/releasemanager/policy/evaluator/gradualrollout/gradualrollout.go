@@ -8,9 +8,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -38,21 +36,18 @@ func ClearTestTimeGetterFactory() {
 }
 
 type GradualRolloutEvaluator struct {
-	store     *store.Store
-	ruleId    string
-	rule      *oapi.GradualRolloutRule
-	hashingFn func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
-
-	// For testing
+	getters    Getters
+	ruleId     string
+	rule       *oapi.GradualRolloutRule
+	hashingFn  func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
 	timeGetter func() time.Time
 }
 
-func NewEvaluator(store *store.Store, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {
+func NewEvaluatorFromStore(store *store.Store, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {
 	if rolloutRule == nil || rolloutRule.GradualRollout == nil || store == nil {
 		return nil
 	}
 
-	// Use test time getter if set, otherwise use time.Now()
 	timeGetter := func() time.Time {
 		return time.Now()
 	}
@@ -61,7 +56,7 @@ func NewEvaluator(store *store.Store, rolloutRule *oapi.PolicyRule) evaluator.Ev
 	}
 
 	return evaluator.WithMemoization(&GradualRolloutEvaluator{
-		store:      store,
+		getters:    &storeGetters{store: store},
 		ruleId:     rolloutRule.Id,
 		rule:       rolloutRule.GradualRollout,
 		hashingFn:  fnvHashingFn,
@@ -112,7 +107,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Conte
 		return &scope.Version.CreatedAt
 	}
 
-	approvalEvaluator := approval.NewEvaluator(e.store, rule)
+	approvalEvaluator := e.getters.NewApprovalEvaluator(rule)
 	if approvalEvaluator == nil {
 		return nil
 	}
@@ -150,7 +145,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx
 		return &scope.Version.CreatedAt
 	}
 
-	environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.store, rule)
+	environmentProgressionEvaluator := e.getters.NewEnvironmentProgressionEvaluator(rule)
 	if environmentProgressionEvaluator == nil {
 		return nil
 	}
@@ -170,7 +165,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	// - deployment window rules:
 	//   - allow windows: rollout starts when window opens (if outside)
 	//   - deny windows: rollout starts when window ends (if inside)
-	policiesForTarget, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
+	policiesForTarget, err := e.getters.GetPolicies(ctx, releaseTarget)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +184,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 		Version:     version,
 	}
 
-	allSkips := e.store.PolicySkips.GetAllForTarget(version.Id, environment.Id, releaseTarget.ResourceId)
+	allSkips := e.getters.GetPolicySkips(version.Id, environment.Id, releaseTarget.ResourceId)
 
 	for _, policy := range policiesForTarget {
 		if !policy.Enabled {
@@ -258,7 +253,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	// - Allow windows: if outside, push to when window opens
 	// - Deny windows: if inside, push to when window ends
 	finalStartTime := baseStartTime
-	if _, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget); err != nil {
+	if !e.getters.HasCurrentRelease(ctx, releaseTarget) {
 		return finalStartTime, nil
 	}
 	for _, windowRule := range deploymentWindowRules {
@@ -313,7 +308,7 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	environment := scope.Environment
 	version := scope.Version
 	releaseTarget := scope.ReleaseTarget()
-	resource, ok := e.store.Resources.Get(releaseTarget.ResourceId)
+	resource, ok := e.getters.GetResource(releaseTarget.ResourceId)
 	if !ok {
 		return results.
 			NewDeniedResult(fmt.Sprintf("Resource not found: %s", releaseTarget.ResourceId)).
@@ -383,7 +378,7 @@ func (e *GradualRolloutEvaluator) getReleaseTargets(
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 ) ([]*oapi.ReleaseTarget, error) {
-	targets, err := e.store.ReleaseTargets.Items()
+	targets, err := e.getters.GetReleaseTargets()
 	if err != nil {
 		return nil, err
 	}

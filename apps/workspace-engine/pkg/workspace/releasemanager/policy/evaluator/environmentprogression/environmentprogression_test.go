@@ -128,7 +128,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	// Create a version for prod environment
@@ -220,7 +220,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Get the prod environment
 	prodEnv, _ := st.Environments.Get("env-prod")
@@ -302,7 +302,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Get the prod environment
 	prodEnv, _ := st.Environments.Get("env-prod")
@@ -342,7 +342,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	version := &oapi.DeploymentVersion{
 		Id:           "version-1",
@@ -518,7 +518,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -601,7 +601,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -732,7 +732,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -907,7 +907,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -989,7 +989,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -1036,7 +1036,7 @@ func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{

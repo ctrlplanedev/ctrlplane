@@ -1526,6 +1526,21 @@ type PreviewReleaseTargetsForResourceParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// GetReleaseTargetStatesJSONBody defines parameters for GetReleaseTargetStates.
+type GetReleaseTargetStatesJSONBody struct {
+	DeploymentId  string `json:"deploymentId"`
+	EnvironmentId string `json:"environmentId"`
+}
+
+// GetReleaseTargetStatesParams defines parameters for GetReleaseTargetStates.
+type GetReleaseTargetStatesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetJobsForReleaseTargetParams defines parameters for GetJobsForReleaseTarget.
 type GetJobsForReleaseTargetParams struct {
 	// Limit Maximum number of items to return
@@ -1632,6 +1647,9 @@ type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
 // PreviewReleaseTargetsForResourceJSONRequestBody defines body for PreviewReleaseTargetsForResource for application/json ContentType.
 type PreviewReleaseTargetsForResourceJSONRequestBody = ResourcePreviewRequest
+
+// GetReleaseTargetStatesJSONRequestBody defines body for GetReleaseTargetStates for application/json ContentType.
+type GetReleaseTargetStatesJSONRequestBody GetReleaseTargetStatesJSONBody
 
 // CacheBatchJSONRequestBody defines body for CacheBatch for application/json ContentType.
 type CacheBatchJSONRequestBody CacheBatchJSONBody
@@ -2812,6 +2830,9 @@ type ServerInterface interface {
 	// Preview release targets for a resource
 	// (POST /v1/workspaces/{workspaceId}/release-targets/resource-preview)
 	PreviewReleaseTargetsForResource(c *gin.Context, workspaceId string, params PreviewReleaseTargetsForResourceParams)
+	// Get release target states by deployment and environment
+	// (POST /v1/workspaces/{workspaceId}/release-targets/state)
+	GetReleaseTargetStates(c *gin.Context, workspaceId string, params GetReleaseTargetStatesParams)
 	// Get the desired release for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release)
 	GetReleaseTargetDesiredRelease(c *gin.Context, workspaceId string, releaseTargetKey string)
@@ -4295,6 +4316,49 @@ func (siw *ServerInterfaceWrapper) PreviewReleaseTargetsForResource(c *gin.Conte
 	siw.Handler.PreviewReleaseTargetsForResource(c, workspaceId, params)
 }
 
+// GetReleaseTargetStates operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetStates(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReleaseTargetStatesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetStates(c, workspaceId, params)
+}
+
 // GetReleaseTargetDesiredRelease operation middleware
 func (siw *ServerInterfaceWrapper) GetReleaseTargetDesiredRelease(c *gin.Context) {
 
@@ -5319,6 +5383,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/resource-preview", wrapper.PreviewReleaseTargetsForResource)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/state", wrapper.GetReleaseTargetStates)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/desired-release", wrapper.GetReleaseTargetDesiredRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)

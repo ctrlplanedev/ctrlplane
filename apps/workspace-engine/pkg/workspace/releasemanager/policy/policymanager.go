@@ -42,30 +42,24 @@ func New(store *store.Store) *Manager {
 
 func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		approval.NewEvaluator(m.store, rule),
-		environmentprogression.NewEvaluator(m.store, rule),
-		gradualrollout.NewEvaluator(m.store, rule),
-		versionselector.NewEvaluator(m.store, rule),
+		approval.NewEvaluatorFromStore(m.store, rule),
+		environmentprogression.NewEvaluatorFromStore(m.store, rule),
+		gradualrollout.NewEvaluatorFromStore(m.store, rule),
+		versionselector.NewEvaluator(rule),
 		deploymentdependency.NewEvaluator(m.store, rule),
-		deploymentwindow.NewEvaluator(m.store, rule),
-		versioncooldown.NewEvaluator(m.store, rule),
+		deploymentwindow.NewEvaluatorFromStore(m.store, rule),
+		versioncooldown.NewEvaluatorFromStore(m.store, rule),
 	)
 }
 
 func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		deployableversions.NewEvaluator(m.store),
+		deployableversions.NewEvaluatorFromStore(m.store),
 	)
 }
 
 func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
-	return evaluator.CollectEvaluators(
-		deploymentwindow.NewSummaryEvaluator(m.store, rule),
-		approval.NewEvaluator(m.store, rule),
-		environmentprogression.NewEvaluator(m.store, rule),
-		gradualrollout.NewSummaryEvaluator(m.store, rule),
-		versioncooldown.NewSummaryEvaluator(m.store, rule),
-	)
+	return EvaluatorsForSummary(m.store, rule)
 }
 
 // evalTask pairs an evaluator with the rule ID it belongs to, so results can

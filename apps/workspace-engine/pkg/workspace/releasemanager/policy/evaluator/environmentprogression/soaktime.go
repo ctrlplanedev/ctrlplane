@@ -7,20 +7,19 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var _ evaluator.Evaluator = &SoakTimeEvaluator{}
 
 type SoakTimeEvaluator struct {
-	store           *store.Store
+	getters         Getters
 	soakMinutes     int32
 	successStatuses map[oapi.JobStatus]bool
 	timeGetter      func() time.Time
 }
 
 func NewSoakTimeEvaluator(
-	store *store.Store,
+	getters Getters,
 	soakMinutes int32,
 	successStatuses map[oapi.JobStatus]bool,
 ) evaluator.Evaluator {
@@ -33,7 +32,7 @@ func NewSoakTimeEvaluator(
 		}
 	}
 	return evaluator.WithMemoization(&SoakTimeEvaluator{
-		store:           store,
+		getters:         getters,
 		soakMinutes:     soakMinutes,
 		successStatuses: successStatuses,
 		timeGetter: func() time.Time {
@@ -68,7 +67,7 @@ func (e *SoakTimeEvaluator) Evaluate(
 	environment := scope.Environment
 	version := scope.Version
 
-	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, e.successStatuses)
+	tracker := NewReleaseTargetJobTracker(ctx, e.getters, environment, version, e.successStatuses)
 	return e.EvaluateWithTracker(tracker)
 }
 

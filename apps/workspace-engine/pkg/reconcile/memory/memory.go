@@ -8,14 +8,14 @@ import (
 	"slices"
 	"sync"
 	"time"
-	"workspace-engine/pkg/workqueue"
+	"workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
 )
 
 const defaultPriority int16 = 100
 
-var _ workqueue.Queue = (*Queue)(nil)
+var _ reconcile.Queue = (*Queue)(nil)
 
 type Queue struct {
 	backend    *backend
@@ -82,15 +82,15 @@ func (q *Queue) ForKinds(kinds ...string) *Queue {
 	return filtered
 }
 
-func (q *Queue) Enqueue(ctx context.Context, params workqueue.EnqueueParams) error {
+func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if params.WorkspaceID == "" {
-		return workqueue.ErrMissingWorkspaceID
+		return reconcile.ErrMissingWorkspaceID
 	}
 	if params.Kind == "" {
-		return workqueue.ErrMissingKind
+		return reconcile.ErrMissingKind
 	}
 	if _, err := uuid.Parse(params.WorkspaceID); err != nil {
 		return fmt.Errorf("parse workspace_id as uuid: %w", err)
@@ -176,18 +176,18 @@ func (q *Queue) Enqueue(ctx context.Context, params workqueue.EnqueueParams) err
 	return nil
 }
 
-func (q *Queue) Claim(ctx context.Context, params workqueue.ClaimParams) ([]workqueue.Item, error) {
+func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reconcile.Item, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if params.WorkerID == "" {
-		return nil, workqueue.ErrMissingWorkerID
+		return nil, reconcile.ErrMissingWorkerID
 	}
 	if params.BatchSize <= 0 {
-		return nil, workqueue.ErrInvalidBatchSize
+		return nil, reconcile.ErrInvalidBatchSize
 	}
 	if params.LeaseDuration <= 0 {
-		return nil, workqueue.ErrInvalidLeaseDuration
+		return nil, reconcile.ErrInvalidLeaseDuration
 	}
 
 	q.backend.mu.Lock()
@@ -232,7 +232,7 @@ func (q *Queue) Claim(ctx context.Context, params workqueue.ClaimParams) ([]work
 	})
 
 	claimCount := min(params.BatchSize, len(candidates))
-	out := make([]workqueue.Item, 0, claimCount)
+	out := make([]reconcile.Item, 0, claimCount)
 	for i := range claimCount {
 		s := candidates[i]
 		claimedUntil := now.Add(params.LeaseDuration)
@@ -244,15 +244,15 @@ func (q *Queue) Claim(ctx context.Context, params workqueue.ClaimParams) ([]work
 	return out, nil
 }
 
-func (q *Queue) ExtendLease(ctx context.Context, params workqueue.ExtendLeaseParams) error {
+func (q *Queue) ExtendLease(ctx context.Context, params reconcile.ExtendLeaseParams) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if params.WorkerID == "" {
-		return workqueue.ErrMissingWorkerID
+		return reconcile.ErrMissingWorkerID
 	}
 	if params.LeaseDuration <= 0 {
-		return workqueue.ErrInvalidLeaseDuration
+		return reconcile.ErrInvalidLeaseDuration
 	}
 
 	q.backend.mu.Lock()
@@ -260,7 +260,7 @@ func (q *Queue) ExtendLease(ctx context.Context, params workqueue.ExtendLeasePar
 
 	s, ok := q.backend.scopes[params.ItemID]
 	if !ok || s.ClaimedBy != params.WorkerID {
-		return workqueue.ErrClaimNotOwned
+		return reconcile.ErrClaimNotOwned
 	}
 	now := time.Now()
 	claimedUntil := now.Add(params.LeaseDuration)
@@ -269,12 +269,12 @@ func (q *Queue) ExtendLease(ctx context.Context, params workqueue.ExtendLeasePar
 	return nil
 }
 
-func (q *Queue) AckSuccess(ctx context.Context, params workqueue.AckSuccessParams) (workqueue.AckSuccessResult, error) {
+func (q *Queue) AckSuccess(ctx context.Context, params reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
 	if err := ctx.Err(); err != nil {
-		return workqueue.AckSuccessResult{}, err
+		return reconcile.AckSuccessResult{}, err
 	}
 	if params.WorkerID == "" {
-		return workqueue.AckSuccessResult{}, workqueue.ErrMissingWorkerID
+		return reconcile.AckSuccessResult{}, reconcile.ErrMissingWorkerID
 	}
 
 	q.backend.mu.Lock()
@@ -282,7 +282,7 @@ func (q *Queue) AckSuccess(ctx context.Context, params workqueue.AckSuccessParam
 
 	s, ok := q.backend.scopes[params.ItemID]
 	if !ok || s.ClaimedBy != params.WorkerID || s.UpdatedAt.After(params.ClaimedUpdatedAt) {
-		return workqueue.AckSuccessResult{}, workqueue.ErrClaimNotOwned
+		return reconcile.AckSuccessResult{}, reconcile.ErrClaimNotOwned
 	}
 
 	cutoff := s.UpdatedAt
@@ -298,24 +298,24 @@ func (q *Queue) AckSuccess(ctx context.Context, params workqueue.AckSuccessParam
 	if len(s.Payloads) == 0 {
 		delete(q.backend.scopes, s.ID)
 		delete(q.backend.scopeIndex, makeScopeKey(s.WorkspaceID, s.Kind, s.ScopeType, s.ScopeID))
-		return workqueue.AckSuccessResult{Deleted: true}, nil
+		return reconcile.AckSuccessResult{Deleted: true}, nil
 	}
 
 	s.ClaimedBy = ""
 	s.ClaimedUntil = nil
 	s.UpdatedAt = time.Now()
-	return workqueue.AckSuccessResult{Deleted: deletedPayloads > 0}, nil
+	return reconcile.AckSuccessResult{Deleted: deletedPayloads > 0}, nil
 }
 
-func (q *Queue) Retry(ctx context.Context, params workqueue.RetryParams) error {
+func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if params.WorkerID == "" {
-		return workqueue.ErrMissingWorkerID
+		return reconcile.ErrMissingWorkerID
 	}
 	if params.RetryBackoff <= 0 {
-		return workqueue.ErrInvalidRetryBackoff
+		return reconcile.ErrInvalidRetryBackoff
 	}
 
 	q.backend.mu.Lock()
@@ -323,7 +323,7 @@ func (q *Queue) Retry(ctx context.Context, params workqueue.RetryParams) error {
 
 	s, ok := q.backend.scopes[params.ItemID]
 	if !ok || s.ClaimedBy != params.WorkerID {
-		return workqueue.ErrClaimNotOwned
+		return reconcile.ErrClaimNotOwned
 	}
 
 	cutoff := s.UpdatedAt
@@ -370,7 +370,7 @@ func normalizePayload(payloadType, payloadKey string, payloadData any) ([]byte, 
 	return normalized, payloadKey, true, nil
 }
 
-func toItem(s *scope) workqueue.Item {
+func toItem(s *scope) reconcile.Item {
 	payloads := make([]*payload, 0, len(s.Payloads))
 	for _, p := range s.Payloads {
 		payloads = append(payloads, p)
@@ -391,7 +391,7 @@ func toItem(s *scope) workqueue.Item {
 		return 0
 	})
 
-	outPayloads := make([]workqueue.Payload, 0, len(payloads))
+	outPayloads := make([]reconcile.Payload, 0, len(payloads))
 	var attemptCount int32
 	lastError := ""
 	for _, p := range payloads {
@@ -401,7 +401,7 @@ func toItem(s *scope) workqueue.Item {
 		if p.LastError > lastError {
 			lastError = p.LastError
 		}
-		outPayloads = append(outPayloads, workqueue.Payload{
+		outPayloads = append(outPayloads, reconcile.Payload{
 			Type:  p.Type,
 			Key:   p.Key,
 			Value: slices.Clone(p.Value),
@@ -414,7 +414,7 @@ func toItem(s *scope) workqueue.Item {
 		claimedUntil = &t
 	}
 
-	return workqueue.Item{
+	return reconcile.Item{
 		ID:           s.ID,
 		WorkspaceID:  s.WorkspaceID,
 		Kind:         s.Kind,

@@ -75,7 +75,7 @@ func TestGetReleaseTargets(t *testing.T) {
 	version, _ := st.DeploymentVersions.Get("version-1")
 
 	// Initially no release targets (no resources matched)
-	targets := getReleaseTargets(ctx, st, version, env)
+	targets := getReleaseTargets(ctx, &storeGetters{store: st}, version, env)
 	assert.Empty(t, targets, "expected no release targets when store has no targets")
 
 	// Note: In a real scenario, release targets would be computed from the intersection
@@ -97,7 +97,7 @@ func TestNewReleaseTargetJobTracker(t *testing.T) {
 	version, _ := st.DeploymentVersions.Get("version-1")
 
 	// Test with default success statuses
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	assert.NotNil(t, tracker, "expected non-nil tracker")
 	assert.Equal(t, "env-1", tracker.Environment.Id)
@@ -110,7 +110,7 @@ func TestNewReleaseTargetJobTracker(t *testing.T) {
 		oapi.JobStatusSuccessful: true,
 		oapi.JobStatusInProgress: true,
 	}
-	tracker2 := NewReleaseTargetJobTracker(ctx, st, env, version, customStatuses)
+	tracker2 := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, customStatuses)
 
 	assert.True(t, tracker2.SuccessStatuses[oapi.JobStatusSuccessful], "expected Successful status in custom success statuses")
 	assert.True(t, tracker2.SuccessStatuses[oapi.JobStatusInProgress], "expected InProgress status in custom success statuses")
@@ -123,7 +123,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_NoTargets(t *testing.T) {
 	env, _ := st.Environments.Get("env-1")
 	version, _ := st.DeploymentVersions.Get("version-1")
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	percentage := tracker.GetSuccessPercentage()
 	assert.Equal(t, float32(0.0), percentage, "expected 0%% success with no targets")
@@ -206,7 +206,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	}
 	st.Jobs.Upsert(ctx, job2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
 
@@ -280,7 +280,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
 
@@ -296,7 +296,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_NoJobs(t *testing.T) {
 	env, _ := st.Environments.Get("env-1")
 	version, _ := st.DeploymentVersions.Get("version-1")
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	// With no successful jobs, soak time requirement should return true (0 duration remaining)
 	// Actually, looking at the code, with no successful jobs mostRecentSuccess is zero time
@@ -349,7 +349,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 	}
 	st.Jobs.Upsert(ctx, job1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	// Soak time of 10 minutes should be met (job completed 15 minutes ago)
 	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
@@ -425,7 +425,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
 
@@ -476,7 +476,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 	}
 	st.Jobs.Upsert(ctx, job1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	// Test zero duration
 	remaining := tracker.GetSoakTimeRemaining(0)
@@ -500,7 +500,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	env, _ := st.Environments.Get("env-1")
 	version, _ := st.DeploymentVersions.Get("version-1")
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	// With no successful jobs, should be zero time
 	assert.True(t, tracker.GetMostRecentSuccess().IsZero(), "expected zero time with no successful jobs")
@@ -536,7 +536,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	}
 	st.Jobs.Upsert(ctx, job1)
 
-	tracker2 := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker2 := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	mostRecent := tracker2.GetMostRecentSuccess()
 	assert.False(t, mostRecent.IsZero(), "expected non-zero time with successful job")
@@ -553,7 +553,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_NoSuccesses(t *testing.T) {
 	env, _ := st.Environments.Get("env-1")
 	version, _ := st.DeploymentVersions.Get("version-1")
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	// With no successful jobs, should return false
 	assert.False(t, tracker.IsWithinMaxAge(10*time.Minute), "expected false with no successful jobs")
@@ -596,7 +596,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 	}
 	st.Jobs.Upsert(ctx, job1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	// Should be within 10 minutes
 	assert.True(t, tracker.IsWithinMaxAge(10*time.Minute),
@@ -669,7 +669,7 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 
 	jobs := tracker.Jobs()
 	assert.Len(t, jobs, 2, "expected 2 jobs")
@@ -749,7 +749,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	st.Jobs.Upsert(ctx, job2)
 
 	// Tracker for env-1 should only see job-1
-	tracker1 := NewReleaseTargetJobTracker(ctx, st, env1, version, nil)
+	tracker1 := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env1, version, nil)
 	jobs1 := tracker1.Jobs()
 	assert.Len(t, jobs1, 1, "expected 1 job for env-1")
 	if len(jobs1) > 0 {
@@ -757,7 +757,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	}
 
 	// Tracker for env-2 should only see job-2
-	tracker2 := NewReleaseTargetJobTracker(ctx, st, env2, version, nil)
+	tracker2 := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env2, version, nil)
 	jobs2 := tracker2.Jobs()
 	assert.Len(t, jobs2, 1, "expected 1 job for env-2")
 	if len(jobs2) > 0 {
@@ -818,7 +818,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1}
 
@@ -931,7 +931,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	}
 	st.Jobs.Upsert(ctx, job3)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
@@ -1008,7 +1008,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 	}
 	st.Jobs.Upsert(ctx, job1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
@@ -1029,7 +1029,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTarget
 	env, _ := st.Environments.Get("env-1")
 	version, _ := st.DeploymentVersions.Get("version-1")
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{}
 
 	// With no release targets, should return zero time
@@ -1056,7 +1056,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJob
 		DeploymentId:  "deploy-1",
 	}
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
 
 	// With no successful jobs, should return zero time
@@ -1127,7 +1127,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
 
 	// With zero or negative minimum percentage, should default to 100%
@@ -1236,7 +1236,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	}
 	st.Jobs.Upsert(ctx, job3)
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, &storeGetters{store: st}, env, version, nil)
 	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)

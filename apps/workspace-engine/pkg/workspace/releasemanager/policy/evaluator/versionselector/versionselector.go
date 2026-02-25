@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -20,20 +19,18 @@ var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versionselec
 // Evaluator evaluates version selector rules using CEL expressions.
 // It provides bidirectional filtering between versions and release targets.
 type Evaluator struct {
-	store  *store.Store
 	ruleId string
 	rule   *oapi.VersionSelectorRule
 }
 
 // NewEvaluator creates a new version selector evaluator.
 // Returns nil if the rule or store is nil.
-func NewEvaluator(store *store.Store, versionSelectorRule *oapi.PolicyRule) evaluator.Evaluator {
-	if versionSelectorRule == nil || versionSelectorRule.VersionSelector == nil || store == nil {
+func NewEvaluator(versionSelectorRule *oapi.PolicyRule) evaluator.Evaluator {
+	if versionSelectorRule == nil || versionSelectorRule.VersionSelector == nil {
 		return nil
 	}
 
 	return evaluator.WithMemoization(&Evaluator{
-		store:  store,
 		ruleId: versionSelectorRule.Id,
 		rule:   versionSelectorRule.VersionSelector,
 	})

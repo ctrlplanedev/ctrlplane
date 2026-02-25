@@ -36,4 +36,12 @@ local openapi = import '../lib/openapi.libsonnet';
       latestJob: openapi.schemaRef('Job'),
     },
   },
+  ReleaseTargetWithState: {
+    type: 'object',
+    required: ['releaseTarget', 'state'],
+    properties: {
+      releaseTarget: openapi.schemaRef('ReleaseTarget'),
+      state: openapi.schemaRef('ReleaseTargetState'),
+    },
+  },
 }

@@ -175,7 +175,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 	// Test with 50% minimum requirement (66.67% > 50%, should pass)
 	env, _ := st.Environments.Get("env-staging")
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(st, minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(&storeGetters{store: st}, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -292,7 +292,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 	// Test with 50% minimum requirement (33.33% < 50%, should fail)
 	env, _ := st.Environments.Get("env-staging")
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(st, minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(&storeGetters{store: st}, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -436,7 +436,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 
 	env, _ := st.Environments.Get("env-staging")
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(st, minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(&storeGetters{store: st}, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -512,7 +512,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	// Test with one successful job - should be allowed
-	evalZero := NewPassRateEvaluator(st, 0.0, nil)
+	evalZero := NewPassRateEvaluator(&storeGetters{store: st}, 0.0, nil)
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
 		Version:     version,
@@ -541,7 +541,7 @@ func TestPassRateEvaluator_NoReleaseTargets(t *testing.T) {
 
 	env, _ := st.Environments.Get("env-staging")
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(st, minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(&storeGetters{store: st}, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -618,7 +618,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		oapi.JobStatusInProgress: true,
 	}
 	minSuccessPercentage := float32(0.0) // Require at least one "successful" job
-	eval := NewPassRateEvaluator(st, minSuccessPercentage, customSuccessStatuses)
+	eval := NewPassRateEvaluator(&storeGetters{store: st}, minSuccessPercentage, customSuccessStatuses)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,

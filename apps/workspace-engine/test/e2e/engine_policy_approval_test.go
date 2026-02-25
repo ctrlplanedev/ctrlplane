@@ -54,9 +54,10 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 
 	// Add approval rule requiring 2 approvals
 	policy, _ := engine.Workspace().Policies().Get(policyID)
+	rule1Id := uuid.New().String()
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-1",
+			Id:          rule1Id,
 			PolicyId:    policyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
@@ -332,9 +333,10 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 
 	// Add approval rule requiring 2 approvals
 	policy, _ := engine.Workspace().Policies().Get(policyID)
+	rule1Id := uuid.New().String()
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-1",
+			Id:          rule1Id,
 			PolicyId:    policyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
@@ -505,9 +507,10 @@ func TestEngine_ApprovalPolicy_ExactMinimum(t *testing.T) {
 
 	// Add approval rule requiring 3 approvals
 	policy, _ := engine.Workspace().Policies().Get(policyID)
+	rule1Id := uuid.New().String()
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-1",
+			Id:          rule1Id,
 			PolicyId:    policyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3},
@@ -592,9 +595,10 @@ func TestEngine_ApprovalPolicy_ZeroApprovalsRequired(t *testing.T) {
 
 	// Add approval rule requiring 0 approvals (effectively disabled)
 	policy, _ := engine.Workspace().Policies().Get(policyID)
+	rule1Id := uuid.New().String()
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-1",
+			Id:          rule1Id,
 			PolicyId:    policyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0},
@@ -668,9 +672,10 @@ func TestEngine_ApprovalPolicy_PartialApprovalBlocks(t *testing.T) {
 
 	// Add approval rule requiring 5 approvals
 	policy, _ := engine.Workspace().Policies().Get(policyID)
+	rule1Id := uuid.New().String()
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-1",
+			Id:          rule1Id,
 			PolicyId:    policyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 5},

@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/http/server/openapi/utils"
 
+	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -229,6 +230,74 @@ func (s *ReleaseTargets) GetJobsForReleaseTarget(c *gin.Context, workspaceId str
 		"total":  total,
 		"offset": params.Offset,
 		"limit":  params.Limit,
+	})
+}
+
+func (s *ReleaseTargets) GetReleaseTargetStates(c *gin.Context, workspaceId string, params oapi.GetReleaseTargetStatesParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var req oapi.GetReleaseTargetStatesJSONRequestBody
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	allTargets, err := ws.ReleaseTargets().Items()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	filtered := make([]*oapi.ReleaseTarget, 0)
+	for _, rt := range allTargets {
+		if rt != nil && rt.DeploymentId == req.DeploymentId && rt.EnvironmentId == req.EnvironmentId {
+			filtered = append(filtered, rt)
+		}
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Key() < filtered[j].Key()
+	})
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(filtered)
+	start := min(offset, total)
+	end := min(start+limit, total)
+	page := filtered[start:end]
+
+	items := make([]oapi.ReleaseTargetAndState, 0, len(page))
+	for _, rt := range page {
+		state, err := ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), rt)
+		if err != nil {
+			log.Warn("Failed to get state for release target", "key", rt.Key(), "error", err.Error())
+			continue
+		}
+		if state == nil {
+			state = &oapi.ReleaseTargetState{}
+		}
+		items = append(items, oapi.ReleaseTargetAndState{
+			ReleaseTarget: *rt,
+			State:         *state,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items":  items,
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
 	})
 }
 

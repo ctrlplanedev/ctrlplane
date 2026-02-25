@@ -23,7 +23,10 @@ const getReleaseTargetJobs: AsyncTypedHandler<
   );
 
   if (jobsResponse.error != null)
-    throw new ApiError(jobsResponse.error.error ?? "Failed to get release target jobs", jobsResponse.response.status);
+    throw new ApiError(
+      jobsResponse.error.error ?? "Failed to get release target jobs",
+      jobsResponse.response.status,
+    );
 
   res.status(200).json(jobsResponse.data);
 };
@@ -66,9 +69,39 @@ const getReleaseTargetState: AsyncTypedHandler<
   );
 
   if (stateResponse.error != null)
-    throw new ApiError(stateResponse.error.error ?? "Failed to get release target state", stateResponse.response.status);
+    throw new ApiError(
+      stateResponse.error.error ?? "Failed to get release target state",
+      stateResponse.response.status,
+    );
 
   res.status(200).json(stateResponse.data);
+};
+
+const getReleaseTargetStates: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/release-targets/state",
+  "post"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { limit, offset } = req.query;
+
+  const statesResponse = await getClientFor(workspaceId).POST(
+    "/v1/workspaces/{workspaceId}/release-targets/state",
+    {
+      params: {
+        path: { workspaceId },
+        query: { limit, offset },
+      },
+      body: req.body,
+    },
+  );
+
+  if (statesResponse.error != null)
+    throw new ApiError(
+      statesResponse.error.error ?? "Failed to get release target states",
+      statesResponse.response.status,
+    );
+
+  res.status(200).json(statesResponse.data);
 };
 
 const previewReleaseTargetsForResource: AsyncTypedHandler<
@@ -104,5 +137,6 @@ const releaseTargetKeyRouter = Router({ mergeParams: true })
   .get("/state", asyncHandler(getReleaseTargetState));
 
 export const releaseTargetsRouter = Router({ mergeParams: true })
+  .post("/state", asyncHandler(getReleaseTargetStates))
   .post("/resource-preview", asyncHandler(previewReleaseTargetsForResource))
   .use("/:releaseTargetKey", releaseTargetKeyRouter);

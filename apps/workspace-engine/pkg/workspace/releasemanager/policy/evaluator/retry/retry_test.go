@@ -64,7 +64,7 @@ func TestRetryEvaluator_DefaultBehavior_FirstAttempt(t *testing.T) {
 	}
 
 	// Nil rule = default behavior
-	eval := NewEvaluator(st, nil)
+	eval := NewEvaluatorFromStore(st, nil)
 	result := eval.Evaluate(ctx, release)
 
 	assert.True(t, result.Allowed, "First attempt should be allowed")
@@ -92,7 +92,7 @@ func TestRetryEvaluator_DefaultBehavior_SecondAttemptDenied(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	eval := NewEvaluator(st, nil)
+	eval := NewEvaluatorFromStore(st, nil)
 	result := eval.Evaluate(ctx, release)
 
 	assert.False(t, result.Allowed, "Second attempt should be denied with default behavior")
@@ -121,7 +121,7 @@ func TestRetryEvaluator_DefaultBehavior_AllStatusesCount(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	eval := NewEvaluator(st, nil)
+	eval := NewEvaluatorFromStore(st, nil)
 	result := eval.Evaluate(ctx, release)
 
 	// Successful jobs count with default behavior (maxRetries=0, no policy)
@@ -149,7 +149,7 @@ func TestRetryEvaluator_MaxRetries_Zero(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: 0,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// First attempt allowed
 	result := eval.Evaluate(ctx, release)
@@ -184,7 +184,7 @@ func TestRetryEvaluator_MaxRetries_Three(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: 3,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Simulate 3 attempts
 	for i := 1; i <= 3; i++ {
@@ -238,7 +238,7 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 		MaxRetries:      1,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add successful job - should NOT count
 	completedAt1 := time.Now().Add(-2 * time.Hour)
@@ -314,7 +314,7 @@ func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
 		MaxRetries:      2,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add jobs with different retryable statuses
 	completedAt1 := time.Now().Add(-3 * time.Hour)
@@ -379,7 +379,7 @@ func TestRetryEvaluator_DifferentReleasesIndependent(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: 0, // No retries
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add failed job for release1
 	completedAt := time.Now()
@@ -417,7 +417,7 @@ func TestRetryEvaluator_LinearBackoff_StillWaiting(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add job that completed 30 seconds ago
 	completedAt := time.Now().Add(-30 * time.Second)
@@ -460,7 +460,7 @@ func TestRetryEvaluator_LinearBackoff_BackoffElapsed(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add job that completed 90 seconds ago (backoff elapsed)
 	completedAt := time.Now().Add(-90 * time.Second)
@@ -496,7 +496,7 @@ func TestRetryEvaluator_LinearBackoff_ConstantDelay(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Simulate multiple retries with linear backoff
 	for i := 1; i <= 3; i++ {
@@ -538,7 +538,7 @@ func TestRetryEvaluator_ExponentialBackoff_DoublesEachRetry(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	expectedBackoffs := map[int]int{
 		1: 30,  // 30 * 2^0
@@ -597,7 +597,7 @@ func TestRetryEvaluator_ExponentialBackoff_WithCap(t *testing.T) {
 		BackoffStrategy:   &backoffStrategy,
 		MaxBackoffSeconds: &maxBackoffSeconds,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Create 4 attempts: 30, 60, 120, 240 -> but 240 should be capped at 100
 	for i := 1; i <= 4; i++ {
@@ -635,7 +635,7 @@ func TestRetryEvaluator_NoBackoff_ImmediateRetry(t *testing.T) {
 		MaxRetries:     3,
 		BackoffSeconds: nil, // No backoff
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add job that just completed
 	completedAt := time.Now().Add(-1 * time.Second)
@@ -672,7 +672,7 @@ func TestRetryEvaluator_Backoff_UsesCompletedAt(t *testing.T) {
 		MaxRetries:     3,
 		BackoffSeconds: &backoffSeconds,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Job created 2 hours ago but completed 30 seconds ago
 	completedAt := time.Now().Add(-30 * time.Second)
@@ -708,7 +708,7 @@ func TestRetryEvaluator_Backoff_FallsBackToCreatedAt(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		RetryOnStatuses: &retryOnStatuses, // Explicitly include InProgress to test backoff fallback logic
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Job with no completedAt (still running)
 	st.Jobs.Upsert(ctx, &oapi.Job{
@@ -740,7 +740,7 @@ func TestRetryEvaluator_Backoff_NextEvaluationTime(t *testing.T) {
 		MaxRetries:     3,
 		BackoffSeconds: &backoffSeconds,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	completedAt := time.Now().Add(-60 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
@@ -784,7 +784,7 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add successful job (not retryable)
 	completedAt1 := time.Now().Add(-5 * time.Second)
@@ -838,7 +838,7 @@ func TestRetryEvaluator_MixedJobStatuses(t *testing.T) {
 		MaxRetries:      2,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Mix of jobs
 	jobs := []struct {
@@ -881,7 +881,7 @@ func TestRetryEvaluator_NilStore_ReturnsNil(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: 3,
 	}
-	eval := NewEvaluator(nil, rule)
+	eval := NewEvaluatorFromStore(nil, rule)
 	assert.Nil(t, eval, "Should return nil for nil store")
 }
 
@@ -899,7 +899,7 @@ func TestRetryEvaluator_MultipleJobsSameRelease_FindsMostRecent(t *testing.T) {
 		MaxRetries:     3,
 		BackoffSeconds: &backoffSeconds,
 	}
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	// Add older job
 	oldCompletedAt := time.Now().Add(-2 * time.Hour)

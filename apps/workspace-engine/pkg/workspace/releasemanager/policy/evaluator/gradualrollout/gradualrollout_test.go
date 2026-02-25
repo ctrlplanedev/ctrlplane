@@ -173,7 +173,7 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -253,7 +253,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -335,7 +335,7 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinearNormalized, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -415,7 +415,7 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 0)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -461,7 +461,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -469,8 +469,9 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -547,7 +548,7 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -668,7 +669,7 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -775,7 +776,7 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -897,7 +898,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1020,7 +1021,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1132,7 +1133,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1264,7 +1265,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		rule:       rule.GradualRollout,
 		ruleId:     rule.Id,
 		hashingFn:  hashingFn,
@@ -1351,7 +1352,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1492,7 +1493,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1632,7 +1633,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1648,8 +1649,9 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	minSuccessPercentage := float32(100.0)
 	policy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -1775,7 +1777,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1881,7 +1883,7 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -1983,7 +1985,7 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60) // 60 seconds between each position
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		rule:       rule.GradualRollout,
 		ruleId:     rule.Id,
 		hashingFn:  hashingFn,
@@ -2110,7 +2112,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		rule:       rule.GradualRollout,
 		ruleId:     rule.Id,
 		hashingFn:  hashingFn,
@@ -2237,7 +2239,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60) // 60 seconds between deployments
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2303,7 +2305,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed(t *testing.T) {
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2361,7 +2363,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2370,8 +2372,9 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 
 	// Create approval policy requiring 2 approvals, but only provide 1
 	approvalPolicy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -2453,7 +2456,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2564,7 +2567,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinearNormalized, 120) // Total 120 seconds for all
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2640,7 +2643,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow(t *testing.T
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2724,7 +2727,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2812,7 +2815,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVe
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2883,7 +2886,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart(
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -2962,7 +2965,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange(t *t
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -3044,7 +3047,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 	// 60 second intervals between deployments
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -3142,7 +3145,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_NoWindowsExistingBehavior(t *t
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,
@@ -3221,7 +3224,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 	// 60 second intervals between deployments
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
-		store:      st,
+		getters:    &storeGetters{store: st},
 		ruleId:     rule.Id,
 		rule:       rule.GradualRollout,
 		hashingFn:  hashingFn,

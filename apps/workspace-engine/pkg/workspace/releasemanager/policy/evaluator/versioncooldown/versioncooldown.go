@@ -30,9 +30,9 @@ var _ evaluator.Evaluator = &VersionCooldownEvaluator{}
 // that iterating through N candidate versions does not repeat the expensive job/release
 // lookups N times.
 type VersionCooldownEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.VersionCooldownRule
+	getters Getters
+	ruleId  string
+	rule    *oapi.VersionCooldownRule
 
 	// refOnce guards the one-time resolution of the reference version.
 	// The reference version is the same for all candidate versions evaluated
@@ -50,15 +50,22 @@ type referenceResult struct {
 
 // NewEvaluator creates a new VersionCooldownEvaluator from a policy rule.
 // Returns nil if the rule doesn't contain a version cooldown configuration.
-func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
-	if policyRule == nil || policyRule.VersionCooldown == nil || store == nil {
+func NewEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if store == nil {
+		return nil
+	}
+	return NewEvaluator(&storeGetters{store: store}, policyRule)
+}
+
+func NewEvaluator(getters Getters, policyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if policyRule == nil || policyRule.VersionCooldown == nil || getters == nil {
 		return nil
 	}
 
 	return evaluator.WithMemoization(&VersionCooldownEvaluator{
-		store:  store,
-		ruleId: policyRule.Id,
-		rule:   policyRule.VersionCooldown,
+		getters: getters,
+		ruleId:  policyRule.Id,
+		rule:    policyRule.VersionCooldown,
 	})
 }
 
@@ -125,7 +132,7 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 	// Fetch all jobs for this release target once and derive both in-progress
 	// and current release from the same data set, avoiding duplicate
 	// GetJobsForReleaseTarget calls.
-	allJobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	allJobs := e.getters.GetJobsForReleaseTarget(releaseTarget)
 
 	// Check for in-progress deployments first — these take precedence.
 	var latestInProgressJob *oapi.Job
@@ -139,7 +146,7 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 	}
 
 	if latestInProgressJob != nil {
-		release, ok := e.store.Releases.Get(latestInProgressJob.ReleaseId)
+		release, ok := e.getters.GetRelease(latestInProgressJob.ReleaseId)
 		if ok && release != nil {
 			return &referenceResult{version: &release.Version, source: "in_progress"}
 		}
@@ -160,12 +167,12 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 	})
 
 	for _, job := range successfulJobs {
-		release, ok := e.store.Releases.Get(job.ReleaseId)
+		release, ok := e.getters.GetRelease(job.ReleaseId)
 		if !ok || release == nil {
 			continue
 		}
 
-		status := e.store.JobVerifications.GetJobVerificationStatus(job.Id)
+		status := e.getters.GetJobVerificationStatus(job.Id)
 		if status == "" || status == oapi.JobVerificationStatusPassed {
 			return &referenceResult{version: &release.Version, source: "deployed"}
 		}

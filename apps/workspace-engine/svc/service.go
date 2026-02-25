@@ -88,14 +88,12 @@ func (r *Runner) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 	for i := len(r.services) - 1; i >= 0; i-- {
 		svc := r.services[i]
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			log.Info("Stopping service", "service", svc.Name())
 			if err := svc.Stop(shutdownCtx); err != nil {
 				log.Error("Service stop error", "service", svc.Name(), "error", err)
 			}
-		}()
+		})
 	}
 
 	done := make(chan struct{})

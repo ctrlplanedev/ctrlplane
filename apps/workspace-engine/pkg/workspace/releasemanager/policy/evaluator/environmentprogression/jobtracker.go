@@ -5,7 +5,6 @@ import (
 	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,9 +13,8 @@ import (
 
 var jobTrackerTracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression/jobtracker")
 
-func getReleaseTargets(ctx context.Context, store *store.Store, version *oapi.DeploymentVersion, environment *oapi.Environment) []*oapi.ReleaseTarget {
-	// Use indexed lookup by environment instead of scanning all release targets
-	envTargets, err := store.ReleaseTargets.GetForEnvironment(ctx, environment.Id)
+func getReleaseTargets(ctx context.Context, getters Getters, version *oapi.DeploymentVersion, environment *oapi.Environment) []*oapi.ReleaseTarget {
+	envTargets, err := getters.GetReleaseTargetsForEnvironment(ctx, environment.Id)
 	if err != nil {
 		return nil
 	}
@@ -34,7 +32,7 @@ func getReleaseTargets(ctx context.Context, store *store.Store, version *oapi.De
 // environment and deployment version. It provides methods to query job statuses, success rates,
 // and other metrics useful for policy evaluation.
 type ReleaseTargetJobTracker struct {
-	store *store.Store
+	getters Getters
 
 	Environment     *oapi.Environment
 	Version         *oapi.DeploymentVersion
@@ -52,7 +50,7 @@ type ReleaseTargetJobTracker struct {
 // NewReleaseTargetJobTracker creates a new tracker for the given environment and version
 func NewReleaseTargetJobTracker(
 	ctx context.Context,
-	store *store.Store,
+	getters Getters,
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 	successStatuses map[oapi.JobStatus]bool,
@@ -72,11 +70,11 @@ func NewReleaseTargetJobTracker(
 	}
 
 	// Get release targets for this environment and version
-	releaseTargets := getReleaseTargets(ctx, store, version, environment)
+	releaseTargets := getReleaseTargets(ctx, getters, version, environment)
 	span.SetAttributes(attribute.Int("release_targets.count", len(releaseTargets)))
 
 	rtt := &ReleaseTargetJobTracker{
-		store:           store,
+		getters:         getters,
 		Environment:     environment,
 		Version:         version,
 		ReleaseTargets:  releaseTargets,
@@ -106,10 +104,10 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	// Use indexed lookup through release targets instead of scanning all jobs
 	for _, rt := range t.ReleaseTargets {
 		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
-		rtJobs := t.store.Jobs.GetJobsForReleaseTarget(rt)
+		rtJobs := t.getters.GetJobsForReleaseTarget(rt)
 		for _, job := range rtJobs {
 			// Get the release to check version
-			release, ok := t.store.Releases.Get(job.ReleaseId)
+			release, ok := t.getters.GetRelease(job.ReleaseId)
 			if !ok || release == nil {
 				continue
 			}

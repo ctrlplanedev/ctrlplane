@@ -101,7 +101,7 @@ func TestNewEvaluator(t *testing.T) {
 	s, _ := setupTestStore(t)
 
 	t.Run("returns nil when policyRule is nil", func(t *testing.T) {
-		eval := NewEvaluator(s, nil)
+		eval := NewEvaluatorFromStore(s, nil)
 		assert.Nil(t, eval)
 	})
 
@@ -109,7 +109,7 @@ func TestNewEvaluator(t *testing.T) {
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
 		}
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		assert.Nil(t, eval)
 	})
 
@@ -120,7 +120,7 @@ func TestNewEvaluator(t *testing.T) {
 				IntervalSeconds: 3600,
 			},
 		}
-		eval := NewEvaluator(nil, rule)
+		eval := NewEvaluatorFromStore(nil, rule)
 		assert.Nil(t, eval)
 	})
 
@@ -131,7 +131,7 @@ func TestNewEvaluator(t *testing.T) {
 				IntervalSeconds: 3600,
 			},
 		}
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		assert.NotNil(t, eval)
 	})
 }
@@ -145,7 +145,7 @@ func TestVersionCooldownEvaluator_ScopeFields(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(s, rule)
+	eval := NewEvaluatorFromStore(s, rule)
 	require.NotNil(t, eval)
 
 	// The evaluator needs Version and ReleaseTarget
@@ -162,7 +162,7 @@ func TestVersionCooldownEvaluator_RuleType(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(s, rule)
+	eval := NewEvaluatorFromStore(s, rule)
 	require.NotNil(t, eval)
 	assert.Equal(t, evaluator.RuleTypeVersionCooldown, eval.RuleType())
 }
@@ -184,7 +184,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -219,7 +219,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		// Try to deploy the same version again
@@ -259,7 +259,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -300,7 +300,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -341,7 +341,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -383,7 +383,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		// All versions should be allowed since 2 hours have passed since v1.0 was created
@@ -442,7 +442,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -484,7 +484,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluatorFromStore(s, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{

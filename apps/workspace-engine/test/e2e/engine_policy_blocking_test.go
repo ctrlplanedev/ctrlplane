@@ -84,8 +84,9 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 	policy, _ := engine.Workspace().Policies().Get(policyID)
 
 	// Add approval rule requiring 2 approvals
+	rule1Id := uuid.New().String()
 	rule := oapi.PolicyRule{
-		Id:          "rule-1",
+		Id:          rule1Id,
 		PolicyId:    policyID,
 		CreatedAt:   "2024-01-01T00:00:00Z",
 		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},

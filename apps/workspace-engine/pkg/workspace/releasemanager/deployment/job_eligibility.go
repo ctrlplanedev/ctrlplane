@@ -224,13 +224,13 @@ func (c *JobEligibilityChecker) buildRetryEvaluators(
 		span.AddEvent("Failed to get retry rules",
 			oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		// On error, use default retry evaluator
-		retryEvaluators = append(retryEvaluators, retry.NewEvaluator(c.store, nil))
+		retryEvaluators = append(retryEvaluators, retry.NewEvaluatorFromStore(c.store, nil))
 		return retryEvaluators
 	}
 
 	// Create evaluators from extracted retry rules
 	for _, ruleWithPolicy := range retryRules {
-		eval := retry.NewEvaluator(c.store, ruleWithPolicy.Rule)
+		eval := retry.NewEvaluatorFromStore(c.store, ruleWithPolicy.Rule)
 		if eval != nil {
 			retryEvaluators = append(retryEvaluators, eval)
 			span.AddEvent("Added retry evaluator from policy",
@@ -246,7 +246,7 @@ func (c *JobEligibilityChecker) buildRetryEvaluators(
 	// If no retry rules found, use default (maxRetries=0, no retries allowed)
 	if len(retryRules) == 0 {
 		span.AddEvent("No retry policy found, using default (maxRetries=0)")
-		retryEvaluators = append(retryEvaluators, retry.NewEvaluator(c.store, nil))
+		retryEvaluators = append(retryEvaluators, retry.NewEvaluatorFromStore(c.store, nil))
 	}
 
 	return retryEvaluators

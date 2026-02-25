@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"workspace-engine/pkg/events/handler"
@@ -754,7 +753,7 @@ func WithPolicySelector(cel string) PolicyOption {
 func WithPolicyRule(options ...PolicyRuleOption) PolicyOption {
 	return func(ws *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
 		rule := &oapi.PolicyRule{
-			Id:        fmt.Sprintf("rule-%s", uuid.New().String()[:8]),
+			Id:        uuid.New().String(),
 			PolicyId:  p.Id,
 			CreatedAt: time.Now().Format(time.RFC3339),
 		}

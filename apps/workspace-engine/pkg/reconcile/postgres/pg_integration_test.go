@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workqueue"
+	"workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -101,7 +101,7 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 
 	ctx := context.Background()
 
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -112,7 +112,7 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 		t.Fatalf("enqueue failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -129,16 +129,16 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 	}
 
 	// Wrong owner cannot extend lease.
-	err = queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{
+	err = queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{
 		ItemID:        item.ID,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
 	})
-	if !errors.Is(err, workqueue.ErrClaimNotOwned) {
+	if !errors.Is(err, reconcile.ErrClaimNotOwned) {
 		t.Fatalf("expected ErrClaimNotOwned, got %v", err)
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           item.ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: item.UpdatedAt,
@@ -150,7 +150,7 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 		t.Fatalf("expected deleted=true on ack, got %+v", ack)
 	}
 
-	claimedAgain, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedAgain, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -172,7 +172,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	all := New(pool)
 	filtered := NewForKinds(pool, "deploymentresourceselectoreval")
 
-	err := all.Enqueue(ctx, workqueue.EnqueueParams{
+	err := all.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -184,7 +184,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("enqueue kind A failed: %v", err)
 	}
-	err = all.Enqueue(ctx, workqueue.EnqueueParams{
+	err = all.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "otherkind",
 		ScopeType:   "deployment",
@@ -197,7 +197,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		t.Fatalf("enqueue kind B failed: %v", err)
 	}
 
-	claimedFiltered, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	claimedFiltered, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: 2 * time.Second,
@@ -210,7 +210,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	}
 
 	// Retry delays visibility and increments attempt count.
-	err = filtered.Retry(ctx, workqueue.RetryParams{
+	err = filtered.Retry(ctx, reconcile.RetryParams{
 		ItemID:       claimedFiltered[0].ID,
 		WorkerID:     "worker-filtered",
 		LastError:    "transient",
@@ -221,7 +221,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	}
 
 	// Immediately claiming filtered item should return none due to not_before.
-	immediate, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	immediate, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: 2 * time.Second,
@@ -234,7 +234,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	}
 
 	// Unfiltered queue should still be able to claim the other kind.
-	other, err := all.Claim(ctx, workqueue.ClaimParams{
+	other, err := all.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-all",
 		LeaseDuration: 2 * time.Second,
@@ -247,7 +247,7 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	}
 
 	time.Sleep(1100 * time.Millisecond)
-	afterBackoff, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	afterBackoff, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: 2 * time.Second,
@@ -277,7 +277,7 @@ func TestQueue_ClaimAggregatesPayloadsByScope(t *testing.T) {
 	kind := "deploymentresourceselectoreval"
 	scopeType := "deployment"
 
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -291,7 +291,7 @@ func TestQueue_ClaimAggregatesPayloadsByScope(t *testing.T) {
 		t.Fatalf("enqueue payload A failed: %v", err)
 	}
 
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -305,7 +305,7 @@ func TestQueue_ClaimAggregatesPayloadsByScope(t *testing.T) {
 		t.Fatalf("enqueue payload B failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-aggregate",
 		LeaseDuration: 2 * time.Second,
@@ -328,7 +328,7 @@ func TestQueue_ClaimAggregatesPayloadsByScope(t *testing.T) {
 		t.Fatalf("expected payload-a and payload-b keys, got %+v", keys)
 	}
 
-	noneWhileClaimed, err := queue.Claim(ctx, workqueue.ClaimParams{
+	noneWhileClaimed, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-aggregate-2",
 		LeaseDuration: 2 * time.Second,
@@ -340,7 +340,7 @@ func TestQueue_ClaimAggregatesPayloadsByScope(t *testing.T) {
 		t.Fatalf("expected zero items while same scope is leased, got %d", len(noneWhileClaimed))
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           items[0].ID,
 		WorkerID:         "worker-aggregate",
 		ClaimedUpdatedAt: items[0].UpdatedAt,
@@ -352,7 +352,7 @@ func TestQueue_ClaimAggregatesPayloadsByScope(t *testing.T) {
 		t.Fatalf("expected aggregated scope delete on ack, got %+v", ack)
 	}
 
-	afterAck, err := queue.Claim(ctx, workqueue.ClaimParams{
+	afterAck, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-aggregate",
 		LeaseDuration: 2 * time.Second,
@@ -376,7 +376,7 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 	kind := "deploymentresourceselectoreval"
 	scopeType := "deployment"
 
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -389,7 +389,7 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 		t.Fatalf("enqueue payload A failed: %v", err)
 	}
 
-	claimedByA, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedByA, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -402,7 +402,7 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 	}
 
 	// Add more payloads for the same scope while worker-a still owns the lease.
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -415,7 +415,7 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 		t.Fatalf("enqueue payload B during active claim failed: %v", err)
 	}
 
-	claimedByB, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedByB, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
@@ -427,7 +427,7 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 		t.Fatalf("expected worker-b to get no scope while worker-a lease active, got %+v", claimedByB)
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           claimedByA[0].ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: claimedByA[0].UpdatedAt,
@@ -439,7 +439,7 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 		t.Fatalf("expected at least original claimed rows to be deleted")
 	}
 
-	claimedAfterRelease, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedAfterRelease, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
@@ -465,7 +465,7 @@ func TestQueue_LeaseExpiry_AllowsOtherWorkerClaim(t *testing.T) {
 	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
 
 	ctx := context.Background()
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -475,7 +475,7 @@ func TestQueue_LeaseExpiry_AllowsOtherWorkerClaim(t *testing.T) {
 		t.Fatalf("enqueue failed: %v", err)
 	}
 
-	claimedA, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedA, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 500 * time.Millisecond,
@@ -489,7 +489,7 @@ func TestQueue_LeaseExpiry_AllowsOtherWorkerClaim(t *testing.T) {
 
 	time.Sleep(700 * time.Millisecond)
 
-	claimedB, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedB, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
@@ -511,7 +511,7 @@ func TestQueue_FilteredByKind_WithAggregatedPayloads(t *testing.T) {
 
 	ctx := context.Background()
 	scopeID := uuid.NewString()
-	err := all.Enqueue(ctx, workqueue.EnqueueParams{
+	err := all.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -523,7 +523,7 @@ func TestQueue_FilteredByKind_WithAggregatedPayloads(t *testing.T) {
 	if err != nil {
 		t.Fatalf("enqueue filtered payload 1 failed: %v", err)
 	}
-	err = all.Enqueue(ctx, workqueue.EnqueueParams{
+	err = all.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -535,7 +535,7 @@ func TestQueue_FilteredByKind_WithAggregatedPayloads(t *testing.T) {
 	if err != nil {
 		t.Fatalf("enqueue filtered payload 2 failed: %v", err)
 	}
-	err = all.Enqueue(ctx, workqueue.EnqueueParams{
+	err = all.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "otherkind",
 		ScopeType:   "deployment",
@@ -545,7 +545,7 @@ func TestQueue_FilteredByKind_WithAggregatedPayloads(t *testing.T) {
 		t.Fatalf("enqueue other kind failed: %v", err)
 	}
 
-	filteredClaim, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	filteredClaim, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-filtered",
 		LeaseDuration: 2 * time.Second,
@@ -563,7 +563,7 @@ func TestQueue_FilteredByKind_WithAggregatedPayloads(t *testing.T) {
 		t.Fatalf("expected filtered scope to aggregate 2 payloads, got %d", len(filteredClaim[0].Payloads))
 	}
 
-	otherClaim, err := all.Claim(ctx, workqueue.ClaimParams{
+	otherClaim, err := all.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-all",
 		LeaseDuration: 2 * time.Second,
@@ -584,7 +584,7 @@ func TestQueue_ReenqueueSamePayloadAndSingleFlightPerScope(t *testing.T) {
 	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
 
 	ctx := context.Background()
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -598,7 +598,7 @@ func TestQueue_ReenqueueSamePayloadAndSingleFlightPerScope(t *testing.T) {
 	}
 
 	// Same payload identity should upsert, not create another payload entry.
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -611,7 +611,7 @@ func TestQueue_ReenqueueSamePayloadAndSingleFlightPerScope(t *testing.T) {
 		t.Fatalf("re-enqueue same payload identity failed: %v", err)
 	}
 
-	claimedA, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedA, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -626,7 +626,7 @@ func TestQueue_ReenqueueSamePayloadAndSingleFlightPerScope(t *testing.T) {
 		t.Fatalf("expected one payload after upsert, got %d", len(claimedA[0].Payloads))
 	}
 
-	claimedB, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedB, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
@@ -652,7 +652,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 	scopeType := "deployment"
 
 	// Initial scope has two payloads that should be processed together.
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -664,7 +664,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 	if err != nil {
 		t.Fatalf("enqueue payload-a failed: %v", err)
 	}
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -677,7 +677,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 		t.Fatalf("enqueue payload-b failed: %v", err)
 	}
 
-	claimedA, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedA, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -696,7 +696,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 	}
 
 	// New payloads can be added while claimed, but must not be claimable until release.
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -711,7 +711,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 	}
 
 	// Another scope ensures queue can keep progressing while this scope is leased.
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        kind,
 		ScopeType:   scopeType,
@@ -725,7 +725,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 		t.Fatalf("enqueue other-scope payload failed: %v", err)
 	}
 
-	claimedB, err := queue.Claim(ctx, workqueue.ClaimParams{
+	claimedB, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
@@ -739,7 +739,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 		}
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           claimedA[0].ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: claimedA[0].UpdatedAt,
@@ -752,7 +752,7 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 	}
 
 	// After release, newly enqueued payload for the same scope should be claimable.
-	nextClaim, err := queue.Claim(ctx, workqueue.ClaimParams{
+	nextClaim, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     10,
 		WorkerID:      "worker-c",
 		LeaseDuration: 2 * time.Second,
@@ -784,16 +784,16 @@ func TestQueue_ValidationAndOwnershipErrors(t *testing.T) {
 	queue := New(pool)
 	ctx := context.Background()
 
-	if err := queue.Enqueue(ctx, workqueue.EnqueueParams{}); !errors.Is(err, workqueue.ErrMissingWorkspaceID) {
+	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{}); !errors.Is(err, reconcile.ErrMissingWorkspaceID) {
 		t.Fatalf("expected ErrMissingWorkspaceID, got %v", err)
 	}
-	if err := queue.Enqueue(ctx, workqueue.EnqueueParams{WorkspaceID: uuid.NewString()}); !errors.Is(err, workqueue.ErrMissingKind) {
+	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{WorkspaceID: uuid.NewString()}); !errors.Is(err, reconcile.ErrMissingKind) {
 		t.Fatalf("expected ErrMissingKind, got %v", err)
 	}
-	if err := queue.Enqueue(ctx, workqueue.EnqueueParams{WorkspaceID: "bad-uuid", Kind: "k"}); err == nil {
+	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{WorkspaceID: "bad-uuid", Kind: "k"}); err == nil {
 		t.Fatal("expected parse workspace_id error")
 	}
-	if err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: uuid.NewString(),
 		Kind:        "k",
 		Payload:     json.RawMessage("{invalid"),
@@ -801,46 +801,46 @@ func TestQueue_ValidationAndOwnershipErrors(t *testing.T) {
 		t.Fatal("expected payload normalization error")
 	}
 
-	if _, err := queue.Claim(ctx, workqueue.ClaimParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if _, err := queue.Claim(ctx, reconcile.ClaimParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if _, err := queue.Claim(ctx, workqueue.ClaimParams{WorkerID: "w"}); !errors.Is(err, workqueue.ErrInvalidBatchSize) {
+	if _, err := queue.Claim(ctx, reconcile.ClaimParams{WorkerID: "w"}); !errors.Is(err, reconcile.ErrInvalidBatchSize) {
 		t.Fatalf("expected ErrInvalidBatchSize, got %v", err)
 	}
-	if _, err := queue.Claim(ctx, workqueue.ClaimParams{WorkerID: "w", BatchSize: 1}); !errors.Is(err, workqueue.ErrInvalidLeaseDuration) {
+	if _, err := queue.Claim(ctx, reconcile.ClaimParams{WorkerID: "w", BatchSize: 1}); !errors.Is(err, reconcile.ErrInvalidLeaseDuration) {
 		t.Fatalf("expected ErrInvalidLeaseDuration, got %v", err)
 	}
 
-	if err := queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{WorkerID: "w"}); !errors.Is(err, workqueue.ErrInvalidLeaseDuration) {
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{WorkerID: "w"}); !errors.Is(err, reconcile.ErrInvalidLeaseDuration) {
 		t.Fatalf("expected ErrInvalidLeaseDuration, got %v", err)
 	}
 
-	if _, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if _, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           123456,
 		WorkerID:         "w",
 		ClaimedUpdatedAt: time.Now(),
-	}); !errors.Is(err, workqueue.ErrClaimNotOwned) {
+	}); !errors.Is(err, reconcile.ErrClaimNotOwned) {
 		t.Fatalf("expected ErrClaimNotOwned for unknown ack item, got %v", err)
 	}
 
-	if err := queue.Retry(ctx, workqueue.RetryParams{}); !errors.Is(err, workqueue.ErrMissingWorkerID) {
+	if err := queue.Retry(ctx, reconcile.RetryParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.Retry(ctx, workqueue.RetryParams{WorkerID: "w"}); !errors.Is(err, workqueue.ErrInvalidRetryBackoff) {
+	if err := queue.Retry(ctx, reconcile.RetryParams{WorkerID: "w"}); !errors.Is(err, reconcile.ErrInvalidRetryBackoff) {
 		t.Fatalf("expected ErrInvalidRetryBackoff, got %v", err)
 	}
-	if err := queue.Retry(ctx, workqueue.RetryParams{
+	if err := queue.Retry(ctx, reconcile.RetryParams{
 		ItemID:       987654,
 		WorkerID:     "w",
 		LastError:    "x",
 		RetryBackoff: time.Second,
-	}); !errors.Is(err, workqueue.ErrClaimNotOwned) {
+	}); !errors.Is(err, reconcile.ErrClaimNotOwned) {
 		t.Fatalf("expected ErrClaimNotOwned for unknown retry item, got %v", err)
 	}
 }
@@ -853,7 +853,7 @@ func TestQueue_AckReturnsDeletedFalseForNewerPayload(t *testing.T) {
 	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
 
 	ctx := context.Background()
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -866,7 +866,7 @@ func TestQueue_AckReturnsDeletedFalseForNewerPayload(t *testing.T) {
 		t.Fatalf("enqueue failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -880,7 +880,7 @@ func TestQueue_AckReturnsDeletedFalseForNewerPayload(t *testing.T) {
 
 	// Update same payload identity after claim; payload updated_at becomes newer
 	// than the claimed snapshot cutoff.
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -893,7 +893,7 @@ func TestQueue_AckReturnsDeletedFalseForNewerPayload(t *testing.T) {
 		t.Fatalf("re-enqueue same payload failed: %v", err)
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           items[0].ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: items[0].UpdatedAt,
@@ -994,7 +994,7 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 	pool.Close()
 	ctx := context.Background()
 
-	err = queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: uuid.NewString(),
 		Kind:        "k",
 	})
@@ -1002,7 +1002,7 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 		t.Fatal("expected enqueue db error on closed pool")
 	}
 
-	if _, err := queue.Claim(ctx, workqueue.ClaimParams{
+	if _, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "w",
 		LeaseDuration: time.Second,
@@ -1010,7 +1010,7 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 		t.Fatal("expected claim db error on closed pool")
 	}
 
-	if err := queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{
 		ItemID:        1,
 		WorkerID:      "w",
 		LeaseDuration: time.Second,
@@ -1018,7 +1018,7 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 		t.Fatal("expected extend lease db error on closed pool")
 	}
 
-	if _, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           1,
 		WorkerID:         "w",
 		ClaimedUpdatedAt: time.Now(),
@@ -1026,7 +1026,7 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 		t.Fatal("expected ack db error on closed pool")
 	}
 
-	if err := queue.Retry(ctx, workqueue.RetryParams{
+	if err := queue.Retry(ctx, reconcile.RetryParams{
 		ItemID:       1,
 		WorkerID:     "w",
 		LastError:    "x",
@@ -1036,7 +1036,7 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 	}
 
 	filtered := NewForKinds(pool, "k")
-	if _, err := filtered.Claim(ctx, workqueue.ClaimParams{
+	if _, err := filtered.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "w",
 		LeaseDuration: time.Second,
@@ -1052,7 +1052,7 @@ func TestQueue_ExtendLeaseSuccess(t *testing.T) {
 	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
 
 	ctx := context.Background()
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
@@ -1062,7 +1062,7 @@ func TestQueue_ExtendLeaseSuccess(t *testing.T) {
 		t.Fatalf("enqueue failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: time.Second,
@@ -1074,7 +1074,7 @@ func TestQueue_ExtendLeaseSuccess(t *testing.T) {
 		t.Fatalf("expected 1 item, got %d", len(items))
 	}
 
-	if err := queue.ExtendLease(ctx, workqueue.ExtendLeaseParams{
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{
 		ItemID:        items[0].ID,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -1106,7 +1106,7 @@ func TestQueue_ClaimAndAck_NoPayloadScope(t *testing.T) {
 	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
 
 	ctx := context.Background()
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "nopayload-kind",
 		ScopeType:   "deployment",
@@ -1116,7 +1116,7 @@ func TestQueue_ClaimAndAck_NoPayloadScope(t *testing.T) {
 		t.Fatalf("enqueue no-payload item failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -1131,7 +1131,7 @@ func TestQueue_ClaimAndAck_NoPayloadScope(t *testing.T) {
 		t.Fatalf("expected zero payloads for no-payload scope, got %d", len(items[0].Payloads))
 	}
 
-	ack, err := queue.AckSuccess(ctx, workqueue.AckSuccessParams{
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 		ItemID:           items[0].ID,
 		WorkerID:         "worker-a",
 		ClaimedUpdatedAt: items[0].UpdatedAt,
@@ -1143,7 +1143,7 @@ func TestQueue_ClaimAndAck_NoPayloadScope(t *testing.T) {
 		t.Fatal("expected deleted=true after acking no-payload scope")
 	}
 
-	next, err := queue.Claim(ctx, workqueue.ClaimParams{
+	next, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -1163,7 +1163,7 @@ func TestQueue_Retry_NoPayloadScope_ReappearsAfterBackoff(t *testing.T) {
 	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
 
 	ctx := context.Background()
-	err := queue.Enqueue(ctx, workqueue.EnqueueParams{
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "nopayload-kind",
 		ScopeType:   "deployment",
@@ -1173,7 +1173,7 @@ func TestQueue_Retry_NoPayloadScope_ReappearsAfterBackoff(t *testing.T) {
 		t.Fatalf("enqueue no-payload item failed: %v", err)
 	}
 
-	items, err := queue.Claim(ctx, workqueue.ClaimParams{
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-a",
 		LeaseDuration: 2 * time.Second,
@@ -1185,7 +1185,7 @@ func TestQueue_Retry_NoPayloadScope_ReappearsAfterBackoff(t *testing.T) {
 		t.Fatalf("expected one claimed no-payload scope, got %d", len(items))
 	}
 
-	err = queue.Retry(ctx, workqueue.RetryParams{
+	err = queue.Retry(ctx, reconcile.RetryParams{
 		ItemID:       items[0].ID,
 		WorkerID:     "worker-a",
 		LastError:    "transient no-payload failure",
@@ -1195,7 +1195,7 @@ func TestQueue_Retry_NoPayloadScope_ReappearsAfterBackoff(t *testing.T) {
 		t.Fatalf("retry no-payload item failed: %v", err)
 	}
 
-	immediate, err := queue.Claim(ctx, workqueue.ClaimParams{
+	immediate, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,
@@ -1208,7 +1208,7 @@ func TestQueue_Retry_NoPayloadScope_ReappearsAfterBackoff(t *testing.T) {
 	}
 
 	time.Sleep(1100 * time.Millisecond)
-	afterBackoff, err := queue.Claim(ctx, workqueue.ClaimParams{
+	afterBackoff, err := queue.Claim(ctx, reconcile.ClaimParams{
 		BatchSize:     1,
 		WorkerID:      "worker-b",
 		LeaseDuration: 2 * time.Second,

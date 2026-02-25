@@ -25,10 +25,18 @@ type DeploymentWindowSummaryEvaluator struct {
 	location *time.Location
 }
 
+// NewSummaryEvaluatorFromStore creates a new DeploymentWindowSummaryEvaluator from a store and policy rule.
+func NewSummaryEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if store == nil {
+		return nil
+	}
+	return NewSummaryEvaluator(policyRule)
+}
+
 // NewSummaryEvaluator creates a new DeploymentWindowSummaryEvaluator from a policy rule.
 // Returns nil if the rule doesn't contain a deployment window configuration.
-func NewSummaryEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
-	if policyRule == nil || policyRule.DeploymentWindow == nil || store == nil {
+func NewSummaryEvaluator(policyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if policyRule == nil || policyRule.DeploymentWindow == nil {
 		return nil
 	}
 

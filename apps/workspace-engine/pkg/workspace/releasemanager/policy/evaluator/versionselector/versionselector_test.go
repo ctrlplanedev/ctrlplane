@@ -66,14 +66,12 @@ func createTestVersion(ctx context.Context, s *store.Store, deploymentID string,
 }
 
 func TestNewEvaluator(t *testing.T) {
-	s, ctx := setupTestStore(t)
-
 	t.Run("returns nil when rule is nil", func(t *testing.T) {
-		eval := NewEvaluator(s, nil)
+		eval := NewEvaluator(nil)
 		assert.Nil(t, eval)
 	})
 
-	t.Run("returns nil when store is nil", func(t *testing.T) {
+	t.Run("returns evaluator when rule has version selector", func(t *testing.T) {
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
@@ -83,30 +81,12 @@ func TestNewEvaluator(t *testing.T) {
 				Selector: *selector,
 			},
 		}
-		eval := NewEvaluator(nil, rule)
-		assert.Nil(t, eval)
-	})
-
-	t.Run("returns evaluator when both rule and store are provided", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-		rule := &oapi.PolicyRule{
-			Id: "versionSelector",
-			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
-			},
-		}
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 		assert.NotNil(t, eval)
 	})
-
-	_ = ctx // Suppress unused warning
 }
 
 func TestScopeFields(t *testing.T) {
-	s, _ := setupTestStore(t)
-
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
@@ -118,7 +98,6 @@ func TestScopeFields(t *testing.T) {
 	}
 
 	eval := &Evaluator{
-		store:  s,
 		ruleId: rule.Id,
 		rule:   rule.VersionSelector,
 	}
@@ -151,7 +130,7 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -182,7 +161,7 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -219,7 +198,7 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -246,7 +225,7 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -282,7 +261,7 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -309,7 +288,7 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -345,7 +324,7 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -372,7 +351,7 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluator(s, rule)
+		eval := NewEvaluator(rule)
 
 		scope := evaluator.EvaluatorScope{
 			Version:     version,
@@ -407,7 +386,7 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(s, rule)
+	eval := NewEvaluator(rule)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     version,
@@ -444,7 +423,7 @@ func TestEvaluate_WithDescription(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluator(s, rule)
+	eval := NewEvaluator(rule)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     version,

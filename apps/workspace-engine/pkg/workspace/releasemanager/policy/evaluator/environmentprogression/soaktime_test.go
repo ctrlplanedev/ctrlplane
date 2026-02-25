@@ -108,7 +108,7 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -173,7 +173,7 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -233,7 +233,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 
 	env, _ := st.Environments.Get("env-staging")
 	soakMinutes := int32(30)
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -295,7 +295,7 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -377,7 +377,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	st.Jobs.Upsert(ctx, job2)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -402,11 +402,11 @@ func TestSoakTimeEvaluator_ZeroOrNegativeSoakMinutes(t *testing.T) {
 	st := setupTestStoreForSoakTime()
 
 	// Test with zero minutes
-	eval1 := NewSoakTimeEvaluator(st, 0, nil)
+	eval1 := NewSoakTimeEvaluator(&storeGetters{store: st}, 0, nil)
 	assert.Nil(t, eval1, "expected nil evaluator when soakMinutes is 0")
 
 	// Test with negative minutes
-	eval2 := NewSoakTimeEvaluator(st, -10, nil)
+	eval2 := NewSoakTimeEvaluator(&storeGetters{store: st}, -10, nil)
 	assert.Nil(t, eval2, "expected nil evaluator when soakMinutes is negative")
 }
 
@@ -460,7 +460,7 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 	customSuccessStatuses := map[oapi.JobStatus]bool{
 		oapi.JobStatusInProgress: true,
 	}
-	eval := NewSoakTimeEvaluator(st, soakMinutes, customSuccessStatuses)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, customSuccessStatuses)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -521,7 +521,7 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -585,7 +585,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -652,7 +652,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 	st.Jobs.Upsert(ctx, job1)
 
 	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -687,7 +687,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_NoJobs(t *testing.T) {
 
 	env, _ := st.Environments.Get("env-staging")
 	soakMinutes := int32(30)
-	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(&storeGetters{store: st}, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{

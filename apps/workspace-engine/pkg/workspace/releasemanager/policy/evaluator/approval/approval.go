@@ -41,19 +41,41 @@ func parseTimestamp(s string) (time.Time, error) {
 
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
+type Getters interface {
+	GetApprovalRecords(versionID, environmentID string) []*oapi.UserApprovalRecord
+}
+
 type AnyApprovalEvaluator struct {
+	getters       Getters
 	store         *store.Store
 	ruleId        string
 	ruleCreatedAt string
 	rule          *oapi.AnyApprovalRule
 }
 
-func NewEvaluator(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
+type storeGetters struct {
+	store *store.Store
+}
+
+func (s *storeGetters) GetApprovalRecords(versionID, environmentID string) []*oapi.UserApprovalRecord {
+	return s.store.UserApprovalRecords.GetApprovalRecords(versionID, environmentID)
+}
+
+func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
 	if approvalRule == nil || approvalRule.AnyApproval == nil || store == nil {
 		return nil
 	}
+
+	return NewEvaluator(&storeGetters{store: store}, approvalRule)
+}
+
+func NewEvaluator(getters Getters, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
+	if approvalRule == nil || approvalRule.AnyApproval == nil || getters == nil {
+		return nil
+	}
+
 	return evaluator.WithMemoization(&AnyApprovalEvaluator{
-		store:         store,
+		getters:       getters,
 		ruleId:        approvalRule.Id,
 		rule:          approvalRule.AnyApproval,
 		ruleCreatedAt: approvalRule.CreatedAt,
@@ -99,7 +121,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithSatisfiedAt(version.CreatedAt)
 	}
 
-	approvalRecords := m.store.UserApprovalRecords.GetApprovalRecords(version.Id, environment.Id)
+	approvalRecords := m.getters.GetApprovalRecords(version.Id, environment.Id)
 	minApprovals := int(m.rule.MinApprovals)
 
 	approvers := make([]string, len(approvalRecords))
