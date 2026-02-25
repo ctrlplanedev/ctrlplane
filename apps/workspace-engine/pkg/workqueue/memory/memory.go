@@ -153,7 +153,7 @@ func (q *Queue) Enqueue(ctx context.Context, params workqueue.EnqueueParams) err
 		s.ClaimedBy = ""
 		s.ClaimedUntil = nil
 	}
-	if !(s.ClaimedUntil != nil && s.ClaimedUntil.After(now)) {
+	if s.ClaimedUntil == nil || !s.ClaimedUntil.After(now) {
 		s.UpdatedAt = now
 	}
 

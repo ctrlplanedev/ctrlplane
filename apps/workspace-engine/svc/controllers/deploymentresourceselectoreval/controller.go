@@ -90,6 +90,9 @@ func (c *Controller) Process(ctx context.Context, item workqueue.Item) error {
 		}
 	}
 
+	// TODO: use resourceMatchedIds to update deployment-resource associations Fixes a lint error
+	_ = resourceMatchedIds
+
 	return nil
 }
 

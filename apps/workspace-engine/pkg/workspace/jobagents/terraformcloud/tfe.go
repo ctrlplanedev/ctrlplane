@@ -8,25 +8,22 @@ import (
 	"maps"
 	"strings"
 	"time"
-	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/charmbracelet/log"
 	"github.com/hashicorp/go-tfe"
 	"sigs.k8s.io/yaml"
 )
 
 var _ types.Dispatchable = &TFE{}
+var _ types.Restorable = &TFE{}
 
 type TFE struct {
-	store         *store.Store
-	verifications *verification.Manager
+	store *store.Store
 }
 
 type VCSRepoTemplate struct {
@@ -66,8 +63,8 @@ type VariableTemplate struct {
 	Sensitive   bool   `json:"sensitive,omitempty" yaml:"sensitive,omitempty"`
 }
 
-func NewTFE(store *store.Store, verifications *verification.Manager) *TFE {
-	return &TFE{store: store, verifications: verifications}
+func NewTFE(store *store.Store) *TFE {
+	return &TFE{store: store}
 }
 
 func (t *TFE) Type() string {
@@ -90,38 +87,276 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 		ctx := context.WithoutCancel(ctx)
 		client, err := t.getClient(address, token)
 		if err != nil {
-			t.sendJobFailureEvent(job, fmt.Sprintf("failed to create Terraform Cloud client: %s", err.Error()))
+			t.sendJobEvent(job, oapi.JobStatusFailure, fmt.Sprintf("failed to create Terraform Cloud client: %s", err.Error()), nil, address, organization, "")
 			return
 		}
 
 		targetWorkspace, err := t.upsertWorkspace(ctx, client, organization, workspace)
 		if err != nil {
-			t.sendJobFailureEvent(job, fmt.Sprintf("failed to upsert workspace: %s", err.Error()))
+			t.sendJobEvent(job, oapi.JobStatusFailure, fmt.Sprintf("failed to upsert workspace: %s", err.Error()), nil, address, organization, "")
 			return
 		}
 
 		if len(workspace.Variables) > 0 {
 			if err := t.syncVariables(ctx, client, targetWorkspace.ID, workspace.Variables); err != nil {
-				t.sendJobFailureEvent(job, fmt.Sprintf("failed to sync variables: %s", err.Error()))
+				t.sendJobEvent(job, oapi.JobStatusFailure, fmt.Sprintf("failed to sync variables: %s", err.Error()), nil, address, organization, targetWorkspace.Name)
 				return
 			}
 		}
 
 		run, err := t.createRun(ctx, client, targetWorkspace.ID, job.Id)
 		if err != nil {
-			t.sendJobFailureEvent(job, fmt.Sprintf("failed to create run: %s", err.Error()))
+			t.sendJobEvent(job, oapi.JobStatusFailure, fmt.Sprintf("failed to create run: %s", err.Error()), nil, address, organization, targetWorkspace.Name)
 			return
 		}
 
-		verification := newTFERunVerification(t.verifications, job, address, token, run.ID)
-		if err := verification.StartVerification(ctx); err != nil {
-			t.sendJobFailureEvent(job, fmt.Sprintf("failed to start verification: %s", err.Error()))
-			return
-		}
-
-		t.sendJobUpdateEvent(address, organization, targetWorkspace.Name, run, job)
+		t.sendJobEvent(job, oapi.JobStatusInProgress, "Run created, polling status...", run, address, organization, targetWorkspace.Name)
+		t.pollRunStatus(ctx, client, run.ID, job, address, organization, targetWorkspace.Name)
 	}()
 
+	return nil
+}
+
+// RestoreJobs resumes polling for in-flight TFC runs after an engine restart.
+// Jobs with an ExternalId (the TFC run ID) are resumed; jobs without one are
+// marked as externalRunNotFound.
+func (t *TFE) RestoreJobs(ctx context.Context, jobs []*oapi.Job) error {
+	for _, job := range jobs {
+		if job.ExternalId == nil || *job.ExternalId == "" {
+			msg := "Run ID not recorded before engine restart"
+			t.sendJobEvent(job, oapi.JobStatusExternalRunNotFound, msg, nil, "", "", "")
+			continue
+		}
+
+		address, token, organization, _, err := t.parseJobAgentConfig(job.DispatchContext.JobAgentConfig)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to parse job agent config on restore: %s", err.Error())
+			t.sendJobEvent(job, oapi.JobStatusFailure, msg, nil, "", "", "")
+			continue
+		}
+
+		client, err := t.getClient(address, token)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to create TFE client on restore: %s", err.Error())
+			t.sendJobEvent(job, oapi.JobStatusFailure, msg, nil, address, organization, "")
+			continue
+		}
+
+		runID := *job.ExternalId
+		log.Info("Restoring TFC run polling", "jobId", job.Id, "runId", runID)
+		go t.pollRunStatus(ctx, client, runID, job, address, organization, "")
+	}
+	return nil
+}
+
+func (t *TFE) pollRunStatus(ctx context.Context, client *tfe.Client, runID string, job *oapi.Job, address, organization, wsName string) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	var lastStatus tfe.RunStatus
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			run, err := client.Runs.ReadWithOptions(ctx, runID, &tfe.RunReadOptions{
+				Include: []tfe.RunIncludeOpt{tfe.RunPlan},
+			})
+			if err != nil {
+				log.Error("Failed to poll TFC run status", "runId", runID, "error", err)
+				continue
+			}
+			if run.Status == lastStatus {
+				continue
+			}
+			lastStatus = run.Status
+
+			jobStatus, message := mapRunStatus(run)
+			if err := t.sendJobEvent(job, jobStatus, message, run, address, organization, wsName); err != nil {
+				log.Error("Failed to send job event", "runId", runID, "error", err)
+			}
+
+			if isTerminalJobStatus(jobStatus) {
+				return
+			}
+		}
+	}
+}
+
+func isTerminalJobStatus(status oapi.JobStatus) bool {
+	switch status {
+	case oapi.JobStatusSuccessful, oapi.JobStatusFailure, oapi.JobStatusCancelled, oapi.JobStatusExternalRunNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+func mapRunStatus(run *tfe.Run) (oapi.JobStatus, string) {
+	changes := formatResourceChanges(run)
+
+	switch run.Status {
+	case tfe.RunPending:
+		pos := run.PositionInQueue
+		return oapi.JobStatusPending, fmt.Sprintf("Run pending in queue (position: %d)", pos)
+
+	case tfe.RunFetching, tfe.RunFetchingCompleted:
+		return oapi.JobStatusInProgress, "Fetching configuration..."
+
+	case tfe.RunPrePlanRunning, tfe.RunPrePlanCompleted:
+		return oapi.JobStatusInProgress, "Running pre-plan tasks..."
+
+	case tfe.RunQueuing, tfe.RunPlanQueued:
+		return oapi.JobStatusInProgress, "Queued for planning..."
+
+	case tfe.RunPlanning:
+		return oapi.JobStatusInProgress, "Planning..."
+
+	case tfe.RunPlanned:
+		if run.Actions != nil && run.Actions.IsConfirmable {
+			return oapi.JobStatusActionRequired, fmt.Sprintf("Plan complete — awaiting approval. %s", changes)
+		}
+		return oapi.JobStatusInProgress, "Plan complete, auto-applying..."
+
+	case tfe.RunPlannedAndFinished:
+		return oapi.JobStatusSuccessful, fmt.Sprintf("Plan complete (no changes). %s", changes)
+
+	case tfe.RunPlannedAndSaved:
+		return oapi.JobStatusSuccessful, fmt.Sprintf("Plan saved. %s", changes)
+
+	case tfe.RunCostEstimating, tfe.RunCostEstimated:
+		return oapi.JobStatusInProgress, "Estimating costs..."
+
+	case tfe.RunPolicyChecking, tfe.RunPolicyChecked:
+		return oapi.JobStatusInProgress, "Checking policies..."
+
+	case tfe.RunPolicyOverride:
+		return oapi.JobStatusActionRequired, "Policy check failed — awaiting override"
+
+	case tfe.RunPolicySoftFailed:
+		return oapi.JobStatusActionRequired, "Policy soft-failed — awaiting override"
+
+	case tfe.RunPostPlanRunning, tfe.RunPostPlanCompleted, tfe.RunPostPlanAwaitingDecision:
+		return oapi.JobStatusInProgress, "Running post-plan tasks..."
+
+	case tfe.RunConfirmed:
+		return oapi.JobStatusInProgress, "Confirmed, queuing apply..."
+
+	case tfe.RunApplyQueued, tfe.RunQueuingApply:
+		return oapi.JobStatusInProgress, "Queued for apply..."
+
+	case tfe.RunApplying:
+		return oapi.JobStatusInProgress, "Applying..."
+
+	case tfe.RunApplied:
+		return oapi.JobStatusSuccessful, fmt.Sprintf("Applied successfully. %s", changes)
+
+	case tfe.RunPreApplyRunning, tfe.RunPreApplyCompleted:
+		return oapi.JobStatusInProgress, "Running pre-apply tasks..."
+
+	case tfe.RunErrored:
+		return oapi.JobStatusFailure, fmt.Sprintf("Run errored: %s", run.Message)
+
+	case tfe.RunCanceled:
+		return oapi.JobStatusCancelled, "Run was canceled"
+
+	case tfe.RunDiscarded:
+		return oapi.JobStatusCancelled, "Run was discarded"
+
+	default:
+		return oapi.JobStatusInProgress, fmt.Sprintf("Run status: %s", run.Status)
+	}
+}
+
+func formatResourceChanges(run *tfe.Run) string {
+	if run.Plan == nil {
+		return "+0/~0/-0"
+	}
+	return fmt.Sprintf("+%d/~%d/-%d",
+		run.Plan.ResourceAdditions,
+		run.Plan.ResourceChanges,
+		run.Plan.ResourceDestructions,
+	)
+}
+
+func (t *TFE) sendJobEvent(job *oapi.Job, status oapi.JobStatus, message string, run *tfe.Run, address, organization, wsName string) error {
+	workspaceId := t.store.ID()
+	now := time.Now().UTC()
+
+	fields := []oapi.JobUpdateEventFieldsToUpdate{
+		oapi.JobUpdateEventFieldsToUpdateStatus,
+		oapi.JobUpdateEventFieldsToUpdateMessage,
+		oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+	}
+
+	eventJob := oapi.Job{
+		Id:        job.Id,
+		Status:    status,
+		Message:   &message,
+		UpdatedAt: now,
+	}
+
+	// Set externalId from the run
+	if run != nil {
+		eventJob.ExternalId = &run.ID
+		fields = append(fields, oapi.JobUpdateEventFieldsToUpdateExternalId)
+	}
+
+	// Set metadata with links when we have enough info
+	if run != nil && address != "" && organization != "" && wsName != "" {
+		runUrl := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", address, organization, wsName, run.ID)
+		if !strings.HasPrefix(runUrl, "https://") {
+			runUrl = "https://" + runUrl
+		}
+		workspaceUrl := fmt.Sprintf("%s/app/%s/workspaces/%s", address, organization, wsName)
+		if !strings.HasPrefix(workspaceUrl, "https://") {
+			workspaceUrl = "https://" + workspaceUrl
+		}
+
+		links := map[string]string{
+			"TFE Run":       runUrl,
+			"TFE Workspace": workspaceUrl,
+		}
+		linksJSON, err := json.Marshal(links)
+		if err == nil {
+			newJobMetadata := make(map[string]string)
+			maps.Copy(newJobMetadata, job.Metadata)
+			newJobMetadata["ctrlplane/links"] = string(linksJSON)
+			eventJob.Metadata = newJobMetadata
+			fields = append(fields, oapi.JobUpdateEventFieldsToUpdateMetadata)
+		}
+	}
+
+	if isTerminalJobStatus(status) {
+		eventJob.CompletedAt = &now
+		fields = append(fields, oapi.JobUpdateEventFieldsToUpdateCompletedAt)
+	}
+
+	// Set startedAt for first non-pending transition
+	if status == oapi.JobStatusInProgress {
+		eventJob.StartedAt = &now
+		fields = append(fields, oapi.JobUpdateEventFieldsToUpdateStartedAt)
+	}
+
+	eventPayload := oapi.JobUpdateEvent{
+		Id:             &job.Id,
+		Job:            eventJob,
+		FieldsToUpdate: &fields,
+	}
+
+	event := map[string]any{
+		"eventType":   "job.updated",
+		"workspaceId": workspaceId,
+		"data":        eventPayload,
+		"timestamp":   time.Now().Unix(),
+	}
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+	if err := messaging.Publish([]byte(workspaceId), eventBytes); err != nil {
+		return fmt.Errorf("failed to publish event: %w", err)
+	}
 	return nil
 }
 
@@ -249,122 +484,6 @@ func (t *TFE) createRun(ctx context.Context, client *tfe.Client, workspaceID, jo
 		return nil, fmt.Errorf("failed to create run: %w", err)
 	}
 	return run, nil
-}
-
-func (t *TFE) sendJobFailureEvent(job *oapi.Job, message string) error {
-	workspaceId := t.store.ID()
-
-	now := time.Now().UTC()
-	eventPayload := oapi.JobUpdateEvent{
-		Id: &job.Id,
-		Job: oapi.Job{
-			Id:          job.Id,
-			Status:      oapi.JobStatusFailure,
-			Message:     &message,
-			UpdatedAt:   now,
-			CompletedAt: &now,
-		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.JobUpdateEventFieldsToUpdateStatus,
-			oapi.JobUpdateEventFieldsToUpdateMessage,
-			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
-			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
-		},
-	}
-	producer, err := t.getKafkaProducer()
-	if err != nil {
-		return fmt.Errorf("failed to create Kafka producer: %w", err)
-	}
-	defer producer.Close()
-
-	event := map[string]any{
-		"eventType":   "job.updated",
-		"workspaceId": workspaceId,
-		"data":        eventPayload,
-		"timestamp":   time.Now().Unix(),
-	}
-	eventBytes, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event: %w", err)
-	}
-	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
-		return fmt.Errorf("failed to publish event: %w", err)
-	}
-	return nil
-}
-
-func (t *TFE) sendJobUpdateEvent(address, organization, workspaceName string, run *tfe.Run, job *oapi.Job) error {
-	workspaceId := t.store.ID()
-
-	runUrl := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", address, organization, workspaceName, run.ID)
-	if !strings.HasPrefix(runUrl, "https://") {
-		runUrl = "https://" + runUrl
-	}
-
-	workspaceUrl := fmt.Sprintf("%s/app/%s/workspaces/%s", address, organization, workspaceName)
-	if !strings.HasPrefix(workspaceUrl, "https://") {
-		workspaceUrl = "https://" + workspaceUrl
-	}
-
-	links := make(map[string]string)
-	links["TFE Run"] = runUrl
-	links["TFE Workspace"] = workspaceUrl
-	linksJSON, err := json.Marshal(links)
-	if err != nil {
-		return fmt.Errorf("failed to marshal links: %w", err)
-	}
-
-	newJobMetadata := make(map[string]string)
-	maps.Copy(newJobMetadata, job.Metadata)
-	newJobMetadata[string("ctrlplane/links")] = string(linksJSON)
-
-	now := time.Now().UTC()
-	eventPayload := oapi.JobUpdateEvent{
-		Id: &job.Id,
-		Job: oapi.Job{
-			Id:          job.Id,
-			Metadata:    newJobMetadata,
-			Status:      oapi.JobStatusSuccessful,
-			UpdatedAt:   now,
-			CompletedAt: &now,
-		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.JobUpdateEventFieldsToUpdateStatus,
-			oapi.JobUpdateEventFieldsToUpdateMetadata,
-			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
-			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
-		},
-	}
-	producer, err := t.getKafkaProducer()
-	if err != nil {
-		return fmt.Errorf("failed to create Kafka producer: %w", err)
-	}
-	defer producer.Close()
-
-	event := map[string]any{
-		"eventType":   "job.updated",
-		"workspaceId": workspaceId,
-		"data":        eventPayload,
-		"timestamp":   time.Now().Unix(),
-	}
-	eventBytes, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event: %w", err)
-	}
-	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
-		return fmt.Errorf("failed to publish event: %w", err)
-	}
-	return nil
-}
-
-func (t *TFE) getKafkaProducer() (messaging.Producer, error) {
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
-		"bootstrap.servers":        config.Global.KafkaBrokers,
-		"enable.idempotence":       true,
-		"compression.type":         "snappy",
-		"message.send.max.retries": 10,
-		"retry.backoff.ms":         100,
-	})
 }
 
 func (w *WorkspaceTemplate) toCreateOptions() tfe.WorkspaceCreateOptions {

@@ -2,7 +2,7 @@
   "name": "@ctrlplane/workspace-engine",
   "scripts": {
     "dev": "air",
-    "build": "go build -o ./bin/workspace-engine main.go",
+    "build": "go build -o ./bin/workspace-engine .",
     "lint": "bash -c 'golangci-lint run --allow-parallel-runners'",
     "lint:fix": "golangci-lint run --fix",
     "start": "./bin/workspace-engine",
