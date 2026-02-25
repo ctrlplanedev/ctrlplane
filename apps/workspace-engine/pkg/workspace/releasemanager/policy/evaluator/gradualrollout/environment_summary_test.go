@@ -176,8 +176,9 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 
 	// Create approval policy that is not satisfied
 	approvalPolicy := &oapi.Policy{
-		Enabled:  true,
-		Selector: "true",
+		Enabled:   true,
+		Selector:  "true",
+		CreatedAt: baseTime.Add(-1 * time.Hour).Format(time.RFC3339),
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{

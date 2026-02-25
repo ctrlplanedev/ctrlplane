@@ -141,7 +141,8 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 	}
 
 	resolved := selector.NewResolvedReleaseTarget(environment, deployment, resource)
-	for _, policy := range r.store.Policies.Items() {
+	policies := r.store.Policies.Items()
+	for _, policy := range policies {
 		if selector.MatchPolicy(ctx, policy, resolved) {
 			policiesSlice = append(policiesSlice, policy)
 		}

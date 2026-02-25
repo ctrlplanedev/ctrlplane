@@ -106,6 +106,15 @@ func WithDBReleases(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBPolicies replaces the default in-memory PolicyRepo
+// with a DB-backed implementation.
+func WithDBPolicies(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Policies.SetRepo(dbRepo.Policies())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -274,6 +283,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.ResourceProviders.repo.Set(rp); err != nil {
 			log.Warn("Failed to migrate legacy resource provider",
 				"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy policies")
+	}
+	for _, pol := range s.repo.Policies().Items() {
+		if err := s.Policies.repo.Set(pol); err != nil {
+			log.Warn("Failed to migrate legacy policy",
+				"policy_id", pol.Id, "name", pol.Name, "error", err)
 		}
 	}
 

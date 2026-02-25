@@ -19,6 +19,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -46,7 +47,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 			integration.PolicyName("production-approvals"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -75,7 +76,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        reason,
 		CreatedBy:     "incident-commander",
 		CreatedAt:     time.Now(),
@@ -99,6 +100,8 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	rule1ID := uuid.New().String()
+	rule2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -124,11 +127,11 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 			integration.PolicyName("multi-rule-policy"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(rule1ID),
 				integration.WithRuleAnyApproval(1),
 			),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-2"),
+				integration.PolicyRuleID(rule2ID),
 				integration.WithRuleGradualRollout(300), // 5 minute intervals
 			),
 		),
@@ -155,7 +158,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        rule1ID,
 		Reason:        reason,
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
@@ -166,7 +169,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-2",
+		RuleId:        rule2ID,
 		Reason:        reason,
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
@@ -188,6 +191,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -217,7 +221,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 			integration.PolicyName("approval-policy"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -244,7 +248,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    nil, // Wildcard - all resources
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        reason,
 		CreatedBy:     "ops-team",
 		CreatedAt:     time.Now(),
@@ -267,6 +271,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 	envProdID := uuid.New().String()
 	envStagingID := uuid.New().String()
 	resourceID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -296,7 +301,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 			integration.PolicyName("approval-policy"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -323,7 +328,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: nil, // Wildcard - all environments
 		ResourceId:    nil, // Wildcard - all resources
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        reason,
 		CreatedBy:     "cto",
 		CreatedAt:     time.Now(),
@@ -347,6 +352,8 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 	resourceID := uuid.New().String()
 	policy1ID := uuid.New().String()
 	policy2ID := uuid.New().String()
+	rule1ID := uuid.New().String()
+	rule2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -372,7 +379,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 			integration.PolicyName("policy-1-approval"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(rule1ID),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -382,7 +389,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 			integration.PolicyName("policy-2-approval"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-2"),
+				integration.PolicyRuleID(rule2ID),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -409,7 +416,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        rule1ID,
 		Reason:        reason,
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
@@ -447,6 +454,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -470,6 +478,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 			integration.PolicyName("approval-policy"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -491,7 +500,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        reason,
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
@@ -514,6 +523,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -537,7 +547,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 			integration.PolicyName("approval-policy"),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -558,7 +568,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 		VersionId:     version1.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        reason,
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),

@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/db/deploymentversions"
 	"workspace-engine/pkg/workspace/store/repository/db/environments"
 	"workspace-engine/pkg/workspace/store/repository/db/jobagents"
+	"workspace-engine/pkg/workspace/store/repository/db/policies"
 	"workspace-engine/pkg/workspace/store/repository/db/releases"
 	"workspace-engine/pkg/workspace/store/repository/db/resourceproviders"
 	"workspace-engine/pkg/workspace/store/repository/db/resources"
@@ -26,6 +27,7 @@ type DBRepo struct {
 	releases           repository.ReleaseRepo
 	systemDeployments  repository.SystemDeploymentRepo
 	systemEnvironments repository.SystemEnvironmentRepo
+	policies           repository.PolicyRepo
 }
 
 func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
@@ -68,6 +70,10 @@ func (d *DBRepo) SystemEnvironments() repository.SystemEnvironmentRepo {
 	return d.systemEnvironments
 }
 
+func (d *DBRepo) Policies() repository.PolicyRepo {
+	return d.policies
+}
+
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
 		deploymentVersions: deploymentversions.NewRepo(ctx, workspaceID),
@@ -80,5 +86,6 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		releases:           releases.NewRepo(ctx, workspaceID),
 		systemDeployments:  systemdeployments.NewRepo(ctx),
 		systemEnvironments: systemenvironments.NewRepo(ctx),
+		policies:           policies.NewRepo(ctx, workspaceID),
 	}
 }

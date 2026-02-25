@@ -21,6 +21,7 @@ func TestEngine_VersionSelectorPolicy_CEL_BasicMatching(t *testing.T) {
 	prodEnvID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -66,7 +67,7 @@ func TestEngine_VersionSelectorPolicy_CEL_BasicMatching(t *testing.T) {
 
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:        "rule-1",
+			Id:        ruleID,
 			PolicyId:  policyID,
 			CreatedAt: "2024-01-01T00:00:00Z",
 			VersionSelector: &oapi.VersionSelectorRule{
@@ -123,6 +124,7 @@ func TestEngine_VersionSelectorPolicy_BlockingVersion(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -163,7 +165,7 @@ func TestEngine_VersionSelectorPolicy_BlockingVersion(t *testing.T) {
 
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:        "rule-1",
+			Id:        ruleID,
 			PolicyId:  policyID,
 			CreatedAt: "2024-01-01T00:00:00Z",
 			VersionSelector: &oapi.VersionSelectorRule{
@@ -204,6 +206,8 @@ func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
 	resourceID := uuid.New().String()
 	versionSelectorPolicyID := uuid.New().String()
 	approvalPolicyID := uuid.New().String()
+	ruleVersionID := uuid.New().String()
+	ruleApprovalID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -250,7 +254,7 @@ func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
 
 	versionPolicy.Rules = []oapi.PolicyRule{
 		{
-			Id:        "rule-version",
+			Id:        ruleVersionID,
 			PolicyId:  versionSelectorPolicyID,
 			CreatedAt: "2024-01-01T00:00:00Z",
 			VersionSelector: &oapi.VersionSelectorRule{
@@ -264,7 +268,7 @@ func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
 	approvalPolicy, _ := engine.Workspace().Policies().Get(approvalPolicyID)
 	approvalPolicy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-approval",
+			Id:          ruleApprovalID,
 			PolicyId:    approvalPolicyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1},

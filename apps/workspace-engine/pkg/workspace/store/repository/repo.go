@@ -11,4 +11,5 @@ type Repo interface {
 	Releases() ReleaseRepo
 	SystemDeployments() SystemDeploymentRepo
 	SystemEnvironments() SystemEnvironmentRepo
+	Policies() PolicyRepo
 }

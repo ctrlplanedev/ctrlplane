@@ -16,3 +16,4 @@ export * from "./deployment-trace.js";
 export * from "./changelog-entry.js";
 export * from "./release.js";
 export * from "./reconcile.js";
+export * from "./policy.js";

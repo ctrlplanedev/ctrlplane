@@ -18,6 +18,7 @@ sql:
       - queries/resource_providers.sql
       - queries/releases.sql
       - queries/changelog.sql
+      - queries/policies.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -84,5 +85,15 @@ sql:
 
           # ReleaseVariable
           - column: "release_variable.value"
+            go_type:
+              type: "[]byte"
+
+          # Policy
+          - column: "policy.metadata"
+            go_type:
+              type: "map[string]string"
+
+          # PolicyRuleVerification
+          - column: "policy_rule_verification.metrics"
             go_type:
               type: "[]byte"
