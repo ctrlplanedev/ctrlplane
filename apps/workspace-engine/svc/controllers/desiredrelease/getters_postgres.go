@@ -59,6 +59,62 @@ func (g *PostgresGetter) GetPolicies(_ context.Context, _ *ReleaseTarget) ([]*oa
 	return nil, nil
 }
 
+func (g *PostgresGetter) GetApprovalRecords(_ context.Context, _, _ string) ([]*oapi.UserApprovalRecord, error) {
+	// TODO: Approval records are not yet stored in the workspace-engine database.
+	return nil, nil
+}
+
+func (g *PostgresGetter) HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error) {
+	releases, err := db.GetQueries(ctx).ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
+		ResourceID:    rt.ResourceID,
+		EnvironmentID: rt.EnvironmentID,
+		DeploymentID:  rt.DeploymentID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("list releases for release target: %w", err)
+	}
+	return len(releases) > 0, nil
+}
+
+func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error) {
+	q := db.GetQueries(ctx)
+
+	releases, err := q.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
+		ResourceID:    rt.ResourceID,
+		EnvironmentID: rt.EnvironmentID,
+		DeploymentID:  rt.DeploymentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list releases for release target: %w", err)
+	}
+	if len(releases) == 0 {
+		return nil, nil
+	}
+
+	latest := releases[0]
+	versionRow, err := q.GetDeploymentVersionByID(ctx, latest.VersionID)
+	if err != nil {
+		return nil, fmt.Errorf("get version %s: %w", latest.VersionID, err)
+	}
+
+	createdAt := ""
+	if latest.CreatedAt.Valid {
+		createdAt = latest.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00")
+	}
+
+	return &oapi.Release{
+		ReleaseTarget: oapi.ReleaseTarget{
+			DeploymentId:  rt.DeploymentID.String(),
+			EnvironmentId: rt.EnvironmentID.String(),
+			ResourceId:    rt.ResourceID.String(),
+		},
+		Version:            *convertDeploymentVersion(versionRow),
+		Variables:          map[string]oapi.LiteralValue{},
+		EncryptedVariables: []string{},
+		CreatedAt:          createdAt,
+	}, nil
+}
+
 func convertDeployment(row db.Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
 		Id:             row.ID.String(),

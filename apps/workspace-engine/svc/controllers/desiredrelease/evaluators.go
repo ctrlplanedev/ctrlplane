@@ -8,38 +8,82 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deployableversions"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 )
 
+// --- Adapters mapping reconciler Getter to evaluator Getters interfaces ---
+
+var _ approval.Getters = (*approvalAdapter)(nil)
+
+type approvalAdapter struct {
+	getter Getter
+	ctx    context.Context
+}
+
+func (a *approvalAdapter) GetApprovalRecords(versionID, environmentID string) []*oapi.UserApprovalRecord {
+	records, _ := a.getter.GetApprovalRecords(a.ctx, versionID, environmentID)
+	return records
+}
+
+var _ deploymentwindow.Getters = (*deploymentWindowAdapter)(nil)
+
+type deploymentWindowAdapter struct {
+	getter Getter
+	ctx    context.Context
+}
+
+func (a *deploymentWindowAdapter) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) bool {
+	rt := &ReleaseTarget{}
+	if err := rt.FromOapi(releaseTarget); err != nil {
+		return false
+	}
+	has, _ := a.getter.HasCurrentRelease(ctx, rt)
+	return has
+}
+
+var _ deployableversions.Getters = (*deployableVersionsAdapter)(nil)
+
+type deployableVersionsAdapter struct {
+	getter Getter
+	ctx    context.Context
+	rt     *ReleaseTarget
+}
+
+func (a *deployableVersionsAdapter) GetReleases() map[string]*oapi.Release {
+	release, _ := a.getter.GetCurrentRelease(a.ctx, a.rt)
+	if release == nil {
+		return nil
+	}
+	return map[string]*oapi.Release{release.ID(): release}
+}
+
 // policyEvaluators returns evaluators for a single policy rule.
-// Evaluator constructors that receive nil getters gracefully return nil,
-// and evaluator.CollectEvaluators filters those out.
-func policyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
+func policyEvaluators(ctx context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		versionselector.NewEvaluator(rule),
-
-		// The evaluators below require DB-backed Getters adapters that are not
-		// yet implemented. Once those adapters exist, replace nil with the
-		// concrete getters.
-		approval.NewEvaluator(nil, rule),
-		deploymentwindow.NewEvaluator(nil, rule),
-		versioncooldown.NewEvaluator(nil, rule),
+		approval.NewEvaluator(&approvalAdapter{getter: getter, ctx: ctx}, rule),
+		deploymentwindow.NewEvaluator(&deploymentWindowAdapter{getter: getter, ctx: ctx}, rule),
 	)
 }
 
 // CollectEvaluators builds and sorts the full evaluator set for the given
 // policies. Evaluators are sorted by Complexity (cheapest first) so that
 // fast-failing checks run before expensive ones.
-func CollectEvaluators(policies []*oapi.Policy) []evaluator.Evaluator {
+func CollectEvaluators(ctx context.Context, getter Getter, rt *ReleaseTarget, policies []*oapi.Policy) []evaluator.Evaluator {
 	var evals []evaluator.Evaluator
+
+	evals = append(evals, deployableversions.NewEvaluator(
+		&deployableVersionsAdapter{getter: getter, ctx: ctx, rt: rt},
+	))
+
 	for _, p := range policies {
 		if p == nil || !p.Enabled {
 			continue
 		}
 		for _, rule := range p.Rules {
-			evals = append(evals, policyEvaluators(&rule)...)
+			evals = append(evals, policyEvaluators(ctx, getter, &rule)...)
 		}
 	}
 

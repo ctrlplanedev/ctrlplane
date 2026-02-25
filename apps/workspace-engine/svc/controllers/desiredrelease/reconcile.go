@@ -48,7 +48,7 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 		return nil, fmt.Errorf("get policies: %w", err)
 	}
 
-	evals := CollectEvaluators(policies)
+	evals := CollectEvaluators(ctx, getter, rt, policies)
 	span.SetAttributes(attribute.Int("evaluators.count", len(evals)))
 
 	version, nextTime := FindDeployableVersion(ctx, versions, evals, *scope)
