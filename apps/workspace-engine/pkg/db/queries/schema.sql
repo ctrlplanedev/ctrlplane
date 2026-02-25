@@ -222,3 +222,13 @@ CREATE TABLE policy_rule_version_selector (
     selector TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE user_approval_record (
+    version_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    environment_id UUID NOT NULL,
+    status TEXT NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (version_id, user_id, environment_id)
+);

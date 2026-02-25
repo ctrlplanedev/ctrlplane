@@ -268,6 +268,15 @@ type SystemEnvironment struct {
 	CreatedAt     pgtype.Timestamptz
 }
 
+type UserApprovalRecord struct {
+	VersionID     uuid.UUID
+	UserID        uuid.UUID
+	EnvironmentID uuid.UUID
+	Status        string
+	Reason        pgtype.Text
+	CreatedAt     pgtype.Timestamptz
+}
+
 type Workspace struct {
 	ID        uuid.UUID
 	Name      string

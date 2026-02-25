@@ -195,11 +195,12 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Add approval so the approval policy passes and gradual rollout can be evaluated
+	user1ID := uuid.New().String()
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     dv.Id,
 		EnvironmentId: environmentId,
 		Status:        oapi.ApprovalStatusApproved,
-		UserId:        "test-user",
+		UserId:        user1ID,
 		CreatedAt:     "2024-01-01T00:00:00Z",
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)

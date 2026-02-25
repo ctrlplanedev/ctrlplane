@@ -500,7 +500,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().GithubEntities.Get(githubEntityKey)
 	assert.True(t, ok, "GithubEntity should be restored")
 
-	_, ok = testStore.Repo().UserApprovalRecords.Get(userApprovalRecord.Key())
+	_, ok = testStore.Repo().UserApprovalRecords().Get(userApprovalRecord.Key())
 	assert.True(t, ok, "UserApprovalRecord should be restored")
 }
 
@@ -757,13 +757,13 @@ func TestUserApprovalRecordKeyIncludesEnvironment(t *testing.T) {
 
 	assert.NotEqual(t, recordOne.Key(), recordTwo.Key())
 
-	_, ok := testStore.Repo().UserApprovalRecords.Get(recordOne.Key())
+	_, ok := testStore.Repo().UserApprovalRecords().Get(recordOne.Key())
 	assert.True(t, ok, "first user approval record should be stored")
 
-	_, ok = testStore.Repo().UserApprovalRecords.Get(recordTwo.Key())
+	_, ok = testStore.Repo().UserApprovalRecords().Get(recordTwo.Key())
 	assert.True(t, ok, "second user approval record should be stored")
 
-	assert.Equal(t, 2, len(testStore.Repo().UserApprovalRecords.Items()))
+	assert.Equal(t, 2, len(testStore.Repo().UserApprovalRecords().Items()))
 }
 
 // Helper function to create string pointers

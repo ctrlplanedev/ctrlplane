@@ -17,3 +17,4 @@ export * from "./changelog-entry.js";
 export * from "./release.js";
 export * from "./reconcile.js";
 export * from "./policy.js";
+export * from "./user-approval-record.js";

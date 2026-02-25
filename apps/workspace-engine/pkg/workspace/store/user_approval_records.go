@@ -5,56 +5,70 @@ import (
 	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 type UserApprovalRecords struct {
-	repo  *memory.InMemory
+	repo  repository.UserApprovalRecordRepo
 	store *Store
 }
 
 func NewUserApprovalRecords(store *Store) *UserApprovalRecords {
 	return &UserApprovalRecords{
-		repo:  store.repo,
+		repo:  store.repo.UserApprovalRecords(),
 		store: store,
 	}
 }
 
+func (u *UserApprovalRecords) SetRepo(repo repository.UserApprovalRecordRepo) {
+	u.repo = repo
+}
+
 func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
-	u.repo.UserApprovalRecords.Set(userApprovalRecord.Key(), userApprovalRecord)
+	if err := u.repo.Set(userApprovalRecord); err != nil {
+		log.Error("Failed to upsert user approval record", "error", err)
+		return
+	}
 	u.store.changeset.RecordUpsert(userApprovalRecord)
 }
 
 func (u *UserApprovalRecords) Get(versionId, userId string) (*oapi.UserApprovalRecord, bool) {
-	return u.repo.UserApprovalRecords.Get(versionId + userId)
+	return u.repo.Get(versionId + userId)
 }
 
 func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
-	userApprovalRecord, ok := u.repo.UserApprovalRecords.Get(key)
+	userApprovalRecord, ok := u.repo.Get(key)
 	if !ok || userApprovalRecord == nil {
 		return
 	}
 
-	u.repo.UserApprovalRecords.Remove(key)
+	if err := u.repo.Remove(key); err != nil {
+		log.Error("Failed to remove user approval record", "error", err)
+		return
+	}
 	u.store.changeset.RecordDelete(userApprovalRecord)
 }
 
 func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []string {
-	approvers := make([]string, 0)
-	for _, record := range u.repo.UserApprovalRecords.Items() {
-		if record.VersionId == versionId && record.EnvironmentId == environmentId && record.Status == oapi.ApprovalStatusApproved {
-			approvers = append(approvers, record.UserId)
-		}
+	records, err := u.repo.GetApprovedByVersionAndEnvironment(versionId, environmentId)
+	if err != nil {
+		log.Warn("Failed to get approvers", "version_id", versionId, "environment_id", environmentId, "error", err)
+		return nil
+	}
+	approvers := make([]string, len(records))
+	for i, r := range records {
+		approvers[i] = r.UserId
 	}
 	return approvers
 }
 
 func (u *UserApprovalRecords) GetApprovalRecords(versionId, environmentId string) []*oapi.UserApprovalRecord {
-	records := make([]*oapi.UserApprovalRecord, 0)
-	for _, record := range u.repo.UserApprovalRecords.Items() {
-		if record.VersionId == versionId && record.EnvironmentId == environmentId && record.Status == oapi.ApprovalStatusApproved {
-			records = append(records, record)
-		}
+	records, err := u.repo.GetApprovedByVersionAndEnvironment(versionId, environmentId)
+	if err != nil {
+		log.Warn("Failed to get approval records", "version_id", versionId, "environment_id", environmentId, "error", err)
+		return nil
 	}
 	sort.Slice(records, func(i, j int) bool {
 		ti, ei := time.Parse(time.RFC3339, records[i].CreatedAt)

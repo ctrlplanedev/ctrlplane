@@ -354,6 +354,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 	policy2ID := uuid.New().String()
 	rule1ID := uuid.New().String()
 	rule2ID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -433,7 +434,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}

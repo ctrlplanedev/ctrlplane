@@ -453,6 +453,7 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 	environmentID := uuid.New().String()
 	cooldownPolicyID := uuid.New().String()
 	approvalPolicyID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -511,7 +512,7 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     v1.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
@@ -537,7 +538,7 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     v2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)

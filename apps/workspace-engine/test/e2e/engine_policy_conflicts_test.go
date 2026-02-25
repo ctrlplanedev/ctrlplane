@@ -22,6 +22,9 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 	resourceID := uuid.New().String()
 	policy1ID := uuid.New().String()
 	policy2ID := uuid.New().String()
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+	user3ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -81,7 +84,7 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -89,7 +92,7 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -104,7 +107,7 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 	approval3 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-3",
+		UserId:        user3ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
@@ -125,6 +128,8 @@ func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
 	resourceID := uuid.New().String()
 	policy1ID := uuid.New().String()
 	policy2ID := uuid.New().String()
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -183,7 +188,7 @@ func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -197,7 +202,7 @@ func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -217,6 +222,7 @@ func TestEngine_PolicyConflict_PriorityOrdering(t *testing.T) {
 	resourceID := uuid.New().String()
 	highPriorityPolicyID := uuid.New().String()
 	lowPriorityPolicyID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -273,7 +279,7 @@ func TestEngine_PolicyConflict_PriorityOrdering(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
@@ -311,6 +317,7 @@ func TestEngine_PolicyConflict_ApprovalPlusRetry(t *testing.T) {
 	resourceID := uuid.New().String()
 	approvalPolicyID := uuid.New().String()
 	retryPolicyID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -367,7 +374,7 @@ func TestEngine_PolicyConflict_ApprovalPlusRetry(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
@@ -398,6 +405,7 @@ func TestEngine_PolicyConflict_AllRulesMerged(t *testing.T) {
 	environmentID := uuid.New().String()
 	policy1ID := uuid.New().String()
 	policy2ID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -460,7 +468,7 @@ func TestEngine_PolicyConflict_AllRulesMerged(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}

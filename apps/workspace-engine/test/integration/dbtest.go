@@ -79,6 +79,7 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBSystemEnvironments(ctx),
 			store.WithDBResources(ctx),
 			store.WithDBPolicies(ctx),
+			store.WithDBUserApprovalRecords(ctx),
 			// store.WithDBReleases(ctx),
 		),
 	)

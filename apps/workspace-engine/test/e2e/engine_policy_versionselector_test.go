@@ -208,6 +208,7 @@ func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
 	approvalPolicyID := uuid.New().String()
 	ruleVersionID := uuid.New().String()
 	ruleApprovalID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -300,7 +301,7 @@ func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
