@@ -62,7 +62,7 @@ func New(wsId string) *InMemory {
 		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
-		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
+		userApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
 		Workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
@@ -104,7 +104,7 @@ type InMemory struct {
 	jobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
 
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]
-	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
+	userApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 
 	Workflows            cmap.ConcurrentMap[string, *oapi.Workflow]
@@ -432,6 +432,45 @@ func (a *systemEnvironmentRepoAdapter) Unlink(systemID, environmentID string) er
 // Policies implements repository.Repo.
 func (s *InMemory) Policies() repository.PolicyRepo {
 	return &cmapRepoAdapter[*oapi.Policy]{store: &s.policies}
+}
+
+// userApprovalRecordRepoAdapter wraps a cmap to satisfy UserApprovalRecordRepo.
+type userApprovalRecordRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
+}
+
+func (a *userApprovalRecordRepoAdapter) Get(key string) (*oapi.UserApprovalRecord, bool) {
+	return a.store.Get(key)
+}
+
+func (a *userApprovalRecordRepoAdapter) Set(entity *oapi.UserApprovalRecord) error {
+	a.store.Set(entity.Key(), entity)
+	return nil
+}
+
+func (a *userApprovalRecordRepoAdapter) Remove(key string) error {
+	a.store.Remove(key)
+	return nil
+}
+
+func (a *userApprovalRecordRepoAdapter) Items() map[string]*oapi.UserApprovalRecord {
+	return a.store.Items()
+}
+
+func (a *userApprovalRecordRepoAdapter) GetApprovedByVersionAndEnvironment(versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+	var records []*oapi.UserApprovalRecord
+	for item := range a.store.IterBuffered() {
+		r := item.Val
+		if r.VersionId == versionID && r.EnvironmentId == environmentID && r.Status == oapi.ApprovalStatusApproved {
+			records = append(records, r)
+		}
+	}
+	return records, nil
+}
+
+// UserApprovalRecords implements repository.Repo.
+func (s *InMemory) UserApprovalRecords() repository.UserApprovalRecordRepo {
+	return &userApprovalRecordRepoAdapter{store: &s.userApprovalRecords}
 }
 
 // SystemEnvironments implements repository.Repo.

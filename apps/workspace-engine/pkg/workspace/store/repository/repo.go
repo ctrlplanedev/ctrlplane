@@ -12,4 +12,5 @@ type Repo interface {
 	SystemDeployments() SystemDeploymentRepo
 	SystemEnvironments() SystemEnvironmentRepo
 	Policies() PolicyRepo
+	UserApprovalRecords() UserApprovalRecordRepo
 }

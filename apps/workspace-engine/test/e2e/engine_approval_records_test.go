@@ -51,25 +51,28 @@ func TestEngine_ApprovalRecords_GetApprovers(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+
 	// Add approvals
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-alice",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-bob",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
 	// Verify GetApprovers()
 	approvers := engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, environmentID)
 	assert.Len(t, approvers, 2)
-	assert.Contains(t, approvers, "user-alice")
-	assert.Contains(t, approvers, "user-bob")
+	assert.Contains(t, approvers, user1ID)
+	assert.Contains(t, approvers, user2ID)
 }
 
 func TestEngine_ApprovalRecords_GetApproversMultipleEnvironments(t *testing.T) {
@@ -110,11 +113,14 @@ func TestEngine_ApprovalRecords_GetApproversMultipleEnvironments(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+
 	// Approve for staging
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: env1ID,
-		UserId:        "user-charlie",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
@@ -122,18 +128,18 @@ func TestEngine_ApprovalRecords_GetApproversMultipleEnvironments(t *testing.T) {
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: env2ID,
-		UserId:        "user-delta",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
 	// Verify environment-scoped GetApprovers
 	stagingApprovers := engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, env1ID)
 	assert.Len(t, stagingApprovers, 1)
-	assert.Contains(t, stagingApprovers, "user-charlie")
+	assert.Contains(t, stagingApprovers, user1ID)
 
 	prodApprovers := engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, env2ID)
 	assert.Len(t, prodApprovers, 1)
-	assert.Contains(t, prodApprovers, "user-delta")
+	assert.Contains(t, prodApprovers, user2ID)
 }
 
 func TestEngine_ApprovalRecords_UpdateStatus(t *testing.T) {
@@ -167,27 +173,29 @@ func TestEngine_ApprovalRecords_UpdateStatus(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	userID := uuid.New().String()
+
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-dave",
+		UserId:        userID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
 	// user-dave should be an approver
 	approvers := engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, environmentID)
-	assert.Contains(t, approvers, "user-dave")
+	assert.Contains(t, approvers, userID)
 
 	// Update to rejected — should no longer be an approver
 	engine.PushEvent(ctx, handler.UserApprovalRecordUpdate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-dave",
+		UserId:        userID,
 		Status:        oapi.ApprovalStatusRejected,
 	})
 
 	approvers = engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, environmentID)
-	assert.NotContains(t, approvers, "user-dave")
+	assert.NotContains(t, approvers, userID)
 }
 
 func TestEngine_ApprovalRecords_Delete(t *testing.T) {
@@ -221,25 +229,27 @@ func TestEngine_ApprovalRecords_Delete(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	userID := uuid.New().String()
+
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-eve",
+		UserId:        userID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
 	approvers := engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, environmentID)
-	assert.Contains(t, approvers, "user-eve")
+	assert.Contains(t, approvers, userID)
 
 	engine.PushEvent(ctx, handler.UserApprovalRecordDelete, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-eve",
+		UserId:        userID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
 	approvers = engine.Workspace().UserApprovalRecords().GetApprovers(version.Id, environmentID)
-	assert.NotContains(t, approvers, "user-eve")
+	assert.NotContains(t, approvers, userID)
 }
 
 func TestEngine_ApprovalRecords_GetApprovalRecords(t *testing.T) {
@@ -273,16 +283,19 @@ func TestEngine_ApprovalRecords_GetApprovalRecords(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-a",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-b",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	})
 

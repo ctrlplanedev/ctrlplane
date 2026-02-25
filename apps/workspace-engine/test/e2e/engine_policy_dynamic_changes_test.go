@@ -21,6 +21,7 @@ func TestEngine_PolicyPriorityChange_MidDeployment(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	userID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -78,7 +79,7 @@ func TestEngine_PolicyPriorityChange_MidDeployment(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version1.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        userID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
@@ -166,6 +167,8 @@ func TestEngine_PolicyRulesUpdate_ExistingApprovals(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -206,7 +209,7 @@ func TestEngine_PolicyRulesUpdate_ExistingApprovals(t *testing.T) {
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -214,7 +217,7 @@ func TestEngine_PolicyRulesUpdate_ExistingApprovals(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -372,6 +375,7 @@ func TestEngine_PolicyDelete_WithPendingApprovals(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	user1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -418,7 +422,7 @@ func TestEngine_PolicyDelete_WithPendingApprovals(t *testing.T) {
 	approval := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)

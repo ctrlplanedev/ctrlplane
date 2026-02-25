@@ -79,6 +79,7 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBSystemEnvironments(ctx),
 			store.WithDBResources(ctx),
 			store.WithDBPolicies(ctx),
+			store.WithDBUserApprovalRecords(ctx),
 			// store.WithDBReleases(ctx),
 		),
 	)
@@ -105,6 +106,7 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 		}{
 			{"release variables", "DELETE FROM release_variable WHERE release_id IN (SELECT r.id FROM release r JOIN deployment d ON d.id = r.deployment_id WHERE d.workspace_id = $1)"},
 			{"releases", "DELETE FROM release WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
+			{"user approval records", "DELETE FROM user_approval_record WHERE version_id IN (SELECT id FROM deployment_version WHERE workspace_id = $1)"},
 			{"deployment versions", "DELETE FROM deployment_version WHERE workspace_id = $1"},
 			{"system deployments", "DELETE FROM system_deployment WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
 			{"system environments", "DELETE FROM system_environment WHERE environment_id IN (SELECT id FROM environment WHERE workspace_id = $1)"},

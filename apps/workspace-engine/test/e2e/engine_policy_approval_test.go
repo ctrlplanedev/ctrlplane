@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 	"workspace-engine/pkg/events/handler"
@@ -78,10 +77,13 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 	}
 
 	// Add first approval
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -96,7 +98,7 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -182,11 +184,14 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 	version1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version1)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+
 	// Add 2 approvals for v1.0.0
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version1.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -194,7 +199,7 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version1.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -228,7 +233,7 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 	approval3 := &oapi.UserApprovalRecord{
 		VersionId:     version2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
@@ -236,7 +241,7 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 	approval4 := &oapi.UserApprovalRecord{
 		VersionId:     version2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval4)
@@ -271,7 +276,7 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 	approval5 := &oapi.UserApprovalRecord{
 		VersionId:     version3.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval5)
@@ -356,10 +361,14 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	version2.Tag = "v2.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version2)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+	user3ID := uuid.New().String()
+
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -373,7 +382,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version3.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -381,7 +390,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	approval3 := &oapi.UserApprovalRecord{
 		VersionId:     version3.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
@@ -414,7 +423,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	approval4 := &oapi.UserApprovalRecord{
 		VersionId:     version4.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval4)
@@ -422,7 +431,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	approval5 := &oapi.UserApprovalRecord{
 		VersionId:     version4.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval5)
@@ -430,7 +439,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	approval6 := &oapi.UserApprovalRecord{
 		VersionId:     version4.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-3",
+		UserId:        user3ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval6)
@@ -524,16 +533,34 @@ func TestEngine_ApprovalPolicy_ExactMinimum(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+	user3ID := uuid.New().String()
+
 	// Add exactly 3 approvals (the minimum)
-	for i := 1; i <= 3; i++ {
-		approval := &oapi.UserApprovalRecord{
-			VersionId:     version.Id,
-			EnvironmentId: environmentID,
-			UserId:        fmt.Sprintf("user-%d", i),
-			Status:        oapi.ApprovalStatusApproved,
-		}
-		engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
+	approval1 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user1ID,
+		Status:        oapi.ApprovalStatusApproved,
 	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
+
+	approval2 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user2ID,
+		Status:        oapi.ApprovalStatusApproved,
+	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
+
+	approval3 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user3ID,
+		Status:        oapi.ApprovalStatusApproved,
+	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
 
 	// Should be deployed with exactly 3 approvals
 	allJobs := engine.Workspace().Jobs().Items()
@@ -689,16 +716,44 @@ func TestEngine_ApprovalPolicy_PartialApprovalBlocks(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+	user3ID := uuid.New().String()
+	user4ID := uuid.New().String()
+	user5ID := uuid.New().String()
+
 	// Add 4 approvals (1 short of requirement)
-	for i := 1; i <= 4; i++ {
-		approval := &oapi.UserApprovalRecord{
-			VersionId:     version.Id,
-			EnvironmentId: environmentID,
-			UserId:        fmt.Sprintf("user-%d", i),
-			Status:        oapi.ApprovalStatusApproved,
-		}
-		engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
+	approval1 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user1ID,
+		Status:        oapi.ApprovalStatusApproved,
 	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
+
+	approval2 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user2ID,
+		Status:        oapi.ApprovalStatusApproved,
+	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
+
+	approval3 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user3ID,
+		Status:        oapi.ApprovalStatusApproved,
+	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
+
+	approval4 := &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environmentID,
+		UserId:        user4ID,
+		Status:        oapi.ApprovalStatusApproved,
+	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval4)
 
 	// Should NOT be deployed (4 < 5)
 	allJobs := engine.Workspace().Jobs().Items()
@@ -710,7 +765,7 @@ func TestEngine_ApprovalPolicy_PartialApprovalBlocks(t *testing.T) {
 	approval5 := &oapi.UserApprovalRecord{
 		VersionId:     version.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-5",
+		UserId:        user5ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval5)
@@ -762,9 +817,10 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 
 	// Add approval rule requiring 2 approvals
 	policy, _ := engine.Workspace().Policies().Get(policyID)
+	rule1Id := uuid.New().String()
 	policy.Rules = []oapi.PolicyRule{
 		{
-			Id:          "rule-1",
+			Id:          rule1Id,
 			PolicyId:    policyID,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
@@ -778,10 +834,13 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 	version1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version1)
 
+	user1ID := uuid.New().String()
+	user2ID := uuid.New().String()
+
 	approval1 := &oapi.UserApprovalRecord{
 		VersionId:     version1.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval1)
@@ -789,7 +848,7 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     version1.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
@@ -822,7 +881,7 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 	approval3 := &oapi.UserApprovalRecord{
 		VersionId:     version2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-1",
+		UserId:        user1ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
@@ -830,7 +889,7 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 	approval4 := &oapi.UserApprovalRecord{
 		VersionId:     version2.Id,
 		EnvironmentId: environmentID,
-		UserId:        "user-2",
+		UserId:        user2ID,
 		Status:        oapi.ApprovalStatusApproved,
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval4)

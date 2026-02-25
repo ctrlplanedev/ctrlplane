@@ -115,6 +115,15 @@ func WithDBPolicies(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBUserApprovalRecords replaces the default in-memory UserApprovalRecordRepo
+// with a DB-backed implementation.
+func WithDBUserApprovalRecords(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.UserApprovalRecords.SetRepo(dbRepo.UserApprovalRecords())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -293,6 +302,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.Policies.repo.Set(pol); err != nil {
 			log.Warn("Failed to migrate legacy policy",
 				"policy_id", pol.Id, "name", pol.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy user approval records")
+	}
+	for _, uar := range s.repo.UserApprovalRecords().Items() {
+		if err := s.UserApprovalRecords.repo.Set(uar); err != nil {
+			log.Warn("Failed to migrate legacy user approval record",
+				"key", uar.Key(), "error", err)
 		}
 	}
 

@@ -116,3 +116,12 @@ type PolicyRepo interface {
 	Remove(id string) error
 	Items() map[string]*oapi.Policy
 }
+
+// UserApprovalRecordRepo defines the contract for user approval record storage.
+type UserApprovalRecordRepo interface {
+	Get(key string) (*oapi.UserApprovalRecord, bool)
+	Set(entity *oapi.UserApprovalRecord) error
+	Remove(key string) error
+	Items() map[string]*oapi.UserApprovalRecord
+	GetApprovedByVersionAndEnvironment(versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
+}
