@@ -500,6 +500,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/release-targets/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get release target states by deployment and environment
+         * @description Returns paginated release target states for a given deployment and environment.
+         */
+        post: operations["getReleaseTargetStates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
         parameters: {
             query?: never;
@@ -1484,6 +1504,10 @@ export interface components {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
             latestJob?: components["schemas"]["Job"];
+        };
+        ReleaseTargetWithState: {
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            state: components["schemas"]["ReleaseTargetState"];
         };
         Resource: {
             config: {
@@ -4008,6 +4032,58 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["ReleaseTargetPreview"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReleaseTargetStates: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    environmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ReleaseTargetWithState"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

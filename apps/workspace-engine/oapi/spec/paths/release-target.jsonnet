@@ -111,6 +111,36 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/release-targets/state': {
+    post: {
+      summary: 'Get release target states by deployment and environment',
+      operationId: 'getReleaseTargetStates',
+      description: 'Returns paginated release target states for a given deployment and environment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['deploymentId', 'environmentId'],
+              properties: {
+                deploymentId: { type: 'string' },
+                environmentId: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTargetAndState'))
+                 + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/release-targets/resource-preview': {
     post: {
       summary: 'Preview release targets for a resource',
