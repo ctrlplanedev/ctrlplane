@@ -17,6 +17,34 @@ import (
 
 var tracer = otel.Tracer("events/handler/policies")
 
+func getAffectedTargets(ctx context.Context, ws *workspace.Workspace, policyID string) []*oapi.ReleaseTarget {
+	releaseTargets, err := ws.ReleaseTargets().Items()
+	if err != nil {
+		return nil
+	}
+
+	allPolicies := ws.Policies().Items()
+	policiesSlice := make([]*oapi.Policy, 0, len(allPolicies))
+	for _, p := range allPolicies {
+		policiesSlice = append(policiesSlice, p)
+	}
+
+	affectedTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, rt := range releaseTargets {
+		matched, err := ws.ReleaseTargets().MatchPolicies(ctx, rt, policiesSlice)
+		if err != nil {
+			continue
+		}
+		for _, p := range matched {
+			if p.Id == policyID {
+				affectedTargets = append(affectedTargets, rt)
+				break
+			}
+		}
+	}
+	return affectedTargets
+}
+
 func HandlePolicyCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -29,35 +57,13 @@ func HandlePolicyCreated(
 
 	ws.Policies().Upsert(ctx, policy)
 
-	// Get all release targets affected by this new policy and trigger reconciliation
-	// This ensures that newly created policies can block previously allowed deployments
-	releaseTargets, err := ws.ReleaseTargets().Items()
-	if err != nil {
-		return err
-	}
+	affectedTargets := getAffectedTargets(ctx, ws, policy.Id)
 
-	affectedTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, rt := range releaseTargets {
-		// Check if this new policy applies to this release target
-		policies, err := ws.ReleaseTargets().GetPolicies(ctx, rt)
-		if err != nil {
-			continue
-		}
-		for _, p := range policies {
-			if p.Id == policy.Id {
-				affectedTargets = append(affectedTargets, rt)
-				break
-			}
-		}
-	}
-
-	// Mark desired release dirty for affected targets so planning phase re-evaluates
 	for _, rt := range affectedTargets {
 		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
 	ws.ReleaseManager().RecomputeState(ctx)
 
-	// Reconcile all affected targets to re-evaluate with the new policy
 	log.Info("Policy created - reconciling affected targets",
 		"policy_id", policy.Id,
 		"affected_targets_count", len(affectedTargets))
@@ -92,35 +98,11 @@ func HandlePolicyUpdated(
 	ws.Policies().Upsert(ctx, policy)
 	upsertSpan.End()
 
-	// Get all release targets affected by this policy and trigger reconciliation
-	// This ensures that when a policy is enabled/disabled or its rules change,
-	// any blocked deployments can proceed or new deployments get blocked
-	_, getTargetsSpan := tracer.Start(ctx, "GetReleaseTargets")
-	releaseTargets, err := ws.ReleaseTargets().Items()
-	getTargetsSpan.End()
-	if err != nil {
-		return err
-	}
-
 	_, getAffectedTargetsSpan := tracer.Start(ctx, "GetAffectedTargets")
-	affectedTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, rt := range releaseTargets {
-		// Check if this policy applies to this release target
-		policies, err := ws.ReleaseTargets().GetPolicies(ctx, rt)
-		if err != nil {
-			continue
-		}
-		for _, p := range policies {
-			if p.Id == policy.Id {
-				affectedTargets = append(affectedTargets, rt)
-				break
-			}
-		}
-	}
+	affectedTargets := getAffectedTargets(ctx, ws, policy.Id)
 	getAffectedTargetsSpan.End()
 
 	_, dirtyDesiredReleaseSpan := tracer.Start(ctx, "DirtyDesiredRelease")
-	// Mark desired release dirty for affected targets so planning phase re-evaluates
 	for _, rt := range affectedTargets {
 		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
@@ -130,7 +112,6 @@ func HandlePolicyUpdated(
 	ws.ReleaseManager().RecomputeState(ctx)
 	recomputeStateSpan.End()
 
-	// Reconcile all affected targets to re-evaluate with the updated policy
 	log.Info("Policy updated - reconciling affected targets",
 		"policy_id", policy.Id,
 		"policy_enabled", policy.Enabled,
@@ -151,37 +132,15 @@ func HandlePolicyDeleted(
 		return err
 	}
 
-	// Get affected targets BEFORE removing the policy
-	releaseTargets, err := ws.ReleaseTargets().Items()
-	if err != nil {
-		return err
-	}
+	affectedTargets := getAffectedTargets(ctx, ws, policy.Id)
 
-	affectedTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, rt := range releaseTargets {
-		// Check if this policy was applying to this release target
-		policies, err := ws.ReleaseTargets().GetPolicies(ctx, rt)
-		if err != nil {
-			continue
-		}
-		for _, p := range policies {
-			if p.Id == policy.Id {
-				affectedTargets = append(affectedTargets, rt)
-				break
-			}
-		}
-	}
-
-	// Now remove the policy
 	ws.Policies().Remove(ctx, policy.Id)
 
-	// Mark desired release dirty for affected targets so planning phase re-evaluates
 	for _, rt := range affectedTargets {
 		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
 	ws.ReleaseManager().RecomputeState(ctx)
 
-	// Reconcile all affected targets so previously blocked deployments can proceed
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 

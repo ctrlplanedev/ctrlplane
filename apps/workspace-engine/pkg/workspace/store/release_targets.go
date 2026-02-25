@@ -154,6 +154,35 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 	return policiesSlice, nil
 }
 
+func (r *ReleaseTargets) MatchPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget, policies []*oapi.Policy) ([]*oapi.Policy, error) {
+	ctx, span := tracer.Start(ctx, "ReleaseTargets.GetPolicies")
+	defer span.End()
+
+	policiesSlice := []*oapi.Policy{}
+
+	environment, ok := r.store.Environments.Get(releaseTarget.EnvironmentId)
+	if !ok {
+		return nil, fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId)
+	}
+	deployment, ok := r.store.Deployments.Get(releaseTarget.DeploymentId)
+	if !ok {
+		return nil, fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId)
+	}
+	resource, ok := r.store.Resources.Get(releaseTarget.ResourceId)
+	if !ok {
+		return nil, fmt.Errorf("resource %s not found", releaseTarget.ResourceId)
+	}
+
+	resolved := selector.NewResolvedReleaseTarget(environment, deployment, resource)
+	for _, policy := range policies {
+		if selector.MatchPolicy(ctx, policy, resolved) {
+			policiesSlice = append(policiesSlice, policy)
+		}
+	}
+
+	return policiesSlice, nil
+}
+
 func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) []*oapi.ReleaseTarget {
 	releaseTargets, err := r.releaseTargets.GetBy("resource_id", resourceId)
 	if err != nil {
