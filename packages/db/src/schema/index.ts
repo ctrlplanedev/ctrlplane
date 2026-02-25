@@ -18,3 +18,4 @@ export * from "./release.js";
 export * from "./reconcile.js";
 export * from "./policy.js";
 export * from "./user-approval-record.js";
+export * from "./resource-variable.js";

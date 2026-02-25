@@ -143,12 +143,13 @@ func (r *Resources) ListByProviderID(providerID string) []*oapi.Resource {
 }
 
 func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {
-	variables := make(map[string]*oapi.ResourceVariable, 25)
-	for _, variable := range r.store.repo.ResourceVariables.Items() {
-		if variable.ResourceId != resourceId {
-			continue
-		}
-		variables[variable.Key] = variable
+	vars, err := r.store.ResourceVariables.repo.GetByResourceID(resourceId)
+	if err != nil {
+		return make(map[string]*oapi.ResourceVariable)
+	}
+	variables := make(map[string]*oapi.ResourceVariable, len(vars))
+	for _, v := range vars {
+		variables[v.Key] = v
 	}
 	return variables
 }

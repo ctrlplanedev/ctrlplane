@@ -1051,6 +1051,13 @@
       "when": 1772042525109,
       "tag": "0149_milky_hammerhead",
       "breakpoints": true
+    },
+    {
+      "idx": 150,
+      "version": "7",
+      "when": 1772049867969,
+      "tag": "0150_abandoned_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

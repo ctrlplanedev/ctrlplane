@@ -20,6 +20,7 @@ sql:
       - queries/changelog.sql
       - queries/policies.sql
       - queries/user_approval_records.sql
+      - queries/resource_variables.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -96,5 +97,10 @@ sql:
 
           # PolicyRuleVerification
           - column: "policy_rule_verification.metrics"
+            go_type:
+              type: "[]byte"
+
+          # ResourceVariable
+          - column: "resource_variable.value"
             go_type:
               type: "[]byte"

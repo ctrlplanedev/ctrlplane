@@ -50,7 +50,7 @@ func New(wsId string) *InMemory {
 		JobVerifications:         createTypedStore[*oapi.JobVerification](router, "job_verification"),
 		resources:                createTypedStore[*oapi.Resource](router, "resource"),
 		resourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
-		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
+		resourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
 		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
 		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
 		DeploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
@@ -85,7 +85,7 @@ type InMemory struct {
 	db     *memdb.MemDB
 
 	resources         cmap.ConcurrentMap[string, *oapi.Resource]
-	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
+	resourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
 	resourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 
 	deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
@@ -471,6 +471,43 @@ func (a *userApprovalRecordRepoAdapter) GetApprovedByVersionAndEnvironment(versi
 // UserApprovalRecords implements repository.Repo.
 func (s *InMemory) UserApprovalRecords() repository.UserApprovalRecordRepo {
 	return &userApprovalRecordRepoAdapter{store: &s.userApprovalRecords}
+}
+
+type resourceVariableRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.ResourceVariable]
+}
+
+func (a *resourceVariableRepoAdapter) Get(key string) (*oapi.ResourceVariable, bool) {
+	return a.store.Get(key)
+}
+
+func (a *resourceVariableRepoAdapter) Set(entity *oapi.ResourceVariable) error {
+	a.store.Set(entity.ID(), entity)
+	return nil
+}
+
+func (a *resourceVariableRepoAdapter) Remove(key string) error {
+	a.store.Remove(key)
+	return nil
+}
+
+func (a *resourceVariableRepoAdapter) Items() map[string]*oapi.ResourceVariable {
+	return a.store.Items()
+}
+
+func (a *resourceVariableRepoAdapter) GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error) {
+	var result []*oapi.ResourceVariable
+	for item := range a.store.IterBuffered() {
+		if item.Val.ResourceId == resourceID {
+			result = append(result, item.Val)
+		}
+	}
+	return result, nil
+}
+
+// ResourceVariables implements repository.Repo.
+func (s *InMemory) ResourceVariables() repository.ResourceVariableRepo {
+	return &resourceVariableRepoAdapter{store: &s.resourceVariables}
 }
 
 // SystemEnvironments implements repository.Repo.

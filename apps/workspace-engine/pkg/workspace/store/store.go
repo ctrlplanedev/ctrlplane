@@ -124,6 +124,15 @@ func WithDBUserApprovalRecords(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBResourceVariables replaces the default in-memory ResourceVariableRepo
+// with a DB-backed implementation.
+func WithDBResourceVariables(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.ResourceVariables.SetRepo(dbRepo.ResourceVariables())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -312,6 +321,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.UserApprovalRecords.repo.Set(uar); err != nil {
 			log.Warn("Failed to migrate legacy user approval record",
 				"key", uar.Key(), "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy resource variables")
+	}
+	for _, rv := range s.repo.ResourceVariables().Items() {
+		if err := s.ResourceVariables.repo.Set(rv); err != nil {
+			log.Warn("Failed to migrate legacy resource variable",
+				"key", rv.ID(), "error", err)
 		}
 	}
 

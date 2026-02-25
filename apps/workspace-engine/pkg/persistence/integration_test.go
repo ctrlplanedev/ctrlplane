@@ -469,7 +469,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().ResourceProviders().Get(resourceProvider.Id)
 	assert.True(t, ok, "ResourceProvider should be restored")
 
-	_, ok = testStore.Repo().ResourceVariables.Get(resourceVariable.ID())
+	_, ok = testStore.Repo().ResourceVariables().Get(resourceVariable.ID())
 	assert.True(t, ok, "ResourceVariable should be restored")
 
 	_, ok = testStore.Repo().Deployments().Get(deploymentId)
