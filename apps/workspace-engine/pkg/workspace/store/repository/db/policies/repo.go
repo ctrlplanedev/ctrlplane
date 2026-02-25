@@ -11,7 +11,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var policyRepoTracer = otel.Tracer("workspace/store/repository/db/policies")
 
 type RuleRows struct {
 	AnyApproval            []db.PolicyRuleAnyApproval
@@ -36,6 +40,10 @@ func NewRepo(ctx context.Context, workspaceID string) *Repo {
 }
 
 func (r *Repo) Get(id string) (*oapi.Policy, bool) {
+	_, span := policyRepoTracer.Start(r.ctx, "PolicyRepo.Get")
+	defer span.End()
+	span.SetAttributes(attribute.String("policy_id", id))
+
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		log.Warn("Failed to parse policy id", "id", id, "error", err)
@@ -55,6 +63,9 @@ func (r *Repo) Get(id string) (*oapi.Policy, bool) {
 }
 
 func (r *Repo) Set(entity *oapi.Policy) error {
+	_, span := policyRepoTracer.Start(r.ctx, "PolicyRepo.Set")
+	defer span.End()
+	span.SetAttributes(attribute.String("policy_id", entity.Id), attribute.Int("rule_count", len(entity.Rules)))
 	params, err := ToPolicyUpsertParams(entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
@@ -104,6 +115,9 @@ func (r *Repo) Remove(id string) error {
 }
 
 func (r *Repo) Items() map[string]*oapi.Policy {
+	_, span := policyRepoTracer.Start(r.ctx, "PolicyRepo.Items")
+	defer span.End()
+
 	uid, err := uuid.Parse(r.workspaceID)
 	if err != nil {
 		log.Warn("Failed to parse workspace id for Items()", "id", r.workspaceID, "error", err)
@@ -118,6 +132,8 @@ func (r *Repo) Items() map[string]*oapi.Policy {
 		return make(map[string]*oapi.Policy)
 	}
 
+	span.SetAttributes(attribute.Int("policy_count", len(rows)))
+
 	result := make(map[string]*oapi.Policy, len(rows))
 	for _, row := range rows {
 		rules, err := r.loadRules(row.ID)
@@ -131,6 +147,10 @@ func (r *Repo) Items() map[string]*oapi.Policy {
 }
 
 func (r *Repo) loadRules(policyID uuid.UUID) (RuleRows, error) {
+	_, span := policyRepoTracer.Start(r.ctx, "PolicyRepo.loadRules")
+	defer span.End()
+	span.SetAttributes(attribute.String("policy_id", policyID.String()))
+
 	q := db.GetQueries(r.ctx)
 	var rows RuleRows
 	var errs []error

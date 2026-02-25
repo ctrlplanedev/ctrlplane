@@ -125,6 +125,9 @@ func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.R
 }
 
 func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+	ctx, span := tracer.Start(ctx, "ReleaseTargets.GetPolicies")
+	defer span.End()
+
 	policiesSlice := []*oapi.Policy{}
 
 	environment, ok := r.store.Environments.Get(releaseTarget.EnvironmentId)
