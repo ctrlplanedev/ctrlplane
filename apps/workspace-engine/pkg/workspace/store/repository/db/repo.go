@@ -100,6 +100,6 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		systemEnvironments:  systemenvironments.NewRepo(ctx),
 		policies:            policies.NewRepo(ctx, workspaceID),
 		userApprovalRecords: userapprovalrecords.NewRepo(ctx),
-		resourceVariables:   resourcevariables.NewRepo(ctx),
+		resourceVariables:   resourcevariables.NewRepo(ctx, workspaceID),
 	}
 }

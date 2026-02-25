@@ -1,6 +1,6 @@
 {
-  "id": "985e51d1-83d4-4a45-ab79-46f2a4f4eb68",
-  "prevId": "b64e903a-273c-4574-b965-e91e509ce092",
+  "id": "30416c17-51d7-477d-b738-91ba33651bd7",
+  "prevId": "985e51d1-83d4-4a45-ab79-46f2a4f4eb68",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3987,6 +3987,12 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
@@ -3996,6 +4002,15 @@
           "tableFrom": "resource_variable",
           "tableTo": "resource",
           "columnsFrom": ["resource_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "resource_variable_workspace_id_workspace_id_fk": {
+          "name": "resource_variable_workspace_id_workspace_id_fk",
+          "tableFrom": "resource_variable",
+          "tableTo": "workspace",
+          "columnsFrom": ["workspace_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"

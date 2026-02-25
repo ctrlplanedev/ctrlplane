@@ -11,11 +11,12 @@ import (
 )
 
 type Repo struct {
-	ctx context.Context
+	ctx         context.Context
+	workspaceID string
 }
 
-func NewRepo(ctx context.Context) *Repo {
-	return &Repo{ctx: ctx}
+func NewRepo(ctx context.Context, workspaceID string) *Repo {
+	return &Repo{ctx: ctx, workspaceID: workspaceID}
 }
 
 func (r *Repo) Get(key string) (*oapi.ResourceVariable, bool) {
@@ -37,7 +38,7 @@ func (r *Repo) Get(key string) (*oapi.ResourceVariable, bool) {
 }
 
 func (r *Repo) Set(entity *oapi.ResourceVariable) error {
-	params, err := ToUpsertParams(entity)
+	params, err := ToUpsertParams(r.workspaceID, entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
 	}
@@ -58,8 +59,24 @@ func (r *Repo) Remove(key string) error {
 }
 
 func (r *Repo) Items() map[string]*oapi.ResourceVariable {
-	log.Warn("ResourceVariables.Items() called on DB repo — not scoped, returning empty map")
-	return make(map[string]*oapi.ResourceVariable)
+	uid, err := uuid.Parse(r.workspaceID)
+	if err != nil {
+		log.Warn("Failed to parse workspace id for Items()", "id", r.workspaceID, "error", err)
+		return make(map[string]*oapi.ResourceVariable)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListResourceVariablesByWorkspaceID(r.ctx, uid)
+	if err != nil {
+		log.Warn("Failed to list resource variables by workspace", "workspaceId", r.workspaceID, "error", err)
+		return make(map[string]*oapi.ResourceVariable)
+	}
+
+	result := make(map[string]*oapi.ResourceVariable, len(rows))
+	for _, row := range rows {
+		rv := ToOapi(row)
+		result[rv.ID()] = rv
+	}
+	return result
 }
 
 func (r *Repo) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error {
@@ -85,7 +102,7 @@ func (r *Repo) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.Re
 	}
 
 	for _, rv := range toUpsert {
-		params, err := ToUpsertParams(rv)
+		params, err := ToUpsertParams(r.workspaceID, rv)
 		if err != nil {
 			return fmt.Errorf("convert to upsert params: %w", err)
 		}

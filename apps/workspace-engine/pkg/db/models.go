@@ -249,9 +249,10 @@ type ResourceProvider struct {
 }
 
 type ResourceVariable struct {
-	ResourceID uuid.UUID
-	Key        string
-	Value      []byte
+	ResourceID  uuid.UUID
+	Key         string
+	Value       []byte
+	WorkspaceID uuid.UUID
 }
 
 type System struct {
