@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -192,80 +193,73 @@ func isTerminalJobStatus(status oapi.JobStatus) bool {
 	}
 }
 
+// Static status mappings for simple TFC run states.
+var runStatusMap = map[tfe.RunStatus]struct {
+	status  oapi.JobStatus
+	message string
+}{
+	// Pending
+	tfe.RunPending: {oapi.JobStatusPending, "Run pending in queue"},
+
+	// In-progress phases
+	tfe.RunFetching:                 {oapi.JobStatusInProgress, "Fetching configuration..."},
+	tfe.RunFetchingCompleted:        {oapi.JobStatusInProgress, "Fetching configuration..."},
+	tfe.RunPrePlanRunning:           {oapi.JobStatusInProgress, "Running pre-plan tasks..."},
+	tfe.RunPrePlanCompleted:         {oapi.JobStatusInProgress, "Running pre-plan tasks..."},
+	tfe.RunQueuing:                  {oapi.JobStatusInProgress, "Queued for planning..."},
+	tfe.RunPlanQueued:               {oapi.JobStatusInProgress, "Queued for planning..."},
+	tfe.RunPlanning:                 {oapi.JobStatusInProgress, "Planning..."},
+	tfe.RunCostEstimating:           {oapi.JobStatusInProgress, "Estimating costs..."},
+	tfe.RunCostEstimated:            {oapi.JobStatusInProgress, "Estimating costs..."},
+	tfe.RunPolicyChecking:           {oapi.JobStatusInProgress, "Checking policies..."},
+	tfe.RunPolicyChecked:            {oapi.JobStatusInProgress, "Checking policies..."},
+	tfe.RunPostPlanRunning:          {oapi.JobStatusInProgress, "Running post-plan tasks..."},
+	tfe.RunPostPlanCompleted:        {oapi.JobStatusInProgress, "Running post-plan tasks..."},
+	tfe.RunPostPlanAwaitingDecision: {oapi.JobStatusInProgress, "Running post-plan tasks..."},
+	tfe.RunConfirmed:                {oapi.JobStatusInProgress, "Confirmed, queuing apply..."},
+	tfe.RunApplyQueued:              {oapi.JobStatusInProgress, "Queued for apply..."},
+	tfe.RunQueuingApply:             {oapi.JobStatusInProgress, "Queued for apply..."},
+	tfe.RunApplying:                 {oapi.JobStatusInProgress, "Applying..."},
+	tfe.RunPreApplyRunning:          {oapi.JobStatusInProgress, "Running pre-apply tasks..."},
+	tfe.RunPreApplyCompleted:        {oapi.JobStatusInProgress, "Running pre-apply tasks..."},
+
+	// Action required
+	tfe.RunPolicyOverride:   {oapi.JobStatusActionRequired, "Policy check failed — awaiting override"},
+	tfe.RunPolicySoftFailed: {oapi.JobStatusActionRequired, "Policy soft-failed — awaiting override"},
+
+	// Terminal: cancelled
+	tfe.RunCanceled:  {oapi.JobStatusCancelled, "Run was canceled"},
+	tfe.RunDiscarded: {oapi.JobStatusCancelled, "Run was discarded"},
+}
+
 func mapRunStatus(run *tfe.Run) (oapi.JobStatus, string) {
 	changes := formatResourceChanges(run)
 
+	// States that need dynamic messages
 	switch run.Status {
 	case tfe.RunPending:
-		pos := run.PositionInQueue
-		return oapi.JobStatusPending, fmt.Sprintf("Run pending in queue (position: %d)", pos)
-
-	case tfe.RunFetching, tfe.RunFetchingCompleted:
-		return oapi.JobStatusInProgress, "Fetching configuration..."
-
-	case tfe.RunPrePlanRunning, tfe.RunPrePlanCompleted:
-		return oapi.JobStatusInProgress, "Running pre-plan tasks..."
-
-	case tfe.RunQueuing, tfe.RunPlanQueued:
-		return oapi.JobStatusInProgress, "Queued for planning..."
-
-	case tfe.RunPlanning:
-		return oapi.JobStatusInProgress, "Planning..."
-
+		return oapi.JobStatusPending, fmt.Sprintf("Run pending in queue (position: %d)", run.PositionInQueue)
 	case tfe.RunPlanned:
 		if run.Actions != nil && run.Actions.IsConfirmable {
 			return oapi.JobStatusActionRequired, fmt.Sprintf("Plan complete — awaiting approval. %s", changes)
 		}
 		return oapi.JobStatusInProgress, "Plan complete, auto-applying..."
-
 	case tfe.RunPlannedAndFinished:
 		return oapi.JobStatusSuccessful, fmt.Sprintf("Plan complete (no changes). %s", changes)
-
 	case tfe.RunPlannedAndSaved:
 		return oapi.JobStatusSuccessful, fmt.Sprintf("Plan saved. %s", changes)
-
-	case tfe.RunCostEstimating, tfe.RunCostEstimated:
-		return oapi.JobStatusInProgress, "Estimating costs..."
-
-	case tfe.RunPolicyChecking, tfe.RunPolicyChecked:
-		return oapi.JobStatusInProgress, "Checking policies..."
-
-	case tfe.RunPolicyOverride:
-		return oapi.JobStatusActionRequired, "Policy check failed — awaiting override"
-
-	case tfe.RunPolicySoftFailed:
-		return oapi.JobStatusActionRequired, "Policy soft-failed — awaiting override"
-
-	case tfe.RunPostPlanRunning, tfe.RunPostPlanCompleted, tfe.RunPostPlanAwaitingDecision:
-		return oapi.JobStatusInProgress, "Running post-plan tasks..."
-
-	case tfe.RunConfirmed:
-		return oapi.JobStatusInProgress, "Confirmed, queuing apply..."
-
-	case tfe.RunApplyQueued, tfe.RunQueuingApply:
-		return oapi.JobStatusInProgress, "Queued for apply..."
-
-	case tfe.RunApplying:
-		return oapi.JobStatusInProgress, "Applying..."
-
 	case tfe.RunApplied:
 		return oapi.JobStatusSuccessful, fmt.Sprintf("Applied successfully. %s", changes)
-
-	case tfe.RunPreApplyRunning, tfe.RunPreApplyCompleted:
-		return oapi.JobStatusInProgress, "Running pre-apply tasks..."
-
 	case tfe.RunErrored:
 		return oapi.JobStatusFailure, fmt.Sprintf("Run errored: %s", run.Message)
-
-	case tfe.RunCanceled:
-		return oapi.JobStatusCancelled, "Run was canceled"
-
-	case tfe.RunDiscarded:
-		return oapi.JobStatusCancelled, "Run was discarded"
-
-	default:
-		return oapi.JobStatusInProgress, fmt.Sprintf("Run status: %s", run.Status)
 	}
+
+	// Static mappings
+	if entry, ok := runStatusMap[run.Status]; ok {
+		return entry.status, entry.message
+	}
+
+	return oapi.JobStatusInProgress, fmt.Sprintf("Run status: %s", run.Status)
 }
 
 func formatResourceChanges(run *tfe.Run) string {
@@ -425,7 +419,7 @@ func (t *TFE) getTemplatedWorkspace(job *oapi.Job, template string) (*WorkspaceT
 
 func (t *TFE) upsertWorkspace(ctx context.Context, client *tfe.Client, organization string, workspace *WorkspaceTemplate) (*tfe.Workspace, error) {
 	existing, err := client.Workspaces.Read(ctx, organization, workspace.Name)
-	if err != nil && err.Error() != "resource not found" {
+	if err != nil && !errors.Is(err, tfe.ErrResourceNotFound) {
 		return nil, fmt.Errorf("failed to read workspace: %w", err)
 	}
 
@@ -456,6 +450,9 @@ func (t *TFE) syncVariables(ctx context.Context, client *tfe.Client, workspaceID
 	}
 
 	for _, desired := range desiredVars {
+		if _, err := desired.categoryType(); err != nil {
+			return err
+		}
 		if existing, ok := existingByKey[desired.Key]; ok {
 			_, err := client.Variables.Update(ctx, workspaceID, existing.ID, desired.toUpdateOptions())
 			if err != nil {
@@ -563,8 +560,20 @@ func (w *WorkspaceTemplate) toUpdateOptions() tfe.WorkspaceUpdateOptions {
 	return opts
 }
 
+var validCategories = map[string]tfe.CategoryType{
+	"terraform": tfe.CategoryTerraform,
+	"env":       tfe.CategoryEnv,
+}
+
+func (v *VariableTemplate) categoryType() (tfe.CategoryType, error) {
+	if ct, ok := validCategories[v.Category]; ok {
+		return ct, nil
+	}
+	return "", fmt.Errorf("invalid variable category %q for key %q (must be \"terraform\" or \"env\")", v.Category, v.Key)
+}
+
 func (v *VariableTemplate) toCreateOptions() tfe.VariableCreateOptions {
-	category := tfe.CategoryType(v.Category)
+	category, _ := v.categoryType()
 	return tfe.VariableCreateOptions{
 		Key:         &v.Key,
 		Value:       &v.Value,
@@ -576,7 +585,7 @@ func (v *VariableTemplate) toCreateOptions() tfe.VariableCreateOptions {
 }
 
 func (v *VariableTemplate) toUpdateOptions() tfe.VariableUpdateOptions {
-	category := tfe.CategoryType(v.Category)
+	category, _ := v.categoryType()
 	return tfe.VariableUpdateOptions{
 		Key:         &v.Key,
 		Value:       &v.Value,
