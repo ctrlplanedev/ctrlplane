@@ -914,3 +914,343 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "production", dcFinalEnv)
 }
+
+// TestEngine_VariableChange_ResourceVariableAddedOverridesDeploymentDefault tests that
+// adding a resource variable after a release exists (using deployment default) creates
+// a new release with the resource variable value taking precedence.
+func TestEngine_VariableChange_ResourceVariableAddedOverridesDeploymentDefault(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable(
+					"region",
+					integration.DeploymentVariableDefaultStringValue("us-west-2"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+		),
+	)
+
+	ctx := context.Background()
+
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 initial job, got %d", len(pendingJobs))
+	}
+
+	var initialJob *oapi.Job
+	for _, job := range pendingJobs {
+		initialJob = job
+		break
+	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
+
+	initialRelease, exists := engine.Workspace().Releases().Get(initialJob.ReleaseId)
+	if !exists {
+		t.Fatalf("initial release not found")
+	}
+	initialRegion, _ := initialRelease.Variables["region"].AsStringValue()
+	assert.Equal(t, "us-west-2", initialRegion, "initial release should use deployment default")
+
+	dcInitialRegion, err := (*initialJob.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-west-2", dcInitialRegion)
+
+	now := time.Now()
+	initialJob.Status = oapi.JobStatusSuccessful
+	initialJob.CompletedAt = &now
+	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+
+	// Now add a resource variable with the same key — this should override the deployment default
+	rv := c.NewResourceVariable(resourceID, "region")
+	rv.Value = *c.NewValueFromString("eu-west-1")
+	engine.PushEvent(ctx, handler.ResourceVariableCreate, rv)
+
+	newPendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(newPendingJobs) != 1 {
+		t.Fatalf("expected 1 new pending job after resource variable added, got %d", len(newPendingJobs))
+	}
+
+	var newJob *oapi.Job
+	for _, job := range newPendingJobs {
+		newJob = job
+		break
+	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
+
+	newRelease, exists := engine.Workspace().Releases().Get(newJob.ReleaseId)
+	if !exists {
+		t.Fatalf("new release not found")
+	}
+
+	newRegion, _ := newRelease.Variables["region"].AsStringValue()
+	assert.Equal(t, "eu-west-1", newRegion, "resource variable should override deployment default")
+
+	dcNewRegion, err := (*newJob.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "eu-west-1", dcNewRegion)
+}
+
+// TestEngine_VariableChange_ResourceVariableAddedOverridesDeploymentValue tests that
+// adding a resource variable after a release exists (using a deployment variable value
+// with selector) creates a new release with the resource variable taking precedence.
+func TestEngine_VariableChange_ResourceVariableAddedOverridesDeploymentValue(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable(
+					"replicas",
+					integration.WithDeploymentVariableValue(
+						integration.DeploymentVariableValueCelResourceSelector("true"),
+						integration.DeploymentVariableValueIntValue(3),
+					),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+		),
+	)
+
+	ctx := context.Background()
+
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 initial job, got %d", len(pendingJobs))
+	}
+
+	var initialJob *oapi.Job
+	for _, job := range pendingJobs {
+		initialJob = job
+		break
+	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
+
+	initialRelease, exists := engine.Workspace().Releases().Get(initialJob.ReleaseId)
+	if !exists {
+		t.Fatalf("initial release not found")
+	}
+	initialReplicas, _ := initialRelease.Variables["replicas"].AsIntegerValue()
+	assert.Equal(t, 3, initialReplicas, "initial release should use deployment variable value")
+
+	dcInitialReplicas, err := (*initialJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, dcInitialReplicas)
+
+	now := time.Now()
+	initialJob.Status = oapi.JobStatusSuccessful
+	initialJob.CompletedAt = &now
+	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+
+	// Now add a resource variable with the same key — this should override the deployment variable value
+	rv := c.NewResourceVariable(resourceID, "replicas")
+	rv.Value = *c.NewValueFromInt(10)
+	engine.PushEvent(ctx, handler.ResourceVariableCreate, rv)
+
+	newPendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(newPendingJobs) != 1 {
+		t.Fatalf("expected 1 new pending job after resource variable added, got %d", len(newPendingJobs))
+	}
+
+	var newJob *oapi.Job
+	for _, job := range newPendingJobs {
+		newJob = job
+		break
+	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
+
+	newRelease, exists := engine.Workspace().Releases().Get(newJob.ReleaseId)
+	if !exists {
+		t.Fatalf("new release not found")
+	}
+
+	newReplicas, _ := newRelease.Variables["replicas"].AsIntegerValue()
+	assert.Equal(t, 10, newReplicas, "resource variable should override deployment variable value")
+
+	dcNewReplicas, err := (*newJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 10, dcNewReplicas)
+}
+
+// TestEngine_VariableChange_ResourceVariableBulkUpdateOverridesDeployment tests that
+// bulk-updating resource variables (the API path) correctly overrides deployment variables.
+func TestEngine_VariableChange_ResourceVariableBulkUpdateOverridesDeployment(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable(
+					"region",
+					integration.DeploymentVariableDefaultStringValue("us-west-2"),
+				),
+				integration.WithDeploymentVariable(
+					"replicas",
+					integration.WithDeploymentVariableValue(
+						integration.DeploymentVariableValueCelResourceSelector("true"),
+						integration.DeploymentVariableValueIntValue(3),
+					),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+		),
+	)
+
+	ctx := context.Background()
+
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 initial job, got %d", len(pendingJobs))
+	}
+
+	var initialJob *oapi.Job
+	for _, job := range pendingJobs {
+		initialJob = job
+		break
+	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
+
+	initialRelease, exists := engine.Workspace().Releases().Get(initialJob.ReleaseId)
+	if !exists {
+		t.Fatalf("initial release not found")
+	}
+	initialRegion, _ := initialRelease.Variables["region"].AsStringValue()
+	assert.Equal(t, "us-west-2", initialRegion)
+	initialReplicas, _ := initialRelease.Variables["replicas"].AsIntegerValue()
+	assert.Equal(t, 3, initialReplicas)
+
+	now := time.Now()
+	initialJob.Status = oapi.JobStatusSuccessful
+	initialJob.CompletedAt = &now
+	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+
+	// Bulk update resource variables (the path used by the API)
+	bulkUpdateEvent := &oapi.ResourceVariablesBulkUpdateEvent{
+		ResourceId: resourceID,
+		Variables: map[string]any{
+			"region":   "eu-central-1",
+			"replicas": 7,
+		},
+	}
+	engine.PushEvent(ctx, handler.ResourceVariablesBulkUpdate, bulkUpdateEvent)
+
+	newPendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(newPendingJobs) != 1 {
+		t.Fatalf("expected 1 new pending job after bulk variable update, got %d", len(newPendingJobs))
+	}
+
+	var newJob *oapi.Job
+	for _, job := range newPendingJobs {
+		newJob = job
+		break
+	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
+
+	newRelease, exists := engine.Workspace().Releases().Get(newJob.ReleaseId)
+	if !exists {
+		t.Fatalf("new release not found")
+	}
+
+	newRegion, _ := newRelease.Variables["region"].AsStringValue()
+	assert.Equal(t, "eu-central-1", newRegion, "resource variable should override deployment default via bulk update")
+
+	newReplicas, _ := newRelease.Variables["replicas"].AsIntegerValue()
+	assert.Equal(t, 7, newReplicas, "resource variable should override deployment variable value via bulk update")
+
+	dcNewRegion, err := (*newJob.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "eu-central-1", dcNewRegion)
+
+	dcNewReplicas, err := (*newJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 7, dcNewReplicas)
+}

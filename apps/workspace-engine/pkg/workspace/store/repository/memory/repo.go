@@ -592,7 +592,6 @@ func (s *InMemory) DeploymentVariableValues() repository.DeploymentVariableValue
 	return &deploymentVariableValueRepoAdapter{store: &s.deploymentVariableValues}
 }
 
-
 // SystemEnvironments implements repository.Repo.
 func (s *InMemory) SystemEnvironments() repository.SystemEnvironmentRepo {
 	return &systemEnvironmentRepoAdapter{

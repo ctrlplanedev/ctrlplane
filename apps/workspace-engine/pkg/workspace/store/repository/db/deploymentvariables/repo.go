@@ -179,4 +179,3 @@ func (r *ValueRepo) GetByVariableID(variableID string) ([]*oapi.DeploymentVariab
 	}
 	return result, nil
 }
-

@@ -20,19 +20,19 @@ import (
 )
 
 type DBRepo struct {
-	deploymentVersions  repository.DeploymentVersionRepo
-	deployments         repository.DeploymentRepo
-	environments        repository.EnvironmentRepo
-	resources           repository.ResourceRepo
-	systems             repository.SystemRepo
-	jobAgents           repository.JobAgentRepo
-	resourceProviders   repository.ResourceProviderRepo
-	releases            repository.ReleaseRepo
-	systemDeployments   repository.SystemDeploymentRepo
-	systemEnvironments  repository.SystemEnvironmentRepo
-	policies            repository.PolicyRepo
-	userApprovalRecords repository.UserApprovalRecordRepo
-	resourceVariables    repository.ResourceVariableRepo
+	deploymentVersions       repository.DeploymentVersionRepo
+	deployments              repository.DeploymentRepo
+	environments             repository.EnvironmentRepo
+	resources                repository.ResourceRepo
+	systems                  repository.SystemRepo
+	jobAgents                repository.JobAgentRepo
+	resourceProviders        repository.ResourceProviderRepo
+	releases                 repository.ReleaseRepo
+	systemDeployments        repository.SystemDeploymentRepo
+	systemEnvironments       repository.SystemEnvironmentRepo
+	policies                 repository.PolicyRepo
+	userApprovalRecords      repository.UserApprovalRecordRepo
+	resourceVariables        repository.ResourceVariableRepo
 	deploymentVariables      repository.DeploymentVariableRepo
 	deploymentVariableValues repository.DeploymentVariableValueRepo
 }
@@ -99,19 +99,19 @@ func (d *DBRepo) DeploymentVariableValues() repository.DeploymentVariableValueRe
 
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
-		deploymentVersions:  deploymentversions.NewRepo(ctx, workspaceID),
-		deployments:         deployments.NewRepo(ctx, workspaceID),
-		environments:        environments.NewRepo(ctx, workspaceID),
-		resources:           resources.NewRepo(ctx, workspaceID),
-		systems:             systems.NewRepo(ctx, workspaceID),
-		jobAgents:           jobagents.NewRepo(ctx, workspaceID),
-		resourceProviders:   resourceproviders.NewRepo(ctx, workspaceID),
-		releases:            releases.NewRepo(ctx, workspaceID),
-		systemDeployments:   systemdeployments.NewRepo(ctx),
-		systemEnvironments:  systemenvironments.NewRepo(ctx),
-		policies:            policies.NewRepo(ctx, workspaceID),
-		userApprovalRecords: userapprovalrecords.NewRepo(ctx),
-		resourceVariables:    resourcevariables.NewRepo(ctx, workspaceID),
+		deploymentVersions:       deploymentversions.NewRepo(ctx, workspaceID),
+		deployments:              deployments.NewRepo(ctx, workspaceID),
+		environments:             environments.NewRepo(ctx, workspaceID),
+		resources:                resources.NewRepo(ctx, workspaceID),
+		systems:                  systems.NewRepo(ctx, workspaceID),
+		jobAgents:                jobagents.NewRepo(ctx, workspaceID),
+		resourceProviders:        resourceproviders.NewRepo(ctx, workspaceID),
+		releases:                 releases.NewRepo(ctx, workspaceID),
+		systemDeployments:        systemdeployments.NewRepo(ctx),
+		systemEnvironments:       systemenvironments.NewRepo(ctx),
+		policies:                 policies.NewRepo(ctx, workspaceID),
+		userApprovalRecords:      userapprovalrecords.NewRepo(ctx),
+		resourceVariables:        resourcevariables.NewRepo(ctx, workspaceID),
 		deploymentVariables:      deploymentvariables.NewVariableRepo(ctx, workspaceID),
 		deploymentVariableValues: deploymentvariables.NewValueRepo(ctx, workspaceID),
 	}
