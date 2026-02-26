@@ -2672,13 +2672,17 @@
                "ref": {
                   "description": "Reference to the job agent",
                   "type": "string"
+               },
+               "workflowId": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
                "ref",
-               "config"
+               "config",
+               "workflowId"
             ],
             "type": "object"
          },

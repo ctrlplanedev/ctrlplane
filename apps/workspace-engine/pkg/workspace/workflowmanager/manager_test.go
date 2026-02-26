@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,8 +27,9 @@ func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 		Default: &[]string{"test-default"}[0],
 	})
 
+	jobAgent1ID := uuid.New().String()
 	jobAgent1 := &oapi.JobAgent{
-		Id:   "test-job-agent-1",
+		Id:   jobAgent1ID,
 		Name: "test-job-agent-1",
 		Type: "test-runner",
 		Config: map[string]any{
@@ -36,15 +38,17 @@ func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 	}
 	store.JobAgents.Upsert(ctx, jobAgent1)
 
+	workflowID := uuid.New().String()
+	workflowJobTemplateID := uuid.New().String()
 	workflow := &oapi.Workflow{
-		Id:     "test-workflow",
+		Id:     workflowID,
 		Name:   "test-workflow",
 		Inputs: []oapi.WorkflowInput{stringInput},
 		Jobs: []oapi.WorkflowJobTemplate{
 			{
-				Id:   "test-job",
+				Id:   workflowJobTemplateID,
 				Name: "test-job",
-				Ref:  "test-job-agent-1",
+				Ref:  jobAgent1ID,
 				Config: map[string]any{
 					"delaySeconds": 10,
 				},
@@ -53,7 +57,7 @@ func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 	}
 	store.Workflows.Upsert(ctx, workflow)
 
-	wfRun, err := manager.CreateWorkflowRun(ctx, "test-workflow", map[string]any{
+	wfRun, err := manager.CreateWorkflowRun(ctx, workflowID, map[string]any{
 		"test-input": "test-value",
 	})
 
@@ -61,7 +65,7 @@ func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 	assert.True(t, ok)
 	assert.NoError(t, err)
 	assert.NotNil(t, workflowRun)
-	assert.Equal(t, "test-workflow", workflowRun.WorkflowId)
+	assert.Equal(t, workflowID, workflowRun.WorkflowId)
 	assert.Equal(t, map[string]any{
 		"test-input": "test-value",
 	}, workflowRun.Inputs)

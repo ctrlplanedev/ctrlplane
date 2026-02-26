@@ -3,50 +3,65 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewWorkflowRuns(store *Store) *WorkflowRuns {
 	return &WorkflowRuns{
-		repo:  store.repo,
+		repo:  store.repo.WorkflowRuns(),
 		store: store,
 	}
 }
 
 type WorkflowRuns struct {
-	repo  *memory.InMemory
+	repo  repository.WorkflowRunRepo
 	store *Store
 }
 
+func (w *WorkflowRuns) SetRepo(repo repository.WorkflowRunRepo) {
+	w.repo = repo
+}
+
 func (w *WorkflowRuns) Items() map[string]*oapi.WorkflowRun {
-	return w.repo.WorkflowRuns.Items()
+	return w.repo.Items()
 }
 
 func (w *WorkflowRuns) Get(id string) (*oapi.WorkflowRun, bool) {
-	return w.repo.WorkflowRuns.Get(id)
+	return w.repo.Get(id)
 }
 
 func (w *WorkflowRuns) GetByWorkflowId(workflowId string) map[string]*oapi.WorkflowRun {
-	workflowRuns := make(map[string]*oapi.WorkflowRun)
-	for _, workflowRun := range w.repo.WorkflowRuns.Items() {
-		if workflowRun.WorkflowId == workflowId {
-			workflowRuns[workflowRun.Id] = workflowRun
-		}
+	runs, err := w.repo.GetByWorkflowID(workflowId)
+	if err != nil {
+		return make(map[string]*oapi.WorkflowRun)
 	}
-	return workflowRuns
+	result := make(map[string]*oapi.WorkflowRun, len(runs))
+	for _, r := range runs {
+		result[r.Id] = r
+	}
+	return result
 }
 
 func (w *WorkflowRuns) Upsert(ctx context.Context, workflowRun *oapi.WorkflowRun) {
-	w.repo.WorkflowRuns.Set(workflowRun.Id, workflowRun)
+	if err := w.repo.Set(workflowRun); err != nil {
+		log.Error("Failed to upsert workflow run", "error", err)
+		return
+	}
 	w.store.changeset.RecordUpsert(workflowRun)
 }
 
 func (w *WorkflowRuns) Remove(ctx context.Context, id string) {
-	workflowRun, ok := w.repo.WorkflowRuns.Get(id)
+	workflowRun, ok := w.repo.Get(id)
 	if !ok || workflowRun == nil {
 		return
 	}
-	w.repo.WorkflowRuns.Remove(id)
+
+	if err := w.repo.Remove(id); err != nil {
+		log.Error("Failed to remove workflow run", "error", err)
+		return
+	}
 
 	workflowJobs := w.store.WorkflowJobs.GetByWorkflowRunId(id)
 	for _, workflowJob := range workflowJobs {

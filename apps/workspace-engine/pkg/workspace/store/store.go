@@ -142,6 +142,42 @@ func WithDBDeploymentVariableValues(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBWorkflows replaces the default in-memory WorkflowRepo
+// with a DB-backed implementation.
+func WithDBWorkflows(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Workflows.SetRepo(dbRepo.Workflows())
+	}
+}
+
+// WithDBWorkflowJobTemplates replaces the default in-memory WorkflowJobTemplateRepo
+// with a DB-backed implementation.
+func WithDBWorkflowJobTemplates(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.WorkflowJobTemplates.SetRepo(dbRepo.WorkflowJobTemplates())
+	}
+}
+
+// WithDBWorkflowRuns replaces the default in-memory WorkflowRunRepo
+// with a DB-backed implementation.
+func WithDBWorkflowRuns(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.WorkflowRuns.SetRepo(dbRepo.WorkflowRuns())
+	}
+}
+
+// WithDBWorkflowJobs replaces the default in-memory WorkflowJobRepo
+// with a DB-backed implementation.
+func WithDBWorkflowJobs(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.WorkflowJobs.SetRepo(dbRepo.WorkflowJobs())
+	}
+}
+
 // WithDBResourceVariables replaces the default in-memory ResourceVariableRepo
 // with a DB-backed implementation.
 func WithDBResourceVariables(ctx context.Context) StoreOption {
@@ -359,6 +395,46 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.DeploymentVariableValues.repo.Set(dvv); err != nil {
 			log.Warn("Failed to migrate legacy deployment variable value",
 				"id", dvv.Id, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy workflows")
+	}
+	for _, wf := range s.repo.Workflows().Items() {
+		if err := s.Workflows.repo.Set(wf); err != nil {
+			log.Warn("Failed to migrate legacy workflow",
+				"id", wf.Id, "name", wf.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy workflow job templates")
+	}
+	for _, wjt := range s.repo.WorkflowJobTemplates().Items() {
+		if err := s.WorkflowJobTemplates.repo.Set(wjt); err != nil {
+			log.Warn("Failed to migrate legacy workflow job template",
+				"id", wjt.Id, "name", wjt.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy workflow runs")
+	}
+	for _, wr := range s.repo.WorkflowRuns().Items() {
+		if err := s.WorkflowRuns.repo.Set(wr); err != nil {
+			log.Warn("Failed to migrate legacy workflow run",
+				"id", wr.Id, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy workflow jobs")
+	}
+	for _, wj := range s.repo.WorkflowJobs().Items() {
+		if err := s.WorkflowJobs.repo.Set(wj); err != nil {
+			log.Warn("Failed to migrate legacy workflow job",
+				"id", wj.Id, "error", err)
 		}
 	}
 

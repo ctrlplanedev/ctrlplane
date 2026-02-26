@@ -22,6 +22,7 @@ sql:
       - queries/user_approval_records.sql
       - queries/resource_variables.sql
       - queries/deployment_variables.sql
+      - queries/workflows.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -115,3 +116,29 @@ sql:
           - column: "deployment_variable_value.value"
             go_type:
               type: "[]byte"
+
+          # Workflow
+          - column: "workflow.inputs"
+            go_type:
+              type: "[]byte"
+          - column: "workflow.jobs"
+            go_type:
+              type: "[]byte"
+
+          # WorkflowJobTemplate
+          - column: "workflow_job_template.config"
+            go_type:
+              type: "map[string]any"
+          - column: "workflow_job_template.matrix"
+            go_type:
+              type: "[]byte"
+
+          # WorkflowRun
+          - column: "workflow_run.inputs"
+            go_type:
+              type: "map[string]any"
+
+          # WorkflowJob
+          - column: "workflow_job.config"
+            go_type:
+              type: "map[string]any"
