@@ -232,3 +232,10 @@ CREATE TABLE user_approval_record (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (version_id, user_id, environment_id)
 );
+
+CREATE TABLE resource_variable (
+    resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value JSONB NOT NULL,
+    PRIMARY KEY (resource_id, key)
+);

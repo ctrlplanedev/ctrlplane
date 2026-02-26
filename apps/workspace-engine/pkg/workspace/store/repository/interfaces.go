@@ -117,6 +117,16 @@ type PolicyRepo interface {
 	Items() map[string]*oapi.Policy
 }
 
+// ResourceVariableRepo defines the contract for resource variable storage.
+type ResourceVariableRepo interface {
+	Get(key string) (*oapi.ResourceVariable, bool)
+	Set(entity *oapi.ResourceVariable) error
+	Remove(key string) error
+	Items() map[string]*oapi.ResourceVariable
+	GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error)
+	BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error
+}
+
 // UserApprovalRecordRepo defines the contract for user approval record storage.
 type UserApprovalRecordRepo interface {
 	Get(key string) (*oapi.UserApprovalRecord, bool)

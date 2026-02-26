@@ -248,6 +248,12 @@ type ResourceProvider struct {
 	Metadata    map[string]string
 }
 
+type ResourceVariable struct {
+	ResourceID uuid.UUID
+	Key        string
+	Value      []byte
+}
+
 type System struct {
 	ID          uuid.UUID
 	Name        string

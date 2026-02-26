@@ -13,4 +13,5 @@ type Repo interface {
 	SystemEnvironments() SystemEnvironmentRepo
 	Policies() PolicyRepo
 	UserApprovalRecords() UserApprovalRecordRepo
+	ResourceVariables() ResourceVariableRepo
 }

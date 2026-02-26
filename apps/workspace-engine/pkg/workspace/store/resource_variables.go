@@ -5,88 +5,118 @@ import (
 	"context"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewResourceVariables(store *Store) *ResourceVariables {
 	return &ResourceVariables{
-		repo:  store.repo,
+		repo:  store.repo.ResourceVariables(),
 		store: store,
 	}
 }
 
 type ResourceVariables struct {
-	repo  *memory.InMemory
+	repo  repository.ResourceVariableRepo
 	store *Store
 }
 
+func (r *ResourceVariables) SetRepo(repo repository.ResourceVariableRepo) {
+	r.repo = repo
+}
+
 func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.ResourceVariable) {
-	r.repo.ResourceVariables.Set(resourceVariable.ID(), resourceVariable)
+	if err := r.repo.Set(resourceVariable); err != nil {
+		log.Error("Failed to upsert resource variable", "error", err)
+		return
+	}
 	r.store.changeset.RecordUpsert(resourceVariable)
 }
 
 func (r *ResourceVariables) Get(resourceId string, key string) (*oapi.ResourceVariable, bool) {
-	return r.repo.ResourceVariables.Get(resourceId + "-" + key)
+	return r.repo.Get(resourceId + "-" + key)
 }
 
 func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key string) {
-	resourceVariable, ok := r.repo.ResourceVariables.Get(resourceId + "-" + key)
+	resourceVariable, ok := r.repo.Get(resourceId + "-" + key)
 	if !ok || resourceVariable == nil {
 		return
 	}
 
-	r.repo.ResourceVariables.Remove(resourceId + "-" + key)
+	if err := r.repo.Remove(resourceId + "-" + key); err != nil {
+		log.Error("Failed to remove resource variable", "error", err)
+		return
+	}
 	r.store.changeset.RecordDelete(resourceVariable)
 }
 
 func (r *ResourceVariables) BulkUpdate(ctx context.Context, resourceId string, variables map[string]any) (bool, error) {
-	currentVariables := make(map[string]*oapi.ResourceVariable)
-	hasChanges := false
-
-	for _, variable := range r.repo.ResourceVariables.Items() {
-		if variable.ResourceId == resourceId {
-			currentVariables[variable.Key] = variable
-		}
+	currentVars, err := r.repo.GetByResourceID(resourceId)
+	if err != nil {
+		return false, err
 	}
+
+	currentVariables := make(map[string]*oapi.ResourceVariable, len(currentVars))
+	for _, v := range currentVars {
+		currentVariables[v.Key] = v
+	}
+
+	var toUpsert []*oapi.ResourceVariable
+	var toRemove []*oapi.ResourceVariable
 
 	for key, currentVar := range currentVariables {
 		if _, ok := variables[key]; !ok {
-			hasChanges = true
-			r.repo.ResourceVariables.Remove(resourceId + "-" + key)
-			r.store.changeset.RecordDelete(currentVar)
+			toRemove = append(toRemove, currentVar)
 		}
 	}
 
 	for key, value := range variables {
 		newValue := oapi.NewValueFromLiteral(oapi.NewLiteralValue(value))
-		if currentVar, exists := currentVariables[key]; !exists {
-			hasChanges = true
-			r.Upsert(ctx, &oapi.ResourceVariable{
+		currentVar, exists := currentVariables[key]
+
+		if !exists {
+			toUpsert = append(toUpsert, &oapi.ResourceVariable{
 				ResourceId: resourceId,
 				Key:        key,
 				Value:      *newValue,
 			})
-		} else {
-			oldBytes, err := currentVar.Value.MarshalJSON()
-			if err != nil {
-				return false, err
-			}
-			newBytes, err := newValue.MarshalJSON()
-			if err != nil {
-				return false, err
-			}
+			continue
+		}
 
-			if !bytes.Equal(oldBytes, newBytes) {
-				hasChanges = true
-				currentVar.Value = *newValue
-				r.Upsert(ctx, currentVar)
-			}
+		oldBytes, err := currentVar.Value.MarshalJSON()
+		if err != nil {
+			return false, err
+		}
+		newBytes, err := newValue.MarshalJSON()
+		if err != nil {
+			return false, err
+		}
+		if !bytes.Equal(oldBytes, newBytes) {
+			currentVar.Value = *newValue
+			toUpsert = append(toUpsert, currentVar)
 		}
 	}
 
-	return hasChanges, nil
+	hasChanges := len(toUpsert) > 0 || len(toRemove) > 0
+	if !hasChanges {
+		return false, nil
+	}
+
+	if err := r.repo.BulkUpdate(toUpsert, toRemove); err != nil {
+		return false, err
+	}
+
+	for _, rv := range toRemove {
+		r.store.changeset.RecordDelete(rv)
+	}
+	for _, rv := range toUpsert {
+		r.store.changeset.RecordUpsert(rv)
+	}
+
+	return true, nil
 }
 
 func (r *ResourceVariables) Items() map[string]*oapi.ResourceVariable {
-	return r.repo.ResourceVariables.Items()
+	return r.repo.Items()
 }
