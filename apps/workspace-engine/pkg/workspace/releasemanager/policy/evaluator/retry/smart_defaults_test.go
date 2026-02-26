@@ -160,7 +160,8 @@ func TestRetryEvaluator_SmartDefault_MixedStatuses(t *testing.T) {
 
 	completedAt := time.Now()
 
-	// Add jobs in various states - only failure and invalidIntegration should count
+	// Non-retryable jobs (oldest) — these break the consecutive streak
+	// so they must be older than the retryable ones.
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-success",
 		ReleaseId:   release.ID(),
@@ -178,17 +179,18 @@ func TestRetryEvaluator_SmartDefault_MixedStatuses(t *testing.T) {
 	})
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-3-failure",
+		Id:          "job-3-skipped",
 		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
+		Status:      oapi.JobStatusSkipped,
 		CreatedAt:   time.Now().Add(-6 * time.Minute),
 		CompletedAt: &completedAt,
 	})
 
+	// Retryable jobs (most recent consecutive) — only these count
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-4-skipped",
+		Id:          "job-4-failure",
 		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusSkipped,
+		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-4 * time.Minute),
 		CompletedAt: &completedAt,
 	})
@@ -201,9 +203,9 @@ func TestRetryEvaluator_SmartDefault_MixedStatuses(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	// Should count: failure + invalidIntegration = 2 attempts
+	// Only the 2 most recent consecutive retryable jobs count (failure + invalidIntegration)
 	result := evaluator.Evaluate(ctx, release)
-	assert.True(t, result.Allowed, "Should allow: 2 retryable jobs (failure + invalidIntegration) = 2/2 attempts")
+	assert.True(t, result.Allowed, "Should allow: 2 consecutive retryable jobs = 2/2 attempts")
 	assert.Contains(t, result.Message, "2/2")
 
 	// Add one more failure - should exceed

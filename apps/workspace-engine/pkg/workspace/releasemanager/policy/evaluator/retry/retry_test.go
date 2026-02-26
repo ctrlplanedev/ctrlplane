@@ -818,64 +818,217 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 }
 
 // =============================================================================
-// Edge Cases
+// Newest-First Sort Order Tests (version flipping)
 // =============================================================================
 
-func TestRetryEvaluator_MixedJobStatuses(t *testing.T) {
+func TestRetryEvaluator_VersionFlip_AllowsRedeployAfterDifferentRelease(t *testing.T) {
+	// When versions flip (v1 → v2 → v1), the retry evaluator must only count
+	// consecutive jobs for the CURRENT release from newest to oldest.
+	// Jobs for other releases in between should break the streak, resetting the count.
 	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
-	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
+	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
+	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
+
+	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
+		t.Fatalf("Failed to upsert releaseV1: %v", err)
+	}
+	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
+		t.Fatalf("Failed to upsert releaseV2: %v", err)
 	}
 
-	retryOnStatuses := []oapi.JobStatus{
-		oapi.JobStatusFailure,
-		oapi.JobStatusInvalidJobAgent,
+	eval := NewEvaluatorFromStore(st, nil)
+
+	// Job 1: v1 deployed successfully (oldest)
+	completedAt1 := time.Now().Add(-3 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v1-first",
+		ReleaseId:   releaseV1.ID(),
+		Status:      oapi.JobStatusSuccessful,
+		CreatedAt:   time.Now().Add(-4 * time.Hour),
+		CompletedAt: &completedAt1,
+	})
+
+	// Job 2: v2 deployed successfully (middle)
+	completedAt2 := time.Now().Add(-2 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v2",
+		ReleaseId:   releaseV2.ID(),
+		Status:      oapi.JobStatusSuccessful,
+		CreatedAt:   time.Now().Add(-150 * time.Minute),
+		CompletedAt: &completedAt2,
+	})
+
+	// Now we want to redeploy v1: the most recent job is for v2,
+	// so the consecutive count for v1 should be 0 → first attempt → allowed
+	result := eval.Evaluate(ctx, releaseV1)
+	assert.True(t, result.Allowed, "Should allow v1 redeploy after v2 was deployed in between")
+	assert.Contains(t, result.Message, "First attempt")
+}
+
+func TestRetryEvaluator_VersionFlip_CountsOnlyLatestConsecutiveJobs(t *testing.T) {
+	// Verifies that with maxRetries=2, only the most recent consecutive jobs
+	// for the current release are counted, ignoring older jobs separated by
+	// a different release.
+	st := setupStoreWithResource(t, "resource-1")
+	ctx := context.Background()
+
+	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
+	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
+
+	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
+		t.Fatalf("Failed to upsert releaseV1: %v", err)
 	}
-	rule := &oapi.RetryRule{
-		MaxRetries:      2,
-		RetryOnStatuses: &retryOnStatuses,
+	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
+		t.Fatalf("Failed to upsert releaseV2: %v", err)
 	}
+
+	rule := &oapi.RetryRule{MaxRetries: 2}
 	eval := NewEvaluatorFromStore(st, rule)
 
-	// Mix of jobs
-	jobs := []struct {
-		id     string
-		status oapi.JobStatus
-	}{
-		{"job-1", oapi.JobStatusFailure},         // Counts
-		{"job-2", oapi.JobStatusSuccessful},      // Doesn't count
-		{"job-3", oapi.JobStatusCancelled},       // Doesn't count
-		{"job-4", oapi.JobStatusInvalidJobAgent}, // Counts
-		{"job-5", oapi.JobStatusInProgress},      // Doesn't count
-		{"job-6", oapi.JobStatusPending},         // Doesn't count
-	}
+	// Old v1 job (should be ignored because v2 job separates it)
+	completedAt1 := time.Now().Add(-5 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v1-old",
+		ReleaseId:   releaseV1.ID(),
+		Status:      oapi.JobStatusFailure,
+		CreatedAt:   time.Now().Add(-6 * time.Hour),
+		CompletedAt: &completedAt1,
+	})
 
-	for _, j := range jobs {
-		completedAt := time.Now()
-		st.Jobs.Upsert(ctx, &oapi.Job{
-			Id:          j.id,
-			ReleaseId:   release.ID(),
-			Status:      j.status,
-			CreatedAt:   time.Now(),
-			CompletedAt: &completedAt,
-		})
-	}
+	// v2 job in between
+	completedAt2 := time.Now().Add(-3 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v2",
+		ReleaseId:   releaseV2.ID(),
+		Status:      oapi.JobStatusSuccessful,
+		CreatedAt:   time.Now().Add(-4 * time.Hour),
+		CompletedAt: &completedAt2,
+	})
 
-	result := eval.Evaluate(ctx, release)
+	// Recent v1 job (only this one should count)
+	completedAt3 := time.Now().Add(-1 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v1-recent",
+		ReleaseId:   releaseV1.ID(),
+		Status:      oapi.JobStatusFailure,
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		CompletedAt: &completedAt3,
+	})
 
-	// Only 2 jobs should count (failure + invalidJobAgent)
-	assert.True(t, result.Allowed, "Should allow (2 retryable <= 2 max)")
-	assert.Equal(t, 2, result.Details["attempt_count"])
-
-	jobIds := result.Details["retryable_job_ids"].([]string)
-	assert.Contains(t, jobIds, "job-1")
-	assert.Contains(t, jobIds, "job-4")
-	assert.NotContains(t, jobIds, "job-2") // successful
-	assert.NotContains(t, jobIds, "job-5") // in progress
+	result := eval.Evaluate(ctx, releaseV1)
+	assert.True(t, result.Allowed, "Should allow retry (only 1 consecutive attempt, max is 2)")
+	assert.Equal(t, 1, result.Details["attempt_count"])
 }
+
+func TestRetryEvaluator_VersionFlip_DeniesWhenConsecutiveExceedsLimit(t *testing.T) {
+	// After flipping back to v1, if consecutive v1 jobs exceed the retry limit,
+	// it should be denied.
+	st := setupStoreWithResource(t, "resource-1")
+	ctx := context.Background()
+
+	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
+	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
+
+	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
+		t.Fatalf("Failed to upsert releaseV1: %v", err)
+	}
+	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
+		t.Fatalf("Failed to upsert releaseV2: %v", err)
+	}
+
+	rule := &oapi.RetryRule{MaxRetries: 1}
+	eval := NewEvaluatorFromStore(st, rule)
+
+	// v2 job (old, will be skipped because newer v1 jobs come after)
+	completedAt1 := time.Now().Add(-5 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v2",
+		ReleaseId:   releaseV2.ID(),
+		Status:      oapi.JobStatusSuccessful,
+		CreatedAt:   time.Now().Add(-6 * time.Hour),
+		CompletedAt: &completedAt1,
+	})
+
+	// Two consecutive v1 jobs (most recent)
+	completedAt2 := time.Now().Add(-2 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v1-a",
+		ReleaseId:   releaseV1.ID(),
+		Status:      oapi.JobStatusFailure,
+		CreatedAt:   time.Now().Add(-3 * time.Hour),
+		CompletedAt: &completedAt2,
+	})
+
+	completedAt3 := time.Now().Add(-1 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-v1-b",
+		ReleaseId:   releaseV1.ID(),
+		Status:      oapi.JobStatusFailure,
+		CreatedAt:   time.Now().Add(-90 * time.Minute),
+		CompletedAt: &completedAt3,
+	})
+
+	result := eval.Evaluate(ctx, releaseV1)
+	assert.False(t, result.Allowed, "Should deny (2 consecutive v1 attempts > maxRetries=1)")
+	assert.Contains(t, result.Message, "Retry limit exceeded")
+	assert.Equal(t, 2, result.Details["attempt_count"])
+}
+
+func TestRetryEvaluator_VersionFlip_MultipleFlips(t *testing.T) {
+	// Simulate multiple version flips: v1 → v2 → v1 → v2
+	// Each flip should reset the consecutive count.
+	st := setupStoreWithResource(t, "resource-1")
+	ctx := context.Background()
+
+	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
+	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
+
+	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
+		t.Fatalf("Failed to upsert releaseV1: %v", err)
+	}
+	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
+		t.Fatalf("Failed to upsert releaseV2: %v", err)
+	}
+
+	eval := NewEvaluatorFromStore(st, nil)
+
+	// v1 → v2 → v1 → v2 (each successful)
+	completedAt1 := time.Now().Add(-4 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id: "job-1-v1", ReleaseId: releaseV1.ID(), Status: oapi.JobStatusSuccessful,
+		CreatedAt: time.Now().Add(-5 * time.Hour), CompletedAt: &completedAt1,
+	})
+	completedAt2 := time.Now().Add(-3 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id: "job-2-v2", ReleaseId: releaseV2.ID(), Status: oapi.JobStatusSuccessful,
+		CreatedAt: time.Now().Add(-210 * time.Minute), CompletedAt: &completedAt2,
+	})
+	completedAt3 := time.Now().Add(-2 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id: "job-3-v1", ReleaseId: releaseV1.ID(), Status: oapi.JobStatusSuccessful,
+		CreatedAt: time.Now().Add(-150 * time.Minute), CompletedAt: &completedAt3,
+	})
+	completedAt4 := time.Now().Add(-1 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id: "job-4-v2", ReleaseId: releaseV2.ID(), Status: oapi.JobStatusSuccessful,
+		CreatedAt: time.Now().Add(-90 * time.Minute), CompletedAt: &completedAt4,
+	})
+
+	// Most recent is v2 → evaluating v1 should see 0 consecutive → first attempt
+	resultV1 := eval.Evaluate(ctx, releaseV1)
+	assert.True(t, resultV1.Allowed, "v1 should be allowed (most recent job is v2)")
+	assert.Contains(t, resultV1.Message, "First attempt")
+
+	// Most recent is v2 → evaluating v2 should see 1 consecutive → denied (maxRetries=0)
+	resultV2 := eval.Evaluate(ctx, releaseV2)
+	assert.False(t, resultV2.Allowed, "v2 should be denied (most recent job matches, maxRetries=0)")
+}
+
+// =============================================================================
+// Edge Cases
+// =============================================================================
 
 func TestRetryEvaluator_NilStore_ReturnsNil(t *testing.T) {
 	rule := &oapi.RetryRule{
