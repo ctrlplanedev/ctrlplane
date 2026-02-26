@@ -72,6 +72,7 @@ const listDeploymentVariableValuesByVariableID = `-- name: ListDeploymentVariabl
 SELECT id, deployment_variable_id, value, resource_selector, priority
 FROM deployment_variable_value
 WHERE deployment_variable_id = $1
+ORDER BY priority DESC, id
 `
 
 func (q *Queries) ListDeploymentVariableValuesByVariableID(ctx context.Context, deploymentVariableID uuid.UUID) ([]DeploymentVariableValue, error) {

@@ -33,7 +33,8 @@ WHERE id = $1;
 -- name: ListDeploymentVariableValuesByVariableID :many
 SELECT id, deployment_variable_id, value, resource_selector, priority
 FROM deployment_variable_value
-WHERE deployment_variable_id = $1;
+WHERE deployment_variable_id = $1
+ORDER BY priority DESC, id;
 
 -- name: UpsertDeploymentVariableValue :one
 INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
