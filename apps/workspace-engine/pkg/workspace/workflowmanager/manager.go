@@ -96,6 +96,8 @@ func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inpu
 		Inputs:     maps.Clone(inputs),
 	}
 
+	m.store.WorkflowRuns.Upsert(ctx, workflowRun)
+
 	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflow.Jobs))
 	for idx, jobTemplate := range workflow.Jobs {
 		if jobTemplate.If != nil {

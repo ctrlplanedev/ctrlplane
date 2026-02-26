@@ -58,10 +58,11 @@ func NewWorkflowJobTemplate(workflowID string) *oapi.WorkflowJobTemplate {
 	id := uuid.New().String()
 	idSubstring := id[:8]
 	jobTemplate := &oapi.WorkflowJobTemplate{
-		Id:     id,
-		Name:   fmt.Sprintf("test-job-%s", idSubstring),
-		Ref:    "",
-		Config: make(map[string]any),
+		Id:         id,
+		Name:       fmt.Sprintf("test-job-%s", idSubstring),
+		Ref:        "",
+		Config:     make(map[string]any),
+		WorkflowId: workflowID,
 	}
 	return jobTemplate
 }
