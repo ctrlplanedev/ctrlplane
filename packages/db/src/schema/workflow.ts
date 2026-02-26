@@ -1,10 +1,4 @@
-import {
-  integer,
-  jsonb,
-  pgTable,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 
 import { workspace } from "./workspace.js";
 
