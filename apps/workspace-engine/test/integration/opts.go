@@ -881,6 +881,19 @@ func WithRuleVersionCooldown(intervalSeconds int32) PolicyRuleOption {
 	}
 }
 
+// ===== VersionSelectorRule Options =====
+
+func WithRuleVersionSelector(cel string) PolicyRuleOption {
+	s := &oapi.Selector{}
+	_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.VersionSelector = &oapi.VersionSelectorRule{
+			Selector: *s,
+		}
+		return nil
+	}
+}
+
 // ===== RollbackRule Options =====
 
 // WithRuleRollback configures a rollback rule that triggers rollback to the previous

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -14,7 +15,7 @@ import (
 var _ evaluator.JobEvaluator = &RetryEvaluator{}
 
 // RetryEvaluator enforces retry limits for failed deployments based on job status.
-// It counts previous job attempts for the same release that match the configured
+// It counts previous consecutive job attempts for the same release that match the configured
 // retryable statuses and denies job creation if the limit is exceeded.
 //
 // When backoff is configured, it calculates the required wait time between retries
@@ -76,7 +77,7 @@ func NewEvaluator(getters Getters, rule *oapi.RetryRule) evaluator.JobEvaluator 
 }
 
 // Evaluate checks if the release has exceeded its retry limit or is in backoff period.
-// Counts previous job attempts for this exact release that match the configured
+// Counts previous consecutive job attempts for this exact release that match the configured
 // retryable statuses (e.g., failure, timeout).
 //
 // Returns:
@@ -90,12 +91,19 @@ func (e *RetryEvaluator) Evaluate(
 	releaseTarget := release.ReleaseTarget
 
 	// Get all jobs for this release target
-	jobs := e.getters.GetJobsForReleaseTarget(&releaseTarget)
+	jobsMap := e.getters.GetJobsForReleaseTarget(&releaseTarget)
+	jobs := make([]*oapi.Job, 0, len(jobsMap))
+	for _, job := range jobsMap {
+		jobs = append(jobs, job)
+	}
+	sort.Slice(jobs, func(i, j int) bool {
+		return jobs[i].CreatedAt.Before(jobs[j].CreatedAt)
+	})
 
 	// Build a map of retryable statuses for efficient lookup
 	retryableStatuses := e.buildRetryableStatusMap()
 
-	// Count previous attempts and find most recent retryable job
+	// Count previous consecutive attempts and find most recent retryable job
 	attemptCount := 0
 	matchingJobIds := make([]string, 0)
 	var mostRecentJob *oapi.Job
@@ -104,13 +112,13 @@ func (e *RetryEvaluator) Evaluate(
 	for _, job := range jobs {
 		// Only count jobs for this exact release
 		if job.ReleaseId != release.ID() {
-			continue
+			break
 		}
 
 		// Check if job status is retryable (or if all statuses count)
 		isRetryable := retryableStatuses == nil || retryableStatuses[job.Status]
 		if !isRetryable {
-			continue
+			break
 		}
 
 		attemptCount++
