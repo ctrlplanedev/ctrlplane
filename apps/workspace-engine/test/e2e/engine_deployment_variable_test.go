@@ -2115,3 +2115,106 @@ func TestEngine_DeploymentVariableValue_ResourceVariableOverride(t *testing.T) {
 		t.Errorf("replicas = %d, want 5 (resource variable overrides deployment variable value)", replicasInt)
 	}
 }
+
+// TestEngine_DeploymentVariableValue_ResourceVariableOverride tests resource variables override deployment variable values
+func TestEngine_DeploymentVariableValue_ResourceVariableOverrideDespiteDefaultValue(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable(
+					"replicas",
+					integration.DeploymentVariableDefaultIntValue(1),
+					integration.WithDeploymentVariableValue(
+						integration.DeploymentVariableValueCelResourceSelector("true"),
+						integration.DeploymentVariableValueIntValue(3),
+					),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(5),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: environmentID,
+		ResourceId:    resourceID,
+	}
+
+	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 job, got %d", len(jobs))
+	}
+
+	var job *oapi.Job
+	for _, j := range jobs {
+		job = j
+		break
+	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.Equal(t, environmentID, job.DispatchContext.Environment.Id)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.Equal(t, resourceID, job.DispatchContext.Resource.Id)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
+	assert.NotNil(t, job.DispatchContext.Variables)
+	replicasVal, err := (*job.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 5, replicasVal)
+
+	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !exists {
+		t.Fatalf("release not found")
+	}
+
+	variables := release.Variables
+
+	replicas, exists := variables["replicas"]
+	if !exists {
+		t.Fatalf("replicas variable not found")
+	}
+	replicasInt, _ := replicas.AsIntegerValue()
+	if int64(replicasInt) != 5 {
+		t.Errorf("replicas = %d, want 5 (resource variable overrides deployment variable value)", replicasInt)
+	}
+}
