@@ -121,12 +121,13 @@ func TestEngine_VersionSelector_FlipppingBetweenVersions(t *testing.T) {
 	job2 := jobsSlice[0]
 	assert.Equal(t, job2.DispatchContext.Version.Tag, "v2.0.0")
 
+	nowPlus10Seconds := now.Add(10 * time.Second)
 	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
 		Id: &job2.Id,
 		Job: oapi.Job{
 			Id:          job2.Id,
 			Status:      oapi.JobStatusSuccessful,
-			CompletedAt: &now,
+			CompletedAt: &nowPlus10Seconds,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
 			oapi.JobUpdateEventFieldsToUpdateStatus,

@@ -76,6 +76,18 @@ func NewEvaluator(getters Getters, rule *oapi.RetryRule) evaluator.JobEvaluator 
 	}
 }
 
+func (e *RetryEvaluator) getJobsForReleaseTargetSortedLatestFirst(releaseTarget *oapi.ReleaseTarget) []*oapi.Job {
+	jobsMap := e.getters.GetJobsForReleaseTarget(releaseTarget)
+	jobs := make([]*oapi.Job, 0, len(jobsMap))
+	for _, job := range jobsMap {
+		jobs = append(jobs, job)
+	}
+	sort.Slice(jobs, func(i, j int) bool {
+		return jobs[i].CreatedAt.After(jobs[j].CreatedAt)
+	})
+	return jobs
+}
+
 // Evaluate checks if the release has exceeded its retry limit or is in backoff period.
 // Counts previous consecutive job attempts for this exact release that match the configured
 // retryable statuses (e.g., failure, timeout).
@@ -91,14 +103,7 @@ func (e *RetryEvaluator) Evaluate(
 	releaseTarget := release.ReleaseTarget
 
 	// Get all jobs for this release target
-	jobsMap := e.getters.GetJobsForReleaseTarget(&releaseTarget)
-	jobs := make([]*oapi.Job, 0, len(jobsMap))
-	for _, job := range jobsMap {
-		jobs = append(jobs, job)
-	}
-	sort.Slice(jobs, func(i, j int) bool {
-		return jobs[i].CreatedAt.Before(jobs[j].CreatedAt)
-	})
+	jobs := e.getJobsForReleaseTargetSortedLatestFirst(&releaseTarget)
 
 	// Build a map of retryable statuses for efficient lookup
 	retryableStatuses := e.buildRetryableStatusMap()
