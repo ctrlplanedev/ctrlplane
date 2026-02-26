@@ -65,7 +65,7 @@ func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 	assert.True(t, ok)
 	assert.NoError(t, err)
 	assert.NotNil(t, workflowRun)
-	assert.Equal(t, "test-workflow", workflowRun.WorkflowId)
+	assert.Equal(t, workflowID, workflowRun.WorkflowId)
 	assert.Equal(t, map[string]any{
 		"test-input": "test-value",
 	}, workflowRun.Inputs)

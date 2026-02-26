@@ -137,10 +137,15 @@ func ToWorkflowRunUpsertParams(e *oapi.WorkflowRun) (db.UpsertWorkflowRunParams,
 		return db.UpsertWorkflowRunParams{}, fmt.Errorf("parse workflow_id: %w", err)
 	}
 
+	inputs := e.Inputs
+	if inputs == nil {
+		inputs = make(map[string]any)
+	}
+
 	return db.UpsertWorkflowRunParams{
 		ID:         id,
 		WorkflowID: wfid,
-		Inputs:     e.Inputs,
+		Inputs:     inputs,
 	}, nil
 }
 
