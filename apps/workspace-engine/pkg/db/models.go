@@ -77,6 +77,14 @@ type Deployment struct {
 	WorkspaceID      uuid.UUID
 }
 
+type DeploymentVariable struct {
+	ID           uuid.UUID
+	DeploymentID uuid.UUID
+	Key          string
+	Description  pgtype.Text
+	DefaultValue []byte
+}
+
 type DeploymentVersion struct {
 	ID             uuid.UUID
 	Name           string

@@ -233,6 +233,14 @@ CREATE TABLE user_approval_record (
     PRIMARY KEY (version_id, user_id, environment_id)
 );
 
+CREATE TABLE deployment_variable (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    description TEXT,
+    default_value JSONB
+);
+
 CREATE TABLE resource_variable (
     resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     key TEXT NOT NULL,

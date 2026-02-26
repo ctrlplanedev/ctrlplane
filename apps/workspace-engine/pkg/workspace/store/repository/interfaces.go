@@ -117,6 +117,15 @@ type PolicyRepo interface {
 	Items() map[string]*oapi.Policy
 }
 
+// DeploymentVariableRepo defines the contract for deployment variable storage.
+type DeploymentVariableRepo interface {
+	Get(id string) (*oapi.DeploymentVariable, bool)
+	Set(entity *oapi.DeploymentVariable) error
+	Remove(id string) error
+	Items() map[string]*oapi.DeploymentVariable
+	GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVariable, error)
+}
+
 // ResourceVariableRepo defines the contract for resource variable storage.
 type ResourceVariableRepo interface {
 	Get(key string) (*oapi.ResourceVariable, bool)

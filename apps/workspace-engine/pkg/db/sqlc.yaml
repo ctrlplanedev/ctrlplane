@@ -21,6 +21,7 @@ sql:
       - queries/policies.sql
       - queries/user_approval_records.sql
       - queries/resource_variables.sql
+      - queries/deployment_variables.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -102,5 +103,10 @@ sql:
 
           # ResourceVariable
           - column: "resource_variable.value"
+            go_type:
+              type: "[]byte"
+
+          # DeploymentVariable
+          - column: "deployment_variable.default_value"
             go_type:
               type: "[]byte"
