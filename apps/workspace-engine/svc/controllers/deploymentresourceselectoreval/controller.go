@@ -90,6 +90,8 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 		}
 	}
 
+	print("resourceMatchedIds", resourceMatchedIds)
+
 	return nil
 }
 

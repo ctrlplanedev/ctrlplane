@@ -9,13 +9,7 @@ import (
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
 )
-
-func isStringUUID(s string) bool {
-	_, err := uuid.Parse(s)
-	return err == nil
-}
 
 func HandleJobUpdated(
 	ctx context.Context,

@@ -47,7 +47,6 @@ type Getters interface {
 
 type AnyApprovalEvaluator struct {
 	getters       Getters
-	store         *store.Store
 	ruleId        string
 	ruleCreatedAt string
 	rule          *oapi.AnyApprovalRule
