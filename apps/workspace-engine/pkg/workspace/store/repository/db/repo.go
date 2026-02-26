@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/db/releases"
 	"workspace-engine/pkg/workspace/store/repository/db/resourceproviders"
 	"workspace-engine/pkg/workspace/store/repository/db/resources"
+	"workspace-engine/pkg/workspace/store/repository/db/workflows"
 	"workspace-engine/pkg/workspace/store/repository/db/resourcevariables"
 	"workspace-engine/pkg/workspace/store/repository/db/systemdeployments"
 	"workspace-engine/pkg/workspace/store/repository/db/systemenvironments"
@@ -35,6 +36,10 @@ type DBRepo struct {
 	resourceVariables        repository.ResourceVariableRepo
 	deploymentVariables      repository.DeploymentVariableRepo
 	deploymentVariableValues repository.DeploymentVariableValueRepo
+	workflows                repository.WorkflowRepo
+	workflowJobTemplates     repository.WorkflowJobTemplateRepo
+	workflowRuns             repository.WorkflowRunRepo
+	workflowJobs             repository.WorkflowJobRepo
 }
 
 func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
@@ -97,6 +102,22 @@ func (d *DBRepo) DeploymentVariableValues() repository.DeploymentVariableValueRe
 	return d.deploymentVariableValues
 }
 
+func (d *DBRepo) Workflows() repository.WorkflowRepo {
+	return d.workflows
+}
+
+func (d *DBRepo) WorkflowJobTemplates() repository.WorkflowJobTemplateRepo {
+	return d.workflowJobTemplates
+}
+
+func (d *DBRepo) WorkflowRuns() repository.WorkflowRunRepo {
+	return d.workflowRuns
+}
+
+func (d *DBRepo) WorkflowJobs() repository.WorkflowJobRepo {
+	return d.workflowJobs
+}
+
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
 		deploymentVersions:       deploymentversions.NewRepo(ctx, workspaceID),
@@ -114,5 +135,9 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		resourceVariables:        resourcevariables.NewRepo(ctx, workspaceID),
 		deploymentVariables:      deploymentvariables.NewVariableRepo(ctx, workspaceID),
 		deploymentVariableValues: deploymentvariables.NewValueRepo(ctx, workspaceID),
+		workflows:                workflows.NewWorkflowRepo(ctx, workspaceID),
+		workflowJobTemplates:     workflows.NewWorkflowJobTemplateRepo(ctx, workspaceID),
+		workflowRuns:             workflows.NewWorkflowRunRepo(ctx, workspaceID),
+		workflowJobs:             workflows.NewWorkflowJobRepo(ctx, workspaceID),
 	}
 }

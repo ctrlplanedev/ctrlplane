@@ -16,4 +16,8 @@ type Repo interface {
 	ResourceVariables() ResourceVariableRepo
 	DeploymentVariables() DeploymentVariableRepo
 	DeploymentVariableValues() DeploymentVariableValueRepo
+	Workflows() WorkflowRepo
+	WorkflowJobTemplates() WorkflowJobTemplateRepo
+	WorkflowRuns() WorkflowRunRepo
+	WorkflowJobs() WorkflowJobRepo
 }

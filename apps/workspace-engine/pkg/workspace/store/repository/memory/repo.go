@@ -65,10 +65,10 @@ func New(wsId string) *InMemory {
 		userApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
-		Workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
-		WorkflowJobTemplates:     createTypedStore[*oapi.WorkflowJobTemplate](router, "workflow_job_template"),
-		WorkflowRuns:             createTypedStore[*oapi.WorkflowRun](router, "workflow_run"),
-		WorkflowJobs:             createTypedStore[*oapi.WorkflowJob](router, "workflow_job"),
+		workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
+		workflowJobTemplates:     createTypedStore[*oapi.WorkflowJobTemplate](router, "workflow_job_template"),
+		workflowRuns:             createTypedStore[*oapi.WorkflowRun](router, "workflow_run"),
+		workflowJobs:             createTypedStore[*oapi.WorkflowJob](router, "workflow_job"),
 
 		systemDeploymentLinks:      &linkStore{},
 		systemEnvironmentLinks:     &linkStore{},
@@ -107,10 +107,10 @@ type InMemory struct {
 	userApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 
-	Workflows            cmap.ConcurrentMap[string, *oapi.Workflow]
-	WorkflowJobTemplates cmap.ConcurrentMap[string, *oapi.WorkflowJobTemplate]
-	WorkflowRuns         cmap.ConcurrentMap[string, *oapi.WorkflowRun]
-	WorkflowJobs         cmap.ConcurrentMap[string, *oapi.WorkflowJob]
+	workflows            cmap.ConcurrentMap[string, *oapi.Workflow]
+	workflowJobTemplates cmap.ConcurrentMap[string, *oapi.WorkflowJobTemplate]
+	workflowRuns         cmap.ConcurrentMap[string, *oapi.WorkflowRun]
+	workflowJobs         cmap.ConcurrentMap[string, *oapi.WorkflowJob]
 
 	systemDeploymentLinks      *linkStore
 	systemEnvironmentLinks     *linkStore
@@ -590,6 +590,86 @@ func (a *deploymentVariableValueRepoAdapter) GetByVariableID(variableID string) 
 
 func (s *InMemory) DeploymentVariableValues() repository.DeploymentVariableValueRepo {
 	return &deploymentVariableValueRepoAdapter{store: &s.deploymentVariableValues}
+}
+
+func (s *InMemory) Workflows() repository.WorkflowRepo {
+	return &cmapRepoAdapter[*oapi.Workflow]{store: &s.workflows}
+}
+
+func (s *InMemory) WorkflowJobTemplates() repository.WorkflowJobTemplateRepo {
+	return &cmapRepoAdapter[*oapi.WorkflowJobTemplate]{store: &s.workflowJobTemplates}
+}
+
+type workflowRunRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.WorkflowRun]
+}
+
+func (a *workflowRunRepoAdapter) Get(id string) (*oapi.WorkflowRun, bool) {
+	return a.store.Get(id)
+}
+
+func (a *workflowRunRepoAdapter) Set(entity *oapi.WorkflowRun) error {
+	a.store.Set(entity.Id, entity)
+	return nil
+}
+
+func (a *workflowRunRepoAdapter) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *workflowRunRepoAdapter) Items() map[string]*oapi.WorkflowRun {
+	return a.store.Items()
+}
+
+func (a *workflowRunRepoAdapter) GetByWorkflowID(workflowID string) ([]*oapi.WorkflowRun, error) {
+	var result []*oapi.WorkflowRun
+	for item := range a.store.IterBuffered() {
+		if item.Val.WorkflowId == workflowID {
+			result = append(result, item.Val)
+		}
+	}
+	return result, nil
+}
+
+func (s *InMemory) WorkflowRuns() repository.WorkflowRunRepo {
+	return &workflowRunRepoAdapter{store: &s.workflowRuns}
+}
+
+type workflowJobRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.WorkflowJob]
+}
+
+func (a *workflowJobRepoAdapter) Get(id string) (*oapi.WorkflowJob, bool) {
+	return a.store.Get(id)
+}
+
+func (a *workflowJobRepoAdapter) Set(entity *oapi.WorkflowJob) error {
+	a.store.Set(entity.Id, entity)
+	return nil
+}
+
+func (a *workflowJobRepoAdapter) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *workflowJobRepoAdapter) Items() map[string]*oapi.WorkflowJob {
+	return a.store.Items()
+}
+
+func (a *workflowJobRepoAdapter) GetByWorkflowRunID(workflowRunID string) ([]*oapi.WorkflowJob, error) {
+	var result []*oapi.WorkflowJob
+	for item := range a.store.IterBuffered() {
+		if item.Val.WorkflowRunId == workflowRunID {
+			result = append(result, item.Val)
+		}
+	}
+	return result, nil
+}
+
+func (s *InMemory) WorkflowJobs() repository.WorkflowJobRepo {
+	return &workflowJobRepoAdapter{store: &s.workflowJobs}
 }
 
 // SystemEnvironments implements repository.Repo.

@@ -22,10 +22,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowJobTemplate: {
     type: 'object',
-    required: ['id', 'name', 'ref', 'config'],
+    required: ['id', 'name', 'ref', 'config', 'workflowId'],
     properties: {
       name: { type: 'string' },
       id: { type: 'string' },
+      workflowId: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
       matrix: openapi.schemaRef('WorkflowJobMatrix'),

@@ -1305,7 +1305,8 @@ type WorkflowJobTemplate struct {
 	Name   string             `json:"name"`
 
 	// Ref Reference to the job agent
-	Ref string `json:"ref"`
+	Ref        string `json:"ref"`
+	WorkflowId string `json:"workflowId"`
 }
 
 // WorkflowJobWithJobs defines model for WorkflowJobWithJobs.

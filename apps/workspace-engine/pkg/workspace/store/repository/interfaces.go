@@ -135,6 +135,40 @@ type DeploymentVariableValueRepo interface {
 	GetByVariableID(variableID string) ([]*oapi.DeploymentVariableValue, error)
 }
 
+// WorkflowRepo defines the contract for workflow storage.
+type WorkflowRepo interface {
+	Get(id string) (*oapi.Workflow, bool)
+	Set(entity *oapi.Workflow) error
+	Remove(id string) error
+	Items() map[string]*oapi.Workflow
+}
+
+// WorkflowJobTemplateRepo defines the contract for workflow job template storage.
+type WorkflowJobTemplateRepo interface {
+	Get(id string) (*oapi.WorkflowJobTemplate, bool)
+	Set(entity *oapi.WorkflowJobTemplate) error
+	Remove(id string) error
+	Items() map[string]*oapi.WorkflowJobTemplate
+}
+
+// WorkflowRunRepo defines the contract for workflow run storage.
+type WorkflowRunRepo interface {
+	Get(id string) (*oapi.WorkflowRun, bool)
+	Set(entity *oapi.WorkflowRun) error
+	Remove(id string) error
+	Items() map[string]*oapi.WorkflowRun
+	GetByWorkflowID(workflowID string) ([]*oapi.WorkflowRun, error)
+}
+
+// WorkflowJobRepo defines the contract for workflow job storage.
+type WorkflowJobRepo interface {
+	Get(id string) (*oapi.WorkflowJob, bool)
+	Set(entity *oapi.WorkflowJob) error
+	Remove(id string) error
+	Items() map[string]*oapi.WorkflowJob
+	GetByWorkflowRunID(workflowRunID string) ([]*oapi.WorkflowJob, error)
+}
+
 // ResourceVariableRepo defines the contract for resource variable storage.
 type ResourceVariableRepo interface {
 	Get(key string) (*oapi.ResourceVariable, bool)
