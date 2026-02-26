@@ -17,25 +17,6 @@ func isStringUUID(s string) bool {
 	return err == nil
 }
 
-func getInternalReleaseID(ws *workspace.Workspace, jobUpdateEvent *oapi.JobUpdateEvent) string {
-	eventReleaseID := jobUpdateEvent.Job.ReleaseId
-	if eventReleaseID == "" {
-		return ""
-	}
-
-	if !isStringUUID(eventReleaseID) {
-		return eventReleaseID
-	}
-
-	for _, release := range ws.Releases().Items() {
-		if release.UUID().String() == eventReleaseID {
-			return release.ID()
-		}
-	}
-
-	return ""
-}
-
 func HandleJobUpdated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -45,9 +26,6 @@ func HandleJobUpdated(
 	if err := json.Unmarshal(event.Data, &jobUpdateEvent); err != nil {
 		return err
 	}
-
-	internalReleaseID := getInternalReleaseID(ws, jobUpdateEvent)
-	jobUpdateEvent.Job.ReleaseId = internalReleaseID
 
 	job, exists := getJob(ws, jobUpdateEvent)
 	if !exists {
