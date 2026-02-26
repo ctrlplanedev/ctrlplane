@@ -28,13 +28,14 @@ import (
 // Manager handles the business logic for release target changes and deployment decisions.
 // It coordinates the state index, eligibility checking, and execution to manage release targets.
 type Manager struct {
-	store        *store.Store
-	planner      *deployment.Planner
-	eligibility  *deployment.JobEligibilityChecker
-	executor     *deployment.Executor
-	verification *verification.Manager
-	traceStore   PersistenceStore
-	stateIndex   *StateIndex
+	store            *store.Store
+	planner          *deployment.Planner
+	eligibility      *deployment.JobEligibilityChecker
+	executor         *deployment.Executor
+	verification     *verification.Manager
+	jobAgentRegistry *jobagents.Registry
+	traceStore       PersistenceStore
+	stateIndex       *StateIndex
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -64,13 +65,14 @@ func New(store *store.Store, traceStore PersistenceStore, verificationManager *v
 	verificationManager.SetHooks(compositeHooks)
 
 	return &Manager{
-		store:        store,
-		planner:      planner,
-		eligibility:  eligibility,
-		executor:     executor,
-		verification: verificationManager,
-		traceStore:   traceStore,
-		stateIndex:   stateIndex,
+		store:            store,
+		planner:          planner,
+		eligibility:      eligibility,
+		executor:         executor,
+		verification:     verificationManager,
+		jobAgentRegistry: jobAgentRegistry,
+		traceStore:       traceStore,
+		stateIndex:       stateIndex,
 	}
 }
 
@@ -525,6 +527,8 @@ func (m *Manager) Scheduler() *deployment.ReconciliationScheduler {
 func (m *Manager) Restore(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "ReleaseManager.Restore")
 	defer span.End()
+
+	m.jobAgentRegistry.RestoreJobs(ctx)
 
 	if err := m.verification.Restore(ctx); err != nil {
 		span.RecordError(err)
