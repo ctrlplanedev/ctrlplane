@@ -3,7 +3,8 @@ CREATE TABLE "deployment_variable" (
 	"deployment_id" uuid NOT NULL,
 	"key" text NOT NULL,
 	"description" text,
-	"default_value" jsonb
+	"default_value" jsonb,
+	CONSTRAINT "deployment_variable_deployment_id_key_unique" UNIQUE("deployment_id","key")
 );
 --> statement-breakpoint
 ALTER TABLE "deployment_variable" ADD CONSTRAINT "deployment_variable_deployment_id_deployment_id_fk" FOREIGN KEY ("deployment_id") REFERENCES "public"."deployment"("id") ON DELETE cascade ON UPDATE no action;

@@ -1,5 +1,5 @@
 {
-  "id": "0fb685d1-9b23-4f03-961e-23d9b98c85aa",
+  "id": "cb727dfb-3654-4201-821c-80454634cfac",
   "prevId": "985e51d1-83d4-4a45-ab79-46f2a4f4eb68",
   "version": "7",
   "dialect": "postgresql",
@@ -1046,7 +1046,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "deployment_variable_deployment_id_key_unique": {
+          "name": "deployment_variable_deployment_id_key_unique",
+          "nullsNotDistinct": false,
+          "columns": ["deployment_id", "key"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

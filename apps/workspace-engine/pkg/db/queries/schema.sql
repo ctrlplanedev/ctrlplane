@@ -235,7 +235,7 @@ CREATE TABLE user_approval_record (
 
 CREATE TABLE deployment_variable (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    deployment_id UUID NOT NULL,
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
     key TEXT NOT NULL,
     description TEXT,
     default_value JSONB
