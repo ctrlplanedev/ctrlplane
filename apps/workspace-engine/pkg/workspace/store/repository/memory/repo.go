@@ -53,7 +53,7 @@ func New(wsId string) *InMemory {
 		resourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
 		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
 		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
-		DeploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
+		deploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
 		DeploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
 		environments:             createTypedStore[*oapi.Environment](router, "environment"),
 		policies:                 createTypedStore[*oapi.Policy](router, "policy"),
@@ -89,7 +89,7 @@ type InMemory struct {
 	resourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 
 	deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
-	DeploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
+	deploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
 	deploymentVersions       *indexstore.Store[*oapi.DeploymentVersion]
 	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
 
@@ -519,6 +519,43 @@ func (a *resourceVariableRepoAdapter) GetByResourceID(resourceID string) ([]*oap
 func (s *InMemory) ResourceVariables() repository.ResourceVariableRepo {
 	return &resourceVariableRepoAdapter{store: &s.resourceVariables}
 }
+
+type deploymentVariableRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
+}
+
+func (a *deploymentVariableRepoAdapter) Get(id string) (*oapi.DeploymentVariable, bool) {
+	return a.store.Get(id)
+}
+
+func (a *deploymentVariableRepoAdapter) Set(entity *oapi.DeploymentVariable) error {
+	a.store.Set(entity.Id, entity)
+	return nil
+}
+
+func (a *deploymentVariableRepoAdapter) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *deploymentVariableRepoAdapter) Items() map[string]*oapi.DeploymentVariable {
+	return a.store.Items()
+}
+
+func (a *deploymentVariableRepoAdapter) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVariable, error) {
+	var result []*oapi.DeploymentVariable
+	for item := range a.store.IterBuffered() {
+		if item.Val.DeploymentId == deploymentID {
+			result = append(result, item.Val)
+		}
+	}
+	return result, nil
+}
+
+func (s *InMemory) DeploymentVariables() repository.DeploymentVariableRepo {
+	return &deploymentVariableRepoAdapter{store: &s.deploymentVariables}
+}
+
 
 // SystemEnvironments implements repository.Repo.
 func (s *InMemory) SystemEnvironments() repository.SystemEnvironmentRepo {

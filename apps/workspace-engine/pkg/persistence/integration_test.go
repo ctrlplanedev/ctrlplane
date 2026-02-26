@@ -478,7 +478,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().DeploymentVersions().Get(deploymentVersion.Id)
 	assert.True(t, ok, "DeploymentVersion should be restored")
 
-	_, ok = testStore.Repo().DeploymentVariables.Get(deploymentVariable.Id)
+	_, ok = testStore.Repo().DeploymentVariables().Get(deploymentVariable.Id)
 	assert.True(t, ok, "DeploymentVariable should be restored")
 
 	_, ok = testStore.Environments.Get(environment.Id)

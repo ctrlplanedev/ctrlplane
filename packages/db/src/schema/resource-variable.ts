@@ -1,10 +1,4 @@
-import {
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
 import { resource } from "./resource.js";
 

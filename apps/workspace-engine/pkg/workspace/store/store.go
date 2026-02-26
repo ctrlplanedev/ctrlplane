@@ -124,6 +124,15 @@ func WithDBUserApprovalRecords(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBDeploymentVariables replaces the default in-memory DeploymentVariableRepo
+// with a DB-backed implementation.
+func WithDBDeploymentVariables(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.DeploymentVariables.SetRepo(dbRepo.DeploymentVariables())
+	}
+}
+
 // WithDBResourceVariables replaces the default in-memory ResourceVariableRepo
 // with a DB-backed implementation.
 func WithDBResourceVariables(ctx context.Context) StoreOption {
@@ -321,6 +330,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.UserApprovalRecords.repo.Set(uar); err != nil {
 			log.Warn("Failed to migrate legacy user approval record",
 				"key", uar.Key(), "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy deployment variables")
+	}
+	for _, dv := range s.repo.DeploymentVariables().Items() {
+		if err := s.DeploymentVariables.repo.Set(dv); err != nil {
+			log.Warn("Failed to migrate legacy deployment variable",
+				"id", dv.Id, "key", dv.Key, "error", err)
 		}
 	}
 

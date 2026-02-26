@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/workspace/store/repository"
 	"workspace-engine/pkg/workspace/store/repository/db/deployments"
+	"workspace-engine/pkg/workspace/store/repository/db/deploymentvariables"
 	"workspace-engine/pkg/workspace/store/repository/db/deploymentversions"
 	"workspace-engine/pkg/workspace/store/repository/db/environments"
 	"workspace-engine/pkg/workspace/store/repository/db/jobagents"
@@ -31,7 +32,8 @@ type DBRepo struct {
 	systemEnvironments  repository.SystemEnvironmentRepo
 	policies            repository.PolicyRepo
 	userApprovalRecords repository.UserApprovalRecordRepo
-	resourceVariables   repository.ResourceVariableRepo
+	resourceVariables    repository.ResourceVariableRepo
+	deploymentVariables  repository.DeploymentVariableRepo
 }
 
 func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
@@ -86,6 +88,10 @@ func (d *DBRepo) ResourceVariables() repository.ResourceVariableRepo {
 	return d.resourceVariables
 }
 
+func (d *DBRepo) DeploymentVariables() repository.DeploymentVariableRepo {
+	return d.deploymentVariables
+}
+
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
 		deploymentVersions:  deploymentversions.NewRepo(ctx, workspaceID),
@@ -100,6 +106,7 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		systemEnvironments:  systemenvironments.NewRepo(ctx),
 		policies:            policies.NewRepo(ctx, workspaceID),
 		userApprovalRecords: userapprovalrecords.NewRepo(ctx),
-		resourceVariables:   resourcevariables.NewRepo(ctx, workspaceID),
+		resourceVariables:    resourcevariables.NewRepo(ctx, workspaceID),
+		deploymentVariables:  deploymentvariables.NewVariableRepo(ctx, workspaceID),
 	}
 }
