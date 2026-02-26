@@ -241,6 +241,14 @@ CREATE TABLE deployment_variable (
     default_value JSONB
 );
 
+CREATE TABLE deployment_variable_value (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deployment_variable_id UUID NOT NULL REFERENCES deployment_variable(id) ON DELETE CASCADE,
+    value JSONB NOT NULL,
+    resource_selector TEXT,
+    priority BIGINT NOT NULL DEFAULT 0
+);
+
 CREATE TABLE resource_variable (
     resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     key TEXT NOT NULL,

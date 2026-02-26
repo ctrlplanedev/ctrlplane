@@ -54,7 +54,7 @@ func New(wsId string) *InMemory {
 		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
 		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
 		deploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
-		DeploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
+		deploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
 		environments:             createTypedStore[*oapi.Environment](router, "environment"),
 		policies:                 createTypedStore[*oapi.Policy](router, "policy"),
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
@@ -91,7 +91,7 @@ type InMemory struct {
 	deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
 	deploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
 	deploymentVersions       *indexstore.Store[*oapi.DeploymentVersion]
-	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
+	deploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
 
 	environments     cmap.ConcurrentMap[string, *oapi.Environment]
 	policies         cmap.ConcurrentMap[string, *oapi.Policy]
@@ -554,6 +554,42 @@ func (a *deploymentVariableRepoAdapter) GetByDeploymentID(deploymentID string) (
 
 func (s *InMemory) DeploymentVariables() repository.DeploymentVariableRepo {
 	return &deploymentVariableRepoAdapter{store: &s.deploymentVariables}
+}
+
+type deploymentVariableValueRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
+}
+
+func (a *deploymentVariableValueRepoAdapter) Get(id string) (*oapi.DeploymentVariableValue, bool) {
+	return a.store.Get(id)
+}
+
+func (a *deploymentVariableValueRepoAdapter) Set(entity *oapi.DeploymentVariableValue) error {
+	a.store.Set(entity.Id, entity)
+	return nil
+}
+
+func (a *deploymentVariableValueRepoAdapter) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *deploymentVariableValueRepoAdapter) Items() map[string]*oapi.DeploymentVariableValue {
+	return a.store.Items()
+}
+
+func (a *deploymentVariableValueRepoAdapter) GetByVariableID(variableID string) ([]*oapi.DeploymentVariableValue, error) {
+	var result []*oapi.DeploymentVariableValue
+	for item := range a.store.IterBuffered() {
+		if item.Val.DeploymentVariableId == variableID {
+			result = append(result, item.Val)
+		}
+	}
+	return result, nil
+}
+
+func (s *InMemory) DeploymentVariableValues() repository.DeploymentVariableValueRepo {
+	return &deploymentVariableValueRepoAdapter{store: &s.deploymentVariableValues}
 }
 
 

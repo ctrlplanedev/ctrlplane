@@ -1258,14 +1258,6 @@ func DeploymentVariableValueCelResourceSelector(cel string) DeploymentVariableVa
 	}
 }
 
-func DeploymentVariableValueJsonResourceSelector(selector map[string]any) DeploymentVariableValueOption {
-	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
-		s := &oapi.Selector{}
-		_ = s.FromJsonSelector(oapi.JsonSelector{Json: selector})
-		dvv.ResourceSelector = s
-	}
-}
-
 func DeploymentVariableValueValue(value *oapi.Value) DeploymentVariableValueOption {
 	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
 		dvv.Value = *value

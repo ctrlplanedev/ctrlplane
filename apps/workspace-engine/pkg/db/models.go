@@ -85,6 +85,14 @@ type DeploymentVariable struct {
 	DefaultValue []byte
 }
 
+type DeploymentVariableValue struct {
+	ID                   uuid.UUID
+	DeploymentVariableID uuid.UUID
+	Value                []byte
+	ResourceSelector     pgtype.Text
+	Priority             int64
+}
+
 type DeploymentVersion struct {
 	ID             uuid.UUID
 	Name           string

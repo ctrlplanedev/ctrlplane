@@ -33,7 +33,8 @@ type DBRepo struct {
 	policies            repository.PolicyRepo
 	userApprovalRecords repository.UserApprovalRecordRepo
 	resourceVariables    repository.ResourceVariableRepo
-	deploymentVariables  repository.DeploymentVariableRepo
+	deploymentVariables      repository.DeploymentVariableRepo
+	deploymentVariableValues repository.DeploymentVariableValueRepo
 }
 
 func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
@@ -92,6 +93,10 @@ func (d *DBRepo) DeploymentVariables() repository.DeploymentVariableRepo {
 	return d.deploymentVariables
 }
 
+func (d *DBRepo) DeploymentVariableValues() repository.DeploymentVariableValueRepo {
+	return d.deploymentVariableValues
+}
+
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
 		deploymentVersions:  deploymentversions.NewRepo(ctx, workspaceID),
@@ -107,6 +112,7 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		policies:            policies.NewRepo(ctx, workspaceID),
 		userApprovalRecords: userapprovalrecords.NewRepo(ctx),
 		resourceVariables:    resourcevariables.NewRepo(ctx, workspaceID),
-		deploymentVariables:  deploymentvariables.NewVariableRepo(ctx, workspaceID),
+		deploymentVariables:      deploymentvariables.NewVariableRepo(ctx, workspaceID),
+		deploymentVariableValues: deploymentvariables.NewValueRepo(ctx, workspaceID),
 	}
 }

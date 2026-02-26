@@ -95,3 +95,88 @@ func (r *VariableRepo) GetByDeploymentID(deploymentID string) ([]*oapi.Deploymen
 	return result, nil
 }
 
+type ValueRepo struct {
+	ctx         context.Context
+	workspaceID string
+}
+
+func NewValueRepo(ctx context.Context, workspaceID string) *ValueRepo {
+	return &ValueRepo{ctx: ctx, workspaceID: workspaceID}
+}
+
+func (r *ValueRepo) Get(id string) (*oapi.DeploymentVariableValue, bool) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		log.Warn("Failed to parse deployment variable value id", "id", id, "error", err)
+		return nil, false
+	}
+
+	row, err := db.GetQueries(r.ctx).GetDeploymentVariableValueByID(r.ctx, uid)
+	if err != nil {
+		return nil, false
+	}
+
+	return ValueToOapi(row), true
+}
+
+func (r *ValueRepo) Set(entity *oapi.DeploymentVariableValue) error {
+	params, err := ToValueUpsertParams(entity)
+	if err != nil {
+		return fmt.Errorf("convert to upsert params: %w", err)
+	}
+
+	_, err = db.GetQueries(r.ctx).UpsertDeploymentVariableValue(r.ctx, params)
+	if err != nil {
+		return fmt.Errorf("upsert deployment variable value: %w", err)
+	}
+	return nil
+}
+
+func (r *ValueRepo) Remove(id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return fmt.Errorf("parse id: %w", err)
+	}
+
+	return db.GetQueries(r.ctx).DeleteDeploymentVariableValue(r.ctx, uid)
+}
+
+func (r *ValueRepo) Items() map[string]*oapi.DeploymentVariableValue {
+	uid, err := uuid.Parse(r.workspaceID)
+	if err != nil {
+		log.Warn("Failed to parse workspace id for Items()", "id", r.workspaceID, "error", err)
+		return make(map[string]*oapi.DeploymentVariableValue)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListDeploymentVariableValuesByWorkspaceID(r.ctx, uid)
+	if err != nil {
+		log.Warn("Failed to list deployment variable values by workspace", "workspaceId", r.workspaceID, "error", err)
+		return make(map[string]*oapi.DeploymentVariableValue)
+	}
+
+	result := make(map[string]*oapi.DeploymentVariableValue, len(rows))
+	for _, row := range rows {
+		dvv := ValueToOapi(row)
+		result[dvv.Id] = dvv
+	}
+	return result
+}
+
+func (r *ValueRepo) GetByVariableID(variableID string) ([]*oapi.DeploymentVariableValue, error) {
+	uid, err := uuid.Parse(variableID)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment_variable_id: %w", err)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListDeploymentVariableValuesByVariableID(r.ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("list deployment variable values: %w", err)
+	}
+
+	result := make([]*oapi.DeploymentVariableValue, len(rows))
+	for i, row := range rows {
+		result[i] = ValueToOapi(row)
+	}
+	return result, nil
+}
+

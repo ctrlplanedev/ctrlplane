@@ -126,6 +126,15 @@ type DeploymentVariableRepo interface {
 	GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVariable, error)
 }
 
+// DeploymentVariableValueRepo defines the contract for deployment variable value storage.
+type DeploymentVariableValueRepo interface {
+	Get(id string) (*oapi.DeploymentVariableValue, bool)
+	Set(entity *oapi.DeploymentVariableValue) error
+	Remove(id string) error
+	Items() map[string]*oapi.DeploymentVariableValue
+	GetByVariableID(variableID string) ([]*oapi.DeploymentVariableValue, error)
+}
+
 // ResourceVariableRepo defines the contract for resource variable storage.
 type ResourceVariableRepo interface {
 	Get(key string) (*oapi.ResourceVariable, bool)
