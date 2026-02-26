@@ -83,7 +83,7 @@ func (q *Queries) GetWorkflowJobByID(ctx context.Context, id uuid.UUID) (Workflo
 }
 
 const getWorkflowJobTemplateByID = `-- name: GetWorkflowJobTemplateByID :one
-SELECT id, name, ref, config, if_condition, matrix, workspace_id FROM workflow_job_template WHERE id = $1
+SELECT id, workflow_id, name, ref, config, if_condition, matrix FROM workflow_job_template WHERE id = $1
 `
 
 func (q *Queries) GetWorkflowJobTemplateByID(ctx context.Context, id uuid.UUID) (WorkflowJobTemplate, error) {
@@ -91,12 +91,12 @@ func (q *Queries) GetWorkflowJobTemplateByID(ctx context.Context, id uuid.UUID) 
 	var i WorkflowJobTemplate
 	err := row.Scan(
 		&i.ID,
+		&i.WorkflowID,
 		&i.Name,
 		&i.Ref,
 		&i.Config,
 		&i.IfCondition,
 		&i.Matrix,
-		&i.WorkspaceID,
 	)
 	return i, err
 }
@@ -113,7 +113,10 @@ func (q *Queries) GetWorkflowRunByID(ctx context.Context, id uuid.UUID) (Workflo
 }
 
 const listWorkflowJobTemplatesByWorkspaceID = `-- name: ListWorkflowJobTemplatesByWorkspaceID :many
-SELECT id, name, ref, config, if_condition, matrix, workspace_id FROM workflow_job_template WHERE workspace_id = $1
+SELECT wjt.id, wjt.workflow_id, wjt.name, wjt.ref, wjt.config, wjt.if_condition, wjt.matrix
+FROM workflow_job_template wjt
+INNER JOIN workflow w ON w.id = wjt.workflow_id
+WHERE w.workspace_id = $1
 `
 
 func (q *Queries) ListWorkflowJobTemplatesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]WorkflowJobTemplate, error) {
@@ -127,12 +130,12 @@ func (q *Queries) ListWorkflowJobTemplatesByWorkspaceID(ctx context.Context, wor
 		var i WorkflowJobTemplate
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkflowID,
 			&i.Name,
 			&i.Ref,
 			&i.Config,
 			&i.IfCondition,
 			&i.Matrix,
-			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
 		}
@@ -292,7 +295,7 @@ func (q *Queries) ListWorkflowsByWorkspaceID(ctx context.Context, workspaceID uu
 
 const upsertWorkflow = `-- name: UpsertWorkflow :one
 INSERT INTO workflow (id, name, inputs, jobs, workspace_id) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, inputs = EXCLUDED.inputs, jobs = EXCLUDED.jobs, workspace_id = EXCLUDED.workspace_id
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, inputs = EXCLUDED.inputs, jobs = EXCLUDED.jobs
 RETURNING id, name, inputs, jobs, workspace_id
 `
 
@@ -357,40 +360,40 @@ func (q *Queries) UpsertWorkflowJob(ctx context.Context, arg UpsertWorkflowJobPa
 }
 
 const upsertWorkflowJobTemplate = `-- name: UpsertWorkflowJobTemplate :one
-INSERT INTO workflow_job_template (id, name, ref, config, if_condition, matrix, workspace_id) VALUES ($1, $2, $3, $4, $5, $6, $7)
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, ref = EXCLUDED.ref, config = EXCLUDED.config, if_condition = EXCLUDED.if_condition, matrix = EXCLUDED.matrix, workspace_id = EXCLUDED.workspace_id
-RETURNING id, name, ref, config, if_condition, matrix, workspace_id
+INSERT INTO workflow_job_template (id, workflow_id, name, ref, config, if_condition, matrix) VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (id) DO UPDATE SET workflow_id = EXCLUDED.workflow_id, name = EXCLUDED.name, ref = EXCLUDED.ref, config = EXCLUDED.config, if_condition = EXCLUDED.if_condition, matrix = EXCLUDED.matrix
+RETURNING id, workflow_id, name, ref, config, if_condition, matrix
 `
 
 type UpsertWorkflowJobTemplateParams struct {
 	ID          uuid.UUID
+	WorkflowID  uuid.UUID
 	Name        string
 	Ref         string
 	Config      map[string]any
 	IfCondition pgtype.Text
 	Matrix      []byte
-	WorkspaceID uuid.UUID
 }
 
 func (q *Queries) UpsertWorkflowJobTemplate(ctx context.Context, arg UpsertWorkflowJobTemplateParams) (WorkflowJobTemplate, error) {
 	row := q.db.QueryRow(ctx, upsertWorkflowJobTemplate,
 		arg.ID,
+		arg.WorkflowID,
 		arg.Name,
 		arg.Ref,
 		arg.Config,
 		arg.IfCondition,
 		arg.Matrix,
-		arg.WorkspaceID,
 	)
 	var i WorkflowJobTemplate
 	err := row.Scan(
 		&i.ID,
+		&i.WorkflowID,
 		&i.Name,
 		&i.Ref,
 		&i.Config,
 		&i.IfCondition,
 		&i.Matrix,
-		&i.WorkspaceID,
 	)
 	return i, err
 }

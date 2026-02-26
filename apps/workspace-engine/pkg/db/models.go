@@ -317,12 +317,12 @@ type WorkflowJob struct {
 
 type WorkflowJobTemplate struct {
 	ID          uuid.UUID
+	WorkflowID  uuid.UUID
 	Name        string
 	Ref         string
 	Config      map[string]any
 	IfCondition pgtype.Text
 	Matrix      []byte
-	WorkspaceID uuid.UUID
 }
 
 type WorkflowRun struct {

@@ -12,12 +12,12 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/db/releases"
 	"workspace-engine/pkg/workspace/store/repository/db/resourceproviders"
 	"workspace-engine/pkg/workspace/store/repository/db/resources"
-	"workspace-engine/pkg/workspace/store/repository/db/workflows"
 	"workspace-engine/pkg/workspace/store/repository/db/resourcevariables"
 	"workspace-engine/pkg/workspace/store/repository/db/systemdeployments"
 	"workspace-engine/pkg/workspace/store/repository/db/systemenvironments"
 	"workspace-engine/pkg/workspace/store/repository/db/systems"
 	"workspace-engine/pkg/workspace/store/repository/db/userapprovalrecords"
+	"workspace-engine/pkg/workspace/store/repository/db/workflows"
 )
 
 type DBRepo struct {

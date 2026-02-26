@@ -102,7 +102,7 @@ func (r *WorkflowJobTemplateRepo) Get(id string) (*oapi.WorkflowJobTemplate, boo
 }
 
 func (r *WorkflowJobTemplateRepo) Set(entity *oapi.WorkflowJobTemplate) error {
-	params, err := ToWorkflowJobTemplateUpsertParams(r.workspaceID, entity)
+	params, err := ToWorkflowJobTemplateUpsertParams(entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
 	}

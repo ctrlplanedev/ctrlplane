@@ -6,7 +6,7 @@ SELECT id, name, inputs, jobs, workspace_id FROM workflow WHERE workspace_id = $
 
 -- name: UpsertWorkflow :one
 INSERT INTO workflow (id, name, inputs, jobs, workspace_id) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, inputs = EXCLUDED.inputs, jobs = EXCLUDED.jobs, workspace_id = EXCLUDED.workspace_id
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, inputs = EXCLUDED.inputs, jobs = EXCLUDED.jobs
 RETURNING *;
 
 -- name: DeleteWorkflow :exec

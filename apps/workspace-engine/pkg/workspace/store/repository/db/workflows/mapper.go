@@ -74,24 +74,25 @@ func WorkflowJobTemplateToOapi(row db.WorkflowJobTemplate) *oapi.WorkflowJobTemp
 	}
 
 	return &oapi.WorkflowJobTemplate{
-		Id:     row.ID.String(),
-		Name:   row.Name,
-		Ref:    row.Ref,
-		Config: row.Config,
-		If:     ifCond,
-		Matrix: matrix,
+		Id:         row.ID.String(),
+		WorkflowId: row.WorkflowID.String(),
+		Name:       row.Name,
+		Ref:        row.Ref,
+		Config:     row.Config,
+		If:         ifCond,
+		Matrix:     matrix,
 	}
 }
 
-func ToWorkflowJobTemplateUpsertParams(workspaceID string, e *oapi.WorkflowJobTemplate) (db.UpsertWorkflowJobTemplateParams, error) {
+func ToWorkflowJobTemplateUpsertParams(e *oapi.WorkflowJobTemplate) (db.UpsertWorkflowJobTemplateParams, error) {
 	id, err := uuid.Parse(e.Id)
 	if err != nil {
 		return db.UpsertWorkflowJobTemplateParams{}, fmt.Errorf("parse id: %w", err)
 	}
 
-	wid, err := uuid.Parse(workspaceID)
+	wfid, err := uuid.Parse(e.WorkflowId)
 	if err != nil {
-		return db.UpsertWorkflowJobTemplateParams{}, fmt.Errorf("parse workspace_id: %w", err)
+		return db.UpsertWorkflowJobTemplateParams{}, fmt.Errorf("parse workflow_id: %w", err)
 	}
 
 	var ifCondition pgtype.Text
@@ -109,12 +110,12 @@ func ToWorkflowJobTemplateUpsertParams(workspaceID string, e *oapi.WorkflowJobTe
 
 	return db.UpsertWorkflowJobTemplateParams{
 		ID:          id,
+		WorkflowID:  wfid,
 		Name:        e.Name,
 		Ref:         e.Ref,
 		Config:      e.Config,
 		IfCondition: ifCondition,
 		Matrix:      matrixBytes,
-		WorkspaceID: wid,
 	}, nil
 }
 
