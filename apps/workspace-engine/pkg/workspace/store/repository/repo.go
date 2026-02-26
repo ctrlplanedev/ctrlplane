@@ -15,4 +15,5 @@ type Repo interface {
 	UserApprovalRecords() UserApprovalRecordRepo
 	ResourceVariables() ResourceVariableRepo
 	DeploymentVariables() DeploymentVariableRepo
+	DeploymentVariableValues() DeploymentVariableValueRepo
 }

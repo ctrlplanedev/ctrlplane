@@ -133,6 +133,15 @@ func WithDBDeploymentVariables(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBDeploymentVariableValues replaces the default in-memory DeploymentVariableValueRepo
+// with a DB-backed implementation.
+func WithDBDeploymentVariableValues(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.DeploymentVariableValues.SetRepo(dbRepo.DeploymentVariableValues())
+	}
+}
+
 // WithDBResourceVariables replaces the default in-memory ResourceVariableRepo
 // with a DB-backed implementation.
 func WithDBResourceVariables(ctx context.Context) StoreOption {
@@ -340,6 +349,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.DeploymentVariables.repo.Set(dv); err != nil {
 			log.Warn("Failed to migrate legacy deployment variable",
 				"id", dv.Id, "key", dv.Key, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy deployment variable values")
+	}
+	for _, dvv := range s.repo.DeploymentVariableValues().Items() {
+		if err := s.DeploymentVariableValues.repo.Set(dvv); err != nil {
+			log.Warn("Failed to migrate legacy deployment variable value",
+				"id", dvv.Id, "error", err)
 		}
 	}
 

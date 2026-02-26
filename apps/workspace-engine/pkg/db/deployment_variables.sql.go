@@ -21,6 +21,15 @@ func (q *Queries) DeleteDeploymentVariable(ctx context.Context, id uuid.UUID) er
 	return err
 }
 
+const deleteDeploymentVariableValue = `-- name: DeleteDeploymentVariableValue :exec
+DELETE FROM deployment_variable_value WHERE id = $1
+`
+
+func (q *Queries) DeleteDeploymentVariableValue(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteDeploymentVariableValue, id)
+	return err
+}
+
 const getDeploymentVariableByID = `-- name: GetDeploymentVariableByID :one
 SELECT id, deployment_id, key, description, default_value
 FROM deployment_variable
@@ -38,6 +47,92 @@ func (q *Queries) GetDeploymentVariableByID(ctx context.Context, id uuid.UUID) (
 		&i.DefaultValue,
 	)
 	return i, err
+}
+
+const getDeploymentVariableValueByID = `-- name: GetDeploymentVariableValueByID :one
+SELECT id, deployment_variable_id, value, resource_selector, priority
+FROM deployment_variable_value
+WHERE id = $1
+`
+
+func (q *Queries) GetDeploymentVariableValueByID(ctx context.Context, id uuid.UUID) (DeploymentVariableValue, error) {
+	row := q.db.QueryRow(ctx, getDeploymentVariableValueByID, id)
+	var i DeploymentVariableValue
+	err := row.Scan(
+		&i.ID,
+		&i.DeploymentVariableID,
+		&i.Value,
+		&i.ResourceSelector,
+		&i.Priority,
+	)
+	return i, err
+}
+
+const listDeploymentVariableValuesByVariableID = `-- name: ListDeploymentVariableValuesByVariableID :many
+SELECT id, deployment_variable_id, value, resource_selector, priority
+FROM deployment_variable_value
+WHERE deployment_variable_id = $1
+ORDER BY priority DESC, id
+`
+
+func (q *Queries) ListDeploymentVariableValuesByVariableID(ctx context.Context, deploymentVariableID uuid.UUID) ([]DeploymentVariableValue, error) {
+	rows, err := q.db.Query(ctx, listDeploymentVariableValuesByVariableID, deploymentVariableID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeploymentVariableValue
+	for rows.Next() {
+		var i DeploymentVariableValue
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeploymentVariableID,
+			&i.Value,
+			&i.ResourceSelector,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDeploymentVariableValuesByWorkspaceID = `-- name: ListDeploymentVariableValuesByWorkspaceID :many
+SELECT dvv.id, dvv.deployment_variable_id, dvv.value, dvv.resource_selector, dvv.priority
+FROM deployment_variable_value dvv
+INNER JOIN deployment_variable dv ON dv.id = dvv.deployment_variable_id
+INNER JOIN deployment d ON d.id = dv.deployment_id
+WHERE d.workspace_id = $1
+`
+
+func (q *Queries) ListDeploymentVariableValuesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]DeploymentVariableValue, error) {
+	rows, err := q.db.Query(ctx, listDeploymentVariableValuesByWorkspaceID, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeploymentVariableValue
+	for rows.Next() {
+		var i DeploymentVariableValue
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeploymentVariableID,
+			&i.Value,
+			&i.ResourceSelector,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listDeploymentVariablesByDeploymentID = `-- name: ListDeploymentVariablesByDeploymentID :many
@@ -137,6 +232,42 @@ func (q *Queries) UpsertDeploymentVariable(ctx context.Context, arg UpsertDeploy
 		&i.Key,
 		&i.Description,
 		&i.DefaultValue,
+	)
+	return i, err
+}
+
+const upsertDeploymentVariableValue = `-- name: UpsertDeploymentVariableValue :one
+INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO UPDATE
+SET deployment_variable_id = EXCLUDED.deployment_variable_id, value = EXCLUDED.value,
+    resource_selector = EXCLUDED.resource_selector, priority = EXCLUDED.priority
+RETURNING id, deployment_variable_id, value, resource_selector, priority
+`
+
+type UpsertDeploymentVariableValueParams struct {
+	ID                   uuid.UUID
+	DeploymentVariableID uuid.UUID
+	Value                []byte
+	ResourceSelector     pgtype.Text
+	Priority             int64
+}
+
+func (q *Queries) UpsertDeploymentVariableValue(ctx context.Context, arg UpsertDeploymentVariableValueParams) (DeploymentVariableValue, error) {
+	row := q.db.QueryRow(ctx, upsertDeploymentVariableValue,
+		arg.ID,
+		arg.DeploymentVariableID,
+		arg.Value,
+		arg.ResourceSelector,
+		arg.Priority,
+	)
+	var i DeploymentVariableValue
+	err := row.Scan(
+		&i.ID,
+		&i.DeploymentVariableID,
+		&i.Value,
+		&i.ResourceSelector,
+		&i.Priority,
 	)
 	return i, err
 }

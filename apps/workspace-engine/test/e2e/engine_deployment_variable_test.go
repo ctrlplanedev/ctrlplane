@@ -442,12 +442,7 @@ func TestEngine_DeploymentVariableValue_ResourceSelectorMatching(t *testing.T) {
 				integration.WithDeploymentVariable(
 					"region",
 					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "metadata",
-							"operator": "equals",
-							"key":      "env",
-							"value":    "production",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.metadata.env == 'production'"),
 						integration.DeploymentVariableValueStringValue("us-east-1"),
 					),
 				),
@@ -602,12 +597,7 @@ func TestEngine_DeploymentVariableValue_ResourceSelectorNotMatching(t *testing.T
 					"region",
 					integration.DeploymentVariableDefaultStringValue("us-west-2"),
 					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "metadata",
-							"operator": "equals",
-							"key":      "env",
-							"value":    "production",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.metadata.env == 'production'"),
 						integration.DeploymentVariableValueStringValue("us-east-1"),
 					),
 				),
@@ -862,21 +852,11 @@ func TestEngine_DeploymentVariableValue_MultipleSelectors(t *testing.T) {
 				integration.WithDeploymentVariable(
 					"region",
 					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "metadata",
-							"operator": "equals",
-							"key":      "env",
-							"value":    "production",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.metadata.env == 'production'"),
 						integration.DeploymentVariableValueStringValue("us-east-1"),
 					),
 					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "metadata",
-							"operator": "equals",
-							"key":      "env",
-							"value":    "staging",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.metadata.env == 'staging'"),
 						integration.DeploymentVariableValueStringValue("us-west-2"),
 					),
 				),
@@ -1402,12 +1382,7 @@ func TestEngine_DeploymentVariableValue_DefaultValueFallback(t *testing.T) {
 					"port",
 					integration.DeploymentVariableDefaultIntValue(8080),
 					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "metadata",
-							"operator": "equals",
-							"key":      "env",
-							"value":    "production",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.metadata.env == 'production'"),
 						integration.DeploymentVariableValueIntValue(3000),
 					),
 				),
@@ -1608,20 +1583,12 @@ func TestEngine_DeploymentVariableValue_MultipleValuesSameResource(t *testing.T)
 					"timeout",
 					integration.WithDeploymentVariableValue(
 						integration.DeploymentVariableValuePriority(20),
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "kind",
-							"operator": "equals",
-							"value":    "server",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.kind == 'server'"),
 						integration.DeploymentVariableValueIntValue(60),
 					),
 					integration.WithDeploymentVariableValue(
 						integration.DeploymentVariableValuePriority(10),
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "kind",
-							"operator": "equals",
-							"value":    "server",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.kind == 'server'"),
 						integration.DeploymentVariableValueIntValue(30),
 					),
 				),
@@ -1817,12 +1784,7 @@ func TestEngine_DeploymentVariableValue_NilDefaultValue(t *testing.T) {
 				integration.WithDeploymentVariable(
 					"optional_var",
 					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueJsonResourceSelector(map[string]any{
-							"type":     "metadata",
-							"operator": "equals",
-							"key":      "env",
-							"value":    "production",
-						}),
+						integration.DeploymentVariableValueCelResourceSelector("resource.metadata.env == 'production'"),
 						integration.DeploymentVariableValueStringValue("production-value"),
 					),
 				),

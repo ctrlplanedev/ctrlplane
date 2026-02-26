@@ -110,3 +110,8 @@ sql:
           - column: "deployment_variable.default_value"
             go_type:
               type: "[]byte"
+
+          # DeploymentVariableValue
+          - column: "deployment_variable_value.value"
+            go_type:
+              type: "[]byte"

@@ -53,11 +53,13 @@ func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 }
 
 func (d *DeploymentVariables) Values(variableId string) map[string]*oapi.DeploymentVariableValue {
-	values := make(map[string]*oapi.DeploymentVariableValue)
-	for _, value := range d.store.DeploymentVariableValues.Items() {
-		if value.DeploymentVariableId == variableId {
-			values[value.Id] = value
-		}
+	dvvs, err := d.store.DeploymentVariableValues.repo.GetByVariableID(variableId)
+	if err != nil {
+		return make(map[string]*oapi.DeploymentVariableValue)
+	}
+	values := make(map[string]*oapi.DeploymentVariableValue, len(dvvs))
+	for _, v := range dvvs {
+		values[v.Id] = v
 	}
 	return values
 }
