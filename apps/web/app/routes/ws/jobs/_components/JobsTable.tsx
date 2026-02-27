@@ -89,8 +89,10 @@ function JobsTableRow({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
         )}
       </TableCell>
       <TableCell className="font-mono  font-medium">
-        {job.dispatchContext?.version?.name ||
-          job.dispatchContext?.version?.tag}
+        <div className="max-w-72 truncate">
+          {job.dispatchContext?.version?.name ||
+            job.dispatchContext?.version?.tag}
+        </div>
       </TableCell>
       <VariablesCell job={job} />
       <TableCell>
