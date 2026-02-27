@@ -1,4 +1,4 @@
-package deploymentresourceselectoreval
+package environmentresourceselectoreval
 
 import (
 	"context"
@@ -23,11 +23,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentresourceselectoreval")
+var tracer = otel.Tracer("workspace-engine/svc/controllers/environmentresourceselectoreval")
 var _ reconcile.Processor = (*Controller)(nil)
 
 var celEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("resource", "deployment").
+	WithMapVariables("resource", "environment").
 	WithStandardExtensions().
 	BuildCached(12 * time.Hour)
 
@@ -40,7 +40,7 @@ type Controller struct {
 
 // Process implements [reconcile.Processor].
 func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
-	ctx, span := tracer.Start(ctx, "deploymentresourceselectoreval.Controller.Process")
+	ctx, span := tracer.Start(ctx, "environmentresourceselectoreval.Controller.Process")
 	defer span.End()
 
 	span.SetAttributes(
@@ -50,30 +50,30 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 		attribute.String("item.scope_id", item.ScopeID),
 	)
 
-	deploymentID, err := uuid.Parse(item.ScopeID)
+	environmentID, err := uuid.Parse(item.ScopeID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("parse deployment id: %w", err)
+		return fmt.Errorf("parse environment id: %w", err)
 	}
 
-	deployment, err := c.getter.GetDeploymentInfo(ctx, deploymentID)
+	environment, err := c.getter.GetEnvironmentInfo(ctx, environmentID)
 	if err != nil {
 		return err
 	}
 
-	selector, err := celEnv.Compile(deployment.ResourceSelector)
+	selector, err := celEnv.Compile(environment.ResourceSelector)
 	if err != nil {
-		return fmt.Errorf("compile deployment selector: %w", err)
+		return fmt.Errorf("compile environment selector: %w", err)
 	}
 
-	matchedIDs, err := c.evalResources(ctx, deployment, selector)
+	matchedIDs, err := c.evalResources(ctx, environment, selector)
 	if err != nil {
 		return fmt.Errorf("eval selectors: %w", err)
 	}
 
-	if err := c.setter.SetComputedDeploymentResources(ctx, deploymentID, matchedIDs); err != nil {
-		return fmt.Errorf("set computed deployment resources: %w", err)
+	if err := c.setter.SetComputedEnvironmentResources(ctx, environmentID, matchedIDs); err != nil {
+		return fmt.Errorf("set computed environment resources: %w", err)
 	}
 
 	return nil
@@ -81,14 +81,14 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 
 // evalResources streams resources from the DB and evaluates the CEL selector
 // concurrently, returning the IDs of all matched resources.
-func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentInfo, selector cel.Program) ([]uuid.UUID, error) {
+func (c *Controller) evalResources(ctx context.Context, environment *EnvironmentInfo, selector cel.Program) ([]uuid.UUID, error) {
 	numWorkers := runtime.GOMAXPROCS(0)
 	batches := make(chan []ResourceInfo, numWorkers)
 
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return c.getter.StreamResources(ctx, deployment.WorkspaceID, streamBatchSize, batches)
+		return c.getter.StreamResources(ctx, environment.WorkspaceID, streamBatchSize, batches)
 	})
 
 	var mu sync.Mutex
@@ -96,8 +96,8 @@ func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentIn
 	for range numWorkers {
 		g.Go(func() error {
 			celCtx := map[string]any{
-				"resource":   nil,
-				"deployment": deployment.Raw,
+				"resource":    nil,
+				"environment": environment.Raw,
 			}
 			var local []uuid.UUID
 			for batch := range batches {
@@ -134,7 +134,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		panic("failed to get pgx pool")
 	}
 	log.Debug(
-		"Creating deployment resourceselector eval worker",
+		"Creating environment resourceselector eval worker",
 		"maxConcurrency", runtime.GOMAXPROCS(0),
 	)
 
@@ -148,7 +148,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
-	kind := "deployment-resource-selector-eval"
+	kind := "environment-resource-selector-eval"
 	controller := &Controller{
 		getter: &PostgresGetter{},
 		setter: &PostgresSetter{},
@@ -160,7 +160,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create deployment resourceselector eval worker", "error", err)
+		log.Fatal("Failed to create environment resourceselector eval worker", "error", err)
 	}
 
 	return worker

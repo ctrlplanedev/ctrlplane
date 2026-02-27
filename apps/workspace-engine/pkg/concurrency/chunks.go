@@ -3,10 +3,8 @@ package concurrency
 import (
 	"context"
 	"runtime"
-	"sync"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -80,41 +78,29 @@ func ProcessInChunks[T any, R any](
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(o.maxConcurrency)
 
-	// Store results by chunk index to preserve order
 	chunkResults := make([][]R, len(chunks))
-	var mu sync.Mutex
 
 	// Process each chunk in a goroutine
 	for chunkIdx, chunk := range chunks {
 		g.Go(func() error {
-			chunkCtx, span := tracer.Start(ctx, "ProcessChunk")
-			span.SetAttributes(
-				attribute.Int("chunk.index", chunkIdx),
-				attribute.Int("chunk.size", len(chunk)),
-			)
-			defer span.End()
-
 			results := make([]R, 0, len(chunk))
 
 			for _, item := range chunk {
 				// Check context cancellation before processing
 				select {
-				case <-chunkCtx.Done():
-					return chunkCtx.Err()
+				case <-ctx.Done():
+					return ctx.Err()
 				default:
 				}
 
-				result, err := processFn(chunkCtx, item)
+				result, err := processFn(ctx, item)
 				if err != nil {
 					return err
 				}
 				results = append(results, result)
 			}
 
-			// Store results for this chunk
-			mu.Lock()
 			chunkResults[chunkIdx] = results
-			mu.Unlock()
 
 			return nil
 		})

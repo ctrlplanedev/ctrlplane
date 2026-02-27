@@ -287,3 +287,19 @@ CREATE TABLE resource_variable (
     value JSONB NOT NULL,
     PRIMARY KEY (resource_id, key)
 );
+
+CREATE TABLE computed_deployment_resource (
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_evaluated_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (deployment_id, resource_id)
+);
+
+CREATE TABLE computed_environment_resource (
+    environment_id UUID NOT NULL REFERENCES environment(id) ON DELETE CASCADE,
+    resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_evaluated_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (environment_id, resource_id)
+);

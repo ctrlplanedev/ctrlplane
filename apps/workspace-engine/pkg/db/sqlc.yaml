@@ -23,6 +23,7 @@ sql:
       - queries/resource_variables.sql
       - queries/deployment_variables.sql
       - queries/workflows.sql
+      - queries/computed_resources.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:

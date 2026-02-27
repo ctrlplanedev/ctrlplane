@@ -46,6 +46,9 @@ export const computedEnvironmentResource = pgTable(
     resourceId: uuid("resource_id")
       .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastEvaluatedAt: timestamp("last_evaluated_at", { withTimezone: true }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.environmentId, t.resourceId] })],
 );

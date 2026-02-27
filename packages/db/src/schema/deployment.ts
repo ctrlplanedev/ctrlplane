@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { resource } from "./resource.js";
 import { systemDeployment } from "./system.js";
@@ -46,6 +46,9 @@ export const computedDeploymentResource = pgTable(
     resourceId: uuid("resource_id")
       .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastEvaluatedAt: timestamp("last_evaluated_at", { withTimezone: true }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.deploymentId, t.resourceId] })],
 );

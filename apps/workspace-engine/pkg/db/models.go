@@ -65,6 +65,20 @@ type ChangelogEntry struct {
 	CreatedAt   pgtype.Timestamptz
 }
 
+type ComputedDeploymentResource struct {
+	DeploymentID    uuid.UUID
+	ResourceID      uuid.UUID
+	CreatedAt       pgtype.Timestamptz
+	LastEvaluatedAt pgtype.Timestamptz
+}
+
+type ComputedEnvironmentResource struct {
+	EnvironmentID   uuid.UUID
+	ResourceID      uuid.UUID
+	CreatedAt       pgtype.Timestamptz
+	LastEvaluatedAt pgtype.Timestamptz
+}
+
 type Deployment struct {
 	ID               uuid.UUID
 	Name             string
