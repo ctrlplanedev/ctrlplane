@@ -146,6 +146,12 @@ func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentIn
 	return matchedIDs, nil
 }
 
+// NewController creates a Controller with the given dependencies.
+// Use this constructor in tests to inject mock implementations.
+func NewController(getter Getter, setter Setter, queue reconcile.Queue) *Controller {
+	return &Controller{getter: getter, setter: setter, queue: queue}
+}
+
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
 		log.Fatal("Failed to get pgx pool")

@@ -18,4 +18,5 @@ type Getter interface {
 	GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
 	HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error)
 	GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error)
+	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
 }

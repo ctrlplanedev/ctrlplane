@@ -70,6 +70,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	return reconcile.Result{}, nil
 }
 
+// NewController creates a Controller with the given dependencies.
+// Use this constructor in tests to inject mock implementations.
+func NewController(getter Getter, setter Setter) *Controller {
+	return &Controller{getter: getter, setter: setter}
+}
+
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
 		log.Fatal("Failed to get pgx pool")

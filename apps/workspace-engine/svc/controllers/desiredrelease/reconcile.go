@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/policymatch"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -61,10 +62,16 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 		attribute.Int("policies.applicable", len(policies)),
 	)
 
-	evals := CollectEvaluators(ctx, getter, rt, policies)
+	oapiRT := &oapi.ReleaseTarget{
+		DeploymentId:  rt.DeploymentID.String(),
+		EnvironmentId: rt.EnvironmentID.String(),
+		ResourceId:    rt.ResourceID.String(),
+	}
+	evalGetter := &policyevalAdapter{getter: getter, rt: rt}
+	evals := policyeval.CollectEvaluators(ctx, evalGetter, oapiRT, policies)
 	span.SetAttributes(attribute.Int("evaluators.count", len(evals)))
 
-	version, nextTime := FindDeployableVersion(ctx, versions, evals, *scope)
+	version, nextTime := policyeval.FindDeployableVersion(ctx, evalGetter, oapiRT, versions, evals, *scope)
 	if version == nil {
 		span.AddEvent("no deployable version found")
 		span.SetAttributes(attribute.String("reason", "blocked_by_policies"))
@@ -93,18 +100,4 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 	)
 	span.SetStatus(codes.Ok, "reconcile completed")
 	return &ReconcileResult{}, nil
-}
-
-func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion) *oapi.Release {
-	return &oapi.Release{
-		ReleaseTarget: oapi.ReleaseTarget{
-			DeploymentId:  rt.DeploymentID.String(),
-			EnvironmentId: rt.EnvironmentID.String(),
-			ResourceId:    rt.ResourceID.String(),
-		},
-		Version:            *version,
-		Variables:          map[string]oapi.LiteralValue{},
-		EncryptedVariables: []string{},
-		CreatedAt:          time.Now().Format(time.RFC3339),
-	}
 }

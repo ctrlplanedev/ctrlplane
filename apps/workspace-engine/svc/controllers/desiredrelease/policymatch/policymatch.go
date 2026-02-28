@@ -45,13 +45,48 @@ func Match(_ context.Context, policy *oapi.Policy, target *Target) bool {
 	return result
 }
 
+// evalSelector compiles and evaluates a CEL selector against the target,
+// handling fast-path literals. Returns (matched, valid).
+func evalSelector(selector string, target *Target) (matched, valid bool) {
+	switch selector {
+	case "":
+		return false, true
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	}
+
+	program, err := celLang.CompileProgram(selector)
+	if err != nil {
+		return false, false
+	}
+
+	result, _ := celutil.EvalBool(program, target.celContext())
+	return result, true
+}
+
 // Filter returns the subset of policies whose CEL selectors match the target.
-func Filter(ctx context.Context, policies []*oapi.Policy, target *Target) []*oapi.Policy {
-	var applicable []*oapi.Policy
+// Policies that share the same selector string are evaluated only once.
+func Filter(_ context.Context, policies []*oapi.Policy, target *Target) []*oapi.Policy {
+	evaluated := make(map[string]bool, len(policies))
+	applicable := make([]*oapi.Policy, 0, len(policies))
+
 	for _, p := range policies {
-		if p != nil && Match(ctx, p, target) {
+		if p == nil {
+			continue
+		}
+
+		result, seen := evaluated[p.Selector]
+		if !seen {
+			result, _ = evalSelector(p.Selector, target)
+			evaluated[p.Selector] = result
+		}
+
+		if result {
 			applicable = append(applicable, p)
 		}
 	}
+
 	return applicable
 }

@@ -320,12 +320,12 @@ func TestTarget_CelContextCached(t *testing.T) {
 
 func TestFilter_EmptyPolicies(t *testing.T) {
 	result := Filter(context.Background(), nil, target())
-	assert.Nil(t, result)
+	assert.Empty(t, result)
 }
 
 func TestFilter_EmptySlice(t *testing.T) {
 	result := Filter(context.Background(), []*oapi.Policy{}, target())
-	assert.Nil(t, result)
+	assert.Empty(t, result)
 }
 
 func TestFilter_NilPoliciesSkipped(t *testing.T) {
@@ -352,7 +352,7 @@ func TestFilter_NoneMatch(t *testing.T) {
 		policy(`environment.name == "staging"`),
 	}
 	result := Filter(context.Background(), policies, target())
-	assert.Nil(t, result)
+	assert.Empty(t, result)
 }
 
 func TestFilter_MixedMatches(t *testing.T) {
