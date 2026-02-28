@@ -19,4 +19,9 @@ type Getter interface {
 	HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error)
 	GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error)
 	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
+
+	// Variable resolution
+	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
+	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
+	GetRelatedEntity(ctx context.Context, resourceID, reference string) ([]*oapi.EntityRelation, error)
 }

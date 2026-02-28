@@ -62,9 +62,10 @@ type ScenarioState struct {
 	EnvironmentID   uuid.UUID
 	EnvironmentName string
 
-	Resources []ResourceDef
-	Versions  []*oapi.DeploymentVersion
-	Policies  []*oapi.Policy
+	Resources   []ResourceDef
+	Versions    []*oapi.DeploymentVersion
+	Policies    []*oapi.Policy
+	PolicySkips []*oapi.PolicySkip
 }
 
 type ResourceDef struct {
@@ -112,9 +113,10 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 
 	scope := buildEvaluatorScope(sc)
 	releaseGetter := &DesiredReleaseGetter{
-		Scope:    scope,
-		Versions: sc.Versions,
-		Policies: sc.Policies,
+		Scope:       scope,
+		Versions:    sc.Versions,
+		Policies:    sc.Policies,
+		PolicySkips: sc.PolicySkips,
 	}
 	releaseSetter := &DesiredReleaseSetter{}
 

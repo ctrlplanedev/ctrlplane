@@ -41,6 +41,14 @@ type ReleaseTarget struct {
 	ResourceID    uuid.UUID `json:"resource_id"`
 }
 
+func (rt *ReleaseTarget) ToOAPI() *oapi.ReleaseTarget {
+	return &oapi.ReleaseTarget{
+		DeploymentId:  rt.DeploymentID.String(),
+		EnvironmentId: rt.EnvironmentID.String(),
+		ResourceId:    rt.ResourceID.String(),
+	}
+}
+
 func (rt *ReleaseTarget) FromOapi(o *oapi.ReleaseTarget) error {
 	var err error
 	rt.DeploymentID, err = uuid.Parse(o.DeploymentId)

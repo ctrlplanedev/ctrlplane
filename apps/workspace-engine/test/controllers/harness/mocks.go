@@ -66,9 +66,17 @@ type DesiredReleaseGetter struct {
 	ApprovalRecords []*oapi.UserApprovalRecord
 	HasRelease      bool
 	CurrentRelease  *oapi.Release
+	PolicySkips     []*oapi.PolicySkip
+
+	DeploymentVars []oapi.DeploymentVariableWithValues
+	ResourceVars   map[string]oapi.ResourceVariable
+	RelatedEntity  map[string][]*oapi.EntityRelation
 
 	// ApprovalRecordsFn allows per-version/per-environment logic when set.
 	ApprovalRecordsFn func(versionID, environmentID string) []*oapi.UserApprovalRecord
+
+	// PolicySkipsFn allows per-version/per-environment/per-resource logic when set.
+	PolicySkipsFn func(versionID, environmentID, resourceID string) []*oapi.PolicySkip
 }
 
 func (g *DesiredReleaseGetter) ReleaseTargetExists(_ context.Context, _ *desiredrelease.ReleaseTarget) (bool, error) {
@@ -102,8 +110,23 @@ func (g *DesiredReleaseGetter) GetCurrentRelease(_ context.Context, _ *desiredre
 	return g.CurrentRelease, nil
 }
 
-func (g *DesiredReleaseGetter) GetPolicySkips(_ context.Context, _, _, _ string) ([]*oapi.PolicySkip, error) {
-	return nil, nil
+func (g *DesiredReleaseGetter) GetPolicySkips(_ context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	if g.PolicySkipsFn != nil {
+		return g.PolicySkipsFn(versionID, environmentID, resourceID), nil
+	}
+	return g.PolicySkips, nil
+}
+
+func (g *DesiredReleaseGetter) GetDeploymentVariables(_ context.Context, _ string) ([]oapi.DeploymentVariableWithValues, error) {
+	return g.DeploymentVars, nil
+}
+
+func (g *DesiredReleaseGetter) GetResourceVariables(_ context.Context, _ string) (map[string]oapi.ResourceVariable, error) {
+	return g.ResourceVars, nil
+}
+
+func (g *DesiredReleaseGetter) GetRelatedEntity(_ context.Context, _, reference string) ([]*oapi.EntityRelation, error) {
+	return g.RelatedEntity[reference], nil
 }
 
 // DesiredReleaseSetter implements desiredrelease.Setter.

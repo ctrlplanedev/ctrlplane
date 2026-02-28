@@ -31,7 +31,25 @@ func (a *policyevalAdapter) GetPolicySkips(ctx context.Context, versionID, envir
 	return a.getter.GetPolicySkips(ctx, versionID, environmentID, resourceID)
 }
 
-func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion) *oapi.Release {
+// variableResolverAdapter bridges the desiredrelease Getter to the
+// variableresolver.Getter interface.
+type variableResolverAdapter struct {
+	getter Getter
+}
+
+func (a *variableResolverAdapter) GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error) {
+	return a.getter.GetDeploymentVariables(ctx, deploymentID)
+}
+
+func (a *variableResolverAdapter) GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error) {
+	return a.getter.GetResourceVariables(ctx, resourceID)
+}
+
+func (a *variableResolverAdapter) GetRelatedEntity(ctx context.Context, resourceID, reference string) ([]*oapi.EntityRelation, error) {
+	return a.getter.GetRelatedEntity(ctx, resourceID, reference)
+}
+
+func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion, variables map[string]oapi.LiteralValue) *oapi.Release {
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  rt.DeploymentID.String(),
@@ -39,7 +57,7 @@ func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion) *oapi.Rele
 			ResourceId:    rt.ResourceID.String(),
 		},
 		Version:            *version,
-		Variables:          map[string]oapi.LiteralValue{},
+		Variables:          variables,
 		EncryptedVariables: []string{},
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}

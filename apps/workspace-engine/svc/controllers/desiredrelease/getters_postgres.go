@@ -128,3 +128,18 @@ func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarge
 		CreatedAt:          createdAt,
 	}, nil
 }
+
+func (g *PostgresGetter) GetDeploymentVariables(_ context.Context, _ string) ([]oapi.DeploymentVariableWithValues, error) {
+	// TODO: implement DB-backed deployment variable fetching
+	return nil, nil
+}
+
+func (g *PostgresGetter) GetResourceVariables(_ context.Context, _ string) (map[string]oapi.ResourceVariable, error) {
+	// TODO: implement DB-backed resource variable fetching
+	return nil, nil
+}
+
+func (g *PostgresGetter) GetRelatedEntity(_ context.Context, _, _ string) ([]*oapi.EntityRelation, error) {
+	// TODO: implement DB-backed entity relationship fetching
+	return nil, nil
+}

@@ -32,6 +32,9 @@ type PolicyOption func(*oapi.Policy)
 // PolicyRuleOption configures a rule within a policy.
 type PolicyRuleOption func(*oapi.PolicyRule)
 
+// PolicySkipOption configures a policy skip within a scenario.
+type PolicySkipOption func(*oapi.PolicySkip)
+
 // ---------------------------------------------------------------------------
 // Top-level pipeline options
 // ---------------------------------------------------------------------------
@@ -114,6 +117,50 @@ func WithPolicy(opts ...PolicyOption) PipelineOption {
 		}
 		sc.Policies = append(sc.Policies, p)
 	}
+}
+
+// WithPolicySkip adds a policy skip to the scenario. The skip is pre-populated
+// with sensible defaults; use PolicySkipOption funcs to customise individual fields.
+func WithPolicySkip(ruleID, versionID string, opts ...PolicySkipOption) PipelineOption {
+	return func(sc *ScenarioState) {
+		ps := &oapi.PolicySkip{
+			Id:        uuid.New().String(),
+			RuleId:    ruleID,
+			VersionId: versionID,
+			Reason:    "test skip",
+			CreatedAt: time.Now(),
+			CreatedBy: "test-admin",
+		}
+		for _, o := range opts {
+			o(ps)
+		}
+		sc.PolicySkips = append(sc.PolicySkips, ps)
+	}
+}
+
+// PolicySkipReason overrides the default reason on a policy skip.
+func PolicySkipReason(reason string) PolicySkipOption {
+	return func(ps *oapi.PolicySkip) { ps.Reason = reason }
+}
+
+// PolicySkipExpiresAt sets an expiration time on a policy skip.
+func PolicySkipExpiresAt(t time.Time) PolicySkipOption {
+	return func(ps *oapi.PolicySkip) { ps.ExpiresAt = &t }
+}
+
+// PolicySkipCreatedAt overrides the creation time of a policy skip.
+func PolicySkipCreatedAt(t time.Time) PolicySkipOption {
+	return func(ps *oapi.PolicySkip) { ps.CreatedAt = t }
+}
+
+// PolicySkipEnvironment scopes a policy skip to a specific environment.
+func PolicySkipEnvironment(envID string) PolicySkipOption {
+	return func(ps *oapi.PolicySkip) { ps.EnvironmentId = &envID }
+}
+
+// PolicySkipResource scopes a policy skip to a specific resource.
+func PolicySkipResource(resourceID string) PolicySkipOption {
+	return func(ps *oapi.PolicySkip) { ps.ResourceId = &resourceID }
 }
 
 // ---------------------------------------------------------------------------
@@ -246,6 +293,12 @@ func WithPolicyRule(opts ...PolicyRuleOption) PolicyOption {
 // ---------------------------------------------------------------------------
 // Policy rule options
 // ---------------------------------------------------------------------------
+
+// PolicyRuleID sets a specific ID on the policy rule, allowing tests to
+// reference it when creating policy skips.
+func PolicyRuleID(id string) PolicyRuleOption {
+	return func(r *oapi.PolicyRule) { r.Id = id }
+}
 
 // WithApprovalRule configures an any-approval rule on the policy rule.
 func WithApprovalRule(minApprovals int32) PolicyRuleOption {
