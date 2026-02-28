@@ -11,6 +11,82 @@ import (
 	"github.com/google/uuid"
 )
 
+const getReleaseTargetsForDeployment = `-- name: GetReleaseTargetsForDeployment :many
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cdr.deployment_id = $1
+`
+
+type GetReleaseTargetsForDeploymentRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns all valid release targets for a deployment by joining computed
+// resource tables through the system link tables.
+func (q *Queries) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]GetReleaseTargetsForDeploymentRow, error) {
+	rows, err := q.db.Query(ctx, getReleaseTargetsForDeployment, deploymentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReleaseTargetsForDeploymentRow
+	for rows.Next() {
+		var i GetReleaseTargetsForDeploymentRow
+		if err := rows.Scan(&i.DeploymentID, &i.EnvironmentID, &i.ResourceID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const releaseTargetExists = `-- name: ReleaseTargetExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM computed_deployment_resource cdr
+    JOIN computed_environment_resource cer
+        ON cer.resource_id = cdr.resource_id
+    JOIN system_deployment sd
+        ON sd.deployment_id = cdr.deployment_id
+    JOIN system_environment se
+        ON se.environment_id = cer.environment_id
+        AND se.system_id = sd.system_id
+    WHERE cdr.deployment_id = $1
+      AND cer.environment_id = $2
+      AND cdr.resource_id = $3
+) AS exists
+`
+
+type ReleaseTargetExistsParams struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Checks whether a specific (deployment, environment, resource) triple forms
+// a valid release target via the computed resource and system link tables.
+func (q *Queries) ReleaseTargetExists(ctx context.Context, arg ReleaseTargetExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, releaseTargetExists, arg.DeploymentID, arg.EnvironmentID, arg.ResourceID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const setComputedDeploymentResources = `-- name: SetComputedDeploymentResources :exec
 WITH current AS (
     SELECT unnest($2::uuid[]) AS resource_id

@@ -24,11 +24,10 @@ var _ reconcile.Processor = (*Controller)(nil)
 type Controller struct {
 	getter Getter
 	setter Setter
-	queue  reconcile.Queue
 }
 
 // Process implements [reconcile.Processor].
-func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
+func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcile.Result, error) {
 	ctx, span := tracer.Start(ctx, "desiredrelease.Controller.Process")
 	defer span.End()
 
@@ -43,29 +42,32 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("parse release target: %w", err)
+		return reconcile.Result{}, fmt.Errorf("parse release target: %w", err)
+	}
+
+	exists, err := c.getter.ReleaseTargetExists(ctx, rt)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("check release target exists: %w", err)
+	}
+
+	span.SetAttributes(attribute.Bool("release_target.exists", exists))
+	if !exists {
+		return reconcile.Result{}, nil
 	}
 
 	result, err := Reconcile(ctx, c.getter, c.setter, rt)
 	if err != nil {
-		return err
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return reconcile.Result{}, fmt.Errorf("reconcile desired release: %w", err)
 	}
 
 	if result.NextReconcileAt != nil {
 		span.SetAttributes(attribute.String("next_reconcile_at", result.NextReconcileAt.Format(time.RFC3339)))
-		if enqErr := c.queue.Enqueue(ctx, reconcile.EnqueueParams{
-			Kind:      item.Kind,
-			ScopeType: item.ScopeType,
-			ScopeID:   item.ScopeID,
-			NotBefore: *result.NextReconcileAt,
-		}); enqErr != nil {
-			span.RecordError(enqErr)
-			span.SetStatus(codes.Error, "re-enqueue failed")
-			return fmt.Errorf("re-enqueue for next reconcile: %w", enqErr)
-		}
+		return reconcile.Result{RequeueAfter: time.Until(*result.NextReconcileAt)}, nil
 	}
 
-	return nil
+	return reconcile.Result{}, nil
 }
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
@@ -93,7 +95,6 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	controller := &Controller{
 		getter: &PostgresGetter{},
 		setter: &PostgresSetter{},
-		queue:  queue,
 	}
 	worker, err := reconcile.NewWorker(
 		kind,

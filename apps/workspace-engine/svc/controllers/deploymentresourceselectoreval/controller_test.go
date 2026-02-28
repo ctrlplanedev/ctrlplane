@@ -17,10 +17,12 @@ import (
 // ---------------------------------------------------------------------------
 
 type mockGetter struct {
-	deployment *DeploymentInfo
-	deployErr  error
-	resources  []ResourceInfo
-	listErr    error
+	deployment     *DeploymentInfo
+	deployErr      error
+	resources      []ResourceInfo
+	listErr        error
+	releaseTargets []ReleaseTarget
+	releaseErr     error
 }
 
 func (m *mockGetter) GetDeploymentInfo(_ context.Context, _ uuid.UUID) (*DeploymentInfo, error) {
@@ -38,6 +40,10 @@ func (m *mockGetter) StreamResources(_ context.Context, _ uuid.UUID, _ int, batc
 	return nil
 }
 
+func (m *mockGetter) GetReleaseTargetsForDeployment(_ context.Context, _ uuid.UUID) ([]ReleaseTarget, error) {
+	return m.releaseTargets, m.releaseErr
+}
+
 type mockSetter struct {
 	calledWith struct {
 		deploymentID uuid.UUID
@@ -51,6 +57,28 @@ func (m *mockSetter) SetComputedDeploymentResources(_ context.Context, deploymen
 	m.calledWith.resourceIDs = resourceIDs
 	return m.err
 }
+
+type mockQueue struct {
+	enqueued []reconcile.EnqueueParams
+	err      error
+}
+
+func (m *mockQueue) Enqueue(_ context.Context, params reconcile.EnqueueParams) error {
+	if m.err != nil {
+		return m.err
+	}
+	m.enqueued = append(m.enqueued, params)
+	return nil
+}
+
+func (m *mockQueue) Claim(context.Context, reconcile.ClaimParams) ([]reconcile.Item, error) {
+	return nil, nil
+}
+func (m *mockQueue) ExtendLease(context.Context, reconcile.ExtendLeaseParams) error { return nil }
+func (m *mockQueue) AckSuccess(context.Context, reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
+	return reconcile.AckSuccessResult{}, nil
+}
+func (m *mockQueue) Retry(context.Context, reconcile.RetryParams) error { return nil }
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -108,8 +136,8 @@ func processItem(scopeID string) reconcile.Item {
 // ---------------------------------------------------------------------------
 
 func TestProcess_InvalidScopeID(t *testing.T) {
-	c := &Controller{getter: &mockGetter{}, setter: &mockSetter{}}
-	err := c.Process(context.Background(), processItem("not-a-uuid"))
+	c := &Controller{getter: &mockGetter{}, setter: &mockSetter{}, queue: &mockQueue{}}
+	_, err := c.Process(context.Background(), processItem("not-a-uuid"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parse deployment id")
 }
@@ -117,9 +145,9 @@ func TestProcess_InvalidScopeID(t *testing.T) {
 func TestProcess_GetDeploymentError(t *testing.T) {
 	deploymentID := uuid.New()
 	getter := &mockGetter{deployErr: errors.New("db down")}
-	c := &Controller{getter: getter, setter: &mockSetter{}}
+	c := &Controller{getter: getter, setter: &mockSetter{}, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(deploymentID.String()))
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "db down")
 }
@@ -133,9 +161,9 @@ func TestProcess_InvalidSelector(t *testing.T) {
 			Raw:              map[string]any{},
 		},
 	}
-	c := &Controller{getter: getter, setter: &mockSetter{}}
+	c := &Controller{getter: getter, setter: &mockSetter{}, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(deploymentID.String()))
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "compile deployment selector")
 }
@@ -146,9 +174,9 @@ func TestProcess_ListResourcesError(t *testing.T) {
 		deployment: makeDeployment("true"),
 		listErr:    errors.New("timeout"),
 	}
-	c := &Controller{getter: getter, setter: &mockSetter{}}
+	c := &Controller{getter: getter, setter: &mockSetter{}, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(deploymentID.String()))
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "timeout")
 }
@@ -160,9 +188,9 @@ func TestProcess_SetterError(t *testing.T) {
 		resources:  []ResourceInfo{makeResource("r1", "Node")},
 	}
 	setter := &mockSetter{err: errors.New("write failed")}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(deploymentID.String()))
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "set computed deployment resources")
 }
@@ -174,9 +202,9 @@ func TestProcess_DelegatesCorrectDeploymentID(t *testing.T) {
 		resources:  []ResourceInfo{},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(deploymentID.String()))
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
 	require.NoError(t, err)
 	assert.Equal(t, deploymentID, setter.calledWith.deploymentID)
 }
@@ -195,9 +223,9 @@ func TestProcess_MatchAllResources(t *testing.T) {
 		resources:  []ResourceInfo{r1, r2, r3},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 3)
 	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
@@ -214,9 +242,9 @@ func TestProcess_MatchNoResources(t *testing.T) {
 		},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Empty(t, setter.calledWith.resourceIDs)
 }
@@ -227,9 +255,9 @@ func TestProcess_EmptyResourceList(t *testing.T) {
 		resources:  []ResourceInfo{},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Empty(t, setter.calledWith.resourceIDs)
 }
@@ -244,9 +272,9 @@ func TestProcess_FilterByKind(t *testing.T) {
 		resources:  []ResourceInfo{node1, pod, node2},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, node1.ID)
@@ -263,9 +291,9 @@ func TestProcess_FilterByName(t *testing.T) {
 		resources:  []ResourceInfo{r1, r2, r3},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
@@ -282,9 +310,9 @@ func TestProcess_FilterByLabel(t *testing.T) {
 		resources:  []ResourceInfo{gpu, cpu, gpu2},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, gpu.ID)
@@ -316,9 +344,9 @@ func TestProcess_CompoundSelector(t *testing.T) {
 		resources: []ResourceInfo{match, wrongKind, wrongLabel, wrongEnv},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, match.ID)
@@ -333,9 +361,9 @@ func TestProcess_MissingKeyReturnsNoMatch(t *testing.T) {
 		resources:  []ResourceInfo{withLabel, withoutLabel},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, withLabel.ID)
@@ -359,9 +387,9 @@ func TestProcess_DeploymentCrossReference(t *testing.T) {
 		resources:  []ResourceInfo{node, pod},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
@@ -382,9 +410,9 @@ func TestProcess_DeploymentCrossReference_NoMatch(t *testing.T) {
 		resources:  []ResourceInfo{makeResource("node-1", "Node")},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Empty(t, setter.calledWith.resourceIDs)
 }
@@ -399,9 +427,9 @@ func TestProcess_NameStartsWith(t *testing.T) {
 		resources:  []ResourceInfo{match1, match2, noMatch},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, match1.ID)
@@ -427,9 +455,9 @@ func TestProcess_LargeResourceSet(t *testing.T) {
 		resources:  resources,
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, len(expectedIDs))
 	for _, id := range expectedIDs {
@@ -447,9 +475,9 @@ func TestProcess_OrSelector(t *testing.T) {
 		resources:  []ResourceInfo{node, pod, svc},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
@@ -466,9 +494,9 @@ func TestProcess_NegationSelector(t *testing.T) {
 		resources:  []ResourceInfo{node, pod, svc},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
@@ -494,9 +522,9 @@ func TestProcess_DeploymentNameEqualsResourceName(t *testing.T) {
 		resources:  []ResourceInfo{match, noMatch1, noMatch2},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, match.ID)
@@ -512,11 +540,87 @@ func TestProcess_InListSelector(t *testing.T) {
 		resources:  []ResourceInfo{r1, r2, r3},
 	}
 	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
 	assert.Contains(t, setter.calledWith.resourceIDs, r2.ID)
+}
+
+// ---------------------------------------------------------------------------
+// Release target enqueue tests
+// ---------------------------------------------------------------------------
+
+func TestProcess_EnqueuesReleaseTargets(t *testing.T) {
+	deploymentID := uuid.New()
+	envID := uuid.New()
+	resID := uuid.New()
+
+	getter := &mockGetter{
+		deployment: makeDeployment("true"),
+		resources:  []ResourceInfo{makeResource("node-1", "Node")},
+		releaseTargets: []ReleaseTarget{
+			{DeploymentID: deploymentID, EnvironmentID: envID, ResourceID: resID},
+		},
+	}
+	setter := &mockSetter{}
+	q := &mockQueue{}
+	c := &Controller{getter: getter, setter: setter, queue: q}
+
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
+	require.NoError(t, err)
+	require.Len(t, q.enqueued, 1)
+	assert.Equal(t, "desired-release", q.enqueued[0].Kind)
+	assert.Equal(t, "release-target", q.enqueued[0].ScopeType)
+	expectedScope := deploymentID.String() + ":" + envID.String() + ":" + resID.String()
+	assert.Equal(t, expectedScope, q.enqueued[0].ScopeID)
+}
+
+func TestProcess_GetReleaseTargetsError(t *testing.T) {
+	getter := &mockGetter{
+		deployment: makeDeployment("true"),
+		resources:  []ResourceInfo{},
+		releaseErr: errors.New("release target query failed"),
+	}
+	setter := &mockSetter{}
+	c := &Controller{getter: getter, setter: setter, queue: &mockQueue{}}
+
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get release targets")
+}
+
+func TestProcess_EnqueueError(t *testing.T) {
+	deploymentID := uuid.New()
+	getter := &mockGetter{
+		deployment: makeDeployment("true"),
+		resources:  []ResourceInfo{},
+		releaseTargets: []ReleaseTarget{
+			{DeploymentID: deploymentID, EnvironmentID: uuid.New(), ResourceID: uuid.New()},
+		},
+	}
+	setter := &mockSetter{}
+	q := &mockQueue{err: errors.New("enqueue failed")}
+	c := &Controller{getter: getter, setter: setter, queue: q}
+
+	_, err := c.Process(context.Background(), processItem(deploymentID.String()))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "enqueue release target")
+}
+
+func TestProcess_NoReleaseTargetsNoEnqueue(t *testing.T) {
+	getter := &mockGetter{
+		deployment:     makeDeployment("true"),
+		resources:      []ResourceInfo{makeResource("node-1", "Node")},
+		releaseTargets: nil,
+	}
+	setter := &mockSetter{}
+	q := &mockQueue{}
+	c := &Controller{getter: getter, setter: setter, queue: q}
+
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
+	require.NoError(t, err)
+	assert.Empty(t, q.enqueued)
 }

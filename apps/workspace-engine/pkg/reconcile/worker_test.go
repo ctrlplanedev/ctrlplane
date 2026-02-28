@@ -68,14 +68,14 @@ func (f *fakeQueue) Retry(ctx context.Context, params RetryParams) error {
 }
 
 type fakeProcessor struct {
-	fn func(context.Context, Item) error
+	fn func(context.Context, Item) (Result, error)
 }
 
-func (f fakeProcessor) Process(ctx context.Context, item Item) error {
+func (f fakeProcessor) Process(ctx context.Context, item Item) (Result, error) {
 	if f.fn != nil {
 		return f.fn(ctx, item)
 	}
-	return nil
+	return Result{}, nil
 }
 
 func validConfig() NodeConfig {
@@ -240,9 +240,9 @@ func TestRunSuccessPathAndHooks(t *testing.T) {
 		},
 	}
 	p := fakeProcessor{
-		fn: func(context.Context, Item) error {
+		fn: func(context.Context, Item) (Result, error) {
 			time.Sleep(12 * time.Millisecond) // allow at least one lease heartbeat tick
-			return nil
+			return Result{}, nil
 		},
 	}
 	w, _ := NewWorker("workqueue-worker", q, p, cfg)
@@ -293,9 +293,9 @@ func TestRunDrainInflightOnCancel(t *testing.T) {
 		},
 	}
 	p := fakeProcessor{
-		fn: func(ctx context.Context, item Item) error {
+		fn: func(ctx context.Context, item Item) (Result, error) {
 			<-release
-			return nil
+			return Result{}, nil
 		},
 	}
 	w, _ := NewWorker("workqueue-worker", q, p, cfg)
@@ -326,7 +326,7 @@ func TestProcessClaimedItemBranches(t *testing.T) {
 		var retried atomic.Int64
 		cfg1 := cfg
 		cfg1.Hooks.OnRetried = func(Item, error) { retried.Add(1) }
-		w, _ := NewWorker("workqueue-worker", &fakeQueue{}, fakeProcessor{fn: func(context.Context, Item) error { return errors.New("fail") }}, cfg1)
+		w, _ := NewWorker("workqueue-worker", &fakeQueue{}, fakeProcessor{fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") }}, cfg1)
 		w.processClaimedItem(context.Background(), item)
 		if retried.Load() != 1 {
 			t.Fatalf("expected retried hook once, got %d", retried.Load())
@@ -338,7 +338,7 @@ func TestProcessClaimedItemBranches(t *testing.T) {
 		cfg2 := cfg
 		cfg2.Hooks.OnDropped = func(Item, error) { dropped.Add(1) }
 		q := &fakeQueue{retryFn: func(context.Context, RetryParams) error { return errors.New("retry failed") }}
-		w, _ := NewWorker("workqueue-worker", q, fakeProcessor{fn: func(context.Context, Item) error { return errors.New("fail") }}, cfg2)
+		w, _ := NewWorker("workqueue-worker", q, fakeProcessor{fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") }}, cfg2)
 		w.processClaimedItem(context.Background(), item)
 		if dropped.Load() != 1 {
 			t.Fatalf("expected dropped hook once, got %d", dropped.Load())

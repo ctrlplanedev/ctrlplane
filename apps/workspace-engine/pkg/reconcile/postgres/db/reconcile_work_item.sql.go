@@ -75,7 +75,7 @@ ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
 `
 
 type ClaimReconcileWorkItemsParams struct {
-	BatchSize    int32
+	BatchSize    int64
 	ClaimedBy    pgtype.Text
 	LeaseSeconds int32
 }
@@ -199,7 +199,7 @@ ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
 
 type ClaimReconcileWorkItemsByKindsParams struct {
 	Kinds        []string
-	BatchSize    int32
+	BatchSize    int64
 	ClaimedBy    pgtype.Text
 	LeaseSeconds int32
 }

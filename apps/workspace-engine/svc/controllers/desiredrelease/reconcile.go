@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/desiredrelease/policymatch"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -35,18 +36,30 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 		span.SetStatus(codes.Error, "get versions failed")
 		return nil, fmt.Errorf("get candidate versions: %w", err)
 	}
+
 	span.SetAttributes(attribute.Int("candidate_versions.count", len(versions)))
 	if len(versions) == 0 {
 		span.AddEvent("no candidate versions")
 		return &ReconcileResult{}, nil
 	}
 
-	policies, err := getter.GetPolicies(ctx, rt)
+	allPolicies, err := getter.GetPolicies(ctx, rt)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "get policies failed")
 		return nil, fmt.Errorf("get policies: %w", err)
 	}
+
+	target := &policymatch.Target{
+		Environment: scope.Environment,
+		Deployment:  scope.Deployment,
+		Resource:    scope.Resource,
+	}
+	policies := policymatch.Filter(ctx, allPolicies, target)
+	span.SetAttributes(
+		attribute.Int("policies.total", len(allPolicies)),
+		attribute.Int("policies.applicable", len(policies)),
+	)
 
 	evals := CollectEvaluators(ctx, getter, rt, policies)
 	span.SetAttributes(attribute.Int("evaluators.count", len(evals)))

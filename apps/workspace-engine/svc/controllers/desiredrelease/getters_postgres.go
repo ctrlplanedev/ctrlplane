@@ -13,6 +13,14 @@ import (
 
 type PostgresGetter struct{}
 
+func (g *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error) {
+	return db.GetQueries(ctx).ReleaseTargetExists(ctx, db.ReleaseTargetExistsParams{
+		DeploymentID:  rt.DeploymentID,
+		EnvironmentID: rt.EnvironmentID,
+		ResourceID:    rt.ResourceID,
+	})
+}
+
 func (g *PostgresGetter) GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error) {
 	q := db.GetQueries(ctx)
 

@@ -32,6 +32,22 @@ FROM resource
 WHERE workspace_id = $1
 `
 
+func (g *PostgresGetter) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error) {
+	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeployment(ctx, deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("query release targets for deployment %s: %w", deploymentID, err)
+	}
+	targets := make([]ReleaseTarget, len(rows))
+	for i, row := range rows {
+		targets[i] = ReleaseTarget{
+			DeploymentID:  row.DeploymentID,
+			EnvironmentID: row.EnvironmentID,
+			ResourceID:    row.ResourceID,
+		}
+	}
+	return targets, nil
+}
+
 func (g *PostgresGetter) StreamResources(ctx context.Context, workspaceID uuid.UUID, batchSize int, batches chan<- []ResourceInfo) error {
 	defer close(batches)
 

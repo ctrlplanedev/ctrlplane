@@ -39,7 +39,7 @@ type Controller struct {
 }
 
 // Process implements [reconcile.Processor].
-func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
+func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcile.Result, error) {
 	ctx, span := tracer.Start(ctx, "environmentresourceselectoreval.Controller.Process")
 	defer span.End()
 
@@ -54,29 +54,29 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("parse environment id: %w", err)
+		return reconcile.Result{}, fmt.Errorf("parse environment id: %w", err)
 	}
 
 	environment, err := c.getter.GetEnvironmentInfo(ctx, environmentID)
 	if err != nil {
-		return err
+		return reconcile.Result{}, err
 	}
 
 	selector, err := celEnv.Compile(environment.ResourceSelector)
 	if err != nil {
-		return fmt.Errorf("compile environment selector: %w", err)
+		return reconcile.Result{}, fmt.Errorf("compile environment selector: %w", err)
 	}
 
 	matchedIDs, err := c.evalResources(ctx, environment, selector)
 	if err != nil {
-		return fmt.Errorf("eval selectors: %w", err)
+		return reconcile.Result{}, fmt.Errorf("eval selectors: %w", err)
 	}
 
 	if err := c.setter.SetComputedEnvironmentResources(ctx, environmentID, matchedIDs); err != nil {
-		return fmt.Errorf("set computed environment resources: %w", err)
+		return reconcile.Result{}, fmt.Errorf("set computed environment resources: %w", err)
 	}
 
-	return nil
+	return reconcile.Result{}, nil
 }
 
 // evalResources streams resources from the DB and evaluates the CEL selector

@@ -36,10 +36,11 @@ const streamBatchSize = 5000
 type Controller struct {
 	getter Getter
 	setter Setter
+	queue  reconcile.Queue
 }
 
 // Process implements [reconcile.Processor].
-func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
+func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcile.Result, error) {
 	ctx, span := tracer.Start(ctx, "deploymentresourceselectoreval.Controller.Process")
 	defer span.End()
 
@@ -54,29 +55,46 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("parse deployment id: %w", err)
+		return reconcile.Result{}, fmt.Errorf("parse deployment id: %w", err)
 	}
 
 	deployment, err := c.getter.GetDeploymentInfo(ctx, deploymentID)
 	if err != nil {
-		return err
+		return reconcile.Result{}, err
 	}
 
 	selector, err := celEnv.Compile(deployment.ResourceSelector)
 	if err != nil {
-		return fmt.Errorf("compile deployment selector: %w", err)
+		return reconcile.Result{}, fmt.Errorf("compile deployment selector: %w", err)
 	}
 
 	matchedIDs, err := c.evalResources(ctx, deployment, selector)
 	if err != nil {
-		return fmt.Errorf("eval selectors: %w", err)
+		return reconcile.Result{}, fmt.Errorf("eval selectors: %w", err)
 	}
 
 	if err := c.setter.SetComputedDeploymentResources(ctx, deploymentID, matchedIDs); err != nil {
-		return fmt.Errorf("set computed deployment resources: %w", err)
+		return reconcile.Result{}, fmt.Errorf("set computed deployment resources: %w", err)
 	}
 
-	return nil
+	releaseTargets, err := c.getter.GetReleaseTargetsForDeployment(ctx, deploymentID)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("get release targets: %w", err)
+	}
+
+	for _, rt := range releaseTargets {
+		scopeID := rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String()
+		if enqErr := c.queue.Enqueue(ctx, reconcile.EnqueueParams{
+			WorkspaceID: deployment.WorkspaceID.String(),
+			Kind:        "desired-release",
+			ScopeType:   "release-target",
+			ScopeID:     scopeID,
+		}); enqErr != nil {
+			return reconcile.Result{}, fmt.Errorf("enqueue release target %s: %w", scopeID, enqErr)
+		}
+	}
+
+	return reconcile.Result{}, nil
 }
 
 // evalResources streams resources from the DB and evaluates the CEL selector
@@ -149,13 +167,15 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	}
 
 	kind := "deployment-resource-selector-eval"
+	queue := postgres.NewForKinds(pgxPool, kind)
 	controller := &Controller{
 		getter: &PostgresGetter{},
 		setter: &PostgresSetter{},
+		queue:  queue,
 	}
 	worker, err := reconcile.NewWorker(
 		kind,
-		postgres.NewForKinds(pgxPool, kind),
+		queue,
 		controller,
 		nodeConfig,
 	)

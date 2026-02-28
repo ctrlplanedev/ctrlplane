@@ -188,7 +188,7 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 		}
 	})
 
-	processErr := w.processor.Process(ctx, item)
+	result, processErr := w.processor.Process(ctx, item)
 	stopLease()
 	leaseWG.Wait()
 
@@ -209,6 +209,23 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 			w.cfg.Hooks.OnRetried(item, processErr)
 		}
 		return
+	}
+
+	if result.RequeueAfter > 0 {
+		requeueErr := w.queue.Enqueue(ctx, EnqueueParams{
+			WorkspaceID: item.WorkspaceID,
+			Kind:        item.Kind,
+			ScopeType:   item.ScopeType,
+			ScopeID:     item.ScopeID,
+			EventTS:     time.Now(),
+			Priority:    item.Priority,
+			NotBefore:   time.Now().Add(result.RequeueAfter),
+		})
+		if requeueErr != nil {
+			if w.cfg.Hooks.OnDropped != nil {
+				w.cfg.Hooks.OnDropped(item, requeueErr)
+			}
+		}
 	}
 
 	_, ackErr := w.queue.AckSuccess(ctx, AckSuccessParams{

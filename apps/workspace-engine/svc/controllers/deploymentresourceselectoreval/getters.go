@@ -21,10 +21,22 @@ type ResourceInfo struct {
 	Raw any
 }
 
+// ReleaseTarget is the (deployment, environment, resource) triple that
+// represents a valid target for a release.
+type ReleaseTarget struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
 type Getter interface {
 	GetDeploymentInfo(ctx context.Context, deploymentID uuid.UUID) (*DeploymentInfo, error)
 	// StreamResources sends batches of resources on the provided channel and
 	// closes it when all rows have been sent (or on error). The caller creates
 	// the channel and controls its buffer size.
 	StreamResources(ctx context.Context, workspaceID uuid.UUID, batchSize int, batches chan<- []ResourceInfo) error
+	// GetReleaseTargetsForDeployment returns all valid release targets for the
+	// given deployment by joining computed resource tables through the system
+	// link tables.
+	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error)
 }

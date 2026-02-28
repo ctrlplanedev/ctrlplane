@@ -16,9 +16,16 @@ type Queue interface {
 	Retry(ctx context.Context, params RetryParams) error
 }
 
+// Result holds the outcome of processing a work item.
+type Result struct {
+	// RequeueAfter, when non-zero, causes the item to be re-enqueued after the
+	// specified duration instead of being acked as complete.
+	RequeueAfter time.Duration
+}
+
 // Processor handles claimed work items.
 type Processor interface {
-	Process(ctx context.Context, item Item) error
+	Process(ctx context.Context, item Item) (Result, error)
 }
 
 // Hooks are optional callbacks for worker lifecycle and item-level transitions.

@@ -10,6 +10,7 @@ import (
 )
 
 type Getter interface {
+	ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
 	GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error)
 	GetCandidateVersions(ctx context.Context, deploymentID uuid.UUID) ([]*oapi.DeploymentVersion, error)
 	GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error)

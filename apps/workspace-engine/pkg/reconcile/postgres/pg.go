@@ -111,7 +111,7 @@ func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reco
 	items := make([]reconcile.Item, 0, params.BatchSize)
 	if len(q.claimKinds) == 0 {
 		rows, err := q.queries.ClaimReconcileWorkItems(ctx, sqldb.ClaimReconcileWorkItemsParams{
-			BatchSize:    int32(params.BatchSize),
+			BatchSize:    int64(params.BatchSize),
 			ClaimedBy:    pgtype.Text{String: params.WorkerID, Valid: true},
 			LeaseSeconds: int32(params.LeaseDuration.Seconds()),
 		})
@@ -145,7 +145,7 @@ func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reco
 			ClaimedBy:    pgtype.Text{String: params.WorkerID, Valid: true},
 			LeaseSeconds: int32(params.LeaseDuration.Seconds()),
 			Kinds:        q.claimKinds,
-			BatchSize:    int32(params.BatchSize),
+			BatchSize:    int64(params.BatchSize),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("claim work items: %w", err)

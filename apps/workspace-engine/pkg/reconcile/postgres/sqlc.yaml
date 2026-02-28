@@ -5,6 +5,8 @@ sql:
       - queries/schema.sql
     queries:
       - queries/reconcile_work_item.sql
+    database:
+      uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
       go:
         package: db

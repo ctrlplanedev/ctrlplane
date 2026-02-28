@@ -109,7 +109,7 @@ func processItem(scopeID string) reconcile.Item {
 
 func TestProcess_InvalidScopeID(t *testing.T) {
 	c := &Controller{getter: &mockGetter{}, setter: &mockSetter{}}
-	err := c.Process(context.Background(), processItem("not-a-uuid"))
+	_, err := c.Process(context.Background(), processItem("not-a-uuid"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parse environment id")
 }
@@ -119,7 +119,7 @@ func TestProcess_GetEnvironmentError(t *testing.T) {
 	getter := &mockGetter{envErr: errors.New("db down")}
 	c := &Controller{getter: getter, setter: &mockSetter{}}
 
-	err := c.Process(context.Background(), processItem(environmentID.String()))
+	_, err := c.Process(context.Background(), processItem(environmentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "db down")
 }
@@ -135,7 +135,7 @@ func TestProcess_InvalidSelector(t *testing.T) {
 	}
 	c := &Controller{getter: getter, setter: &mockSetter{}}
 
-	err := c.Process(context.Background(), processItem(environmentID.String()))
+	_, err := c.Process(context.Background(), processItem(environmentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "compile environment selector")
 }
@@ -148,7 +148,7 @@ func TestProcess_ListResourcesError(t *testing.T) {
 	}
 	c := &Controller{getter: getter, setter: &mockSetter{}}
 
-	err := c.Process(context.Background(), processItem(environmentID.String()))
+	_, err := c.Process(context.Background(), processItem(environmentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "timeout")
 }
@@ -162,7 +162,7 @@ func TestProcess_SetterError(t *testing.T) {
 	setter := &mockSetter{err: errors.New("write failed")}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(environmentID.String()))
+	_, err := c.Process(context.Background(), processItem(environmentID.String()))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "set computed environment resources")
 }
@@ -176,7 +176,7 @@ func TestProcess_DelegatesCorrectEnvironmentID(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(environmentID.String()))
+	_, err := c.Process(context.Background(), processItem(environmentID.String()))
 	require.NoError(t, err)
 	assert.Equal(t, environmentID, setter.calledWith.environmentID)
 }
@@ -197,7 +197,7 @@ func TestProcess_MatchAllResources(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 3)
 	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
@@ -216,7 +216,7 @@ func TestProcess_MatchNoResources(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Empty(t, setter.calledWith.resourceIDs)
 }
@@ -229,7 +229,7 @@ func TestProcess_EmptyResourceList(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Empty(t, setter.calledWith.resourceIDs)
 }
@@ -246,7 +246,7 @@ func TestProcess_FilterByKind(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, node1.ID)
@@ -265,7 +265,7 @@ func TestProcess_FilterByName(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
@@ -284,7 +284,7 @@ func TestProcess_FilterByLabel(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, gpu.ID)
@@ -318,7 +318,7 @@ func TestProcess_CompoundSelector(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, match.ID)
@@ -335,7 +335,7 @@ func TestProcess_MissingKeyReturnsNoMatch(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, withLabel.ID)
@@ -361,7 +361,7 @@ func TestProcess_EnvironmentCrossReference(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
@@ -384,7 +384,7 @@ func TestProcess_EnvironmentCrossReference_NoMatch(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Empty(t, setter.calledWith.resourceIDs)
 }
@@ -401,7 +401,7 @@ func TestProcess_NameStartsWith(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, match1.ID)
@@ -429,7 +429,7 @@ func TestProcess_LargeResourceSet(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, len(expectedIDs))
 	for _, id := range expectedIDs {
@@ -449,7 +449,7 @@ func TestProcess_OrSelector(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
@@ -468,7 +468,7 @@ func TestProcess_NegationSelector(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
@@ -496,7 +496,7 @@ func TestProcess_EnvironmentNameEqualsResourceName(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
 	assert.Contains(t, setter.calledWith.resourceIDs, match.ID)
@@ -514,7 +514,7 @@ func TestProcess_InListSelector(t *testing.T) {
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
 
-	err := c.Process(context.Background(), processItem(uuid.New().String()))
+	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
 	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
