@@ -66,6 +66,10 @@ type ScenarioState struct {
 	Versions    []*oapi.DeploymentVersion
 	Policies    []*oapi.Policy
 	PolicySkips []*oapi.PolicySkip
+
+	DeploymentVars  []oapi.DeploymentVariableWithValues
+	ResourceVars    map[string]oapi.ResourceVariable
+	RelatedEntities map[string][]*oapi.EntityRelation
 }
 
 type ResourceDef struct {
@@ -113,10 +117,13 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 
 	scope := buildEvaluatorScope(sc)
 	releaseGetter := &DesiredReleaseGetter{
-		Scope:       scope,
-		Versions:    sc.Versions,
-		Policies:    sc.Policies,
-		PolicySkips: sc.PolicySkips,
+		Scope:          scope,
+		Versions:       sc.Versions,
+		Policies:       sc.Policies,
+		PolicySkips:    sc.PolicySkips,
+		DeploymentVars: sc.DeploymentVars,
+		ResourceVars:   sc.ResourceVars,
+		RelatedEntity:  sc.RelatedEntities,
 	}
 	releaseSetter := &DesiredReleaseSetter{}
 

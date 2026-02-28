@@ -334,6 +334,121 @@ func WithVersionCooldownRule(intervalSeconds int32) PolicyRuleOption {
 }
 
 // ---------------------------------------------------------------------------
+// Variable options
+// ---------------------------------------------------------------------------
+
+// DeploymentVarOption configures a deployment variable within a scenario.
+type DeploymentVarOption func(*oapi.DeploymentVariableWithValues)
+
+// VariableValueOption configures a deployment variable value.
+type VariableValueOption func(*oapi.DeploymentVariableValue)
+
+// WithDeploymentVariable adds a deployment variable to the scenario.
+func WithDeploymentVariable(key string, opts ...DeploymentVarOption) PipelineOption {
+	return func(sc *ScenarioState) {
+		dv := oapi.DeploymentVariableWithValues{
+			Variable: oapi.DeploymentVariable{
+				Id:           uuid.New().String(),
+				DeploymentId: sc.DeploymentID.String(),
+				Key:          key,
+			},
+		}
+		for _, o := range opts {
+			o(&dv)
+		}
+		sc.DeploymentVars = append(sc.DeploymentVars, dv)
+	}
+}
+
+// DefaultValue sets the default literal value on a deployment variable.
+func DefaultValue(val any) DeploymentVarOption {
+	return func(dv *oapi.DeploymentVariableWithValues) {
+		dv.Variable.DefaultValue = oapi.NewLiteralValue(val)
+	}
+}
+
+// WithVariableValue adds a deployment variable value entry.
+func WithVariableValue(value oapi.Value, opts ...VariableValueOption) DeploymentVarOption {
+	return func(dv *oapi.DeploymentVariableWithValues) {
+		dvv := oapi.DeploymentVariableValue{
+			Id:                   uuid.New().String(),
+			DeploymentVariableId: dv.Variable.Id,
+			Value:                value,
+			Priority:             0,
+		}
+		for _, o := range opts {
+			o(&dvv)
+		}
+		dv.Values = append(dv.Values, dvv)
+	}
+}
+
+// ValuePriority sets the priority on a deployment variable value.
+func ValuePriority(p int64) VariableValueOption {
+	return func(dvv *oapi.DeploymentVariableValue) { dvv.Priority = p }
+}
+
+// ValueSelector sets a CEL resource selector on a deployment variable value,
+// so it only applies to resources matching the selector.
+func ValueSelector(cel string) VariableValueOption {
+	return func(dvv *oapi.DeploymentVariableValue) {
+		s := &oapi.Selector{}
+		_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
+		dvv.ResourceSelector = s
+	}
+}
+
+// WithResourceVariable adds a resource variable to the scenario. The variable
+// is keyed by the given key and applies to the first resource in the scenario.
+func WithResourceVariable(key string, value oapi.Value) PipelineOption {
+	return func(sc *ScenarioState) {
+		if sc.ResourceVars == nil {
+			sc.ResourceVars = make(map[string]oapi.ResourceVariable)
+		}
+		resourceID := ""
+		if len(sc.Resources) > 0 {
+			resourceID = sc.Resources[0].ID.String()
+		}
+		sc.ResourceVars[key] = oapi.ResourceVariable{
+			Key:        key,
+			ResourceId: resourceID,
+			Value:      value,
+		}
+	}
+}
+
+// WithRelatedResource registers a related resource under the given reference
+// name, enabling reference variable resolution.
+func WithRelatedResource(reference string, res *oapi.Resource) PipelineOption {
+	return func(sc *ScenarioState) {
+		if sc.RelatedEntities == nil {
+			sc.RelatedEntities = make(map[string][]*oapi.EntityRelation)
+		}
+		entity := &oapi.RelatableEntity{}
+		_ = entity.FromResource(*res)
+		sc.RelatedEntities[reference] = append(sc.RelatedEntities[reference],
+			&oapi.EntityRelation{Entity: *entity, EntityId: res.Id},
+		)
+	}
+}
+
+// LiteralValue creates an oapi.Value wrapping a literal Go value.
+func LiteralValue(val any) oapi.Value {
+	lv := oapi.NewLiteralValue(val)
+	return *oapi.NewValueFromLiteral(lv)
+}
+
+// ReferenceValue creates an oapi.Value pointing to a named relationship path.
+func ReferenceValue(reference string, path ...string) oapi.Value {
+	v := &oapi.Value{}
+	_ = v.FromReferenceValue(oapi.ReferenceValue{
+		Reference: reference,
+		Path:      path,
+	})
+	return *v
+}
+
+// ---------------------------------------------------------------------------
 // Internal builders: convert ScenarioState into mock data
 // ---------------------------------------------------------------------------
 
@@ -374,11 +489,18 @@ func buildEvaluatorScope(sc *ScenarioState) *evaluator.EvaluatorScope {
 	var resource *oapi.Resource
 	if len(sc.Resources) > 0 {
 		rd := sc.Resources[0]
+		metadata := make(map[string]string)
+		for k, v := range rd.Metadata {
+			metadata[k] = fmt.Sprintf("%v", v)
+		}
+		for k, v := range rd.Labels {
+			metadata[k] = fmt.Sprintf("%v", v)
+		}
 		resource = &oapi.Resource{
 			Id:       rd.ID.String(),
 			Name:     rd.Name,
 			Kind:     rd.Kind,
-			Metadata: map[string]string{},
+			Metadata: metadata,
 		}
 	}
 

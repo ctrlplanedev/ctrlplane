@@ -3,6 +3,8 @@ package harness
 import (
 	"testing"
 
+	"workspace-engine/pkg/oapi"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,4 +59,37 @@ func (p *TestPipeline) AssertReleaseEnvironmentID(t *testing.T, idx int, environ
 	require.Greater(t, len(p.ReleaseSetter.Releases), idx,
 		"release index %d out of range (have %d)", idx, len(p.ReleaseSetter.Releases))
 	assert.Equal(t, environmentID, p.ReleaseSetter.Releases[idx].ReleaseTarget.EnvironmentId)
+}
+
+// AssertReleaseVariableCount asserts the number of resolved variables on the
+// release at the given index.
+func (p *TestPipeline) AssertReleaseVariableCount(t *testing.T, idx, n int) {
+	t.Helper()
+	require.Greater(t, len(p.ReleaseSetter.Releases), idx,
+		"release index %d out of range (have %d)", idx, len(p.ReleaseSetter.Releases))
+	assert.Len(t, p.ReleaseSetter.Releases[idx].Variables, n,
+		"expected %d variables on release %d", n, idx)
+}
+
+// AssertReleaseVariableEquals asserts a string variable value on the release
+// at the given index.
+func (p *TestPipeline) AssertReleaseVariableEquals(t *testing.T, idx int, key, expected string) {
+	t.Helper()
+	require.Greater(t, len(p.ReleaseSetter.Releases), idx,
+		"release index %d out of range (have %d)", idx, len(p.ReleaseSetter.Releases))
+	vars := p.ReleaseSetter.Releases[idx].Variables
+	lv, ok := vars[key]
+	require.True(t, ok, "variable %q not found on release %d", key, idx)
+	s, err := lv.AsStringValue()
+	require.NoError(t, err, "variable %q is not a string value", key)
+	assert.Equal(t, expected, string(s))
+}
+
+// ReleaseVariables returns the resolved variables map from the release at the
+// given index.
+func (p *TestPipeline) ReleaseVariables(t *testing.T, idx int) map[string]oapi.LiteralValue {
+	t.Helper()
+	require.Greater(t, len(p.ReleaseSetter.Releases), idx,
+		"release index %d out of range (have %d)", idx, len(p.ReleaseSetter.Releases))
+	return p.ReleaseSetter.Releases[idx].Variables
 }
