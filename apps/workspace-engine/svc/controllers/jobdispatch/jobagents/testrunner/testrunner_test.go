@@ -97,13 +97,13 @@ func TestType(t *testing.T) {
 
 func TestDispatch_DefaultDelay_SuccessfulStatus(t *testing.T) {
 	setter := &mockSetter{}
-	tr := New(setter)
+	tr := &TestRunner{timeFunc: instantTimer, setter: setter}
 
 	job := newTestJob("job-1", nil)
 	err := tr.Dispatch(context.Background(), job)
 	require.NoError(t, err)
 
-	assert.Eventually(t, func() bool {
+	require.Eventually(t, func() bool {
 		return len(setter.getCalls()) == 1
 	}, time.Second, 10*time.Millisecond)
 
