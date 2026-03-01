@@ -19,7 +19,7 @@ type WorkflowDispatcher interface {
 
 // Setter persists job status updates.
 type Setter interface {
-	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string) error
+	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
 }
 
 type GithubAction struct {
@@ -56,7 +56,7 @@ func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 		if err := a.workflows.DispatchWorkflow(asyncCtx, cfg, ref, map[string]any{"job_id": job.Id}); err != nil {
 			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
-			_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusInvalidIntegration, message)
+			_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusInvalidIntegration, message, nil)
 		}
 	}()
 

@@ -68,13 +68,25 @@ type mockSetter struct {
 	createErr   error
 }
 
-func (m *mockSetter) UpdateJob(_ context.Context, _ string, _ oapi.JobStatus, _ string) error {
+func (m *mockSetter) UpdateJob(_ context.Context, _ string, _ oapi.JobStatus, _ string, _ map[string]string) error {
 	return nil
 }
 
 func (m *mockSetter) CreateJobWithVerification(_ context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
 	m.createCalls = append(m.createCalls, createJobWithVerificationCall{Job: job, Specs: specs})
 	return m.createErr
+}
+
+// ---------------------------------------------------------------------------
+// Mock AgentVerifier
+// ---------------------------------------------------------------------------
+
+type mockVerifier struct {
+	specs map[string][]oapi.VerificationMetricSpec
+}
+
+func (m *mockVerifier) AgentVerifications(agentType string, _ oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error) {
+	return m.specs[agentType], nil
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +145,7 @@ func TestReconcile_NoDesiredRelease(t *testing.T) {
 	getter := &mockGetter{desiredRelease: nil}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, nil, testReleaseTarget())
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.RequeueAfter)
@@ -150,7 +162,7 @@ func TestReconcile_AlreadySuccessful(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, nil, testReleaseTarget())
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.RequeueAfter)
@@ -168,7 +180,7 @@ func TestReconcile_ActiveJobsRequeue(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, nil, testReleaseTarget())
 	require.NoError(t, err)
 	require.NotNil(t, result.RequeueAfter)
 	assert.Empty(t, setter.createCalls)
@@ -187,7 +199,7 @@ func TestReconcile_CreatesJobWithoutVerifications(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, nil, testReleaseTarget())
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 
@@ -211,7 +223,7 @@ func TestReconcile_CreatesJobWithPolicyVerifications(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, nil, testReleaseTarget())
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 
@@ -220,35 +232,26 @@ func TestReconcile_CreatesJobWithPolicyVerifications(t *testing.T) {
 	assert.Equal(t, "policy-check", setter.createCalls[0].Specs[0].Name)
 }
 
-func TestReconcile_CreatesJobWithAgentConfigVerifications(t *testing.T) {
+func TestReconcile_CreatesJobWithAgentVerifications(t *testing.T) {
 	rel := testRelease()
 	agentID := uuid.New().String()
-
-	agentConfig := oapi.JobAgentConfig{
-		"verifications": []interface{}{
-			map[string]interface{}{
-				"name":             "agent-health",
-				"intervalSeconds":  30,
-				"count":            5,
-				"successCondition": "result.ok == true",
-				"provider": map[string]interface{}{
-					"type":            "sleep",
-					"durationSeconds": 1,
-				},
-			},
-		},
-	}
+	prov := sleepProvider(t)
 
 	getter := &mockGetter{
 		desiredRelease:       rel,
 		jobsForRelease:       []oapi.Job{},
 		activeJobs:           []oapi.Job{},
-		agents:               []oapi.JobAgent{{Id: agentID, Config: agentConfig}},
+		agents:               []oapi.JobAgent{{Id: agentID, Type: "argo-cd", Config: oapi.JobAgentConfig{}}},
 		verificationPolicies: nil,
 	}
 	setter := &mockSetter{}
+	verifier := &mockVerifier{
+		specs: map[string][]oapi.VerificationMetricSpec{
+			"argo-cd": {makeSpec("agent-health", prov)},
+		},
+	}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, verifier, testReleaseTarget())
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 
@@ -265,41 +268,26 @@ func TestReconcile_MergesAndDeduplicatesPolicyAndAgentSpecs(t *testing.T) {
 	policySpec := makeSpec("shared-check", prov)
 	policySpec.Count = 5
 
-	agentConfig := oapi.JobAgentConfig{
-		"verifications": []interface{}{
-			map[string]interface{}{
-				"name":             "shared-check",
-				"intervalSeconds":  60,
-				"count":            99,
-				"successCondition": "true",
-				"provider": map[string]interface{}{
-					"type":            "sleep",
-					"durationSeconds": 1,
-				},
-			},
-			map[string]interface{}{
-				"name":             "agent-only",
-				"intervalSeconds":  10,
-				"count":            2,
-				"successCondition": "true",
-				"provider": map[string]interface{}{
-					"type":            "sleep",
-					"durationSeconds": 1,
-				},
-			},
-		},
-	}
+	agentDupSpec := makeSpec("shared-check", prov)
+	agentDupSpec.Count = 99
+	agentOnlySpec := makeSpec("agent-only", prov)
+	agentOnlySpec.Count = 2
 
 	getter := &mockGetter{
 		desiredRelease:       rel,
 		jobsForRelease:       []oapi.Job{},
 		activeJobs:           []oapi.Job{},
-		agents:               []oapi.JobAgent{{Id: agentID, Config: agentConfig}},
+		agents:               []oapi.JobAgent{{Id: agentID, Type: "test-agent", Config: oapi.JobAgentConfig{}}},
 		verificationPolicies: []oapi.VerificationMetricSpec{policySpec},
 	}
 	setter := &mockSetter{}
+	verifier := &mockVerifier{
+		specs: map[string][]oapi.VerificationMetricSpec{
+			"test-agent": {agentDupSpec, agentOnlySpec},
+		},
+	}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, verifier, testReleaseTarget())
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 
@@ -328,7 +316,7 @@ func TestReconcile_MultipleAgents(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), getter, setter, testReleaseTarget())
+	result, err := Reconcile(context.Background(), getter, setter, nil, testReleaseTarget())
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 

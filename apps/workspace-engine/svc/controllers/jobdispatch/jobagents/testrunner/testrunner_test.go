@@ -27,7 +27,13 @@ type updateJobCall struct {
 	Message string
 }
 
-func (m *mockSetter) UpdateJob(_ context.Context, jobID string, status oapi.JobStatus, message string) error {
+func (m *mockSetter) UpdateJob(
+	_ context.Context,
+	jobID string,
+	status oapi.JobStatus,
+	message string,
+	metadata map[string]string,
+) error {
 	if m.barrier != nil {
 		<-m.barrier
 	}

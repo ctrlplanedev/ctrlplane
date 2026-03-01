@@ -54,7 +54,7 @@ type updateCall struct {
 	Message string
 }
 
-func (m *mockSetter) UpdateJob(_ context.Context, jobID string, status oapi.JobStatus, message string) error {
+func (m *mockSetter) UpdateJob(_ context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.calls = append(m.calls, updateCall{JobID: jobID, Status: status, Message: message})

@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/verification"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -19,8 +20,10 @@ type ReconcileResult struct {
 }
 
 // Reconcile evaluates whether a job should be created for the release target's
-// desired release, and if so creates and persists the job(s).
-func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTarget) (*ReconcileResult, error) {
+// desired release, and if so creates and persists the job(s). The verifier
+// resolves agent-declared verification specs; pass nil when no agent
+// verifier is available.
+func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier AgentVerifier, rt *ReleaseTarget) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.Reconcile")
 	defer span.End()
 
@@ -76,7 +79,18 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 			return nil, recordErr(span, fmt.Sprintf("get verification policies for agent %s", agent.Id), err)
 		}
 
-		specs := verification.GatherSpecs(policySpecs, agent.Config)
+		var agentSpecs []oapi.VerificationMetricSpec
+		if verifier != nil {
+			agentSpecs, err = verifier.AgentVerifications(agent.Type, agent.Config)
+			if err != nil {
+				log.Warn("Failed to get agent verifications",
+					"agent_type", agent.Type,
+					"error", err,
+				)
+			}
+		}
+
+		specs := verification.MergeAndDeduplicate(policySpecs, agentSpecs)
 
 		if err := setter.CreateJobWithVerification(ctx, job, specs); err != nil {
 			return nil, recordErr(span, fmt.Sprintf("create job for agent %s", agent.Id), err)

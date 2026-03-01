@@ -11,6 +11,7 @@ import (
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/environmentresourceselectoreval"
 	"workspace-engine/svc/controllers/jobdispatch"
+	"workspace-engine/svc/controllers/verification"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/routerregistrar"
 	"workspace-engine/svc/workspaceconsumer"
@@ -59,6 +60,7 @@ func main() {
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		jobdispatch.New(WorkerID, db.GetPool(ctx)),
+		verification.New(WorkerID, db.GetPool(ctx)),
 	)
 
 	if err := runner.Run(ctx); err != nil {

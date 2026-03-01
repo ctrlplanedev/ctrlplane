@@ -1,46 +1,8 @@
 package verification
 
 import (
-	"encoding/json"
-
 	"workspace-engine/pkg/oapi"
 )
-
-// GatherSpecs merges already-fetched policy verification specs with specs
-// parsed from the job agent config, deduplicating by metric name. Policy
-// specs take precedence over agent config specs.
-func GatherSpecs(
-	policySpecs []oapi.VerificationMetricSpec,
-	agentConfig oapi.JobAgentConfig,
-) []oapi.VerificationMetricSpec {
-	agentSpecs := ParseAgentConfig(agentConfig)
-	return MergeAndDeduplicate(policySpecs, agentSpecs)
-}
-
-// ParseAgentConfig extracts verification metric specs from the
-// "verifications" key in a job agent config JSON object.
-func ParseAgentConfig(config oapi.JobAgentConfig) []oapi.VerificationMetricSpec {
-	if config == nil {
-		return nil
-	}
-
-	raw, ok := config["verifications"]
-	if !ok {
-		return nil
-	}
-
-	data, err := json.Marshal(raw)
-	if err != nil {
-		return nil
-	}
-
-	var specs []oapi.VerificationMetricSpec
-	if err := json.Unmarshal(data, &specs); err != nil {
-		return nil
-	}
-
-	return specs
-}
 
 // MergeAndDeduplicate combines two slices of specs and removes duplicates
 // by metric name. The first occurrence of each name wins, so policySpecs

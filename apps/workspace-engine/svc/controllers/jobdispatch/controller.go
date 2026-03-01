@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
 
@@ -27,6 +28,7 @@ type Controller struct {
 	getter     Getter
 	setter     Setter
 	dispatcher Dispatcher
+	verifier   AgentVerifier
 }
 
 // Process implements [reconcile.Processor].
@@ -58,7 +60,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	result, err := Reconcile(ctx, c.getter, c.setter, rt)
+	result, err := Reconcile(ctx, c.getter, c.setter, c.verifier, rt)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -75,8 +77,8 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 // NewController creates a Controller with the given dependencies.
 // Use this constructor in tests to inject mock implementations.
-func NewController(getter Getter, setter Setter, dispatcher Dispatcher) *Controller {
-	return &Controller{getter: getter, setter: setter, dispatcher: dispatcher}
+func NewController(getter Getter, setter Setter, dispatcher Dispatcher, verifier AgentVerifier) *Controller {
+	return &Controller{getter: getter, setter: setter, dispatcher: dispatcher, verifier: verifier}
 }
 
 func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
@@ -86,6 +88,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	}
 
 	dispatcher := jobagents.NewRegistry(&PostgresGetter{})
+	dispatcher.Register(argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{}))
 	dispatcher.Register(testrunner.New(&PostgresSetter{}))
 	dispatcher.Register(github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{}))
 
@@ -110,6 +113,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		getter:     &PostgresGetter{},
 		setter:     &PostgresSetter{},
 		dispatcher: dispatcher,
+		verifier:   dispatcher,
 	}
 	worker, err := reconcile.NewWorker(
 		kind,

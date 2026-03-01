@@ -11,7 +11,13 @@ var _ Setter = &PostgresSetter{}
 type PostgresSetter struct{}
 
 // UpdateJob implements [testrunner.Setter].
-func (s *PostgresSetter) UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string) error {
+func (s *PostgresSetter) UpdateJob(
+	ctx context.Context,
+	jobID string,
+	status oapi.JobStatus,
+	message string,
+	metadata map[string]string,
+) error {
 	panic("unimplemented")
 }
 

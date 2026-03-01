@@ -21,7 +21,7 @@ type TestRunner struct {
 }
 
 type Setter interface {
-	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string) error
+	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
 }
 
 func New(setter Setter) *TestRunner {
@@ -80,5 +80,5 @@ func (t *TestRunner) resolveJobAfterDelay(ctx context.Context, jobID string, del
 		finalMessage = resolveMsg
 	}
 
-	t.setter.UpdateJob(ctx, jobID, status, finalMessage)
+	t.setter.UpdateJob(ctx, jobID, status, finalMessage, nil)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
 )
@@ -11,6 +12,7 @@ import (
 type Setter interface {
 	testrunner.Setter
 	github.Setter
+	argo.Setter
 
 	// CreateJobWithVerification persists a new job and its release_job link
 	// row. When specs is non-empty it atomically creates the job, a

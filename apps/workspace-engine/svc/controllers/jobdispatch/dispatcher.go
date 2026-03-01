@@ -13,6 +13,12 @@ type Dispatcher interface {
 	Dispatch(ctx context.Context, job *oapi.Job) error
 }
 
+// AgentVerifier resolves verification specs that an agent type declares
+// via the [types.Verifiable] interface. *jobagents.Registry satisfies this.
+type AgentVerifier interface {
+	AgentVerifications(agentType string, config oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error)
+}
+
 // Restorable is optionally implemented by a Dispatcher to re-establish
 // in-flight jobs after a process restart. Agents whose execution is driven
 // by in-process state (e.g. test-runner timers) implement this so the
