@@ -11,8 +11,8 @@ import (
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/jobdispatch"
-	"workspace-engine/svc/controllers/verificationmetric/metrics"
-	"workspace-engine/svc/controllers/verificationmetric/metrics/provider"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 
 	"github.com/google/uuid"
 )

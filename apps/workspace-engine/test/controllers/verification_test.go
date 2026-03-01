@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/svc/controllers/verificationmetric"
-	"workspace-engine/svc/controllers/verificationmetric/metrics"
-	"workspace-engine/svc/controllers/verificationmetric/metrics/provider"
+	"workspace-engine/svc/controllers/jobverificationmetric"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 	. "workspace-engine/test/controllers/harness"
 
 	"github.com/google/uuid"
@@ -58,7 +58,7 @@ func TestVerification_FirstMeasurement_Requeues(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1, "should record one measurement")
@@ -75,7 +75,7 @@ func TestVerification_AllMeasurementsPass_Completes(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
@@ -90,7 +90,7 @@ func TestVerification_FailureLimitExceeded_Fails(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
@@ -106,7 +106,7 @@ func TestVerification_NotFound_NoOp(t *testing.T) {
 	}
 	setter := &VerificationSetter{}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, "nonexistent")
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, "nonexistent")
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 	assert.Empty(t, setter.RecordedMeasurements)
@@ -120,7 +120,7 @@ func TestVerification_AlreadyComplete_SkipsMeasurement(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	assert.Empty(t, setter.RecordedMeasurements, "should not take another measurement")
@@ -142,7 +142,7 @@ func TestVerification_SuccessThreshold_RequiresConsecutivePasses(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
@@ -163,7 +163,7 @@ func TestVerification_FailureThreshold_ContinuesBelowLimit(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
@@ -180,7 +180,7 @@ func TestVerification_FailureThreshold_ExceedsLimit_Stops(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	assert.Nil(t, result.RequeueAfter, "above failure threshold — should stop")
@@ -199,7 +199,7 @@ func TestVerification_IntervalNotElapsed_Defers(t *testing.T) {
 	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
+	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	assert.Empty(t, setter.RecordedMeasurements, "should not take a measurement — interval not elapsed")
