@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/environmentresourceselectoreval"
@@ -49,7 +50,8 @@ func main() {
 
 	runner := svc.NewRunner()
 
-	wsConsumer := workspaceconsumer.New(kafka.Brokers, kafka.Topic)
+	reconcileQueue := postgres.New(db.GetPool(ctx))
+	wsConsumer := workspaceconsumer.New(kafka.Brokers, kafka.Topic, reconcileQueue)
 	runner.Add(
 		httpsvc.New(config.Global),
 		workspaceticker.New(producer),

@@ -229,6 +229,7 @@ type JobAgent struct {
 type JobVerificationMetric struct {
 	ID               uuid.UUID
 	CreatedAt        pgtype.Timestamptz
+	JobID            uuid.UUID
 	Name             string
 	Provider         []byte
 	IntervalSeconds  int32
@@ -366,6 +367,11 @@ type Release struct {
 	DeploymentID  uuid.UUID
 	VersionID     uuid.UUID
 	CreatedAt     pgtype.Timestamptz
+}
+
+type ReleaseJob struct {
+	ReleaseID uuid.UUID
+	JobID     uuid.UUID
 }
 
 type ReleaseVariable struct {

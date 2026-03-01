@@ -324,11 +324,19 @@ CREATE TABLE computed_environment_resource (
 );
 
 
+CREATE TABLE release_job (
+    release_id UUID NOT NULL REFERENCES release(id) ON DELETE CASCADE,
+    job_id UUID NOT NULL,
+    PRIMARY KEY (release_id, job_id)
+);
+
 -- Verification Metric Table (as in packages/db/src/schema/verification.ts)
 CREATE TABLE job_verification_metric (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    job_id UUID NOT NULL,
 
     name TEXT NOT NULL,
     provider JSONB NOT NULL,

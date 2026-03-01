@@ -7,6 +7,7 @@ import (
 	dbpersistence "workspace-engine/pkg/db/persistence"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
@@ -24,16 +25,17 @@ var _ svc.Service = (*Service)(nil)
 // is the primary entry point for loading and operating on workspaces.
 type Service struct {
 	consumer        messaging.Consumer
+	reconcileQueue  reconcile.Queue
 	persistentStore persistence.Store
 }
 
-func New(brokers, topic string) *Service {
+func New(brokers, topic string, reconcileQueue reconcile.Queue) *Service {
 	c, err := kafka.NewConsumer(brokers, topic)
 	if err != nil {
 		log.Fatal("Failed to create workspace consumer", "error", err)
 		panic(err)
 	}
-	return &Service{consumer: c}
+	return &Service{consumer: c, reconcileQueue: reconcileQueue}
 }
 
 // Consumer returns the underlying consumer, e.g. for reading assigned partitions.

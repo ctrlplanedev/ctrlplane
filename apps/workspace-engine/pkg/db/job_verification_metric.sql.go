@@ -12,10 +12,149 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getProviderContextForMetric = `-- name: GetProviderContextForMetric :one
+SELECT
+  r.id            AS release_id,
+  r.created_at    AS release_created_at,
+  res.id          AS resource_id,
+  res.name        AS resource_name,
+  res.kind        AS resource_kind,
+  res.identifier  AS resource_identifier,
+  res.version     AS resource_version,
+  res.config      AS resource_config,
+  res.metadata    AS resource_metadata,
+  env.id          AS environment_id,
+  env.name        AS environment_name,
+  env.metadata    AS environment_metadata,
+  dep.id          AS deployment_id,
+  dep.name        AS deployment_name,
+  dep.description AS deployment_description,
+  dep.metadata    AS deployment_metadata,
+  dv.id           AS version_id,
+  dv.name         AS version_name,
+  dv.tag          AS version_tag,
+  dv.config       AS version_config,
+  dv.metadata     AS version_metadata,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', rv.key, 'value', rv.value, 'encrypted', rv.encrypted))
+     FROM release_variable rv WHERE rv.release_id = r.id),
+    '[]'
+  )::jsonb AS release_variables
+FROM job_verification_metric jvm
+JOIN release_job rj ON rj.job_id = jvm.job_id
+JOIN release r ON r.id = rj.release_id
+JOIN resource res ON res.id = r.resource_id
+JOIN environment env ON env.id = r.environment_id
+JOIN deployment dep ON dep.id = r.deployment_id
+JOIN deployment_version dv ON dv.id = r.version_id
+WHERE jvm.id = $1
+`
+
+type GetProviderContextForMetricRow struct {
+	ReleaseID             uuid.UUID
+	ReleaseCreatedAt      pgtype.Timestamptz
+	ResourceID            uuid.UUID
+	ResourceName          string
+	ResourceKind          string
+	ResourceIdentifier    string
+	ResourceVersion       string
+	ResourceConfig        map[string]any
+	ResourceMetadata      map[string]string
+	EnvironmentID         uuid.UUID
+	EnvironmentName       string
+	EnvironmentMetadata   map[string]string
+	DeploymentID          uuid.UUID
+	DeploymentName        string
+	DeploymentDescription string
+	DeploymentMetadata    map[string]string
+	VersionID             uuid.UUID
+	VersionName           string
+	VersionTag            string
+	VersionConfig         map[string]any
+	VersionMetadata       map[string]string
+	ReleaseVariables      []byte
+}
+
+func (q *Queries) GetProviderContextForMetric(ctx context.Context, id uuid.UUID) (GetProviderContextForMetricRow, error) {
+	row := q.db.QueryRow(ctx, getProviderContextForMetric, id)
+	var i GetProviderContextForMetricRow
+	err := row.Scan(
+		&i.ReleaseID,
+		&i.ReleaseCreatedAt,
+		&i.ResourceID,
+		&i.ResourceName,
+		&i.ResourceKind,
+		&i.ResourceIdentifier,
+		&i.ResourceVersion,
+		&i.ResourceConfig,
+		&i.ResourceMetadata,
+		&i.EnvironmentID,
+		&i.EnvironmentName,
+		&i.EnvironmentMetadata,
+		&i.DeploymentID,
+		&i.DeploymentName,
+		&i.DeploymentDescription,
+		&i.DeploymentMetadata,
+		&i.VersionID,
+		&i.VersionName,
+		&i.VersionTag,
+		&i.VersionConfig,
+		&i.VersionMetadata,
+		&i.ReleaseVariables,
+	)
+	return i, err
+}
+
+const getSiblingMetricStatuses = `-- name: GetSiblingMetricStatuses :many
+SELECT
+  m.id,
+  (
+    COALESCE(mc.total, 0) >= m.count
+    OR COALESCE(mc.failures, 0) > COALESCE(m.failure_threshold, 0)
+  )::boolean AS is_terminal,
+  (COALESCE(mc.failures, 0) > COALESCE(m.failure_threshold, 0))::boolean AS is_failed
+FROM job_verification_metric m
+LEFT JOIN LATERAL (
+  SELECT
+    COUNT(*)::int AS total,
+    COUNT(*) FILTER (WHERE mm.status = 'failed')::int AS failures
+  FROM job_verification_metric_measurement mm
+  WHERE mm.job_verification_metric_status_id = m.id
+) mc ON true
+WHERE m.job_id = (SELECT job_id FROM job_verification_metric WHERE id = $1)
+`
+
+type GetSiblingMetricStatusesRow struct {
+	ID         uuid.UUID
+	IsTerminal bool
+	IsFailed   bool
+}
+
+func (q *Queries) GetSiblingMetricStatuses(ctx context.Context, dollar_1 uuid.UUID) ([]GetSiblingMetricStatusesRow, error) {
+	rows, err := q.db.Query(ctx, getSiblingMetricStatuses, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSiblingMetricStatusesRow
+	for rows.Next() {
+		var i GetSiblingMetricStatusesRow
+		if err := rows.Scan(&i.ID, &i.IsTerminal, &i.IsFailed); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getVerificationMetricWithMeasurements = `-- name: GetVerificationMetricWithMeasurements :one
 SELECT
   jvm.id,
   jvm.created_at,
+  jvm.job_id,
   jvm.name,
   jvm.provider,
   jvm.interval_seconds,
@@ -48,6 +187,7 @@ WHERE
 type GetVerificationMetricWithMeasurementsRow struct {
 	ID               uuid.UUID
 	CreatedAt        pgtype.Timestamptz
+	JobID            uuid.UUID
 	Name             string
 	Provider         []byte
 	IntervalSeconds  int32
@@ -65,6 +205,7 @@ func (q *Queries) GetVerificationMetricWithMeasurements(ctx context.Context, id 
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
+		&i.JobID,
 		&i.Name,
 		&i.Provider,
 		&i.IntervalSeconds,
@@ -76,4 +217,78 @@ func (q *Queries) GetVerificationMetricWithMeasurements(ctx context.Context, id 
 		&i.Measurements,
 	)
 	return i, err
+}
+
+const insertJobVerificationMetric = `-- name: InsertJobVerificationMetric :one
+INSERT INTO job_verification_metric (
+  job_id, name, provider, interval_seconds, count,
+  success_condition, success_threshold, failure_condition, failure_threshold
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, created_at, job_id, name, provider, interval_seconds, count, success_condition, success_threshold, failure_condition, failure_threshold
+`
+
+type InsertJobVerificationMetricParams struct {
+	JobID            uuid.UUID
+	Name             string
+	Provider         []byte
+	IntervalSeconds  int32
+	Count            int32
+	SuccessCondition string
+	SuccessThreshold pgtype.Int4
+	FailureCondition pgtype.Text
+	FailureThreshold pgtype.Int4
+}
+
+func (q *Queries) InsertJobVerificationMetric(ctx context.Context, arg InsertJobVerificationMetricParams) (JobVerificationMetric, error) {
+	row := q.db.QueryRow(ctx, insertJobVerificationMetric,
+		arg.JobID,
+		arg.Name,
+		arg.Provider,
+		arg.IntervalSeconds,
+		arg.Count,
+		arg.SuccessCondition,
+		arg.SuccessThreshold,
+		arg.FailureCondition,
+		arg.FailureThreshold,
+	)
+	var i JobVerificationMetric
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.JobID,
+		&i.Name,
+		&i.Provider,
+		&i.IntervalSeconds,
+		&i.Count,
+		&i.SuccessCondition,
+		&i.SuccessThreshold,
+		&i.FailureCondition,
+		&i.FailureThreshold,
+	)
+	return i, err
+}
+
+const insertJobVerificationMetricMeasurement = `-- name: InsertJobVerificationMetricMeasurement :exec
+INSERT INTO job_verification_metric_measurement (
+  job_verification_metric_status_id, data, measured_at, message, status
+) VALUES ($1, $2, $3, $4, $5)
+`
+
+type InsertJobVerificationMetricMeasurementParams struct {
+	JobVerificationMetricStatusID uuid.UUID
+	Data                          []byte
+	MeasuredAt                    pgtype.Timestamptz
+	Message                       string
+	Status                        JobVerificationStatus
+}
+
+func (q *Queries) InsertJobVerificationMetricMeasurement(ctx context.Context, arg InsertJobVerificationMetricMeasurementParams) error {
+	_, err := q.db.Exec(ctx, insertJobVerificationMetricMeasurement,
+		arg.JobVerificationMetricStatusID,
+		arg.Data,
+		arg.MeasuredAt,
+		arg.Message,
+		arg.Status,
+	)
+	return err
 }

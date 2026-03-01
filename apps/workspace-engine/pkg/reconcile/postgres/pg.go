@@ -17,6 +17,8 @@ import (
 
 const defaultPriority int16 = 100
 
+var _ reconcile.Queue = (*Queue)(nil)
+
 // Queue implements reconcile.Queue using a two-table PostgreSQL model:
 // - reconcile_work_scope: leasing and scheduling per logical scope key
 // - reconcile_work_payload: payload variants attached to a scope
