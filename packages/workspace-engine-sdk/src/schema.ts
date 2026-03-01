@@ -2205,6 +2205,7 @@ export interface components {
             name: string;
             /** @description Reference to the job agent */
             ref: string;
+            workflowId: string;
         };
         WorkflowJobWithJobs: components["schemas"]["WorkflowJob"] & {
             jobs: components["schemas"]["Job"][];

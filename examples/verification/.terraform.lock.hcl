@@ -1,0 +1,24 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/ctrlplanedev/ctrlplane" {
+  version     = "1.6.2"
+  constraints = "1.6.2"
+  hashes = [
+    "h1:gu0G733VnduHT0hDvp0HW+HEhlftSA0xk8iehzeLYkc=",
+    "zh:0455b2cad36be14ea0dfaf788e2461d2b6c29074013fd80f52a4280408117162",
+    "zh:0b1296fc918ce52c52bd5cf11b631b96c736cc153c09005b82ed16f877ce1ed3",
+    "zh:4006affd82f590813c85428c3bb93635219ff6981a689817738410d21763d1d4",
+    "zh:456b0a00d8b774789725e53a876a39665f01ace56284cb74af852335df13f1ac",
+    "zh:535a4501b6811a18fd579fc13ff6328ccd66a4941166ad375470b865e7a1c4e8",
+    "zh:809158b441025fdc4e2112624d2035475a88a1add8bee1afccad5f0cc6a511e1",
+    "zh:878def8e65fae67bd7e321d43588eca44c17919e28ba102d2a52ba2f1c9f7dc4",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:9b496b508c7c4f22a4caf54d482cd87fdd7349ed5a56ca96f09160a3c86a10fa",
+    "zh:b251448e063815fe4e050f4fdaf9419413da52c47f0100124f9e4ea4d19ce8f3",
+    "zh:cc71552d13443a4fcbd97e42a240504e37ece705980e528176090c3ea5ea0ce1",
+    "zh:da63008e287cbee89c9e711a30a7a0988610c80d7ff77ce7afc30b2a3c5828e6",
+    "zh:dd901d70b2c289a94465f7280eb4597b60cd89bcfc59ba01e87f9483ca2ea862",
+    "zh:e0c63d018c1ac411b95a084e4f9c3ef0052c93820b483fa354587430e3415eb0",
+  ]
+}
