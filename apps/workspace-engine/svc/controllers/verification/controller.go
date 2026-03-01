@@ -25,6 +25,12 @@ type Controller struct {
 	setter Setter
 }
 
+// NewController creates a Controller with the given dependencies.
+// Use this constructor in tests to inject mock implementations.
+func NewController(getter Getter, setter Setter) *Controller {
+	return &Controller{getter: getter, setter: setter}
+}
+
 // Process implements [reconcile.Processor].
 func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcile.Result, error) {
 	ctx, span := tracer.Start(ctx, "verification.Controller.Process")

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics"
+	"workspace-engine/svc/controllers/verification/metrics"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -50,6 +50,13 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, scope *Verific
 	if !m.ShouldContinue(metric) {
 		span.AddEvent("metric already complete, checking overall verification")
 		return handleVerificationStatus(ctx, getter, setter, v, span)
+	}
+
+	if remaining := m.TimeUntilNextMeasurement(metric); remaining > 0 {
+		span.AddEvent("interval not yet elapsed, deferring",
+			trace.WithAttributes(attribute.String("remaining", remaining.String())),
+		)
+		return &ReconcileResult{RequeueAfter: &remaining}, nil
 	}
 
 	job, err := getter.GetJob(ctx, v.JobId)

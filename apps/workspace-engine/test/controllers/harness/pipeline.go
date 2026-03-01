@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
+	"workspace-engine/svc/controllers/jobdispatch"
 
 	"github.com/google/uuid"
 )
@@ -15,6 +16,7 @@ import (
 const (
 	KindSelectorEval   = "deployment-resource-selector-eval"
 	KindDesiredRelease = "desired-release"
+	KindJobDispatch    = "job-dispatch"
 )
 
 // TestPipeline wires the deployment-resource-selector-eval and
@@ -33,6 +35,11 @@ type TestPipeline struct {
 	releaseQueue  reconcile.Queue
 	ReleaseGetter *DesiredReleaseGetter
 	ReleaseSetter *DesiredReleaseSetter
+
+	jobDispatchCtrl   reconcile.Processor
+	jobDispatchQueue  reconcile.Queue
+	JobDispatchGetter *JobDispatchGetter
+	JobDispatchSetter *JobDispatchSetter
 
 	// Scenario holds the declarative configuration built by PipelineOptions.
 	Scenario *ScenarioState
@@ -66,6 +73,7 @@ type ScenarioState struct {
 	Versions    []*oapi.DeploymentVersion
 	Policies    []*oapi.Policy
 	PolicySkips []*oapi.PolicySkip
+	JobAgents   []oapi.JobAgent
 
 	DeploymentVars  []oapi.DeploymentVariableWithValues
 	ResourceVars    map[string]oapi.ResourceVariable
@@ -136,21 +144,35 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 		qs = newMemoryQueues()
 	}
 
+	releaseSetter.JobDispatchQueue = qs.jobDispatchQueue
+	releaseSetter.WorkspaceID = sc.WorkspaceID.String()
+
 	selectorCtrl := selectoreval.NewController(selectorGetter, selectorSetter, qs.shared)
 	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter)
 
+	jobDispatchGetter := &JobDispatchGetter{
+		ReleaseSetter: releaseSetter,
+		Agents:        sc.JobAgents,
+	}
+	jobDispatchSetter := &JobDispatchSetter{}
+	jobDispatchCtrl := jobdispatch.NewController(jobDispatchGetter, jobDispatchSetter, nil, nil)
+
 	return &TestPipeline{
-		t:              t,
-		selectorCtrl:   selectorCtrl,
-		selectorQueue:  qs.selectorQueue,
-		SelectorGetter: selectorGetter,
-		SelectorSetter: selectorSetter,
-		releaseCtrl:    releaseCtrl,
-		releaseQueue:   qs.releaseQueue,
-		ReleaseGetter:  releaseGetter,
-		ReleaseSetter:  releaseSetter,
-		Scenario:       sc,
-		dbBacked:       dbBacked,
+		t:                 t,
+		selectorCtrl:      selectorCtrl,
+		selectorQueue:     qs.selectorQueue,
+		SelectorGetter:    selectorGetter,
+		SelectorSetter:    selectorSetter,
+		releaseCtrl:       releaseCtrl,
+		releaseQueue:      qs.releaseQueue,
+		ReleaseGetter:     releaseGetter,
+		ReleaseSetter:     releaseSetter,
+		jobDispatchCtrl:   jobDispatchCtrl,
+		jobDispatchQueue:  qs.jobDispatchQueue,
+		JobDispatchGetter: jobDispatchGetter,
+		JobDispatchSetter: jobDispatchSetter,
+		Scenario:          sc,
+		dbBacked:          dbBacked,
 	}
 }
 
@@ -191,13 +213,25 @@ func (p *TestPipeline) ProcessDesiredReleases() int {
 	return res.Processed
 }
 
+// ProcessJobDispatches claims and processes all pending job-dispatch items.
+// Returns the count processed.
+func (p *TestPipeline) ProcessJobDispatches() int {
+	p.t.Helper()
+	res, err := DrainQueue(context.Background(), p.jobDispatchQueue, p.jobDispatchCtrl)
+	if err != nil {
+		p.t.Fatalf("process job dispatches: %v", err)
+	}
+	return res.Processed
+}
+
 // RunPipeline is a convenience method that enqueues a selector-eval item
-// and then drains both controller queues in sequence.
+// and then drains all controller queues in sequence.
 func (p *TestPipeline) RunPipeline() {
 	p.t.Helper()
 	p.EnqueueSelectorEval()
 	p.ProcessSelectorEvals()
 	p.ProcessDesiredReleases()
+	p.ProcessJobDispatches()
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +307,13 @@ func (p *TestPipeline) RunRound() int {
 	total += rRes.Processed
 	p.requeues = append(p.requeues, rRes.Requeued...)
 
+	jRes, err := DrainQueue(ctx, p.jobDispatchQueue, p.jobDispatchCtrl)
+	if err != nil {
+		p.t.Fatalf("RunRound job-dispatch: %v", err)
+	}
+	total += jRes.Processed
+	p.requeues = append(p.requeues, jRes.Requeued...)
+
 	return total
 }
 
@@ -323,6 +364,8 @@ func (p *TestPipeline) queueForKind(kind string) reconcile.Queue {
 		return p.selectorQueue
 	case KindDesiredRelease:
 		return p.releaseQueue
+	case KindJobDispatch:
+		return p.jobDispatchQueue
 	default:
 		p.t.Fatalf("unknown kind: %s", kind)
 		return nil
@@ -337,6 +380,11 @@ func (p *TestPipeline) IsDBBacked() bool {
 // Releases returns the releases captured by the desired-release setter.
 func (p *TestPipeline) Releases() []*oapi.Release {
 	return p.ReleaseSetter.Releases
+}
+
+// Jobs returns the jobs created by the job-dispatch controller.
+func (p *TestPipeline) Jobs() []*oapi.Job {
+	return p.JobDispatchSetter.Jobs
 }
 
 // ComputedResources returns the resource IDs written by the selector-eval setter.

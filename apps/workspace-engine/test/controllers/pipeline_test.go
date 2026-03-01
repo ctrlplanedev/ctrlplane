@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -375,4 +376,166 @@ func TestRun_PendingRequeues_Empty(t *testing.T) {
 	p.Run()
 
 	assert.Empty(t, p.PendingRequeues(), "no requeues expected for a simple happy path")
+}
+
+// ===========================================================================
+// Release → Job dispatch tests
+// ===========================================================================
+
+func TestPipeline_ReleaseCreatesJob(t *testing.T) {
+	agentID := uuid.New().String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true"), DeploymentName("api")),
+		WithEnvironment(EnvironmentName("production")),
+		WithResource(ResourceName("server-1"), ResourceKind("Node")),
+		WithVersion(VersionTag("v1.0.0")),
+		WithJobAgent("test-runner", JobAgentID(agentID)),
+	)
+
+	p.RunPipeline()
+
+	p.AssertReleaseCreated(t)
+	p.AssertJobCreated(t)
+	p.AssertJobCount(t, 1)
+	p.AssertJobAgentID(t, 0, agentID)
+	p.AssertJobStatus(t, 0, oapi.JobStatusPending)
+}
+
+func TestPipeline_NoJobAgent_NoJob(t *testing.T) {
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("production")),
+		WithResource(ResourceName("server-1"), ResourceKind("Node")),
+		WithVersion(VersionTag("v1.0.0")),
+	)
+
+	p.RunPipeline()
+
+	p.AssertReleaseCreated(t)
+	p.AssertNoJob(t)
+}
+
+func TestPipeline_MultipleAgents_MultipleJobs(t *testing.T) {
+	agent1 := uuid.New().String()
+	agent2 := uuid.New().String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("prod")),
+		WithResource(ResourceName("srv"), ResourceKind("Server")),
+		WithVersion(VersionTag("v1.0.0")),
+		WithJobAgent("argo-cd", JobAgentID(agent1)),
+		WithJobAgent("github-app", JobAgentID(agent2)),
+	)
+
+	p.RunPipeline()
+
+	p.AssertReleaseCreated(t)
+	p.AssertJobCount(t, 2)
+	p.AssertJobAgentID(t, 0, agent1)
+	p.AssertJobAgentID(t, 1, agent2)
+}
+
+func TestPipeline_JobReferencesRelease(t *testing.T) {
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("prod")),
+		WithResource(ResourceName("srv"), ResourceKind("Server")),
+		WithVersion(VersionTag("v1.0.0")),
+		WithJobAgent("test-runner"),
+	)
+
+	p.RunPipeline()
+
+	p.AssertReleaseCreated(t)
+	p.AssertJobCreated(t)
+
+	release := p.Releases()[0]
+	p.AssertJobReleaseID(t, 0, release.ID())
+}
+
+func TestRun_FullPipeline_WithJobDispatch(t *testing.T) {
+	agentID := uuid.New().String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true"), DeploymentName("api")),
+		WithEnvironment(EnvironmentName("production")),
+		WithResource(ResourceName("server-1"), ResourceKind("Node")),
+		WithVersion(VersionTag("v1.0.0")),
+		WithJobAgent("test-runner", JobAgentID(agentID)),
+	)
+
+	p.Run()
+
+	p.AssertComputedResourceCount(t, 1)
+	p.AssertReleaseCreated(t)
+	p.AssertReleaseVersion(t, 0, "v1.0.0")
+	p.AssertJobCreated(t)
+	p.AssertJobCount(t, 1)
+	p.AssertJobAgentID(t, 0, agentID)
+}
+
+func TestRun_PolicyBlocks_NoJob(t *testing.T) {
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("production")),
+		WithResource(ResourceName("srv"), ResourceKind("Server")),
+		WithVersion(VersionTag("v2.0.0")),
+		WithJobAgent("test-runner"),
+		WithPolicy(
+			PolicySelector("true"),
+			PolicyEnabled(true),
+			WithPolicyRule(WithApprovalRule(1)),
+		),
+	)
+
+	p.Run()
+
+	p.AssertNoRelease(t)
+	p.AssertNoJob(t)
+}
+
+func TestPipeline_StepByStep_WithJobDispatch(t *testing.T) {
+	agentID := uuid.New().String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("prod")),
+		WithResource(ResourceName("srv"), ResourceKind("Server")),
+		WithVersion(VersionTag("v1.0.0")),
+		WithJobAgent("test-runner", JobAgentID(agentID)),
+	)
+
+	p.EnqueueSelectorEval()
+
+	n := p.ProcessSelectorEvals()
+	require.Equal(t, 1, n)
+	p.AssertComputedResourceCount(t, 1)
+	p.AssertNoRelease(t)
+	p.AssertNoJob(t)
+
+	n = p.ProcessDesiredReleases()
+	require.Equal(t, 1, n)
+	p.AssertReleaseCreated(t)
+	p.AssertNoJob(t)
+
+	n = p.ProcessJobDispatches()
+	require.Equal(t, 1, n)
+	p.AssertJobCreated(t)
+	p.AssertJobAgentID(t, 0, agentID)
+}
+
+func TestPipeline_NoVersions_NoJob(t *testing.T) {
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("prod")),
+		WithResource(ResourceName("srv"), ResourceKind("Server")),
+		WithJobAgent("test-runner"),
+	)
+
+	p.Run()
+
+	p.AssertNoRelease(t)
+	p.AssertNoJob(t)
 }

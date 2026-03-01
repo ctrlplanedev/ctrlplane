@@ -47,20 +47,22 @@ func requireDB(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-// queueSet holds the three queue handles needed by the pipeline.
+// queueSet holds the queue handles needed by the pipeline.
 type queueSet struct {
-	shared        reconcile.Queue
-	selectorQueue reconcile.Queue
-	releaseQueue  reconcile.Queue
+	shared           reconcile.Queue
+	selectorQueue    reconcile.Queue
+	releaseQueue     reconcile.Queue
+	jobDispatchQueue reconcile.Queue
 }
 
 // newMemoryQueues creates the in-memory queue set.
 func newMemoryQueues() queueSet {
 	shared := memory.New()
 	return queueSet{
-		shared:        shared,
-		selectorQueue: shared.ForKinds(KindSelectorEval),
-		releaseQueue:  shared.ForKinds(KindDesiredRelease),
+		shared:           shared,
+		selectorQueue:    shared.ForKinds(KindSelectorEval),
+		releaseQueue:     shared.ForKinds(KindDesiredRelease),
+		jobDispatchQueue: shared.ForKinds(KindJobDispatch),
 	}
 }
 
@@ -81,9 +83,12 @@ func newPostgresQueues(t *testing.T, pool *pgxpool.Pool, workspaceID string) que
 		}
 	})
 
+	jobDispatchQueue := pgqueue.NewForKinds(pool, KindJobDispatch)
+
 	return queueSet{
-		shared:        shared,
-		selectorQueue: selectorQueue,
-		releaseQueue:  releaseQueue,
+		shared:           shared,
+		selectorQueue:    selectorQueue,
+		releaseQueue:     releaseQueue,
+		jobDispatchQueue: jobDispatchQueue,
 	}
 }

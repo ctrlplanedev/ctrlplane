@@ -93,3 +93,50 @@ func (p *TestPipeline) ReleaseVariables(t *testing.T, idx int) map[string]oapi.L
 		"release index %d out of range (have %d)", idx, len(p.ReleaseSetter.Releases))
 	return p.ReleaseSetter.Releases[idx].Variables
 }
+
+// ---------------------------------------------------------------------------
+// Job assertions
+// ---------------------------------------------------------------------------
+
+// AssertJobCreated asserts that at least one job was created.
+func (p *TestPipeline) AssertJobCreated(t *testing.T) {
+	t.Helper()
+	require.NotEmpty(t, p.JobDispatchSetter.Jobs, "expected at least one job to be created")
+}
+
+// AssertNoJob asserts that no jobs were created.
+func (p *TestPipeline) AssertNoJob(t *testing.T) {
+	t.Helper()
+	assert.Empty(t, p.JobDispatchSetter.Jobs, "expected no jobs to be created")
+}
+
+// AssertJobCount asserts the exact number of jobs created.
+func (p *TestPipeline) AssertJobCount(t *testing.T, n int) {
+	t.Helper()
+	assert.Len(t, p.JobDispatchSetter.Jobs, n)
+}
+
+// AssertJobAgentID asserts the job agent ID on the job at the given index.
+func (p *TestPipeline) AssertJobAgentID(t *testing.T, idx int, agentID string) {
+	t.Helper()
+	require.Greater(t, len(p.JobDispatchSetter.Jobs), idx,
+		"job index %d out of range (have %d)", idx, len(p.JobDispatchSetter.Jobs))
+	assert.Equal(t, agentID, p.JobDispatchSetter.Jobs[idx].JobAgentId)
+}
+
+// AssertJobStatus asserts the status on the job at the given index.
+func (p *TestPipeline) AssertJobStatus(t *testing.T, idx int, status oapi.JobStatus) {
+	t.Helper()
+	require.Greater(t, len(p.JobDispatchSetter.Jobs), idx,
+		"job index %d out of range (have %d)", idx, len(p.JobDispatchSetter.Jobs))
+	assert.Equal(t, status, p.JobDispatchSetter.Jobs[idx].Status)
+}
+
+// AssertJobReleaseID asserts that the job at the given index references
+// the expected release ID.
+func (p *TestPipeline) AssertJobReleaseID(t *testing.T, idx int, releaseID string) {
+	t.Helper()
+	require.Greater(t, len(p.JobDispatchSetter.Jobs), idx,
+		"job index %d out of range (have %d)", idx, len(p.JobDispatchSetter.Jobs))
+	assert.Equal(t, releaseID, p.JobDispatchSetter.Jobs[idx].ReleaseId)
+}

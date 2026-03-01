@@ -417,6 +417,43 @@ func WithResourceVariable(key string, value oapi.Value) PipelineOption {
 	}
 }
 
+// JobAgentOption configures a job agent within a scenario.
+type JobAgentOption func(*oapi.JobAgent)
+
+// WithJobAgent adds a job agent to the scenario. The agent will be returned
+// by the JobDispatchGetter when the job dispatch controller asks for agents
+// configured on the deployment.
+func WithJobAgent(agentType string, opts ...JobAgentOption) PipelineOption {
+	return func(sc *ScenarioState) {
+		agent := oapi.JobAgent{
+			Id:          uuid.New().String(),
+			Name:        fmt.Sprintf("agent-%d", len(sc.JobAgents)+1),
+			Type:        agentType,
+			Config:      oapi.JobAgentConfig{},
+			WorkspaceId: sc.WorkspaceID.String(),
+		}
+		for _, o := range opts {
+			o(&agent)
+		}
+		sc.JobAgents = append(sc.JobAgents, agent)
+	}
+}
+
+// JobAgentName sets the name on a job agent.
+func JobAgentName(name string) JobAgentOption {
+	return func(a *oapi.JobAgent) { a.Name = name }
+}
+
+// JobAgentConfig sets the config on a job agent.
+func JobAgentConfig(config oapi.JobAgentConfig) JobAgentOption {
+	return func(a *oapi.JobAgent) { a.Config = config }
+}
+
+// JobAgentID sets the ID on a job agent.
+func JobAgentID(id string) JobAgentOption {
+	return func(a *oapi.JobAgent) { a.Id = id }
+}
+
 // WithRelatedResource registers a related resource under the given reference
 // name, enabling reference variable resolution.
 func WithRelatedResource(reference string, res *oapi.Resource) PipelineOption {
