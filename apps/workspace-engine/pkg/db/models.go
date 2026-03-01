@@ -57,6 +57,93 @@ func (ns NullDeploymentVersionStatus) Value() (driver.Value, error) {
 	return string(ns.DeploymentVersionStatus), nil
 }
 
+type JobVerificationStatus string
+
+const (
+	JobVerificationStatusFailed       JobVerificationStatus = "failed"
+	JobVerificationStatusInconclusive JobVerificationStatus = "inconclusive"
+	JobVerificationStatusPassed       JobVerificationStatus = "passed"
+)
+
+func (e *JobVerificationStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JobVerificationStatus(s)
+	case string:
+		*e = JobVerificationStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JobVerificationStatus: %T", src)
+	}
+	return nil
+}
+
+type NullJobVerificationStatus struct {
+	JobVerificationStatus JobVerificationStatus
+	Valid                 bool // Valid is true if JobVerificationStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJobVerificationStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.JobVerificationStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JobVerificationStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJobVerificationStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JobVerificationStatus), nil
+}
+
+type JobVerificationTriggerOn string
+
+const (
+	JobVerificationTriggerOnJobCreated JobVerificationTriggerOn = "jobCreated"
+	JobVerificationTriggerOnJobStarted JobVerificationTriggerOn = "jobStarted"
+	JobVerificationTriggerOnJobSuccess JobVerificationTriggerOn = "jobSuccess"
+	JobVerificationTriggerOnJobFailure JobVerificationTriggerOn = "jobFailure"
+)
+
+func (e *JobVerificationTriggerOn) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JobVerificationTriggerOn(s)
+	case string:
+		*e = JobVerificationTriggerOn(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JobVerificationTriggerOn: %T", src)
+	}
+	return nil
+}
+
+type NullJobVerificationTriggerOn struct {
+	JobVerificationTriggerOn JobVerificationTriggerOn
+	Valid                    bool // Valid is true if JobVerificationTriggerOn is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJobVerificationTriggerOn) Scan(value interface{}) error {
+	if value == nil {
+		ns.JobVerificationTriggerOn, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JobVerificationTriggerOn.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJobVerificationTriggerOn) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JobVerificationTriggerOn), nil
+}
+
 type ChangelogEntry struct {
 	WorkspaceID uuid.UUID
 	EntityType  string
@@ -139,6 +226,28 @@ type JobAgent struct {
 	Config      map[string]any
 }
 
+type JobVerificationMetric struct {
+	ID               uuid.UUID
+	CreatedAt        pgtype.Timestamptz
+	Name             string
+	Provider         []byte
+	IntervalSeconds  int32
+	Count            int32
+	SuccessCondition string
+	SuccessThreshold pgtype.Int4
+	FailureCondition pgtype.Text
+	FailureThreshold pgtype.Int4
+}
+
+type JobVerificationMetricMeasurement struct {
+	ID                            uuid.UUID
+	JobVerificationMetricStatusID uuid.UUID
+	Data                          []byte
+	MeasuredAt                    pgtype.Timestamptz
+	Message                       string
+	Status                        JobVerificationStatus
+}
+
 type Policy struct {
 	ID          uuid.UUID
 	Name        string
@@ -192,6 +301,20 @@ type PolicyRuleGradualRollout struct {
 	RolloutType       string
 	TimeScaleInterval int32
 	CreatedAt         pgtype.Timestamptz
+}
+
+type PolicyRuleJobVerificationMetric struct {
+	ID               uuid.UUID
+	TriggerOn        JobVerificationTriggerOn
+	PolicyID         uuid.UUID
+	Name             string
+	Provider         []byte
+	IntervalSeconds  int32
+	Count            int32
+	SuccessCondition string
+	SuccessThreshold pgtype.Int4
+	FailureCondition pgtype.Text
+	FailureThreshold pgtype.Int4
 }
 
 type PolicyRuleRetry struct {

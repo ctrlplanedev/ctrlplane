@@ -223,6 +223,25 @@ CREATE TABLE policy_rule_version_selector (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TYPE job_verification_status AS ENUM ('failed', 'inconclusive', 'passed');
+CREATE TYPE job_verification_trigger_on AS ENUM ('jobCreated', 'jobStarted', 'jobSuccess', 'jobFailure');
+
+
+
+CREATE TABLE policy_rule_job_verification_metric (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trigger_on job_verification_trigger_on NOT NULL DEFAULT 'jobSuccess',
+    policy_id UUID NOT NULL REFERENCES policy(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    provider JSONB NOT NULL,
+    interval_seconds INTEGER NOT NULL,
+    count INTEGER NOT NULL,
+    success_condition TEXT NOT NULL,
+    success_threshold INTEGER DEFAULT 0,
+    failure_condition TEXT DEFAULT 'false',
+    failure_threshold INTEGER DEFAULT 0
+);
+
 CREATE TABLE user_approval_record (
     version_id UUID NOT NULL,
     user_id UUID NOT NULL,
@@ -302,4 +321,33 @@ CREATE TABLE computed_environment_resource (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_evaluated_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (environment_id, resource_id)
+);
+
+
+-- Verification Metric Table (as in packages/db/src/schema/verification.ts)
+CREATE TABLE job_verification_metric (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    name TEXT NOT NULL,
+    provider JSONB NOT NULL,
+
+    interval_seconds INTEGER NOT NULL,
+    count INTEGER NOT NULL,
+
+    success_condition TEXT NOT NULL,
+    success_threshold INTEGER DEFAULT 0,
+
+    failure_condition TEXT DEFAULT 'false',
+    failure_threshold INTEGER DEFAULT 0
+);
+
+CREATE TABLE job_verification_metric_measurement (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_verification_metric_status_id UUID NOT NULL REFERENCES job_verification_metric(id) ON DELETE CASCADE,
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    measured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    message TEXT NOT NULL DEFAULT '',
+    status job_verification_status NOT NULL
 );

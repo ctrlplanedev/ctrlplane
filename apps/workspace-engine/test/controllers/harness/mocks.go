@@ -8,11 +8,11 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/jobdispatch"
-	"workspace-engine/svc/controllers/verification"
+	"workspace-engine/svc/controllers/verificationmetric/metrics"
+	"workspace-engine/svc/controllers/verificationmetric/metrics/provider"
 
 	"github.com/google/uuid"
 )
@@ -257,104 +257,64 @@ func (s *JobDispatchSetter) CreateJobWithVerification(_ context.Context, job *oa
 // verification mocks
 // ---------------------------------------------------------------------------
 
-// VerificationGetter implements verification.Getter.
+// VerificationGetter implements verificationmetric.Getter.
 type VerificationGetter struct {
 	mu sync.Mutex
 
-	Verifications map[string]*oapi.JobVerification
-	Jobs          map[string]*oapi.Job
-	ProviderCtx   *provider.ProviderContext
-	ReleaseTarget *verification.ReleaseTarget
+	Metrics     map[string]*metrics.VerificationMetric
+	ProviderCtx *provider.ProviderContext
 }
 
-func (g *VerificationGetter) GetVerification(_ context.Context, id string) (*oapi.JobVerification, error) {
+func (g *VerificationGetter) GetVerificationMetric(_ context.Context, id string) (*metrics.VerificationMetric, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	v, ok := g.Verifications[id]
-	if !ok {
-		return nil, nil
-	}
-	return v, nil
-}
-
-func (g *VerificationGetter) GetJob(_ context.Context, jobID string) (*oapi.Job, error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	j, ok := g.Jobs[jobID]
-	if !ok {
-		return nil, fmt.Errorf("job %s not found", jobID)
-	}
-	return j, nil
+	return g.Metrics[id], nil
 }
 
 func (g *VerificationGetter) GetProviderContext(_ context.Context, _ string) (*provider.ProviderContext, error) {
 	return g.ProviderCtx, nil
 }
 
-func (g *VerificationGetter) GetReleaseTarget(_ context.Context, _ string) (*verification.ReleaseTarget, error) {
-	return g.ReleaseTarget, nil
-}
-
-// UpdateVerification replaces the stored verification, simulating what the
-// DB would do after RecordMeasurement.
-func (g *VerificationGetter) UpdateVerification(v *oapi.JobVerification) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.Verifications[v.Id] = v
-}
-
-// VerificationSetter implements verification.Setter.
+// VerificationSetter implements verificationmetric.Setter.
 type VerificationSetter struct {
 	mu sync.Mutex
 
 	RecordedMeasurements []RecordedMeasurement
-	Messages             map[string]string
-	EnqueuedTargets      []*verification.ReleaseTarget
+	Completed            map[string]metrics.VerificationStatus
 
 	Getter *VerificationGetter
 }
 
 // RecordedMeasurement captures a single RecordMeasurement call.
 type RecordedMeasurement struct {
-	VerificationID string
-	MetricIndex    int
-	Measurement    oapi.VerificationMeasurement
+	MetricID    string
+	Measurement metrics.Measurement
 }
 
-func (s *VerificationSetter) RecordMeasurement(_ context.Context, verificationID string, metricIndex int, measurement oapi.VerificationMeasurement) error {
+func (s *VerificationSetter) RecordMeasurement(_ context.Context, metricID string, measurement metrics.Measurement) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.RecordedMeasurements = append(s.RecordedMeasurements, RecordedMeasurement{
-		VerificationID: verificationID,
-		MetricIndex:    metricIndex,
-		Measurement:    measurement,
+		MetricID:    metricID,
+		Measurement: measurement,
 	})
 
 	if s.Getter != nil {
 		s.Getter.mu.Lock()
-		if v, ok := s.Getter.Verifications[verificationID]; ok {
-			v.Metrics[metricIndex].Measurements = append(
-				v.Metrics[metricIndex].Measurements, measurement,
-			)
+		if m, ok := s.Getter.Metrics[metricID]; ok {
+			m.Measurements = append(m.Measurements, measurement)
 		}
 		s.Getter.mu.Unlock()
 	}
 	return nil
 }
 
-func (s *VerificationSetter) UpdateVerificationMessage(_ context.Context, verificationID, message string) error {
+func (s *VerificationSetter) CompleteMetric(_ context.Context, metricID string, status metrics.VerificationStatus) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.Messages == nil {
-		s.Messages = make(map[string]string)
+	if s.Completed == nil {
+		s.Completed = make(map[string]metrics.VerificationStatus)
 	}
-	s.Messages[verificationID] = message
-	return nil
-}
-
-func (s *VerificationSetter) EnqueueDesiredRelease(_ context.Context, _ string, rt *verification.ReleaseTarget) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.EnqueuedTargets = append(s.EnqueuedTargets, rt)
+	s.Completed[metricID] = status
 	return nil
 }

@@ -21,3 +21,4 @@ export * from "./user-approval-record.js";
 export * from "./resource-variable.js";
 export * from "./deployment-variable.js";
 export * from "./workflow.js";
+export * from "./job-verification-metric.js";

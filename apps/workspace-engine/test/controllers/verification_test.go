@@ -1,12 +1,13 @@
 package controllers_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
-	"workspace-engine/svc/controllers/verification"
+	"workspace-engine/svc/controllers/verificationmetric"
+	"workspace-engine/svc/controllers/verificationmetric/metrics"
+	"workspace-engine/svc/controllers/verificationmetric/metrics/provider"
 	. "workspace-engine/test/controllers/harness"
 
 	"github.com/google/uuid"
@@ -18,50 +19,33 @@ import (
 // helpers
 // ---------------------------------------------------------------------------
 
-func sleepProvider() oapi.MetricProvider {
-	var p oapi.MetricProvider
-	_ = p.FromSleepMetricProvider(oapi.SleepMetricProvider{DurationSeconds: 0})
-	return p
+func sleepProvider() json.RawMessage {
+	return json.RawMessage(`{"type":"sleep","durationSeconds":0}`)
 }
 
-func newVerification(jobID string, metrics ...oapi.VerificationMetricStatus) *oapi.JobVerification {
-	return &oapi.JobVerification{
-		Id:        uuid.New().String(),
-		JobId:     jobID,
-		CreatedAt: time.Now(),
-		Metrics:   metrics,
-	}
-}
-
-func metricStatus(name string, count int, successCondition string) oapi.VerificationMetricStatus {
-	return oapi.VerificationMetricStatus{
+func newMetric(name string, count int32, successCondition string) *metrics.VerificationMetric {
+	return &metrics.VerificationMetric{
+		ID:               uuid.New().String(),
 		Name:             name,
 		Count:            count,
 		IntervalSeconds:  1,
 		SuccessCondition: successCondition,
 		Provider:         sleepProvider(),
-		Measurements:     []oapi.VerificationMeasurement{},
+		Measurements:     []metrics.Measurement{},
 	}
 }
 
-func measurement(status oapi.VerificationMeasurementStatus) oapi.VerificationMeasurement {
-	return oapi.VerificationMeasurement{
+func oldMeasurement(status metrics.MeasurementStatus) metrics.Measurement {
+	return metrics.Measurement{
 		Status:     status,
 		MeasuredAt: time.Now().Add(-time.Minute),
 	}
 }
 
-func verificationGetter(v *oapi.JobVerification, job *oapi.Job) *VerificationGetter {
+func verificationGetter(m *metrics.VerificationMetric) *VerificationGetter {
 	return &VerificationGetter{
-		Verifications: map[string]*oapi.JobVerification{v.Id: v},
-		Jobs:          map[string]*oapi.Job{job.Id: job},
-		ProviderCtx:   &provider.ProviderContext{},
-		ReleaseTarget: &verification.ReleaseTarget{
-			WorkspaceID:   uuid.New().String(),
-			DeploymentID:  uuid.New().String(),
-			EnvironmentID: uuid.New().String(),
-			ResourceID:    uuid.New().String(),
-		},
+		Metrics:     map[string]*metrics.VerificationMetric{m.ID: m},
+		ProviderCtx: &provider.ProviderContext{},
 	}
 }
 
@@ -70,211 +54,78 @@ func verificationGetter(v *oapi.JobVerification, job *oapi.Job) *VerificationGet
 // ---------------------------------------------------------------------------
 
 func TestVerification_FirstMeasurement_Requeues(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-	v := newVerification(jobID, metricStatus("health-check", 3, "true"))
-	getter := verificationGetter(v, job)
+	m := newMetric("health-check", 3, "true")
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{
-		VerificationID: v.Id,
-		MetricIndex:    0,
-	}
-
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1, "should record one measurement")
-	assert.Equal(t, v.Id, setter.RecordedMeasurements[0].VerificationID)
-	assert.Equal(t, 0, setter.RecordedMeasurements[0].MetricIndex)
+	assert.Equal(t, m.ID, setter.RecordedMeasurements[0].MetricID)
 
 	require.NotNil(t, result.RequeueAfter, "should requeue for next measurement")
 }
 
 func TestVerification_AllMeasurementsPass_Completes(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric := metricStatus("health-check", 2, "true")
-	metric.Measurements = []oapi.VerificationMeasurement{
-		measurement(oapi.Passed),
+	m := newMetric("health-check", 2, "true")
+	m.Measurements = []metrics.Measurement{
+		oldMeasurement(metrics.StatusPassed),
 	}
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{
-		VerificationID: v.Id,
-		MetricIndex:    0,
-	}
-
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
-	assert.Equal(t, oapi.Passed, setter.RecordedMeasurements[0].Measurement.Status)
+	assert.Equal(t, metrics.StatusPassed, setter.RecordedMeasurements[0].Measurement.Status)
 
-	assert.Nil(t, result.RequeueAfter, "should not requeue — verification is complete")
-	assert.Contains(t, setter.Messages[v.Id], "passed")
-	require.Len(t, setter.EnqueuedTargets, 1, "should enqueue desired-release re-evaluation")
+	assert.Nil(t, result.RequeueAfter, "should not requeue — metric is complete")
+	assert.Equal(t, metrics.VerificationPassed, setter.Completed[m.ID])
 }
 
 func TestVerification_FailureLimitExceeded_Fails(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric := metricStatus("health-check", 5, "false")
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	m := newMetric("health-check", 5, "false")
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{
-		VerificationID: v.Id,
-		MetricIndex:    0,
-	}
-
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
-	assert.Equal(t, oapi.Failed, setter.RecordedMeasurements[0].Measurement.Status)
+	assert.Equal(t, metrics.StatusFailed, setter.RecordedMeasurements[0].Measurement.Status)
 
 	assert.Nil(t, result.RequeueAfter, "should not requeue — failure stops metric")
-	assert.Contains(t, setter.Messages[v.Id], "failed")
-	require.Len(t, setter.EnqueuedTargets, 1)
+	assert.Equal(t, metrics.VerificationFailed, setter.Completed[m.ID])
 }
 
 func TestVerification_NotFound_NoOp(t *testing.T) {
 	getter := &VerificationGetter{
-		Verifications: map[string]*oapi.JobVerification{},
-		Jobs:          map[string]*oapi.Job{},
+		Metrics: map[string]*metrics.VerificationMetric{},
 	}
 	setter := &VerificationSetter{}
 
-	scope := &verification.VerificationMetricScope{
-		VerificationID: "nonexistent",
-		MetricIndex:    0,
-	}
-
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, "nonexistent")
 	require.NoError(t, err)
 	assert.Nil(t, result.RequeueAfter)
 	assert.Empty(t, setter.RecordedMeasurements)
 }
 
-func TestVerification_InvalidMetricIndex_Errors(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-	v := newVerification(jobID, metricStatus("check", 3, "true"))
-	getter := verificationGetter(v, job)
-	setter := &VerificationSetter{}
-
-	scope := &verification.VerificationMetricScope{
-		VerificationID: v.Id,
-		MetricIndex:    5,
+func TestVerification_AlreadyComplete_SkipsMeasurement(t *testing.T) {
+	m := newMetric("health-check", 1, "true")
+	m.Measurements = []metrics.Measurement{
+		oldMeasurement(metrics.StatusPassed),
 	}
-
-	_, err := verification.Reconcile(t.Context(), getter, setter, scope)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "metric index")
-}
-
-func TestVerification_AlreadyComplete_ChecksOverallStatus(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric := metricStatus("health-check", 1, "true")
-	metric.Measurements = []oapi.VerificationMeasurement{
-		measurement(oapi.Passed),
-	}
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{
-		VerificationID: v.Id,
-		MetricIndex:    0,
-	}
-
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	assert.Empty(t, setter.RecordedMeasurements, "should not take another measurement")
 	assert.Nil(t, result.RequeueAfter)
-	assert.Contains(t, setter.Messages[v.Id], "passed")
-	require.Len(t, setter.EnqueuedTargets, 1)
-}
-
-// ---------------------------------------------------------------------------
-// Multi-metric verification
-// ---------------------------------------------------------------------------
-
-func TestVerification_MultipleMetrics_AllMustPass(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric1 := metricStatus("check-a", 1, "true")
-	metric1.Measurements = []oapi.VerificationMeasurement{measurement(oapi.Passed)}
-
-	metric2 := metricStatus("check-b", 1, "true")
-	metric2.Measurements = []oapi.VerificationMeasurement{measurement(oapi.Passed)}
-
-	v := newVerification(jobID, metric1, metric2)
-	getter := verificationGetter(v, job)
-	setter := &VerificationSetter{Getter: getter}
-
-	scope0 := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 0}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope0)
-	require.NoError(t, err)
-	assert.Nil(t, result.RequeueAfter)
-
-	assert.Contains(t, setter.Messages[v.Id], "passed")
-	require.Len(t, setter.EnqueuedTargets, 1)
-}
-
-func TestVerification_MultipleMetrics_OneRunning_StaysRunning(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric1 := metricStatus("check-a", 1, "true")
-	metric1.Measurements = []oapi.VerificationMeasurement{measurement(oapi.Passed)}
-
-	metric2 := metricStatus("check-b", 3, "true")
-
-	v := newVerification(jobID, metric1, metric2)
-	getter := verificationGetter(v, job)
-	setter := &VerificationSetter{Getter: getter}
-
-	scope0 := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 0}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope0)
-	require.NoError(t, err)
-
-	assert.Nil(t, result.RequeueAfter)
-	assert.Empty(t, setter.Messages, "should not set message while metric-b is still running")
-	assert.Empty(t, setter.EnqueuedTargets, "should not enqueue while metric-b is still running")
-}
-
-func TestVerification_MultipleMetrics_OneFails_OverallFails(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric1 := metricStatus("check-a", 1, "true")
-	metric1.Measurements = []oapi.VerificationMeasurement{measurement(oapi.Passed)}
-
-	metric2 := metricStatus("check-b", 3, "false")
-	metric2.Measurements = []oapi.VerificationMeasurement{measurement(oapi.Failed)}
-
-	v := newVerification(jobID, metric1, metric2)
-	getter := verificationGetter(v, job)
-	setter := &VerificationSetter{Getter: getter}
-
-	scope1 := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 1}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope1)
-	require.NoError(t, err)
-	assert.Nil(t, result.RequeueAfter)
-
-	assert.Contains(t, setter.Messages[v.Id], "failed")
-	require.Len(t, setter.EnqueuedTargets, 1)
+	assert.Equal(t, metrics.VerificationPassed, setter.Completed[m.ID])
 }
 
 // ---------------------------------------------------------------------------
@@ -282,28 +133,23 @@ func TestVerification_MultipleMetrics_OneFails_OverallFails(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestVerification_SuccessThreshold_RequiresConsecutivePasses(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	threshold := 2
-	metric := metricStatus("check", 5, "true")
-	metric.SuccessThreshold = &threshold
-	metric.Measurements = []oapi.VerificationMeasurement{
-		measurement(oapi.Passed),
+	threshold := int32(2)
+	m := newMetric("check", 5, "true")
+	m.SuccessThreshold = &threshold
+	m.Measurements = []metrics.Measurement{
+		oldMeasurement(metrics.StatusPassed),
 	}
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 0}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
-	assert.Equal(t, oapi.Passed, setter.RecordedMeasurements[0].Measurement.Status)
+	assert.Equal(t, metrics.StatusPassed, setter.RecordedMeasurements[0].Measurement.Status)
 
 	assert.Nil(t, result.RequeueAfter, "two consecutive passes met threshold — complete")
-	assert.Contains(t, setter.Messages[v.Id], "passed")
+	assert.Equal(t, metrics.VerificationPassed, setter.Completed[m.ID])
 }
 
 // ---------------------------------------------------------------------------
@@ -311,18 +157,13 @@ func TestVerification_SuccessThreshold_RequiresConsecutivePasses(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestVerification_FailureThreshold_ContinuesBelowLimit(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	failureThreshold := 2
-	metric := metricStatus("check", 5, "false")
-	metric.FailureThreshold = &failureThreshold
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	failureThreshold := int32(2)
+	m := newMetric("check", 5, "false")
+	m.FailureThreshold = &failureThreshold
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 0}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	require.Len(t, setter.RecordedMeasurements, 1)
@@ -330,25 +171,20 @@ func TestVerification_FailureThreshold_ContinuesBelowLimit(t *testing.T) {
 }
 
 func TestVerification_FailureThreshold_ExceedsLimit_Stops(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	failureThreshold := 1
-	metric := metricStatus("check", 5, "false")
-	metric.FailureThreshold = &failureThreshold
-	metric.Measurements = []oapi.VerificationMeasurement{
-		measurement(oapi.Failed),
+	failureThreshold := int32(1)
+	m := newMetric("check", 5, "false")
+	m.FailureThreshold = &failureThreshold
+	m.Measurements = []metrics.Measurement{
+		oldMeasurement(metrics.StatusFailed),
 	}
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 0}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	assert.Nil(t, result.RequeueAfter, "above failure threshold — should stop")
-	assert.Contains(t, setter.Messages[v.Id], "failed")
+	assert.Equal(t, metrics.VerificationFailed, setter.Completed[m.ID])
 }
 
 // ---------------------------------------------------------------------------
@@ -356,19 +192,14 @@ func TestVerification_FailureThreshold_ExceedsLimit_Stops(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestVerification_IntervalNotElapsed_Defers(t *testing.T) {
-	jobID := uuid.New().String()
-	job := &oapi.Job{Id: jobID, ReleaseId: uuid.New().String()}
-
-	metric := metricStatus("check", 3, "true")
-	metric.Measurements = []oapi.VerificationMeasurement{
-		{Status: oapi.Passed, MeasuredAt: time.Now()},
+	m := newMetric("check", 3, "true")
+	m.Measurements = []metrics.Measurement{
+		{Status: metrics.StatusPassed, MeasuredAt: time.Now()},
 	}
-	v := newVerification(jobID, metric)
-	getter := verificationGetter(v, job)
+	getter := verificationGetter(m)
 	setter := &VerificationSetter{Getter: getter}
 
-	scope := &verification.VerificationMetricScope{VerificationID: v.Id, MetricIndex: 0}
-	result, err := verification.Reconcile(t.Context(), getter, setter, scope)
+	result, err := verificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
 	assert.Empty(t, setter.RecordedMeasurements, "should not take a measurement — interval not elapsed")

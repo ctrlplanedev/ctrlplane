@@ -1086,6 +1086,13 @@
       "when": 1772234723596,
       "tag": "0154_large_shatterstar",
       "breakpoints": true
+    },
+    {
+      "idx": 155,
+      "version": "7",
+      "when": 1772393255000,
+      "tag": "0155_medical_komodo",
+      "breakpoints": true
     }
   ]
 }

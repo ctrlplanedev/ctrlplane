@@ -5,6 +5,7 @@ import {
   boolean,
   index,
   json,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -51,6 +52,13 @@ export const job = pgTable(
       .$type<Record<string, any>>(),
 
     externalId: text("external_id"),
+
+    traceToken: text("trace_token"),
+
+    dispatchContext: jsonb("dispatch_context")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, any>>(),
 
     status: jobStatus("status").notNull().default("pending"),
     message: text("message"),
