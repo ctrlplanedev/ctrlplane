@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/jobdispatch/verification"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -33,10 +34,7 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 	}
 	span.SetAttributes(attribute.String("release.id", release.ID()))
 
-	releaseID, err := uuid.Parse(release.ID())
-	if err != nil {
-		return nil, recordErr(span, "parse release id", err)
-	}
+	releaseID := release.UUID()
 
 	existingJobs, err := getter.GetJobsForRelease(ctx, releaseID)
 	if err != nil {
@@ -72,13 +70,22 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 
 	for _, agent := range agents {
 		job := buildJob(release, &agent)
-		if err := setter.CreateJob(ctx, job); err != nil {
+
+		policySpecs, err := getter.GetVerificationPolicies(ctx, rt)
+		if err != nil {
+			return nil, recordErr(span, fmt.Sprintf("get verification policies for agent %s", agent.Id), err)
+		}
+
+		specs := verification.GatherSpecs(policySpecs, agent.Config)
+
+		if err := setter.CreateJobWithVerification(ctx, job, specs); err != nil {
 			return nil, recordErr(span, fmt.Sprintf("create job for agent %s", agent.Id), err)
 		}
 		span.AddEvent("job created",
 			trace.WithAttributes(
 				attribute.String("job.id", job.Id),
 				attribute.String("job_agent.id", agent.Id),
+				attribute.Int("verification_specs", len(specs)),
 			),
 		)
 	}

@@ -52,3 +52,8 @@ func (p *PostgresGetter) GetJobsForRelease(ctx context.Context, releaseID uuid.U
 func (p *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error) {
 	panic("unimplemented")
 }
+
+// GetVerificationPolicies implements [Getter].
+func (p *PostgresGetter) GetVerificationPolicies(ctx context.Context, rt *ReleaseTarget) ([]oapi.VerificationMetricSpec, error) {
+	panic("unimplemented")
+}

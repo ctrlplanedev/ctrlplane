@@ -12,6 +12,10 @@ type Setter interface {
 	testrunner.Setter
 	github.Setter
 
-	// CreateJob persists a new job and its release_job link row.
-	CreateJob(ctx context.Context, job *oapi.Job) error
+	// CreateJobWithVerification persists a new job and its release_job link
+	// row. When specs is non-empty it atomically creates the job, a
+	// JobVerification record (with metric statuses initialised from the
+	// specs), and enqueues one "verification" queue item per metric.
+	// When specs is empty it only creates the job.
+	CreateJobWithVerification(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error
 }

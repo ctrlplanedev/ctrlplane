@@ -26,4 +26,8 @@ type Getter interface {
 	// GetJobAgentsForDeployment returns the job agents configured for the
 	// deployment, including merged config from agent + deployment layers.
 	GetJobAgentsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]oapi.JobAgent, error)
+
+	// GetVerificationPolicies returns the verification metric specs from
+	// policy_rule_verification rows that match the given release target.
+	GetVerificationPolicies(ctx context.Context, rt *ReleaseTarget) ([]oapi.VerificationMetricSpec, error)
 }
