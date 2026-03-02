@@ -5,46 +5,50 @@ import (
 	"fmt"
 	"sort"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 func NewJobs(store *Store) *Jobs {
 	return &Jobs{
-		repo:  store.repo,
+		repo:  store.repo.JobsRepo(),
 		store: store,
 	}
 }
 
 type Jobs struct {
-	repo  *memory.InMemory
+	repo  repository.JobRepo
 	store *Store
 }
 
+func (j *Jobs) SetRepo(repo repository.JobRepo) {
+	j.repo = repo
+}
+
 func (j *Jobs) Items() map[string]*oapi.Job {
-	return j.repo.Jobs.Items()
+	return j.repo.Items()
 }
 
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
-	_ = j.repo.Jobs.Set(job)
+	_ = j.repo.Set(job)
 	j.store.changeset.RecordUpsert(job)
 }
 
 func (j *Jobs) Get(id string) (*oapi.Job, bool) {
-	return j.repo.Jobs.Get(id)
+	return j.repo.Get(id)
 }
 
 func (j *Jobs) Remove(ctx context.Context, id string) {
-	job, ok := j.repo.Jobs.Get(id)
+	job, ok := j.repo.Get(id)
 	if !ok || job == nil {
 		return
 	}
-	_ = j.repo.Jobs.Remove(id)
+	_ = j.repo.Remove(id)
 	j.store.changeset.RecordDelete(job)
 }
 
 func (j *Jobs) GetPending() map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
-	for _, job := range j.repo.Jobs.Items() {
+	for _, job := range j.repo.Items() {
 		if job.Status != oapi.JobStatusPending {
 			continue
 		}
@@ -55,7 +59,7 @@ func (j *Jobs) GetPending() map[string]*oapi.Job {
 
 func (j *Jobs) GetJobsForAgent(agentId string) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
-	jobItems, err := j.repo.Jobs.GetBy("job_agent_id", agentId)
+	jobItems, err := j.repo.GetByAgentID(agentId)
 	if err != nil {
 		return nil
 	}
@@ -151,7 +155,7 @@ func (j *Jobs) GetWithRelease(id string) (*oapi.JobWithRelease, error) {
 
 func (j *Jobs) GetByWorkflowJobId(workflowJobId string) []*oapi.Job {
 	jobs := make([]*oapi.Job, 0)
-	for _, job := range j.repo.Jobs.Items() {
+	for _, job := range j.repo.Items() {
 		if job.WorkflowJobId == workflowJobId {
 			jobs = append(jobs, job)
 		}

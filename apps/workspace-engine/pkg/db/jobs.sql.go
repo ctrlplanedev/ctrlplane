@@ -12,6 +12,82 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteJobByID = `-- name: DeleteJobByID :exec
+DELETE FROM job WHERE id = $1
+`
+
+func (q *Queries) DeleteJobByID(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteJobByID, id)
+	return err
+}
+
+const deleteJobMetadataByJobID = `-- name: DeleteJobMetadataByJobID :exec
+DELETE FROM job_metadata WHERE job_id = $1
+`
+
+func (q *Queries) DeleteJobMetadataByJobID(ctx context.Context, jobID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteJobMetadataByJobID, jobID)
+	return err
+}
+
+const getJobByID = `-- name: GetJobByID :one
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+LEFT JOIN release_job rj ON rj.job_id = j.id
+WHERE j.id = $1
+`
+
+type GetJobByIDRow struct {
+	ID             uuid.UUID
+	JobAgentID     uuid.UUID
+	JobAgentConfig []byte
+	ExternalID     pgtype.Text
+	Status         JobStatus
+	Message        pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	StartedAt      pgtype.Timestamptz
+	CompletedAt    pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+	ReleaseID      uuid.UUID
+	Metadata       []byte
+}
+
+func (q *Queries) GetJobByID(ctx context.Context, id uuid.UUID) (GetJobByIDRow, error) {
+	row := q.db.QueryRow(ctx, getJobByID, id)
+	var i GetJobByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.JobAgentID,
+		&i.JobAgentConfig,
+		&i.ExternalID,
+		&i.Status,
+		&i.Message,
+		&i.CreatedAt,
+		&i.StartedAt,
+		&i.CompletedAt,
+		&i.UpdatedAt,
+		&i.ReleaseID,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const getWorkspaceIDByReleaseID = `-- name: GetWorkspaceIDByReleaseID :one
 SELECT d.workspace_id
 FROM release r
@@ -63,5 +139,210 @@ type InsertReleaseJobParams struct {
 
 func (q *Queries) InsertReleaseJob(ctx context.Context, arg InsertReleaseJobParams) error {
 	_, err := q.db.Exec(ctx, insertReleaseJob, arg.ReleaseID, arg.JobID)
+	return err
+}
+
+const listJobsByAgentID = `-- name: ListJobsByAgentID :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+LEFT JOIN release_job rj ON rj.job_id = j.id
+WHERE j.job_agent_id = $1
+`
+
+type ListJobsByAgentIDRow struct {
+	ID             uuid.UUID
+	JobAgentID     uuid.UUID
+	JobAgentConfig []byte
+	ExternalID     pgtype.Text
+	Status         JobStatus
+	Message        pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	StartedAt      pgtype.Timestamptz
+	CompletedAt    pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+	ReleaseID      uuid.UUID
+	Metadata       []byte
+}
+
+func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID uuid.UUID) ([]ListJobsByAgentIDRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByAgentID, jobAgentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByAgentIDRow
+	for rows.Next() {
+		var i ListJobsByAgentIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ExternalID,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.UpdatedAt,
+			&i.ReleaseID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByWorkspaceID = `-- name: ListJobsByWorkspaceID :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+JOIN deployment d ON d.id = r.deployment_id
+WHERE d.workspace_id = $1
+`
+
+type ListJobsByWorkspaceIDRow struct {
+	ID             uuid.UUID
+	JobAgentID     uuid.UUID
+	JobAgentConfig []byte
+	ExternalID     pgtype.Text
+	Status         JobStatus
+	Message        pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	StartedAt      pgtype.Timestamptz
+	CompletedAt    pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+	ReleaseID      uuid.UUID
+	Metadata       []byte
+}
+
+func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListJobsByWorkspaceIDRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByWorkspaceID, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByWorkspaceIDRow
+	for rows.Next() {
+		var i ListJobsByWorkspaceIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ExternalID,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.UpdatedAt,
+			&i.ReleaseID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertJob = `-- name: UpsertJob :exec
+INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+ON CONFLICT (id) DO UPDATE
+SET job_agent_id = EXCLUDED.job_agent_id,
+    job_agent_config = EXCLUDED.job_agent_config,
+    external_id = EXCLUDED.external_id,
+    status = EXCLUDED.status,
+    message = EXCLUDED.message,
+    started_at = EXCLUDED.started_at,
+    completed_at = EXCLUDED.completed_at,
+    updated_at = EXCLUDED.updated_at
+`
+
+type UpsertJobParams struct {
+	ID             uuid.UUID
+	JobAgentID     uuid.UUID
+	JobAgentConfig []byte
+	ExternalID     pgtype.Text
+	Status         JobStatus
+	Message        pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	StartedAt      pgtype.Timestamptz
+	CompletedAt    pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+}
+
+func (q *Queries) UpsertJob(ctx context.Context, arg UpsertJobParams) error {
+	_, err := q.db.Exec(ctx, upsertJob,
+		arg.ID,
+		arg.JobAgentID,
+		arg.JobAgentConfig,
+		arg.ExternalID,
+		arg.Status,
+		arg.Message,
+		arg.CreatedAt,
+		arg.StartedAt,
+		arg.CompletedAt,
+		arg.UpdatedAt,
+	)
+	return err
+}
+
+const upsertJobMetadata = `-- name: UpsertJobMetadata :exec
+INSERT INTO job_metadata (job_id, key, value)
+VALUES ($1, $2, $3)
+ON CONFLICT (job_id, key) DO UPDATE
+SET value = EXCLUDED.value
+`
+
+type UpsertJobMetadataParams struct {
+	JobID uuid.UUID
+	Key   string
+	Value string
+}
+
+func (q *Queries) UpsertJobMetadata(ctx context.Context, arg UpsertJobMetadataParams) error {
+	_, err := q.db.Exec(ctx, upsertJobMetadata, arg.JobID, arg.Key, arg.Value)
 	return err
 }

@@ -680,6 +680,35 @@ func (s *InMemory) SystemEnvironments() repository.SystemEnvironmentRepo {
 	}
 }
 
+// jobRepoAdapter wraps an indexstore.Store to satisfy the JobRepo interface.
+type jobRepoAdapter struct {
+	store *indexstore.Store[*oapi.Job]
+}
+
+func (a *jobRepoAdapter) Get(id string) (*oapi.Job, bool) {
+	return a.store.Get(id)
+}
+
+func (a *jobRepoAdapter) Set(entity *oapi.Job) error {
+	return a.store.Set(entity)
+}
+
+func (a *jobRepoAdapter) Remove(id string) error {
+	return a.store.Remove(id)
+}
+
+func (a *jobRepoAdapter) Items() map[string]*oapi.Job {
+	return a.store.Items()
+}
+
+func (a *jobRepoAdapter) GetByAgentID(agentID string) ([]*oapi.Job, error) {
+	return a.store.GetBy("job_agent_id", agentID)
+}
+
+func (s *InMemory) JobsRepo() repository.JobRepo {
+	return &jobRepoAdapter{store: s.Jobs}
+}
+
 // RestoreLinks rebuilds the in-memory link stores from the persisted link entities.
 // This should be called after Router().Apply() loads data from persistence.
 func (s *InMemory) RestoreLinks() {
