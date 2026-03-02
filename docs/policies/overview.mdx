@@ -44,7 +44,8 @@ A policy consists of:
 2. **Selector** - A CEL expression defining which release targets the policy
    applies to
 3. **Rules** - One or more rules specifying behavior or requirements
-4. **Priority** - Higher priority policies are evaluated first
+4. **Priority** - Higher numeric value = higher priority. For the same rule
+   type, the highest priority policy wins.
 5. **Metadata** - Arbitrary key-value pairs for organization
 
 <Tabs>
@@ -290,8 +291,10 @@ When a release is created, Ctrlplane:
 
 1. **Finds matching policies** - Evaluates the `selector` CEL expression
    against each release target
-2. **Merges rules** - Combines rules from all matching policies
-3. **Applies rules** - Enforces each rule type
+2. **Resolves rules by priority** - For each rule type, only the highest
+   priority policy's rule is used. Different rule types are combined across
+   policies.
+3. **Applies rules** - Enforces each resolved rule type
 
 ### Rule Interactions
 

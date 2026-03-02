@@ -743,6 +743,12 @@ func PolicyID(id string) PolicyOption {
 	}
 }
 
+func PolicyPriority(priority int) PolicyOption {
+	return func(_ *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
+		p.Priority = priority
+	}
+}
+
 // WithPolicySelector sets the policy's CEL selector expression.
 func WithPolicySelector(cel string) PolicyOption {
 	return func(_ *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
