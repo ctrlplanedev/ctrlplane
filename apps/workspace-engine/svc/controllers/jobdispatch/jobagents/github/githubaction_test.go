@@ -71,8 +71,6 @@ func (m *mockSetter) getCalls() []updateCall {
 
 // ----- Helpers -----
 
-func ptr[T any](v T) *T { return &v }
-
 func validConfig() oapi.JobAgentConfig {
 	return oapi.JobAgentConfig{
 		"installationId": float64(12345),

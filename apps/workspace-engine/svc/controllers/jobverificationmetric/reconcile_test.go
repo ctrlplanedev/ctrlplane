@@ -161,8 +161,6 @@ func reconcileItem(scopeID, kind string) reconcile.Item {
 
 func int32Ptr(i int32) *int32 { return &i }
 
-func strPtr(s string) *string { return &s }
-
 // ---------------------------------------------------------------------------
 // Controller.Process tests
 // ---------------------------------------------------------------------------
