@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/workspace/jobagents/terraformcloud"
 	"workspace-engine/pkg/workspace/jobagents/testrunner"
 	"workspace-engine/pkg/workspace/jobagents/types"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -19,13 +18,13 @@ type Registry struct {
 	store       *store.Store
 }
 
-func NewRegistry(store *store.Store, verifications *verification.Manager) *Registry {
+func NewRegistry(store *store.Store) *Registry {
 	r := &Registry{}
 	r.dispatchers = make(map[string]types.Dispatchable)
 	r.store = store
 
 	r.Register(testrunner.New(store))
-	r.Register(argo.NewArgoApplication(store, verifications))
+	r.Register(argo.NewArgoApplication(store))
 	r.Register(terraformcloud.NewTFE(store))
 	r.Register(github.NewGithubAction(store))
 

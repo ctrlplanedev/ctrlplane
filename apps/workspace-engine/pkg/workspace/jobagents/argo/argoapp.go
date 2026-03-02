@@ -14,7 +14,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
@@ -32,12 +31,11 @@ var tracer = otel.Tracer("workspace-engine/jobagents/argo")
 var _ types.Dispatchable = &ArgoApplication{}
 
 type ArgoApplication struct {
-	store         *store.Store
-	verifications *verification.Manager
+	store *store.Store
 }
 
-func NewArgoApplication(store *store.Store, verifications *verification.Manager) *ArgoApplication {
-	return &ArgoApplication{store: store, verifications: verifications}
+func NewArgoApplication(store *store.Store) *ArgoApplication {
+	return &ArgoApplication{store: store}
 }
 
 func (a *ArgoApplication) Type() string {
@@ -75,12 +73,6 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 		if err := a.upsertApplicationWithRetry(asyncCtx, app, appClient); err != nil {
 			a.sendJobFailureEvent(job, fmt.Sprintf("failed to upsert application: %s", err.Error()))
-			return
-		}
-
-		verification := newArgoApplicationVerification(a.verifications, job, app.Name, serverAddr, apiKey)
-		if err := verification.StartVerification(asyncCtx, job); err != nil {
-			a.sendJobFailureEvent(job, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
 		}
 
@@ -199,7 +191,6 @@ func isRetryableError(err error) bool {
 		return false
 	}
 	errStr := err.Error()
-	// Check for HTTP status codes and gRPC errors that indicate transient failures
 	return strings.Contains(errStr, "502") ||
 		strings.Contains(errStr, "503") ||
 		strings.Contains(errStr, "504") ||

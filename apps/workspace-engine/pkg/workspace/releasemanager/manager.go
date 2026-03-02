@@ -9,12 +9,10 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
 
@@ -28,13 +26,12 @@ import (
 // Manager handles the business logic for release target changes and deployment decisions.
 // It coordinates the state index, eligibility checking, and execution to manage release targets.
 type Manager struct {
-	store        *store.Store
-	planner      *deployment.Planner
-	eligibility  *deployment.JobEligibilityChecker
-	executor     *deployment.Executor
-	verification *verification.Manager
-	traceStore   PersistenceStore
-	stateIndex   *StateIndex
+	store       *store.Store
+	planner     *deployment.Planner
+	eligibility *deployment.JobEligibilityChecker
+	executor    *deployment.Executor
+	traceStore  PersistenceStore
+	stateIndex  *StateIndex
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -44,7 +41,7 @@ type PersistenceStore = trace.PersistenceStore
 
 // New creates a new release manager for a workspace.
 // traceStore must not be nil - panics if not provided.
-func New(store *store.Store, traceStore PersistenceStore, verificationManager *verification.Manager, jobAgentRegistry *jobagents.Registry) *Manager {
+func New(store *store.Store, traceStore PersistenceStore, jobAgentRegistry *jobagents.Registry) *Manager {
 	if traceStore == nil {
 		panic("traceStore cannot be nil - deployment tracing is mandatory")
 	}
@@ -58,19 +55,13 @@ func New(store *store.Store, traceStore PersistenceStore, verificationManager *v
 	executor := deployment.NewExecutor(store, jobAgentRegistry)
 	stateIndex := NewStateIndex(store, planner)
 
-	releaseManagerHooks := newReleaseManagerVerificationHooks(store, stateIndex)
-	rollbackHooks := rollback.NewRollbackHooks(store, jobAgentRegistry)
-	compositeHooks := verification.NewCompositeHooks(releaseManagerHooks, rollbackHooks)
-	verificationManager.SetHooks(compositeHooks)
-
 	return &Manager{
-		store:        store,
-		planner:      planner,
-		eligibility:  eligibility,
-		executor:     executor,
-		verification: verificationManager,
-		traceStore:   traceStore,
-		stateIndex:   stateIndex,
+		store:       store,
+		planner:     planner,
+		eligibility: eligibility,
+		executor:    executor,
+		traceStore:  traceStore,
+		stateIndex:  stateIndex,
 	}
 }
 
@@ -81,10 +72,6 @@ func New(store *store.Store, traceStore PersistenceStore, verificationManager *v
 type targetState struct {
 	entity   *oapi.ReleaseTarget
 	isDelete bool
-}
-
-func (m *Manager) VerificationManager() *verification.Manager {
-	return m.verification
 }
 
 // ProcessChanges handles detected changes to release targets (WRITES TO STORE).
@@ -525,12 +512,6 @@ func (m *Manager) Scheduler() *deployment.ReconciliationScheduler {
 func (m *Manager) Restore(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "ReleaseManager.Restore")
 	defer span.End()
-
-	if err := m.verification.Restore(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to restore verifications")
-		log.Error("failed to restore verifications", "error", err.Error())
-	}
 
 	// Pre-compute the state index for every release target that was restored
 	// from persistence.  This avoids per-request lazy registration and ensures
