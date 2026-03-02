@@ -7,6 +7,7 @@ type Repo interface {
 	Resources() ResourceRepo
 	Systems() SystemRepo
 	JobAgents() JobAgentRepo
+	Jobs() JobRepo
 	ResourceProviders() ResourceProviderRepo
 	Releases() ReleaseRepo
 	SystemDeployments() SystemDeploymentRepo

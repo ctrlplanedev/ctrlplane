@@ -179,6 +179,18 @@ type ResourceVariableRepo interface {
 	BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error
 }
 
+// JobRepo defines the contract for job storage.
+type JobRepo interface {
+	Get(id string) (*oapi.Job, bool)
+	Set(entity *oapi.Job) error
+	Remove(id string) error
+	Items() map[string]*oapi.Job
+	GetByReleaseID(releaseID string) ([]*oapi.Job, error)
+	GetByJobAgentID(jobAgentID string) ([]*oapi.Job, error)
+	GetByWorkflowJobID(workflowJobID string) ([]*oapi.Job, error)
+	GetByStatus(status oapi.JobStatus) ([]*oapi.Job, error)
+}
+
 // UserApprovalRecordRepo defines the contract for user approval record storage.
 type UserApprovalRecordRepo interface {
 	Get(key string) (*oapi.UserApprovalRecord, bool)

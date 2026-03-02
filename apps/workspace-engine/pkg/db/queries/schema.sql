@@ -287,3 +287,28 @@ CREATE TABLE resource_variable (
     value JSONB NOT NULL,
     PRIMARY KEY (resource_id, key)
 );
+
+CREATE TYPE job_status AS ENUM (
+    'action_required', 'cancelled', 'external_run_not_found', 'failure',
+    'in_progress', 'invalid_integration', 'invalid_job_agent',
+    'pending', 'skipped', 'successful'
+);
+
+CREATE TABLE job (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    release_id UUID NOT NULL,
+    job_agent_id UUID,
+    workflow_job_id UUID NOT NULL,
+    status job_status NOT NULL DEFAULT 'pending',
+    reason TEXT NOT NULL DEFAULT 'policy_passing',
+    external_id TEXT,
+    message TEXT,
+    trace_token TEXT,
+    job_agent_config JSONB NOT NULL DEFAULT '{}',
+    dispatch_context JSONB,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ
+);

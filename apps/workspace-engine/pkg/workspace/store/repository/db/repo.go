@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/db/deploymentversions"
 	"workspace-engine/pkg/workspace/store/repository/db/environments"
 	"workspace-engine/pkg/workspace/store/repository/db/jobagents"
+	"workspace-engine/pkg/workspace/store/repository/db/jobs"
 	"workspace-engine/pkg/workspace/store/repository/db/policies"
 	"workspace-engine/pkg/workspace/store/repository/db/releases"
 	"workspace-engine/pkg/workspace/store/repository/db/resourceproviders"
@@ -27,6 +28,7 @@ type DBRepo struct {
 	resources                repository.ResourceRepo
 	systems                  repository.SystemRepo
 	jobAgents                repository.JobAgentRepo
+	jobs                     repository.JobRepo
 	resourceProviders        repository.ResourceProviderRepo
 	releases                 repository.ReleaseRepo
 	systemDeployments        repository.SystemDeploymentRepo
@@ -64,6 +66,10 @@ func (d *DBRepo) Systems() repository.SystemRepo {
 
 func (d *DBRepo) JobAgents() repository.JobAgentRepo {
 	return d.jobAgents
+}
+
+func (d *DBRepo) Jobs() repository.JobRepo {
+	return d.jobs
 }
 
 func (d *DBRepo) ResourceProviders() repository.ResourceProviderRepo {
@@ -126,6 +132,7 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		resources:                resources.NewRepo(ctx, workspaceID),
 		systems:                  systems.NewRepo(ctx, workspaceID),
 		jobAgents:                jobagents.NewRepo(ctx, workspaceID),
+		jobs:                     jobs.NewRepo(ctx, workspaceID),
 		resourceProviders:        resourceproviders.NewRepo(ctx, workspaceID),
 		releases:                 releases.NewRepo(ctx, workspaceID),
 		systemDeployments:        systemdeployments.NewRepo(ctx),

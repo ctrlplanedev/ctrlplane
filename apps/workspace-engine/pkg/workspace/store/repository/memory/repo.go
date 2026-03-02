@@ -60,7 +60,7 @@ func New(wsId string) *InMemory {
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		systems:                  createTypedStore[*oapi.System](router, "system"),
 		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
-		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
+		jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		userApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
@@ -100,7 +100,7 @@ type InMemory struct {
 	releases         *indexstore.Store[*oapi.Release]
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
-	Jobs      *indexstore.Store[*oapi.Job]
+	jobs      *indexstore.Store[*oapi.Job]
 	jobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
 
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]
@@ -146,6 +146,41 @@ func (a *releaseRepoAdapter) GetByReleaseTargetKey(key string) ([]*oapi.Release,
 // Releases implements repository.Repo.
 func (s *InMemory) Releases() repository.ReleaseRepo {
 	return &releaseRepoAdapter{s.releases}
+}
+
+type jobRepoAdapter struct {
+	*indexstore.Store[*oapi.Job]
+}
+
+func (a *jobRepoAdapter) GetByReleaseID(releaseID string) ([]*oapi.Job, error) {
+	return a.GetBy("release_id", releaseID)
+}
+
+func (a *jobRepoAdapter) GetByJobAgentID(jobAgentID string) ([]*oapi.Job, error) {
+	return a.GetBy("job_agent_id", jobAgentID)
+}
+
+func (a *jobRepoAdapter) GetByWorkflowJobID(workflowJobID string) ([]*oapi.Job, error) {
+	var result []*oapi.Job
+	for _, job := range a.Items() {
+		if job.WorkflowJobId == workflowJobID {
+			result = append(result, job)
+		}
+	}
+	return result, nil
+}
+
+func (a *jobRepoAdapter) GetByStatus(status oapi.JobStatus) ([]*oapi.Job, error) {
+	return a.GetBy("status", string(status))
+}
+
+func (s *InMemory) Jobs() repository.JobRepo {
+	return &jobRepoAdapter{s.jobs}
+}
+
+// JobsStore returns the raw indexstore for legacy migration access.
+func (s *InMemory) JobsStore() *indexstore.Store[*oapi.Job] {
+	return s.jobs
 }
 
 // cmapRepoAdapter wraps a cmap.ConcurrentMap to satisfy a basic entity repo interface.

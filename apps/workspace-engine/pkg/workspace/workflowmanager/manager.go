@@ -128,7 +128,9 @@ func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inpu
 		if err != nil {
 			return nil, fmt.Errorf("failed to create job for workflow job %q: %w", wfJob.Id, err)
 		}
-		m.store.Jobs.Upsert(ctx, job)
+		if err := m.store.Jobs.Upsert(ctx, job); err != nil {
+			return nil, fmt.Errorf("failed to upsert job for workflow job %q: %w", wfJob.Id, err)
+		}
 		if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
 			return nil, fmt.Errorf("failed to dispatch job: %w", err)
 		}

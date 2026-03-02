@@ -5,6 +5,7 @@ import {
   boolean,
   index,
   json,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -15,6 +16,8 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 
 import { jobAgent } from "./job-agent.js";
+import { release } from "./release.js";
+import { workflowJob } from "./workflow.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -50,11 +53,33 @@ export const job = pgTable(
       .default("{}")
       .$type<Record<string, any>>(),
 
+    releaseId: uuid("release_id")
+      .notNull()
+      .references(() => release.id),
+    workflowJobId: uuid("workflow_job_id")
+      .notNull()
+      .references(() => workflowJob.id),
+
     externalId: text("external_id"),
+    traceToken: text("trace_token"),
 
     status: jobStatus("status").notNull().default("pending"),
     message: text("message"),
     reason: jobReason("reason").notNull().default("policy_passing"),
+
+    dispatchContext: jsonb("dispatch_context").$type<{
+      deployment?: Record<string, any>;
+      environment?: Record<string, any>;
+      jobAgent: Record<string, any>;
+      jobAgentConfig: Record<string, any>;
+      release?: Record<string, any>;
+      resource?: Record<string, any>;
+      variables?: Record<string, Record<string, any>>;
+      version?: Record<string, any>;
+      workflow?: Record<string, any>;
+      workflowJob?: Record<string, any>;
+      workflowRun?: Record<string, any>;
+    }>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -76,6 +101,14 @@ export const jobRelations = relations(job, ({ many, one }) => ({
   agent: one(jobAgent, {
     fields: [job.jobAgentId],
     references: [jobAgent.id],
+  }),
+  release: one(release, {
+    fields: [job.releaseId],
+    references: [release.id],
+  }),
+  workflowJob: one(workflowJob, {
+    fields: [job.workflowJobId],
+    references: [workflowJob.id],
   }),
   metadata: many(jobMetadata),
   variables: many(jobVariable),
@@ -107,6 +140,7 @@ export const updateJob = createInsertSchema(job)
   .omit({
     id: true,
     jobAgentConfig: true,
+    dispatchContext: true,
     createdAt: true,
   })
   .partial();

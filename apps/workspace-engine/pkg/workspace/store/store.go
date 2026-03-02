@@ -187,6 +187,15 @@ func WithDBResourceVariables(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBJobs replaces the default in-memory JobRepo
+// with a DB-backed implementation.
+func WithDBJobs(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Jobs.SetRepo(dbRepo.Jobs())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -445,6 +454,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.ResourceVariables.repo.Set(rv); err != nil {
 			log.Warn("Failed to migrate legacy resource variable",
 				"key", rv.ID(), "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy jobs")
+	}
+	for _, job := range s.repo.JobsStore().Items() {
+		if err := s.Jobs.repo.Set(job); err != nil {
+			log.Warn("Failed to migrate legacy job",
+				"job_id", job.Id, "error", err)
 		}
 	}
 

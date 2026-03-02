@@ -99,7 +99,9 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		CompletedAt: &completedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, job)
+	if err := s.Jobs.Upsert(ctx, job); err != nil {
+		panic(err)
+	}
 
 	return release, job
 }
@@ -300,7 +302,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 		CompletedAt: &olderJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, olderJob)
+	assert.NoError(t, s.Jobs.Upsert(ctx, olderJob))
 
 	olderVerification := createVerificationWithStatus(s, ctx, olderJob.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
 	require.Equal(t, oapi.JobVerificationStatusPassed, olderVerification.Status())
@@ -331,7 +333,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 		CompletedAt: &newerJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, newerJob)
+	assert.NoError(t, s.Jobs.Upsert(ctx, newerJob))
 
 	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusFailed, time.Now())
 	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
@@ -415,7 +417,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 		CompletedAt: &olderJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, olderJob)
+	assert.NoError(t, s.Jobs.Upsert(ctx, olderJob))
 
 	olderVerification := createVerificationWithStatus(s, ctx, olderJob.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
 	require.Equal(t, oapi.JobVerificationStatusPassed, olderVerification.Status())
@@ -446,7 +448,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 		CompletedAt: &newerJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, newerJob)
+	assert.NoError(t, s.Jobs.Upsert(ctx, newerJob))
 
 	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusRunning, time.Now())
 	require.Equal(t, oapi.JobVerificationStatusRunning, newerVerification.Status())
@@ -557,7 +559,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 		CompletedAt: &olderJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, olderJob)
+	assert.NoError(t, s.Jobs.Upsert(ctx, olderJob))
 
 	// Create newer release with cancelled verification (represented as failed with failure limit exceeded)
 	newerVersionId := uuid.New().String()
@@ -585,7 +587,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 		CompletedAt: &newerJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
 	}
-	s.Jobs.Upsert(ctx, newerJob)
+	assert.NoError(t, s.Jobs.Upsert(ctx, newerJob))
 
 	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusCancelled, time.Now())
 	// Cancelled verification will show as failed when exceeding failure limit

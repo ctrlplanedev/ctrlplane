@@ -57,6 +57,56 @@ func (ns NullDeploymentVersionStatus) Value() (driver.Value, error) {
 	return string(ns.DeploymentVersionStatus), nil
 }
 
+type JobStatus string
+
+const (
+	JobStatusActionRequired      JobStatus = "action_required"
+	JobStatusCancelled           JobStatus = "cancelled"
+	JobStatusExternalRunNotFound JobStatus = "external_run_not_found"
+	JobStatusFailure             JobStatus = "failure"
+	JobStatusInProgress          JobStatus = "in_progress"
+	JobStatusInvalidIntegration  JobStatus = "invalid_integration"
+	JobStatusInvalidJobAgent     JobStatus = "invalid_job_agent"
+	JobStatusPending             JobStatus = "pending"
+	JobStatusSkipped             JobStatus = "skipped"
+	JobStatusSuccessful          JobStatus = "successful"
+)
+
+func (e *JobStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JobStatus(s)
+	case string:
+		*e = JobStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JobStatus: %T", src)
+	}
+	return nil
+}
+
+type NullJobStatus struct {
+	JobStatus JobStatus
+	Valid     bool // Valid is true if JobStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJobStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.JobStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JobStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJobStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JobStatus), nil
+}
+
 type ChangelogEntry struct {
 	WorkspaceID uuid.UUID
 	EntityType  string
@@ -115,6 +165,25 @@ type Environment struct {
 	Metadata         map[string]string
 	CreatedAt        pgtype.Timestamptz
 	WorkspaceID      uuid.UUID
+}
+
+type Job struct {
+	ID              uuid.UUID
+	ReleaseID       uuid.UUID
+	JobAgentID      uuid.UUID
+	WorkflowJobID   uuid.UUID
+	Status          JobStatus
+	Reason          string
+	ExternalID      pgtype.Text
+	Message         pgtype.Text
+	TraceToken      pgtype.Text
+	JobAgentConfig  map[string]any
+	DispatchContext []byte
+	Metadata        map[string]string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
 }
 
 type JobAgent struct {

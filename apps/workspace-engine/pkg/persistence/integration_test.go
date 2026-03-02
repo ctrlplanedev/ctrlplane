@@ -490,7 +490,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.JobAgents.Get(jobAgent.Id)
 	assert.True(t, ok, "JobAgent should be restored")
 
-	_, ok = testStore.Repo().Jobs.Get(job.Id)
+	_, ok = testStore.Repo().JobsStore().Get(job.Id)
 	assert.True(t, ok, "Job should be restored")
 
 	_, ok = testStore.Repo().RelationshipRules.Get(relationshipRule.Id)
@@ -669,19 +669,19 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	assert.Equal(t, "v1.2.3", restoredRelease.Version.Tag)
 
 	// Verify all jobs are restored with their statuses
-	restoredJobPending, ok := newStore.Repo().Jobs.Get(jobPending.Id)
+	restoredJobPending, ok := newStore.Repo().JobsStore().Get(jobPending.Id)
 	require.True(t, ok, "Pending job should be restored")
 	assert.Equal(t, "pending", string(restoredJobPending.Status))
 
-	restoredJobInProgress, ok := newStore.Repo().Jobs.Get(jobInProgress.Id)
+	restoredJobInProgress, ok := newStore.Repo().JobsStore().Get(jobInProgress.Id)
 	require.True(t, ok, "In-progress job should be restored")
 	assert.Equal(t, "in_progress", string(restoredJobInProgress.Status))
 
-	restoredJobCompleted, ok := newStore.Repo().Jobs.Get(jobCompleted.Id)
+	restoredJobCompleted, ok := newStore.Repo().JobsStore().Get(jobCompleted.Id)
 	require.True(t, ok, "Completed job should be restored")
 	assert.Equal(t, "completed", string(restoredJobCompleted.Status))
 
-	allJobs := newStore.Repo().Jobs.Items()
+	allJobs := newStore.Repo().JobsStore().Items()
 	count := len(allJobs)
 
 	// Verify all jobs are present

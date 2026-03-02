@@ -23,6 +23,7 @@ sql:
       - queries/resource_variables.sql
       - queries/deployment_variables.sql
       - queries/workflows.sql
+      - queries/jobs.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -142,3 +143,14 @@ sql:
           - column: "workflow_job.config"
             go_type:
               type: "map[string]any"
+
+          # Job
+          - column: "job.job_agent_config"
+            go_type:
+              type: "map[string]any"
+          - column: "job.dispatch_context"
+            go_type:
+              type: "[]byte"
+          - column: "job.metadata"
+            go_type:
+              type: "map[string]string"

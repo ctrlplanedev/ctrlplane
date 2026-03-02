@@ -218,7 +218,7 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 	job1 := store.Jobs.GetByWorkflowJobId(wfJobs[0].Id)[0]
 	job1.CompletedAt = &now
 	job1.Status = oapi.JobStatusSuccessful
-	store.Jobs.Upsert(ctx, job1)
+	assert.NoError(t, store.Jobs.Upsert(ctx, job1))
 
 	wfv, _ = NewWorkflowRunView(store, wfRun.Id)
 	assert.False(t, wfv.IsComplete())
@@ -226,7 +226,7 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 	job2 := store.Jobs.GetByWorkflowJobId(wfJobs[1].Id)[0]
 	job2.CompletedAt = &now
 	job2.Status = oapi.JobStatusSuccessful
-	store.Jobs.Upsert(ctx, job2)
+	assert.NoError(t, store.Jobs.Upsert(ctx, job2))
 
 	wfv, _ = NewWorkflowRunView(store, wfRun.Id)
 	assert.True(t, wfv.IsComplete())

@@ -34,13 +34,13 @@ func TestRetryEvaluator_SmartDefault_OnlyCountsFailures(t *testing.T) {
 
 	// Add a successful job - should NOT count toward retry limit
 	completedAt := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-success",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-5 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	// Should still allow deployment (successful jobs don't count)
 	result := evaluator.Evaluate(ctx, release)
@@ -48,13 +48,13 @@ func TestRetryEvaluator_SmartDefault_OnlyCountsFailures(t *testing.T) {
 	assert.Contains(t, result.Message, "0/2")
 
 	// Add a failed job - should count
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2-failure",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-3 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result = evaluator.Evaluate(ctx, release)
 	assert.True(t, result.Allowed, "Should allow after 1 failure (1/2 attempts)")
@@ -79,26 +79,26 @@ func TestRetryEvaluator_SmartDefault_CountsInvalidIntegration(t *testing.T) {
 
 	// Add an invalidIntegration job - should count
 	completedAt := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-invalid",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusInvalidIntegration,
 		CreatedAt:   time.Now().Add(-1 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result := evaluator.Evaluate(ctx, release)
 	assert.True(t, result.Allowed, "Should allow after 1 invalidIntegration (1/1 attempts)")
 	assert.Contains(t, result.Message, "1/1")
 
 	// Add another invalidIntegration - should exceed limit
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2-invalid",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusInvalidIntegration,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result = evaluator.Evaluate(ctx, release)
 	assert.False(t, result.Allowed, "Should deny after 2 invalidIntegration (exceeds limit)")
@@ -122,20 +122,20 @@ func TestRetryEvaluator_SmartDefault_DoesNotCountCancelled(t *testing.T) {
 
 	// Add multiple cancelled jobs - should NOT count
 	completedAt := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-cancelled",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-5 * time.Minute),
 		CompletedAt: &completedAt,
-	})
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	}))
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2-cancelled",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-3 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	// Should still allow (cancelled jobs don't count with smart default)
 	result := evaluator.Evaluate(ctx, release)
@@ -162,46 +162,46 @@ func TestRetryEvaluator_SmartDefault_MixedStatuses(t *testing.T) {
 
 	// Non-retryable jobs (oldest) — these break the consecutive streak
 	// so they must be older than the retryable ones.
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-success",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-10 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2-cancelled",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-8 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-3-skipped",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusSkipped,
 		CreatedAt:   time.Now().Add(-6 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	// Retryable jobs (most recent consecutive) — only these count
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-4-failure",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-4 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-5-invalid",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusInvalidIntegration,
 		CreatedAt:   time.Now().Add(-2 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	// Only the 2 most recent consecutive retryable jobs count (failure + invalidIntegration)
 	result := evaluator.Evaluate(ctx, release)
@@ -209,13 +209,13 @@ func TestRetryEvaluator_SmartDefault_MixedStatuses(t *testing.T) {
 	assert.Contains(t, result.Message, "2/2")
 
 	// Add one more failure - should exceed
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-6-failure",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result = evaluator.Evaluate(ctx, release)
 	assert.False(t, result.Allowed, "Should deny: 3 retryable jobs exceeds limit of 2")
@@ -245,26 +245,26 @@ func TestRetryEvaluator_ExplicitStatuses_OverridesSmartDefault(t *testing.T) {
 	completedAt := time.Now()
 
 	// Add a failure - should NOT count (only cancelled counts)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-failure",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-5 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result := evaluator.Evaluate(ctx, release)
 	assert.True(t, result.Allowed, "Should allow (failure doesn't count, only cancelled does)")
 	assert.Contains(t, result.Message, "0/2")
 
 	// Add cancelled job - should count
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2-cancelled",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result = evaluator.Evaluate(ctx, release)
 	assert.True(t, result.Allowed, "Should allow after 1 cancelled (1/2 attempts)")
@@ -291,13 +291,13 @@ func TestRetryEvaluator_ZeroMaxRetries_CountsSuccessfulAndErrors(t *testing.T) {
 	completedAt := time.Now()
 
 	// Add a successful job - should count (strict mode: successful counts for maxRetries=0)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-success",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result := evaluator.Evaluate(ctx, release)
 	assert.False(t, result.Allowed, "Should deny: maxRetries=0 means no retries after success")
@@ -324,13 +324,13 @@ func TestRetryEvaluator_ZeroMaxRetries_AllowsAfterCancelled(t *testing.T) {
 	completedAt := time.Now()
 
 	// Add a cancelled job - should NOT count
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	assert.NoError(t, st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1-cancelled",
 		ReleaseId:   release.ID(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}))
 
 	result := evaluator.Evaluate(ctx, release)
 	assert.True(t, result.Allowed, "Should allow: cancelled jobs don't count, even with maxRetries=0")
