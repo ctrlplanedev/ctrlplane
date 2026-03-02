@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { and, desc, eq, isNull, like } from "@ctrlplane/db";
+import { and, desc, eq, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -14,19 +14,20 @@ export const deploymentTracesRouter = router({
         traceId: z.string(),
       }),
     )
-    .query(async ({ ctx, input }) => {
-      const spans = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(
-          and(
-            eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-            eq(schema.deploymentTraceSpan.traceId, input.traceId),
-          ),
-        )
-        .orderBy(schema.deploymentTraceSpan.startTime);
+    .query(() => {
+      // const spans = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(
+      //     and(
+      //       eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      //       eq(schema.deploymentTraceSpan.traceId, input.traceId),
+      //     ),
+      //   )
+      //   .orderBy(schema.deploymentTraceSpan.startTime);
 
-      return spans;
+      // return spans;
+      return [];
     }),
 
   byReleaseId: protectedProcedure
@@ -38,21 +39,22 @@ export const deploymentTracesRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ ctx, input }) => {
-      const spans = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(
-          and(
-            eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-            eq(schema.deploymentTraceSpan.releaseId, input.releaseId),
-          ),
-        )
-        .orderBy(desc(schema.deploymentTraceSpan.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+    .query(() => {
+      // const spans = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(
+      //     and(
+      //       eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      //       eq(schema.deploymentTraceSpan.releaseId, input.releaseId),
+      //     ),
+      //   )
+      //   .orderBy(desc(schema.deploymentTraceSpan.createdAt))
+      //   .limit(input.limit)
+      //   .offset(input.offset);
 
-      return spans;
+      // return spans;
+      return [];
     }),
 
   byReleaseTargetKey: protectedProcedure
@@ -64,24 +66,25 @@ export const deploymentTracesRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ ctx, input }) => {
-      const spans = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(
-          and(
-            eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-            eq(
-              schema.deploymentTraceSpan.releaseTargetKey,
-              input.releaseTargetKey,
-            ),
-          ),
-        )
-        .orderBy(desc(schema.deploymentTraceSpan.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+    .query(() => {
+      // const spans = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(
+      //     and(
+      //       eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      //       eq(
+      //         schema.deploymentTraceSpan.releaseTargetKey,
+      //         input.releaseTargetKey,
+      //       ),
+      //     ),
+      //   )
+      //   .orderBy(desc(schema.deploymentTraceSpan.createdAt))
+      //   .limit(input.limit)
+      //   .offset(input.offset);
 
-      return spans;
+      // return spans;
+      return [];
     }),
 
   byJobId: protectedProcedure
@@ -93,21 +96,22 @@ export const deploymentTracesRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ ctx, input }) => {
-      const spans = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(
-          and(
-            eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-            eq(schema.deploymentTraceSpan.jobId, input.jobId),
-          ),
-        )
-        .orderBy(desc(schema.deploymentTraceSpan.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+    .query(() => {
+      // const spans = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(
+      //     and(
+      //       eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      //       eq(schema.deploymentTraceSpan.jobId, input.jobId),
+      //     ),
+      //   )
+      //   .orderBy(desc(schema.deploymentTraceSpan.createdAt))
+      //   .limit(input.limit)
+      //   .offset(input.offset);
 
-      return spans;
+      // return spans;
+      return [];
     }),
 
   list: protectedProcedure
@@ -131,38 +135,40 @@ export const deploymentTracesRouter = router({
           .perform(Permission.DeploymentTraceList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ ctx, input }) => {
-      const conditions = [
-        eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-      ];
+    .query(() => {
+      // const conditions = [
+      //   eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      // ];
 
-      if (input.filters?.phase) {
-        conditions.push(
-          eq(schema.deploymentTraceSpan.phase, input.filters.phase),
-        );
-      }
+      // if (input.filters?.phase) {
+      //   conditions.push(
+      //     eq(schema.deploymentTraceSpan.phase, input.filters.phase),
+      //   );
+      // }
 
-      if (input.filters?.status) {
-        conditions.push(
-          eq(schema.deploymentTraceSpan.status, input.filters.status),
-        );
-      }
+      // if (input.filters?.status) {
+      //   conditions.push(
+      //     eq(schema.deploymentTraceSpan.status, input.filters.status),
+      //   );
+      // }
 
-      if (input.filters?.nodeType) {
-        conditions.push(
-          eq(schema.deploymentTraceSpan.nodeType, input.filters.nodeType),
-        );
-      }
+      // if (input.filters?.nodeType) {
+      //   conditions.push(
+      //     eq(schema.deploymentTraceSpan.nodeType, input.filters.nodeType),
+      //   );
+      // }
 
-      const spans = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(and(...conditions))
-        .orderBy(desc(schema.deploymentTraceSpan.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+      // const spans = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(and(...conditions))
+      //   .orderBy(desc(schema.deploymentTraceSpan.createdAt))
+      //   .limit(input.limit)
+      //   .offset(input.offset);
 
-      return spans;
+      // return spans;
+
+      return [];
     }),
 
   listRootSpans: protectedProcedure
@@ -211,20 +217,21 @@ export const deploymentTracesRouter = router({
           .perform(Permission.DeploymentTraceGet)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ ctx, input }) => {
-      const children = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(
-          and(
-            eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-            eq(schema.deploymentTraceSpan.traceId, input.traceId),
-            eq(schema.deploymentTraceSpan.parentSpanId, input.spanId),
-          ),
-        )
-        .orderBy(schema.deploymentTraceSpan.sequence);
+    .query(() => {
+      // const children = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(
+      //     and(
+      //       eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      //       eq(schema.deploymentTraceSpan.traceId, input.traceId),
+      //       eq(schema.deploymentTraceSpan.parentSpanId, input.spanId),
+      //     ),
+      //   )
+      //   .orderBy(schema.deploymentTraceSpan.sequence);
 
-      return children;
+      // return children;
+      return [];
     }),
 
   getUniqueTraces: protectedProcedure
@@ -245,50 +252,52 @@ export const deploymentTracesRouter = router({
           .perform(Permission.DeploymentTraceList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ ctx, input }) => {
-      const conditions = [
-        eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
-        // Only get root spans to represent unique traces
-        isNull(schema.deploymentTraceSpan.parentSpanId),
-      ];
+    .query(() => {
+      // const conditions = [
+      //   eq(schema.deploymentTraceSpan.workspaceId, input.workspaceId),
+      //   // Only get root spans to represent unique traces
+      //   isNull(schema.deploymentTraceSpan.parentSpanId),
+      // ];
 
-      // Filter by deploymentId - releaseTargetKey format is "resourceId-environmentId-deploymentId"
-      if (input.deploymentId) {
-        conditions.push(
-          like(
-            schema.deploymentTraceSpan.releaseTargetKey,
-            `%-${input.deploymentId}`,
-          ),
-        );
-      }
+      // // Filter by deploymentId - releaseTargetKey format is "resourceId-environmentId-deploymentId"
+      // if (input.deploymentId) {
+      //   conditions.push(
+      //     like(
+      //       schema.deploymentTraceSpan.releaseTargetKey,
+      //       `%-${input.deploymentId}`,
+      //     ),
+      //   );
+      // }
 
-      if (input.releaseId) {
-        conditions.push(
-          eq(schema.deploymentTraceSpan.releaseId, input.releaseId),
-        );
-      }
+      // if (input.releaseId) {
+      //   conditions.push(
+      //     eq(schema.deploymentTraceSpan.releaseId, input.releaseId),
+      //   );
+      // }
 
-      if (input.releaseTargetKey) {
-        conditions.push(
-          eq(
-            schema.deploymentTraceSpan.releaseTargetKey,
-            input.releaseTargetKey,
-          ),
-        );
-      }
+      // if (input.releaseTargetKey) {
+      //   conditions.push(
+      //     eq(
+      //       schema.deploymentTraceSpan.releaseTargetKey,
+      //       input.releaseTargetKey,
+      //     ),
+      //   );
+      // }
 
-      if (input.jobId) {
-        conditions.push(eq(schema.deploymentTraceSpan.jobId, input.jobId));
-      }
+      // if (input.jobId) {
+      //   conditions.push(eq(schema.deploymentTraceSpan.jobId, input.jobId));
+      // }
 
-      const traces = await ctx.db
-        .select()
-        .from(schema.deploymentTraceSpan)
-        .where(and(...conditions))
-        .orderBy(desc(schema.deploymentTraceSpan.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+      // const traces = await ctx.db
+      //   .select()
+      //   .from(schema.deploymentTraceSpan)
+      //   .where(and(...conditions))
+      //   .orderBy(desc(schema.deploymentTraceSpan.createdAt))
+      //   .limit(input.limit)
+      //   .offset(input.offset);
 
-      return traces;
+      // return traces;
+
+      return [];
     }),
 });
