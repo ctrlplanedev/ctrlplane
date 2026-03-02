@@ -152,7 +152,6 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 					job.Status = oapi.JobStatusCancelled
 					job.UpdatedAt = time.Now()
 					m.store.Jobs.Upsert(ctx, job)
-					fmt.Printf("cancelled job: %+v\n", job)
 					jobsCancelled++
 				}
 			}

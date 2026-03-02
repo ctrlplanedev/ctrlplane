@@ -55,7 +55,7 @@ func (r *Releases) Remove(ctx context.Context, id string) {
 
 func (r *Releases) Jobs(releaseId string) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
-	jobItems, err := r.store.repo.Jobs.GetBy("release_id", releaseId)
+	jobItems, err := r.store.Jobs.repo.GetByReleaseID(releaseId)
 	if err != nil {
 		return jobs
 	}

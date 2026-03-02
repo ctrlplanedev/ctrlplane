@@ -221,6 +221,80 @@ func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID uuid.UUID) (
 	return items, nil
 }
 
+const listJobsByReleaseID = `-- name: ListJobsByReleaseID :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.dispatch_context,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+WHERE rj.release_id = $1
+`
+
+type ListJobsByReleaseIDRow struct {
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	DispatchContext []byte
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	ReleaseID       uuid.UUID
+	Metadata        []byte
+}
+
+func (q *Queries) ListJobsByReleaseID(ctx context.Context, releaseID uuid.UUID) ([]ListJobsByReleaseIDRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByReleaseID, releaseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByReleaseIDRow
+	for rows.Next() {
+		var i ListJobsByReleaseIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ExternalID,
+			&i.DispatchContext,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.UpdatedAt,
+			&i.ReleaseID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listJobsByWorkspaceID = `-- name: ListJobsByWorkspaceID :many
 SELECT
   j.id,

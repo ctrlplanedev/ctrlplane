@@ -108,6 +108,29 @@ JOIN job_agent ja ON ja.id = j.job_agent_id
 WHERE ja.workspace_id = $1
   AND NOT EXISTS (SELECT 1 FROM release_job rj WHERE rj.job_id = j.id);
 
+-- name: ListJobsByReleaseID :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.dispatch_context,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+WHERE rj.release_id = $1;
+
 -- name: ListJobsByAgentID :many
 SELECT
   j.id,

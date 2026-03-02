@@ -104,6 +104,24 @@ func (r *Repo) Items() map[string]*oapi.Job {
 	return result
 }
 
+func (r *Repo) GetByReleaseID(releaseID string) ([]*oapi.Job, error) {
+	uid, err := uuid.Parse(releaseID)
+	if err != nil {
+		return nil, fmt.Errorf("parse release id: %w", err)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListJobsByReleaseID(r.ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("list jobs by release: %w", err)
+	}
+
+	result := make([]*oapi.Job, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, ToOapi(fromReleaseRow(row)))
+	}
+	return result, nil
+}
+
 func (r *Repo) GetByAgentID(agentID string) ([]*oapi.Job, error) {
 	uid, err := uuid.Parse(agentID)
 	if err != nil {

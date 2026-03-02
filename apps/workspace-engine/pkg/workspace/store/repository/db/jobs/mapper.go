@@ -48,6 +48,16 @@ func fromWorkspaceRow(r db.ListJobsByWorkspaceIDRow) jobRow {
 	}
 }
 
+func fromReleaseRow(r db.ListJobsByReleaseIDRow) jobRow {
+	return jobRow{
+		ID: r.ID, JobAgentID: r.JobAgentID, JobAgentConfig: r.JobAgentConfig,
+		ExternalID: r.ExternalID, DispatchContext: r.DispatchContext,
+		Status: r.Status, Message: r.Message,
+		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, CompletedAt: r.CompletedAt,
+		UpdatedAt: r.UpdatedAt, ReleaseID: r.ReleaseID, Metadata: r.Metadata,
+	}
+}
+
 func fromAgentRow(r db.ListJobsByAgentIDRow) jobRow {
 	return jobRow{
 		ID: r.ID, JobAgentID: r.JobAgentID, JobAgentConfig: r.JobAgentConfig,
