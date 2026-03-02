@@ -93,8 +93,8 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 
 		if err := s.Queue.Enqueue(ctx, reconcile.EnqueueParams{
 			WorkspaceID: workspaceID.String(),
-			Kind:        "verification-metric",
-			ScopeType:   "verification-metric",
+			Kind:        "job-verification-metric",
+			ScopeType:   "job-verification-metric",
 			ScopeID:     metric.ID.String(),
 		}); err != nil {
 			return fmt.Errorf("enqueue verification metric %q: %w", spec.Name, err)

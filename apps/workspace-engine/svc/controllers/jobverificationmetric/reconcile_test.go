@@ -154,7 +154,7 @@ func reconcileItem(scopeID, kind string) reconcile.Item {
 	return reconcile.Item{
 		ID:        1,
 		Kind:      kind,
-		ScopeType: "verification-metric",
+		ScopeType: "job-verification-metric",
 		ScopeID:   scopeID,
 	}
 }
@@ -211,6 +211,110 @@ func TestProcess_MetricNotFound_NoRequeue(t *testing.T) {
 	result, err := ctrl.Process(context.Background(), item)
 	require.NoError(t, err)
 	assert.Equal(t, time.Duration(0), result.RequeueAfter)
+}
+
+func TestProcess_CompletedMetric_ReturnsZeroRequeue(t *testing.T) {
+	m := newMetric("check", 1, "true")
+	m.Measurements = []metrics.Measurement{oldMeasurement(metrics.StatusPassed)}
+	getter, setter := setupMocks(m)
+	ctrl := NewController(getter, setter)
+
+	item := reconcileItem(m.ID, JobVerificationMetricKind)
+	result, err := ctrl.Process(context.Background(), item)
+	require.NoError(t, err)
+	assert.Equal(t, time.Duration(0), result.RequeueAfter, "completed metric should not requeue")
+	assert.Equal(t, metrics.VerificationPassed, setter.completed[m.ID])
+}
+
+func TestProcess_GetProviderContextError_Propagated(t *testing.T) {
+	m := newMetric("check", 3, "true")
+	getter := &mockGetter{
+		metrics:           map[string]*metrics.VerificationMetric{m.ID: m},
+		getProviderCtxErr: fmt.Errorf("release not found"),
+	}
+	ctrl := NewController(getter, &mockSetter{})
+
+	item := reconcileItem(m.ID, JobVerificationMetricKind)
+	_, err := ctrl.Process(context.Background(), item)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "reconcile verification metric")
+	assert.Contains(t, err.Error(), "get provider context")
+}
+
+func TestProcess_RecordMeasurementError_Propagated(t *testing.T) {
+	m := newMetric("check", 3, "true")
+	getter, _ := setupMocks(m)
+	setter := &mockSetter{recordErr: fmt.Errorf("disk full"), getter: getter}
+	ctrl := NewController(getter, setter)
+
+	item := reconcileItem(m.ID, JobVerificationMetricKind)
+	_, err := ctrl.Process(context.Background(), item)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "reconcile verification metric")
+	assert.Contains(t, err.Error(), "record measurement")
+}
+
+func TestProcess_CompleteMetricError_Propagated(t *testing.T) {
+	m := newMetric("check", 1, "true")
+	m.Measurements = []metrics.Measurement{oldMeasurement(metrics.StatusPassed)}
+	getter, _ := setupMocks(m)
+	setter := &mockSetter{completeErr: fmt.Errorf("queue down"), getter: getter}
+	ctrl := NewController(getter, setter)
+
+	item := reconcileItem(m.ID, JobVerificationMetricKind)
+	_, err := ctrl.Process(context.Background(), item)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "reconcile verification metric")
+	assert.Contains(t, err.Error(), "complete metric")
+}
+
+func TestProcess_FailureCompletesWithNoRequeue(t *testing.T) {
+	m := newMetric("check", 5, "false")
+	getter, setter := setupMocks(m)
+	ctrl := NewController(getter, setter)
+
+	item := reconcileItem(m.ID, JobVerificationMetricKind)
+	result, err := ctrl.Process(context.Background(), item)
+	require.NoError(t, err)
+	assert.Equal(t, time.Duration(0), result.RequeueAfter, "failed metric should not requeue")
+	assert.Equal(t, metrics.VerificationFailed, setter.completed[m.ID])
+}
+
+func TestProcess_UsesItemScopeID(t *testing.T) {
+	m1 := newMetric("alpha", 3, "true")
+	m2 := newMetric("beta", 1, "true")
+	m2.Measurements = []metrics.Measurement{oldMeasurement(metrics.StatusPassed)}
+
+	getter := &mockGetter{
+		metrics:     map[string]*metrics.VerificationMetric{m1.ID: m1, m2.ID: m2},
+		providerCtx: &provider.ProviderContext{},
+	}
+	setter := &mockSetter{getter: getter}
+	ctrl := NewController(getter, setter)
+
+	result1, err := ctrl.Process(context.Background(), reconcileItem(m1.ID, JobVerificationMetricKind))
+	require.NoError(t, err)
+	assert.Greater(t, result1.RequeueAfter, time.Duration(0), "m1 still running — should requeue")
+
+	result2, err := ctrl.Process(context.Background(), reconcileItem(m2.ID, JobVerificationMetricKind))
+	require.NoError(t, err)
+	assert.Equal(t, time.Duration(0), result2.RequeueAfter, "m2 complete — no requeue")
+	assert.Equal(t, metrics.VerificationPassed, setter.completed[m2.ID])
+}
+
+func TestProcess_ReReadError_Propagated(t *testing.T) {
+	m := newMetric("check", 3, "true")
+	getter, _ := setupMocks(m)
+	getter.getMetricErr = fmt.Errorf("re-read failed")
+	getter.getMetricErrOnCall = 2
+	setter := &mockSetter{getter: getter}
+	ctrl := NewController(getter, setter)
+
+	item := reconcileItem(m.ID, JobVerificationMetricKind)
+	_, err := ctrl.Process(context.Background(), item)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "reconcile verification metric")
+	assert.Contains(t, err.Error(), "re-read verification metric")
 }
 
 // ---------------------------------------------------------------------------

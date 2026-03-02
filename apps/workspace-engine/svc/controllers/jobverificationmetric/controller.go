@@ -17,6 +17,10 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
+const (
+	JobVerificationMetricKind = "job-verification-metric"
+)
+
 var tracer = otel.Tracer("workspace-engine/svc/controllers/jobverificationmetric")
 var _ reconcile.Processor = (*Controller)(nil)
 
@@ -64,7 +68,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	}
 
 	log.Debug(
-		"Creating verification reconcile worker",
+		"Creating job verification metric reconcile worker",
 		"maxConcurrency", runtime.GOMAXPROCS(0),
 	)
 
@@ -78,15 +82,13 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		MaxRetryBackoff: 30 * time.Second,
 	}
 
-	kind := "verification-metric"
-	queue := postgres.NewForKinds(pgxPool, kind)
-	enqueueQueue := postgres.New(pgxPool)
+	queue := postgres.NewForKinds(pgxPool, JobVerificationMetricKind)
 	controller := &Controller{
 		getter: &PostgresGetter{},
-		setter: &PostgresSetter{Queue: enqueueQueue},
+		setter: &PostgresSetter{Queue: queue},
 	}
 	worker, err := reconcile.NewWorker(
-		kind,
+		JobVerificationMetricKind,
 		queue,
 		controller,
 		nodeConfig,

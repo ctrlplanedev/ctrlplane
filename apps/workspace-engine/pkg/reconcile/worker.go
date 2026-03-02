@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 	"workspace-engine/svc"
+
+	"github.com/charmbracelet/log"
 )
 
 const (
@@ -126,6 +128,12 @@ func (w *Worker) Run(ctx context.Context) error {
 				WorkerID:      w.cfg.WorkerID,
 				LeaseDuration: w.cfg.LeaseDuration,
 			})
+			if err != nil {
+				log.Error("error claiming items", "error", err)
+			}
+			for _, item := range items {
+				log.Info("item", "item", item.ID, "kind", item.Kind, "scopeType", item.ScopeType, "scopeID", item.ScopeID)
+			}
 			if err == nil && len(items) > 0 {
 				w.startItems(ctx, items, sem, doneCh)
 				// If we filled all currently available slots, immediately loop to try
@@ -193,6 +201,7 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 	leaseWG.Wait()
 
 	if processErr != nil {
+		log.Error("Error processing item", "item", item.ID, "scopeType", item.ScopeType, "scopeID", item.ScopeID, "error", processErr)
 		retryErr := w.queue.Retry(ctx, RetryParams{
 			ItemID:       item.ID,
 			WorkerID:     w.cfg.WorkerID,
