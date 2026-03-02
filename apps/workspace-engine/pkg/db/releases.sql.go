@@ -31,7 +31,7 @@ func (q *Queries) DeleteReleaseVariablesByReleaseID(ctx context.Context, release
 }
 
 const getReleaseByID = `-- name: GetReleaseByID :one
-SELECT id, resource_id, environment_id, deployment_id, version_id, created_at FROM release WHERE id = $1
+SELECT id, resource_id, environment_id, deployment_id, version_id, version_status, created_at FROM release WHERE id = $1
 `
 
 func (q *Queries) GetReleaseByID(ctx context.Context, id uuid.UUID) (Release, error) {
@@ -43,6 +43,7 @@ func (q *Queries) GetReleaseByID(ctx context.Context, id uuid.UUID) (Release, er
 		&i.EnvironmentID,
 		&i.DeploymentID,
 		&i.VersionID,
+		&i.VersionStatus,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -80,7 +81,7 @@ func (q *Queries) GetReleaseVariablesByReleaseID(ctx context.Context, releaseID 
 }
 
 const listReleasesByReleaseTarget = `-- name: ListReleasesByReleaseTarget :many
-SELECT id, resource_id, environment_id, deployment_id, version_id, created_at FROM release
+SELECT id, resource_id, environment_id, deployment_id, version_id, version_status, created_at FROM release
 WHERE resource_id = $1 AND environment_id = $2 AND deployment_id = $3
 `
 
@@ -105,6 +106,7 @@ func (q *Queries) ListReleasesByReleaseTarget(ctx context.Context, arg ListRelea
 			&i.EnvironmentID,
 			&i.DeploymentID,
 			&i.VersionID,
+			&i.VersionStatus,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -118,7 +120,7 @@ func (q *Queries) ListReleasesByReleaseTarget(ctx context.Context, arg ListRelea
 }
 
 const listReleasesByWorkspaceID = `-- name: ListReleasesByWorkspaceID :many
-SELECT r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at
+SELECT r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.version_status, r.created_at
 FROM release r
 JOIN deployment d ON d.id = r.deployment_id
 WHERE d.workspace_id = $1
@@ -145,6 +147,7 @@ func (q *Queries) ListReleasesByWorkspaceID(ctx context.Context, arg ListRelease
 			&i.EnvironmentID,
 			&i.DeploymentID,
 			&i.VersionID,
+			&i.VersionStatus,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -158,14 +161,15 @@ func (q *Queries) ListReleasesByWorkspaceID(ctx context.Context, arg ListRelease
 }
 
 const upsertRelease = `-- name: UpsertRelease :one
-INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id, created_at)
-VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamptz, NOW()))
+INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id, version_status, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, NOW()))
 ON CONFLICT (id) DO UPDATE
 SET resource_id = EXCLUDED.resource_id,
     environment_id = EXCLUDED.environment_id,
     deployment_id = EXCLUDED.deployment_id,
-    version_id = EXCLUDED.version_id
-RETURNING id, resource_id, environment_id, deployment_id, version_id, created_at
+    version_id = EXCLUDED.version_id,
+    version_status = EXCLUDED.version_status
+RETURNING id, resource_id, environment_id, deployment_id, version_id, version_status, created_at
 `
 
 type UpsertReleaseParams struct {
@@ -174,6 +178,7 @@ type UpsertReleaseParams struct {
 	EnvironmentID uuid.UUID
 	DeploymentID  uuid.UUID
 	VersionID     uuid.UUID
+	VersionStatus pgtype.Text
 	CreatedAt     pgtype.Timestamptz
 }
 
@@ -184,6 +189,7 @@ func (q *Queries) UpsertRelease(ctx context.Context, arg UpsertReleaseParams) (R
 		arg.EnvironmentID,
 		arg.DeploymentID,
 		arg.VersionID,
+		arg.VersionStatus,
 		arg.CreatedAt,
 	)
 	var i Release
@@ -193,6 +199,7 @@ func (q *Queries) UpsertRelease(ctx context.Context, arg UpsertReleaseParams) (R
 		&i.EnvironmentID,
 		&i.DeploymentID,
 		&i.VersionID,
+		&i.VersionStatus,
 		&i.CreatedAt,
 	)
 	return i, err

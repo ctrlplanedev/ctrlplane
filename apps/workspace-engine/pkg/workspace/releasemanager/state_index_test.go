@@ -75,6 +75,7 @@ func TestRestoreAll_ComputesLatestJob(t *testing.T) {
 
 	// Create a release and a job in the store.
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),
@@ -160,6 +161,7 @@ func TestGetReleaseTargetState_AfterRestore(t *testing.T) {
 
 	// Add a job so we can verify state is fully populated.
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),
@@ -213,6 +215,7 @@ func TestRecomputeEntity_RefreshesAfterRestore(t *testing.T) {
 
 	// Now add a job to the store (simulates a new job arriving after boot).
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),

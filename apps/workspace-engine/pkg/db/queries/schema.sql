@@ -113,6 +113,7 @@ CREATE TABLE release (
     environment_id UUID NOT NULL,
     deployment_id UUID NOT NULL,
     version_id UUID NOT NULL,
+    version_status TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -359,9 +360,10 @@ CREATE TABLE job_metadata (
 );
 
 CREATE TABLE release_job (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     release_id UUID NOT NULL REFERENCES release(id) ON DELETE CASCADE,
     job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE,
-    PRIMARY KEY (release_id, job_id)
+    UNIQUE (release_id, job_id)
 );
 
 -- Verification Metric Table (as in packages/db/src/schema/verification.ts)

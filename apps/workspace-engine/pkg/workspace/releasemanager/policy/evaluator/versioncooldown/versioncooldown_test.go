@@ -76,6 +76,7 @@ func createTestReleaseTarget(ctx context.Context, s *store.Store, deployment *oa
 
 func createTestRelease(ctx context.Context, s *store.Store, rt *oapi.ReleaseTarget, version *oapi.DeploymentVersion) *oapi.Release {
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt,
 		Version:       *version,
 		CreatedAt:     time.Now().Format(time.RFC3339),

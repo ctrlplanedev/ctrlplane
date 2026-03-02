@@ -849,6 +849,7 @@ type RelationshipRule_Matcher struct {
 type Release struct {
 	CreatedAt          string                  `json:"createdAt"`
 	EncryptedVariables []string                `json:"encryptedVariables"`
+	Id                 string                  `json:"id"`
 	ReleaseTarget      ReleaseTarget           `json:"releaseTarget"`
 	Variables          map[string]LiteralValue `json:"variables"`
 	Version            DeploymentVersion       `json:"version"`

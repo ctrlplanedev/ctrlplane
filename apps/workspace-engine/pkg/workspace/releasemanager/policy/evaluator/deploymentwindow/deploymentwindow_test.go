@@ -81,6 +81,7 @@ func seedSuccessfulRelease(
 	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *version,
 		CreatedAt:     versionCreatedAt.Add(30 * time.Minute).Format(time.RFC3339),

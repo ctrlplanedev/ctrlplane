@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -183,10 +184,11 @@ func BuildRelease(
 	}
 
 	return &oapi.Release{
+		Id:                 uuid.New().String(),
 		ReleaseTarget:      *releaseTarget,
 		Version:            *version,
 		Variables:          clonedVariables,
-		EncryptedVariables: []string{}, // TODO: Handle encrypted variables
+		EncryptedVariables: []string{},
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
 }

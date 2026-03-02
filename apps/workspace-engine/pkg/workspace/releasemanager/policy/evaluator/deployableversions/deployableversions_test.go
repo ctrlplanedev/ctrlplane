@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,6 +97,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 
 	// Create an existing release for this paused version
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *version,
 		ReleaseTarget: *releaseTarget,
 	}
@@ -404,6 +406,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 
 	// Create release for target1 only
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *version,
 		ReleaseTarget: *target1,
 	}
@@ -476,6 +479,7 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 
 	// Step 3: Add release for paused version, then evaluate again - should be allowed
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *version2,
 		ReleaseTarget: *releaseTarget,
 	}
@@ -531,10 +535,12 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 
 	// Create releases: paused version on target1, ready version on target2
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *pausedVersion,
 		ReleaseTarget: *target1,
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *readyVersion,
 		ReleaseTarget: *target2,
 	}
@@ -599,6 +605,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 
 	// Create release for dev only
 	devRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *version,
 		ReleaseTarget: *devTarget,
 	}
@@ -684,6 +691,7 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 
 	// Create release for OTHER version
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *otherVersion,
 		ReleaseTarget: *target,
 	}
@@ -729,6 +737,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 
 	// Create release for target1
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		Version:       *version,
 		ReleaseTarget: *target1,
 	}
@@ -817,6 +826,7 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 			// For paused status, also test with release
 			if tc.status == oapi.DeploymentVersionStatusPaused {
 				release := &oapi.Release{
+					Id:            uuid.New().String(),
 					Version:       *version,
 					ReleaseTarget: *target,
 				}

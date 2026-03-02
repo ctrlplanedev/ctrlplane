@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
@@ -249,6 +250,12 @@ func HandleDeploymentDeleted(
 		return err
 	}
 
+	// Cancel processing jobs BEFORE removing the deployment, because DB
+	// cascade deletes on the release table would remove the releases that
+	// link jobs to release targets, making it impossible to locate them
+	// later in ProcessChanges.
+	cancelJobsForReleaseTargets(ctx, ws, oldReleaseTargets)
+
 	ws.Store().RelationshipIndexes.RemoveEntity(ctx, deployment.Id)
 	ws.Deployments().Remove(ctx, deployment.Id)
 
@@ -257,4 +264,16 @@ func HandleDeploymentDeleted(
 	}
 
 	return nil
+}
+
+func cancelJobsForReleaseTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets []*oapi.ReleaseTarget) {
+	for _, rt := range releaseTargets {
+		for _, job := range ws.Store().Jobs.GetJobsForReleaseTarget(rt) {
+			if job != nil && job.IsInProcessingState() {
+				job.Status = oapi.JobStatusCancelled
+				job.UpdatedAt = time.Now()
+				ws.Store().Jobs.Upsert(ctx, job)
+			}
+		}
+	}
 }

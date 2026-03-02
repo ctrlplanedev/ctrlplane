@@ -4,12 +4,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRelease_UUID(t *testing.T) {
+	id := uuid.New().String()
 	release := &Release{
+		Id: id,
 		ReleaseTarget: ReleaseTarget{
 			DeploymentId:  "dep-1",
 			EnvironmentId: "env-1",
@@ -22,10 +25,14 @@ func TestRelease_UUID(t *testing.T) {
 		CreatedAt: "2024-01-01T00:00:00Z",
 	}
 
-	u1 := release.UUID()
-	u2 := release.UUID()
-	assert.Equal(t, u1, u2, "UUID should be deterministic")
-	assert.NotEqual(t, u1.String(), "00000000-0000-0000-0000-000000000000", "UUID should not be nil UUID")
+	assert.Equal(t, id, release.ID(), "ID() should return the stored Id")
+	u := release.UUID()
+	assert.Equal(t, id, u.String(), "UUID() should parse the stored Id")
+	assert.NotEqual(t, uuid.Nil, u, "UUID should not be nil UUID")
+
+	// Invalid Id should return nil UUID
+	release2 := &Release{Id: "not-a-uuid"}
+	assert.Equal(t, uuid.Nil, release2.UUID(), "UUID() should return Nil for unparseable Id")
 }
 
 func TestVerificationMetricSpec_GetInterval(t *testing.T) {

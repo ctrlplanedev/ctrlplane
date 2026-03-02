@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,6 +84,7 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -148,6 +150,7 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -212,6 +215,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -271,6 +275,7 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -335,6 +340,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -432,6 +438,7 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -497,6 +504,7 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -561,6 +569,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -628,6 +637,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 	}
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},

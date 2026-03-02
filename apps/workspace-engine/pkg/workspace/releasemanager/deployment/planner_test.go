@@ -743,6 +743,8 @@ func TestPlanDeployment_ConsistentReleaseIDs(t *testing.T) {
 	require.NotNil(t, release1)
 	require.NotNil(t, release2)
 
-	// Same inputs should produce same release ID
-	assert.Equal(t, release1.ID(), release2.ID())
+	// Each plan generates a unique random UUID
+	assert.NotEmpty(t, release1.ID())
+	assert.NotEmpty(t, release2.ID())
+	assert.NotEqual(t, release1.ID(), release2.ID(), "Each plan should produce a unique release ID")
 }

@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,6 +185,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -264,6 +266,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	}
 
 	stagingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -412,18 +415,21 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -561,6 +567,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -652,12 +659,14 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
 
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -790,18 +799,21 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
 
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -953,6 +965,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingReleaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},

@@ -17,12 +17,26 @@ import (
 )
 
 func (r *Release) ID() string {
-	// Collect relevant fields for deterministic ID
+	return r.Id
+}
+
+func (r *Release) UUID() uuid.UUID {
+	id, err := uuid.Parse(r.Id)
+	if err != nil {
+		return uuid.Nil
+	}
+	return id
+}
+
+// VersionKey returns a deterministic key for the logical "same release"
+// concept (same version + variables on the same target). Used by the retry
+// evaluator to decide whether an old job counts toward the new release's
+// attempt budget.
+func (r *Release) VersionKey() string {
 	var sb strings.Builder
 	sb.WriteString(r.Version.Id)
 	sb.WriteString(r.Version.Tag)
 
-	// Sort variable keys for determinism
 	keys := make([]string, 0, len(r.Variables))
 	for k := range r.Variables {
 		keys = append(keys, k)
@@ -38,13 +52,8 @@ func (r *Release) ID() string {
 
 	sb.WriteString(r.ReleaseTarget.Key())
 
-	// Hash the concatenated string
 	hash := sha256.Sum256([]byte(sb.String()))
 	return hex.EncodeToString(hash[:])
-}
-
-func (r *Release) UUID() uuid.UUID {
-	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(r.ID()))
 }
 
 func toString(v any) string {

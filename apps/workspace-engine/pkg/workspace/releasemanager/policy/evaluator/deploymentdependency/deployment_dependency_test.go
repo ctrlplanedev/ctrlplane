@@ -72,6 +72,7 @@ func generateDependencyRule(cel string) *oapi.PolicyRule {
 func generateReleaseAndJob(ctx context.Context, releaseTarget *oapi.ReleaseTarget, jobStatus oapi.JobStatus, st *store.Store) *oapi.Job {
 	now := time.Now()
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),

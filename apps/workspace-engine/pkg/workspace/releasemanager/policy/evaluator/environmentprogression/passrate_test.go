@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -101,18 +102,21 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -231,18 +235,21 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -348,18 +355,21 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -473,6 +483,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -577,6 +588,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},

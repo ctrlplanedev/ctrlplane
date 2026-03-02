@@ -90,6 +90,7 @@ func createTestRelease(t *testing.T, deploymentId, environmentId, resourceId, ve
 func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environmentId, resourceId, versionId string, jobAgentConfig map[string]interface{}) *oapi.Release {
 	t.Helper()
 	return &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentId,
 			EnvironmentId: environmentId,

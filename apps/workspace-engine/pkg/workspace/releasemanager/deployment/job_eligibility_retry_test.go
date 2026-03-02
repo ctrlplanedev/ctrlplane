@@ -86,6 +86,9 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Second attempt should be allowed (1 failure <= 3 max retries)
@@ -103,6 +106,9 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 			Status:      oapi.JobStatusFailure,
 			CreatedAt:   time.Now(),
 			CompletedAt: &completedAt,
+			DispatchContext: &oapi.DispatchContext{
+				Release: release,
+			},
 		})
 	}
 
@@ -200,6 +206,9 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Second attempt should be allowed (1 failure <= 1 max retry from strict policy)
@@ -215,6 +224,9 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt2,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Third attempt should be DENIED because the stricter policy (maxRetries=1) blocks it
@@ -298,6 +310,9 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Second attempt should be DENIED (uses default maxRetries=0 behavior)
@@ -370,6 +385,9 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Second attempt should be DENIED because disabled policy is ignored,

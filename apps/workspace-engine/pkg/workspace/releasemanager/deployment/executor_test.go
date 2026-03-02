@@ -79,6 +79,7 @@ func createTestResourceForExecutor(id, name, workspaceID string) *oapi.Resource 
 
 func createTestRelease(deploymentID, environmentID, resourceID, versionID, versionTag string) *oapi.Release {
 	return &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
 			EnvironmentId: environmentID,
@@ -597,23 +598,15 @@ func TestBuildRelease_ReleaseIDDetermination(t *testing.T) {
 		"replicas": &replicas,
 	}
 
-	// Build first release
 	release1 := BuildRelease(ctx, releaseTarget, version, variables1)
-
-	// Build second release with same parameters
 	release2 := BuildRelease(ctx, releaseTarget, version, variables1)
 
-	// Same inputs should produce same release ID
-	assert.Equal(t, release1.ID(), release2.ID())
-
-	// Different variables should produce different release ID
-	replicas2 := oapi.LiteralValue{}
-	require.NoError(t, replicas2.FromIntegerValue(5))
-
-	variables2 := map[string]*oapi.LiteralValue{
-		"replicas": &replicas2,
-	}
-
-	release3 := BuildRelease(ctx, releaseTarget, version, variables2)
-	assert.NotEqual(t, release1.ID(), release3.ID())
+	// Each call generates a unique random UUID
+	assert.NotEmpty(t, release1.ID())
+	assert.NotEmpty(t, release2.ID())
+	_, err := uuid.Parse(release1.ID())
+	require.NoError(t, err, "Release ID should be a valid UUID")
+	_, err = uuid.Parse(release2.ID())
+	require.NoError(t, err, "Release ID should be a valid UUID")
+	assert.NotEqual(t, release1.ID(), release2.ID(), "Two calls should produce different IDs")
 }

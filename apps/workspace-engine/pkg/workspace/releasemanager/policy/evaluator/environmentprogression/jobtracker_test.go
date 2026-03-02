@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -159,18 +160,21 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -240,12 +244,14 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -328,6 +334,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 
 	// Create release
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -383,12 +390,14 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -455,6 +464,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	// Create release
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -515,6 +525,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 
 	// Create release
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -575,6 +586,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	// Create release
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -631,12 +643,14 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -708,12 +722,14 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -782,6 +798,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 
 	// Create release
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -866,18 +883,21 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -980,12 +1000,14 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -1087,12 +1109,14 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -1172,18 +1196,21 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 
 	// Create releases
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt2,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt3,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},

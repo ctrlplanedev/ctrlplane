@@ -149,6 +149,7 @@ func TestSummaryEvaluator_SomeTargetsDenied(t *testing.T) {
 
 	// Create a release with the older version on rt1
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *rt1,
 		Version:       *olderVersion,
 		CreatedAt:     time.Now().Add(-10 * time.Second).Format(time.RFC3339),

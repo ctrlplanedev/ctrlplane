@@ -84,6 +84,7 @@ func seedSuccessfulRelease(ctx context.Context, store *store.Store, releaseTarge
 	store.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *version,
 		CreatedAt:     versionCreatedAt.Add(30 * time.Minute).Format(time.RFC3339),
@@ -945,6 +946,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 	successTime := baseTime.Add(1 * time.Hour) // Success happens 1 hour after version creation
 	for i, rt := range stagingReleaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
@@ -1061,6 +1063,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 
 	// Create release and successful job in staging
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *stagingRT,
 		Version:       *version,
 	}
@@ -1183,6 +1186,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 	lastJobCompletedAt := successTime.Add(2 * time.Minute) // Last job completes at this time
 	for i, rt := range stagingReleaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
@@ -1421,6 +1425,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 
 	for i, rt := range stagingReleaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
@@ -1545,6 +1550,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 
 	for i, rt := range stagingReleaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
@@ -1686,6 +1692,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	for i, rt := range stagingReleaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
@@ -2157,6 +2164,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 	// Create successful staging jobs (all complete at stagingCompletionTime)
 	for i, stagingRT := range stagingReleaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *stagingRT,
 			Version:       *version,
 		}

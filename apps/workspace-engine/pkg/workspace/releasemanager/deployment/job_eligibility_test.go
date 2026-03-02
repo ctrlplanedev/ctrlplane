@@ -38,6 +38,7 @@ func setupStoreWithResourceForEligibility(t *testing.T, resourceID string) *stor
 
 func createReleaseForEligibility(deploymentID, environmentID, resourceID, versionID, versionTag string) *oapi.Release {
 	return &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
 			EnvironmentId: environmentID,
@@ -89,6 +90,9 @@ func TestShouldCreateJob_AlreadyDeployed(t *testing.T) {
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Act
@@ -119,6 +123,9 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: releaseV1,
+		},
 	})
 
 	// Try to deploy v2.0.0
@@ -213,6 +220,9 @@ func TestShouldCreateJob_FailedJobPreventsRedeploy(t *testing.T) {
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Act - try to redeploy same release
@@ -244,6 +254,9 @@ func TestShouldCreateJob_CancelledJobPreventsRedeploy(t *testing.T) {
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Act - try to redeploy same release
@@ -266,6 +279,7 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 	require.NoError(t, replicas1.FromIntegerValue(3))
 
 	release1 := &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  "deployment-1",
 			EnvironmentId: "env-1",
@@ -292,6 +306,9 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release1,
+		},
 	})
 
 	// Create second release with replicas=5 (different variables)
@@ -299,6 +316,7 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 	require.NoError(t, replicas2.FromIntegerValue(5))
 
 	release2 := &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  "deployment-1",
 			EnvironmentId: "env-1",
@@ -424,6 +442,7 @@ func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
 	// Create multiple historical releases with completed jobs
 	for i := 1; i <= 3; i++ {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: releaseTarget,
 			Version: oapi.DeploymentVersion{
 				Id:  uuid.New().String(),
@@ -444,11 +463,15 @@ func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   time.Now().Add(-time.Duration(4-i) * time.Hour),
 			CompletedAt: &completedAt,
+			DispatchContext: &oapi.DispatchContext{
+				Release: release,
+			},
 		})
 	}
 
 	// Try to create job for new release
 	newRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  uuid.New().String(),
@@ -489,6 +512,9 @@ func TestShouldCreateJob_SkippedJobPreventsRedeploy(t *testing.T) {
 		Status:      oapi.JobStatusSkipped,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Act - try to redeploy same release
@@ -518,6 +544,9 @@ func TestShouldCreateJob_InvalidJobAgentStatusPreventsRedeploy(t *testing.T) {
 		ReleaseId: release.ID(),
 		Status:    oapi.JobStatusInvalidJobAgent,
 		CreatedAt: time.Now().Add(-1 * time.Hour),
+		DispatchContext: &oapi.DispatchContext{
+			Release: release,
+		},
 	})
 
 	// Act - try to redeploy same release
@@ -537,6 +566,7 @@ func TestShouldCreateJob_EmptyReleaseID(t *testing.T) {
 
 	// Create a release that would have empty components
 	release := &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  "deployment-1",
 			EnvironmentId: "env-1",

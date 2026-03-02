@@ -76,13 +76,25 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[st
 	}
 
 	releases, err := j.store.Releases.GetByReleaseTargetKey(releaseTarget.Key())
-	if err != nil {
-		return jobs
+	if err == nil {
+		for _, release := range releases {
+			releaseJobs := j.store.Releases.Jobs(release.ID())
+			for _, job := range releaseJobs {
+				jobs[job.Id] = job
+			}
+		}
 	}
 
-	for _, release := range releases {
-		releaseJobs := j.store.Releases.Jobs(release.ID())
-		for _, job := range releaseJobs {
+	// Also scan for orphaned jobs whose releases were cascade-deleted from
+	// the DB but still exist in the in-memory job store. These jobs carry
+	// the release target in their DispatchContext.
+	targetKey := releaseTarget.Key()
+	for _, job := range j.repo.Items() {
+		if _, found := jobs[job.Id]; found {
+			continue
+		}
+		if job.DispatchContext != nil && job.DispatchContext.Release != nil &&
+			job.DispatchContext.Release.ReleaseTarget.Key() == targetKey {
 			jobs[job.Id] = job
 		}
 	}

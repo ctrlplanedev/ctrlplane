@@ -410,6 +410,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 
 	for _, rt := range releaseTargets {
 		release := &oapi.Release{
+			Id:            uuid.New().String(),
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}

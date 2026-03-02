@@ -86,6 +86,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 
 	// Create release
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},

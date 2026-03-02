@@ -92,6 +92,7 @@ func TestProcessChanges_DeleteOnly(t *testing.T) {
 
 	// Create a release for this target
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *target,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),
@@ -255,6 +256,7 @@ func TestProcessChanges_OnlyPendingJobsCancelled(t *testing.T) {
 
 	// Create a release
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *target,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),
@@ -314,6 +316,7 @@ func TestProcessChanges_MixedOperations(t *testing.T) {
 
 	// Setup target2 with a job to be cancelled
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *target2,
 		Version: oapi.DeploymentVersion{
 			Id:           uuid.New().String(),

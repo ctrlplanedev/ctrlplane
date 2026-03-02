@@ -572,6 +572,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	_ = replicasValue.FromStringValue("3")
 
 	release := &oapi.Release{
+		Id: releaseId,
 		Version: oapi.DeploymentVersion{
 			Id:           versionId,
 			DeploymentId: deploymentId,

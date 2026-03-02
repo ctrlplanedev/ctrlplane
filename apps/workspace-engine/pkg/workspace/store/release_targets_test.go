@@ -84,6 +84,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 
 	// Create release
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -285,6 +286,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	s.DeploymentVersions.Upsert(ctx, olderVersionId, olderVersion)
 
 	olderRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *olderVersion,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -316,6 +318,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	s.DeploymentVersions.Upsert(ctx, newerVersionId, newerVersion)
 
 	newerRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *newerVersion,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -400,6 +403,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	s.DeploymentVersions.Upsert(ctx, olderVersionId, olderVersion)
 
 	olderRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *olderVersion,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -431,6 +435,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	s.DeploymentVersions.Upsert(ctx, newerVersionId, newerVersion)
 
 	newerRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *newerVersion,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -542,6 +547,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	s.DeploymentVersions.Upsert(ctx, olderVersionId, olderVersion)
 
 	olderRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *olderVersion,
 		Variables:     map[string]oapi.LiteralValue{},
@@ -570,6 +576,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	s.DeploymentVersions.Upsert(ctx, newerVersionId, newerVersion)
 
 	newerRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version:       *newerVersion,
 		Variables:     map[string]oapi.LiteralValue{},

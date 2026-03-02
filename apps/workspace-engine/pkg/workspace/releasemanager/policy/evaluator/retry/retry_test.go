@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,6 +38,7 @@ func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
 
 func createRelease(deploymentID, envID, resourceID, versionID, tag string) *oapi.Release {
 	return &oapi.Release{
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
 			EnvironmentId: envID,
@@ -45,6 +47,17 @@ func createRelease(deploymentID, envID, resourceID, versionID, tag string) *oapi
 		Version: oapi.DeploymentVersion{
 			Id:  versionID,
 			Tag: tag,
+		},
+	}
+}
+
+func dispatchContextFor(release *oapi.Release) *oapi.DispatchContext {
+	return &oapi.DispatchContext{
+		Release: &oapi.Release{
+			Id:            uuid.New().String(),
+			ReleaseTarget: release.ReleaseTarget,
+			Version:       release.Version,
+			Variables:     release.Variables,
 		},
 	}
 }
@@ -82,14 +95,14 @@ func TestRetryEvaluator_DefaultBehavior_SecondAttemptDenied(t *testing.T) {
 		t.Fatalf("Failed to upsert release: %v", err)
 	}
 
-	// Create a job for this release
 	completedAt := time.Now().Add(-1 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-2 * time.Hour),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	eval := NewEvaluatorFromStore(st, nil)
@@ -111,14 +124,14 @@ func TestRetryEvaluator_DefaultBehavior_AllStatusesCount(t *testing.T) {
 		t.Fatalf("Failed to upsert release: %v", err)
 	}
 
-	// Create job with successful status
 	completedAt := time.Now().Add(-1 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-success",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		CompletedAt: &completedAt,
+		Id:              "job-success",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-2 * time.Hour),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	eval := NewEvaluatorFromStore(st, nil)
@@ -158,11 +171,12 @@ func TestRetryEvaluator_MaxRetries_Zero(t *testing.T) {
 	// Add a failed job
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now(),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now(),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Second attempt denied
@@ -190,11 +204,12 @@ func TestRetryEvaluator_MaxRetries_Three(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		completedAt := time.Now()
 		st.Jobs.Upsert(ctx, &oapi.Job{
-			Id:          "job-" + string(rune(i)),
-			ReleaseId:   release.ID(),
-			Status:      oapi.JobStatusFailure,
-			CreatedAt:   time.Now(),
-			CompletedAt: &completedAt,
+			Id:              "job-" + string(rune(i)),
+			ReleaseId:       release.ID(),
+			Status:          oapi.JobStatusFailure,
+			CreatedAt:       time.Now(),
+			CompletedAt:     &completedAt,
+			DispatchContext: dispatchContextFor(release),
 		})
 
 		result := eval.Evaluate(ctx, release)
@@ -205,11 +220,12 @@ func TestRetryEvaluator_MaxRetries_Three(t *testing.T) {
 	// Add 4th failed job
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-4",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now(),
-		CompletedAt: &completedAt,
+		Id:              "job-4",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now(),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// 5th attempt should be denied
@@ -243,21 +259,23 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 	// Add successful job - should NOT count
 	completedAt1 := time.Now().Add(-2 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-success",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-3 * time.Hour),
-		CompletedAt: &completedAt1,
+		Id:              "job-success",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-3 * time.Hour),
+		CompletedAt:     &completedAt1,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Add cancelled job - should NOT count
 	completedAt2 := time.Now().Add(-1 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-cancelled",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusCancelled,
-		CreatedAt:   time.Now().Add(-90 * time.Minute),
-		CompletedAt: &completedAt2,
+		Id:              "job-cancelled",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusCancelled,
+		CreatedAt:       time.Now().Add(-90 * time.Minute),
+		CompletedAt:     &completedAt2,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Should still be allowed (no failures yet)
@@ -268,11 +286,12 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 	// Add failed job - should count
 	completedAt3 := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-failed",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now(),
-		CompletedAt: &completedAt3,
+		Id:              "job-failed",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now(),
+		CompletedAt:     &completedAt3,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Should still allow one more retry
@@ -283,11 +302,12 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 	// Add second failed job
 	completedAt4 := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-failed-2",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now(),
-		CompletedAt: &completedAt4,
+		Id:              "job-failed-2",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now(),
+		CompletedAt:     &completedAt4,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Now should deny (2 failures > maxRetries of 1)
@@ -319,20 +339,22 @@ func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
 	// Add jobs with different retryable statuses
 	completedAt1 := time.Now().Add(-3 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-4 * time.Hour),
-		CompletedAt: &completedAt1,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-4 * time.Hour),
+		CompletedAt:     &completedAt1,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	completedAt2 := time.Now().Add(-2 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-2",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusInvalidJobAgent,
-		CreatedAt:   time.Now().Add(-150 * time.Minute),
-		CompletedAt: &completedAt2,
+		Id:              "job-2",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusInvalidJobAgent,
+		CreatedAt:       time.Now().Add(-150 * time.Minute),
+		CompletedAt:     &completedAt2,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -342,11 +364,12 @@ func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
 	// Add third retryable status job
 	completedAt3 := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-3",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusExternalRunNotFound,
-		CreatedAt:   time.Now(),
-		CompletedAt: &completedAt3,
+		Id:              "job-3",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusExternalRunNotFound,
+		CreatedAt:       time.Now(),
+		CompletedAt:     &completedAt3,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result = eval.Evaluate(ctx, release)
@@ -384,11 +407,12 @@ func TestRetryEvaluator_DifferentReleasesIndependent(t *testing.T) {
 	// Add failed job for release1
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-r1",
-		ReleaseId:   release1.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now(),
-		CompletedAt: &completedAt,
+		Id:              "job-r1",
+		ReleaseId:       release1.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now(),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release1),
 	})
 
 	// Release2 should still be allowed (different release)
@@ -422,11 +446,12 @@ func TestRetryEvaluator_LinearBackoff_StillWaiting(t *testing.T) {
 	// Add job that completed 30 seconds ago
 	completedAt := time.Now().Add(-30 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-1 * time.Hour),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-1 * time.Hour),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -465,11 +490,12 @@ func TestRetryEvaluator_LinearBackoff_BackoffElapsed(t *testing.T) {
 	// Add job that completed 90 seconds ago (backoff elapsed)
 	completedAt := time.Now().Add(-90 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-2 * time.Minute),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-2 * time.Minute),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -502,11 +528,12 @@ func TestRetryEvaluator_LinearBackoff_ConstantDelay(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		completedAt := time.Now().Add(-20 * time.Second)
 		st.Jobs.Upsert(ctx, &oapi.Job{
-			Id:          "job-" + string(rune(i)),
-			ReleaseId:   release.ID(),
-			Status:      oapi.JobStatusFailure,
-			CreatedAt:   time.Now().Add(-1 * time.Minute),
-			CompletedAt: &completedAt,
+			Id:              "job-" + string(rune(i)),
+			ReleaseId:       release.ID(),
+			Status:          oapi.JobStatusFailure,
+			CreatedAt:       time.Now().Add(-1 * time.Minute),
+			CompletedAt:     &completedAt,
+			DispatchContext: dispatchContextFor(release),
 		})
 
 		result := eval.Evaluate(ctx, release)
@@ -552,11 +579,12 @@ func TestRetryEvaluator_ExponentialBackoff_DoublesEachRetry(t *testing.T) {
 		for i := 1; i <= attemptCount; i++ {
 			completedAt := time.Now().Add(-10 * time.Second)
 			st.Jobs.Upsert(ctx, &oapi.Job{
-				Id:          "job-" + string(rune(i)),
-				ReleaseId:   release.ID(),
-				Status:      oapi.JobStatusFailure,
-				CreatedAt:   time.Now().Add(-1 * time.Minute),
-				CompletedAt: &completedAt,
+				Id:              "job-" + string(rune(i)),
+				ReleaseId:       release.ID(),
+				Status:          oapi.JobStatusFailure,
+				CreatedAt:       time.Now().Add(-1 * time.Minute),
+				CompletedAt:     &completedAt,
+				DispatchContext: dispatchContextFor(release),
 			})
 		}
 
@@ -603,11 +631,12 @@ func TestRetryEvaluator_ExponentialBackoff_WithCap(t *testing.T) {
 	for i := 1; i <= 4; i++ {
 		completedAt := time.Now().Add(-5 * time.Second)
 		st.Jobs.Upsert(ctx, &oapi.Job{
-			Id:          "job-" + string(rune(i)),
-			ReleaseId:   release.ID(),
-			Status:      oapi.JobStatusFailure,
-			CreatedAt:   time.Now().Add(-1 * time.Minute),
-			CompletedAt: &completedAt,
+			Id:              "job-" + string(rune(i)),
+			ReleaseId:       release.ID(),
+			Status:          oapi.JobStatusFailure,
+			CreatedAt:       time.Now().Add(-1 * time.Minute),
+			CompletedAt:     &completedAt,
+			DispatchContext: dispatchContextFor(release),
 		})
 	}
 
@@ -640,11 +669,12 @@ func TestRetryEvaluator_NoBackoff_ImmediateRetry(t *testing.T) {
 	// Add job that just completed
 	completedAt := time.Now().Add(-1 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-1 * time.Minute),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-1 * time.Minute),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -677,11 +707,12 @@ func TestRetryEvaluator_Backoff_UsesCompletedAt(t *testing.T) {
 	// Job created 2 hours ago but completed 30 seconds ago
 	completedAt := time.Now().Add(-30 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-2 * time.Hour),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -712,11 +743,12 @@ func TestRetryEvaluator_Backoff_FallsBackToCreatedAt(t *testing.T) {
 
 	// Job with no completedAt (still running)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusInProgress,
-		CreatedAt:   time.Now().Add(-30 * time.Second),
-		CompletedAt: nil, // No completion time
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusInProgress,
+		CreatedAt:       time.Now().Add(-30 * time.Second),
+		CompletedAt:     nil,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -744,11 +776,12 @@ func TestRetryEvaluator_Backoff_NextEvaluationTime(t *testing.T) {
 
 	completedAt := time.Now().Add(-60 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-2 * time.Minute),
-		CompletedAt: &completedAt,
+		Id:              "job-1",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-2 * time.Minute),
+		CompletedAt:     &completedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)
@@ -789,11 +822,12 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 	// Add successful job (not retryable)
 	completedAt1 := time.Now().Add(-5 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-success",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-1 * time.Hour),
-		CompletedAt: &completedAt1,
+		Id:              "job-success",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-1 * time.Hour),
+		CompletedAt:     &completedAt1,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Should be allowed immediately (successful job doesn't count)
@@ -803,11 +837,12 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 	// Add failed job (retryable)
 	completedAt2 := time.Now().Add(-5 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-failed",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-10 * time.Second),
-		CompletedAt: &completedAt2,
+		Id:              "job-failed",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-10 * time.Second),
+		CompletedAt:     &completedAt2,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Now should be in backoff (failed job counts)
@@ -843,21 +878,23 @@ func TestRetryEvaluator_VersionFlip_AllowsRedeployAfterDifferentRelease(t *testi
 	// Job 1: v1 deployed successfully (oldest)
 	completedAt1 := time.Now().Add(-3 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v1-first",
-		ReleaseId:   releaseV1.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-4 * time.Hour),
-		CompletedAt: &completedAt1,
+		Id:              "job-v1-first",
+		ReleaseId:       releaseV1.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-4 * time.Hour),
+		CompletedAt:     &completedAt1,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 
 	// Job 2: v2 deployed successfully (middle)
 	completedAt2 := time.Now().Add(-2 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v2",
-		ReleaseId:   releaseV2.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-150 * time.Minute),
-		CompletedAt: &completedAt2,
+		Id:              "job-v2",
+		ReleaseId:       releaseV2.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-150 * time.Minute),
+		CompletedAt:     &completedAt2,
+		DispatchContext: dispatchContextFor(releaseV2),
 	})
 
 	// Now we want to redeploy v1: the most recent job is for v2,
@@ -890,31 +927,34 @@ func TestRetryEvaluator_VersionFlip_CountsOnlyLatestConsecutiveJobs(t *testing.T
 	// Old v1 job (should be ignored because v2 job separates it)
 	completedAt1 := time.Now().Add(-5 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v1-old",
-		ReleaseId:   releaseV1.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-6 * time.Hour),
-		CompletedAt: &completedAt1,
+		Id:              "job-v1-old",
+		ReleaseId:       releaseV1.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-6 * time.Hour),
+		CompletedAt:     &completedAt1,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 
 	// v2 job in between
 	completedAt2 := time.Now().Add(-3 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v2",
-		ReleaseId:   releaseV2.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-4 * time.Hour),
-		CompletedAt: &completedAt2,
+		Id:              "job-v2",
+		ReleaseId:       releaseV2.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-4 * time.Hour),
+		CompletedAt:     &completedAt2,
+		DispatchContext: dispatchContextFor(releaseV2),
 	})
 
 	// Recent v1 job (only this one should count)
 	completedAt3 := time.Now().Add(-1 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v1-recent",
-		ReleaseId:   releaseV1.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		CompletedAt: &completedAt3,
+		Id:              "job-v1-recent",
+		ReleaseId:       releaseV1.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-2 * time.Hour),
+		CompletedAt:     &completedAt3,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 
 	result := eval.Evaluate(ctx, releaseV1)
@@ -944,30 +984,33 @@ func TestRetryEvaluator_VersionFlip_DeniesWhenConsecutiveExceedsLimit(t *testing
 	// v2 job (old, will be skipped because newer v1 jobs come after)
 	completedAt1 := time.Now().Add(-5 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v2",
-		ReleaseId:   releaseV2.ID(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-6 * time.Hour),
-		CompletedAt: &completedAt1,
+		Id:              "job-v2",
+		ReleaseId:       releaseV2.ID(),
+		Status:          oapi.JobStatusSuccessful,
+		CreatedAt:       time.Now().Add(-6 * time.Hour),
+		CompletedAt:     &completedAt1,
+		DispatchContext: dispatchContextFor(releaseV2),
 	})
 
 	// Two consecutive v1 jobs (most recent)
 	completedAt2 := time.Now().Add(-2 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v1-a",
-		ReleaseId:   releaseV1.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-3 * time.Hour),
-		CompletedAt: &completedAt2,
+		Id:              "job-v1-a",
+		ReleaseId:       releaseV1.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-3 * time.Hour),
+		CompletedAt:     &completedAt2,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 
 	completedAt3 := time.Now().Add(-1 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-v1-b",
-		ReleaseId:   releaseV1.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-90 * time.Minute),
-		CompletedAt: &completedAt3,
+		Id:              "job-v1-b",
+		ReleaseId:       releaseV1.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-90 * time.Minute),
+		CompletedAt:     &completedAt3,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 
 	result := eval.Evaluate(ctx, releaseV1)
@@ -999,21 +1042,25 @@ func TestRetryEvaluator_VersionFlip_MultipleFlips(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id: "job-1-v1", ReleaseId: releaseV1.ID(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-5 * time.Hour), CompletedAt: &completedAt1,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 	completedAt2 := time.Now().Add(-3 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id: "job-2-v2", ReleaseId: releaseV2.ID(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-210 * time.Minute), CompletedAt: &completedAt2,
+		DispatchContext: dispatchContextFor(releaseV2),
 	})
 	completedAt3 := time.Now().Add(-2 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id: "job-3-v1", ReleaseId: releaseV1.ID(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-150 * time.Minute), CompletedAt: &completedAt3,
+		DispatchContext: dispatchContextFor(releaseV1),
 	})
 	completedAt4 := time.Now().Add(-1 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id: "job-4-v2", ReleaseId: releaseV2.ID(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-90 * time.Minute), CompletedAt: &completedAt4,
+		DispatchContext: dispatchContextFor(releaseV2),
 	})
 
 	// Most recent is v2 → evaluating v1 should see 0 consecutive → first attempt
@@ -1057,21 +1104,23 @@ func TestRetryEvaluator_MultipleJobsSameRelease_FindsMostRecent(t *testing.T) {
 	// Add older job
 	oldCompletedAt := time.Now().Add(-2 * time.Hour)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-old",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-3 * time.Hour),
-		CompletedAt: &oldCompletedAt,
+		Id:              "job-old",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-3 * time.Hour),
+		CompletedAt:     &oldCompletedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	// Add recent job (30s ago)
 	recentCompletedAt := time.Now().Add(-30 * time.Second)
 	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-recent",
-		ReleaseId:   release.ID(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-1 * time.Minute),
-		CompletedAt: &recentCompletedAt,
+		Id:              "job-recent",
+		ReleaseId:       release.ID(),
+		Status:          oapi.JobStatusFailure,
+		CreatedAt:       time.Now().Add(-1 * time.Minute),
+		CompletedAt:     &recentCompletedAt,
+		DispatchContext: dispatchContextFor(release),
 	})
 
 	result := eval.Evaluate(ctx, release)

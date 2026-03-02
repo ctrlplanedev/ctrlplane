@@ -108,19 +108,21 @@ func (e *RetryEvaluator) Evaluate(
 	// Build a map of retryable statuses for efficient lookup
 	retryableStatuses := e.buildRetryableStatusMap()
 
-	// Count previous consecutive attempts and find most recent retryable job
+	// Count previous consecutive attempts and find most recent retryable job.
+	// Jobs are matched by VersionKey (same version + variables + target) rather
+	// than by release ID, because release IDs are random UUIDs — the same
+	// logical deployment produces a different release ID each time it is planned.
 	attemptCount := 0
 	matchingJobIds := make([]string, 0)
 	var mostRecentJob *oapi.Job
 	var mostRecentTime time.Time
 
+	versionKey := release.VersionKey()
 	for _, job := range jobs {
-		// Only count jobs for this exact release
-		if job.ReleaseId != release.ID() {
+		if !jobMatchesVersionKey(job, versionKey) {
 			break
 		}
 
-		// Check if job status is retryable (or if all statuses count)
 		isRetryable := retryableStatuses == nil || retryableStatuses[job.Status]
 		if !isRetryable {
 			break
@@ -293,4 +295,14 @@ func (e *RetryEvaluator) calculateBackoffDuration(attemptCount int, baseBackoffS
 	}
 
 	return time.Duration(backoffSeconds) * time.Second
+}
+
+// jobMatchesVersionKey checks whether a job belongs to the same logical
+// release (same version + variables + target) by comparing VersionKeys.
+// It extracts the release snapshot from the job's DispatchContext.
+func jobMatchesVersionKey(job *oapi.Job, versionKey string) bool {
+	if job.DispatchContext == nil || job.DispatchContext.Release == nil {
+		return false
+	}
+	return job.DispatchContext.Release.VersionKey() == versionKey
 }

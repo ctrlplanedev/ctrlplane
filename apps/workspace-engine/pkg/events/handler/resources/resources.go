@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
@@ -160,6 +161,12 @@ func HandleResourceDeleted(
 
 	oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
 
+	// Cancel processing jobs BEFORE removing the resource, because DB
+	// cascade deletes on the release table would remove the releases that
+	// link jobs to release targets, making it impossible to locate them
+	// later in ProcessChanges.
+	cancelJobsForReleaseTargets(ctx, ws, oldReleaseTargets)
+
 	ws.Store().RelationshipIndexes.RemoveEntity(ctx, resource.Id)
 	ws.Resources().Remove(ctx, resource.Id)
 
@@ -168,4 +175,16 @@ func HandleResourceDeleted(
 	}
 
 	return nil
+}
+
+func cancelJobsForReleaseTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets []*oapi.ReleaseTarget) {
+	for _, rt := range releaseTargets {
+		for _, job := range ws.Store().Jobs.GetJobsForReleaseTarget(rt) {
+			if job != nil && job.IsInProcessingState() {
+				job.Status = oapi.JobStatusCancelled
+				job.UpdatedAt = time.Now()
+				ws.Store().Jobs.Upsert(ctx, job)
+			}
+		}
+	}
 }

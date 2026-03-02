@@ -63,7 +63,7 @@ func (r *RollbackAction) Execute(
 		return nil
 	}
 
-	if currentRelease.ID() == actx.Release.ID() {
+	if currentRelease.VersionKey() == actx.Release.VersionKey() {
 		span.AddEvent("Current release is the same as failed release, no rollback needed")
 		span.SetStatus(codes.Ok, "already on current release")
 		return nil

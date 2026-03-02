@@ -93,12 +93,13 @@ func TestEngine_JobsWithNilReleaseReference(t *testing.T) {
 		DeploymentId:  deployment.Id,
 	}
 
-	// Test GetJobsForReleaseTarget with missing release
+	// Test GetJobsForReleaseTarget with missing release.
+	// Orphaned jobs (whose releases were deleted) are still discoverable
+	// via their DispatchContext, which is important for retry evaluation
+	// after cascade deletes.
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-
-	// The job should be filtered out because its release doesn't exist
-	if len(jobsForTarget) != 0 {
-		t.Fatalf("expected 0 jobs for release target (release doesn't exist), got %d", len(jobsForTarget))
+	if len(jobsForTarget) != 1 {
+		t.Fatalf("expected 1 orphaned job for release target (found via DispatchContext), got %d", len(jobsForTarget))
 	}
 
 	// Test GetCurrentRelease with missing release
@@ -297,21 +298,29 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	releaseIdToDelete := release.ID()
 	engine.Workspace().Releases().Remove(ctx, releaseIdToDelete)
 
-	// Get jobs for release target - should only return jobs with valid releases
+	// Get jobs for release target — includes both release-linked and orphaned
+	// jobs (discovered via DispatchContext after cascade deletes).
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
 
-	// Should have at least one job (the one with valid release)
-	// The corrupted job should be filtered out
-	if len(jobsForTarget) < 1 {
-		t.Fatalf("expected at least 1 job with valid release, got %d", len(jobsForTarget))
+	if len(jobsForTarget) < 2 {
+		t.Fatalf("expected at least 2 jobs (1 valid + 1 orphaned), got %d", len(jobsForTarget))
 	}
 
-	// Verify all returned jobs have valid releases
-	for jobId, job := range jobsForTarget {
-		rel, ok := engine.Workspace().Releases().Get(job.ReleaseId)
-		if !ok || rel == nil {
-			t.Fatalf("job %s has invalid release reference", jobId)
+	// Verify that at least one job has a valid release and at least one is orphaned
+	validCount := 0
+	orphanedCount := 0
+	for _, job := range jobsForTarget {
+		if _, ok := engine.Workspace().Releases().Get(job.ReleaseId); ok {
+			validCount++
+		} else {
+			orphanedCount++
 		}
+	}
+	if validCount < 1 {
+		t.Fatalf("expected at least 1 job with valid release, got %d", validCount)
+	}
+	if orphanedCount < 1 {
+		t.Fatalf("expected at least 1 orphaned job, got %d", orphanedCount)
 	}
 }
 

@@ -83,6 +83,7 @@ func createJob(t *testing.T, s *store.Store, ctx context.Context, e testEntities
 
 	// Create release to link job to release target
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *e.rt,
 		Version:       *e.version,
 		CreatedAt:     createdAt.Format(time.RFC3339),

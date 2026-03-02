@@ -246,10 +246,10 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 		t.Errorf("expected desired release version v1.0.0, got %s", state.DesiredRelease.Version.Tag)
 	}
 
-	// Verify: releases are the same
-	if state.CurrentRelease.ID() != state.DesiredRelease.ID() {
-		t.Errorf("expected current and desired releases to be the same, got current=%s, desired=%s",
-			state.CurrentRelease.ID(), state.DesiredRelease.ID())
+	// Verify: releases represent the same logical deployment (same version + variables + target)
+	if state.CurrentRelease.VersionKey() != state.DesiredRelease.VersionKey() {
+		t.Errorf("expected current and desired releases to represent the same deployment, got current=%s, desired=%s",
+			state.CurrentRelease.VersionKey(), state.DesiredRelease.VersionKey())
 	}
 }
 

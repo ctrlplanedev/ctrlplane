@@ -98,8 +98,8 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 		return nil
 	}
 
-	// Don't rollback to the same release
-	if currentRelease.ID() == release.ID() {
+	// Don't rollback to the same logical release (same version + variables + target)
+	if currentRelease.VersionKey() == release.VersionKey() {
 		span.AddEvent("Current release is the same as failed release, no rollback needed")
 		span.SetStatus(codes.Ok, "already on current release")
 		return nil

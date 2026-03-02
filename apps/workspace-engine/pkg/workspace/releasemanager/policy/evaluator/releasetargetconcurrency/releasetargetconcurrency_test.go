@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 // Helper function to create a test store with a resource
@@ -38,6 +40,7 @@ func TestReleaseTargetConcurrencyEvaluator_NoActiveJobs(t *testing.T) {
 	eval := NewReleaseTargetConcurrencyEvaluator(st)
 
 	release := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  "deployment-1",
 			EnvironmentId: "env-1",
@@ -74,6 +77,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 	}
 
 	existingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -96,6 +100,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 
 	// Try to deploy a new release to the same target
 	newRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-2",
@@ -136,6 +141,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 	}
 
 	existingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -158,6 +164,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 
 	// Try to deploy a new release to the same target
 	newRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-2",
@@ -190,6 +197,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 	}
 
 	existingRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -212,6 +220,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 
 	// Try to deploy a new release to the same target
 	newRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-2",
@@ -245,6 +254,7 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 
 	// Create multiple releases with active jobs
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -253,6 +263,7 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 	}
 
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-2",
@@ -285,6 +296,7 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 
 	// Try to deploy a new release
 	newRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-3",
@@ -323,6 +335,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 
 	// Create releases with terminal jobs
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -331,6 +344,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 	}
 
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-2",
@@ -339,6 +353,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 	}
 
 	release3 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-3",
@@ -386,6 +401,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 
 	// Try to deploy a new release
 	newRelease := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-4",
@@ -440,6 +456,7 @@ func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere
 
 	// Create a release with active job for target 1
 	release1 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget1,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -462,6 +479,7 @@ func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere
 
 	// Try to deploy to target 2 (different resource)
 	release2 := &oapi.Release{
+		Id:            uuid.New().String(),
 		ReleaseTarget: *releaseTarget2,
 		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
@@ -499,6 +517,7 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 			}
 
 			existingRelease := &oapi.Release{
+				Id:            uuid.New().String(),
 				ReleaseTarget: *releaseTarget,
 				Version: oapi.DeploymentVersion{
 					Id:  "version-1",
@@ -521,6 +540,7 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 
 			// Try to deploy a new release
 			newRelease := &oapi.Release{
+				Id:            uuid.New().String(),
 				ReleaseTarget: *releaseTarget,
 				Version: oapi.DeploymentVersion{
 					Id:  "version-2",
@@ -572,6 +592,7 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 			}
 
 			existingRelease := &oapi.Release{
+				Id:            uuid.New().String(),
 				ReleaseTarget: *releaseTarget,
 				Version: oapi.DeploymentVersion{
 					Id:  "version-1",
@@ -596,6 +617,7 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 
 			// Try to deploy a new release
 			newRelease := &oapi.Release{
+				Id:            uuid.New().String(),
 				ReleaseTarget: *releaseTarget,
 				Version: oapi.DeploymentVersion{
 					Id:  "version-2",
