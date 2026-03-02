@@ -350,6 +350,14 @@ CREATE TABLE job (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE job_metadata (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    UNIQUE (job_id, key)
+);
+
 CREATE TABLE release_job (
     release_id UUID NOT NULL REFERENCES release(id) ON DELETE CASCADE,
     job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE,

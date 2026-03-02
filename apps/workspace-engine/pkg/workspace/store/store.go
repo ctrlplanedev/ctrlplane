@@ -70,6 +70,15 @@ func WithDBJobAgents(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBJobs replaces the default in-memory JobRepo
+// with a DB-backed implementation.
+func WithDBJobs(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Jobs.SetRepo(dbRepo.Jobs())
+	}
+}
+
 // WithDBResourceProviders replaces the default in-memory ResourceProviderRepo
 // with a DB-backed implementation.
 func WithDBResourceProviders(ctx context.Context) StoreOption {

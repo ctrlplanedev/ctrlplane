@@ -169,6 +169,15 @@ type WorkflowJobRepo interface {
 	GetByWorkflowRunID(workflowRunID string) ([]*oapi.WorkflowJob, error)
 }
 
+// JobRepo defines the contract for job storage.
+type JobRepo interface {
+	Get(id string) (*oapi.Job, bool)
+	Set(entity *oapi.Job) error
+	Remove(id string) error
+	Items() map[string]*oapi.Job
+	GetByAgentID(agentID string) ([]*oapi.Job, error)
+}
+
 // ResourceVariableRepo defines the contract for resource variable storage.
 type ResourceVariableRepo interface {
 	Get(key string) (*oapi.ResourceVariable, bool)

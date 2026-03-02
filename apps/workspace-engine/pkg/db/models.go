@@ -336,6 +336,13 @@ type JobAgent struct {
 	Config      map[string]any
 }
 
+type JobMetadatum struct {
+	ID    uuid.UUID
+	JobID uuid.UUID
+	Key   string
+	Value string
+}
+
 type JobVerificationMetric struct {
 	ID               uuid.UUID
 	CreatedAt        pgtype.Timestamptz

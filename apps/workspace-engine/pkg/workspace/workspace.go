@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager"
@@ -75,6 +76,7 @@ type Workspace struct {
 	actionOrchestrator         *action.Orchestrator
 	workflowActionOrchestrator *workflowmanager.WorkflowActionOrchestrator
 	jobAgentRegistry           *jobagents.Registry
+	reconcileQueue             reconcile.Queue
 }
 
 func (w *Workspace) ActionOrchestrator() *action.Orchestrator {
