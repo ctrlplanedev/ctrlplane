@@ -12,9 +12,7 @@ import (
 )
 
 // ToOapi converts a db.Release row, its associated deployment version, and
-// its variables into an oapi.Release. The version_status stored on the release
-// row overrides the live deployment version status to preserve the snapshot
-// captured at release creation time.
+// its variables into an oapi.Release.
 func ToOapi(
 	row db.Release,
 	version *oapi.DeploymentVersion,
@@ -37,11 +35,6 @@ func ToOapi(
 		createdAt = row.CreatedAt.Time.Format(time.RFC3339)
 	}
 
-	snapshotVersion := *version
-	if row.VersionStatus.Valid {
-		snapshotVersion.Status = oapi.DeploymentVersionStatus(row.VersionStatus.String)
-	}
-
 	return &oapi.Release{
 		Id:                 row.ID.String(),
 		CreatedAt:          createdAt,
@@ -52,7 +45,7 @@ func ToOapi(
 			DeploymentId:  row.DeploymentID.String(),
 		},
 		Variables: variables,
-		Version:   snapshotVersion,
+		Version:   *version,
 	}
 }
 
@@ -92,7 +85,6 @@ func ToUpsertParams(release *oapi.Release) (db.UpsertReleaseParams, error) {
 		EnvironmentID: environmentID,
 		DeploymentID:  deploymentID,
 		VersionID:     versionID,
-		VersionStatus: pgtype.Text{String: string(release.Version.Status), Valid: true},
 		CreatedAt:     createdAt,
 	}, nil
 }

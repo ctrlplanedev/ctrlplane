@@ -113,7 +113,6 @@ CREATE TABLE release (
     environment_id UUID NOT NULL,
     deployment_id UUID NOT NULL,
     version_id UUID NOT NULL,
-    version_status TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

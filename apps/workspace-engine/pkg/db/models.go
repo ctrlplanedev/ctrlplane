@@ -483,7 +483,6 @@ type Release struct {
 	EnvironmentID uuid.UUID
 	DeploymentID  uuid.UUID
 	VersionID     uuid.UUID
-	VersionStatus pgtype.Text
 	CreatedAt     pgtype.Timestamptz
 }
 

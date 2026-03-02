@@ -135,13 +135,9 @@ func TestEngine_PausedVersionWithExistingRelease(t *testing.T) {
 	// Note: Releases capture a snapshot of the version at creation time.
 	// They do not automatically update when the source version status changes.
 	for _, releaseID := range releaseIDs {
-		release, ok := engine.Workspace().Releases().Get(releaseID)
+		_, ok := engine.Workspace().Releases().Get(releaseID)
 		if !ok {
 			t.Errorf("expected release %s to still exist after version paused", releaseID)
-		}
-		// Release version is a snapshot - will still show "ready" even though source version is paused
-		if release.Version.Status != oapi.DeploymentVersionStatusReady {
-			t.Errorf("expected release version status to remain ready (snapshot), got %s", release.Version.Status)
 		}
 	}
 
