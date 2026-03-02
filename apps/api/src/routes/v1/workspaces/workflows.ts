@@ -26,7 +26,7 @@ function buildWorkflow(
   body: {
     name: string;
     inputs: Workflow["inputs"];
-    jobs: Omit<Workflow["jobs"][number], "id">[];
+    jobs: Omit<Workflow["jobs"][number], "id" | "workflowId">[];
   },
 ): Workflow {
   return {
@@ -34,10 +34,9 @@ function buildWorkflow(
     name: body.name,
     inputs: body.inputs,
     jobs: body.jobs.map((job) => ({
+      ...job,
       id: uuidv4(),
-      name: job.name,
-      ref: job.ref,
-      config: job.config,
+      workflowId: id,
     })),
   };
 }
