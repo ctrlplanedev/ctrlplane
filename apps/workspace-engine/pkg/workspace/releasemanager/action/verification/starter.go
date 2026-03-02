@@ -30,6 +30,10 @@ func (s *DBVerificationStarter) StartVerification(ctx context.Context, job *oapi
 		return nil
 	}
 
+	if s.Queue == nil {
+		return fmt.Errorf("reconcile queue is not configured; use workspace.WithReconcileQueue when creating the workspace")
+	}
+
 	queries := db.GetQueries(ctx)
 	jobUUID := uuid.MustParse(job.Id)
 
