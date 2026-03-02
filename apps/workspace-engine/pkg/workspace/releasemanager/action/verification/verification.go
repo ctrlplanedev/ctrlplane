@@ -4,7 +4,6 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
@@ -16,13 +15,13 @@ var tracer = otel.Tracer("workspace/releasemanager/action/verification")
 
 // VerificationAction creates verifications based on policy rules
 type VerificationAction struct {
-	verificationManager *verification.Manager
+	starter VerificationStarter
 }
 
 // NewVerificationAction creates a new verification action
-func NewVerificationAction(manager *verification.Manager) *VerificationAction {
+func NewVerificationAction(starter VerificationStarter) *VerificationAction {
 	return &VerificationAction{
-		verificationManager: manager,
+		starter: starter,
 	}
 }
 
@@ -46,7 +45,6 @@ func (v *VerificationAction) Execute(
 		attribute.String("release.id", actx.Release.ID()),
 		attribute.String("job.id", actx.Job.Id))
 
-	// Extract all verification metrics from matching policies
 	metrics := v.extractVerificationMetrics(trigger, actx.Policies)
 	if len(metrics) == 0 {
 		span.SetAttributes(attribute.Int("metric_count", 0))
@@ -56,8 +54,7 @@ func (v *VerificationAction) Execute(
 
 	span.SetAttributes(attribute.Int("metric_count", len(metrics)))
 
-	// Create verification synchronously
-	if err := v.verificationManager.StartVerification(ctx, actx.Job, metrics); err != nil {
+	if err := v.starter.StartVerification(ctx, actx.Job, metrics); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create verification")
 		log.Error("Failed to create verification",
@@ -84,7 +81,7 @@ func (v *VerificationAction) extractVerificationMetrics(
 	policies []*oapi.Policy,
 ) []oapi.VerificationMetricSpec {
 	var allMetrics []oapi.VerificationMetricSpec
-	seen := make(map[string]bool) // Deduplicate by metric name
+	seen := make(map[string]bool)
 
 	for _, policy := range policies {
 		if !policy.Enabled {
@@ -97,12 +94,10 @@ func (v *VerificationAction) extractVerificationMetrics(
 				continue
 			}
 
-			// Check if this verification rule matches the trigger
 			if v.getTriggerFromRule(verificationRule) != trigger {
 				continue
 			}
 
-			// Add metrics (deduplicate by name)
 			for _, metric := range verificationRule.Metrics {
 				if !seen[metric.Name] {
 					allMetrics = append(allMetrics, metric)
@@ -123,7 +118,7 @@ func (v *VerificationAction) getVerificationRule(rule *oapi.PolicyRule) *oapi.Ve
 // getTriggerFromRule determines the trigger for a verification rule
 func (v *VerificationAction) getTriggerFromRule(rule *oapi.VerificationRule) action.ActionTrigger {
 	if rule.TriggerOn == nil {
-		return action.TriggerJobSuccess // Default
+		return action.TriggerJobSuccess
 	}
 
 	switch *rule.TriggerOn {

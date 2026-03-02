@@ -86,6 +86,7 @@ func (s *Service) configureManager() error {
 		manager.WithPersistentStore(store),
 		manager.WithWorkspaceCreateOptions(
 			workspace.WithTraceStore(traceStore),
+			workspace.WithReconcileQueue(s.reconcileQueue),
 			workspace.WithStoreOptions(
 				wsstore.WithDBDeploymentVersions(bgCtx),
 				wsstore.WithDBEnvironments(bgCtx),

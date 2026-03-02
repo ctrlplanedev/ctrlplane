@@ -14,7 +14,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 	"workspace-engine/pkg/workspace/workflowmanager"
 )
@@ -30,16 +29,13 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		traceStore: spanstore.NewInMemoryStore(),
 	}
 
-	// Apply options first to allow setting traceStore
 	for _, option := range options {
 		option(ws)
 	}
 
-	ws.verificationManager = verification.NewManager(s)
-	ws.jobAgentRegistry = jobagents.NewRegistry(ws.store, ws.verificationManager)
+	ws.jobAgentRegistry = jobagents.NewRegistry(ws.store)
 
-	// Create release manager with trace store (will panic if nil)
-	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager, ws.jobAgentRegistry)
+	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.jobAgentRegistry)
 	ws.workflowManager = workflowmanager.NewWorkflowManager(s, ws.jobAgentRegistry)
 
 	reconcileFn := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
@@ -50,12 +46,19 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
 	}
 
-	ws.actionOrchestrator = action.
+	verificationStarter := &verificationaction.DBVerificationStarter{
+		Queue:       ws.reconcileQueue,
+		WorkspaceID: ws.ID,
+	}
+
+	orchestrator := action.
 		NewOrchestrator(s).
-		RegisterAction(verificationaction.NewVerificationAction(ws.verificationManager)).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
 		RegisterAction(environmentprogression.NewEnvironmentProgressionActionFromStore(s, reconcileFn)).
-		RegisterAction(rollback.NewRollbackAction(s, ws.jobAgentRegistry))
+		RegisterAction(rollback.NewRollbackAction(s, ws.jobAgentRegistry)).
+		RegisterAction(verificationaction.NewVerificationAction(verificationStarter))
+
+	ws.actionOrchestrator = orchestrator
 
 	ws.workflowActionOrchestrator = workflowmanager.
 		NewWorkflowActionOrchestrator(s).
@@ -69,7 +72,6 @@ type Workspace struct {
 
 	changeset                  *statechange.ChangeSet[any]
 	store                      *store.Store
-	verificationManager        *verification.Manager
 	workflowManager            *workflowmanager.Manager
 	releasemanager             *releasemanager.Manager
 	traceStore                 releasemanager.PersistenceStore
@@ -97,10 +99,6 @@ func (w *Workspace) Policies() *store.Policies {
 
 func (w *Workspace) ReleaseManager() *releasemanager.Manager {
 	return w.releasemanager
-}
-
-func (w *Workspace) VerificationManager() *verification.Manager {
-	return w.verificationManager
 }
 
 func (w *Workspace) WorkflowManager() *workflowmanager.Manager {

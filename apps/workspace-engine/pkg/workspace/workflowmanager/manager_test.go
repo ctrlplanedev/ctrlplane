@@ -7,7 +7,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -17,7 +16,7 @@ import (
 func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 	ctx := context.Background()
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var stringInput oapi.WorkflowInput
@@ -90,7 +89,7 @@ func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 func TestWorkflowManager_DispatchesAllJobsConcurrently(t *testing.T) {
 	ctx := context.Background()
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var stringInput oapi.WorkflowInput
@@ -179,7 +178,7 @@ func TestWorkflowManager_DispatchesAllJobsConcurrently(t *testing.T) {
 func TestWorkflowView_IsComplete(t *testing.T) {
 	ctx := context.Background()
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	jobAgent1 := &oapi.JobAgent{
@@ -235,7 +234,7 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 func TestCreateWorkflow_SkipsJobWhenIfEvaluatesToFalse(t *testing.T) {
 	ctx := context.Background()
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	jobAgent := &oapi.JobAgent{
@@ -271,7 +270,7 @@ func TestCreateWorkflow_SkipsJobWhenIfEvaluatesToFalse(t *testing.T) {
 
 func TestMaybeSetDefaultInputValues_SetsStringDefault(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var stringInput oapi.WorkflowInput
@@ -294,7 +293,7 @@ func TestMaybeSetDefaultInputValues_SetsStringDefault(t *testing.T) {
 
 func TestMaybeSetDefaultInputValues_SetsNumberDefault(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var numberInput oapi.WorkflowInput
@@ -317,7 +316,7 @@ func TestMaybeSetDefaultInputValues_SetsNumberDefault(t *testing.T) {
 
 func TestMaybeSetDefaultInputValues_SetsBooleanDefault(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var booleanInput oapi.WorkflowInput
@@ -340,7 +339,7 @@ func TestMaybeSetDefaultInputValues_SetsBooleanDefault(t *testing.T) {
 
 func TestMaybeSetDefaultInputValues_SetsObjectDefault(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var objectInput oapi.WorkflowInput
@@ -362,7 +361,7 @@ func TestMaybeSetDefaultInputValues_SetsObjectDefault(t *testing.T) {
 
 func TestMaybeSetDefaultInputValues_DoesNotOverwriteExistingValue(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var stringInput oapi.WorkflowInput
@@ -387,7 +386,7 @@ func TestMaybeSetDefaultInputValues_DoesNotOverwriteExistingValue(t *testing.T) 
 
 func TestMaybeSetDefaultInputValues_HandlesMultipleInputTypes(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var stringInput oapi.WorkflowInput
@@ -426,7 +425,7 @@ func TestMaybeSetDefaultInputValues_HandlesMultipleInputTypes(t *testing.T) {
 
 func TestMaybeSetDefaultInputValues_SkipsInputsWithoutDefault(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
-	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	jobAgentRegistry := jobagents.NewRegistry(store)
 	manager := NewWorkflowManager(store, jobAgentRegistry)
 
 	var stringInput oapi.WorkflowInput

@@ -64,9 +64,6 @@ func TestEngine_WorkspaceAccessors(t *testing.T) {
 	// Test ReleaseManager accessor
 	assert.NotNil(t, ws.ReleaseManager())
 
-	// Test VerificationManager accessor
-	assert.NotNil(t, ws.ReleaseManager().VerificationManager())
-
 	// Test WorkflowManager accessor
 	assert.NotNil(t, ws.WorkflowManager())
 
