@@ -1879,6 +1879,7 @@ export interface components {
     Release: {
       createdAt: string;
       encryptedVariables: string[];
+      id: string;
       releaseTarget: components["schemas"]["ReleaseTarget"];
       variables: {
         [key: string]: components["schemas"]["LiteralValue"];
