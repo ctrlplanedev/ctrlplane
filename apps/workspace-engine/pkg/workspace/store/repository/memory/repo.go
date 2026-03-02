@@ -64,7 +64,7 @@ func New(wsId string) *InMemory {
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		userApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
-		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
+		relationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
 		workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
 		workflowJobTemplates:     createTypedStore[*oapi.WorkflowJobTemplate](router, "workflow_job_template"),
@@ -106,7 +106,7 @@ type InMemory struct {
 
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]
 	userApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
-	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
+	relationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 
 	workflows            cmap.ConcurrentMap[string, *oapi.Workflow]
 	workflowJobTemplates cmap.ConcurrentMap[string, *oapi.WorkflowJobTemplate]
@@ -469,6 +469,10 @@ func (a *policySkipRepoAdapter) ListByVersionID(versionID string) ([]*oapi.Polic
 		}
 	}
 	return result, nil
+}
+
+func (s *InMemory) RelationshipRules() repository.RelationshipRuleRepo {
+	return &cmapRepoAdapter[*oapi.RelationshipRule]{store: &s.relationshipRules}
 }
 
 func (s *InMemory) PolicySkips() repository.PolicySkipRepo {

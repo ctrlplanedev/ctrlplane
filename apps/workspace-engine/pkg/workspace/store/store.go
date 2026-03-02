@@ -133,6 +133,15 @@ func WithDBUserApprovalRecords(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBRelationshipRules replaces the default in-memory RelationshipRuleRepo
+// with a DB-backed implementation.
+func WithDBRelationshipRules(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Relationships.SetRepo(dbRepo.RelationshipRules())
+	}
+}
+
 // WithDBPolicySkips replaces the default in-memory PolicySkipRepo
 // with a DB-backed implementation.
 func WithDBPolicySkips(ctx context.Context) StoreOption {
@@ -373,6 +382,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.ResourceProviders.repo.Set(rp); err != nil {
 			log.Warn("Failed to migrate legacy resource provider",
 				"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy relationship rules")
+	}
+	for _, rr := range s.repo.RelationshipRules().Items() {
+		if err := s.Relationships.repo.Set(rr); err != nil {
+			log.Warn("Failed to migrate legacy relationship rule",
+				"id", rr.Id, "name", rr.Name, "error", err)
 		}
 	}
 
