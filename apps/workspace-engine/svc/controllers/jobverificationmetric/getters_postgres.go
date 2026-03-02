@@ -3,6 +3,7 @@ package jobverificationmetric
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"workspace-engine/pkg/db"
@@ -63,5 +64,32 @@ func (p *PostgresGetter) GetVerificationMetric(ctx context.Context, metricID str
 }
 
 func (p *PostgresGetter) GetProviderContext(ctx context.Context, metricID string) (*provider.ProviderContext, error) {
-	panic("unimplemented")
+	raw, err := db.GetQueries(ctx).GetJobDispatchContext(ctx, uuid.MustParse(metricID))
+	if err != nil {
+		return nil, fmt.Errorf("get job dispatch context: %w", err)
+	}
+
+	var dc map[string]any
+	if err := json.Unmarshal(raw, &dc); err != nil {
+		return nil, fmt.Errorf("unmarshal dispatch context: %w", err)
+	}
+
+	return &provider.ProviderContext{
+		Release:     toMapStringAny(dc["release"]),
+		Resource:    toMapStringAny(dc["resource"]),
+		Environment: toMapStringAny(dc["environment"]),
+		Version:     toMapStringAny(dc["version"]),
+		Deployment:  toMapStringAny(dc["deployment"]),
+		Variables:   toMapStringAny(dc["variables"]),
+	}, nil
+}
+
+func toMapStringAny(v any) map[string]any {
+	if v == nil {
+		return nil
+	}
+	if m, ok := v.(map[string]any); ok {
+		return m
+	}
+	return nil
 }

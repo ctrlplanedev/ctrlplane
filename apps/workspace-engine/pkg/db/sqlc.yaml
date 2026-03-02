@@ -25,6 +25,7 @@ sql:
       - queries/workflows.sql
       - queries/computed_resources.sql
       - queries/job_verification_metric.sql
+      - queries/jobs.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -83,6 +84,14 @@ sql:
           - column: "resource.metadata"
             go_type:
               type: "map[string]string"
+
+          # Job
+          - column: "job.job_agent_config"
+            go_type:
+              type: "[]byte"
+          - column: "job.dispatch_context"
+            go_type:
+              type: "[]byte"
 
           # JobAgent
           - column: "job_agent.config"

@@ -12,95 +12,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getProviderContextForMetric = `-- name: GetProviderContextForMetric :one
-SELECT
-  r.id            AS release_id,
-  r.created_at    AS release_created_at,
-  res.id          AS resource_id,
-  res.name        AS resource_name,
-  res.kind        AS resource_kind,
-  res.identifier  AS resource_identifier,
-  res.version     AS resource_version,
-  res.config      AS resource_config,
-  res.metadata    AS resource_metadata,
-  env.id          AS environment_id,
-  env.name        AS environment_name,
-  env.metadata    AS environment_metadata,
-  dep.id          AS deployment_id,
-  dep.name        AS deployment_name,
-  dep.description AS deployment_description,
-  dep.metadata    AS deployment_metadata,
-  dv.id           AS version_id,
-  dv.name         AS version_name,
-  dv.tag          AS version_tag,
-  dv.config       AS version_config,
-  dv.metadata     AS version_metadata,
-  COALESCE(
-    (SELECT json_agg(json_build_object('key', rv.key, 'value', rv.value, 'encrypted', rv.encrypted))
-     FROM release_variable rv WHERE rv.release_id = r.id),
-    '[]'
-  )::jsonb AS release_variables
-FROM job_verification_metric jvm
-JOIN release_job rj ON rj.job_id = jvm.job_id
-JOIN release r ON r.id = rj.release_id
-JOIN resource res ON res.id = r.resource_id
-JOIN environment env ON env.id = r.environment_id
-JOIN deployment dep ON dep.id = r.deployment_id
-JOIN deployment_version dv ON dv.id = r.version_id
+const getJobDispatchContext = `-- name: GetJobDispatchContext :one
+SELECT j.dispatch_context
+FROM job j
+JOIN job_verification_metric jvm ON j.id = jvm.job_id
 WHERE jvm.id = $1
 `
 
-type GetProviderContextForMetricRow struct {
-	ReleaseID             uuid.UUID
-	ReleaseCreatedAt      pgtype.Timestamptz
-	ResourceID            uuid.UUID
-	ResourceName          string
-	ResourceKind          string
-	ResourceIdentifier    string
-	ResourceVersion       string
-	ResourceConfig        map[string]any
-	ResourceMetadata      map[string]string
-	EnvironmentID         uuid.UUID
-	EnvironmentName       string
-	EnvironmentMetadata   map[string]string
-	DeploymentID          uuid.UUID
-	DeploymentName        string
-	DeploymentDescription string
-	DeploymentMetadata    map[string]string
-	VersionID             uuid.UUID
-	VersionName           string
-	VersionTag            string
-	VersionConfig         map[string]any
-	VersionMetadata       map[string]string
-	ReleaseVariables      []byte
+func (q *Queries) GetJobDispatchContext(ctx context.Context, id uuid.UUID) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getJobDispatchContext, id)
+	var dispatch_context []byte
+	err := row.Scan(&dispatch_context)
+	return dispatch_context, err
 }
 
-func (q *Queries) GetProviderContextForMetric(ctx context.Context, id uuid.UUID) (GetProviderContextForMetricRow, error) {
-	row := q.db.QueryRow(ctx, getProviderContextForMetric, id)
-	var i GetProviderContextForMetricRow
+const getReleaseTargetForMetric = `-- name: GetReleaseTargetForMetric :one
+SELECT
+  r.deployment_id,
+  r.environment_id,
+  r.resource_id,
+  d.workspace_id
+FROM job_verification_metric jvm
+JOIN release_job rj ON rj.job_id = jvm.job_id
+JOIN release r ON r.id = rj.release_id
+JOIN deployment d ON d.id = r.deployment_id
+WHERE jvm.id = $1
+`
+
+type GetReleaseTargetForMetricRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+	WorkspaceID   uuid.UUID
+}
+
+func (q *Queries) GetReleaseTargetForMetric(ctx context.Context, id uuid.UUID) (GetReleaseTargetForMetricRow, error) {
+	row := q.db.QueryRow(ctx, getReleaseTargetForMetric, id)
+	var i GetReleaseTargetForMetricRow
 	err := row.Scan(
-		&i.ReleaseID,
-		&i.ReleaseCreatedAt,
-		&i.ResourceID,
-		&i.ResourceName,
-		&i.ResourceKind,
-		&i.ResourceIdentifier,
-		&i.ResourceVersion,
-		&i.ResourceConfig,
-		&i.ResourceMetadata,
-		&i.EnvironmentID,
-		&i.EnvironmentName,
-		&i.EnvironmentMetadata,
 		&i.DeploymentID,
-		&i.DeploymentName,
-		&i.DeploymentDescription,
-		&i.DeploymentMetadata,
-		&i.VersionID,
-		&i.VersionName,
-		&i.VersionTag,
-		&i.VersionConfig,
-		&i.VersionMetadata,
-		&i.ReleaseVariables,
+		&i.EnvironmentID,
+		&i.ResourceID,
+		&i.WorkspaceID,
 	)
 	return i, err
 }

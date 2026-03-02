@@ -80,9 +80,10 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 
 	kind := "verification-metric"
 	queue := postgres.NewForKinds(pgxPool, kind)
+	enqueueQueue := postgres.New(pgxPool)
 	controller := &Controller{
 		getter: &PostgresGetter{},
-		setter: &PostgresSetter{},
+		setter: &PostgresSetter{Queue: enqueueQueue},
 	}
 	worker, err := reconcile.NewWorker(
 		kind,

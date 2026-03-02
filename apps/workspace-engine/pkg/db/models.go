@@ -57,6 +57,100 @@ func (ns NullDeploymentVersionStatus) Value() (driver.Value, error) {
 	return string(ns.DeploymentVersionStatus), nil
 }
 
+type JobReason string
+
+const (
+	JobReasonPolicyPassing        JobReason = "policy_passing"
+	JobReasonPolicyOverride       JobReason = "policy_override"
+	JobReasonEnvPolicyOverride    JobReason = "env_policy_override"
+	JobReasonConfigPolicyOverride JobReason = "config_policy_override"
+)
+
+func (e *JobReason) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JobReason(s)
+	case string:
+		*e = JobReason(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JobReason: %T", src)
+	}
+	return nil
+}
+
+type NullJobReason struct {
+	JobReason JobReason
+	Valid     bool // Valid is true if JobReason is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJobReason) Scan(value interface{}) error {
+	if value == nil {
+		ns.JobReason, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JobReason.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJobReason) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JobReason), nil
+}
+
+type JobStatus string
+
+const (
+	JobStatusCancelled           JobStatus = "cancelled"
+	JobStatusSkipped             JobStatus = "skipped"
+	JobStatusInProgress          JobStatus = "in_progress"
+	JobStatusActionRequired      JobStatus = "action_required"
+	JobStatusPending             JobStatus = "pending"
+	JobStatusFailure             JobStatus = "failure"
+	JobStatusInvalidJobAgent     JobStatus = "invalid_job_agent"
+	JobStatusInvalidIntegration  JobStatus = "invalid_integration"
+	JobStatusExternalRunNotFound JobStatus = "external_run_not_found"
+	JobStatusSuccessful          JobStatus = "successful"
+)
+
+func (e *JobStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JobStatus(s)
+	case string:
+		*e = JobStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JobStatus: %T", src)
+	}
+	return nil
+}
+
+type NullJobStatus struct {
+	JobStatus JobStatus
+	Valid     bool // Valid is true if JobStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJobStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.JobStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JobStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJobStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JobStatus), nil
+}
+
 type JobVerificationStatus string
 
 const (
@@ -216,6 +310,22 @@ type Environment struct {
 	Metadata         map[string]string
 	CreatedAt        pgtype.Timestamptz
 	WorkspaceID      uuid.UUID
+}
+
+type Job struct {
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	TraceToken      pgtype.Text
+	DispatchContext []byte
+	Status          JobStatus
+	Message         pgtype.Text
+	Reason          JobReason
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type JobAgent struct {

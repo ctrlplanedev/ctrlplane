@@ -324,9 +324,35 @@ CREATE TABLE computed_environment_resource (
 );
 
 
+CREATE TYPE job_status AS ENUM (
+    'cancelled', 'skipped', 'in_progress', 'action_required', 'pending',
+    'failure', 'invalid_job_agent', 'invalid_integration',
+    'external_run_not_found', 'successful'
+);
+
+CREATE TYPE job_reason AS ENUM (
+    'policy_passing', 'policy_override', 'env_policy_override', 'config_policy_override'
+);
+
+CREATE TABLE job (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_agent_id UUID REFERENCES job_agent(id) ON DELETE SET NULL,
+    job_agent_config JSON NOT NULL DEFAULT '{}',
+    external_id TEXT,
+    trace_token TEXT,
+    dispatch_context JSONB NOT NULL DEFAULT '{}',
+    status job_status NOT NULL DEFAULT 'pending',
+    message TEXT,
+    reason job_reason NOT NULL DEFAULT 'policy_passing',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE release_job (
     release_id UUID NOT NULL REFERENCES release(id) ON DELETE CASCADE,
-    job_id UUID NOT NULL,
+    job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE,
     PRIMARY KEY (release_id, job_id)
 );
 

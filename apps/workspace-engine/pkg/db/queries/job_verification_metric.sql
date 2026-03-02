@@ -61,39 +61,20 @@ LEFT JOIN LATERAL (
 ) mc ON true
 WHERE m.job_id = (SELECT job_id FROM job_verification_metric WHERE id = $1);
 
--- name: GetProviderContextForMetric :one
+-- name: GetReleaseTargetForMetric :one
 SELECT
-  r.id            AS release_id,
-  r.created_at    AS release_created_at,
-  res.id          AS resource_id,
-  res.name        AS resource_name,
-  res.kind        AS resource_kind,
-  res.identifier  AS resource_identifier,
-  res.version     AS resource_version,
-  res.config      AS resource_config,
-  res.metadata    AS resource_metadata,
-  env.id          AS environment_id,
-  env.name        AS environment_name,
-  env.metadata    AS environment_metadata,
-  dep.id          AS deployment_id,
-  dep.name        AS deployment_name,
-  dep.description AS deployment_description,
-  dep.metadata    AS deployment_metadata,
-  dv.id           AS version_id,
-  dv.name         AS version_name,
-  dv.tag          AS version_tag,
-  dv.config       AS version_config,
-  dv.metadata     AS version_metadata,
-  COALESCE(
-    (SELECT json_agg(json_build_object('key', rv.key, 'value', rv.value, 'encrypted', rv.encrypted))
-     FROM release_variable rv WHERE rv.release_id = r.id),
-    '[]'
-  )::jsonb AS release_variables
+  r.deployment_id,
+  r.environment_id,
+  r.resource_id,
+  d.workspace_id
 FROM job_verification_metric jvm
 JOIN release_job rj ON rj.job_id = jvm.job_id
 JOIN release r ON r.id = rj.release_id
-JOIN resource res ON res.id = r.resource_id
-JOIN environment env ON env.id = r.environment_id
-JOIN deployment dep ON dep.id = r.deployment_id
-JOIN deployment_version dv ON dv.id = r.version_id
+JOIN deployment d ON d.id = r.deployment_id
+WHERE jvm.id = $1;
+
+-- name: GetJobDispatchContext :one
+SELECT j.dispatch_context
+FROM job j
+JOIN job_verification_metric jvm ON j.id = jvm.job_id
 WHERE jvm.id = $1;
