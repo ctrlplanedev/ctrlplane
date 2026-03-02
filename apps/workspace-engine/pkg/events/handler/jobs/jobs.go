@@ -21,6 +21,17 @@ func HandleJobUpdated(
 		return err
 	}
 
+	// When a bare *oapi.Job is pushed (no wrapping "job" key), the
+	// JobUpdateEvent.Job field stays zero-valued because UnmarshalJSON
+	// only populates it from a "job" key. Fall back to interpreting the
+	// entire payload as a Job so status updates persist in DB-backed mode.
+	if jobUpdateEvent.Job.Id == "" {
+		var bareJob oapi.Job
+		if err := json.Unmarshal(event.Data, &bareJob); err == nil && bareJob.Id != "" {
+			jobUpdateEvent.Job = bareJob
+		}
+	}
+
 	job, exists := getJob(ws, jobUpdateEvent)
 	if !exists {
 		return nil

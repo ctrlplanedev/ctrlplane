@@ -40,7 +40,7 @@ func TestReleaseTargetConcurrencyEvaluator_NoActiveJobs(t *testing.T) {
 	eval := NewReleaseTargetConcurrencyEvaluator(st)
 
 	release := &oapi.Release{
-		Id:            uuid.New().String(),
+		Id: uuid.New().String(),
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  "deployment-1",
 			EnvironmentId: "env-1",

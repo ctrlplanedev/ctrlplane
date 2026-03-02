@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"testing"
@@ -189,6 +190,7 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 	baseTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 	timestampIndex := 0
 
+	ctx := context.Background()
 	for _, rt := range releaseTargets {
 		resource, _ := ws.Resources().Get(rt.ResourceId)
 		jobs := ws.Jobs().GetJobsForReleaseTarget(rt)
@@ -206,6 +208,7 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			}
 			timestampIndex++
+			ws.Jobs().Upsert(ctx, job)
 		}
 	}
 

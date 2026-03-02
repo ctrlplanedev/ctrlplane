@@ -170,6 +170,11 @@ func (j *Jobs) GetByWorkflowJobId(workflowJobId string) []*oapi.Job {
 	for _, job := range j.repo.Items() {
 		if job.WorkflowJobId == workflowJobId {
 			jobs = append(jobs, job)
+			continue
+		}
+		if job.DispatchContext != nil && job.DispatchContext.WorkflowJob != nil &&
+			job.DispatchContext.WorkflowJob.Id == workflowJobId {
+			jobs = append(jobs, job)
 		}
 	}
 	return jobs

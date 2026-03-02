@@ -36,6 +36,7 @@ SELECT
   j.job_agent_id,
   j.job_agent_config,
   j.external_id,
+  j.dispatch_context,
   j.status,
   j.message,
   j.created_at,
@@ -54,18 +55,19 @@ WHERE j.id = $1
 `
 
 type GetJobByIDRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	DispatchContext []byte
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
 func (q *Queries) GetJobByID(ctx context.Context, id uuid.UUID) (GetJobByIDRow, error) {
@@ -76,6 +78,7 @@ func (q *Queries) GetJobByID(ctx context.Context, id uuid.UUID) (GetJobByIDRow, 
 		&i.JobAgentID,
 		&i.JobAgentConfig,
 		&i.ExternalID,
+		&i.DispatchContext,
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,
@@ -103,17 +106,18 @@ func (q *Queries) GetWorkspaceIDByReleaseID(ctx context.Context, id uuid.UUID) (
 }
 
 const insertJob = `-- name: InsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO job (id, job_agent_id, job_agent_config, dispatch_context, status, created_at, updated_at)
+VALUES ($1, NULLIF($2::UUID, '00000000-0000-0000-0000-000000000000'::UUID), $3, $4, $5, $6, $7)
 `
 
 type InsertJobParams struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	Status         JobStatus
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	DispatchContext []byte
+	Status          JobStatus
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
@@ -121,6 +125,7 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 		arg.ID,
 		arg.JobAgentID,
 		arg.JobAgentConfig,
+		arg.DispatchContext,
 		arg.Status,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -148,6 +153,7 @@ SELECT
   j.job_agent_id,
   j.job_agent_config,
   j.external_id,
+  j.dispatch_context,
   j.status,
   j.message,
   j.created_at,
@@ -166,18 +172,19 @@ WHERE j.job_agent_id = $1
 `
 
 type ListJobsByAgentIDRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	DispatchContext []byte
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
 func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID uuid.UUID) ([]ListJobsByAgentIDRow, error) {
@@ -194,6 +201,7 @@ func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID uuid.UUID) (
 			&i.JobAgentID,
 			&i.JobAgentConfig,
 			&i.ExternalID,
+			&i.DispatchContext,
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
@@ -219,6 +227,7 @@ SELECT
   j.job_agent_id,
   j.job_agent_config,
   j.external_id,
+  j.dispatch_context,
   j.status,
   j.message,
   j.created_at,
@@ -236,21 +245,45 @@ JOIN release_job rj ON rj.job_id = j.id
 JOIN release r ON r.id = rj.release_id
 JOIN deployment d ON d.id = r.deployment_id
 WHERE d.workspace_id = $1
+UNION ALL
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.dispatch_context,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  '00000000-0000-0000-0000-000000000000'::UUID AS release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN job_agent ja ON ja.id = j.job_agent_id
+WHERE ja.workspace_id = $1
+  AND NOT EXISTS (SELECT 1 FROM release_job rj WHERE rj.job_id = j.id)
 `
 
 type ListJobsByWorkspaceIDRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	DispatchContext []byte
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
 func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListJobsByWorkspaceIDRow, error) {
@@ -267,6 +300,7 @@ func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UU
 			&i.JobAgentID,
 			&i.JobAgentConfig,
 			&i.ExternalID,
+			&i.DispatchContext,
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
@@ -287,12 +321,13 @@ func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UU
 }
 
 const upsertJob = `-- name: UpsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO job (id, job_agent_id, job_agent_config, external_id, dispatch_context, status, message, created_at, started_at, completed_at, updated_at)
+VALUES ($1, NULLIF($2::UUID, '00000000-0000-0000-0000-000000000000'::UUID), $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (id) DO UPDATE
 SET job_agent_id = EXCLUDED.job_agent_id,
     job_agent_config = EXCLUDED.job_agent_config,
     external_id = EXCLUDED.external_id,
+    dispatch_context = EXCLUDED.dispatch_context,
     status = EXCLUDED.status,
     message = EXCLUDED.message,
     started_at = EXCLUDED.started_at,
@@ -301,16 +336,17 @@ SET job_agent_id = EXCLUDED.job_agent_id,
 `
 
 type UpsertJobParams struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	ID              uuid.UUID
+	JobAgentID      uuid.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	DispatchContext []byte
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) UpsertJob(ctx context.Context, arg UpsertJobParams) error {
@@ -319,6 +355,7 @@ func (q *Queries) UpsertJob(ctx context.Context, arg UpsertJobParams) error {
 		arg.JobAgentID,
 		arg.JobAgentConfig,
 		arg.ExternalID,
+		arg.DispatchContext,
 		arg.Status,
 		arg.Message,
 		arg.CreatedAt,

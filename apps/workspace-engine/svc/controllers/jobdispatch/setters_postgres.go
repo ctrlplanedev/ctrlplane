@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	jobsmapper "workspace-engine/pkg/workspace/store/repository/db/jobs"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -36,20 +37,32 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 
 	jobID := uuid.MustParse(job.Id)
 	releaseID := uuid.MustParse(job.ReleaseId)
-	agentID := uuid.MustParse(job.JobAgentId)
+
+	var agentID uuid.UUID
+	if job.JobAgentId != "" {
+		agentID = uuid.MustParse(job.JobAgentId)
+	}
 
 	agentConfig, err := json.Marshal(job.JobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("marshal job agent config: %w", err)
 	}
 
+	dcBytes := []byte("{}")
+	if job.DispatchContext != nil {
+		if b, marshalErr := json.Marshal(job.DispatchContext); marshalErr == nil {
+			dcBytes = b
+		}
+	}
+
 	if err := queries.InsertJob(ctx, db.InsertJobParams{
-		ID:             jobID,
-		JobAgentID:     agentID,
-		JobAgentConfig: agentConfig,
-		Status:         db.JobStatus(job.Status),
-		CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
-		UpdatedAt:      pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
+		ID:              jobID,
+		JobAgentID:      agentID,
+		JobAgentConfig:  agentConfig,
+		DispatchContext: dcBytes,
+		Status:          jobsmapper.OapiToDBStatus[job.Status],
+		CreatedAt:       pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
+		UpdatedAt:       pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
 	}); err != nil {
 		return fmt.Errorf("insert job: %w", err)
 	}
