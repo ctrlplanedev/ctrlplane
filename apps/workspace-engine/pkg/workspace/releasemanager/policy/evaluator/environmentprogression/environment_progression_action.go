@@ -225,7 +225,22 @@ func (a *EnvironmentProgressionAction) didThresholdJustCross(
 		return false
 	}
 
-	return satisfiedAt.Equal(*job.CompletedAt)
+	successCompletedAt := job.CompletedAt
+	verificationStatus := a.store.JobVerifications.GetJobVerificationStatus(job.Id)
+	if verificationStatus != "" && verificationStatus != oapi.JobVerificationStatusPassed {
+		return false
+	}
+	if verificationStatus == oapi.JobVerificationStatusPassed {
+		if verificationCompletedAt := a.getLatestVerificationCompletedAt(job.Id); verificationCompletedAt != nil {
+			successCompletedAt = verificationCompletedAt
+		}
+	}
+
+	if successCompletedAt == nil {
+		return false
+	}
+
+	return satisfiedAt.Equal(*successCompletedAt)
 }
 
 func (a *EnvironmentProgressionAction) getThresholdSatisfiedAt(
@@ -236,4 +251,19 @@ func (a *EnvironmentProgressionAction) getThresholdSatisfiedAt(
 		return tracker.GetEarliestSuccess()
 	}
 	return tracker.GetSuccessPercentageSatisfiedAt(minPercentage)
+}
+
+func (a *EnvironmentProgressionAction) getLatestVerificationCompletedAt(jobId string) *time.Time {
+	verifications := a.store.JobVerifications.GetByJobId(jobId)
+	var latest *time.Time
+	for _, verification := range verifications {
+		completedAt := verification.CompletedAt()
+		if completedAt == nil {
+			continue
+		}
+		if latest == nil || completedAt.After(*latest) {
+			latest = completedAt
+		}
+	}
+	return latest
 }
