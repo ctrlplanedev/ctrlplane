@@ -300,6 +300,18 @@ CREATE TABLE workflow_job (
     index INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE policy_skip (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by TEXT NOT NULL DEFAULT '',
+    environment_id UUID,
+    expires_at TIMESTAMPTZ,
+    reason TEXT NOT NULL DEFAULT '',
+    resource_id UUID,
+    rule_id UUID NOT NULL,
+    version_id UUID NOT NULL
+);
+
 CREATE TABLE resource_variable (
     resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     key TEXT NOT NULL,

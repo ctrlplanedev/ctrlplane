@@ -97,6 +97,7 @@ func (s *Service) configureManager() error {
 				wsstore.WithDBResources(bgCtx),
 				wsstore.WithDBJobAgents(bgCtx),
 				wsstore.WithDBPolicies(bgCtx),
+				wsstore.WithDBPolicySkips(bgCtx),
 				wsstore.WithDBUserApprovalRecords(bgCtx),
 				wsstore.WithDBDeploymentVariables(bgCtx),
 				wsstore.WithDBDeploymentVariableValues(bgCtx),

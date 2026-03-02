@@ -19,6 +19,7 @@ func TestEngine_PolicySkipLifecycle_GetForTarget(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	policyID := uuid.New().String()
+	ruleID := uuid.New().String()
 	skipID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
@@ -43,7 +44,7 @@ func TestEngine_PolicySkipLifecycle_GetForTarget(t *testing.T) {
 			integration.PolicyID(policyID),
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -65,7 +66,7 @@ func TestEngine_PolicySkipLifecycle_GetForTarget(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        "hotfix",
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
@@ -95,6 +96,7 @@ func TestEngine_PolicySkipLifecycle_Delete(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	jobAgentID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -117,7 +119,7 @@ func TestEngine_PolicySkipLifecycle_Delete(t *testing.T) {
 		integration.WithPolicy(
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -137,7 +139,7 @@ func TestEngine_PolicySkipLifecycle_Delete(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        "temporary",
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
@@ -167,6 +169,7 @@ func TestEngine_PolicySkipLifecycle_IsExpired(t *testing.T) {
 	environmentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	jobAgentID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -189,7 +192,7 @@ func TestEngine_PolicySkipLifecycle_IsExpired(t *testing.T) {
 		integration.WithPolicy(
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -215,7 +218,7 @@ func TestEngine_PolicySkipLifecycle_IsExpired(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        "expired skip",
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now().Add(-2 * time.Hour),
@@ -235,7 +238,7 @@ func TestEngine_PolicySkipLifecycle_IsExpired(t *testing.T) {
 		VersionId:     version2.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        "active skip",
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
@@ -254,6 +257,7 @@ func TestEngine_PolicySkipLifecycle_WildcardEnvironment(t *testing.T) {
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
 	jobAgentID := uuid.New().String()
+	ruleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -276,7 +280,7 @@ func TestEngine_PolicySkipLifecycle_WildcardEnvironment(t *testing.T) {
 		integration.WithPolicy(
 			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
-				integration.PolicyRuleID("rule-1"),
+				integration.PolicyRuleID(ruleID),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -296,7 +300,7 @@ func TestEngine_PolicySkipLifecycle_WildcardEnvironment(t *testing.T) {
 		VersionId:     version.Id,
 		EnvironmentId: nil,
 		ResourceId:    &resourceID,
-		RuleId:        "rule-1",
+		RuleId:        ruleID,
 		Reason:        "skip for all environments",
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),

@@ -477,6 +477,18 @@ type PolicyRuleVersionSelector struct {
 	CreatedAt   pgtype.Timestamptz
 }
 
+type PolicySkip struct {
+	ID            uuid.UUID
+	CreatedAt     pgtype.Timestamptz
+	CreatedBy     string
+	EnvironmentID uuid.UUID
+	ExpiresAt     pgtype.Timestamptz
+	Reason        string
+	ResourceID    uuid.UUID
+	RuleID        uuid.UUID
+	VersionID     uuid.UUID
+}
+
 type Release struct {
 	ID            uuid.UUID
 	ResourceID    uuid.UUID
