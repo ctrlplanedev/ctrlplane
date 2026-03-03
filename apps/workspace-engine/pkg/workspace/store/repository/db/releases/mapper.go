@@ -80,7 +80,7 @@ func ToUpsertParams(release *oapi.Release) (db.UpsertReleaseParams, error) {
 	}
 
 	return db.UpsertReleaseParams{
-		ID:            release.Id,
+		ID:            release.UUID(),
 		ResourceID:    resourceID,
 		EnvironmentID: environmentID,
 		DeploymentID:  deploymentID,

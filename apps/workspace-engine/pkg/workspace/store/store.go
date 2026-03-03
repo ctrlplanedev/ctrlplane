@@ -458,6 +458,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	}
 
 	if setStatus != nil {
+		setStatus("Migrating legacy releases")
+	}
+	for _, rel := range s.repo.Releases().Items() {
+		if err := s.Releases.repo.Set(rel); err != nil {
+			log.Warn("Failed to migrate legacy release",
+				"content_hash", rel.ContentHash(), "error", err)
+		}
+	}
+
+	if setStatus != nil {
 		setStatus("Computing release targets")
 	}
 
