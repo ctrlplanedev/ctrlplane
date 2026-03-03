@@ -4,7 +4,6 @@ import (
 	"context"
 	"runtime"
 
-	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,8 +24,6 @@ func Chunk[T any](slice []T, chunkSize int) [][]T {
 
 	return chunks
 }
-
-var tracer = otel.Tracer("workspace-engine/pkg/concurrency")
 
 type options struct {
 	chunkSize      int

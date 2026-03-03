@@ -53,7 +53,6 @@ func Measure(ctx context.Context, metric *VerificationMetric, providerCtx *provi
 		return Measurement{}, err
 	}
 
-	message := "Measurement completed"
 	hasFailureCondition := metric.FailureCondition != nil && *metric.FailureCondition != ""
 
 	if hasFailureCondition {
@@ -65,14 +64,19 @@ func Measure(ctx context.Context, metric *VerificationMetric, providerCtx *provi
 
 		failed, err := failureEvaluator.Evaluate(data)
 		if err != nil {
-			message = fmt.Sprintf("Failure evaluation failed: %s", err.Error())
+			return Measurement{
+				MetricID:   metric.ID,
+				Message:    fmt.Sprintf("Failure evaluation failed: %s", err.Error()),
+				Status:     StatusFailed,
+				Data:       data,
+				MeasuredAt: measuredAt,
+			}, nil
 		}
 
 		if failed {
-			message = "Failure condition met"
 			return Measurement{
 				MetricID:   metric.ID,
-				Message:    message,
+				Message:    "Failure condition met",
 				Status:     StatusFailed,
 				Data:       data,
 				MeasuredAt: measuredAt,
@@ -88,14 +92,19 @@ func Measure(ctx context.Context, metric *VerificationMetric, providerCtx *provi
 
 	passed, err := successEvaluator.Evaluate(data)
 	if err != nil {
-		message = fmt.Sprintf("Success evaluation failed: %s", err.Error())
+		return Measurement{
+			MetricID:   metric.ID,
+			Message:    fmt.Sprintf("Success evaluation failed: %s", err.Error()),
+			Status:     StatusFailed,
+			Data:       data,
+			MeasuredAt: measuredAt,
+		}, nil
 	}
 
 	if passed {
-		message = "Success condition met"
 		return Measurement{
 			MetricID:   metric.ID,
-			Message:    message,
+			Message:    "Success condition met",
 			Status:     StatusPassed,
 			Data:       data,
 			MeasuredAt: measuredAt,
@@ -103,20 +112,18 @@ func Measure(ctx context.Context, metric *VerificationMetric, providerCtx *provi
 	}
 
 	if hasFailureCondition {
-		message = "Waiting for success or failure condition"
 		return Measurement{
 			MetricID:   metric.ID,
-			Message:    message,
+			Message:    "Waiting for success or failure condition",
 			Status:     StatusInconclusive,
 			Data:       data,
 			MeasuredAt: measuredAt,
 		}, nil
 	}
 
-	message = "Success condition not met"
 	return Measurement{
 		MetricID:   metric.ID,
-		Message:    message,
+		Message:    "Success condition not met",
 		Status:     StatusFailed,
 		Data:       data,
 		MeasuredAt: measuredAt,

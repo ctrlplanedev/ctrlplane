@@ -7,11 +7,7 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents/types"
-
-	"go.opentelemetry.io/otel"
 )
-
-var tracer = otel.Tracer("jobagents/testrunner")
 
 var _ types.Dispatchable = &TestRunner{}
 
