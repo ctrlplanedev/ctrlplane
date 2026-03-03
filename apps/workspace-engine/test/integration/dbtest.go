@@ -69,15 +69,15 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 	ws := workspace.New(ctx, workspaceID,
 		workspace.WithTraceStore(traceStore),
 		workspace.WithStoreOptions(
-			store.WithDBSystems(ctx),
-			store.WithDBDeployments(ctx),
-			store.WithDBEnvironments(ctx),
 			store.WithDBDeploymentVersions(ctx),
-			store.WithDBJobAgents(ctx),
+			store.WithDBEnvironments(ctx),
+			store.WithDBDeployments(ctx),
+			store.WithDBSystems(ctx),
 			store.WithDBResourceProviders(ctx),
 			store.WithDBSystemDeployments(ctx),
 			store.WithDBSystemEnvironments(ctx),
 			store.WithDBResources(ctx),
+			store.WithDBJobAgents(ctx),
 			store.WithDBPolicies(ctx),
 			store.WithDBUserApprovalRecords(ctx),
 			store.WithDBDeploymentVariables(ctx),
@@ -87,8 +87,6 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBWorkflowRuns(ctx),
 			store.WithDBWorkflowJobs(ctx),
 			store.WithDBResourceVariables(ctx),
-			store.WithDBJobs(ctx),
-			// store.WithDBReleases(ctx),
 		),
 	)
 

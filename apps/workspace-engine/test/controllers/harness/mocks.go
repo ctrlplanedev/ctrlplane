@@ -63,7 +63,7 @@ func (s *SelectorEvalSetter) SetComputedDeploymentResources(_ context.Context, _
 
 // DesiredReleaseGetter implements desiredrelease.Getter.
 type DesiredReleaseGetter struct {
-	Scope *evaluator.EvaluatorScope
+	Scope           *evaluator.EvaluatorScope
 	Versions        []*oapi.DeploymentVersion
 	Policies        []*oapi.Policy
 	ApprovalRecords []*oapi.UserApprovalRecord
