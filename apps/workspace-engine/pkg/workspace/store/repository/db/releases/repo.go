@@ -114,7 +114,7 @@ func (r *Repo) Set(entity *oapi.Release) error {
 		return fmt.Errorf("upsert release: %w", err)
 	}
 
-	releaseUUID := entity.Id
+	releaseUUID := entity.UUID()
 
 	encryptedKeys := make(map[string]bool, len(entity.EncryptedVariables))
 	for _, k := range entity.EncryptedVariables {

@@ -13,6 +13,7 @@ import (
 
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
 
 	"github.com/google/uuid"
@@ -109,13 +110,18 @@ func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentIn
 		return c.getter.StreamResources(ctx, deployment.WorkspaceID, streamBatchSize, batches)
 	})
 
+	deploymentMap, err := celutil.EntityToMap(deployment.Raw)
+	if err != nil {
+		return nil, fmt.Errorf("convert deployment to map: %w", err)
+	}
+
 	var mu sync.Mutex
 	var matchedIDs []uuid.UUID
 	for range numWorkers {
 		g.Go(func() error {
 			celCtx := map[string]any{
 				"resource":   nil,
-				"deployment": deployment.Raw,
+				"deployment": deploymentMap,
 			}
 			var local []uuid.UUID
 			for batch := range batches {
@@ -172,7 +178,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
-	kind := "deployment-resource-selector-eval"
+	kind := events.DeploymentResourceselectorEvalKind
 	queue := postgres.NewForKinds(pgxPool, kind)
 	controller := &Controller{
 		getter: &PostgresGetter{},

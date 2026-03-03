@@ -7,10 +7,13 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
+
+	"github.com/charmbracelet/log"
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
@@ -42,6 +45,7 @@ func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment
 			}
 		}
 	}
+
 	return releaseTargets, nil
 }
 
@@ -60,6 +64,14 @@ func HandleDeploymentCreated(
 	}
 
 	ws.Store().RelationshipIndexes.AddEntity(ctx, deployment.Id)
+
+	err := events.EnqueueDeploymentResourceselectorEval(ws.Queue(), ctx, events.DeploymentResourceselectorEvalParams{
+		WorkspaceID:  ws.ID,
+		DeploymentID: deployment.Id,
+	})
+	if err != nil {
+		log.Error("failed to enqueue deployment resourceselector eval", "error", err)
+	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
 	if err != nil {
@@ -205,6 +217,14 @@ func HandleDeploymentUpdated(
 	}
 
 	ws.Store().RelationshipIndexes.DirtyEntity(ctx, deployment.Id)
+
+	err = events.EnqueueDeploymentResourceselectorEval(ws.Queue(), ctx, events.DeploymentResourceselectorEvalParams{
+		WorkspaceID:  ws.ID,
+		DeploymentID: deployment.Id,
+	})
+	if err != nil {
+		log.Error("failed to enqueue deployment resourceselector eval", "error", err)
+	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
 	if err != nil {
