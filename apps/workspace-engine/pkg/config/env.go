@@ -41,5 +41,5 @@ type Config struct {
 
 	TraceTokenSecret string `envconfig:"TRACE_TOKEN_SECRET" default:"secret"`
 
-	JobDispatchEnabled bool `envconfig:"JOB_DISPATCH_ENABLED" default:"false"`
+	JobDispatchEnabled bool `envconfig:"JOB_DISPATCH_ENABLED" default:"true"`
 }
