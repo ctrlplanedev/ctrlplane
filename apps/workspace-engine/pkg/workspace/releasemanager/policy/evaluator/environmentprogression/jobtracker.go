@@ -116,14 +116,14 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 				continue
 			}
 
-			if t.SuccessStatuses[job.Status] && job.CompletedAt != nil {
+			if completedAt, ok := t.successCompletionTime(job); ok {
 				targetKey := rt.Key()
 				// Store the oldest successful completion time for this release target
-				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {
-					t.successfulReleaseTargets[targetKey] = *job.CompletedAt
+				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || completedAt.Before(existingTime) {
+					t.successfulReleaseTargets[targetKey] = *completedAt
 				}
-				if t.mostRecentSuccess.Before(*job.CompletedAt) {
-					t.mostRecentSuccess = *job.CompletedAt
+				if t.mostRecentSuccess.Before(*completedAt) {
+					t.mostRecentSuccess = *completedAt
 				}
 			}
 
@@ -138,6 +138,40 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	)
 
 	return t.jobs
+}
+
+func (t *ReleaseTargetJobTracker) successCompletionTime(job *oapi.Job) (*time.Time, bool) {
+	if !t.SuccessStatuses[job.Status] || job.CompletedAt == nil {
+		return nil, false
+	}
+
+	verificationStatus := t.store.JobVerifications.GetJobVerificationStatus(job.Id)
+	if verificationStatus != "" && verificationStatus != oapi.JobVerificationStatusPassed {
+		return nil, false
+	}
+
+	if verificationStatus == oapi.JobVerificationStatusPassed {
+		if completedAt := t.getLatestVerificationCompletedAt(job.Id); completedAt != nil {
+			return completedAt, true
+		}
+	}
+
+	return job.CompletedAt, true
+}
+
+func (t *ReleaseTargetJobTracker) getLatestVerificationCompletedAt(jobId string) *time.Time {
+	verifications := t.store.JobVerifications.GetByJobId(jobId)
+	var latest *time.Time
+	for _, verification := range verifications {
+		completedAt := verification.CompletedAt()
+		if completedAt == nil {
+			continue
+		}
+		if latest == nil || completedAt.After(*latest) {
+			latest = completedAt
+		}
+	}
+	return latest
 }
 
 // GetSuccessPercentage returns the percentage of release targets that have at least one successful job (0-100)

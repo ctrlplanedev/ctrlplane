@@ -67,6 +67,71 @@ func setupTestStoreForJobTracker() *store.Store {
 	return st
 }
 
+func upsertVerificationWithStatus(
+	st *store.Store,
+	ctx context.Context,
+	jobId string,
+	status oapi.JobVerificationStatus,
+	createdAt time.Time,
+) *oapi.JobVerification {
+	successCondition := "result.statusCode == 200"
+	metrics := []oapi.VerificationMetricStatus{}
+
+	switch status {
+	case oapi.JobVerificationStatusPassed:
+		metrics = []oapi.VerificationMetricStatus{
+			{
+				Name:             "health-check",
+				IntervalSeconds:  30,
+				Count:            2,
+				SuccessCondition: successCondition,
+				Provider:         oapi.MetricProvider{},
+				Measurements: []oapi.VerificationMeasurement{
+					{Status: oapi.Passed, MeasuredAt: createdAt},
+					{Status: oapi.Passed, MeasuredAt: createdAt.Add(30 * time.Second)},
+				},
+			},
+		}
+	case oapi.JobVerificationStatusFailed:
+		metrics = []oapi.VerificationMetricStatus{
+			{
+				Name:             "health-check",
+				IntervalSeconds:  30,
+				Count:            2,
+				SuccessCondition: successCondition,
+				Provider:         oapi.MetricProvider{},
+				Measurements: []oapi.VerificationMeasurement{
+					{Status: oapi.Failed, MeasuredAt: createdAt},
+					{Status: oapi.Failed, MeasuredAt: createdAt.Add(30 * time.Second)},
+				},
+			},
+		}
+	default:
+		metrics = []oapi.VerificationMetricStatus{
+			{
+				Name:             "health-check",
+				IntervalSeconds:  30,
+				Count:            2,
+				SuccessCondition: successCondition,
+				Provider:         oapi.MetricProvider{},
+				Measurements: []oapi.VerificationMeasurement{
+					{Status: oapi.Passed, MeasuredAt: createdAt},
+				},
+			},
+		}
+	}
+
+	verification := &oapi.JobVerification{
+		Id:        "verification-" + jobId,
+		JobId:     jobId,
+		CreatedAt: createdAt,
+		Metrics:   metrics,
+	}
+
+	st.JobVerifications.Upsert(ctx, verification)
+	return verification
+}
+
 func TestGetReleaseTargets(t *testing.T) {
 	st := setupTestStoreForJobTracker()
 	ctx := context.Background()
@@ -214,6 +279,73 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	percentage := tracker.GetSuccessPercentage()
 	expected := float32(100.0 / 3.0) // ~33.33%
 	assert.InDelta(t, expected, percentage, 0.1, "expected ~33.33%% success")
+}
+
+func TestReleaseTargetJobTracker_VerificationStatus(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	rt := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	_ = st.ReleaseTargets.Upsert(ctx, rt)
+
+	release := &oapi.Release{
+		ReleaseTarget: *rt,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	_ = st.Releases.Upsert(ctx, release)
+
+	completedAt := time.Now().Add(-10 * time.Minute)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      completedAt.Add(-1 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	assert.Equal(t, float32(100.0), tracker.GetSuccessPercentage(), "expected 100%% with no verification")
+
+	upsertVerificationWithStatus(st, ctx, job1.Id, oapi.JobVerificationStatusFailed, completedAt.Add(1*time.Minute))
+
+	tracker2 := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	assert.Equal(t, float32(0.0), tracker2.GetSuccessPercentage(), "expected 0%% when verification failed")
+
+	completedAt2 := time.Now().Add(-5 * time.Minute)
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      completedAt2.Add(-1 * time.Minute),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	st.Jobs.Upsert(ctx, job2)
+
+	verification := upsertVerificationWithStatus(st, ctx, job2.Id, oapi.JobVerificationStatusPassed, completedAt2.Add(1*time.Minute))
+
+	tracker3 := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	assert.Equal(t, float32(100.0), tracker3.GetSuccessPercentage(), "expected 100%% with passed verification")
+
+	expectedCompletedAt := verification.CompletedAt()
+	if assert.NotNil(t, expectedCompletedAt) {
+		assert.True(t, tracker3.GetEarliestSuccess().Equal(*expectedCompletedAt))
+	}
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T) {
