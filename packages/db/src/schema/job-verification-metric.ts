@@ -58,8 +58,7 @@ export const jobVerificationMetricStatus = pgTable("job_verification_metric", {
     .notNull()
     .defaultNow(),
 
-  jobId: uuid("job_id")
-    .notNull(),
+  jobId: uuid("job_id").notNull(),
 
   name: text("name").notNull(),
   provider: jsonb("provider").notNull(),

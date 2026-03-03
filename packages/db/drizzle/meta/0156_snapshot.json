@@ -1,6 +1,6 @@
 {
-  "id": "767c0bef-4521-46d8-942b-2a15b4e27037",
-  "prevId": "d252d9bf-cc52-4752-a8de-e8476ea2ea2f",
+  "id": "42419d56-ea42-4e25-9dc0-eccbd34b728d",
+  "prevId": "767c0bef-4521-46d8-942b-2a15b4e27037",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2967,7 +2967,7 @@
           "tableTo": "resource",
           "columnsFrom": ["resource_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "release_environment_id_environment_id_fk": {
@@ -2976,7 +2976,7 @@
           "tableTo": "environment",
           "columnsFrom": ["environment_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "release_deployment_id_deployment_id_fk": {
@@ -2985,7 +2985,7 @@
           "tableTo": "deployment",
           "columnsFrom": ["deployment_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "release_version_id_deployment_version_id_fk": {
@@ -2994,7 +2994,7 @@
           "tableTo": "deployment_version",
           "columnsFrom": ["version_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

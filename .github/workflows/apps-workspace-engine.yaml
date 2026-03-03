@@ -19,7 +19,6 @@ jobs:
       contents: read
       pull-requests: write
 
-    # Add PostgreSQL service for integration tests
     services:
       postgres:
         image: postgres:18

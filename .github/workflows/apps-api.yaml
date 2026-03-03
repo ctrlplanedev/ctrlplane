@@ -22,6 +22,7 @@ jobs:
   build:
     uses: ./.github/workflows/build-image.yaml
     secrets: inherit
+
     with:
       image-name: ctrlplane/api
       dockerfile: apps/api/Dockerfile

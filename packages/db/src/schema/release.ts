@@ -12,26 +12,41 @@ import {
 import { deploymentVersion } from "./deployment-version.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
+import { job } from "./job.js";
 import { resource } from "./resource.js";
 
 export const release = pgTable("release", {
   id: uuid("id").primaryKey().defaultRandom(),
   resourceId: uuid("resource_id")
     .notNull()
-    .references(() => resource.id),
+    .references(() => resource.id, { onDelete: "cascade" }),
   environmentId: uuid("environment_id")
     .notNull()
-    .references(() => environment.id),
+    .references(() => environment.id, { onDelete: "cascade" }),
   deploymentId: uuid("deployment_id")
     .notNull()
-    .references(() => deployment.id),
+    .references(() => deployment.id, { onDelete: "cascade" }),
   versionId: uuid("version_id")
     .notNull()
-    .references(() => deploymentVersion.id),
+    .references(() => deploymentVersion.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
+
+export const releaseJob = pgTable(
+  "release_job",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => job.id, { onDelete: "cascade" }),
+    releaseId: uuid("release_id")
+      .notNull()
+      .references(() => release.id, { onDelete: "cascade" }),
+  },
+  (t) => [uniqueIndex().on(t.releaseId, t.jobId)],
+);
 
 export const releaseVariable = pgTable(
   "release_variable",
@@ -39,7 +54,7 @@ export const releaseVariable = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     releaseId: uuid("release_id")
       .notNull()
-      .references(() => release.id),
+      .references(() => release.id, { onDelete: "cascade" }),
     key: text("key").notNull(),
     value: jsonb("value").notNull(),
     encrypted: boolean("encrypted").notNull().default(false),

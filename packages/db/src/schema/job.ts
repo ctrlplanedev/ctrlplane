@@ -73,11 +73,11 @@ export const job = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => ({
-    idx: index("job_created_at_idx").on(t.createdAt),
-    statusIdx: index("job_status_idx").on(t.status),
-    externalIdIdx: index("job_external_id_idx").on(t.externalId),
-  }),
+  (t) => [
+    index("job_created_at_idx").on(t.createdAt),
+    index("job_status_idx").on(t.status),
+    index("job_external_id_idx").on(t.externalId),
+  ],
 );
 
 export const jobRelations = relations(job, ({ many, one }) => ({
@@ -99,10 +99,10 @@ export const jobMetadata = pgTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({
-    uniq: uniqueIndex().on(t.key, t.jobId),
-    jobIdIdx: index("job_metadata_job_id_idx").on(t.jobId),
-  }),
+  (t) => [
+    uniqueIndex().on(t.key, t.jobId),
+    index("job_metadata_job_id_idx").on(t.jobId),
+  ],
 );
 
 export type JobMetadata = InferSelectModel<typeof jobMetadata>;
