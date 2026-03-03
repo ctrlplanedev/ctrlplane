@@ -60,7 +60,8 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 ) (*EligibilityResult, error) {
 	ctx, span := jobEligibilityTracer.Start(ctx, "ShouldCreateJob",
 		oteltrace.WithAttributes(
-			attribute.String("release.id", release.ContentHash()),
+			attribute.String("release.id", release.Id.String()),
+			attribute.String("release.content_hash", release.ContentHash()),
 			attribute.String("release.version.id", release.Version.Id),
 			attribute.String("release.version.tag", release.Version.Tag),
 			attribute.String("release.target.key", release.ReleaseTarget.Key()),

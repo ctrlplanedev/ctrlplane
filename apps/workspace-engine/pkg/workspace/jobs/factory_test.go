@@ -174,7 +174,7 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify release ID is correct
-	require.Equal(t, release.ContentHash(), job.ReleaseId)
+	require.Equal(t, release.Id.String(), job.ReleaseId)
 
 	// Verify job agent ID is correct
 	require.Equal(t, jobAgentId, job.JobAgentId)

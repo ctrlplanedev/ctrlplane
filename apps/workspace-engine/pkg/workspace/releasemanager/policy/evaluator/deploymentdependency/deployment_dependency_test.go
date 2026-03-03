@@ -91,7 +91,7 @@ func generateReleaseAndJob(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ContentHash(),
+		ReleaseId:   release.Id.String(),
 		Status:      jobStatus,
 		CreatedAt:   now,
 		CompletedAt: completedAt,

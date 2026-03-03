@@ -177,7 +177,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 
 func createTestReleaseAndJob(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.Job) {
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ContentHash())
+	job := createTestJob(s, ctx, release.Id.String())
 	return release, job
 }
 
@@ -269,7 +269,7 @@ func TestScheduler_StartVerification_AlreadyRunning(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ContentHash(), 1, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 1, 3600)
 
 	// Start verification first time
 	scheduler.StartVerification(ctx, verification.Id)
@@ -300,7 +300,7 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ContentHash(), 1, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 1, 3600)
 
 	// Mark all metrics as complete by adding measurements
 	for i := range verification.Metrics {
@@ -330,7 +330,7 @@ func TestScheduler_StartVerification_Success(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ContentHash(), 3, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 3, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 
@@ -350,7 +350,7 @@ func TestScheduler_StopVerification(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ContentHash(), 2, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 
@@ -385,7 +385,7 @@ func TestScheduler_StopVerification_MultipleTimes(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ContentHash(), 1, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 1, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 	scheduler.StopVerification(verification.Id)
@@ -405,7 +405,7 @@ func TestScheduler_ConcurrentStartStop(t *testing.T) {
 	verificationIDs := make([]string, 10)
 	for i := 0; i < 10; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ContentHash(), 2, 3600)
+		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 
@@ -452,7 +452,7 @@ func TestScheduler_MultipleMetrics(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Create verification with 5 metrics
-	verification := createTestVerification(s, ctx, release.ContentHash(), 5, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 5, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 
@@ -472,7 +472,7 @@ func TestScheduler_RestartAfterStop(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ContentHash(), 2, 3600)
+	verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 
 	// Start, stop, start again
 	scheduler.StartVerification(ctx, verification.Id)
@@ -504,7 +504,7 @@ func TestScheduler_VerificationWithNoMetrics(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ContentHash())
+	job := createTestJob(s, ctx, release.Id.String())
 
 	verification := &oapi.JobVerification{
 		Id:        uuid.New().String(),
@@ -708,7 +708,7 @@ func BenchmarkScheduler_StartVerification(b *testing.B) {
 	verificationIDs := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ContentHash(), 2, 3600)
+		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 
@@ -732,7 +732,7 @@ func BenchmarkScheduler_StopVerification(b *testing.B) {
 	verificationIDs := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ContentHash(), 2, 3600)
+		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
 		scheduler.StartVerification(ctx, verification.Id)
 	}
@@ -752,7 +752,7 @@ func BenchmarkScheduler_ConcurrentOperations(b *testing.B) {
 	verificationIDs := make([]string, 100)
 	for i := 0; i < 100; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ContentHash(), 2, 3600)
+		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 

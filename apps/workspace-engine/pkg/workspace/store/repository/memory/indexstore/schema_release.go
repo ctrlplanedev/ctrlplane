@@ -30,7 +30,7 @@ func (r *ReleaseIDIndexer) FromObject(obj any) (bool, []byte, error) {
 	if !ok {
 		return false, nil, fmt.Errorf("expected *oapi.Release, got %T", obj)
 	}
-	id := release.ContentHash()
+	id := release.Id.String()
 	return true, []byte(id + "\x00"), nil
 }
 

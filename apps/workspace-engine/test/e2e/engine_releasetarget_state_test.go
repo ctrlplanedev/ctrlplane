@@ -67,12 +67,12 @@ func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
 
 	// Verify: no current release (no successful jobs)
 	if state.CurrentRelease != nil {
-		t.Errorf("expected no current release, got release %s", state.CurrentRelease.ContentHash())
+		t.Errorf("expected no current release, got release %s", state.CurrentRelease.Id.String())
 	}
 
 	// Verify: no desired release (no versions available)
 	if state.DesiredRelease != nil {
-		t.Errorf("expected no desired release, got release %s", state.DesiredRelease.ContentHash())
+		t.Errorf("expected no desired release, got release %s", state.DesiredRelease.Id.String())
 	}
 }
 
@@ -137,7 +137,7 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 
 	// Verify: no current release (job not completed yet)
 	if state.CurrentRelease != nil {
-		t.Errorf("expected no current release, got release %s", state.CurrentRelease.ContentHash())
+		t.Errorf("expected no current release, got release %s", state.CurrentRelease.Id.String())
 	}
 
 	// Verify: desired release exists
@@ -189,6 +189,11 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
+	allReleases := engine.Workspace().Releases().Items()
+	if len(allReleases) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(allReleases))
+	}
+
 	// Get the job and mark it as successful
 	jobs := engine.Workspace().Jobs().Items()
 	if len(jobs) != 1 {
@@ -203,9 +208,23 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 
 	// Mark the job as successful
 	now := time.Now()
-	job.Status = oapi.JobStatusSuccessful
-	job.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+		Id: &job.Id,
+		Job: oapi.Job{
+			Id:          job.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
+
+	allReleases2 := engine.Workspace().Releases().Items()
+	if len(allReleases2) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(allReleases2))
+	}
 
 	// Get the release target (get it first so we can invalidate cache)
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
@@ -214,6 +233,11 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 	}
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
+	}
+
+	allReleases3 := engine.Workspace().Releases().Items()
+	if len(allReleases3) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(allReleases3))
 	}
 
 	var releaseTarget *oapi.ReleaseTarget
@@ -248,8 +272,13 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 
 	// Verify: releases are the same
 	if state.CurrentRelease.ContentHash() != state.DesiredRelease.ContentHash() {
-		t.Errorf("expected current and desired releases to be the same, got current=%s, desired=%s",
+		t.Errorf("expected current and desired releases to have the same content hash, got current=%s, desired=%s",
 			state.CurrentRelease.ContentHash(), state.DesiredRelease.ContentHash())
+	}
+
+	if state.CurrentRelease.Id.String() != state.DesiredRelease.Id.String() {
+		t.Errorf("expected current and desired releases to be the same, got current=%s, desired=%s",
+			state.CurrentRelease.Id.String(), state.DesiredRelease.Id.String())
 	}
 }
 
@@ -352,7 +381,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 	}
 
 	// Verify: releases are different
-	if state.CurrentRelease.ContentHash() == state.DesiredRelease.ContentHash() {
+	if state.CurrentRelease.Id.String() == state.DesiredRelease.Id.String() {
 		t.Errorf("expected current and desired releases to differ")
 	}
 }
@@ -428,7 +457,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
 	if state.CurrentRelease != nil {
-		t.Errorf("expected no current release when job is pending, got release %s", state.CurrentRelease.ContentHash())
+		t.Errorf("expected no current release when job is pending, got release %s", state.CurrentRelease.Id.String())
 	}
 
 	// State 2: Job is InProgress - still no current release
@@ -440,7 +469,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
 	if state.CurrentRelease != nil {
-		t.Errorf("expected no current release when job is in progress, got release %s", state.CurrentRelease.ContentHash())
+		t.Errorf("expected no current release when job is in progress, got release %s", state.CurrentRelease.Id.String())
 	}
 
 	// State 3: Job is Successful - current release should now exist
@@ -619,7 +648,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 		t.Fatalf("failed to get release target state for pending: %v", err)
 	}
 	if state2.CurrentRelease != nil {
-		t.Errorf("expected no current release for pending target, got release %s", state2.CurrentRelease.ContentHash())
+		t.Errorf("expected no current release for pending target, got release %s", state2.CurrentRelease.Id.String())
 	}
 	if state2.DesiredRelease == nil {
 		t.Errorf("expected desired release for pending target, got nil")

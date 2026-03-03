@@ -72,7 +72,8 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 	}
 
 	span.SetAttributes(
-		attribute.String("release.id", release.ContentHash()),
+		attribute.String("release.id", release.Id.String()),
+		attribute.String("release.content_hash", release.ContentHash()),
 		attribute.String("release_target.key", release.ReleaseTarget.Key()),
 	)
 
@@ -106,7 +107,8 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 	}
 
 	span.SetAttributes(
-		attribute.String("rollback_to_release.id", currentRelease.ContentHash()),
+		attribute.String("rollback_to_release.id", currentRelease.Id.String()),
+		attribute.String("rollback_to_release.content_hash", currentRelease.ContentHash()),
 		attribute.String("rollback_to_version.id", currentRelease.Version.Id),
 		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
 	)

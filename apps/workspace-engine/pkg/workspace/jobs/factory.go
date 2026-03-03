@@ -169,11 +169,11 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 
 	if action != nil {
 		action.AddStep("Create job", trace.StepResultPass,
-			fmt.Sprintf("Job created successfully with ID %s for release %s", jobId, release.ContentHash())).
+			fmt.Sprintf("Job created successfully with ID %s for release %s", jobId, release.Id.String())).
 			AddMetadata("job_id", jobId).
 			AddMetadata("job_status", string(oapi.JobStatusPending)).
 			AddMetadata("job_agent_id", jobAgent.Id).
-			AddMetadata("release_id", release.ContentHash()).
+			AddMetadata("release_id", release.Id.String()).
 			AddMetadata("version_tag", release.Version.Tag)
 	}
 
@@ -184,7 +184,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 
 	return &oapi.Job{
 		Id:              jobId,
-		ReleaseId:       release.ContentHash(),
+		ReleaseId:       release.Id.String(),
 		JobAgentId:      jobAgent.Id,
 		JobAgentConfig:  jobAgent.Config,
 		Status:          oapi.JobStatusPending,

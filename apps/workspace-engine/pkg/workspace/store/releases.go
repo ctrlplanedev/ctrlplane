@@ -29,6 +29,7 @@ func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
 	if release.Id == uuid.Nil {
 		release.Id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(release.ContentHash()))
 	}
+
 	if err := r.repo.Set(release); err != nil {
 		return err
 	}

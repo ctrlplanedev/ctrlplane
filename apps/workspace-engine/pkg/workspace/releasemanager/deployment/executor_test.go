@@ -40,7 +40,7 @@ func createTestJobAgent(id, workspaceID, name, agentType string) *oapi.JobAgent 
 	}
 }
 
-func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oapi.Deployment {
+func createTestDeploymentForExecutor(id, name, jobAgentID string) *oapi.Deployment {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
@@ -54,7 +54,7 @@ func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oap
 	}
 }
 
-func createTestEnvironmentForExecutor(id, systemID, name string) *oapi.Environment {
+func createTestEnvironmentForExecutor(id, name string) *oapi.Environment {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	return &oapi.Environment{
@@ -109,15 +109,23 @@ func TestExecuteRelease_Success(t *testing.T) {
 	versionID := uuid.New().String()
 	jobAgentID := uuid.New().String()
 
+	testStore.Systems.Upsert(ctx, &oapi.System{
+		Id:   systemID,
+		Name: "test-system",
+	})
+
 	// Create necessary entities in store
 	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "test-runner")
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
-	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
+	deployment := createTestDeploymentForExecutor(deploymentID, "test-deployment", jobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
 
-	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	testStore.SystemDeployments.Link(systemID, deploymentID)
+
+	environment := createTestEnvironmentForExecutor(environmentID, "test-environment")
 	_ = testStore.Environments.Upsert(ctx, environment)
+	testStore.SystemEnvironments.Link(systemID, environmentID)
 
 	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
 	_, _ = testStore.Resources.Upsert(ctx, resource)
@@ -132,14 +140,14 @@ func TestExecuteRelease_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, jobs, 1)
 	job := jobs[0]
-	assert.Equal(t, release.ContentHash(), job.ReleaseId)
+	assert.Equal(t, release.Id.String(), job.ReleaseId)
 	assert.Equal(t, oapi.JobStatusPending, job.Status)
 	assert.Equal(t, jobAgentID, job.JobAgentId)
 
 	// Verify release was persisted
-	storedRelease, exists := testStore.Releases.Get(release.ContentHash())
+	storedRelease, exists := testStore.Releases.Get(release.Id.String())
 	require.True(t, exists)
-	assert.Equal(t, release.ContentHash(), storedRelease.ContentHash())
+	assert.Equal(t, release.Id.String(), storedRelease.Id.String())
 
 	// Verify job was persisted
 	storedJob, exists := testStore.Jobs.Get(job.Id)
@@ -173,7 +181,12 @@ func TestExecuteRelease_MultipleDeploymentJobAgents_MergesSelectedAgentConfig(t 
 	testStore.JobAgents.Upsert(ctx, selectedAgent)
 	testStore.JobAgents.Upsert(ctx, otherAgent)
 
-	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", selectedAgentID)
+	testStore.Systems.Upsert(ctx, &oapi.System{
+		Id:   systemID,
+		Name: "test-system",
+	})
+
+	deployment := createTestDeploymentForExecutor(deploymentID, "test-deployment", selectedAgentID)
 	deployment.JobAgentConfig = oapi.JobAgentConfig{
 		"template": "deployment-template",
 		"retries":  3,
@@ -196,9 +209,11 @@ func TestExecuteRelease_MultipleDeploymentJobAgents_MergesSelectedAgentConfig(t 
 		},
 	}
 	_ = testStore.Deployments.Upsert(ctx, deployment)
+	testStore.SystemDeployments.Link(systemID, deploymentID)
 
-	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	environment := createTestEnvironmentForExecutor(environmentID, "test-environment")
 	_ = testStore.Environments.Upsert(ctx, environment)
+	testStore.SystemEnvironments.Link(systemID, environmentID)
 
 	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
 	_, _ = testStore.Resources.Upsert(ctx, resource)
@@ -249,7 +264,7 @@ func TestExecuteRelease_NoJobAgentConfigured(t *testing.T) {
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, jobs[0].Status)
 
 	// Verify release was still persisted
-	_, exists := testStore.Releases.Get(release.ContentHash())
+	_, exists := testStore.Releases.Get(release.Id.String())
 	require.True(t, exists)
 }
 
@@ -286,9 +301,15 @@ func TestExecuteRelease_SkipsDispatchForInvalidJobAgent(t *testing.T) {
 	versionID := uuid.New().String()
 	nonExistentJobAgentID := uuid.New().String()
 
+	testStore.Systems.Upsert(ctx, &oapi.System{
+		Id:   systemID,
+		Name: "test-system",
+	})
+
 	// Create deployment with non-existent job agent
-	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", nonExistentJobAgentID)
+	deployment := createTestDeploymentForExecutor(deploymentID, "test-deployment", nonExistentJobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
+	testStore.SystemDeployments.Link(systemID, deploymentID)
 
 	// Create release
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
@@ -323,15 +344,22 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 	resourceID := uuid.New().String()
 	jobAgentID := uuid.New().String()
 
+	testStore.Systems.Upsert(ctx, &oapi.System{
+		Id:   systemID,
+		Name: "test-system",
+	})
+
 	// Create necessary entities
 	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "test-runner")
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
-	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
+	deployment := createTestDeploymentForExecutor(deploymentID, "test-deployment", jobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
+	testStore.SystemDeployments.Link(systemID, deploymentID)
 
-	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	environment := createTestEnvironmentForExecutor(environmentID, "test-environment")
 	_ = testStore.Environments.Upsert(ctx, environment)
+	testStore.SystemEnvironments.Link(systemID, environmentID)
 
 	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
 	_, _ = testStore.Resources.Upsert(ctx, resource)
@@ -356,7 +384,7 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 
 	for i, job := range allJobs {
 		// Verify each job has correct release ID
-		assert.Equal(t, releases[i].ContentHash(), job.ReleaseId)
+		assert.Equal(t, releases[i].Id.String(), job.ReleaseId)
 
 		// Verify job was persisted
 		storedJob, exists := testStore.Jobs.Get(job.Id)
@@ -364,8 +392,9 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 		assert.Equal(t, job.Id, storedJob.Id)
 
 		// Verify release was persisted
-		storedRelease, exists := testStore.Releases.Get(releases[i].ContentHash())
+		storedRelease, exists := testStore.Releases.Get(releases[i].Id.String())
 		require.True(t, exists)
+		assert.Equal(t, releases[i].Id.String(), storedRelease.Id.String())
 		assert.Equal(t, releases[i].ContentHash(), storedRelease.ContentHash())
 	}
 }
