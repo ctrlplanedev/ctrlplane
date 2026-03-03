@@ -800,7 +800,7 @@ func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
 
 	// Count jobs for this deployment
 	deploymentJobs := 0
-	var jobsForDeployment []string
+
 	for _, job := range pendingJobs {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
 		if !ok {
@@ -808,7 +808,6 @@ func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
 		}
 		if release.ReleaseTarget.DeploymentId == deploymentID {
 			deploymentJobs++
-			jobsForDeployment = append(jobsForDeployment, job.Id)
 
 			assert.NotNil(t, job.DispatchContext, "pending job should have DispatchContext")
 			assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
