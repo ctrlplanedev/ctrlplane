@@ -347,6 +347,8 @@ func HandleResourceProviderSetResources(
 	}
 	postProcessSpan.End()
 
+	dispatchResourceSelectorEval(ctx, ws)
+
 	span.SetAttributes(
 		attribute.Int("total.deleted", len(resourcesToDelete)),
 		attribute.Int("total.upserted", len(resourcesToUpsert)),

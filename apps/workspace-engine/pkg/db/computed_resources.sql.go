@@ -91,14 +91,19 @@ const setComputedDeploymentResources = `-- name: SetComputedDeploymentResources 
 WITH current AS (
     SELECT unnest($2::uuid[]) AS resource_id
 ),
+valid AS (
+    SELECT c.resource_id
+    FROM current c
+    JOIN resource r ON r.id = c.resource_id
+),
 deleted AS (
     DELETE FROM computed_deployment_resource
     WHERE deployment_id = $1
-      AND resource_id NOT IN (SELECT resource_id FROM current)
+      AND resource_id NOT IN (SELECT resource_id FROM valid)
 )
 INSERT INTO computed_deployment_resource (deployment_id, resource_id, last_evaluated_at)
 SELECT $1, resource_id, NOW()
-FROM current
+FROM valid
 ON CONFLICT (deployment_id, resource_id) DO UPDATE
 SET last_evaluated_at = NOW()
 `
@@ -110,6 +115,8 @@ type SetComputedDeploymentResourcesParams struct {
 
 // Replaces the full set of computed resources for a deployment.
 // Deletes stale rows and upserts the current set with last_evaluated_at = NOW().
+// The valid CTE filters against the resource table to avoid FK violations from
+// resources deleted between selector evaluation and this write.
 func (q *Queries) SetComputedDeploymentResources(ctx context.Context, arg SetComputedDeploymentResourcesParams) error {
 	_, err := q.db.Exec(ctx, setComputedDeploymentResources, arg.DeploymentID, arg.ResourceIds)
 	return err
@@ -119,14 +126,19 @@ const setComputedEnvironmentResources = `-- name: SetComputedEnvironmentResource
 WITH current AS (
     SELECT unnest($2::uuid[]) AS resource_id
 ),
+valid AS (
+    SELECT c.resource_id
+    FROM current c
+    JOIN resource r ON r.id = c.resource_id
+),
 deleted AS (
     DELETE FROM computed_environment_resource
     WHERE environment_id = $1
-      AND resource_id NOT IN (SELECT resource_id FROM current)
+      AND resource_id NOT IN (SELECT resource_id FROM valid)
 )
 INSERT INTO computed_environment_resource (environment_id, resource_id, last_evaluated_at)
 SELECT $1, resource_id, NOW()
-FROM current
+FROM valid
 ON CONFLICT (environment_id, resource_id) DO UPDATE
 SET last_evaluated_at = NOW()
 `
@@ -138,6 +150,8 @@ type SetComputedEnvironmentResourcesParams struct {
 
 // Replaces the full set of computed resources for an environment.
 // Deletes stale rows and upserts the current set with last_evaluated_at = NOW().
+// The valid CTE filters against the resource table to avoid FK violations from
+// resources deleted between selector evaluation and this write.
 func (q *Queries) SetComputedEnvironmentResources(ctx context.Context, arg SetComputedEnvironmentResourcesParams) error {
 	_, err := q.db.Exec(ctx, setComputedEnvironmentResources, arg.EnvironmentID, arg.ResourceIds)
 	return err
