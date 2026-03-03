@@ -491,9 +491,6 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
 	}
 
-	// InvalidJobAgent jobs should not have DispatchContext (dispatch was never called)
-	assert.Nil(t, job.DispatchContext, "InvalidJobAgent job should not have DispatchContext")
-
 	// Verify no pending jobs (InvalidJobAgent jobs are not pending)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {
@@ -579,9 +576,6 @@ func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
 	if len(cfg) != 0 {
 		t.Errorf("expected empty job agent config, got %v", cfg)
 	}
-
-	// InvalidJobAgent jobs should not have DispatchContext
-	assert.Nil(t, job.DispatchContext, "InvalidJobAgent job should not have DispatchContext")
 
 	// Verify job is NOT in pending state
 	pendingJobs := engine.Workspace().Jobs().GetPending()

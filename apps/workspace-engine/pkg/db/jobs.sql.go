@@ -42,6 +42,7 @@ SELECT
   j.started_at,
   j.completed_at,
   j.updated_at,
+  j.dispatch_context,
   rj.release_id,
   COALESCE(
     (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
@@ -54,18 +55,19 @@ WHERE j.id = $1
 `
 
 type GetJobByIDRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
 func (q *Queries) GetJobByID(ctx context.Context, id uuid.UUID) (GetJobByIDRow, error) {
@@ -82,6 +84,7 @@ func (q *Queries) GetJobByID(ctx context.Context, id uuid.UUID) (GetJobByIDRow, 
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.UpdatedAt,
+		&i.DispatchContext,
 		&i.ReleaseID,
 		&i.Metadata,
 	)
@@ -109,7 +112,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
 
 type InsertJobParams struct {
 	ID             uuid.UUID
-	JobAgentID     uuid.UUID
+	JobAgentID     pgtype.UUID
 	JobAgentConfig []byte
 	Status         JobStatus
 	CreatedAt      pgtype.Timestamptz
@@ -154,6 +157,7 @@ SELECT
   j.started_at,
   j.completed_at,
   j.updated_at,
+  j.dispatch_context,
   rj.release_id,
   COALESCE(
     (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
@@ -166,21 +170,22 @@ WHERE j.job_agent_id = $1
 `
 
 type ListJobsByAgentIDRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
-func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID uuid.UUID) ([]ListJobsByAgentIDRow, error) {
+func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID pgtype.UUID) ([]ListJobsByAgentIDRow, error) {
 	rows, err := q.db.Query(ctx, listJobsByAgentID, jobAgentID)
 	if err != nil {
 		return nil, err
@@ -200,6 +205,81 @@ func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID uuid.UUID) (
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.UpdatedAt,
+			&i.DispatchContext,
+			&i.ReleaseID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByReleaseID = `-- name: ListJobsByReleaseID :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+WHERE rj.release_id = $1
+`
+
+type ListJobsByReleaseIDRow struct {
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
+}
+
+func (q *Queries) ListJobsByReleaseID(ctx context.Context, releaseID uuid.UUID) ([]ListJobsByReleaseIDRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByReleaseID, releaseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByReleaseIDRow
+	for rows.Next() {
+		var i ListJobsByReleaseIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ExternalID,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.UpdatedAt,
+			&i.DispatchContext,
 			&i.ReleaseID,
 			&i.Metadata,
 		); err != nil {
@@ -225,6 +305,7 @@ SELECT
   j.started_at,
   j.completed_at,
   j.updated_at,
+  j.dispatch_context,
   rj.release_id,
   COALESCE(
     (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
@@ -239,18 +320,19 @@ WHERE d.workspace_id = $1
 `
 
 type ListJobsByWorkspaceIDRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
 func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListJobsByWorkspaceIDRow, error) {
@@ -273,6 +355,7 @@ func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UU
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.UpdatedAt,
+			&i.DispatchContext,
 			&i.ReleaseID,
 			&i.Metadata,
 		); err != nil {
@@ -287,8 +370,8 @@ func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UU
 }
 
 const upsertJob = `-- name: UpsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at, dispatch_context)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (id) DO UPDATE
 SET job_agent_id = EXCLUDED.job_agent_id,
     job_agent_config = EXCLUDED.job_agent_config,
@@ -297,20 +380,22 @@ SET job_agent_id = EXCLUDED.job_agent_id,
     message = EXCLUDED.message,
     started_at = EXCLUDED.started_at,
     completed_at = EXCLUDED.completed_at,
-    updated_at = EXCLUDED.updated_at
+    updated_at = EXCLUDED.updated_at,
+    dispatch_context = EXCLUDED.dispatch_context
 `
 
 type UpsertJobParams struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
 }
 
 func (q *Queries) UpsertJob(ctx context.Context, arg UpsertJobParams) error {
@@ -325,6 +410,7 @@ func (q *Queries) UpsertJob(ctx context.Context, arg UpsertJobParams) error {
 		arg.StartedAt,
 		arg.CompletedAt,
 		arg.UpdatedAt,
+		arg.DispatchContext,
 	)
 	return err
 }

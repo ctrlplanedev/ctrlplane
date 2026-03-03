@@ -65,10 +65,19 @@ func TestEngine_RetryPolicy_DefaultBehavior(t *testing.T) {
 	firstJob := getFirstJob(pendingJobs)
 
 	// Mark as cancelled
-	firstJob.Status = oapi.JobStatusCancelled
 	completedAt := time.Now()
-	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusCancelled,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Trigger reconciliation - with NO policy, ALL statuses count (including cancelled)
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
@@ -91,10 +100,19 @@ func TestEngine_RetryPolicy_DefaultBehavior(t *testing.T) {
 	secondJob := getFirstJob(pendingJobs)
 
 	// Mark as successful
-	secondJob.Status = oapi.JobStatusSuccessful
-	secondJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, secondJob)
-
+	completedAt = time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &secondJob.Id,
+		Job: oapi.Job{
+			Id:          secondJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 	// Trigger reconciliation - should NOT create new job (success also counts in strict mode)
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
 
@@ -160,10 +178,19 @@ func TestEngine_RetryPolicy_SmartDefaults(t *testing.T) {
 	firstJob := getFirstJob(pendingJobs)
 
 	// Mark as cancelled
-	firstJob.Status = oapi.JobStatusCancelled
 	completedAt := time.Now()
-	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusCancelled,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// With explicit policy and smart defaults, cancelled jobs DON'T count
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
@@ -179,9 +206,18 @@ func TestEngine_RetryPolicy_SmartDefaults(t *testing.T) {
 	}
 
 	// But successful jobs still count with maxRetries=0
-	secondJob.Status = oapi.JobStatusSuccessful
-	secondJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, secondJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &secondJob.Id,
+		Job: oapi.Job{
+			Id:          secondJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
 
@@ -250,10 +286,19 @@ func TestEngine_RetryPolicy_WithMaxRetries(t *testing.T) {
 	job1 := getFirstJob(pendingJobs)
 
 	// Fail job 1
-	job1.Status = oapi.JobStatusFailure
 	completedAt := time.Now()
-	job1.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, job1)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &job1.Id,
+		Job: oapi.Job{
+			Id:          job1.Id,
+			Status:      oapi.JobStatusFailure,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Attempt 2: First retry
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
@@ -267,9 +312,18 @@ func TestEngine_RetryPolicy_WithMaxRetries(t *testing.T) {
 	}
 
 	// Fail job 2
-	job2.Status = oapi.JobStatusFailure
-	job2.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, job2)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &job2.Id,
+		Job: oapi.Job{
+			Id:          job2.Id,
+			Status:      oapi.JobStatusFailure,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Attempt 3: Second retry
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
@@ -283,9 +337,18 @@ func TestEngine_RetryPolicy_WithMaxRetries(t *testing.T) {
 	}
 
 	// Fail job 3
-	job3.Status = oapi.JobStatusFailure
-	job3.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, job3)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &job3.Id,
+		Job: oapi.Job{
+			Id:          job3.Id,
+			Status:      oapi.JobStatusFailure,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Attempt 4: Should be blocked (exceeded maxRetries=2)
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
@@ -343,11 +406,19 @@ func TestEngine_RetryPolicy_SuccessDoesNotCountWithRetries(t *testing.T) {
 	job1 := getFirstJob(pendingJobs)
 
 	// Mark as successful
-	job1.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	job1.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, job1)
-
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &job1.Id,
+		Job: oapi.Job{
+			Id:          job1.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 	// Create version 2 - should be allowed (success doesn't count with maxRetries>0)
 	dv2 := c.NewDeploymentVersion()
 	dv2.DeploymentId = deploymentID
@@ -415,11 +486,19 @@ func TestEngine_RetryPolicy_InvalidJobAgentCounts(t *testing.T) {
 	job1 := getFirstJob(pendingJobs)
 
 	// Mark as invalidJobAgent (misconfiguration)
-	job1.Status = oapi.JobStatusInvalidJobAgent
 	completedAt := time.Now()
-	job1.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, job1)
-
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &job1.Id,
+		Job: oapi.Job{
+			Id:          job1.Id,
+			Status:      oapi.JobStatusInvalidJobAgent,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 	// Trigger reconciliation - with default policy (maxRetries=0), should be blocked
 	engine.PushEvent(ctx, handler.ResourceUpdate, r1)
 

@@ -168,10 +168,19 @@ func TestEngine_VersionCooldown_BlocksRapidVersions(t *testing.T) {
 
 	// Mark first job as successful
 	firstJob := getFirstJob(pendingJobs)
-	firstJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Create second version immediately (should be blocked)
 	v2 := c.NewDeploymentVersion()
@@ -363,10 +372,19 @@ func TestEngine_VersionCooldown_BatchesMultipleVersions(t *testing.T) {
 	require.Equal(t, 1, len(pendingJobs), "Expected 1 job for first version")
 
 	firstJob := getFirstJob(pendingJobs)
-	firstJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Rapidly create multiple versions (simulating frequent upstream releases)
 	for i := 2; i <= 5; i++ {
@@ -429,10 +447,19 @@ func TestEngine_VersionCooldown_UsesVersionCreationTime(t *testing.T) {
 
 	// Complete first job successfully
 	firstJob := getFirstJob(pendingJobs)
-	firstJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Create second version immediately after (should be blocked because v1 was just created)
 	v2 := c.NewDeploymentVersion()
@@ -523,10 +550,19 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 
 	// Complete first job
 	firstJob := getFirstJob(pendingJobs)
-	firstJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Create second version immediately
 	v2 := c.NewDeploymentVersion()
@@ -605,10 +641,19 @@ func TestEngine_VersionCooldown_MultipleEnvironments(t *testing.T) {
 
 	// Complete both jobs
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
 		completedAt := time.Now()
-		job.CompletedAt = &completedAt
-		engine.PushEvent(ctx, handler.JobUpdate, job)
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job.Id,
+			Job: oapi.Job{
+				Id:          job.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &completedAt,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Create second version immediately
@@ -671,8 +716,19 @@ func TestEngine_VersionCooldown_InProgressDeploymentBlocks(t *testing.T) {
 
 	// Don't complete the job - leave it in progress
 	firstJob := getFirstJob(pendingJobs)
-	firstJob.Status = oapi.JobStatusInProgress
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	completedAt := time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusInProgress,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Create second version while first is still in progress
 	v2 := c.NewDeploymentVersion()

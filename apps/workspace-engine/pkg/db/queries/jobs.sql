@@ -23,6 +23,7 @@ SELECT
   j.started_at,
   j.completed_at,
   j.updated_at,
+  j.dispatch_context,
   rj.release_id,
   COALESCE(
     (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
@@ -34,8 +35,8 @@ LEFT JOIN release_job rj ON rj.job_id = j.id
 WHERE j.id = $1;
 
 -- name: UpsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at, dispatch_context)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (id) DO UPDATE
 SET job_agent_id = EXCLUDED.job_agent_id,
     job_agent_config = EXCLUDED.job_agent_config,
@@ -44,7 +45,8 @@ SET job_agent_id = EXCLUDED.job_agent_id,
     message = EXCLUDED.message,
     started_at = EXCLUDED.started_at,
     completed_at = EXCLUDED.completed_at,
-    updated_at = EXCLUDED.updated_at;
+    updated_at = EXCLUDED.updated_at,
+    dispatch_context = EXCLUDED.dispatch_context;
 
 -- name: UpsertJobMetadata :exec
 INSERT INTO job_metadata (job_id, key, value)
@@ -70,6 +72,7 @@ SELECT
   j.started_at,
   j.completed_at,
   j.updated_at,
+  j.dispatch_context,
   rj.release_id,
   COALESCE(
     (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
@@ -94,6 +97,7 @@ SELECT
   j.started_at,
   j.completed_at,
   j.updated_at,
+  j.dispatch_context,
   rj.release_id,
   COALESCE(
     (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
@@ -103,3 +107,26 @@ SELECT
 FROM job j
 LEFT JOIN release_job rj ON rj.job_id = j.id
 WHERE j.job_agent_id = $1;
+
+-- name: ListJobsByReleaseID :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+WHERE rj.release_id = $1;

@@ -45,7 +45,7 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 
 	if err := queries.InsertJob(ctx, db.InsertJobParams{
 		ID:             jobID,
-		JobAgentID:     agentID,
+		JobAgentID:     pgtype.UUID{Bytes: agentID, Valid: true},
 		JobAgentConfig: agentConfig,
 		Status:         db.JobStatus(job.Status),
 		CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},

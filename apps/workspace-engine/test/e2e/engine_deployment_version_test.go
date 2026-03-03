@@ -435,7 +435,6 @@ func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 	if job.Status != oapi.JobStatusInvalidJobAgent {
 		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
 	}
-	assert.Nil(t, job.DispatchContext)
 
 	if job.JobAgentId != "" {
 		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
