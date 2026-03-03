@@ -17,7 +17,7 @@ import (
 func dispatchResourceSelectorEval(ctx context.Context, ws *workspace.Workspace) {
 	for _, environment := range ws.Environments().Items() {
 		err := events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
-			WorkspaceID:  ws.ID,
+			WorkspaceID:   ws.ID,
 			EnvironmentID: environment.Id,
 		})
 		if err != nil {

@@ -30,6 +30,7 @@ SELECT id, version, name, kind, identifier, provider_id, workspace_id,
        config, created_at, updated_at, deleted_at, metadata
 FROM resource
 WHERE workspace_id = $1
+  AND deleted_at IS NULL
 `
 
 func (g *PostgresGetter) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error) {

@@ -1,17 +1,24 @@
 -- name: SetComputedDeploymentResources :exec
 -- Replaces the full set of computed resources for a deployment.
 -- Deletes stale rows and upserts the current set with last_evaluated_at = NOW().
+-- The valid CTE filters against the resource table to avoid FK violations from
+-- resources deleted between selector evaluation and this write.
 WITH current AS (
     SELECT unnest(@resource_ids::uuid[]) AS resource_id
+),
+valid AS (
+    SELECT c.resource_id
+    FROM current c
+    JOIN resource r ON r.id = c.resource_id
 ),
 deleted AS (
     DELETE FROM computed_deployment_resource
     WHERE deployment_id = @deployment_id
-      AND resource_id NOT IN (SELECT resource_id FROM current)
+      AND resource_id NOT IN (SELECT resource_id FROM valid)
 )
 INSERT INTO computed_deployment_resource (deployment_id, resource_id, last_evaluated_at)
 SELECT @deployment_id, resource_id, NOW()
-FROM current
+FROM valid
 ON CONFLICT (deployment_id, resource_id) DO UPDATE
 SET last_evaluated_at = NOW();
 
@@ -53,16 +60,23 @@ SELECT EXISTS (
 -- name: SetComputedEnvironmentResources :exec
 -- Replaces the full set of computed resources for an environment.
 -- Deletes stale rows and upserts the current set with last_evaluated_at = NOW().
+-- The valid CTE filters against the resource table to avoid FK violations from
+-- resources deleted between selector evaluation and this write.
 WITH current AS (
     SELECT unnest(@resource_ids::uuid[]) AS resource_id
+),
+valid AS (
+    SELECT c.resource_id
+    FROM current c
+    JOIN resource r ON r.id = c.resource_id
 ),
 deleted AS (
     DELETE FROM computed_environment_resource
     WHERE environment_id = @environment_id
-      AND resource_id NOT IN (SELECT resource_id FROM current)
+      AND resource_id NOT IN (SELECT resource_id FROM valid)
 )
 INSERT INTO computed_environment_resource (environment_id, resource_id, last_evaluated_at)
 SELECT @environment_id, resource_id, NOW()
-FROM current
+FROM valid
 ON CONFLICT (environment_id, resource_id) DO UPDATE
 SET last_evaluated_at = NOW();
