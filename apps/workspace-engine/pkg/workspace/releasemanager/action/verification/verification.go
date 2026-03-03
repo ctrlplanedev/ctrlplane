@@ -43,7 +43,7 @@ func (v *VerificationAction) Execute(
 
 	span.SetAttributes(
 		attribute.String("trigger", string(trigger)),
-		attribute.String("release.id", actx.Release.ID()),
+		attribute.String("release.id", actx.Release.ContentHash()),
 		attribute.String("job.id", actx.Job.Id))
 
 	// Extract all verification metrics from matching policies
@@ -62,7 +62,7 @@ func (v *VerificationAction) Execute(
 		span.SetStatus(codes.Error, "failed to create verification")
 		log.Error("Failed to create verification",
 			"error", err,
-			"release_id", actx.Release.ID(),
+			"release_id", actx.Release.ContentHash(),
 			"job_id", actx.Job.Id,
 			"trigger", trigger)
 		return err
@@ -70,7 +70,7 @@ func (v *VerificationAction) Execute(
 
 	span.SetStatus(codes.Ok, "verification created")
 	log.Info("Created verification from policy action",
-		"release_id", actx.Release.ID(),
+		"release_id", actx.Release.ContentHash(),
 		"job_id", actx.Job.Id,
 		"trigger", trigger,
 		"metric_count", len(metrics))

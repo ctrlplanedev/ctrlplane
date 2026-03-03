@@ -195,7 +195,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 	completedAt := time.Now().Add(-10 * time.Minute)
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.ID(),
+		ReleaseId:      stagingRelease.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-15 * time.Minute),
@@ -275,7 +275,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	completedAt := time.Now().Add(-2 * time.Minute)
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.ID(),
+		ReleaseId:      stagingRelease.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-5 * time.Minute),
@@ -464,7 +464,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -478,7 +478,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC) // This should be the satisfiedAt
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -492,7 +492,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.ID(),
+		ReleaseId:      release3.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
@@ -577,7 +577,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	completedAt := mostRecentSuccess
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.ID(),
+		ReleaseId:      stagingRelease.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -683,7 +683,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	completedAt1 := passRateSatisfiedAt
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -698,7 +698,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	completedAt2 := mostRecentSuccess
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC),
@@ -842,7 +842,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	completedAt1 := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-35 * time.Minute),
@@ -856,7 +856,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	completedAt2 := time.Now().Add(-18 * time.Minute) // Completes before job3
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-20 * time.Minute),
@@ -873,7 +873,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	completedAt3 := passRateSatisfiedAt
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.ID(),
+		ReleaseId:      release3.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-22 * time.Minute),
@@ -964,7 +964,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 	completedAt := time.Now().Add(-2 * time.Minute)
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.ID(),
+		ReleaseId:      stagingRelease.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-5 * time.Minute),

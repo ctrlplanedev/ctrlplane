@@ -97,7 +97,7 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -162,7 +162,7 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -222,7 +222,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 	// Create a pending job (not successful)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
@@ -284,7 +284,7 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -350,7 +350,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	completedAt1 := oldSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      oldSuccess.Add(-5 * time.Minute),
@@ -366,7 +366,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	completedAt2 := mostRecentSuccess
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -445,7 +445,7 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusInProgress,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -510,7 +510,7 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -574,7 +574,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -641,7 +641,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),

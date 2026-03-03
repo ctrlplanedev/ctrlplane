@@ -71,7 +71,7 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 	}
 
 	span.SetAttributes(
-		attribute.String("release.id", release.ID()),
+		attribute.String("release.id", release.ContentHash()),
 		attribute.Bool("has_desired_release", true),
 	)
 	span.SetStatus(codes.Ok, "reconcile completed")

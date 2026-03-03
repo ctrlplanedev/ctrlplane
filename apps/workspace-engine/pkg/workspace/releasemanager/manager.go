@@ -299,7 +299,7 @@ func (m *Manager) reconcileTargetWithRecorder(
 	planning := recorder.StartPlanning()
 	if desiredRelease != nil {
 		planning.MakeDecision(
-			fmt.Sprintf("Desired release resolved from index: %s", desiredRelease.ID()),
+			fmt.Sprintf("Desired release resolved from index: %s", desiredRelease.ContentHash()),
 			trace.DecisionApproved,
 		)
 	} else {

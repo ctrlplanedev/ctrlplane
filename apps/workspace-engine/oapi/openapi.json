@@ -1627,6 +1627,10 @@
                   },
                   "type": "array"
                },
+               "id": {
+                  "format": "uuid",
+                  "type": "string"
+               },
                "releaseTarget": {
                   "$ref": "#/components/schemas/ReleaseTarget"
                },
@@ -1641,6 +1645,7 @@
                }
             },
             "required": [
+               "id",
                "version",
                "variables",
                "encryptedVariables",

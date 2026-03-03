@@ -116,7 +116,7 @@ func (e *RetryEvaluator) Evaluate(
 
 	for _, job := range jobs {
 		// Only count jobs for this exact release
-		if job.ReleaseId != release.ID() {
+		if job.ReleaseId != release.ContentHash() {
 			break
 		}
 
@@ -149,7 +149,7 @@ func (e *RetryEvaluator) Evaluate(
 			NewDeniedResult(
 				fmt.Sprintf("Retry limit exceeded (%d/%d attempts)", attemptCount, maxRetries),
 			).
-			WithDetail("release_id", release.ID()).
+			WithDetail("release_id", release.ContentHash()).
 			WithDetail("attempt_count", attemptCount).
 			WithDetail("max_retries", maxRetries).
 			WithDetail("version", release.Version.Tag).
@@ -171,7 +171,7 @@ func (e *RetryEvaluator) Evaluate(
 			NewAllowedResult(
 				fmt.Sprintf("First attempt (0/%d retries used)", maxRetries),
 			).
-			WithDetail("release_id", release.ID()).
+			WithDetail("release_id", release.ContentHash()).
 			WithDetail("max_retries", maxRetries).
 			WithDetail("version", release.Version.Tag)
 	}
@@ -180,7 +180,7 @@ func (e *RetryEvaluator) Evaluate(
 		NewAllowedResult(
 			fmt.Sprintf("Retry allowed (%d/%d attempts)", attemptCount, maxRetries),
 		).
-		WithDetail("release_id", release.ID()).
+		WithDetail("release_id", release.ContentHash()).
 		WithDetail("attempt_count", attemptCount).
 		WithDetail("max_retries", maxRetries).
 		WithDetail("version", release.Version.Tag).
@@ -246,7 +246,7 @@ func (e *RetryEvaluator) evaluateBackoff(
 				"wait",
 				fmt.Sprintf("Waiting for retry backoff (%ds remaining)", remainingSeconds),
 			).
-			WithDetail("release_id", release.ID()).
+			WithDetail("release_id", release.ContentHash()).
 			WithDetail("attempt_count", attemptCount).
 			WithDetail("max_retries", int(e.rule.MaxRetries)).
 			WithDetail("version", release.Version.Tag).

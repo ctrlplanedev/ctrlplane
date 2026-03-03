@@ -72,7 +72,7 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 	}
 
 	span.SetAttributes(
-		attribute.String("release.id", release.ID()),
+		attribute.String("release.id", release.ContentHash()),
 		attribute.String("release_target.key", release.ReleaseTarget.Key()),
 	)
 
@@ -99,14 +99,14 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 	}
 
 	// Don't rollback to the same release
-	if currentRelease.ID() == release.ID() {
+	if currentRelease.ContentHash() == release.ContentHash() {
 		span.AddEvent("Current release is the same as failed release, no rollback needed")
 		span.SetStatus(codes.Ok, "already on current release")
 		return nil
 	}
 
 	span.SetAttributes(
-		attribute.String("rollback_to_release.id", currentRelease.ID()),
+		attribute.String("rollback_to_release.id", currentRelease.ContentHash()),
 		attribute.String("rollback_to_version.id", currentRelease.Version.Id),
 		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
 	)

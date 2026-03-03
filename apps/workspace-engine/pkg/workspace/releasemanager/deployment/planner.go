@@ -176,7 +176,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	desiredRelease := BuildRelease(ctx, releaseTarget, deployableVersion, resolvedVariables)
 	span.SetAttributes(
 		attribute.Bool("has_desired_release", true),
-		attribute.String("release.id", desiredRelease.ID()),
+		attribute.String("release.id", desiredRelease.ContentHash()),
 	)
 	span.SetStatus(codes.Ok, "planning completed successfully")
 

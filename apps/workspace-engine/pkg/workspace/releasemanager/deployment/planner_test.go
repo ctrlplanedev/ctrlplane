@@ -618,7 +618,7 @@ func TestPlanDeployment_MultipleResourcesSameDeployment(t *testing.T) {
 	assert.Equal(t, versionID, release2.Version.Id)
 
 	// But releases should have different IDs due to different resources
-	assert.NotEqual(t, release1.ID(), release2.ID())
+	assert.NotEqual(t, release1.ContentHash(), release2.ContentHash())
 }
 
 func TestPlanDeployment_VariableEvaluationError(t *testing.T) {
@@ -744,5 +744,5 @@ func TestPlanDeployment_ConsistentReleaseIDs(t *testing.T) {
 	require.NotNil(t, release2)
 
 	// Same inputs should produce same release ID
-	assert.Equal(t, release1.ID(), release2.ID())
+	assert.Equal(t, release1.ContentHash(), release2.ContentHash())
 }

@@ -184,7 +184,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -197,7 +197,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	// Create pending job for release2
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now().Add(-3 * time.Minute),
@@ -258,7 +258,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 	completedAt1 := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -269,7 +269,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 	completedAt2 := time.Now().Add(-3 * time.Minute)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-8 * time.Minute),
@@ -339,7 +339,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 	completedAt := time.Now().Add(-15 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-20 * time.Minute),
@@ -401,7 +401,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 	completedAt1 := time.Now().Add(-20 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-25 * time.Minute),
@@ -414,7 +414,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 	completedAt2 := time.Now().Add(-5 * time.Minute)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -466,7 +466,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -526,7 +526,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -586,7 +586,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -649,7 +649,7 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -659,7 +659,7 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 	}
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now().Add(-3 * time.Minute),
@@ -726,7 +726,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	completedAt1 := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -737,7 +737,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	completedAt2 := time.Now().Add(-3 * time.Minute)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-8 * time.Minute),
@@ -794,7 +794,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	completedAt1 := time.Now().Add(-20 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-25 * time.Minute),
@@ -807,7 +807,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	completedAt2 := time.Now().Add(-10 * time.Minute)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-15 * time.Minute),
@@ -892,7 +892,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -907,7 +907,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -921,7 +921,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.ID(),
+		ReleaseId:      release3.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
@@ -998,7 +998,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -1105,7 +1105,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -1116,7 +1116,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -1198,7 +1198,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	completedAt2 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -1212,7 +1212,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	completedAt1 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -1226,7 +1226,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.ID(),
+		ReleaseId:      release3.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),

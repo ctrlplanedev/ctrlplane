@@ -849,6 +849,7 @@ type RelationshipRule_Matcher struct {
 type Release struct {
 	CreatedAt          string                  `json:"createdAt"`
 	EncryptedVariables []string                `json:"encryptedVariables"`
+	Id                 openapi_types.UUID      `json:"id"`
 	ReleaseTarget      ReleaseTarget           `json:"releaseTarget"`
 	Variables          map[string]LiteralValue `json:"variables"`
 	Version            DeploymentVersion       `json:"version"`

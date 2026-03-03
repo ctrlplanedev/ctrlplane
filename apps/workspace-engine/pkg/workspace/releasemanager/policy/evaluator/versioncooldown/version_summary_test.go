@@ -159,7 +159,7 @@ func TestSummaryEvaluator_SomeTargetsDenied(t *testing.T) {
 	completedAt := time.Now().Add(-5 * time.Second)
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CompletedAt: &completedAt,
 		CreatedAt:   completedAt,

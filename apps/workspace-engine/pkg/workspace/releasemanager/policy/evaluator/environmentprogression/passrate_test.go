@@ -150,7 +150,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -161,7 +161,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -279,7 +279,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -397,7 +397,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -410,7 +410,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	completedAt2 := satisfiedAtTime
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release2.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -422,7 +422,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.ID(),
+		ReleaseId:      release3.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
@@ -501,7 +501,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 	completedAt := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -602,7 +602,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.ID(),
+		ReleaseId:      release1.ContentHash(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusInProgress,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),

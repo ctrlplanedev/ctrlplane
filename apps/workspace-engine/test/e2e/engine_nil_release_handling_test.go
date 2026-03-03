@@ -78,7 +78,7 @@ func TestEngine_JobsWithNilReleaseReference(t *testing.T) {
 
 	// EDGE CASE 1: Manually remove the release but keep the job
 	// This simulates a corrupted state where a job references a non-existent release
-	engine.Workspace().Releases().Remove(ctx, release.ID())
+	engine.Workspace().Releases().Remove(ctx, release.ContentHash())
 
 	// Verify release is gone
 	_, ok = engine.Workspace().Releases().Get(job.ReleaseId)
@@ -173,7 +173,7 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 	if !ok {
 		t.Fatalf("release should exist")
 	}
-	engine.Workspace().Releases().Remove(ctx, release.ID())
+	engine.Workspace().Releases().Remove(ctx, release.ContentHash())
 
 	releaseTarget := &oapi.ReleaseTarget{
 		ResourceId:    resource.Id,
@@ -294,7 +294,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 		t.Fatalf("release should exist")
 	}
 
-	releaseIdToDelete := release.ID()
+	releaseIdToDelete := release.ContentHash()
 	engine.Workspace().Releases().Remove(ctx, releaseIdToDelete)
 
 	// Get jobs for release target - should only return jobs with valid releases

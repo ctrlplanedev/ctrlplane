@@ -88,7 +88,7 @@ func createSuccessfulJob(ctx context.Context, s *store.Store, release *oapi.Rele
 	completedAt := time.Now()
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CompletedAt: &completedAt,
 		CreatedAt:   time.Now(),
@@ -426,7 +426,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		// Create in-progress job (no completedAt)
 		inProgressJob := &oapi.Job{
 			Id:        uuid.New().String(),
-			ReleaseId: release2.ID(),
+			ReleaseId: release2.ContentHash(),
 			Status:    oapi.JobStatusInProgress,
 			CreatedAt: time.Now(),
 		}

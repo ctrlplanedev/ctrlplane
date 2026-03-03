@@ -42,7 +42,7 @@ func (s *System) CompactionKey() (string, string) {
 }
 
 func (r *Release) CompactionKey() (string, string) {
-	return "release", r.ID()
+	return "release", r.ContentHash()
 }
 
 func (j *Job) CompactionKey() (string, string) {

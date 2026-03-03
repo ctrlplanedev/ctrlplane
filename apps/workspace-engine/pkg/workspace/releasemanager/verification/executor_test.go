@@ -38,7 +38,7 @@ func TestExecutor_Execute_Success(t *testing.T) {
 	metric := createHTTPMetricStatus(server.URL)
 
 	// Execute measurement with direct objects
-	measurement, err := executor.Execute(ctx, &metric, release.ID())
+	measurement, err := executor.Execute(ctx, &metric, release.ContentHash())
 
 	require.NoError(t, err)
 	assert.Equal(t, oapi.Passed, measurement.Status)
@@ -78,7 +78,7 @@ func TestExecutor_Execute_FailedMeasurement(t *testing.T) {
 
 	// Execute measurement - should not error but should fail
 	// (success condition not met, no failure condition = binary pass/fail)
-	measurement, err := executor.Execute(ctx, &metric, release.ID())
+	measurement, err := executor.Execute(ctx, &metric, release.ContentHash())
 
 	require.NoError(t, err)
 	assert.Equal(t, oapi.Failed, measurement.Status)
@@ -103,7 +103,7 @@ func TestExecutor_Execute_ContextCancellation(t *testing.T) {
 	metric := createHTTPMetricStatus(server.URL)
 
 	// Execute should fail due to context timeout
-	_, err := executor.Execute(ctx, &metric, release.ID())
+	_, err := executor.Execute(ctx, &metric, release.ContentHash())
 
 	assert.Error(t, err)
 }
@@ -125,7 +125,7 @@ func TestExecutor_Execute_WithTemplatedURL(t *testing.T) {
 	metric := createHTTPMetricStatus(server.URL + "/{{.release.version.tag}}")
 
 	// Execute - template should be resolved
-	measurement, err := executor.Execute(ctx, &metric, release.ID())
+	measurement, err := executor.Execute(ctx, &metric, release.ContentHash())
 
 	require.NoError(t, err)
 	assert.Equal(t, oapi.Passed, measurement.Status)
@@ -138,7 +138,7 @@ func TestExecutor_BuildProviderContext_Success(t *testing.T) {
 
 	release := createTestRelease(s, ctx)
 
-	providerCtx, err := executor.BuildProviderContext(release.ID())
+	providerCtx, err := executor.BuildProviderContext(release.ContentHash())
 
 	require.NoError(t, err)
 	require.NotNil(t, providerCtx)
@@ -181,7 +181,7 @@ func TestExecutor_BuildProviderContext_WithVariables(t *testing.T) {
 	}
 	_ = s.Releases.Upsert(ctx, release)
 
-	providerCtx, err := executor.BuildProviderContext(release.ID())
+	providerCtx, err := executor.BuildProviderContext(release.ContentHash())
 
 	require.NoError(t, err)
 	require.NotNil(t, providerCtx)
