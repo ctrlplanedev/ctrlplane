@@ -6,10 +6,36 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
+
+	"github.com/charmbracelet/log"
 )
+
+func dispatchResourceSelectorEval(ctx context.Context, ws *workspace.Workspace) {
+	for _, environment := range ws.Environments().Items() {
+		err := events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
+			WorkspaceID:  ws.ID,
+			EnvironmentID: environment.Id,
+		})
+		if err != nil {
+			log.Error("failed to enqueue environment resourceselector eval", "error", err)
+		}
+	}
+
+	for _, deployment := range ws.Deployments().Items() {
+		err := events.EnqueueDeploymentResourceselectorEval(ws.Queue(), ctx, events.DeploymentResourceselectorEvalParams{
+			WorkspaceID:  ws.ID,
+			DeploymentID: deployment.Id,
+		})
+		if err != nil {
+			log.Error("failed to enqueue deployment resourceselector eval", "error", err)
+		}
+	}
+
+}
 
 func shareSystem(envSystemIDs, depSystemIDs []string) bool {
 	set := make(map[string]struct{}, len(envSystemIDs))
@@ -70,6 +96,7 @@ func HandleResourceCreated(
 		return err
 	}
 
+	dispatchResourceSelectorEval(ctx, ws)
 	ws.Store().RelationshipIndexes.AddEntity(ctx, resource.Id)
 
 	releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
@@ -115,6 +142,7 @@ func HandleResourceUpdated(
 		return err
 	}
 
+	dispatchResourceSelectorEval(ctx, ws)
 	ws.Store().RelationshipIndexes.DirtyEntity(ctx, resource.Id)
 
 	oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
