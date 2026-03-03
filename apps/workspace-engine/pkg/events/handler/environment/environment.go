@@ -6,10 +6,13 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
+
+	"github.com/charmbracelet/log"
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, environment *oapi.Environment) ([]*oapi.ReleaseTarget, error) {
@@ -59,6 +62,14 @@ func HandleEnvironmentCreated(
 	}
 
 	ws.Store().RelationshipIndexes.AddEntity(ctx, environment.Id)
+
+	err := events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
+		WorkspaceID:   ws.ID,
+		EnvironmentID: environment.Id,
+	})
+	if err != nil {
+		log.Error("failed to enqueue environment resourceselector eval", "error", err)
+	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, environment)
 	if err != nil {
@@ -132,6 +143,14 @@ func HandleEnvironmentUpdated(
 	}
 
 	ws.Store().RelationshipIndexes.DirtyEntity(ctx, environment.Id)
+
+	err = events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
+		WorkspaceID:   ws.ID,
+		EnvironmentID: environment.Id,
+	})
+	if err != nil {
+		log.Error("failed to enqueue environment resourceselector eval", "error", err)
+	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, environment)
 	if err != nil {

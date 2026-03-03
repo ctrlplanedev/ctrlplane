@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/memory"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager"
@@ -24,10 +25,11 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	s := store.New(id, cs)
 
 	ws := &Workspace{
-		ID:         id,
-		store:      s,
-		changeset:  cs,
-		traceStore: spanstore.NewInMemoryStore(),
+		ID:             id,
+		reconcileQueue: memory.New(),
+		store:          s,
+		changeset:      cs,
+		traceStore:     spanstore.NewInMemoryStore(),
 	}
 
 	// Apply options first to allow setting traceStore
@@ -77,6 +79,10 @@ type Workspace struct {
 	workflowActionOrchestrator *workflowmanager.WorkflowActionOrchestrator
 	jobAgentRegistry           *jobagents.Registry
 	reconcileQueue             reconcile.Queue
+}
+
+func (w *Workspace) Queue() reconcile.Queue {
+	return w.reconcileQueue
 }
 
 func (w *Workspace) ActionOrchestrator() *action.Orchestrator {

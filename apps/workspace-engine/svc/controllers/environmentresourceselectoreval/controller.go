@@ -13,6 +13,7 @@ import (
 
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
 
 	"github.com/google/uuid"
@@ -154,7 +155,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
-	kind := "environment-resource-selector-eval"
+	kind := events.EnvironmentResourceselectorEvalKind
 	controller := &Controller{
 		getter: &PostgresGetter{},
 		setter: &PostgresSetter{},

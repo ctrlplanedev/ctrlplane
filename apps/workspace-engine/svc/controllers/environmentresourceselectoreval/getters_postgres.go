@@ -66,11 +66,16 @@ func (g *PostgresGetter) StreamResources(ctx context.Context, workspaceID uuid.U
 
 		batch = append(batch, ResourceInfo{
 			ID: id,
-			Raw: db.ListResourcesByWorkspaceIDRow{
-				ID: id, Version: version, Name: name, Kind: kind,
-				Identifier: identifier, ProviderID: providerID, WorkspaceID: wsID,
-				Config: config, CreatedAt: createdAt, UpdatedAt: updatedAt,
-				DeletedAt: deletedAt, Metadata: metadata,
+			Raw: map[string]any{
+				"id":          id,
+				"version":     version,
+				"name":        name,
+				"kind":        kind,
+				"identifier":  identifier,
+				"providerId":  providerID,
+				"workspaceId": wsID,
+				"config":      config,
+				"metadata":    metadata,
 			},
 		})
 
