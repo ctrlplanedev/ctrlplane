@@ -37,7 +37,7 @@ func (d *DeploymentDependencyAction) Execute(ctx context.Context, trigger action
 
 	span.SetAttributes(
 		attribute.String("trigger", string(trigger)),
-		attribute.String("release.id", context.Release.ID()),
+		attribute.String("release.id", context.Release.ContentHash()),
 		attribute.String("job.id", context.Job.Id),
 		attribute.String("job.status", string(context.Job.Status)),
 	)

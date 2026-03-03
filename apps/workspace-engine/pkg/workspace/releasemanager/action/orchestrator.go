@@ -67,7 +67,7 @@ func (o *Orchestrator) OnJobStatusChange(
 		return nil // No release found
 	}
 
-	span.SetAttributes(attribute.String("release.id", release.ID()))
+	span.SetAttributes(attribute.String("release.id", release.ContentHash()))
 
 	policies, err := o.store.ReleaseTargets.GetPolicies(ctx, &release.ReleaseTarget)
 	if err != nil {
@@ -97,7 +97,7 @@ func (o *Orchestrator) OnJobStatusChange(
 			log.Error("Policy action failed",
 				"action", action.Name(),
 				"job_id", job.Id,
-				"release_id", release.ID(),
+				"release_id", release.ContentHash(),
 				"error", err)
 			// Continue with other actions
 		}

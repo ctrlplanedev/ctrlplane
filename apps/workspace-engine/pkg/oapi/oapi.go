@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (r *Release) ID() string {
+func (r *Release) ContentHash() string {
 	// Collect relevant fields for deterministic ID
 	var sb strings.Builder
 	sb.WriteString(r.Version.Id)
@@ -44,7 +44,7 @@ func (r *Release) ID() string {
 }
 
 func (r *Release) UUID() uuid.UUID {
-	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(r.ID()))
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(r.ContentHash()))
 }
 
 func toString(v any) string {

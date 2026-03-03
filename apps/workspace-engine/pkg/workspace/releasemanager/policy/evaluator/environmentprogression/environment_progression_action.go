@@ -44,7 +44,7 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 
 	span.SetAttributes(
 		attribute.String("trigger", string(trigger)),
-		attribute.String("release.id", actx.Release.ID()),
+		attribute.String("release.id", actx.Release.ContentHash()),
 		attribute.String("job.id", actx.Job.Id),
 		attribute.String("job.status", string(actx.Job.Status)),
 	)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/google/uuid"
 )
 
 func NewReleases(store *Store) *Releases {
@@ -24,6 +26,9 @@ func (r *Releases) SetRepo(repo repository.ReleaseRepo) {
 }
 
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
+	if release.Id == uuid.Nil {
+		release.Id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(release.ContentHash()))
+	}
 	if err := r.repo.Set(release); err != nil {
 		return err
 	}

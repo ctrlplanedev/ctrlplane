@@ -82,7 +82,7 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -99,7 +99,7 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 		completedAt := time.Now()
 		st.Jobs.Upsert(ctx, &oapi.Job{
 			Id:          "job-" + string(rune(i)),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusFailure,
 			CreatedAt:   time.Now(),
 			CompletedAt: &completedAt,
@@ -196,7 +196,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -211,7 +211,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 	completedAt2 := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2",
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt2,
@@ -294,7 +294,7 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -366,7 +366,7 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,

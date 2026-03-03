@@ -132,14 +132,14 @@ func TestExecuteRelease_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, jobs, 1)
 	job := jobs[0]
-	assert.Equal(t, release.ID(), job.ReleaseId)
+	assert.Equal(t, release.ContentHash(), job.ReleaseId)
 	assert.Equal(t, oapi.JobStatusPending, job.Status)
 	assert.Equal(t, jobAgentID, job.JobAgentId)
 
 	// Verify release was persisted
-	storedRelease, exists := testStore.Releases.Get(release.ID())
+	storedRelease, exists := testStore.Releases.Get(release.ContentHash())
 	require.True(t, exists)
-	assert.Equal(t, release.ID(), storedRelease.ID())
+	assert.Equal(t, release.ContentHash(), storedRelease.ContentHash())
 
 	// Verify job was persisted
 	storedJob, exists := testStore.Jobs.Get(job.Id)
@@ -249,7 +249,7 @@ func TestExecuteRelease_NoJobAgentConfigured(t *testing.T) {
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, jobs[0].Status)
 
 	// Verify release was still persisted
-	_, exists := testStore.Releases.Get(release.ID())
+	_, exists := testStore.Releases.Get(release.ContentHash())
 	require.True(t, exists)
 }
 
@@ -356,7 +356,7 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 
 	for i, job := range allJobs {
 		// Verify each job has correct release ID
-		assert.Equal(t, releases[i].ID(), job.ReleaseId)
+		assert.Equal(t, releases[i].ContentHash(), job.ReleaseId)
 
 		// Verify job was persisted
 		storedJob, exists := testStore.Jobs.Get(job.Id)
@@ -364,9 +364,9 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 		assert.Equal(t, job.Id, storedJob.Id)
 
 		// Verify release was persisted
-		storedRelease, exists := testStore.Releases.Get(releases[i].ID())
+		storedRelease, exists := testStore.Releases.Get(releases[i].ContentHash())
 		require.True(t, exists)
-		assert.Equal(t, releases[i].ID(), storedRelease.ID())
+		assert.Equal(t, releases[i].ContentHash(), storedRelease.ContentHash())
 	}
 }
 
@@ -604,7 +604,7 @@ func TestBuildRelease_ReleaseIDDetermination(t *testing.T) {
 	release2 := BuildRelease(ctx, releaseTarget, version, variables1)
 
 	// Same inputs should produce same release ID
-	assert.Equal(t, release1.ID(), release2.ID())
+	assert.Equal(t, release1.ContentHash(), release2.ContentHash())
 
 	// Different variables should produce different release ID
 	replicas2 := oapi.LiteralValue{}
@@ -615,5 +615,5 @@ func TestBuildRelease_ReleaseIDDetermination(t *testing.T) {
 	}
 
 	release3 := BuildRelease(ctx, releaseTarget, version, variables2)
-	assert.NotEqual(t, release1.ID(), release3.ID())
+	assert.NotEqual(t, release1.ContentHash(), release3.ContentHash())
 }

@@ -93,7 +93,7 @@ func seedSuccessfulRelease(ctx context.Context, store *store.Store, releaseTarge
 	completedAt := time.Now().Add(-23 * time.Hour)
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CompletedAt: &completedAt,
 		CreatedAt:   completedAt,
@@ -953,7 +953,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 		completedAt := successTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   successTime,
 			CompletedAt: &completedAt,
@@ -1070,7 +1070,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 	jobCompletedAt := baseTime.Add(1 * time.Hour)
 	job := &oapi.Job{
 		Id:          "job-staging-1",
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   baseTime,
 		CompletedAt: &jobCompletedAt,
@@ -1191,7 +1191,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 		completedAt := successTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   successTime,
 			CompletedAt: &completedAt,
@@ -1429,7 +1429,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   envProgTime,
 			CompletedAt: &completedAt,
@@ -1553,7 +1553,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   envProgTime,
 			CompletedAt: &completedAt,
@@ -1694,7 +1694,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   envProgTime,
 			CompletedAt: &completedAt,
@@ -2165,7 +2165,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 		completedAt := stagingCompletionTime
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
-			ReleaseId:   release.ID(),
+			ReleaseId:   release.ContentHash(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   baseTime,
 			CompletedAt: &completedAt,

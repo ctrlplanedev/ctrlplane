@@ -36,6 +36,7 @@ func ToOapi(
 	}
 
 	return &oapi.Release{
+		Id:                 row.ID,
 		CreatedAt:          createdAt,
 		EncryptedVariables: encrypted,
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -79,7 +80,7 @@ func ToUpsertParams(release *oapi.Release) (db.UpsertReleaseParams, error) {
 	}
 
 	return db.UpsertReleaseParams{
-		ID:            release.UUID(),
+		ID:            release.Id,
 		ResourceID:    resourceID,
 		EnvironmentID: environmentID,
 		DeploymentID:  deploymentID,

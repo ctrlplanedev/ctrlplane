@@ -93,7 +93,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 	// Create job
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   completedAt.Add(-1 * time.Minute),
 		CompletedAt: &completedAt,
@@ -204,7 +204,7 @@ func TestGetCurrentRelease_NoVerification(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
 	require.NotNil(t, currentJob)
-	assert.Equal(t, release.ID(), currentRelease.ID())
+	assert.Equal(t, release.ContentHash(), currentRelease.ContentHash())
 	assert.Equal(t, oapi.JobStatusSuccessful, currentJob.Status)
 }
 
@@ -228,7 +228,7 @@ func TestGetCurrentRelease_PassedVerification(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
 	require.NotNil(t, currentJob)
-	assert.Equal(t, release.ID(), currentRelease.ID())
+	assert.Equal(t, release.ContentHash(), currentRelease.ContentHash())
 }
 
 func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
@@ -294,7 +294,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	olderJobCompletedAt := time.Now().Add(-1 * time.Hour)
 	olderJob := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   olderRelease.ID(),
+		ReleaseId:   olderRelease.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   olderJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &olderJobCompletedAt,
@@ -325,7 +325,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	newerJobCompletedAt := time.Now()
 	newerJob := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   newerRelease.ID(),
+		ReleaseId:   newerRelease.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   newerJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &newerJobCompletedAt,
@@ -342,7 +342,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
 	require.NotNil(t, currentJob)
-	assert.Equal(t, olderRelease.ID(), currentRelease.ID())
+	assert.Equal(t, olderRelease.ContentHash(), currentRelease.ContentHash())
 	assert.Equal(t, "v1.0.0", currentRelease.Version.Tag)
 }
 
@@ -409,7 +409,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	olderJobCompletedAt := time.Now().Add(-1 * time.Hour)
 	olderJob := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   olderRelease.ID(),
+		ReleaseId:   olderRelease.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   olderJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &olderJobCompletedAt,
@@ -440,7 +440,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	newerJobCompletedAt := time.Now()
 	newerJob := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   newerRelease.ID(),
+		ReleaseId:   newerRelease.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   newerJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &newerJobCompletedAt,
@@ -457,7 +457,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
 	require.NotNil(t, currentJob)
-	assert.Equal(t, olderRelease.ID(), currentRelease.ID())
+	assert.Equal(t, olderRelease.ContentHash(), currentRelease.ContentHash())
 	assert.Equal(t, "v1.0.0", currentRelease.Version.Tag)
 }
 
@@ -551,7 +551,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	olderJobCompletedAt := time.Now().Add(-1 * time.Hour)
 	olderJob := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   olderRelease.ID(),
+		ReleaseId:   olderRelease.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   olderJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &olderJobCompletedAt,
@@ -579,7 +579,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	newerJobCompletedAt := time.Now()
 	newerJob := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   newerRelease.ID(),
+		ReleaseId:   newerRelease.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   newerJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &newerJobCompletedAt,
@@ -597,7 +597,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
 	require.NotNil(t, currentJob)
-	assert.Equal(t, olderRelease.ID(), currentRelease.ID())
+	assert.Equal(t, olderRelease.ContentHash(), currentRelease.ContentHash())
 	assert.Equal(t, "v1.0.0", currentRelease.Version.Tag)
 }
 

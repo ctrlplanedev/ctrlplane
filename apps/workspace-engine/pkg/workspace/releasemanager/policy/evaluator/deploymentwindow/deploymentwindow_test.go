@@ -90,7 +90,7 @@ func seedSuccessfulRelease(
 	completedAt := time.Now().Add(-1 * time.Hour)
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ID(),
+		ReleaseId:   release.ContentHash(),
 		Status:      oapi.JobStatusSuccessful,
 		CompletedAt: &completedAt,
 		CreatedAt:   completedAt,

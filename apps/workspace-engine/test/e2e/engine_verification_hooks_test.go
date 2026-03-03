@@ -127,7 +127,7 @@ func TestEngineVerificationHooks(t *testing.T) {
 	if releaseTargetState.CurrentRelease == nil {
 		t.Fatalf("expected current release, got nil")
 	}
-	assert.Equal(t, release.ID(), releaseTargetState.CurrentRelease.ID())
+	assert.Equal(t, release.ContentHash(), releaseTargetState.CurrentRelease.ContentHash())
 }
 
 func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
@@ -243,5 +243,5 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 	if releaseTargetState.CurrentRelease == nil {
 		t.Fatalf("expected current release, got nil")
 	}
-	assert.Equal(t, release.ID(), releaseTargetState.CurrentRelease.ID())
+	assert.Equal(t, release.ContentHash(), releaseTargetState.CurrentRelease.ContentHash())
 }

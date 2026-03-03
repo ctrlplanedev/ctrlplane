@@ -452,7 +452,7 @@ func TestPipeline_JobReferencesRelease(t *testing.T) {
 	p.AssertJobCreated(t)
 
 	release := p.Releases()[0]
-	p.AssertJobReleaseID(t, 0, release.ID())
+	p.AssertJobReleaseID(t, 0, release.ContentHash())
 }
 
 func TestRun_FullPipeline_WithJobDispatch(t *testing.T) {

@@ -141,8 +141,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Release: {
     type: 'object',
-    required: ['version', 'variables', 'encryptedVariables', 'releaseTarget', 'createdAt'],
+    required: ['id', 'version', 'variables', 'encryptedVariables', 'releaseTarget', 'createdAt'],
     properties: {
+      id: { type: 'string', format: 'uuid' },
       version: openapi.schemaRef('DeploymentVersion'),
       variables: {
         type: 'object',

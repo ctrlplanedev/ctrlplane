@@ -37,7 +37,7 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	// Create metric specs using test server
 	metrics := []oapi.VerificationMetricSpec{
@@ -87,7 +87,7 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -131,7 +131,7 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -173,7 +173,7 @@ func TestManager_StartVerification_NoMetrics(t *testing.T) {
 	manager := NewManager(s)
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	// Try to start with empty metrics
 	err := manager.StartVerification(ctx, job, []oapi.VerificationMetricSpec{})
@@ -196,7 +196,7 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	failureLimit := 3
 	metrics := []oapi.VerificationMetricSpec{
@@ -234,7 +234,7 @@ func TestManager_StopVerification_Success(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -305,11 +305,11 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 
 	// Create some releases, jobs, and verifications in running state
 	release1 := createTestRelease(s, ctx)
-	job1 := createTestJob(s, ctx, release1.ID())
+	job1 := createTestJob(s, ctx, release1.ContentHash())
 	release2 := createTestRelease(s, ctx)
-	job2 := createTestJob(s, ctx, release2.ID())
+	job2 := createTestJob(s, ctx, release2.ContentHash())
 	release3 := createTestRelease(s, ctx)
-	job3 := createTestJob(s, ctx, release3.ID())
+	job3 := createTestJob(s, ctx, release3.ContentHash())
 
 	verification1 := createTestVerification(s, ctx, job1.Id, 2, 3600)
 	verification2 := createTestVerification(s, ctx, job2.Id, 1, 300)
@@ -367,7 +367,7 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 	manager := NewManager(s)
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 	verification := createTestVerification(s, ctx, job.Id, 1, 30)
 
 	// Make verification failed by exceeding failure limit
@@ -404,11 +404,11 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 
 	// Create verifications in different states
 	runningRelease := createTestRelease(s, ctx)
-	runningJob := createTestJob(s, ctx, runningRelease.ID())
+	runningJob := createTestJob(s, ctx, runningRelease.ContentHash())
 	passedRelease := createTestRelease(s, ctx)
-	passedJob := createTestJob(s, ctx, passedRelease.ID())
+	passedJob := createTestJob(s, ctx, passedRelease.ContentHash())
 	failedRelease := createTestRelease(s, ctx)
-	failedJob := createTestJob(s, ctx, failedRelease.ID())
+	failedJob := createTestJob(s, ctx, failedRelease.ContentHash())
 
 	runningVerification := createTestVerification(s, ctx, runningJob.Id, 1, 3600)
 
@@ -480,7 +480,7 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 	jobs := make([]*oapi.Job, 5)
 	for i := 0; i < 5; i++ {
 		release := createTestRelease(s, ctx)
-		jobs[i] = createTestJob(s, ctx, release.ID())
+		jobs[i] = createTestJob(s, ctx, release.ContentHash())
 		err := manager.StartVerification(ctx, jobs[i], metrics)
 		require.NoError(t, err)
 	}
@@ -513,7 +513,7 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	method := oapi.POST
 	timeout := "10s"
@@ -583,7 +583,7 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -646,7 +646,7 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 	jobs := make([]*oapi.Job, b.N)
 	for i := 0; i < b.N; i++ {
 		release := createTestRelease(s, ctx)
-		jobs[i] = createTestJob(s, ctx, release.ID())
+		jobs[i] = createTestJob(s, ctx, release.ContentHash())
 	}
 
 	b.ResetTimer()
@@ -686,7 +686,7 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 	jobs := make([]*oapi.Job, b.N)
 	for i := 0; i < b.N; i++ {
 		release := createTestRelease(s, ctx)
-		jobs[i] = createTestJob(s, ctx, release.ID())
+		jobs[i] = createTestJob(s, ctx, release.ContentHash())
 		_ = manager.StartVerification(ctx, jobs[i], metrics)
 	}
 
@@ -706,7 +706,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 		// Create 10 running verifications per store
 		for j := 0; j < 10; j++ {
 			release := createTestRelease(s, ctx)
-			job := createTestJob(s, ctx, release.ID())
+			job := createTestJob(s, ctx, release.ContentHash())
 			createTestVerification(s, ctx, job.Id, 2, 3600)
 		}
 		stores[i] = s
@@ -848,7 +848,7 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -889,7 +889,7 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -930,7 +930,7 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -978,7 +978,7 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	// Use a very short interval, low count, and short timeout to complete quickly
 	metrics := []oapi.VerificationMetricSpec{
@@ -1027,7 +1027,7 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	// Use a very short interval, low count, and short timeout to complete quickly
 	metrics := []oapi.VerificationMetricSpec{
@@ -1083,7 +1083,7 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	manager := NewManager(s, WithHooks(hooks))
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -1125,7 +1125,7 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
-	job := createTestJob(s, ctx, release.ID())
+	job := createTestJob(s, ctx, release.ContentHash())
 
 	// Create multiple metrics
 	metrics := []oapi.VerificationMetricSpec{

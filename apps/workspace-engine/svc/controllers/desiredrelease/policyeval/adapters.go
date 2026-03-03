@@ -46,5 +46,5 @@ func (a *deployableVersionsAdapter) GetReleases() map[string]*oapi.Release {
 	if release == nil {
 		return nil
 	}
-	return map[string]*oapi.Release{release.ID(): release}
+	return map[string]*oapi.Release{release.ContentHash(): release}
 }

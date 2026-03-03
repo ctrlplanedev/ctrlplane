@@ -81,7 +81,7 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[st
 	}
 
 	for _, release := range releases {
-		releaseJobs := j.store.Releases.Jobs(release.ID())
+		releaseJobs := j.store.Releases.Jobs(release.ContentHash())
 		for _, job := range releaseJobs {
 			jobs[job.Id] = job
 		}

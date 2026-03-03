@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -90,7 +91,7 @@ func (e *Executor) dispatchJobForAgent(ctx context.Context, release *oapi.Releas
 func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release, recorder *trace.ReconcileTarget) ([]*oapi.Job, error) {
 	ctx, span := tracer.Start(ctx, "ExecuteRelease",
 		oteltrace.WithAttributes(
-			attribute.String("release.id", releaseToDeploy.ID()),
+			attribute.String("release.id", releaseToDeploy.ContentHash()),
 			attribute.String("deployment.id", releaseToDeploy.ReleaseTarget.DeploymentId),
 			attribute.String("environment.id", releaseToDeploy.ReleaseTarget.EnvironmentId),
 			attribute.String("resource.id", releaseToDeploy.ReleaseTarget.ResourceId),
@@ -120,7 +121,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get deployment agents")
-		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(releaseToDeploy.ID(), deployment.Name, nil)
+		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(releaseToDeploy.ContentHash(), deployment.Name, nil)
 		e.store.Jobs.Upsert(ctx, failedJob)
 		return []*oapi.Job{failedJob}, nil
 	}
@@ -137,7 +138,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	}
 
 	if len(agents) == 0 {
-		failedJob := e.jobFactory.NoAgentConfiguredJob(releaseToDeploy.ID(), "", deployment.Name, nil)
+		failedJob := e.jobFactory.NoAgentConfiguredJob(releaseToDeploy.ContentHash(), "", deployment.Name, nil)
 		e.store.Jobs.Upsert(ctx, failedJob)
 		return []*oapi.Job{failedJob}, nil
 	}
@@ -183,10 +184,11 @@ func BuildRelease(
 	}
 
 	return &oapi.Release{
+		Id:                 uuid.New(),
 		ReleaseTarget:      *releaseTarget,
 		Version:            *version,
 		Variables:          clonedVariables,
-		EncryptedVariables: []string{}, // TODO: Handle encrypted variables
+		EncryptedVariables: []string{},
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
 }

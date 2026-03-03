@@ -43,7 +43,7 @@ func (r *RollbackAction) Execute(
 
 	span.SetAttributes(
 		attribute.String("trigger", string(trigger)),
-		attribute.String("release.id", actx.Release.ID()),
+		attribute.String("release.id", actx.Release.ContentHash()),
 		attribute.String("job.id", actx.Job.Id),
 		attribute.String("job.status", string(actx.Job.Status)),
 	)
@@ -63,14 +63,14 @@ func (r *RollbackAction) Execute(
 		return nil
 	}
 
-	if currentRelease.ID() == actx.Release.ID() {
+	if currentRelease.ContentHash() == actx.Release.ContentHash() {
 		span.AddEvent("Current release is the same as failed release, no rollback needed")
 		span.SetStatus(codes.Ok, "already on current release")
 		return nil
 	}
 
 	span.SetAttributes(
-		attribute.String("rollback_to_release.id", currentRelease.ID()),
+		attribute.String("rollback_to_release.id", currentRelease.ContentHash()),
 		attribute.String("rollback_to_version.id", currentRelease.Version.Id),
 		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
 	)
