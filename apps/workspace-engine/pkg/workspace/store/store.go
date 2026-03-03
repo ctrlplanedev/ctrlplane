@@ -462,6 +462,9 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		setStatus("Migrating legacy releases")
 	}
 	for _, rel := range s.repo.Releases().Items() {
+		if rel.Id == uuid.Nil {
+			rel.Id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(rel.ContentHash()))
+		}
 		if err := s.Releases.repo.Set(rel); err != nil {
 			log.Warn("Failed to migrate legacy release",
 				"content_hash", rel.ContentHash(), "error", err)
@@ -479,7 +482,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 			continue
 		}
 		job.ReleaseId = uuid.NewSHA1(uuid.NameSpaceOID, []byte(job.ReleaseId)).String()
-		if err := s.repo.Jobs.Set(job); err != nil {
+		if err := s.Jobs.repo.Set(job); err != nil {
 			log.Warn("Failed to migrate legacy job release ID",
 				"job_id", job.Id, "error", err)
 		}

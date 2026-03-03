@@ -91,7 +91,7 @@ func (e *Executor) dispatchJobForAgent(ctx context.Context, release *oapi.Releas
 func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release, recorder *trace.ReconcileTarget) ([]*oapi.Job, error) {
 	ctx, span := tracer.Start(ctx, "ExecuteRelease",
 		oteltrace.WithAttributes(
-			attribute.String("release.id", releaseToDeploy.ContentHash()),
+			attribute.String("release.id", releaseToDeploy.Id.String()),
 			attribute.String("deployment.id", releaseToDeploy.ReleaseTarget.DeploymentId),
 			attribute.String("environment.id", releaseToDeploy.ReleaseTarget.EnvironmentId),
 			attribute.String("resource.id", releaseToDeploy.ReleaseTarget.ResourceId),
