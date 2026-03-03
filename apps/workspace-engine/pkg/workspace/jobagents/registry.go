@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents/argo"
 	"workspace-engine/pkg/workspace/jobagents/github"
@@ -38,6 +39,10 @@ func (r *Registry) Register(dispatcher types.Dispatchable) {
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
+	if !config.Global.JobDispatchEnabled {
+		return fmt.Errorf("job dispatch is not enabled")
+	}
+
 	jobAgent, ok := r.store.JobAgents.Get(job.JobAgentId)
 	if !ok {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)
