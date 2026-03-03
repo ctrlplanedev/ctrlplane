@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/memory"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -464,6 +465,23 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.Releases.repo.Set(rel); err != nil {
 			log.Warn("Failed to migrate legacy release",
 				"content_hash", rel.ContentHash(), "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy job release IDs")
+	}
+	for _, job := range s.repo.Jobs.Items() {
+		if job.ReleaseId == "" {
+			continue
+		}
+		if _, err := uuid.Parse(job.ReleaseId); err == nil {
+			continue
+		}
+		job.ReleaseId = uuid.NewSHA1(uuid.NameSpaceOID, []byte(job.ReleaseId)).String()
+		if err := s.repo.Jobs.Set(job); err != nil {
+			log.Warn("Failed to migrate legacy job release ID",
+				"job_id", job.Id, "error", err)
 		}
 	}
 

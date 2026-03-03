@@ -35,7 +35,8 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier Agent
 		span.AddEvent("no desired release")
 		return &ReconcileResult{}, nil
 	}
-	span.SetAttributes(attribute.String("release.id", release.ContentHash()))
+	span.SetAttributes(attribute.String("release.id", release.Id.String()))
+	span.SetAttributes(attribute.String("release.content_hash", release.ContentHash()))
 
 	releaseID := release.UUID()
 
@@ -111,7 +112,7 @@ func buildJob(release *oapi.Release, agent *oapi.JobAgent) *oapi.Job {
 	now := time.Now()
 	return &oapi.Job{
 		Id:             uuid.New().String(),
-		ReleaseId:      release.ContentHash(),
+		ReleaseId:      release.Id.String(),
 		JobAgentId:     agent.Id,
 		JobAgentConfig: agent.Config,
 		Status:         oapi.JobStatusPending,

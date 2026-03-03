@@ -92,7 +92,7 @@ func createJob(t *testing.T, s *store.Store, ctx context.Context, e testEntities
 	completedAt := createdAt.Add(30 * time.Second)
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    status,
 		CreatedAt: createdAt,
 	}

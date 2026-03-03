@@ -88,7 +88,7 @@ func TestEngine_JobVerification_QueryByReleaseId(t *testing.T) {
 	assert.Len(t, byJob, 1)
 
 	// Query by release ID
-	byRelease := engine.Workspace().Store().JobVerifications.GetByReleaseId(release.ContentHash())
+	byRelease := engine.Workspace().Store().JobVerifications.GetByReleaseId(release.Id.String())
 	assert.Len(t, byRelease, 1)
 	assert.Equal(t, job.Id, byRelease[0].JobId)
 }

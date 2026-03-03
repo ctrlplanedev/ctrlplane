@@ -85,7 +85,7 @@ func TestShouldCreateJob_AlreadyDeployed(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ContentHash(),
+		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -115,7 +115,7 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-v1",
-		ReleaseId:   releaseV1.ContentHash(),
+		ReleaseId:   releaseV1.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -150,7 +150,7 @@ func TestShouldCreateJob_JobInProgress(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
@@ -179,7 +179,7 @@ func TestShouldCreateJob_PendingJob(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusPending,
 		CreatedAt: time.Now(),
 	})
@@ -209,7 +209,7 @@ func TestShouldCreateJob_FailedJobPreventsRedeploy(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ContentHash(),
+		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -240,7 +240,7 @@ func TestShouldCreateJob_CancelledJobPreventsRedeploy(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ContentHash(),
+		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -288,7 +288,7 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release1.ContentHash(),
+		ReleaseId:   release1.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -340,7 +340,7 @@ func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release1.ContentHash(),
+		ReleaseId: release1.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
@@ -390,7 +390,7 @@ func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release1.ContentHash(),
+		ReleaseId: release1.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
@@ -440,7 +440,7 @@ func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
 		completedAt := time.Now().Add(-time.Duration(4-i) * time.Hour)
 		st.Jobs.Upsert(ctx, &oapi.Job{
 			Id:          uuid.New().String(),
-			ReleaseId:   release.ContentHash(),
+			ReleaseId:   release.Id.String(),
 			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   time.Now().Add(-time.Duration(4-i) * time.Hour),
 			CompletedAt: &completedAt,
@@ -485,7 +485,7 @@ func TestShouldCreateJob_SkippedJobPreventsRedeploy(t *testing.T) {
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release.ContentHash(),
+		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusSkipped,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -515,7 +515,7 @@ func TestShouldCreateJob_InvalidJobAgentStatusPreventsRedeploy(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInvalidJobAgent,
 		CreatedAt: time.Now().Add(-1 * time.Hour),
 	})
@@ -576,7 +576,7 @@ func TestShouldCreateJob_EvaluatorOrdering(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})

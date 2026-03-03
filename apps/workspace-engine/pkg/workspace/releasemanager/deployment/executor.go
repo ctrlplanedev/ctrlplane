@@ -121,7 +121,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get deployment agents")
-		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(releaseToDeploy.ContentHash(), deployment.Name, nil)
+		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(releaseToDeploy.Id.String(), deployment.Name, nil)
 		e.store.Jobs.Upsert(ctx, failedJob)
 		return []*oapi.Job{failedJob}, nil
 	}
@@ -138,7 +138,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	}
 
 	if len(agents) == 0 {
-		failedJob := e.jobFactory.NoAgentConfiguredJob(releaseToDeploy.ContentHash(), "", deployment.Name, nil)
+		failedJob := e.jobFactory.NoAgentConfiguredJob(releaseToDeploy.Id.String(), "", deployment.Name, nil)
 		e.store.Jobs.Upsert(ctx, failedJob)
 		return []*oapi.Job{failedJob}, nil
 	}
@@ -183,12 +183,13 @@ func BuildRelease(
 		}
 	}
 
-	return &oapi.Release{
-		Id:                 uuid.New(),
+	release := &oapi.Release{
 		ReleaseTarget:      *releaseTarget,
 		Version:            *version,
 		Variables:          clonedVariables,
 		EncryptedVariables: []string{},
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
+	release.Id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(release.ContentHash()))
+	return release
 }

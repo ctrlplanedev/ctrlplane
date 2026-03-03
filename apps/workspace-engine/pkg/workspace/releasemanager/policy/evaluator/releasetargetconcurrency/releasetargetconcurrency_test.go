@@ -87,7 +87,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: existingRelease.ContentHash(),
+		ReleaseId: existingRelease.Id.String(),
 		Status:    oapi.JobStatusPending,
 		CreatedAt: time.Now(),
 	})
@@ -149,7 +149,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: existingRelease.ContentHash(),
+		ReleaseId: existingRelease.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
@@ -203,7 +203,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: existingRelease.ContentHash(),
+		ReleaseId: existingRelease.Id.String(),
 		Status:    oapi.JobStatusActionRequired,
 		CreatedAt: time.Now(),
 	})
@@ -269,14 +269,14 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release1.ContentHash(),
+		ReleaseId: release1.Id.String(),
 		Status:    oapi.JobStatusPending,
 		CreatedAt: time.Now().Add(-1 * time.Hour),
 	})
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-2",
-		ReleaseId: release2.ContentHash(),
+		ReleaseId: release2.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
@@ -360,7 +360,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
-		ReleaseId:   release1.ContentHash(),
+		ReleaseId:   release1.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-3 * time.Hour),
 		CompletedAt: &completedAt,
@@ -368,7 +368,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2",
-		ReleaseId:   release2.ContentHash(),
+		ReleaseId:   release2.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
@@ -376,7 +376,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-3",
-		ReleaseId:   release3.ContentHash(),
+		ReleaseId:   release3.Id.String(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
@@ -453,7 +453,7 @@ func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
-		ReleaseId: release1.ContentHash(),
+		ReleaseId: release1.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
@@ -512,7 +512,7 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 
 			st.Jobs.Upsert(ctx, &oapi.Job{
 				Id:        "job-1",
-				ReleaseId: existingRelease.ContentHash(),
+				ReleaseId: existingRelease.Id.String(),
 				Status:    status,
 				CreatedAt: time.Now(),
 			})
@@ -586,7 +586,7 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 			completedAt := time.Now()
 			st.Jobs.Upsert(ctx, &oapi.Job{
 				Id:          "job-1",
-				ReleaseId:   existingRelease.ContentHash(),
+				ReleaseId:   existingRelease.Id.String(),
 				Status:      status,
 				CreatedAt:   time.Now(),
 				CompletedAt: &completedAt,

@@ -43,7 +43,8 @@ func (r *RollbackAction) Execute(
 
 	span.SetAttributes(
 		attribute.String("trigger", string(trigger)),
-		attribute.String("release.id", actx.Release.ContentHash()),
+		attribute.String("release.id", actx.Release.Id.String()),
+		attribute.String("release.content_hash", actx.Release.ContentHash()),
 		attribute.String("job.id", actx.Job.Id),
 		attribute.String("job.status", string(actx.Job.Status)),
 	)
@@ -70,7 +71,8 @@ func (r *RollbackAction) Execute(
 	}
 
 	span.SetAttributes(
-		attribute.String("rollback_to_release.id", currentRelease.ContentHash()),
+		attribute.String("rollback_to_release.id", currentRelease.Id.String()),
+		attribute.String("rollback_to_release.content_hash", currentRelease.ContentHash()),
 		attribute.String("rollback_to_version.id", currentRelease.Version.Id),
 		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
 	)

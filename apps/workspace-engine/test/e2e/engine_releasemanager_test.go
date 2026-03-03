@@ -564,7 +564,7 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 		}
 
 		if release.Version.Tag != "v3.0.0" {
-			t.Errorf("release %s has version tag %s, want v3.0.0", release.ContentHash(), release.Version.Tag)
+			t.Errorf("release %s has version tag %s, want v3.0.0", release.Id.String(), release.Version.Tag)
 		}
 	}
 

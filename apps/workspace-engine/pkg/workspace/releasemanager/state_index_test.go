@@ -90,7 +90,7 @@ func TestRestoreAll_ComputesLatestJob(t *testing.T) {
 	now := time.Now()
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.ContentHash(),
+		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -175,7 +175,7 @@ func TestGetReleaseTargetState_AfterRestore(t *testing.T) {
 	now := time.Now()
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusPending,
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -228,7 +228,7 @@ func TestRecomputeEntity_RefreshesAfterRestore(t *testing.T) {
 	now := time.Now()
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: now,
 		UpdatedAt: now,

@@ -44,7 +44,10 @@ func (r *Repo) fetchOapiRelease(row db.Release) (*oapi.Release, error) {
 }
 
 func (r *Repo) Get(id string) (*oapi.Release, bool) {
-	uid := uuid.NewSHA1(uuid.NameSpaceOID, []byte(id))
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		uid = uuid.NewSHA1(uuid.NameSpaceOID, []byte(id))
+	}
 
 	row, err := db.GetQueries(r.ctx).GetReleaseByID(r.ctx, uid)
 	if err != nil {
@@ -111,7 +114,7 @@ func (r *Repo) Set(entity *oapi.Release) error {
 		return fmt.Errorf("upsert release: %w", err)
 	}
 
-	releaseUUID := entity.UUID()
+	releaseUUID := entity.Id
 
 	encryptedKeys := make(map[string]bool, len(entity.EncryptedVariables))
 	for _, k := range entity.EncryptedVariables {
@@ -134,7 +137,10 @@ func (r *Repo) Set(entity *oapi.Release) error {
 }
 
 func (r *Repo) Remove(id string) error {
-	uid := uuid.NewSHA1(uuid.NameSpaceOID, []byte(id))
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		uid = uuid.NewSHA1(uuid.NameSpaceOID, []byte(id))
+	}
 
 	if err := db.GetQueries(r.ctx).DeleteReleaseVariablesByReleaseID(r.ctx, uid); err != nil {
 		return fmt.Errorf("delete release variables: %w", err)
@@ -165,7 +171,7 @@ func (r *Repo) Items() map[string]*oapi.Release {
 			log.Warn("Failed to assemble release", "release_id", row.ID, "error", err)
 			continue
 		}
-		result[release.ContentHash()] = release
+		result[release.Id.String()] = release
 	}
 
 	return result

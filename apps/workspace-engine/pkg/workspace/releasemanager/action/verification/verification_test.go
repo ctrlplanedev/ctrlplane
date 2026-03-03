@@ -113,7 +113,7 @@ func TestVerificationAction_Execute_NoMetrics(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -181,7 +181,7 @@ func TestVerificationAction_Execute_CreatesVerification(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -271,7 +271,7 @@ func TestVerificationAction_Execute_SkipsWrongTrigger(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -308,7 +308,7 @@ func TestVerificationAction_Execute_DefaultsTriggerToJobSuccess(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -346,7 +346,7 @@ func TestVerificationAction_Execute_DeduplicatesMetrics(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -406,7 +406,7 @@ func TestVerificationAction_Execute_TriggerJobCreated(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusPending,
 		CreatedAt: time.Now(),
 	}
@@ -447,7 +447,7 @@ func TestVerificationAction_Execute_TriggerJobStarted(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	}
@@ -488,7 +488,7 @@ func TestVerificationAction_Execute_TriggerJobFailure(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusFailure,
 		CreatedAt: time.Now(),
 	}
@@ -545,7 +545,7 @@ func TestVerificationAction_Execute_PolicyWithMixedRules(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -602,7 +602,7 @@ func TestVerificationAction_Execute_MultipleVerificationRulesInPolicy(t *testing
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -671,7 +671,7 @@ func TestVerificationAction_Execute_NilVerificationRule(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -711,7 +711,7 @@ func TestVerificationAction_Execute_EmptyMetricsArray(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -755,7 +755,7 @@ func TestVerificationAction_Execute_NilPoliciesSlice(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -785,7 +785,7 @@ func TestVerificationAction_Execute_PolicyWithNoRules(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -820,7 +820,7 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -887,7 +887,7 @@ func TestVerificationAction_Execute_VerificationRecordHasCorrectReleaseLink(t *t
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -933,7 +933,7 @@ func TestVerificationAction_Execute_MultipleMetricsAllRunning(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}

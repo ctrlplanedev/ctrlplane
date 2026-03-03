@@ -159,7 +159,7 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobSuccess(t *testing.T) {
 	// Create job
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -172,7 +172,7 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobSuccess(t *testing.T) {
 	assert.True(t, mockAct.executeCalled)
 	assert.Equal(t, action.TriggerJobSuccess, mockAct.lastTrigger)
 	assert.Equal(t, job.Id, mockAct.lastContext.Job.Id)
-	assert.Equal(t, release.ContentHash(), mockAct.lastContext.Release.ContentHash())
+	assert.Equal(t, release.Id.String(), mockAct.lastContext.Release.Id.String())
 }
 
 func TestOrchestrator_OnJobStatusChange_TriggerJobStarted(t *testing.T) {
@@ -190,7 +190,7 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobStarted(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	}
@@ -217,7 +217,7 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobFailure(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusFailure,
 		CreatedAt: time.Now(),
 	}
@@ -244,7 +244,7 @@ func TestOrchestrator_OnJobStatusChange_NoTrigger(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	}
@@ -272,7 +272,7 @@ func TestOrchestrator_OnJobStatusChange_ShouldNotExecute(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -301,7 +301,7 @@ func TestOrchestrator_OnJobStatusChange_MultipleActions(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
@@ -357,7 +357,7 @@ func TestOrchestrator_OnJobStatusChange_ActionError(t *testing.T) {
 
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ContentHash(),
+		ReleaseId: release.Id.String(),
 		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
