@@ -3,47 +3,55 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
-	rr := &RelationshipRules{
-		repo:  store.repo,
+	return &RelationshipRules{
+		repo:  store.repo.RelationshipRules(),
 		store: store,
 	}
-
-	return rr
 }
 
 type RelationshipRules struct {
-	repo  *memory.InMemory
+	repo  repository.RelationshipRuleRepo
 	store *Store
 }
 
+func (r *RelationshipRules) SetRepo(repo repository.RelationshipRuleRepo) {
+	r.repo = repo
+}
+
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
-	r.repo.RelationshipRules.Set(relationship.Id, relationship)
+	if err := r.repo.Set(relationship); err != nil {
+		log.Error("Failed to upsert relationship rule", "error", err)
+		return err
+	}
 	r.store.changeset.RecordUpsert(relationship)
 	return nil
 }
 
 func (r *RelationshipRules) Get(id string) (*oapi.RelationshipRule, bool) {
-	return r.repo.RelationshipRules.Get(id)
+	return r.repo.Get(id)
 }
 
 func (r *RelationshipRules) Remove(ctx context.Context, id string) error {
-	relationship, ok := r.repo.RelationshipRules.Get(id)
+	relationship, ok := r.repo.Get(id)
 	if !ok || relationship == nil {
 		return nil
 	}
-
-	r.repo.RelationshipRules.Remove(id)
+	if err := r.repo.Remove(id); err != nil {
+		log.Error("Failed to remove relationship rule", "error", err)
+		return err
+	}
 	r.store.changeset.RecordDelete(relationship)
-
 	return nil
 }
 
 func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
-	return r.repo.RelationshipRules.Items()
+	return r.repo.Items()
 }
 
 func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {

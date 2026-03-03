@@ -117,6 +117,14 @@ type PolicyRepo interface {
 	Items() map[string]*oapi.Policy
 }
 
+// RelationshipRuleRepo defines the contract for relationship rule storage.
+type RelationshipRuleRepo interface {
+	Get(id string) (*oapi.RelationshipRule, bool)
+	Set(entity *oapi.RelationshipRule) error
+	Remove(id string) error
+	Items() map[string]*oapi.RelationshipRule
+}
+
 // PolicySkipRepo defines the contract for policy skip storage.
 type PolicySkipRepo interface {
 	Get(id string) (*oapi.PolicySkip, bool)

@@ -300,6 +300,21 @@ CREATE TABLE workflow_job (
     index INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE relationship_rule (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT,
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    from_type TEXT NOT NULL,
+    to_type TEXT NOT NULL,
+    relationship_type TEXT NOT NULL,
+    reference TEXT NOT NULL,
+    from_selector TEXT,
+    to_selector TEXT,
+    matcher JSONB NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'
+);
+
 CREATE TABLE policy_skip (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

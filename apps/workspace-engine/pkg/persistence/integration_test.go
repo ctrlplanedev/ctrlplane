@@ -493,7 +493,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().Jobs.Get(job.Id)
 	assert.True(t, ok, "Job should be restored")
 
-	_, ok = testStore.Repo().RelationshipRules.Get(relationshipRule.Id)
+	_, ok = testStore.Repo().RelationshipRules().Get(relationshipRule.Id)
 	assert.True(t, ok, "RelationshipRule should be restored")
 
 	githubEntityKey := githubEntity.Slug + "-" + fmt.Sprintf("%d", githubEntity.InstallationId)

@@ -489,6 +489,21 @@ type PolicySkip struct {
 	VersionID     uuid.UUID
 }
 
+type RelationshipRule struct {
+	ID               uuid.UUID
+	Name             string
+	Description      pgtype.Text
+	WorkspaceID      uuid.UUID
+	FromType         string
+	ToType           string
+	RelationshipType string
+	Reference        string
+	FromSelector     pgtype.Text
+	ToSelector       pgtype.Text
+	Matcher          []byte
+	Metadata         map[string]string
+}
+
 type Release struct {
 	ID            uuid.UUID
 	ResourceID    uuid.UUID
