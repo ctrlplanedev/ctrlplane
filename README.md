@@ -97,6 +97,40 @@ cd packages/db && pnpm migrate && cd ../..
 pnpm dev
 ```
 
+## 🏢 Contributing at W&B / CoreWeave — FAQ
+
+**Q: What license was chosen for ctrlplane, and why?**
+
+A: The GNU Affero General Public License (AGPL-3.0). It is designed specifically to ensure that modified source code becomes available to the community. It requires the operator of a network server to provide the source code of the modified version running there to the users of that server. Therefore, public use of a modified version, on a publicly accessible server, gives the public access to the source code of the modified version.
+
+**Q: How do the W&B fork and public repo differ?**
+
+A: Not meaningfully. At the moment, most activity happens on the public repo.
+
+**Q: Does contributing to this open source project create a conflict of interest?**
+
+A: If contributing to this project during your duties as an employee of W&B, you are implicitly agreeing to following terms of the legal agreement signed Oct 29 2024 that states:
+
+> "I am not engaged in, and shall not engage in, any activities that may be perceived as conflicting with the best interest of W&B; If a new or changed conflict should arise, I am required to notify my manager; I understand that W&B employees who knowingly fail to disclose potential or actual conflicts of interest could be subject to discipline, including without limitation dismissal; I understand that W&B may decide it is in the best interest of W&B for me to distance myself with the conflicting interest or the perception of a conflict of interest, which could mean adjusting job duties or responsibilities to eliminate the potential for a conflict of interest. I will comply with all such instructions from W&B."
+
+**Q: What does the conflict of interest clause mean in plain English?**
+
+A: If you contributing to ctrlplane to solve problems that benefit your team, the company, and/or customers, you likely do not have a conflict of interest. If you are contributing changes during company time using company assets for personal or outside buiness gain, you may have a conflict of interest. When in doubt, [file an intake form before contributing](https://coreweave.atlassian.net/wiki/x/UADcFg). 
+
+The intention of making ctrplane opensource under AGPL-3.0 is to "specifically designed to ensure cooperation with the community." The conflict of interest standard is applicable to your overall employment with CoreWeave, not ctrlplane specifically. Please contribute!  
+
+**Q: What rights does CoreWeave/W&B have to the code I contribute?**
+
+A: Per the legal agreement signed Oct 29 2024, W&B is granted:
+
+> "a royalty-free, fully-paid up, perpetual, irrevocable, worldwide, sublicensable (through multiple tiers), transferable license to use, copy, modify, distribute, create derivative works of and otherwise exploit the Software for any purpose, without any obligation to me of any kind, which for clarity includes without limitation the right to sell products or services incorporating or otherwise using the Software."
+
+**Q: What happens to the code I contribute?**
+
+A: Code contributed during working hours on W&B assets is governed by the conflict of interest documents and subject to the W&B rights stated above. Code contributed outside of working hours on your own assets, that does not pose a conflict of interest, is subject to the terms of the AGPL-3.0 license.
+
+---
+
 ## :heart: Community
 
 - [GitHub Discussions](https://github.com/ctrlplanedev/ctrlplane/discussions)
