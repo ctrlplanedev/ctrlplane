@@ -96,6 +96,9 @@ func (c *Controller) evalResources(ctx context.Context, environment *Environment
 	var matchedIDs []uuid.UUID
 	for range numWorkers {
 		g.Go(func() error {
+			_, evalSpan := tracer.Start(ctx, "EvalResource.Worker")
+			defer evalSpan.End()
+
 			celCtx := map[string]any{
 				"resource":    nil,
 				"environment": environment.Raw,
