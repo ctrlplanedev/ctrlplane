@@ -3,6 +3,8 @@ package events
 import (
 	"context"
 	"workspace-engine/pkg/reconcile"
+
+	"github.com/charmbracelet/log"
 )
 
 const EnvironmentResourceselectorEvalKind = "environment-resource-selector-eval"
@@ -25,6 +27,7 @@ func EnqueueManyEnvironmentResourceselectorEval(queue reconcile.Queue, ctx conte
 	if len(params) == 0 {
 		return nil
 	}
+	log.Info("enqueueing environment resourceselector evals", "count", len(params))
 	items := make([]reconcile.EnqueueParams, len(params))
 	for i, p := range params {
 		items[i] = reconcile.EnqueueParams{
