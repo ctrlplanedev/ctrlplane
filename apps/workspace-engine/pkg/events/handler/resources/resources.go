@@ -15,26 +15,29 @@ import (
 )
 
 func dispatchResourceSelectorEval(ctx context.Context, ws *workspace.Workspace) {
-	for _, environment := range ws.Environments().Items() {
-		err := events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
+	environments := ws.Environments().Items()
+	envParams := make([]events.EnvironmentResourceselectorEvalParams, 0, len(environments))
+	for _, env := range environments {
+		envParams = append(envParams, events.EnvironmentResourceselectorEvalParams{
 			WorkspaceID:   ws.ID,
-			EnvironmentID: environment.Id,
+			EnvironmentID: env.Id,
 		})
-		if err != nil {
-			log.Error("failed to enqueue environment resourceselector eval", "error", err)
-		}
+	}
+	if err := events.EnqueueManyEnvironmentResourceselectorEval(ws.Queue(), ctx, envParams); err != nil {
+		log.Error("failed to enqueue environment resourceselector evals", "error", err)
 	}
 
-	for _, deployment := range ws.Deployments().Items() {
-		err := events.EnqueueDeploymentResourceselectorEval(ws.Queue(), ctx, events.DeploymentResourceselectorEvalParams{
+	deployments := ws.Deployments().Items()
+	depParams := make([]events.DeploymentResourceselectorEvalParams, 0, len(deployments))
+	for _, dep := range deployments {
+		depParams = append(depParams, events.DeploymentResourceselectorEvalParams{
 			WorkspaceID:  ws.ID,
-			DeploymentID: deployment.Id,
+			DeploymentID: dep.Id,
 		})
-		if err != nil {
-			log.Error("failed to enqueue deployment resourceselector eval", "error", err)
-		}
 	}
-
+	if err := events.EnqueueManyDeploymentResourceselectorEval(ws.Queue(), ctx, depParams); err != nil {
+		log.Error("failed to enqueue deployment resourceselector evals", "error", err)
+	}
 }
 
 func shareSystem(envSystemIDs, depSystemIDs []string) bool {

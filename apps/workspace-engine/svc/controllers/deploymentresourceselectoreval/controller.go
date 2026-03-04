@@ -86,24 +86,30 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	span.SetAttributes(attribute.Int("release_targets", len(releaseTargets)))
 
 	if len(releaseTargets) > 0 {
-		_, enqSpan := tracer.Start(ctx, "EnqueueReleaseTargets")
-		defer enqSpan.End()
-		enqSpan.SetAttributes(attribute.Int("count", len(releaseTargets)))
-
-		for _, rt := range releaseTargets {
-			scopeID := rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String()
-			if enqErr := c.queue.Enqueue(ctx, reconcile.EnqueueParams{
-				WorkspaceID: deployment.WorkspaceID.String(),
-				Kind:        "desired-release",
-				ScopeType:   "release-target",
-				ScopeID:     scopeID,
-			}); enqErr != nil {
-				return reconcile.Result{}, fmt.Errorf("enqueue release target %s: %w", scopeID, enqErr)
-			}
+		if err := c.enqueueReleaseTargets(ctx, deployment.WorkspaceID, releaseTargets); err != nil {
+			return reconcile.Result{}, fmt.Errorf("enqueue release targets: %w", err)
 		}
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (c *Controller) enqueueReleaseTargets(ctx context.Context, workspaceID uuid.UUID, releaseTargets []ReleaseTarget) error {
+	_, span := tracer.Start(ctx, "EnqueueReleaseTargets")
+	defer span.End()
+	span.SetAttributes(attribute.Int("count", len(releaseTargets)))
+
+	wsID := workspaceID.String()
+	items := make([]reconcile.EnqueueParams, len(releaseTargets))
+	for i, rt := range releaseTargets {
+		items[i] = reconcile.EnqueueParams{
+			WorkspaceID: wsID,
+			Kind:        "desired-release",
+			ScopeType:   "release-target",
+			ScopeID:     rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String(),
+		}
+	}
+	return c.queue.EnqueueMany(ctx, items)
 }
 
 // evalResources streams resources from the DB and evaluates the CEL selector

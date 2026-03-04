@@ -71,6 +71,16 @@ func (m *mockQueue) Enqueue(_ context.Context, params reconcile.EnqueueParams) e
 	return nil
 }
 
+func (m *mockQueue) EnqueueMany(_ context.Context, params []reconcile.EnqueueParams) error {
+	for _, p := range params {
+		if m.err != nil {
+			return m.err
+		}
+		m.enqueued = append(m.enqueued, p)
+	}
+	return nil
+}
+
 func (m *mockQueue) Claim(context.Context, reconcile.ClaimParams) ([]reconcile.Item, error) {
 	return nil, nil
 }
