@@ -83,15 +83,23 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("get release targets: %w", err)
 	}
 
-	for _, rt := range releaseTargets {
-		scopeID := rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String()
-		if enqErr := c.queue.Enqueue(ctx, reconcile.EnqueueParams{
-			WorkspaceID: deployment.WorkspaceID.String(),
-			Kind:        "desired-release",
-			ScopeType:   "release-target",
-			ScopeID:     scopeID,
-		}); enqErr != nil {
-			return reconcile.Result{}, fmt.Errorf("enqueue release target %s: %w", scopeID, enqErr)
+	span.SetAttributes(attribute.Int("release_targets", len(releaseTargets)))
+
+	if len(releaseTargets) > 0 {
+		_, enqSpan := tracer.Start(ctx, "EnqueueReleaseTargets")
+		defer enqSpan.End()
+		enqSpan.SetAttributes(attribute.Int("count", len(releaseTargets)))
+
+		for _, rt := range releaseTargets {
+			scopeID := rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String()
+			if enqErr := c.queue.Enqueue(ctx, reconcile.EnqueueParams{
+				WorkspaceID: deployment.WorkspaceID.String(),
+				Kind:        "desired-release",
+				ScopeType:   "release-target",
+				ScopeID:     scopeID,
+			}); enqErr != nil {
+				return reconcile.Result{}, fmt.Errorf("enqueue release target %s: %w", scopeID, enqErr)
+			}
 		}
 	}
 
@@ -101,13 +109,20 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 // evalResources streams resources from the DB and evaluates the CEL selector
 // concurrently, returning the IDs of all matched resources.
 func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentInfo, selector cel.Program) ([]uuid.UUID, error) {
+	ctx, span := tracer.Start(ctx, "EvalResources")
+	defer span.End()
+
 	numWorkers := runtime.GOMAXPROCS(0)
+	span.SetAttributes(attribute.Int("num_workers", numWorkers))
 	batches := make(chan []ResourceInfo, numWorkers)
 
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return c.getter.StreamResources(ctx, deployment.WorkspaceID, streamBatchSize, batches)
+		_, streamSpan := tracer.Start(ctx, "StreamResources")
+		defer streamSpan.End()
+		err := c.getter.StreamResources(ctx, deployment.WorkspaceID, streamBatchSize, batches)
+		return err
 	})
 
 	deploymentMap, err := celutil.EntityToMap(deployment.Raw)
