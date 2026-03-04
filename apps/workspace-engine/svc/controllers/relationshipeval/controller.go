@@ -131,7 +131,7 @@ func (c *Controller) evalRule(ctx context.Context, entity *EntityInfo, rule *Rul
 
 	// Entity is "from" → stream "to" candidates
 	if entity.EntityType == rule.FromType {
-		matches, err := c.evalCandidates(ctx, entity, rule.ToType, rule.Cel, program, true)
+		matches, err := c.evalCandidates(ctx, entity, rule.ToType, program, true)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func (c *Controller) evalRule(ctx context.Context, entity *EntityInfo, rule *Rul
 
 	// Entity is "to" → stream "from" candidates
 	if entity.EntityType == rule.ToType {
-		matches, err := c.evalCandidates(ctx, entity, rule.FromType, rule.Cel, program, false)
+		matches, err := c.evalCandidates(ctx, entity, rule.FromType, program, false)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +175,6 @@ func (c *Controller) evalCandidates(
 	ctx context.Context,
 	entity *EntityInfo,
 	candidateType string,
-	celExpr string,
 	program cel.Program,
 	entityIsFrom bool,
 ) ([]uuid.UUID, error) {
