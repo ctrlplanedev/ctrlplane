@@ -13,6 +13,7 @@ import (
 	"workspace-engine/svc/controllers/environmentresourceselectoreval"
 	"workspace-engine/svc/controllers/jobdispatch"
 	"workspace-engine/svc/controllers/jobverificationmetric"
+	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/routerregistrar"
 	"workspace-engine/svc/workspaceconsumer"
@@ -63,6 +64,7 @@ func main() {
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		jobdispatch.New(WorkerID, db.GetPool(ctx)),
 		jobverificationmetric.New(WorkerID, db.GetPool(ctx)),
+		relationshipeval.New(WorkerID, db.GetPool(ctx)),
 	)
 
 	if err := runner.Run(ctx); err != nil {

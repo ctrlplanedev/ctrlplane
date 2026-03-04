@@ -253,6 +253,15 @@ type ComputedDeploymentResource struct {
 	LastEvaluatedAt pgtype.Timestamptz
 }
 
+type ComputedEntityRelationship struct {
+	RuleID          uuid.UUID
+	FromEntityType  string
+	FromEntityID    uuid.UUID
+	ToEntityType    string
+	ToEntityID      uuid.UUID
+	LastEvaluatedAt pgtype.Timestamptz
+}
+
 type ComputedEnvironmentResource struct {
 	EnvironmentID   uuid.UUID
 	ResourceID      uuid.UUID
@@ -475,6 +484,16 @@ type PolicyRuleVersionSelector struct {
 	Description pgtype.Text
 	Selector    string
 	CreatedAt   pgtype.Timestamptz
+}
+
+type RelationshipRule struct {
+	ID          uuid.UUID
+	Name        string
+	Description pgtype.Text
+	WorkspaceID uuid.UUID
+	Reference   string
+	Cel         string
+	Metadata    []byte
 }
 
 type Release struct {

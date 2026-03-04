@@ -385,6 +385,26 @@ CREATE TABLE job_verification_metric (
     failure_threshold INTEGER DEFAULT 0
 );
 
+CREATE TABLE relationship_rule (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    reference TEXT NOT NULL,
+    cel TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'
+);
+
+CREATE TABLE computed_entity_relationship (
+    rule_id UUID NOT NULL REFERENCES relationship_rule(id) ON DELETE CASCADE,
+    from_entity_type TEXT NOT NULL,
+    from_entity_id UUID NOT NULL,
+    to_entity_type TEXT NOT NULL,
+    to_entity_id UUID NOT NULL,
+    last_evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id)
+);
+
 CREATE TABLE job_verification_metric_measurement (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     job_verification_metric_status_id UUID NOT NULL REFERENCES job_verification_metric(id) ON DELETE CASCADE,

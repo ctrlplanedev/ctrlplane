@@ -26,6 +26,7 @@ sql:
       - queries/computed_resources.sql
       - queries/job_verification_metric.sql
       - queries/jobs.sql
+      - queries/computed_relationships.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
