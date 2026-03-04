@@ -3,6 +3,9 @@ package persistence
 import (
 	"context"
 	"fmt"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 )
 
 // RepositoryRouter routes entity changes to the appropriate repository based on entity type.
@@ -30,6 +33,11 @@ func (r *RepositoryRouter) Apply(ctx context.Context, changes Changes) error {
 	latestChanges := make(map[string]Change)
 	for _, change := range changes {
 		entityType, entityID := change.Entity.CompactionKey()
+		if _, err := uuid.Parse(entityID); err != nil {
+			log.Warn("Skipping entity with non-UUID id",
+				"entity_type", entityType, "entity_id", entityID)
+			continue
+		}
 		key := entityType + ":" + entityID
 
 		// Keep the change with the latest timestamp
