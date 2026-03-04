@@ -875,3 +875,93 @@ func (q *Queries) UpsertVersionSelectorRule(ctx context.Context, arg UpsertVersi
 	)
 	return err
 }
+
+const listPoliciesWithRulesByWorkspaceID = `-- name: ListPoliciesWithRulesByWorkspaceID :many
+SELECT
+  p.id, p.name, p.description, p.selector, p.metadata, p.priority, p.enabled, p.workspace_id, p.created_at,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'min_approvals', r.min_approvals, 'created_at', r.created_at))
+    FROM policy_rule_any_approval r WHERE r.policy_id = p.id), '[]')::jsonb AS any_approval_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'depends_on', r.depends_on, 'created_at', r.created_at))
+    FROM policy_rule_deployment_dependency r WHERE r.policy_id = p.id), '[]')::jsonb AS deployment_dependency_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'allow_window', r.allow_window, 'duration_minutes', r.duration_minutes, 'rrule', r.rrule, 'timezone', r.timezone, 'created_at', r.created_at))
+    FROM policy_rule_deployment_window r WHERE r.policy_id = p.id), '[]')::jsonb AS deployment_window_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'depends_on_environment_selector', r.depends_on_environment_selector, 'maximum_age_hours', r.maximum_age_hours, 'minimum_soak_time_minutes', r.minimum_soak_time_minutes, 'minimum_success_percentage', r.minimum_success_percentage, 'success_statuses', r.success_statuses, 'created_at', r.created_at))
+    FROM policy_rule_environment_progression r WHERE r.policy_id = p.id), '[]')::jsonb AS environment_progression_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'rollout_type', r.rollout_type, 'time_scale_interval', r.time_scale_interval, 'created_at', r.created_at))
+    FROM policy_rule_gradual_rollout r WHERE r.policy_id = p.id), '[]')::jsonb AS gradual_rollout_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'max_retries', r.max_retries, 'backoff_seconds', r.backoff_seconds, 'backoff_strategy', r.backoff_strategy, 'max_backoff_seconds', r.max_backoff_seconds, 'retry_on_statuses', r.retry_on_statuses, 'created_at', r.created_at))
+    FROM policy_rule_retry r WHERE r.policy_id = p.id), '[]')::jsonb AS retry_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'on_job_statuses', r.on_job_statuses, 'on_verification_failure', r.on_verification_failure, 'created_at', r.created_at))
+    FROM policy_rule_rollback r WHERE r.policy_id = p.id), '[]')::jsonb AS rollback_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'metrics', r.metrics, 'trigger_on', r.trigger_on, 'created_at', r.created_at))
+    FROM policy_rule_verification r WHERE r.policy_id = p.id), '[]')::jsonb AS verification_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'interval_seconds', r.interval_seconds, 'created_at', r.created_at))
+    FROM policy_rule_version_cooldown r WHERE r.policy_id = p.id), '[]')::jsonb AS version_cooldown_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'policy_id', r.policy_id, 'description', r.description, 'selector', r.selector, 'created_at', r.created_at))
+    FROM policy_rule_version_selector r WHERE r.policy_id = p.id), '[]')::jsonb AS version_selector_rules
+FROM policy p
+WHERE p.workspace_id = $1
+ORDER BY p.priority DESC, p.created_at DESC
+`
+
+type ListPoliciesWithRulesByWorkspaceIDRow struct {
+	ID                         uuid.UUID
+	Name                       string
+	Description                pgtype.Text
+	Selector                   string
+	Metadata                   map[string]string
+	Priority                   int32
+	Enabled                    bool
+	WorkspaceID                uuid.UUID
+	CreatedAt                  pgtype.Timestamptz
+	AnyApprovalRules           []byte
+	DeploymentDependencyRules  []byte
+	DeploymentWindowRules      []byte
+	EnvironmentProgressionRules []byte
+	GradualRolloutRules        []byte
+	RetryRules                 []byte
+	RollbackRules              []byte
+	VerificationRules          []byte
+	VersionCooldownRules       []byte
+	VersionSelectorRules       []byte
+}
+
+func (q *Queries) ListPoliciesWithRulesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListPoliciesWithRulesByWorkspaceIDRow, error) {
+	rows, err := q.db.Query(ctx, listPoliciesWithRulesByWorkspaceID, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPoliciesWithRulesByWorkspaceIDRow
+	for rows.Next() {
+		var i ListPoliciesWithRulesByWorkspaceIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Selector,
+			&i.Metadata,
+			&i.Priority,
+			&i.Enabled,
+			&i.WorkspaceID,
+			&i.CreatedAt,
+			&i.AnyApprovalRules,
+			&i.DeploymentDependencyRules,
+			&i.DeploymentWindowRules,
+			&i.EnvironmentProgressionRules,
+			&i.GradualRolloutRules,
+			&i.RetryRules,
+			&i.RollbackRules,
+			&i.VerificationRules,
+			&i.VersionCooldownRules,
+			&i.VersionSelectorRules,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

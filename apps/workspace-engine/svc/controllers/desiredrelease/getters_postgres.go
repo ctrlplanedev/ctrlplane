@@ -62,10 +62,28 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 	return versions, nil
 }
 
-func (g *PostgresGetter) GetPolicies(_ context.Context, _ *ReleaseTarget) ([]*oapi.Policy, error) {
-	// TODO: Policies are not yet stored in the database.
-	// When policy tables are added, implement DB-backed policy fetching here.
-	return nil, nil
+func (g *PostgresGetter) GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error) {
+	q := db.GetQueries(ctx)
+
+	depRow, err := q.GetDeploymentByID(ctx, rt.DeploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("get deployment for workspace lookup: %w", err)
+	}
+
+	rows, err := q.ListPoliciesWithRulesByWorkspaceID(ctx, depRow.WorkspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("list policies: %w", err)
+	}
+
+	policies := make([]*oapi.Policy, 0, len(rows))
+	for _, row := range rows {
+		p, err := convert.PolicyWithRules(row)
+		if err != nil {
+			return nil, fmt.Errorf("convert policy %s: %w", row.ID, err)
+		}
+		policies = append(policies, p)
+	}
+	return policies, nil
 }
 
 func (g *PostgresGetter) GetApprovalRecords(_ context.Context, _, _ string) ([]*oapi.UserApprovalRecord, error) {
