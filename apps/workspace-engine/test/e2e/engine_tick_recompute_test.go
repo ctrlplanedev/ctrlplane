@@ -78,7 +78,18 @@ func TestEngine_Tick_RecomputesExpiredCooldownBeforeReconcile(t *testing.T) {
 	firstJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
 	firstJob.CompletedAt = &completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, firstJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &firstJob.Id,
+		Job: oapi.Job{
+			Id:          firstJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// ----- Step 2: Create v2 immediately — should be blocked by cooldown -----
 	v2 := c.NewDeploymentVersion()

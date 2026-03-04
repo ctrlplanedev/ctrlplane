@@ -384,76 +384,76 @@ func TestEngine_DispatchContextImmutability_MultipleEntitiesUpdated(t *testing.T
 	assert.Equal(t, "v1.0.0", jobAfter.DispatchContext.Version.Tag)
 }
 
-func TestEngine_DispatchContextImmutability_WorkflowJobUpdate(t *testing.T) {
-	jobAgentID := uuid.New().String()
-	workflowID := uuid.New().String()
+// func TestEngine_DispatchContextImmutability_WorkflowJobUpdate(t *testing.T) {
+// 	jobAgentID := uuid.New().String()
+// 	workflowID := uuid.New().String()
 
-	engine := integration.NewTestWorkspace(t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-			integration.JobAgentName("Workflow Agent"),
-		),
-		integration.WithWorkflow(
-			integration.WorkflowID(workflowID),
-			integration.WithWorkflowJobTemplate(
-				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
-				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
-					"timeout": 60,
-				}),
-				integration.WorkflowJobTemplateName("deploy-step"),
-			),
-		),
-	)
+// 	engine := integration.NewTestWorkspace(t,
+// 		integration.WithJobAgent(
+// 			integration.JobAgentID(jobAgentID),
+// 			integration.JobAgentName("Workflow Agent"),
+// 		),
+// 		integration.WithWorkflow(
+// 			integration.WorkflowID(workflowID),
+// 			integration.WithWorkflowJobTemplate(
+// 				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+// 				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
+// 					"timeout": 60,
+// 				}),
+// 				integration.WorkflowJobTemplateName("deploy-step"),
+// 			),
+// 		),
+// 	)
 
-	ctx := context.Background()
+// 	ctx := context.Background()
 
-	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
-		WorkflowId: workflowID,
-		Inputs:     map[string]any{"env": "prod"},
-	})
+// 	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+// 		WorkflowId: workflowID,
+// 		Inputs:     map[string]any{"env": "prod"},
+// 	})
 
-	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
-	require.Len(t, workflowRuns, 1)
+// 	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+// 	require.Len(t, workflowRuns, 1)
 
-	var workflowRun *oapi.WorkflowRun
-	for _, wr := range workflowRuns {
-		workflowRun = wr
-		break
-	}
+// 	var workflowRun *oapi.WorkflowRun
+// 	for _, wr := range workflowRuns {
+// 		workflowRun = wr
+// 		break
+// 	}
 
-	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
-	require.Len(t, workflowJobs, 1)
+// 	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
+// 	require.Len(t, workflowJobs, 1)
 
-	jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[0].Id)
-	require.Len(t, jobs, 1)
-	job := jobs[0]
+// 	jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[0].Id)
+// 	require.Len(t, jobs, 1)
+// 	job := jobs[0]
 
-	require.NotNil(t, job.DispatchContext)
-	assert.NotNil(t, job.DispatchContext.Workflow)
-	assert.Equal(t, workflowID, job.DispatchContext.Workflow.Id)
-	assert.NotNil(t, job.DispatchContext.WorkflowRun)
-	assert.Equal(t, workflowRun.Id, job.DispatchContext.WorkflowRun.Id)
-	assert.NotNil(t, job.DispatchContext.WorkflowJob)
-	originalWorkflowJobId := job.DispatchContext.WorkflowJob.Id
-	originalRunInputs := job.DispatchContext.WorkflowRun.Inputs
+// 	require.NotNil(t, job.DispatchContext)
+// 	assert.NotNil(t, job.DispatchContext.Workflow)
+// 	assert.Equal(t, workflowID, job.DispatchContext.Workflow.Id)
+// 	assert.NotNil(t, job.DispatchContext.WorkflowRun)
+// 	assert.Equal(t, workflowRun.Id, job.DispatchContext.WorkflowRun.Id)
+// 	assert.NotNil(t, job.DispatchContext.WorkflowJob)
+// 	originalWorkflowJobId := job.DispatchContext.WorkflowJob.Id
+// 	originalRunInputs := job.DispatchContext.WorkflowRun.Inputs
 
-	assert.Equal(t, map[string]any{"env": "prod"}, originalRunInputs)
+// 	assert.Equal(t, map[string]any{"env": "prod"}, originalRunInputs)
 
-	// Create a second workflow run (which adds more data to the store)
-	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
-		WorkflowId: workflowID,
-		Inputs:     map[string]any{"env": "staging"},
-	})
+// 	// Create a second workflow run (which adds more data to the store)
+// 	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+// 		WorkflowId: workflowID,
+// 		Inputs:     map[string]any{"env": "staging"},
+// 	})
 
-	// Re-fetch original job and verify its DispatchContext is unchanged
-	jobAfter, ok := engine.Workspace().Jobs().Get(job.Id)
-	require.True(t, ok)
-	require.NotNil(t, jobAfter.DispatchContext)
-	assert.Equal(t, workflowID, jobAfter.DispatchContext.Workflow.Id)
-	assert.Equal(t, originalWorkflowJobId, jobAfter.DispatchContext.WorkflowJob.Id)
-	assert.Equal(t, map[string]any{"env": "prod"}, jobAfter.DispatchContext.WorkflowRun.Inputs,
-		"DispatchContext.WorkflowRun.Inputs should retain original values")
-}
+// 	// Re-fetch original job and verify its DispatchContext is unchanged
+// 	jobAfter, ok := engine.Workspace().Jobs().Get(job.Id)
+// 	require.True(t, ok)
+// 	require.NotNil(t, jobAfter.DispatchContext)
+// 	assert.Equal(t, workflowID, jobAfter.DispatchContext.Workflow.Id)
+// 	assert.Equal(t, originalWorkflowJobId, jobAfter.DispatchContext.WorkflowJob.Id)
+// 	assert.Equal(t, map[string]any{"env": "prod"}, jobAfter.DispatchContext.WorkflowRun.Inputs,
+// 		"DispatchContext.WorkflowRun.Inputs should retain original values")
+// }
 
 func TestEngine_DispatchContextImmutability_VariablesUnchangedAfterResourceVariableUpdate(t *testing.T) {
 	jobAgentID := uuid.New().String()

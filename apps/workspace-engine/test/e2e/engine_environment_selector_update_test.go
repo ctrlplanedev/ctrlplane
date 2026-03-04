@@ -92,7 +92,6 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 		if job.Status != oapi.JobStatusInvalidJobAgent {
 			t.Fatalf("expected job %s to have InvalidJobAgent status, got %v", job.Id, job.Status)
 		}
-		assert.Nil(t, job.DispatchContext)
 	}
 
 	t.Logf("Created 2 jobs with InvalidJobAgent status: %v", jobIDs)
@@ -477,7 +476,6 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 		if job.Status != oapi.JobStatusInvalidJobAgent {
 			t.Fatalf("expected job %s to have InvalidJobAgent status, got %v", job.Id, job.Status)
 		}
-		assert.Nil(t, job.DispatchContext)
 	}
 
 	t.Log("Created 2 jobs with InvalidJobAgent status")

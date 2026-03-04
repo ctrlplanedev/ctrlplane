@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Repo struct {
@@ -110,7 +111,7 @@ func (r *Repo) GetByAgentID(agentID string) ([]*oapi.Job, error) {
 		return nil, fmt.Errorf("parse agent id: %w", err)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListJobsByAgentID(r.ctx, uid)
+	rows, err := db.GetQueries(r.ctx).ListJobsByAgentID(r.ctx, pgtype.UUID{Bytes: uid, Valid: true})
 	if err != nil {
 		return nil, fmt.Errorf("list jobs by agent: %w", err)
 	}
@@ -118,6 +119,24 @@ func (r *Repo) GetByAgentID(agentID string) ([]*oapi.Job, error) {
 	result := make([]*oapi.Job, 0, len(rows))
 	for _, row := range rows {
 		result = append(result, ToOapi(fromAgentRow(row)))
+	}
+	return result, nil
+}
+
+func (r *Repo) GetByReleaseID(releaseID string) ([]*oapi.Job, error) {
+	uid, err := uuid.Parse(releaseID)
+	if err != nil {
+		return nil, fmt.Errorf("parse release id: %w", err)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListJobsByReleaseID(r.ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("list jobs by release: %w", err)
+	}
+
+	result := make([]*oapi.Job, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, ToOapi(fromReleaseRow(row)))
 	}
 	return result, nil
 }

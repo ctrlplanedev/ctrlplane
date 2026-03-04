@@ -314,7 +314,7 @@ type Environment struct {
 
 type Job struct {
 	ID              uuid.UUID
-	JobAgentID      uuid.UUID
+	JobAgentID      pgtype.UUID
 	JobAgentConfig  []byte
 	ExternalID      pgtype.Text
 	TraceToken      pgtype.Text

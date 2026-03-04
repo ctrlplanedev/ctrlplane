@@ -705,6 +705,10 @@ func (a *jobRepoAdapter) GetByAgentID(agentID string) ([]*oapi.Job, error) {
 	return a.store.GetBy("job_agent_id", agentID)
 }
 
+func (a *jobRepoAdapter) GetByReleaseID(releaseID string) ([]*oapi.Job, error) {
+	return a.store.GetBy("release_id", releaseID)
+}
+
 func (s *InMemory) JobsRepo() repository.JobRepo {
 	return &jobRepoAdapter{store: s.Jobs}
 }

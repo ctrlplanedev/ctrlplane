@@ -41,6 +41,7 @@ func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName str
 			AddMetadata("message", message)
 	}
 
+	now := time.Now()
 	return &oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      releaseID,
@@ -48,8 +49,9 @@ func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName str
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Status:         oapi.JobStatusInvalidJobAgent,
 		Message:        &message,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		CompletedAt:    &now,
 		Metadata:       make(map[string]string),
 	}
 }
@@ -65,6 +67,7 @@ func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, a
 			AddMetadata("message", message)
 	}
 
+	now := time.Now()
 	return &oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      releaseID,
@@ -72,8 +75,9 @@ func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, a
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Status:         oapi.JobStatusInvalidJobAgent,
 		Message:        &message,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		CompletedAt:    &now,
 		Metadata:       make(map[string]string),
 	}
 }

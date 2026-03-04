@@ -6,6 +6,8 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewJobs(store *Store) *Jobs {
@@ -29,7 +31,10 @@ func (j *Jobs) Items() map[string]*oapi.Job {
 }
 
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
-	_ = j.repo.Set(job)
+	if err := j.repo.Set(job); err != nil {
+		log.Warn("Failed to upsert job", "job_id", job.Id, "error", err)
+		return
+	}
 	j.store.changeset.RecordUpsert(job)
 }
 

@@ -226,7 +226,7 @@ func (a *EnvironmentProgressionAction) didThresholdJustCross(
 		return false
 	}
 
-	return satisfiedAt.Equal(*job.CompletedAt)
+	return satisfiedAt.Truncate(time.Microsecond).Equal(job.CompletedAt.Truncate(time.Microsecond))
 }
 
 func (a *EnvironmentProgressionAction) getThresholdSatisfiedAt(

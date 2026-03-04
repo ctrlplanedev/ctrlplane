@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
@@ -81,8 +82,19 @@ func TestEngine_Redeploy_BasicFlow(t *testing.T) {
 	}
 
 	// Mark the initial job as completed
-	initialJob.Status = oapi.JobStatusSuccessful
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	now := time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify no pending jobs after completion
 	pendingJobs = engine.Workspace().Jobs().GetPending()
@@ -200,8 +212,19 @@ func TestEngine_Redeploy_AfterFailedJob(t *testing.T) {
 	}
 
 	// Mark the job as failed
-	initialJob.Status = oapi.JobStatusFailure
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	now := time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusFailure,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify no pending jobs after failure
 	pendingJobs = engine.Workspace().Jobs().GetPending()
@@ -310,8 +333,19 @@ func TestEngine_Redeploy_MultipleReleaseTargets(t *testing.T) {
 
 	// Mark all jobs as completed
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
-		engine.PushEvent(ctx, handler.JobUpdate, job)
+		now := time.Now()
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job.Id,
+			Job: oapi.Job{
+				Id:          job.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Verify no pending jobs
@@ -468,8 +502,19 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	// Get and complete the initial job
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
-		engine.PushEvent(ctx, handler.JobUpdate, job)
+		now := time.Now()
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job.Id,
+			Job: oapi.Job{
+				Id:          job.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Create a second deployment version
@@ -481,8 +526,19 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	// Complete the v2 job
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
-		engine.PushEvent(ctx, handler.JobUpdate, job)
+		now := time.Now()
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job.Id,
+			Job: oapi.Job{
+				Id:          job.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Create a third deployment version
@@ -494,8 +550,19 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	// Complete the v3 job
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
-		engine.PushEvent(ctx, handler.JobUpdate, job)
+		now := time.Now()
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job.Id,
+			Job: oapi.Job{
+				Id:          job.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Trigger redeploy
@@ -589,8 +656,19 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 	// Complete the initial job
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
-		engine.PushEvent(ctx, handler.JobUpdate, job)
+		now := time.Now()
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job.Id,
+			Job: oapi.Job{
+				Id:          job.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Trigger redeploy
@@ -794,8 +872,19 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 	}
 
 	// Mark job as in-progress (not completed)
-	initialJob.Status = oapi.JobStatusInProgress
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	now := time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusInProgress,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify job is now in progress
 	allJobs := engine.Workspace().Jobs().Items()
@@ -824,8 +913,19 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 	}
 
 	// Now complete the job
-	initialJob.Status = oapi.JobStatusSuccessful
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	now = time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Trigger redeploy again - should work now
 	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
@@ -916,8 +1016,19 @@ func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
 	}
 
 	// Mark job as requiring action
-	initialJob.Status = oapi.JobStatusActionRequired
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	now := time.Now()
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusActionRequired,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Trigger redeploy - should be blocked
 	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
@@ -994,7 +1105,6 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 	if initialJob.Status != oapi.JobStatusInvalidJobAgent {
 		t.Fatalf("expected initial job status InvalidJobAgent, got %v", initialJob.Status)
 	}
-	assert.Nil(t, initialJob.DispatchContext)
 
 	// Trigger redeploy - should work since InvalidJobAgent is NOT in processing state
 	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)

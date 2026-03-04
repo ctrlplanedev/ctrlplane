@@ -472,6 +472,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	}
 
 	if setStatus != nil {
+		setStatus("Migrating legacy jobs")
+	}
+	for _, job := range s.repo.Jobs.Items() {
+		if err := s.Jobs.repo.Set(job); err != nil {
+			log.Warn("Failed to migrate legacy job",
+				"job_id", job.Id, "error", err)
+		}
+	}
+
+	if setStatus != nil {
 		setStatus("Migrating legacy job release IDs")
 	}
 	for _, job := range s.repo.Jobs.Items() {

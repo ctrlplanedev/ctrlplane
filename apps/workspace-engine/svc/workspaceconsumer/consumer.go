@@ -107,6 +107,7 @@ func (s *Service) configureManager() error {
 				wsstore.WithDBWorkflowJobs(bgCtx),
 				wsstore.WithDBResourceVariables(bgCtx),
 				wsstore.WithDBReleases(bgCtx),
+				wsstore.WithDBJobs(bgCtx),
 			),
 		),
 	)

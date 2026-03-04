@@ -76,9 +76,20 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 
 	// Mark job as successful
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	// initialJob.Status = oapi.JobStatusSuccessful
+	// initialJob.CompletedAt = &now
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify no more pending jobs after completion
 	pendingAfterComplete := engine.Workspace().Jobs().GetPending()
@@ -229,9 +240,18 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 	assert.NotNil(t, initialJob.DispatchContext)
 	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify initial variable value
 	initialRelease, _ := engine.Workspace().Releases().Get(initialJob.ReleaseId)
@@ -344,9 +364,18 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 	assert.NotNil(t, initialJob.DispatchContext)
 	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify initial value
 	initialRelease, _ := engine.Workspace().Releases().Get(initialJob.ReleaseId)
@@ -462,9 +491,18 @@ func TestEngine_VariableChange_DeploymentDefaultObjectValueChange(t *testing.T) 
 	assert.NotNil(t, initialJob.DispatchContext)
 	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify initial value
 	initialRelease, _ := engine.Workspace().Releases().Get(initialJob.ReleaseId)
@@ -579,9 +617,18 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 	assert.NotNil(t, initialJob.DispatchContext)
 	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify initial value
 	initialRelease, _ := engine.Workspace().Releases().Get(initialJob.ReleaseId)
@@ -692,9 +739,18 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 	assert.NotNil(t, initialJob.DispatchContext)
 	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify initial value
 	initialRelease, _ := engine.Workspace().Releases().Get(initialJob.ReleaseId)
@@ -800,9 +856,18 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 	assert.NotNil(t, initialJob.DispatchContext)
 	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Verify initial values
 	initialRelease, _ := engine.Workspace().Releases().Get(initialJob.ReleaseId)
@@ -843,9 +908,18 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		break
 	}
 	if job2 != nil {
-		job2.Status = oapi.JobStatusSuccessful
-		job2.CompletedAt = &now
-		engine.PushEvent(ctx, handler.JobUpdate, job2)
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job2.Id,
+			Job: oapi.Job{
+				Id:          job2.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Change second variable - triggers another new job
@@ -866,9 +940,18 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		break
 	}
 	if job3 != nil {
-		job3.Status = oapi.JobStatusSuccessful
-		job3.CompletedAt = &now
-		engine.PushEvent(ctx, handler.JobUpdate, job3)
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &job3.Id,
+			Job: oapi.Job{
+				Id:          job3.Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &now,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			},
+		})
 	}
 
 	// Change third variable (resource variable) - triggers final job
@@ -987,9 +1070,18 @@ func TestEngine_VariableChange_ResourceVariableAddedOverridesDeploymentDefault(t
 	assert.Equal(t, "us-west-2", dcInitialRegion)
 
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Now add a resource variable with the same key — this should override the deployment default
 	rv := c.NewResourceVariable(resourceID, "region")
@@ -1097,10 +1189,18 @@ func TestEngine_VariableChange_ResourceVariableAddedOverridesDeploymentValue(t *
 	assert.Equal(t, 3, dcInitialReplicas)
 
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
-
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 	// Now add a resource variable with the same key — this should override the deployment variable value
 	rv := c.NewResourceVariable(resourceID, "replicas")
 	rv.Value = *c.NewValueFromInt(10)
@@ -1208,9 +1308,18 @@ func TestEngine_VariableChange_ResourceVariableBulkUpdateOverridesDeployment(t *
 	assert.Equal(t, 3, initialReplicas)
 
 	now := time.Now()
-	initialJob.Status = oapi.JobStatusSuccessful
-	initialJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &initialJob.Id,
+		Job: oapi.Job{
+			Id:          initialJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
 
 	// Bulk update resource variables (the path used by the API)
 	bulkUpdateEvent := &oapi.ResourceVariablesBulkUpdateEvent{

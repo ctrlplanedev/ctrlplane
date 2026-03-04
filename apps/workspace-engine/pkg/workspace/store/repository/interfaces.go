@@ -176,6 +176,7 @@ type JobRepo interface {
 	Remove(id string) error
 	Items() map[string]*oapi.Job
 	GetByAgentID(agentID string) ([]*oapi.Job, error)
+	GetByReleaseID(releaseID string) ([]*oapi.Job, error)
 }
 
 // ResourceVariableRepo defines the contract for resource variable storage.

@@ -160,6 +160,9 @@ func TestEngine_DeploymentVariableDeletion_TriggersRecomputation(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
+	allJobs := engine.Workspace().Jobs().GetPending()
+	assert.Len(t, allJobs, 1)
+
 	// Verify job was created with both variables
 	rt := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,

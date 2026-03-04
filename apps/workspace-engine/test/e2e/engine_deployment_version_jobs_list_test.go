@@ -1,10 +1,12 @@
 package e2e
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
+	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 
@@ -175,6 +177,7 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 	// Wait for jobs to be created
 	time.Sleep(500 * time.Millisecond)
 
+	ctx := context.Background()
 	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
@@ -196,14 +199,49 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 		for _, job := range jobs {
 			switch resource.Name {
 			case "z-server":
-				job.Status = oapi.JobStatusFailure // Should come first despite "z" name
-				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				// job.Status = oapi.JobStatusFailure // Should come first despite "z" name
+				// job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				createdAt := baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+					Id: &job.Id,
+					Job: oapi.Job{
+						Id:        job.Id,
+						Status:    oapi.JobStatusFailure,
+						CreatedAt: createdAt,
+					},
+					FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+						oapi.JobUpdateEventFieldsToUpdateStatus,
+						oapi.JobUpdateEventFieldsToUpdateCreatedAt,
+					},
+				})
 			case "a-server":
-				job.Status = oapi.JobStatusInProgress
-				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				createdAt := baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+					Id: &job.Id,
+					Job: oapi.Job{
+						Id:        job.Id,
+						Status:    oapi.JobStatusInProgress,
+						CreatedAt: createdAt,
+					},
+					FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+						oapi.JobUpdateEventFieldsToUpdateStatus,
+						oapi.JobUpdateEventFieldsToUpdateCreatedAt,
+					},
+				})
 			case "m-server":
-				job.Status = oapi.JobStatusSuccessful
-				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				createdAt := baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
+				engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+					Id: &job.Id,
+					Job: oapi.Job{
+						Id:        job.Id,
+						Status:    oapi.JobStatusSuccessful,
+						CreatedAt: createdAt,
+					},
+					FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+						oapi.JobUpdateEventFieldsToUpdateStatus,
+						oapi.JobUpdateEventFieldsToUpdateCreatedAt,
+					},
+				})
 			}
 			timestampIndex++
 		}

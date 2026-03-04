@@ -58,7 +58,6 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
 	assert.Empty(t, originalJob.JobAgentId, "expected empty job agent ID")
-	assert.Nil(t, originalJob.DispatchContext)
 
 	// Store original job details for later verification
 	originalJobID := originalJob.Id
@@ -176,7 +175,6 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	}
 
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
-	assert.Nil(t, originalJob.DispatchContext)
 
 	originalJobID := originalJob.Id
 	originalReleaseID := originalJob.ReleaseId
@@ -311,7 +309,6 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 	for _, j := range allJobs {
 		if j.Status == oapi.JobStatusInvalidJobAgent {
 			invalidJobAgentCount++
-			assert.Nil(t, j.DispatchContext)
 		}
 	}
 

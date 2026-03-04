@@ -185,11 +185,21 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 	}
 
 	// Simulate job completion 3 minutes ago (past the soak time)
-	stagingJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now().Add(-3 * time.Minute)
-	stagingJob.CompletedAt = &completedAt
-	stagingJob.UpdatedAt = completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, stagingJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &stagingJob.Id,
+		Job: oapi.Job{
+			Id:          stagingJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	})
 
 	// Give time for release manager to process
 	time.Sleep(100 * time.Millisecond)
@@ -291,11 +301,21 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 	}
 	assert.NotNil(t, usEastJob, "us-east staging job not found")
 
-	usEastJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now().Add(-3 * time.Minute)
-	usEastJob.CompletedAt = &completedAt
-	usEastJob.UpdatedAt = completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, usEastJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &usEastJob.Id,
+		Job: oapi.Job{
+			Id:          usEastJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	})
 
 	// Trigger policy re-evaluation
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -400,18 +420,38 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 	// Complete 2 out of 3 staging jobs successfully (66.7% success rate)
 	completedAt := time.Now().Add(-3 * time.Minute)
 	for i := 0; i < 2; i++ {
-		stagingJobs[i].Status = oapi.JobStatusSuccessful
-		stagingJobs[i].CompletedAt = &completedAt
-		stagingJobs[i].UpdatedAt = completedAt
-		engine.PushEvent(ctx, handler.JobUpdate, stagingJobs[i])
+		engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+			Id: &stagingJobs[i].Id,
+			Job: oapi.Job{
+				Id:          stagingJobs[i].Id,
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &completedAt,
+				UpdatedAt:   completedAt,
+			},
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdateStatus,
+				oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+				oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+			},
+		})
 	}
 
 	// Mark the third job as failed
 	failedAt := time.Now().Add(-3 * time.Minute)
-	stagingJobs[2].Status = oapi.JobStatusFailure
-	stagingJobs[2].CompletedAt = &failedAt
-	stagingJobs[2].UpdatedAt = failedAt
-	engine.PushEvent(ctx, handler.JobUpdate, stagingJobs[2])
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &stagingJobs[2].Id,
+		Job: oapi.Job{
+			Id:          stagingJobs[2].Id,
+			Status:      oapi.JobStatusFailure,
+			CompletedAt: &failedAt,
+			UpdatedAt:   failedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	})
 
 	// Trigger policy re-evaluation
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -499,11 +539,21 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 	}
 
 	// Complete job 3 hours ago (exceeds max age)
-	stagingJob.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now().Add(-3 * time.Hour)
-	stagingJob.CompletedAt = &completedAt
-	stagingJob.UpdatedAt = completedAt
-	engine.PushEvent(ctx, handler.JobUpdate, stagingJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &stagingJob.Id,
+		Job: oapi.Job{
+			Id:          stagingJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	})
 
 	// Trigger policy re-evaluation
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -595,10 +645,20 @@ func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
 
 	// Complete v1.0.0 staging job 10 minutes ago (past the soak time)
 	v1CompletedAt := time.Now().Add(-10 * time.Minute)
-	v1StagingJob.Status = oapi.JobStatusSuccessful
-	v1StagingJob.CompletedAt = &v1CompletedAt
-	v1StagingJob.UpdatedAt = v1CompletedAt
-	engine.PushEvent(ctx, handler.JobUpdate, v1StagingJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &v1StagingJob.Id,
+		Job: oapi.Job{
+			Id:          v1StagingJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &v1CompletedAt,
+			UpdatedAt:   v1CompletedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	})
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -624,10 +684,20 @@ func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
 
 	// Complete v2.0.0 staging job just now (soak time NOT met)
 	v2CompletedAt := time.Now()
-	v2StagingJob.Status = oapi.JobStatusSuccessful
-	v2StagingJob.CompletedAt = &v2CompletedAt
-	v2StagingJob.UpdatedAt = v2CompletedAt
-	engine.PushEvent(ctx, handler.JobUpdate, v2StagingJob)
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id: &v2StagingJob.Id,
+		Job: oapi.Job{
+			Id:          v2StagingJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &v2CompletedAt,
+			UpdatedAt:   v2CompletedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	})
 
 	// Trigger policy re-evaluation
 	time.Sleep(100 * time.Millisecond)

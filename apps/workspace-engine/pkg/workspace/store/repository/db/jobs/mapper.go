@@ -13,18 +13,19 @@ import (
 )
 
 type jobRow struct {
-	ID             uuid.UUID
-	JobAgentID     uuid.UUID
-	JobAgentConfig []byte
-	ExternalID     pgtype.Text
-	Status         db.JobStatus
-	Message        pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	StartedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ReleaseID      uuid.UUID
-	Metadata       []byte
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          db.JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
 }
 
 func fromGetRow(r db.GetJobByIDRow) jobRow {
@@ -32,7 +33,8 @@ func fromGetRow(r db.GetJobByIDRow) jobRow {
 		ID: r.ID, JobAgentID: r.JobAgentID, JobAgentConfig: r.JobAgentConfig,
 		ExternalID: r.ExternalID, Status: r.Status, Message: r.Message,
 		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, CompletedAt: r.CompletedAt,
-		UpdatedAt: r.UpdatedAt, ReleaseID: r.ReleaseID, Metadata: r.Metadata,
+		UpdatedAt: r.UpdatedAt, DispatchContext: r.DispatchContext,
+		ReleaseID: r.ReleaseID, Metadata: r.Metadata,
 	}
 }
 
@@ -41,7 +43,8 @@ func fromWorkspaceRow(r db.ListJobsByWorkspaceIDRow) jobRow {
 		ID: r.ID, JobAgentID: r.JobAgentID, JobAgentConfig: r.JobAgentConfig,
 		ExternalID: r.ExternalID, Status: r.Status, Message: r.Message,
 		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, CompletedAt: r.CompletedAt,
-		UpdatedAt: r.UpdatedAt, ReleaseID: r.ReleaseID, Metadata: r.Metadata,
+		UpdatedAt: r.UpdatedAt, DispatchContext: r.DispatchContext,
+		ReleaseID: r.ReleaseID, Metadata: r.Metadata,
 	}
 }
 
@@ -50,13 +53,50 @@ func fromAgentRow(r db.ListJobsByAgentIDRow) jobRow {
 		ID: r.ID, JobAgentID: r.JobAgentID, JobAgentConfig: r.JobAgentConfig,
 		ExternalID: r.ExternalID, Status: r.Status, Message: r.Message,
 		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, CompletedAt: r.CompletedAt,
-		UpdatedAt: r.UpdatedAt, ReleaseID: r.ReleaseID, Metadata: r.Metadata,
+		UpdatedAt: r.UpdatedAt, DispatchContext: r.DispatchContext,
+		ReleaseID: r.ReleaseID, Metadata: r.Metadata,
+	}
+}
+
+func fromReleaseRow(r db.ListJobsByReleaseIDRow) jobRow {
+	return jobRow{
+		ID: r.ID, JobAgentID: r.JobAgentID, JobAgentConfig: r.JobAgentConfig,
+		ExternalID: r.ExternalID, Status: r.Status, Message: r.Message,
+		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, CompletedAt: r.CompletedAt,
+		UpdatedAt: r.UpdatedAt, DispatchContext: r.DispatchContext,
+		ReleaseID: r.ReleaseID, Metadata: r.Metadata,
 	}
 }
 
 type metadataEntry struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+var dbToOapiStatus = map[db.JobStatus]oapi.JobStatus{
+	"cancelled":              oapi.JobStatusCancelled,
+	"skipped":                oapi.JobStatusSkipped,
+	"in_progress":            oapi.JobStatusInProgress,
+	"action_required":        oapi.JobStatusActionRequired,
+	"pending":                oapi.JobStatusPending,
+	"failure":                oapi.JobStatusFailure,
+	"invalid_job_agent":      oapi.JobStatusInvalidJobAgent,
+	"invalid_integration":    oapi.JobStatusInvalidIntegration,
+	"external_run_not_found": oapi.JobStatusExternalRunNotFound,
+	"successful":             oapi.JobStatusSuccessful,
+}
+
+var oapiToDBStatus = map[oapi.JobStatus]db.JobStatus{
+	oapi.JobStatusCancelled:           "cancelled",
+	oapi.JobStatusSkipped:             "skipped",
+	oapi.JobStatusInProgress:          "in_progress",
+	oapi.JobStatusActionRequired:      "action_required",
+	oapi.JobStatusPending:             "pending",
+	oapi.JobStatusFailure:             "failure",
+	oapi.JobStatusInvalidJobAgent:     "invalid_job_agent",
+	oapi.JobStatusInvalidIntegration:  "invalid_integration",
+	oapi.JobStatusExternalRunNotFound: "external_run_not_found",
+	oapi.JobStatusSuccessful:          "successful",
 }
 
 func ToOapi(row jobRow) *oapi.Job {
@@ -75,15 +115,29 @@ func ToOapi(row jobRow) *oapi.Job {
 		}
 	}
 
+	var dispatchContext *oapi.DispatchContext
+	if len(row.DispatchContext) > 0 {
+		dc := &oapi.DispatchContext{}
+		if err := json.Unmarshal(row.DispatchContext, dc); err == nil {
+			dispatchContext = dc
+		}
+	}
+
+	var jobAgentId string
+	if row.JobAgentID.Valid {
+		jobAgentId = uuid.UUID(row.JobAgentID.Bytes).String()
+	}
+
 	j := &oapi.Job{
-		Id:             row.ID.String(),
-		JobAgentId:     row.JobAgentID.String(),
-		JobAgentConfig: config,
-		Status:         oapi.JobStatus(row.Status),
-		ReleaseId:      row.ReleaseID.String(),
-		Metadata:       metadata,
-		CreatedAt:      row.CreatedAt.Time,
-		UpdatedAt:      row.UpdatedAt.Time,
+		Id:              row.ID.String(),
+		JobAgentId:      jobAgentId,
+		JobAgentConfig:  config,
+		Status:          dbToOapiStatus[row.Status],
+		ReleaseId:       row.ReleaseID.String(),
+		Metadata:        metadata,
+		CreatedAt:       row.CreatedAt.Time,
+		UpdatedAt:       row.UpdatedAt.Time,
+		DispatchContext: dispatchContext,
 	}
 
 	if row.ExternalID.Valid {
@@ -110,9 +164,13 @@ func ToUpsertParams(j *oapi.Job) (db.UpsertJobParams, error) {
 		return db.UpsertJobParams{}, fmt.Errorf("parse job id: %w", err)
 	}
 
-	agentID, err := uuid.Parse(j.JobAgentId)
-	if err != nil {
-		return db.UpsertJobParams{}, fmt.Errorf("parse job_agent_id: %w", err)
+	var agentID pgtype.UUID
+	if j.JobAgentId != "" {
+		parsed, err := uuid.Parse(j.JobAgentId)
+		if err != nil {
+			return db.UpsertJobParams{}, fmt.Errorf("parse job_agent_id: %w", err)
+		}
+		agentID = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
 	agentConfig, err := json.Marshal(j.JobAgentConfig)
@@ -120,13 +178,23 @@ func ToUpsertParams(j *oapi.Job) (db.UpsertJobParams, error) {
 		return db.UpsertJobParams{}, fmt.Errorf("marshal job_agent_config: %w", err)
 	}
 
+	dispatchContextBytes := []byte("{}")
+	if j.DispatchContext != nil {
+		var err error
+		dispatchContextBytes, err = json.Marshal(j.DispatchContext)
+		if err != nil {
+			return db.UpsertJobParams{}, fmt.Errorf("marshal dispatch_context: %w", err)
+		}
+	}
+
 	params := db.UpsertJobParams{
-		ID:             id,
-		JobAgentID:     agentID,
-		JobAgentConfig: agentConfig,
-		Status:         db.JobStatus(j.Status),
-		CreatedAt:      pgtype.Timestamptz{Time: j.CreatedAt, Valid: !j.CreatedAt.IsZero()},
-		UpdatedAt:      pgtype.Timestamptz{Time: j.UpdatedAt, Valid: !j.UpdatedAt.IsZero()},
+		ID:              id,
+		JobAgentID:      agentID,
+		JobAgentConfig:  agentConfig,
+		Status:          oapiToDBStatus[j.Status],
+		CreatedAt:       pgtype.Timestamptz{Time: j.CreatedAt, Valid: !j.CreatedAt.IsZero()},
+		UpdatedAt:       pgtype.Timestamptz{Time: j.UpdatedAt, Valid: !j.UpdatedAt.IsZero()},
+		DispatchContext: dispatchContextBytes,
 	}
 
 	if j.ExternalId != nil {

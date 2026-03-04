@@ -86,6 +86,9 @@ sql:
               type: "map[string]string"
 
           # Job
+          - column: "job.job_agent_id"
+            go_type:
+              type: "pgtype.UUID"
           - column: "job.job_agent_config"
             go_type:
               type: "[]byte"
