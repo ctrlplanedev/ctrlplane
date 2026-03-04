@@ -25,7 +25,8 @@ type fakeQueue struct {
 	lastClaimMux sync.Mutex
 }
 
-func (f *fakeQueue) Enqueue(ctx context.Context, params EnqueueParams) error { return nil }
+func (f *fakeQueue) Enqueue(ctx context.Context, params EnqueueParams) error       { return nil }
+func (f *fakeQueue) EnqueueMany(ctx context.Context, params []EnqueueParams) error { return nil }
 func (f *fakeQueue) Claim(ctx context.Context, params ClaimParams) ([]Item, error) {
 	f.claimCalls.Add(1)
 	f.lastClaimMux.Lock()

@@ -176,6 +176,15 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 	return nil
 }
 
+func (q *Queue) EnqueueMany(ctx context.Context, params []reconcile.EnqueueParams) error {
+	for _, p := range params {
+		if err := q.Enqueue(ctx, p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reconcile.Item, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

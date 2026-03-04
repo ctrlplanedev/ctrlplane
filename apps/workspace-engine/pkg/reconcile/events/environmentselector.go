@@ -20,3 +20,19 @@ func EnqueueEnvironmentResourceselectorEval(queue reconcile.Queue, ctx context.C
 		ScopeID:     params.EnvironmentID,
 	})
 }
+
+func EnqueueManyEnvironmentResourceselectorEval(queue reconcile.Queue, ctx context.Context, params []EnvironmentResourceselectorEvalParams) error {
+	if len(params) == 0 {
+		return nil
+	}
+	items := make([]reconcile.EnqueueParams, len(params))
+	for i, p := range params {
+		items[i] = reconcile.EnqueueParams{
+			WorkspaceID: p.WorkspaceID,
+			Kind:        EnvironmentResourceselectorEvalKind,
+			ScopeType:   "environment",
+			ScopeID:     p.EnvironmentID,
+		}
+	}
+	return queue.EnqueueMany(ctx, items)
+}

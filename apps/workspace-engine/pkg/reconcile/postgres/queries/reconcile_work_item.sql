@@ -1,3 +1,42 @@
+-- name: BatchUpsertReconcileWorkScopes :exec
+-- Batch upsert scope rows for multiple work items in a single round-trip.
+INSERT INTO reconcile_work_scope (
+  workspace_id, kind, scope_type, scope_id, event_ts, priority, not_before,
+  claimed_by, claimed_until, created_at, updated_at
+)
+SELECT
+  unnest(sqlc.arg(workspace_ids)::uuid[]),
+  unnest(sqlc.arg(kinds)::text[]),
+  unnest(sqlc.arg(scope_types)::text[]),
+  unnest(sqlc.arg(scope_ids)::text[]),
+  unnest(sqlc.arg(event_ts)::timestamptz[]),
+  unnest(sqlc.arg(priorities)::smallint[]),
+  unnest(sqlc.arg(not_befores)::timestamptz[]),
+  NULL, NULL, now(), now()
+ON CONFLICT (workspace_id, kind, scope_type, scope_id)
+DO UPDATE SET
+  event_ts   = GREATEST(reconcile_work_scope.event_ts, EXCLUDED.event_ts),
+  priority   = LEAST(reconcile_work_scope.priority, EXCLUDED.priority),
+  not_before = LEAST(reconcile_work_scope.not_before, EXCLUDED.not_before),
+  updated_at = CASE
+    WHEN reconcile_work_scope.claimed_until IS NOT NULL
+      AND reconcile_work_scope.claimed_until >= now()
+    THEN reconcile_work_scope.updated_at
+    ELSE now()
+  END,
+  claimed_by = CASE
+    WHEN reconcile_work_scope.claimed_until IS NOT NULL
+      AND reconcile_work_scope.claimed_until < now()
+    THEN NULL
+    ELSE reconcile_work_scope.claimed_by
+  END,
+  claimed_until = CASE
+    WHEN reconcile_work_scope.claimed_until IS NOT NULL
+      AND reconcile_work_scope.claimed_until < now()
+    THEN NULL
+    ELSE reconcile_work_scope.claimed_until
+  END;
+
 -- name: UpsertReconcileWorkItem :exec
 -- Upsert scope scheduling metadata, then upsert payload variant under that scope.
 WITH upsert_scope AS (

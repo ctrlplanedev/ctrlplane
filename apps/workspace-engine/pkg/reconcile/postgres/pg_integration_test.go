@@ -93,6 +93,233 @@ WHERE workspace_id = $1
 	}
 }
 
+// ---------------------------------------------------------------------------
+// EnqueueMany tests
+// ---------------------------------------------------------------------------
+
+func TestQueue_EnqueueMany_BasicBatchAndClaim(t *testing.T) {
+	pool := requireDB(t)
+	queue := New(pool)
+	workspaceID := uuid.NewString()
+	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
+
+	ctx := context.Background()
+	scopeIDs := []string{uuid.NewString(), uuid.NewString(), uuid.NewString()}
+
+	params := make([]reconcile.EnqueueParams, len(scopeIDs))
+	for i, sid := range scopeIDs {
+		params[i] = reconcile.EnqueueParams{
+			WorkspaceID: workspaceID,
+			Kind:        "deployment-resource-selector-eval",
+			ScopeType:   "deployment",
+			ScopeID:     sid,
+		}
+	}
+
+	if err := queue.EnqueueMany(ctx, params); err != nil {
+		t.Fatalf("EnqueueMany failed: %v", err)
+	}
+
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     10,
+		WorkerID:      "worker-batch",
+		LeaseDuration: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("claim after batch enqueue failed: %v", err)
+	}
+	if len(items) != 3 {
+		t.Fatalf("expected 3 claimed items, got %d", len(items))
+	}
+
+	claimed := map[string]bool{}
+	for _, item := range items {
+		claimed[item.ScopeID] = true
+	}
+	for _, sid := range scopeIDs {
+		if !claimed[sid] {
+			t.Fatalf("expected scope %s to be claimed", sid)
+		}
+	}
+}
+
+func TestQueue_EnqueueMany_EmptySliceIsNoOp(t *testing.T) {
+	pool := requireDB(t)
+	queue := New(pool)
+	ctx := context.Background()
+
+	if err := queue.EnqueueMany(ctx, nil); err != nil {
+		t.Fatalf("EnqueueMany(nil) should be no-op, got %v", err)
+	}
+	if err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{}); err != nil {
+		t.Fatalf("EnqueueMany([]) should be no-op, got %v", err)
+	}
+}
+
+func TestQueue_EnqueueMany_UpsertsMergePriorityAndNotBefore(t *testing.T) {
+	pool := requireDB(t)
+	queue := New(pool)
+	workspaceID := uuid.NewString()
+	scopeID := uuid.NewString()
+	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
+
+	ctx := context.Background()
+
+	if err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{{
+		WorkspaceID: workspaceID,
+		Kind:        "eval",
+		ScopeType:   "deployment",
+		ScopeID:     scopeID,
+		Priority:    50,
+		NotBefore:   time.Now().Add(10 * time.Second),
+	}}); err != nil {
+		t.Fatalf("first enqueue failed: %v", err)
+	}
+
+	// Second batch with higher priority number (lower urgency) and earlier
+	// not_before. The upsert should keep the lower priority (50) and the
+	// earlier not_before.
+	if err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{{
+		WorkspaceID: workspaceID,
+		Kind:        "eval",
+		ScopeType:   "deployment",
+		ScopeID:     scopeID,
+		Priority:    200,
+		NotBefore:   time.Now().Add(-1 * time.Second),
+	}}); err != nil {
+		t.Fatalf("upsert enqueue failed: %v", err)
+	}
+
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     1,
+		WorkerID:      "worker-upsert",
+		LeaseDuration: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("claim failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item after upsert, got %d", len(items))
+	}
+	if items[0].Priority != 50 {
+		t.Fatalf("expected priority to stay at 50 (LEAST), got %d", items[0].Priority)
+	}
+}
+
+func TestQueue_EnqueueMany_DuplicateScopeKeysInSameBatch(t *testing.T) {
+	pool := requireDB(t)
+	queue := New(pool)
+	workspaceID := uuid.NewString()
+	scopeID := uuid.NewString()
+	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
+
+	ctx := context.Background()
+
+	// Same scope key appears twice in one batch — should upsert, not fail.
+	err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{
+		{WorkspaceID: workspaceID, Kind: "eval", ScopeType: "deployment", ScopeID: scopeID},
+		{WorkspaceID: workspaceID, Kind: "eval", ScopeType: "deployment", ScopeID: scopeID},
+	})
+	if err != nil {
+		t.Fatalf("EnqueueMany with duplicate scope keys failed: %v", err)
+	}
+
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     10,
+		WorkerID:      "worker-dup",
+		LeaseDuration: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("claim failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 scope after dedup upsert, got %d", len(items))
+	}
+}
+
+func TestQueue_EnqueueMany_ValidationErrors(t *testing.T) {
+	pool := requireDB(t)
+	queue := New(pool)
+	ctx := context.Background()
+
+	if err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{
+		{Kind: "k"},
+	}); !errors.Is(err, reconcile.ErrMissingWorkspaceID) {
+		t.Fatalf("expected ErrMissingWorkspaceID, got %v", err)
+	}
+
+	if err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{
+		{WorkspaceID: uuid.NewString()},
+	}); !errors.Is(err, reconcile.ErrMissingKind) {
+		t.Fatalf("expected ErrMissingKind, got %v", err)
+	}
+
+	if err := queue.EnqueueMany(ctx, []reconcile.EnqueueParams{
+		{WorkspaceID: "bad-uuid", Kind: "k"},
+	}); err == nil {
+		t.Fatal("expected parse workspace_id error")
+	}
+}
+
+func TestQueue_EnqueueMany_DatabaseError(t *testing.T) {
+	if os.Getenv("POSTGRES_URL") == "" {
+		_ = os.Setenv("POSTGRES_URL", defaultTestPostgresURL)
+	}
+	pool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
+	if err != nil {
+		t.Fatalf("failed to create pool: %v", err)
+	}
+	queue := New(pool)
+	pool.Close()
+
+	err = queue.EnqueueMany(context.Background(), []reconcile.EnqueueParams{
+		{WorkspaceID: uuid.NewString(), Kind: "k"},
+	})
+	if err == nil {
+		t.Fatal("expected EnqueueMany db error on closed pool")
+	}
+}
+
+func TestQueue_EnqueueMany_ClaimableByFilteredQueue(t *testing.T) {
+	pool := requireDB(t)
+	workspaceID := uuid.NewString()
+	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
+
+	all := New(pool)
+	filtered := NewForKinds(pool, "target-kind")
+	ctx := context.Background()
+
+	err := all.EnqueueMany(ctx, []reconcile.EnqueueParams{
+		{WorkspaceID: workspaceID, Kind: "target-kind", ScopeType: "env", ScopeID: uuid.NewString()},
+		{WorkspaceID: workspaceID, Kind: "target-kind", ScopeType: "env", ScopeID: uuid.NewString()},
+		{WorkspaceID: workspaceID, Kind: "other-kind", ScopeType: "env", ScopeID: uuid.NewString()},
+	})
+	if err != nil {
+		t.Fatalf("EnqueueMany failed: %v", err)
+	}
+
+	items, err := filtered.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     10,
+		WorkerID:      "worker-filtered",
+		LeaseDuration: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("filtered claim failed: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items for filtered kind, got %d", len(items))
+	}
+	for _, item := range items {
+		if item.Kind != "target-kind" {
+			t.Fatalf("expected only target-kind, got %s", item.Kind)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Enqueue (single) tests
+// ---------------------------------------------------------------------------
+
 func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 	pool := requireDB(t)
 	queue := New(pool)

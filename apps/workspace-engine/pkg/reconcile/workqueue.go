@@ -10,6 +10,7 @@ import (
 // Implementations must be safe for concurrent use.
 type Queue interface {
 	Enqueue(ctx context.Context, params EnqueueParams) error
+	EnqueueMany(ctx context.Context, params []EnqueueParams) error
 	Claim(ctx context.Context, params ClaimParams) ([]Item, error)
 	ExtendLease(ctx context.Context, params ExtendLeaseParams) error
 	AckSuccess(ctx context.Context, params AckSuccessParams) (AckSuccessResult, error)

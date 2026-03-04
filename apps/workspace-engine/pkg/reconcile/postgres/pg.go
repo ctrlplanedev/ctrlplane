@@ -99,6 +99,114 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 	return nil
 }
 
+type resolvedItem struct {
+	workspaceID uuid.UUID
+	kind        string
+	scopeType   string
+	scopeID     string
+	eventTS     time.Time
+	priority    int16
+	notBefore   time.Time
+}
+
+func (q *Queue) EnqueueMany(ctx context.Context, params []reconcile.EnqueueParams) error {
+	if len(params) == 0 {
+		return nil
+	}
+
+	now := time.Now()
+
+	// Deduplicate by scope key, merging with the same semantics as the
+	// ON CONFLICT clause (GREATEST event_ts, LEAST priority, LEAST not_before).
+	// Postgres errors if ON CONFLICT DO UPDATE hits the same row twice.
+	deduped := make(map[string]*resolvedItem, len(params))
+	order := make([]string, 0, len(params))
+	for _, p := range params {
+		if p.WorkspaceID == "" {
+			return reconcile.ErrMissingWorkspaceID
+		}
+		if p.Kind == "" {
+			return reconcile.ErrMissingKind
+		}
+
+		wid, err := uuid.Parse(p.WorkspaceID)
+		if err != nil {
+			return fmt.Errorf("parse workspace_id as uuid: %w", err)
+		}
+
+		ts := p.EventTS
+		if ts.IsZero() {
+			ts = now
+		}
+		pri := p.Priority
+		if pri == 0 {
+			pri = defaultPriority
+		}
+		nb := p.NotBefore
+		if nb.IsZero() {
+			nb = now.Add(-1 * time.Second)
+		}
+
+		key := p.WorkspaceID + "\x00" + p.Kind + "\x00" + p.ScopeType + "\x00" + p.ScopeID
+		if existing, ok := deduped[key]; ok {
+			if ts.After(existing.eventTS) {
+				existing.eventTS = ts
+			}
+			if pri < existing.priority {
+				existing.priority = pri
+			}
+			if nb.Before(existing.notBefore) {
+				existing.notBefore = nb
+			}
+		} else {
+			deduped[key] = &resolvedItem{
+				workspaceID: wid,
+				kind:        p.Kind,
+				scopeType:   p.ScopeType,
+				scopeID:     p.ScopeID,
+				eventTS:     ts,
+				priority:    pri,
+				notBefore:   nb,
+			}
+			order = append(order, key)
+		}
+	}
+
+	n := len(order)
+	workspaceIDs := make([]uuid.UUID, n)
+	kinds := make([]string, n)
+	scopeTypes := make([]string, n)
+	scopeIDs := make([]string, n)
+	eventTSs := make([]pgtype.Timestamptz, n)
+	priorities := make([]int16, n)
+	notBefores := make([]pgtype.Timestamptz, n)
+
+	for i, key := range order {
+		item := deduped[key]
+		workspaceIDs[i] = item.workspaceID
+		kinds[i] = item.kind
+		scopeTypes[i] = item.scopeType
+		scopeIDs[i] = item.scopeID
+		eventTSs[i] = pgtype.Timestamptz{Time: item.eventTS, Valid: true}
+		priorities[i] = item.priority
+		notBefores[i] = pgtype.Timestamptz{Time: item.notBefore, Valid: true}
+	}
+
+	err := q.queries.BatchUpsertReconcileWorkScopes(ctx, sqldb.BatchUpsertReconcileWorkScopesParams{
+		WorkspaceIds: workspaceIDs,
+		Kinds:        kinds,
+		ScopeTypes:   scopeTypes,
+		ScopeIds:     scopeIDs,
+		EventTs:      eventTSs,
+		Priorities:   priorities,
+		NotBefores:   notBefores,
+	})
+	if err != nil {
+		return fmt.Errorf("batch enqueue work items: %w", err)
+	}
+	return nil
+}
+
 func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reconcile.Item, error) {
 	if params.WorkerID == "" {
 		return nil, reconcile.ErrMissingWorkerID

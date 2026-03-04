@@ -12,6 +12,69 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const batchUpsertReconcileWorkScopes = `-- name: BatchUpsertReconcileWorkScopes :exec
+INSERT INTO reconcile_work_scope (
+  workspace_id, kind, scope_type, scope_id, event_ts, priority, not_before,
+  claimed_by, claimed_until, created_at, updated_at
+)
+SELECT
+  unnest($1::uuid[]),
+  unnest($2::text[]),
+  unnest($3::text[]),
+  unnest($4::text[]),
+  unnest($5::timestamptz[]),
+  unnest($6::smallint[]),
+  unnest($7::timestamptz[]),
+  NULL, NULL, now(), now()
+ON CONFLICT (workspace_id, kind, scope_type, scope_id)
+DO UPDATE SET
+  event_ts   = GREATEST(reconcile_work_scope.event_ts, EXCLUDED.event_ts),
+  priority   = LEAST(reconcile_work_scope.priority, EXCLUDED.priority),
+  not_before = LEAST(reconcile_work_scope.not_before, EXCLUDED.not_before),
+  updated_at = CASE
+    WHEN reconcile_work_scope.claimed_until IS NOT NULL
+      AND reconcile_work_scope.claimed_until >= now()
+    THEN reconcile_work_scope.updated_at
+    ELSE now()
+  END,
+  claimed_by = CASE
+    WHEN reconcile_work_scope.claimed_until IS NOT NULL
+      AND reconcile_work_scope.claimed_until < now()
+    THEN NULL
+    ELSE reconcile_work_scope.claimed_by
+  END,
+  claimed_until = CASE
+    WHEN reconcile_work_scope.claimed_until IS NOT NULL
+      AND reconcile_work_scope.claimed_until < now()
+    THEN NULL
+    ELSE reconcile_work_scope.claimed_until
+  END
+`
+
+type BatchUpsertReconcileWorkScopesParams struct {
+	WorkspaceIds []uuid.UUID
+	Kinds        []string
+	ScopeTypes   []string
+	ScopeIds     []string
+	EventTs      []pgtype.Timestamptz
+	Priorities   []int16
+	NotBefores   []pgtype.Timestamptz
+}
+
+// Batch upsert scope rows for multiple work items in a single round-trip.
+func (q *Queries) BatchUpsertReconcileWorkScopes(ctx context.Context, arg BatchUpsertReconcileWorkScopesParams) error {
+	_, err := q.db.Exec(ctx, batchUpsertReconcileWorkScopes,
+		arg.WorkspaceIds,
+		arg.Kinds,
+		arg.ScopeTypes,
+		arg.ScopeIds,
+		arg.EventTs,
+		arg.Priorities,
+		arg.NotBefores,
+	)
+	return err
+}
+
 const claimReconcileWorkItems = `-- name: ClaimReconcileWorkItems :many
 WITH candidate_scopes AS (
   SELECT s.id
