@@ -33,10 +33,11 @@ func (r *RepositoryRouter) Apply(ctx context.Context, changes Changes) error {
 	latestChanges := make(map[string]Change)
 	for _, change := range changes {
 		entityType, entityID := change.Entity.CompactionKey()
-		if _, err := uuid.Parse(entityID); err != nil {
-			log.Warn("Skipping entity with non-UUID id",
-				"entity_type", entityType, "entity_id", entityID)
-			continue
+		if entityType == "release" {
+			if _, err := uuid.Parse(entityID); err != nil {
+				log.Warn("Skipping release with non-UUID id", "entity_id", entityID)
+				continue
+			}
 		}
 		key := entityType + ":" + entityID
 
