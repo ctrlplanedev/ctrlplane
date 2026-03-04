@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
 	dbrepo "workspace-engine/pkg/workspace/store/repository/db"
+	hybridrepo "workspace-engine/pkg/workspace/store/repository/hybrid"
 	"workspace-engine/pkg/workspace/store/repository/memory"
 
 	"github.com/charmbracelet/log"
@@ -80,6 +81,15 @@ func WithDBJobs(ctx context.Context) StoreOption {
 	}
 }
 
+// WithHybridJobs replaces the default in-memory JobRepo with a hybrid
+// implementation that reads from memory and writes to both memory and DB.
+func WithHybridJobs(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Jobs.SetRepo(hybridrepo.NewRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBResourceProviders replaces the default in-memory ResourceProviderRepo
 // with a DB-backed implementation.
 func WithDBResourceProviders(ctx context.Context) StoreOption {
@@ -113,6 +123,15 @@ func WithDBReleases(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.Releases.SetRepo(dbRepo.Releases())
+	}
+}
+
+// WithHybridReleases replaces the default in-memory ReleaseRepo with a hybrid
+// implementation that reads from memory and writes to both memory and DB.
+func WithHybridReleases(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Releases.SetRepo(hybridrepo.NewReleaseRepo(dbRepo, s.repo))
 	}
 }
 

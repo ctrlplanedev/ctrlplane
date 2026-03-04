@@ -87,8 +87,8 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBWorkflowRuns(ctx),
 			store.WithDBWorkflowJobs(ctx),
 			store.WithDBResourceVariables(ctx),
-			store.WithDBReleases(ctx),
-			store.WithDBJobs(ctx),
+			store.WithHybridReleases(ctx),
+			store.WithHybridJobs(ctx),
 		),
 	)
 
