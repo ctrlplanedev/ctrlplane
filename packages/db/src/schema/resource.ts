@@ -1,6 +1,7 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  index,
   json,
   jsonb,
   pgTable,
@@ -42,7 +43,10 @@ export const resource = pgTable(
     metadata: jsonb("metadata").default("{}").$type<Record<string, string>>(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => [uniqueIndex().on(t.identifier, t.workspaceId)],
+  (t) => [
+    uniqueIndex().on(t.identifier, t.workspaceId),
+    index("resource_workspace_id_active_idx").on(t.workspaceId),
+  ],
 );
 
 export const resourceRelations = relations(resource, ({ one }) => ({

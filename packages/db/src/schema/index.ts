@@ -23,3 +23,4 @@ export * from "./deployment-variable.js";
 export * from "./workflow.js";
 export * from "./policy-skip.js";
 export * from "./job-verification-metric.js";
+export * from "./relationships.js";
