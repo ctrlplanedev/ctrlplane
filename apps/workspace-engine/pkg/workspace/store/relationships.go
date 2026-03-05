@@ -36,6 +36,7 @@ func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.Relat
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upsert relationship rule")
 		log.Error("Failed to upsert relationship rule", "error", err)
+		return err
 	}
 	r.store.changeset.RecordUpsert(relationship)
 
@@ -54,6 +55,7 @@ func (r *RelationshipRules) Remove(ctx context.Context, id string) error {
 
 	if err := r.repo.Remove(id); err != nil {
 		log.Error("Failed to remove relationship rule", "error", err)
+		return err
 	}
 	r.store.changeset.RecordDelete(relationship)
 
