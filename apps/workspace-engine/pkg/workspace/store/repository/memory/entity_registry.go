@@ -35,6 +35,8 @@ func initGlobalRegistry() {
 
 		globalRegistry.Register("policy_skip", func() persistence.Entity { return &oapi.PolicySkip{} })
 		globalRegistry.Register("system", func() persistence.Entity { return &oapi.System{} })
+		globalRegistry.Register("system_deployment_link", func() persistence.Entity { return &oapi.SystemDeploymentLink{} })
+		globalRegistry.Register("system_environment_link", func() persistence.Entity { return &oapi.SystemEnvironmentLink{} })
 		globalRegistry.Register("release", func() persistence.Entity { return &oapi.Release{} })
 		globalRegistry.Register("job", func() persistence.Entity { return &oapi.Job{} })
 		globalRegistry.Register("job_agent", func() persistence.Entity { return &oapi.JobAgent{} })
