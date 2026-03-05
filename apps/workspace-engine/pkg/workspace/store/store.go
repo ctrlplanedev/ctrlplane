@@ -454,6 +454,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	}
 
 	if setStatus != nil {
+		setStatus("Migrating legacy job agents")
+	}
+	for _, ja := range s.repo.JobAgents().Items() {
+		if err := s.JobAgents.repo.Set(ja); err != nil {
+			log.Warn("Failed to migrate legacy job agent",
+				"job_agent_id", ja.Id, "name", ja.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
 		setStatus("Migrating legacy deployments")
 	}
 	for _, d := range s.repo.Deployments().Items() {
@@ -484,12 +494,12 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	}
 
 	if setStatus != nil {
-		setStatus("Migrating legacy job agents")
+		setStatus("Migrating legacy resource providers")
 	}
-	for _, ja := range s.repo.JobAgents().Items() {
-		if err := s.JobAgents.repo.Set(ja); err != nil {
-			log.Warn("Failed to migrate legacy job agent",
-				"job_agent_id", ja.Id, "name", ja.Name, "error", err)
+	for _, rp := range s.repo.ResourceProviders().Items() {
+		if err := s.ResourceProviders.repo.Set(rp); err != nil {
+			log.Warn("Failed to migrate legacy resource provider",
+				"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
 		}
 	}
 
@@ -500,16 +510,6 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.Resources.repo.Set(r); err != nil {
 			log.Warn("Failed to migrate legacy resource",
 				"resource_id", r.Id, "name", r.Name, "error", err)
-		}
-	}
-
-	if setStatus != nil {
-		setStatus("Migrating legacy resource providers")
-	}
-	for _, rp := range s.repo.ResourceProviders().Items() {
-		if err := s.ResourceProviders.repo.Set(rp); err != nil {
-			log.Warn("Failed to migrate legacy resource provider",
-				"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
 		}
 	}
 
