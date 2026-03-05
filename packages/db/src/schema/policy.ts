@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -12,28 +13,32 @@ import {
 
 import { workspace } from "./workspace.js";
 
-export const policy = pgTable("policy", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description"),
-  selector: text("selector").notNull().default("true"),
+export const policy = pgTable(
+  "policy",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    selector: text("selector").notNull().default("true"),
 
-  metadata: jsonb("metadata")
-    .notNull()
-    .default("{}")
-    .$type<Record<string, string>>(),
+    metadata: jsonb("metadata")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, string>>(),
 
-  priority: integer("priority").notNull().default(0),
-  enabled: boolean("enabled").notNull().default(true),
+    priority: integer("priority").notNull().default(0),
+    enabled: boolean("enabled").notNull().default(true),
 
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspace.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
 
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index().on(t.workspaceId)],
+);
 
 export const policyRelations = relations(policy, ({ many }) => ({
   anyApprovalRules: many(policyRuleAnyApproval),

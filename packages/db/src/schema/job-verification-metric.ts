@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -51,27 +52,31 @@ export const policyRuleJobVerificationMetric = pgTable(
   },
 );
 
-export const jobVerificationMetricStatus = pgTable("job_verification_metric", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const jobVerificationMetricStatus = pgTable(
+  "job_verification_metric",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
 
-  jobId: uuid("job_id").notNull(),
+    jobId: uuid("job_id").notNull(),
 
-  name: text("name").notNull(),
-  provider: jsonb("provider").notNull(),
+    name: text("name").notNull(),
+    provider: jsonb("provider").notNull(),
 
-  intervalSeconds: integer("interval_seconds").notNull(),
-  count: integer("count").notNull(),
+    intervalSeconds: integer("interval_seconds").notNull(),
+    count: integer("count").notNull(),
 
-  successCondition: text("success_condition").notNull(),
-  successThreshold: integer("success_threshold").default(0),
+    successCondition: text("success_condition").notNull(),
+    successThreshold: integer("success_threshold").default(0),
 
-  failureCondition: text("failure_condition").default("false"),
-  failureThreshold: integer("failure_threshold").default(0),
-});
+    failureCondition: text("failure_condition").default("false"),
+    failureThreshold: integer("failure_threshold").default(0),
+  },
+  (t) => [index().on(t.jobId)],
+);
 
 export const jobVerificationMetricMeasurement = pgTable(
   "job_verification_metric_measurement",
@@ -87,4 +92,5 @@ export const jobVerificationMetricMeasurement = pgTable(
     message: text("message").notNull().default(""),
     status: jobVerificationStatus("status").notNull(),
   },
+  (t) => [index().on(t.jobVerificationMetricStatusId)],
 );

@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  index,
   jsonb,
   pgTable,
   primaryKey,
@@ -12,33 +13,37 @@ import { resource } from "./resource.js";
 import { systemDeployment } from "./system.js";
 import { workspace } from "./workspace.js";
 
-export const deployment = pgTable("deployment", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
+export const deployment = pgTable(
+  "deployment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
 
-  jobAgentId: uuid("job_agent_id"),
-  jobAgentConfig: jsonb("job_agent_config")
-    .default("{}")
-    .$type<Record<string, any>>()
-    .notNull(),
+    jobAgentId: uuid("job_agent_id"),
+    jobAgentConfig: jsonb("job_agent_config")
+      .default("{}")
+      .$type<Record<string, any>>()
+      .notNull(),
 
-  jobAgents: jsonb("job_agents")
-    .default("[]")
-    .$type<
-      Array<{ ref: string; config: Record<string, any>; selector: string }>
-    >()
-    .notNull(),
+    jobAgents: jsonb("job_agents")
+      .default("[]")
+      .$type<
+        Array<{ ref: string; config: Record<string, any>; selector: string }>
+      >()
+      .notNull(),
 
-  resourceSelector: text("resource_selector").default("false"),
+    resourceSelector: text("resource_selector").default("false"),
 
-  metadata: jsonb("metadata")
-    .default("{}")
-    .$type<Record<string, string>>()
-    .notNull(),
+    metadata: jsonb("metadata")
+      .default("{}")
+      .$type<Record<string, string>>()
+      .notNull(),
 
-  workspaceId: uuid("workspace_id").references(() => workspace.id),
-});
+    workspaceId: uuid("workspace_id").references(() => workspace.id),
+  },
+  (t) => [index().on(t.workspaceId)],
+);
 
 export const deploymentRelations = relations(deployment, ({ many }) => ({
   systemDeployments: many(systemDeployment),

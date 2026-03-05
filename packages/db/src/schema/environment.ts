@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  index,
   jsonb,
   pgTable,
   primaryKey,
@@ -13,23 +14,27 @@ import { resource } from "./resource.js";
 import { systemEnvironment } from "./system.js";
 import { workspace } from "./workspace.js";
 
-export const environment = pgTable("environment", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const environment = pgTable(
+  "environment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  name: text("name").notNull(),
-  description: text("description").default(""),
-  resourceSelector: text("resource_selector").default("false"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+    name: text("name").notNull(),
+    description: text("description").default(""),
+    resourceSelector: text("resource_selector").default("false"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
 
-  metadata: jsonb("metadata")
-    .notNull()
-    .default("{}")
-    .$type<Record<string, string>>(),
+    metadata: jsonb("metadata")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, string>>(),
 
-  workspaceId: uuid("workspace_id").references(() => workspace.id),
-});
+    workspaceId: uuid("workspace_id").references(() => workspace.id),
+  },
+  (t) => [index().on(t.workspaceId)],
+);
 
 export const environmentRelations = relations(environment, ({ many }) => ({
   systemEnvironments: many(systemEnvironment),

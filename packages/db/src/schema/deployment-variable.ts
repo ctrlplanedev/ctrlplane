@@ -1,5 +1,6 @@
 import {
   bigint,
+  index,
   jsonb,
   pgTable,
   text,
@@ -20,15 +21,19 @@ export const deploymentVariable = pgTable(
     description: text("description"),
     defaultValue: jsonb("default_value"),
   },
-  (t) => [unique().on(t.deploymentId, t.key)],
+  (t) => [unique().on(t.deploymentId, t.key), index().on(t.deploymentId)],
 );
 
-export const deploymentVariableValue = pgTable("deployment_variable_value", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  deploymentVariableId: uuid("deployment_variable_id")
-    .notNull()
-    .references(() => deploymentVariable.id, { onDelete: "cascade" }),
-  value: jsonb("value").notNull(),
-  resourceSelector: text("resource_selector"),
-  priority: bigint("priority", { mode: "number" }).notNull().default(0),
-});
+export const deploymentVariableValue = pgTable(
+  "deployment_variable_value",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    deploymentVariableId: uuid("deployment_variable_id")
+      .notNull()
+      .references(() => deploymentVariable.id, { onDelete: "cascade" }),
+    value: jsonb("value").notNull(),
+    resourceSelector: text("resource_selector"),
+    priority: bigint("priority", { mode: "number" }).notNull().default(0),
+  },
+  (t) => [index().on(t.deploymentVariableId)],
+);

@@ -46,6 +46,7 @@ export const resource = pgTable(
   (t) => [
     uniqueIndex().on(t.identifier, t.workspaceId),
     index("resource_workspace_id_active_idx").on(t.workspaceId),
+    index().on(t.workspaceId, t.deletedAt),
   ],
 );
 

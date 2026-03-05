@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  index,
   jsonb,
   pgTable,
   text,
@@ -15,24 +16,28 @@ import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
 
-export const release = pgTable("release", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  resourceId: uuid("resource_id")
-    .notNull()
-    .references(() => resource.id, { onDelete: "cascade" }),
-  environmentId: uuid("environment_id")
-    .notNull()
-    .references(() => environment.id, { onDelete: "cascade" }),
-  deploymentId: uuid("deployment_id")
-    .notNull()
-    .references(() => deployment.id, { onDelete: "cascade" }),
-  versionId: uuid("version_id")
-    .notNull()
-    .references(() => deploymentVersion.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const release = pgTable(
+  "release",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => resource.id, { onDelete: "cascade" }),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environment.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+    versionId: uuid("version_id")
+      .notNull()
+      .references(() => deploymentVersion.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index().on(t.resourceId, t.environmentId, t.deploymentId)],
+);
 
 export const releaseJob = pgTable(
   "release_job",
@@ -45,7 +50,10 @@ export const releaseJob = pgTable(
       .notNull()
       .references(() => release.id, { onDelete: "cascade" }),
   },
-  (t) => [uniqueIndex().on(t.releaseId, t.jobId)],
+  (t) => [
+    uniqueIndex().on(t.releaseId, t.jobId),
+    index("release_id_job_id_index").on(t.releaseId, t.jobId),
+  ],
 );
 
 export const releaseVariable = pgTable(
