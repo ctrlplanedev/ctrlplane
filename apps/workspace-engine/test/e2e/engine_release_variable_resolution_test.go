@@ -15,164 +15,150 @@ import (
 
 // TestEngine_ReleaseVariableResolution_LiteralValues tests resolving literal variable values
 func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
-	jobAgentID := uuid.New().String()
-	deploymentID := uuid.New().String()
-	environmentID := uuid.New().String()
-	providerID := uuid.New().String()
-
-	system := integration.WithSystem(
-		integration.SystemName("test-system"),
-		integration.WithDeployment(
-			integration.DeploymentID(deploymentID),
-			integration.DeploymentName("api"),
-			integration.DeploymentJobAgent(jobAgentID),
-			integration.DeploymentCelResourceSelector("true"),
-			// Define deployment variables so resource variables can override them
-			integration.WithDeploymentVariable("app_name"),
-			integration.WithDeploymentVariable("replicas"),
-			integration.WithDeploymentVariable("debug_mode"),
-		),
-		integration.WithEnvironment(
-			integration.EnvironmentID(environmentID),
-			integration.EnvironmentName("production"),
-			integration.EnvironmentCelResourceSelector("true"),
-		),
-	)
-
-	engineDirect := integration.NewTestWorkspace(
-		t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-			integration.JobAgentName("Test Agent"),
-		),
-		system,
-		integration.WithResource(
-			integration.ResourceIdentifier("server-1"),
-			integration.ResourceName("server-1"),
-			integration.ResourceKind("server"),
-			integration.WithResourceVariable(
-				"app_name",
-				integration.ResourceVariableStringValue("my-app"),
-			),
-			integration.WithResourceVariable(
-				"replicas",
-				integration.ResourceVariableIntValue(3),
-			),
-			integration.WithResourceVariable(
-				"debug_mode",
-				integration.ResourceVariableBoolValue(false),
-			),
-		),
-	)
-
-	engineWithProvider := integration.NewTestWorkspace(
-		t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-			integration.JobAgentName("Test Agent"),
-		),
-		system,
-		integration.WithResourceProvider(
-			integration.ProviderID(providerID),
-			integration.ProviderName("test-provider"),
-			integration.WithResourceProviderResource(
-				integration.ResourceIdentifier("server-1"),
-				integration.ResourceName("server-1"),
-				integration.ResourceKind("server"),
-				integration.WithResourceVariable(
-					"app_name",
-					integration.ResourceVariableStringValue("my-app"),
-				),
-				integration.WithResourceVariable(
-					"replicas",
-					integration.ResourceVariableIntValue(3),
-				),
-				integration.WithResourceVariable(
-					"debug_mode",
-					integration.ResourceVariableBoolValue(false),
-				),
-			),
-		),
-	)
-
-	engines := map[string]*integration.TestWorkspace{
-		"direct":        engineDirect,
-		"with_provider": engineWithProvider,
+	type engineTestCase struct {
+		workspace     *integration.TestWorkspace
+		deploymentID  string
+		environmentID string
 	}
 
-	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-		ctx := context.Background()
+	makeSystem := func(deploymentID, environmentID, jobAgentID string) integration.WorkspaceOption {
+		return integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("app_name"),
+				integration.WithDeploymentVariable("replicas"),
+				integration.WithDeploymentVariable("debug_mode"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		)
+	}
 
-		// Create a deployment version to trigger release creation
-		dv := c.NewDeploymentVersion()
-		dv.DeploymentId = deploymentID
-		dv.Tag = "v1.0.0"
-		engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+	resourceVariables := []integration.ResourceOption{
+		integration.ResourceIdentifier("server-1"),
+		integration.ResourceName("server-1"),
+		integration.ResourceKind("server"),
+		integration.WithResourceVariable("app_name", integration.ResourceVariableStringValue("my-app")),
+		integration.WithResourceVariable("replicas", integration.ResourceVariableIntValue(3)),
+		integration.WithResourceVariable("debug_mode", integration.ResourceVariableBoolValue(false)),
+	}
 
-		// Get the release for the target
-		resource, ok := engine.Workspace().Resources().GetByIdentifier("server-1")
-		if !ok {
-			t.Fatalf("server-1 not found")
-		}
-		releaseTarget := &oapi.ReleaseTarget{
-			DeploymentId:  deploymentID,
-			EnvironmentId: environmentID,
-			ResourceId:    resource.Id,
-		}
+	directJobAgentID := uuid.New().String()
+	directDeploymentID := uuid.New().String()
+	directEnvironmentID := uuid.New().String()
 
-		jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-		if len(jobs) != 1 {
-			t.Fatalf("expected 1 job, got %d", len(jobs))
-		}
+	providerJobAgentID := uuid.New().String()
+	providerDeploymentID := uuid.New().String()
+	providerEnvironmentID := uuid.New().String()
+	providerID := uuid.New().String()
 
-		var job *oapi.Job
-		for _, j := range jobs {
-			job = j
-			break
-		}
+	engines := map[string]*engineTestCase{
+		"direct": {
+			workspace: integration.NewTestWorkspace(t,
+				integration.WithJobAgent(
+					integration.JobAgentID(directJobAgentID),
+					integration.JobAgentName("Test Agent"),
+				),
+				makeSystem(directDeploymentID, directEnvironmentID, directJobAgentID),
+				integration.WithResource(resourceVariables...),
+			),
+			deploymentID:  directDeploymentID,
+			environmentID: directEnvironmentID,
+		},
+		"with_provider": {
+			workspace: integration.NewTestWorkspace(t,
+				integration.WithJobAgent(
+					integration.JobAgentID(providerJobAgentID),
+					integration.JobAgentName("Test Agent"),
+				),
+				makeSystem(providerDeploymentID, providerEnvironmentID, providerJobAgentID),
+				integration.WithResourceProvider(
+					integration.ProviderID(providerID),
+					integration.ProviderName("test-provider"),
+					integration.WithResourceProviderResource(resourceVariables...),
+				),
+			),
+			deploymentID:  providerDeploymentID,
+			environmentID: providerEnvironmentID,
+		},
+	}
 
-		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
-		if !exists {
-			t.Fatalf("release not found")
-		}
+	for name, tc := range engines {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
 
-		variables := release.Variables
+			dv := c.NewDeploymentVersion()
+			dv.DeploymentId = tc.deploymentID
+			dv.Tag = "v1.0.0"
+			tc.workspace.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-		// Verify all variables are resolved
-		if len(variables) != 3 {
-			t.Fatalf("expected 3 variables, got %d", len(variables))
-		}
+			resource, ok := tc.workspace.Workspace().Resources().GetByIdentifier("server-1")
+			if !ok {
+				t.Fatalf("server-1 not found")
+			}
+			releaseTarget := &oapi.ReleaseTarget{
+				DeploymentId:  tc.deploymentID,
+				EnvironmentId: tc.environmentID,
+				ResourceId:    resource.Id,
+			}
 
-		// Check app_name
-		appName, exists := variables["app_name"]
-		if !exists {
-			t.Fatalf("app_name variable not found")
-		}
-		appNameStr, _ := appName.AsStringValue()
-		if appNameStr != "my-app" {
-			t.Errorf("app_name = %s, want my-app", appNameStr)
-		}
+			jobs := tc.workspace.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+			if len(jobs) != 1 {
+				t.Fatalf("expected 1 job, got %d", len(jobs))
+			}
 
-		// Check replicas
-		replicas, exists := variables["replicas"]
-		if !exists {
-			t.Fatalf("replicas variable not found")
-		}
-		replicasInt, _ := replicas.AsIntegerValue()
-		if int64(replicasInt) != 3 {
-			t.Errorf("replicas = %d, want 3", replicasInt)
-		}
+			var job *oapi.Job
+			for _, j := range jobs {
+				job = j
+				break
+			}
 
-		// Check debug_mode
-		debugMode, exists := variables["debug_mode"]
-		if !exists {
-			t.Fatalf("debug_mode variable not found")
-		}
-		debugModeBool, _ := debugMode.AsBooleanValue()
-		if debugModeBool {
-			t.Errorf("debug_mode = %v, want false", debugModeBool)
-		}
-	})
+			release, exists := tc.workspace.Workspace().Releases().Get(job.ReleaseId)
+			if !exists {
+				t.Fatalf("release not found")
+			}
+
+			variables := release.Variables
+
+			if len(variables) != 3 {
+				t.Fatalf("expected 3 variables, got %d", len(variables))
+			}
+
+			appName, exists := variables["app_name"]
+			if !exists {
+				t.Fatalf("app_name variable not found")
+			}
+			appNameStr, _ := appName.AsStringValue()
+			if appNameStr != "my-app" {
+				t.Errorf("app_name = %s, want my-app", appNameStr)
+			}
+
+			replicas, exists := variables["replicas"]
+			if !exists {
+				t.Fatalf("replicas variable not found")
+			}
+			replicasInt, _ := replicas.AsIntegerValue()
+			if int64(replicasInt) != 3 {
+				t.Errorf("replicas = %d, want 3", replicasInt)
+			}
+
+			debugMode, exists := variables["debug_mode"]
+			if !exists {
+				t.Fatalf("debug_mode variable not found")
+			}
+			debugModeBool, _ := debugMode.AsBooleanValue()
+			if debugModeBool {
+				t.Errorf("debug_mode = %v, want false", debugModeBool)
+			}
+		})
+	}
 }
 
 // TestEngine_ReleaseVariableResolution_ObjectValue tests resolving complex object variable values
@@ -294,210 +280,186 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 
 // TestEngine_ReleaseVariableResolution_ReferenceValue tests resolving reference variable values
 func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
-	jobAgentID := uuid.New().String()
-	deploymentID := uuid.New().String()
-	environmentID := uuid.New().String()
-	relRuleID := uuid.New().String()
-	providerID := uuid.New().String()
-
-	system := integration.WithSystem(
-		integration.SystemName("test-system"),
-		integration.WithDeployment(
-			integration.DeploymentID(deploymentID),
-			integration.DeploymentName("api"),
-			integration.DeploymentJobAgent(jobAgentID),
-			integration.DeploymentCelResourceSelector("true"),
-			// Define deployment variables so resource variables can override them
-			integration.WithDeploymentVariable("vpc_id"),
-			integration.WithDeploymentVariable("vpc_region"),
-			integration.WithDeploymentVariable("vpc_cidr"),
-		),
-		integration.WithEnvironment(
-			integration.EnvironmentID(environmentID),
-			integration.EnvironmentName("production"),
-			integration.EnvironmentCelResourceSelector("true"),
-		),
-	)
-
-	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID(relRuleID),
-		integration.RelationshipRuleName("cluster-to-vpc"),
-		integration.RelationshipRuleReference("vpc"),
-		integration.RelationshipRuleFromType("resource"),
-		integration.RelationshipRuleToType("resource"),
-		integration.RelationshipRuleFromCelSelector("resource.kind == 'kubernetes-cluster'"),
-		integration.RelationshipRuleToCelSelector("resource.kind == 'vpc'"),
-		integration.WithCelMatcher("from.metadata.vpc_name == to.name"),
-	)
-
-	engineDirect := integration.NewTestWorkspace(
-		t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-			integration.JobAgentName("Test Agent"),
-		),
-		system,
-		rule,
-		integration.WithResource(
-			integration.ResourceIdentifier("vpc-main"),
-			integration.ResourceName("vpc-main"),
-			integration.ResourceKind("vpc"),
-			integration.ResourceMetadata(map[string]string{
-				"region": "us-east-1",
-				"cidr":   "10.0.0.0/16",
-			}),
-		),
-		integration.WithResource(
-			integration.ResourceIdentifier("cluster-main"),
-			integration.ResourceName("cluster-main"),
-			integration.ResourceKind("kubernetes-cluster"),
-			integration.ResourceMetadata(map[string]string{
-				"vpc_name": "vpc-main",
-				"region":   "us-east-1",
-			}),
-			integration.WithResourceVariable(
-				"vpc_id",
-				integration.ResourceVariableReferenceValue("vpc", []string{"id"}),
-			),
-			integration.WithResourceVariable(
-				"vpc_region",
-				integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "region"}),
-			),
-			integration.WithResourceVariable(
-				"vpc_cidr",
-				integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "cidr"}),
-			),
-		),
-	)
-
-	engineWithProvider := integration.NewTestWorkspace(
-		t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-			integration.JobAgentName("Test Agent"),
-		),
-		system,
-		rule,
-		integration.WithResourceProvider(
-			integration.ProviderID(providerID),
-			integration.ProviderName("test-provider"),
-			integration.WithResourceProviderResource(
-				integration.ResourceIdentifier("vpc-main"),
-				integration.ResourceName("vpc-main"),
-				integration.ResourceKind("vpc"),
-				integration.ResourceMetadata(map[string]string{
-					"region": "us-east-1",
-					"cidr":   "10.0.0.0/16",
-				}),
-			),
-			integration.WithResourceProviderResource(
-				integration.ResourceIdentifier("cluster-main"),
-				integration.ResourceName("cluster-main"),
-				integration.ResourceKind("kubernetes-cluster"),
-				integration.ResourceMetadata(map[string]string{
-					"vpc_name": "vpc-main",
-					"region":   "us-east-1",
-				}),
-				integration.WithResourceVariable(
-					"vpc_id",
-					integration.ResourceVariableReferenceValue("vpc", []string{"id"}),
-				),
-				integration.WithResourceVariable(
-					"vpc_region",
-					integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "region"}),
-				),
-				integration.WithResourceVariable(
-					"vpc_cidr",
-					integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "cidr"}),
-				),
-			),
-		),
-	)
-
-	engines := map[string]*integration.TestWorkspace{
-		"direct":        engineDirect,
-		"with_provider": engineWithProvider,
+	type engineTestCase struct {
+		workspace     *integration.TestWorkspace
+		deploymentID  string
+		environmentID string
 	}
 
-	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-		ctx := context.Background()
+	makeSystem := func(deploymentID, environmentID, jobAgentID string) integration.WorkspaceOption {
+		return integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("vpc_id"),
+				integration.WithDeploymentVariable("vpc_region"),
+				integration.WithDeploymentVariable("vpc_cidr"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		)
+	}
 
-		// Create a deployment version to trigger release creation
-		dv := c.NewDeploymentVersion()
-		dv.DeploymentId = deploymentID
-		dv.Tag = "v1.0.0"
-		engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+	makeRule := func() integration.WorkspaceOption {
+		return integration.WithRelationshipRule(
+			integration.RelationshipRuleID(uuid.New().String()),
+			integration.RelationshipRuleName("cluster-to-vpc"),
+			integration.RelationshipRuleReference("vpc"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'kubernetes-cluster'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'vpc'"),
+			integration.WithCelMatcher("from.metadata.vpc_name == to.name"),
+		)
+	}
 
-		// Look up resources by identifier
-		vpc, ok := engine.Workspace().Resources().GetByIdentifier("vpc-main")
-		if !ok {
-			t.Fatalf("vpc-main not found")
-		}
-		cluster, ok := engine.Workspace().Resources().GetByIdentifier("cluster-main")
-		if !ok {
-			t.Fatalf("cluster-main not found")
-		}
+	clusterResourceOpts := []integration.ResourceOption{
+		integration.ResourceIdentifier("cluster-main"),
+		integration.ResourceName("cluster-main"),
+		integration.ResourceKind("kubernetes-cluster"),
+		integration.ResourceMetadata(map[string]string{
+			"vpc_name": "vpc-main",
+			"region":   "us-east-1",
+		}),
+		integration.WithResourceVariable("vpc_id", integration.ResourceVariableReferenceValue("vpc", []string{"id"})),
+		integration.WithResourceVariable("vpc_region", integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "region"})),
+		integration.WithResourceVariable("vpc_cidr", integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "cidr"})),
+	}
 
-		// Get the release for the target
-		releaseTarget := &oapi.ReleaseTarget{
-			DeploymentId:  deploymentID,
-			EnvironmentId: environmentID,
-			ResourceId:    cluster.Id,
-		}
+	vpcResourceOpts := []integration.ResourceOption{
+		integration.ResourceIdentifier("vpc-main"),
+		integration.ResourceName("vpc-main"),
+		integration.ResourceKind("vpc"),
+		integration.ResourceMetadata(map[string]string{
+			"region": "us-east-1",
+			"cidr":   "10.0.0.0/16",
+		}),
+	}
 
-		jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-		if len(jobs) != 1 {
-			t.Fatalf("expected 1 job, got %d", len(jobs))
-		}
+	directJobAgentID := uuid.New().String()
+	directDeploymentID := uuid.New().String()
+	directEnvironmentID := uuid.New().String()
 
-		var job *oapi.Job
-		for _, j := range jobs {
-			job = j
-			break
-		}
+	providerJobAgentID := uuid.New().String()
+	providerDeploymentID := uuid.New().String()
+	providerEnvironmentID := uuid.New().String()
+	providerID := uuid.New().String()
 
-		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
-		if !exists {
-			t.Fatalf("release not found")
-		}
+	engines := map[string]*engineTestCase{
+		"direct": {
+			workspace: integration.NewTestWorkspace(t,
+				integration.WithJobAgent(
+					integration.JobAgentID(directJobAgentID),
+					integration.JobAgentName("Test Agent"),
+				),
+				makeSystem(directDeploymentID, directEnvironmentID, directJobAgentID),
+				makeRule(),
+				integration.WithResource(vpcResourceOpts...),
+				integration.WithResource(clusterResourceOpts...),
+			),
+			deploymentID:  directDeploymentID,
+			environmentID: directEnvironmentID,
+		},
+		"with_provider": {
+			workspace: integration.NewTestWorkspace(t,
+				integration.WithJobAgent(
+					integration.JobAgentID(providerJobAgentID),
+					integration.JobAgentName("Test Agent"),
+				),
+				makeSystem(providerDeploymentID, providerEnvironmentID, providerJobAgentID),
+				makeRule(),
+				integration.WithResourceProvider(
+					integration.ProviderID(providerID),
+					integration.ProviderName("test-provider"),
+					integration.WithResourceProviderResource(vpcResourceOpts...),
+					integration.WithResourceProviderResource(clusterResourceOpts...),
+				),
+			),
+			deploymentID:  providerDeploymentID,
+			environmentID: providerEnvironmentID,
+		},
+	}
 
-		variables := release.Variables
+	for name, tc := range engines {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
 
-		// Verify all reference variables are resolved
-		if len(variables) != 3 {
-			t.Fatalf("expected 3 variables, got %d", len(variables))
-		}
+			dv := c.NewDeploymentVersion()
+			dv.DeploymentId = tc.deploymentID
+			dv.Tag = "v1.0.0"
+			tc.workspace.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-		// Check vpc_id
-		vpcIDVar, exists := variables["vpc_id"]
-		if !exists {
-			t.Fatalf("vpc_id variable not found")
-		}
-		vpcIDStr, _ := vpcIDVar.AsStringValue()
-		if vpcIDStr != vpc.Id {
-			t.Errorf("vpc_id = %s, want %s", vpcIDStr, vpc.Id)
-		}
+			vpc, ok := tc.workspace.Workspace().Resources().GetByIdentifier("vpc-main")
+			if !ok {
+				t.Fatalf("vpc-main not found")
+			}
+			cluster, ok := tc.workspace.Workspace().Resources().GetByIdentifier("cluster-main")
+			if !ok {
+				t.Fatalf("cluster-main not found")
+			}
 
-		// Check vpc_region
-		vpcRegion, exists := variables["vpc_region"]
-		if !exists {
-			t.Fatalf("vpc_region variable not found")
-		}
-		vpcRegionStr, _ := vpcRegion.AsStringValue()
-		if vpcRegionStr != "us-east-1" {
-			t.Errorf("vpc_region = %s, want us-east-1", vpcRegionStr)
-		}
+			releaseTarget := &oapi.ReleaseTarget{
+				DeploymentId:  tc.deploymentID,
+				EnvironmentId: tc.environmentID,
+				ResourceId:    cluster.Id,
+			}
 
-		// Check vpc_cidr
-		vpcCIDR, exists := variables["vpc_cidr"]
-		if !exists {
-			t.Fatalf("vpc_cidr variable not found")
-		}
-		vpcCIDRStr, _ := vpcCIDR.AsStringValue()
-		if vpcCIDRStr != "10.0.0.0/16" {
-			t.Errorf("vpc_cidr = %s, want 10.0.0.0/16", vpcCIDRStr)
-		}
-	})
+			jobs := tc.workspace.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+			if len(jobs) != 1 {
+				t.Fatalf("expected 1 job, got %d", len(jobs))
+			}
+
+			var job *oapi.Job
+			for _, j := range jobs {
+				job = j
+				break
+			}
+
+			release, exists := tc.workspace.Workspace().Releases().Get(job.ReleaseId)
+			if !exists {
+				t.Fatalf("release not found")
+			}
+
+			variables := release.Variables
+
+			if len(variables) != 3 {
+				t.Fatalf("expected 3 variables, got %d", len(variables))
+			}
+
+			vpcIDVar, exists := variables["vpc_id"]
+			if !exists {
+				t.Fatalf("vpc_id variable not found")
+			}
+			vpcIDStr, _ := vpcIDVar.AsStringValue()
+			if vpcIDStr != vpc.Id {
+				t.Errorf("vpc_id = %s, want %s", vpcIDStr, vpc.Id)
+			}
+
+			vpcRegion, exists := variables["vpc_region"]
+			if !exists {
+				t.Fatalf("vpc_region variable not found")
+			}
+			vpcRegionStr, _ := vpcRegion.AsStringValue()
+			if vpcRegionStr != "us-east-1" {
+				t.Errorf("vpc_region = %s, want us-east-1", vpcRegionStr)
+			}
+
+			vpcCIDR, exists := variables["vpc_cidr"]
+			if !exists {
+				t.Fatalf("vpc_cidr variable not found")
+			}
+			vpcCIDRStr, _ := vpcCIDR.AsStringValue()
+			if vpcCIDRStr != "10.0.0.0/16" {
+				t.Errorf("vpc_cidr = %s, want 10.0.0.0/16", vpcCIDRStr)
+			}
+		})
+	}
 }
 
 // TestEngine_ReleaseVariableResolution_MixedValues tests resolving mix of literal and reference values
