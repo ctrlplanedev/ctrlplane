@@ -15,11 +15,12 @@ import (
 type DeploymentVersionStatus string
 
 const (
-	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
-	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
-	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
-	DeploymentVersionStatusRejected DeploymentVersionStatus = "rejected"
-	DeploymentVersionStatusPaused   DeploymentVersionStatus = "paused"
+	DeploymentVersionStatusUnspecified DeploymentVersionStatus = "unspecified"
+	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
+	DeploymentVersionStatusReady       DeploymentVersionStatus = "ready"
+	DeploymentVersionStatusFailed      DeploymentVersionStatus = "failed"
+	DeploymentVersionStatusRejected    DeploymentVersionStatus = "rejected"
+	DeploymentVersionStatusPaused      DeploymentVersionStatus = "paused"
 )
 
 func (e *DeploymentVersionStatus) Scan(src interface{}) error {
@@ -484,6 +485,18 @@ type PolicyRuleVersionSelector struct {
 	Description pgtype.Text
 	Selector    string
 	CreatedAt   pgtype.Timestamptz
+}
+
+type PolicySkip struct {
+	ID            uuid.UUID
+	CreatedAt     pgtype.Timestamptz
+	CreatedBy     string
+	EnvironmentID uuid.UUID
+	ExpiresAt     pgtype.Timestamptz
+	Reason        string
+	ResourceID    uuid.UUID
+	RuleID        uuid.UUID
+	VersionID     uuid.UUID
 }
 
 type RelationshipRule struct {

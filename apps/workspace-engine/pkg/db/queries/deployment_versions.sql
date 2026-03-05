@@ -19,5 +19,12 @@ WHERE workspace_id = $1
 ORDER BY created_at DESC
 LIMIT COALESCE(sqlc.narg('limit')::int, 5000);
 
+-- name: ListDeployableVersionsByDeploymentID :many
+SELECT * FROM deployment_version
+WHERE deployment_id = $1
+  AND status NOT IN ('rejected', 'building')
+ORDER BY created_at DESC
+LIMIT COALESCE(sqlc.narg('limit')::int, 5000);
+
 -- name: DeleteDeploymentVersion :exec
 DELETE FROM deployment_version WHERE id = $1;

@@ -44,6 +44,51 @@ func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (D
 	return i, err
 }
 
+const listDeployableVersionsByDeploymentID = `-- name: ListDeployableVersionsByDeploymentID :many
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version
+WHERE deployment_id = $1
+  AND status NOT IN ('rejected', 'building')
+ORDER BY created_at DESC
+LIMIT COALESCE($2::int, 5000)
+`
+
+type ListDeployableVersionsByDeploymentIDParams struct {
+	DeploymentID uuid.UUID
+	Limit        pgtype.Int4
+}
+
+func (q *Queries) ListDeployableVersionsByDeploymentID(ctx context.Context, arg ListDeployableVersionsByDeploymentIDParams) ([]DeploymentVersion, error) {
+	rows, err := q.db.Query(ctx, listDeployableVersionsByDeploymentID, arg.DeploymentID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeploymentVersion
+	for rows.Next() {
+		var i DeploymentVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Tag,
+			&i.Config,
+			&i.JobAgentConfig,
+			&i.DeploymentID,
+			&i.Metadata,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.WorkspaceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDeploymentVersionsByDeploymentID = `-- name: ListDeploymentVersionsByDeploymentID :many
 SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
 LIMIT COALESCE($2::int, 5000)

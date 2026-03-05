@@ -67,7 +67,7 @@ CREATE TABLE resource (
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE TYPE deployment_version_status AS ENUM ('building', 'ready', 'failed', 'rejected', 'paused');
+CREATE TYPE deployment_version_status AS ENUM ('unspecified', 'building', 'ready', 'failed', 'rejected', 'paused');
 
 CREATE TABLE deployment_version (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -403,6 +403,18 @@ CREATE TABLE computed_entity_relationship (
     to_entity_id UUID NOT NULL,
     last_evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id)
+);
+
+CREATE TABLE policy_skip (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by TEXT NOT NULL DEFAULT '',
+    environment_id UUID,
+    expires_at TIMESTAMPTZ,
+    reason TEXT NOT NULL DEFAULT '',
+    resource_id UUID,
+    rule_id UUID NOT NULL,
+    version_id UUID NOT NULL
 );
 
 CREATE TABLE job_verification_metric_measurement (

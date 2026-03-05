@@ -12,6 +12,7 @@ import (
 	"workspace-engine/svc/controllers/desiredrelease/convert"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type PostgresGetter struct{}
@@ -50,8 +51,9 @@ func (g *PostgresGetter) GetReleaseTargetScope(ctx context.Context, rt *ReleaseT
 }
 
 func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID uuid.UUID) ([]*oapi.DeploymentVersion, error) {
-	rows, err := db.GetQueries(ctx).ListDeploymentVersionsByDeploymentID(ctx, db.ListDeploymentVersionsByDeploymentIDParams{
+	rows, err := db.GetQueries(ctx).ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
 		DeploymentID: deploymentID,
+		Limit:        pgtype.Int4{Int32: 5000, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
@@ -64,20 +66,50 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 	return versions, nil
 }
 
-func (g *PostgresGetter) GetPolicies(_ context.Context, _ *ReleaseTarget) ([]*oapi.Policy, error) {
-	// TODO: Policies are not yet stored in the database.
-	// When policy tables are added, implement DB-backed policy fetching here.
-	return nil, nil
+func (g *PostgresGetter) GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error) {
+	policies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
+		WorkspaceID: rt.WorkspaceID,
+		Limit:       pgtype.Int4{Int32: 5000, Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list policies for workspace %s: %w", rt.WorkspaceID, err)
+	}
+	policiesOAPI := make([]*oapi.Policy, 0, len(policies))
+	for _, policy := range policies {
+		policiesOAPI = append(policiesOAPI, convert.Policy(policy))
+	}
+	return policiesOAPI, nil
 }
 
-func (g *PostgresGetter) GetApprovalRecords(_ context.Context, _, _ string) ([]*oapi.UserApprovalRecord, error) {
-	// TODO: Approval records are not yet stored in the workspace-engine database.
-	return nil, nil
+func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+	approvalRecords, err := db.GetQueries(ctx).ListApprovedRecordsByVersionAndEnvironment(ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
+		VersionID:     uuid.MustParse(versionID),
+		EnvironmentID: uuid.MustParse(environmentID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list approval records for workspace %s: %w", versionID, err)
+	}
+	approvalRecordsOAPI := make([]*oapi.UserApprovalRecord, 0, len(approvalRecords))
+	for _, approvalRecord := range approvalRecords {
+		approvalRecordsOAPI = append(approvalRecordsOAPI, convert.UserApprovalRecord(approvalRecord))
+	}
+	return approvalRecordsOAPI, nil
 }
 
-func (g *PostgresGetter) GetPolicySkips(_ context.Context, _, _, _ string) ([]*oapi.PolicySkip, error) {
-	// TODO: Policy skips are not yet stored in the workspace-engine database.
-	return nil, nil
+func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	policySkips, err := db.GetQueries(ctx).ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
+		VersionID:     uuid.MustParse(versionID),
+		EnvironmentID: uuid.MustParse(environmentID),
+		ResourceID:    uuid.MustParse(resourceID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list policy skips for version %s: %w", versionID, err)
+	}
+	result := make([]*oapi.PolicySkip, 0, len(policySkips))
+	for _, skip := range policySkips {
+		result = append(result, convert.PolicySkip(skip))
+	}
+	return result, nil
 }
 
 func (g *PostgresGetter) HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error) {
@@ -131,14 +163,45 @@ func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarge
 	}, nil
 }
 
-func (g *PostgresGetter) GetDeploymentVariables(_ context.Context, _ string) ([]oapi.DeploymentVariableWithValues, error) {
-	// TODO: implement DB-backed deployment variable fetching
-	return nil, nil
+func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error) {
+	q := db.GetQueries(ctx)
+
+	vars, err := q.ListDeploymentVariablesByDeploymentID(ctx, uuid.MustParse(deploymentID))
+	if err != nil {
+		return nil, fmt.Errorf("list deployment variables for %s: %w", deploymentID, err)
+	}
+
+	result := make([]oapi.DeploymentVariableWithValues, 0, len(vars))
+	for _, v := range vars {
+		values, err := q.ListDeploymentVariableValuesByVariableID(ctx, v.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list values for variable %s: %w", v.ID, err)
+		}
+
+		oapiValues := make([]oapi.DeploymentVariableValue, 0, len(values))
+		for _, val := range values {
+			oapiValues = append(oapiValues, convert.DeploymentVariableValue(val))
+		}
+
+		result = append(result, oapi.DeploymentVariableWithValues{
+			Variable: convert.DeploymentVariable(v),
+			Values:   oapiValues,
+		})
+	}
+	return result, nil
 }
 
-func (g *PostgresGetter) GetResourceVariables(_ context.Context, _ string) (map[string]oapi.ResourceVariable, error) {
-	// TODO: implement DB-backed resource variable fetching
-	return nil, nil
+func (g *PostgresGetter) GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error) {
+	rows, err := db.GetQueries(ctx).ListResourceVariablesByResourceID(ctx, uuid.MustParse(resourceID))
+	if err != nil {
+		return nil, fmt.Errorf("list resource variables for %s: %w", resourceID, err)
+	}
+
+	result := make(map[string]oapi.ResourceVariable, len(rows))
+	for _, row := range rows {
+		result[row.Key] = convert.ResourceVariable(row)
+	}
+	return result, nil
 }
 
 var celTypePattern = regexp.MustCompile(`^from\.type\s*==\s*"([^"]+)"\s*&&\s*to\.type\s*==\s*"([^"]+)"`)

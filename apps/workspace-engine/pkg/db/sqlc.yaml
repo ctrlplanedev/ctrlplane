@@ -23,6 +23,7 @@ sql:
       - queries/resource_variables.sql
       - queries/deployment_variables.sql
       - queries/workflows.sql
+      - queries/policy_skips.sql
       - queries/computed_resources.sql
       - queries/job_verification_metric.sql
       - queries/jobs.sql

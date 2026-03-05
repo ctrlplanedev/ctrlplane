@@ -36,6 +36,7 @@ func NewReleaseTarget(key string) (*ReleaseTarget, error) {
 }
 
 type ReleaseTarget struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
 	DeploymentID  uuid.UUID `json:"deployment_id"`
 	EnvironmentID uuid.UUID `json:"environment_id"`
 	ResourceID    uuid.UUID `json:"resource_id"`

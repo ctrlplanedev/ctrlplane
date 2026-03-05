@@ -56,7 +56,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	result, err := Reconcile(ctx, c.getter, c.setter, rt)
+	result, err := Reconcile(ctx, item.WorkspaceID, c.getter, c.setter, rt)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

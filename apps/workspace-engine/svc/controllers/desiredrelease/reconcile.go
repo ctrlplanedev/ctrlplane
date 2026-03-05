@@ -11,6 +11,7 @@ import (
 	"workspace-engine/svc/controllers/desiredrelease/policymatch"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -23,6 +24,8 @@ type ReconcileResult struct {
 // (load → evaluate → resolve → persist) is a method that reads from and
 // writes to the struct, keeping Reconcile itself a clean pipeline.
 type reconciler struct {
+	workspaceID uuid.UUID
+
 	getter Getter
 	setter Setter
 	rt     *ReleaseTarget
@@ -97,11 +100,12 @@ func (r *reconciler) persistRelease(ctx context.Context) (*oapi.Release, error) 
 // Reconcile computes the desired release for a release target and persists it.
 // All data access goes through the getter/setter interfaces so the function is
 // fully testable with mocks.
-func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTarget) (*ReconcileResult, error) {
+func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Setter, rt *ReleaseTarget) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
 	defer span.End()
 
-	r := &reconciler{getter: getter, setter: setter, rt: rt}
+	r := &reconciler{workspaceID: uuid.MustParse(workspaceID), getter: getter, setter: setter, rt: rt}
+	r.rt.WorkspaceID = r.workspaceID
 
 	if err := r.loadInput(ctx); err != nil {
 		return nil, recordErr(span, "load input", err)
