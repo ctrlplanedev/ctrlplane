@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var deploymentVariablesTracer = otel.Tracer("workspace/store/deployment_variables")
 
 func NewDeploymentVariables(store *Store) *DeploymentVariables {
 	return &DeploymentVariables{
@@ -33,7 +37,12 @@ func (d *DeploymentVariables) Get(id string) (*oapi.DeploymentVariable, bool) {
 }
 
 func (d *DeploymentVariables) Upsert(ctx context.Context, id string, deploymentVariable *oapi.DeploymentVariable) {
+	_, span := deploymentVariablesTracer.Start(ctx, "UpsertDeploymentVariable")
+	defer span.End()
+
 	if err := d.repo.Set(deploymentVariable); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert deployment variable")
 		log.Error("Failed to upsert deployment variable", "error", err)
 		return
 	}

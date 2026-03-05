@@ -8,7 +8,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var resourceVariablesTracer = otel.Tracer("workspace/store/resource_variables")
 
 func NewResourceVariables(store *Store) *ResourceVariables {
 	return &ResourceVariables{
@@ -27,7 +31,12 @@ func (r *ResourceVariables) SetRepo(repo repository.ResourceVariableRepo) {
 }
 
 func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.ResourceVariable) {
+	_, span := resourceVariablesTracer.Start(ctx, "UpsertResourceVariable")
+	defer span.End()
+
 	if err := r.repo.Set(resourceVariable); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert resource variable")
 		log.Error("Failed to upsert resource variable", "error", err)
 		return
 	}

@@ -8,7 +8,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var environmentsTracer = otel.Tracer("workspace/store/environments")
 
 func NewEnvironments(store *Store) *Environments {
 	return &Environments{
@@ -36,7 +40,12 @@ func (e *Environments) Get(id string) (*oapi.Environment, bool) {
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
+	_, span := environmentsTracer.Start(ctx, "UpsertEnvironment")
+	defer span.End()
+
 	if err := e.repo.Set(environment); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert environment")
 		log.Error("Failed to upsert environment", "error", err)
 	}
 	e.store.changeset.RecordUpsert(environment)

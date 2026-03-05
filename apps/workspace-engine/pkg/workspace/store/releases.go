@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var releasesTracer = otel.Tracer("workspace/store/releases")
 
 func NewReleases(store *Store) *Releases {
 	return &Releases{
@@ -26,11 +30,16 @@ func (r *Releases) SetRepo(repo repository.ReleaseRepo) {
 }
 
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
+	_, span := releasesTracer.Start(ctx, "UpsertRelease")
+	defer span.End()
+
 	if release.Id == uuid.Nil {
 		release.Id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(release.ContentHash()))
 	}
 
 	if err := r.repo.Set(release); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert release")
 		return err
 	}
 	r.store.changeset.RecordUpsert(release)

@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var jobAgentsTracer = otel.Tracer("workspace/store/job_agents")
 
 func NewJobAgents(store *Store) *JobAgents {
 	return &JobAgents{
@@ -26,7 +30,12 @@ func (j *JobAgents) SetRepo(repo repository.JobAgentRepo) {
 }
 
 func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {
+	_, span := jobAgentsTracer.Start(ctx, "UpsertJobAgent")
+	defer span.End()
+
 	if err := j.repo.Set(jobAgent); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert job agent")
 		log.Error("Failed to upsert job agent", "error", err)
 	}
 	j.store.changeset.RecordUpsert(jobAgent)

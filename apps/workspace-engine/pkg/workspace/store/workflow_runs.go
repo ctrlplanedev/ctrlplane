@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var workflowRunsTracer = otel.Tracer("workspace/store/workflow_runs")
 
 func NewWorkflowRuns(store *Store) *WorkflowRuns {
 	return &WorkflowRuns{
@@ -45,7 +49,12 @@ func (w *WorkflowRuns) GetByWorkflowId(workflowId string) map[string]*oapi.Workf
 }
 
 func (w *WorkflowRuns) Upsert(ctx context.Context, workflowRun *oapi.WorkflowRun) {
+	_, span := workflowRunsTracer.Start(ctx, "UpsertWorkflowRun")
+	defer span.End()
+
 	if err := w.repo.Set(workflowRun); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert workflow run")
 		log.Error("Failed to upsert workflow run", "error", err)
 		return
 	}
