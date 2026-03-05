@@ -189,6 +189,14 @@ type ResourceVariableRepo interface {
 	BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error
 }
 
+// RelationshipRuleRepo defines the contract for relationship rule storage.
+type RelationshipRuleRepo interface {
+	Get(id string) (*oapi.RelationshipRule, bool)
+	Set(entity *oapi.RelationshipRule) error
+	Remove(id string) error
+	Items() map[string]*oapi.RelationshipRule
+}
+
 // UserApprovalRecordRepo defines the contract for user approval record storage.
 type UserApprovalRecordRepo interface {
 	Get(key string) (*oapi.UserApprovalRecord, bool)
