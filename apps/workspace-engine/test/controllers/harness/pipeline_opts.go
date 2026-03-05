@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 
@@ -455,17 +456,48 @@ func JobAgentID(id string) JobAgentOption {
 }
 
 // WithRelatedResource registers a related resource under the given reference
-// name, enabling reference variable resolution.
+// name, enabling reference variable resolution. It creates a CEL-based
+// relationship rule that matches the primary resource to the related
+// resource by ID, and adds the related resource as a candidate entity.
 func WithRelatedResource(reference string, res *oapi.Resource) PipelineOption {
 	return func(sc *ScenarioState) {
-		if sc.RelatedEntities == nil {
-			sc.RelatedEntities = make(map[string][]*oapi.EntityRelation)
-		}
-		entity := &oapi.RelatableEntity{}
-		_ = entity.FromResource(*res)
-		sc.RelatedEntities[reference] = append(sc.RelatedEntities[reference],
-			&oapi.EntityRelation{Entity: *entity, EntityId: res.Id},
+		relatedID := uuid.MustParse(res.Id)
+
+		cel := fmt.Sprintf(
+			`from.type == "resource" && to.type == "resource" && to.id == "%s"`,
+			relatedID.String(),
 		)
+		sc.RelationshipRules = append(sc.RelationshipRules, eval.Rule{
+			ID:        uuid.New(),
+			Reference: reference,
+			Cel:       cel,
+			FromType:  "resource",
+			ToType:    "resource",
+		})
+
+		if sc.Candidates == nil {
+			sc.Candidates = make(map[string][]eval.EntityData)
+		}
+
+		metadata := make(map[string]any, len(res.Metadata))
+		for k, v := range res.Metadata {
+			metadata[k] = v
+		}
+		sc.Candidates["resource"] = append(sc.Candidates["resource"], eval.EntityData{
+			ID:          relatedID,
+			WorkspaceID: sc.WorkspaceID,
+			EntityType:  "resource",
+			Raw: map[string]any{
+				"type":       "resource",
+				"id":         relatedID.String(),
+				"name":       res.Name,
+				"kind":       res.Kind,
+				"version":    res.Version,
+				"identifier": res.Identifier,
+				"config":     res.Config,
+				"metadata":   metadata,
+			},
+		})
 	}
 }
 
@@ -534,10 +566,11 @@ func buildEvaluatorScope(sc *ScenarioState) *evaluator.EvaluatorScope {
 			metadata[k] = fmt.Sprintf("%v", v)
 		}
 		resource = &oapi.Resource{
-			Id:       rd.ID.String(),
-			Name:     rd.Name,
-			Kind:     rd.Kind,
-			Metadata: metadata,
+			Id:          rd.ID.String(),
+			Name:        rd.Name,
+			Kind:        rd.Kind,
+			WorkspaceId: sc.WorkspaceID.String(),
+			Metadata:    metadata,
 		}
 	}
 

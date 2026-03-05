@@ -604,7 +604,7 @@ func TestProcess_CELCompileError(t *testing.T) {
 	_, err := ctrl.Process(context.Background(), reconcile.Item{
 		ScopeID: FormatScopeID("resource", entityID.String()),
 	})
-	assert.ErrorContains(t, err, "eval rule")
+	assert.ErrorContains(t, err, "compile rule CEL")
 }
 
 // ---------------------------------------------------------------------------
@@ -653,7 +653,7 @@ func TestProcess_StreamCandidatesError(t *testing.T) {
 	_, err := ctrl.Process(context.Background(), reconcile.Item{
 		ScopeID: FormatScopeID("resource", entityID.String()),
 	})
-	assert.ErrorContains(t, err, "eval rule")
+	assert.ErrorContains(t, err, "stream failed")
 }
 
 // ---------------------------------------------------------------------------

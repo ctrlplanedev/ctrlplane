@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/google/uuid"
@@ -23,5 +24,8 @@ type Getter interface {
 	// Variable resolution
 	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
 	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
-	GetRelatedEntity(ctx context.Context, resourceID, reference string) ([]*oapi.EntityRelation, error)
+
+	// Realtime relationship resolution
+	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
+	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
 }

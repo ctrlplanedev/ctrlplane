@@ -8,15 +8,22 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 )
 
+// RelatedEntityResolver resolves a reference name to the matched related
+// entities for a resource. Implementations may evaluate relationship rules
+// in realtime or return pre-computed/mocked results.
+type RelatedEntityResolver interface {
+	ResolveRelated(ctx context.Context, reference string) ([]*oapi.RelatableEntity, error)
+}
+
 // ResolveValue resolves a single oapi.Value to a concrete LiteralValue.
 //
-// Literal values are returned as-is. Reference values are resolved by fetching
-// the specific named relationship via the getter and traversing the property
-// path on the matched entity. Sensitive values are not resolved and return an
-// error — they must be handled by a separate decryption path.
+// Literal values are returned as-is. Reference values are resolved by
+// finding related entities through the resolver and traversing the property
+// path on the matched entity. Sensitive values are not resolved and return
+// an error — they must be handled by a separate decryption path.
 func ResolveValue(
 	ctx context.Context,
-	getter Getter,
+	resolver RelatedEntityResolver,
 	resourceID string,
 	entity *oapi.RelatableEntity,
 	value *oapi.Value,
@@ -33,7 +40,7 @@ func ResolveValue(
 	case "literal":
 		return resolveLiteral(value)
 	case "reference":
-		return resolveReference(ctx, getter, resourceID, value, entity)
+		return resolveReference(ctx, resolver, value, entity)
 	case "sensitive":
 		return nil, fmt.Errorf("sensitive values are not resolved by the variable resolver")
 	default:
@@ -51,8 +58,7 @@ func resolveLiteral(value *oapi.Value) (*oapi.LiteralValue, error) {
 
 func resolveReference(
 	ctx context.Context,
-	getter Getter,
-	resourceID string,
+	resolver RelatedEntityResolver,
 	value *oapi.Value,
 	entity *oapi.RelatableEntity,
 ) (*oapi.LiteralValue, error) {
@@ -61,9 +67,9 @@ func resolveReference(
 		return nil, fmt.Errorf("extract reference value: %w", err)
 	}
 
-	refs, err := getter.GetRelatedEntity(ctx, resourceID, rv.Reference)
+	refs, err := resolver.ResolveRelated(ctx, rv.Reference)
 	if err != nil {
-		return nil, fmt.Errorf("get related entity for reference %q: %w", rv.Reference, err)
+		return nil, fmt.Errorf("resolve related entities for reference %q: %w", rv.Reference, err)
 	}
 	if len(refs) == 0 {
 		return nil, fmt.Errorf(
@@ -72,7 +78,7 @@ func resolveReference(
 		)
 	}
 
-	lv, err := relationships.GetPropertyValue(&refs[0].Entity, rv.Path)
+	lv, err := relationships.GetPropertyValue(refs[0], rv.Path)
 	if err != nil {
 		return nil, fmt.Errorf("resolve property path %v on reference %q: %w", rv.Path, rv.Reference, err)
 	}

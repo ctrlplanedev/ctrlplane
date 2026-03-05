@@ -7,6 +7,7 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
@@ -71,9 +72,10 @@ type DesiredReleaseGetter struct {
 	CurrentRelease  *oapi.Release
 	PolicySkips     []*oapi.PolicySkip
 
-	DeploymentVars []oapi.DeploymentVariableWithValues
-	ResourceVars   map[string]oapi.ResourceVariable
-	RelatedEntity  map[string][]*oapi.EntityRelation
+	DeploymentVars    []oapi.DeploymentVariableWithValues
+	ResourceVars      map[string]oapi.ResourceVariable
+	RelationshipRules []eval.Rule
+	Candidates        map[string][]eval.EntityData
 
 	// ApprovalRecordsFn allows per-version/per-environment logic when set.
 	ApprovalRecordsFn func(versionID, environmentID string) []*oapi.UserApprovalRecord
@@ -128,8 +130,15 @@ func (g *DesiredReleaseGetter) GetResourceVariables(_ context.Context, _ string)
 	return g.ResourceVars, nil
 }
 
-func (g *DesiredReleaseGetter) GetRelatedEntity(_ context.Context, _, reference string) ([]*oapi.EntityRelation, error) {
-	return g.RelatedEntity[reference], nil
+func (g *DesiredReleaseGetter) GetRelationshipRules(_ context.Context, _ uuid.UUID) ([]eval.Rule, error) {
+	return g.RelationshipRules, nil
+}
+
+func (g *DesiredReleaseGetter) LoadCandidates(_ context.Context, _ uuid.UUID, entityType string) ([]eval.EntityData, error) {
+	if g.Candidates != nil {
+		return g.Candidates[entityType], nil
+	}
+	return nil, nil
 }
 
 // DesiredReleaseSetter implements desiredrelease.Setter.

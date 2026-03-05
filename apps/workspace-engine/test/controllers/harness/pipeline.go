@@ -6,6 +6,7 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/workspace/relationships/eval"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/jobdispatch"
@@ -75,9 +76,10 @@ type ScenarioState struct {
 	PolicySkips []*oapi.PolicySkip
 	JobAgents   []oapi.JobAgent
 
-	DeploymentVars  []oapi.DeploymentVariableWithValues
-	ResourceVars    map[string]oapi.ResourceVariable
-	RelatedEntities map[string][]*oapi.EntityRelation
+	DeploymentVars    []oapi.DeploymentVariableWithValues
+	ResourceVars      map[string]oapi.ResourceVariable
+	RelationshipRules []eval.Rule
+	Candidates        map[string][]eval.EntityData
 }
 
 type ResourceDef struct {
@@ -125,13 +127,14 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 
 	scope := buildEvaluatorScope(sc)
 	releaseGetter := &DesiredReleaseGetter{
-		Scope:          scope,
-		Versions:       sc.Versions,
-		Policies:       sc.Policies,
-		PolicySkips:    sc.PolicySkips,
-		DeploymentVars: sc.DeploymentVars,
-		ResourceVars:   sc.ResourceVars,
-		RelatedEntity:  sc.RelatedEntities,
+		Scope:             scope,
+		Versions:          sc.Versions,
+		Policies:          sc.Policies,
+		PolicySkips:       sc.PolicySkips,
+		DeploymentVars:    sc.DeploymentVars,
+		ResourceVars:      sc.ResourceVars,
+		RelationshipRules: sc.RelationshipRules,
+		Candidates:        sc.Candidates,
 	}
 	releaseSetter := &DesiredReleaseSetter{}
 

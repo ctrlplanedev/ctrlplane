@@ -100,16 +100,16 @@ func (c *Controller) enqueueReleaseTargets(ctx context.Context, workspaceID uuid
 	span.SetAttributes(attribute.Int("count", len(releaseTargets)))
 
 	wsID := workspaceID.String()
-	items := make([]reconcile.EnqueueParams, len(releaseTargets))
+	params := make([]events.DesiredReleaseEvalParams, len(releaseTargets))
 	for i, rt := range releaseTargets {
-		items[i] = reconcile.EnqueueParams{
-			WorkspaceID: wsID,
-			Kind:        "desired-release",
-			ScopeType:   "release-target",
-			ScopeID:     rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String(),
+		params[i] = events.DesiredReleaseEvalParams{
+			WorkspaceID:   wsID,
+			ResourceID:    rt.ResourceID.String(),
+			EnvironmentID: rt.EnvironmentID.String(),
+			DeploymentID:  rt.DeploymentID.String(),
 		}
 	}
-	return c.queue.EnqueueMany(ctx, items)
+	return events.EnqueueManyDesiredRelease(c.queue, ctx, params)
 }
 
 // evalResources streams resources from the DB and evaluates the CEL selector

@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -96,7 +97,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
-	kind := "desired-release"
+	kind := events.DesiredReleaseKind
 	queue := postgres.NewForKinds(pgxPool, kind)
 	controller := &Controller{
 		getter: &PostgresGetter{},

@@ -11,13 +11,87 @@ import (
 	"workspace-engine/svc/controllers/desiredrelease/policymatch"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
 	NextReconcileAt *time.Time
+}
+
+// reconciler holds the state for a single reconciliation pass. Each phase
+// (load → evaluate → resolve → persist) is a method that reads from and
+// writes to the struct, keeping Reconcile itself a clean pipeline.
+type reconciler struct {
+	getter Getter
+	setter Setter
+	rt     *ReleaseTarget
+
+	scope    *evaluator.EvaluatorScope
+	versions []*oapi.DeploymentVersion
+	policies []*oapi.Policy
+	version  *oapi.DeploymentVersion
+	vars     map[string]oapi.LiteralValue
+}
+
+func (r *reconciler) loadInput(ctx context.Context) error {
+	scope, err := r.getter.GetReleaseTargetScope(ctx, r.rt)
+	if err != nil {
+		return fmt.Errorf("get release target scope: %w", err)
+	}
+	r.scope = scope
+
+	versions, err := r.getter.GetCandidateVersions(ctx, r.rt.DeploymentID)
+	if err != nil {
+		return fmt.Errorf("get candidate versions: %w", err)
+	}
+	r.versions = versions
+
+	policies, err := r.getter.GetPolicies(ctx, r.rt)
+	if err != nil {
+		return fmt.Errorf("get policies: %w", err)
+	}
+	r.policies = policymatch.Filter(ctx, policies, r.scope.ToTarget())
+
+	return nil
+}
+
+// findDeployableVersion evaluates policy rules against candidate versions
+// (newest-first) and sets r.version to the first passing version. Returns
+// the earliest NextEvaluationTime when all versions are blocked.
+func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
+	oapiRT := r.rt.ToOAPI()
+	evalGetter := &policyevalAdapter{getter: r.getter, rt: r.rt}
+	evals := policyeval.CollectEvaluators(ctx, evalGetter, oapiRT, r.policies)
+	var nextTime *time.Time
+	r.version, nextTime = policyeval.FindDeployableVersion(ctx, evalGetter, oapiRT, r.versions, evals, *r.scope)
+	return nextTime
+}
+
+func (r *reconciler) resolveVariables(ctx context.Context) error {
+	varScope := &variableresolver.Scope{
+		Resource:    r.scope.Resource,
+		Deployment:  r.scope.Deployment,
+		Environment: r.scope.Environment,
+	}
+	varGetter := &variableResolverAdapter{getter: r.getter}
+	vars, err := variableresolver.Resolve(
+		ctx, varGetter, varScope,
+		r.rt.DeploymentID.String(), r.rt.ResourceID.String(),
+	)
+	if err != nil {
+		return err
+	}
+	r.vars = vars
+	return nil
+}
+
+func (r *reconciler) persistRelease(ctx context.Context) (*oapi.Release, error) {
+	release := buildRelease(r.rt, r.version, r.vars)
+	if err := r.setter.SetDesiredRelease(ctx, r.rt, release); err != nil {
+		return nil, err
+	}
+	return release, nil
 }
 
 // Reconcile computes the desired release for a release target and persists it.
@@ -27,116 +101,33 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, rt *ReleaseTar
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
 	defer span.End()
 
-	scope, err := getter.GetReleaseTargetScope(ctx, rt)
-	if err != nil {
-		return nil, recordErr(span, "get release target scope", err)
-	}
+	r := &reconciler{getter: getter, setter: setter, rt: rt}
 
-	versions, err := getter.GetCandidateVersions(ctx, rt.DeploymentID)
-	if err != nil {
-		return nil, recordErr(span, "get candidate versions", err)
+	if err := r.loadInput(ctx); err != nil {
+		return nil, recordErr(span, "load input", err)
 	}
-	if len(versions) == 0 {
-		span.AddEvent("no candidate versions")
+	if len(r.versions) == 0 {
 		return &ReconcileResult{}, nil
 	}
-	span.SetAttributes(attribute.Int("candidate_versions.count", len(versions)))
 
-	version, nextTime, err := findDeployableVersion(ctx, span, getter, rt, scope, versions)
-	if err != nil {
-		return nil, recordErr(span, "find deployable version", err)
-	}
-	if version == nil {
-		span.AddEvent("no deployable version found")
-		span.SetAttributes(attribute.String("reason", "blocked_by_policies"))
-		if nextTime != nil {
-			span.SetAttributes(attribute.String("next_reconcile_at", nextTime.Format(time.RFC3339)))
-		}
+	nextTime := r.findDeployableVersion(ctx)
+	if r.version == nil {
 		return &ReconcileResult{NextReconcileAt: nextTime}, nil
 	}
-	span.SetAttributes(
-		attribute.String("deployable_version.id", version.Id),
-		attribute.String("deployable_version.tag", version.Tag),
-	)
 
-	resolvedVars, err := resolveVariables(ctx, getter, rt, scope)
-	if err != nil {
+	if err := r.resolveVariables(ctx); err != nil {
 		return nil, recordErr(span, "resolve variables", err)
 	}
-	span.SetAttributes(attribute.Int("resolved_variables.count", len(resolvedVars)))
 
-	release := buildRelease(rt, version, resolvedVars)
-	if err := setter.SetDesiredRelease(ctx, rt, release); err != nil {
-		return nil, recordErr(span, "set desired release", err)
+	release, err := r.persistRelease(ctx)
+	if err != nil {
+		return nil, recordErr(span, "persist release", err)
 	}
 
-	span.SetAttributes(
-		attribute.String("release.id", release.Id.String()),
-		attribute.String("release.content_hash", release.ContentHash()),
-		attribute.Bool("has_desired_release", true),
-	)
-	span.SetStatus(codes.Ok, "reconcile completed")
+	span.SetStatus(codes.Ok, "reconcile completed: release="+release.Id.String())
 	return &ReconcileResult{}, nil
 }
 
-// findDeployableVersion filters policies, builds evaluators, and returns the
-// first version that passes all policy checks. Returns (nil, nextTime, nil)
-// when every version is blocked.
-func findDeployableVersion(
-	ctx context.Context,
-	span trace.Span,
-	getter Getter,
-	rt *ReleaseTarget,
-	scope *evaluator.EvaluatorScope,
-	versions []*oapi.DeploymentVersion,
-) (*oapi.DeploymentVersion, *time.Time, error) {
-	allPolicies, err := getter.GetPolicies(ctx, rt)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get policies: %w", err)
-	}
-
-	target := &policymatch.Target{
-		Environment: scope.Environment,
-		Deployment:  scope.Deployment,
-		Resource:    scope.Resource,
-	}
-	policies := policymatch.Filter(ctx, allPolicies, target)
-	span.SetAttributes(
-		attribute.Int("policies.total", len(allPolicies)),
-		attribute.Int("policies.applicable", len(policies)),
-	)
-
-	oapiRT := rt.ToOAPI()
-	evalGetter := &policyevalAdapter{getter: getter, rt: rt}
-	evals := policyeval.CollectEvaluators(ctx, evalGetter, oapiRT, policies)
-	span.SetAttributes(attribute.Int("evaluators.count", len(evals)))
-
-	version, nextTime := policyeval.FindDeployableVersion(ctx, evalGetter, oapiRT, versions, evals, *scope)
-	return version, nextTime, nil
-}
-
-// resolveVariables computes the final variable set for the release target
-// using the three-tier priority: resource var → deployment var value → default.
-func resolveVariables(
-	ctx context.Context,
-	getter Getter,
-	rt *ReleaseTarget,
-	scope *evaluator.EvaluatorScope,
-) (map[string]oapi.LiteralValue, error) {
-	varScope := &variableresolver.Scope{
-		Resource:    scope.Resource,
-		Deployment:  scope.Deployment,
-		Environment: scope.Environment,
-	}
-	varGetter := &variableResolverAdapter{getter: getter}
-	return variableresolver.Resolve(
-		ctx, varGetter, varScope,
-		rt.DeploymentID.String(), rt.ResourceID.String(),
-	)
-}
-
-// recordErr logs the error on the span, sets the span status, and returns a
-// wrapped error — collapsing a 3-line pattern into a single call.
 func recordErr(span trace.Span, msg string, err error) error {
 	span.RecordError(err)
 	span.SetStatus(codes.Error, msg+" failed")

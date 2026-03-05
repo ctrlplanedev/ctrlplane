@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
+
+	"github.com/google/uuid"
 )
 
 // policyevalAdapter bridges the desiredrelease Getter (which uses
@@ -45,8 +48,12 @@ func (a *variableResolverAdapter) GetResourceVariables(ctx context.Context, reso
 	return a.getter.GetResourceVariables(ctx, resourceID)
 }
 
-func (a *variableResolverAdapter) GetRelatedEntity(ctx context.Context, resourceID, reference string) ([]*oapi.EntityRelation, error) {
-	return a.getter.GetRelatedEntity(ctx, resourceID, reference)
+func (a *variableResolverAdapter) GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error) {
+	return a.getter.GetRelationshipRules(ctx, workspaceID)
+}
+
+func (a *variableResolverAdapter) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
+	return a.getter.LoadCandidates(ctx, workspaceID, entityType)
 }
 
 func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion, variables map[string]oapi.LiteralValue) *oapi.Release {

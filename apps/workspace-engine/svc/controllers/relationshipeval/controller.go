@@ -5,24 +5,21 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
-	"github.com/google/cel-go/cel"
 
-	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/workspace/relationships/eval"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"golang.org/x/sync/errgroup"
 )
 
 // FormatScopeID encodes an entity type and ID into the scope ID format "type:uuid".
@@ -46,13 +43,6 @@ func ParseScopeID(scopeID string) (entityType string, entityID uuid.UUID, err er
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/relationshipeval")
 var _ reconcile.Processor = (*Controller)(nil)
-
-var celEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("from", "to").
-	WithStandardExtensions().
-	BuildCached(12 * time.Hour)
-
-const streamBatchSize = 5000
 
 type Controller struct {
 	getter Getter
@@ -92,13 +82,24 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		attribute.Int("rules.total", len(rules)),
 	)
 
-	var allRelationships []ComputedRelationship
-	for _, rule := range rules {
-		rels, err := c.evalRule(ctx, entity, &rule)
-		if err != nil {
-			return reconcile.Result{}, fmt.Errorf("eval rule %s: %w", rule.ID, err)
+	evalEntity := toEvalEntity(entity)
+	evalRules := toEvalRules(rules)
+
+	loader := &streamingCandidateLoader{getter: c.getter}
+	matches, err := eval.EvaluateRules(ctx, loader, evalEntity, evalRules)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("evaluate rules: %w", err)
+	}
+
+	allRelationships := make([]ComputedRelationship, len(matches))
+	for i, m := range matches {
+		allRelationships[i] = ComputedRelationship{
+			RuleID:         m.RuleID,
+			FromEntityType: m.FromEntityType,
+			FromEntityID:   m.FromEntityID,
+			ToEntityType:   m.ToEntityType,
+			ToEntityID:     m.ToEntityID,
 		}
-		allRelationships = append(allRelationships, rels...)
 	}
 
 	span.SetAttributes(attribute.Int("relationships.computed", len(allRelationships)))
@@ -110,129 +111,61 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	return reconcile.Result{}, nil
 }
 
-// evalRule evaluates a single relationship rule for the given entity.
-// It checks if the entity participates as "from" or "to" (or both) in the rule,
-// streams candidate entities of the opposite type, and evaluates the CEL expression.
-func (c *Controller) evalRule(ctx context.Context, entity *EntityInfo, rule *RuleInfo) ([]ComputedRelationship, error) {
-	ctx, span := tracer.Start(ctx, "EvalRule")
-	defer span.End()
-	span.SetAttributes(
-		attribute.String("rule.id", rule.ID.String()),
-		attribute.String("rule.from_type", rule.FromType),
-		attribute.String("rule.to_type", rule.ToType),
-	)
-
-	program, err := celEnv.Compile(rule.Cel)
-	if err != nil {
-		return nil, fmt.Errorf("compile rule CEL: %w", err)
-	}
-
-	var relationships []ComputedRelationship
-
-	// Entity is "from" → stream "to" candidates
-	if entity.EntityType == rule.FromType {
-		matches, err := c.evalCandidates(ctx, entity, rule.ToType, program, true)
-		if err != nil {
-			return nil, err
-		}
-		for _, candidateID := range matches {
-			relationships = append(relationships, ComputedRelationship{
-				RuleID:         rule.ID,
-				FromEntityType: entity.EntityType,
-				FromEntityID:   entity.ID,
-				ToEntityType:   rule.ToType,
-				ToEntityID:     candidateID,
-			})
-		}
-	}
-
-	// Entity is "to" → stream "from" candidates
-	if entity.EntityType == rule.ToType {
-		matches, err := c.evalCandidates(ctx, entity, rule.FromType, program, false)
-		if err != nil {
-			return nil, err
-		}
-		for _, candidateID := range matches {
-			relationships = append(relationships, ComputedRelationship{
-				RuleID:         rule.ID,
-				FromEntityType: rule.FromType,
-				FromEntityID:   candidateID,
-				ToEntityType:   entity.EntityType,
-				ToEntityID:     entity.ID,
-			})
-		}
-	}
-
-	span.SetAttributes(attribute.Int("relationships.count", len(relationships)))
-	return relationships, nil
+// streamingCandidateLoader implements eval.CandidateLoader by loading all
+// candidates of the requested type for the workspace into memory. The
+// background batch controller can afford this since it processes one entity
+// at a time with generous timeouts.
+type streamingCandidateLoader struct {
+	getter Getter
 }
 
-// evalCandidates streams candidates of candidateType and evaluates the CEL program.
-// When entityIsFrom is true, the entity is placed in "from" and candidates in "to";
-// otherwise the positions are reversed. It attempts to push extractable predicates
-// from the CEL expression into SQL to pre-filter candidates.
-func (c *Controller) evalCandidates(
-	ctx context.Context,
-	entity *EntityInfo,
-	candidateType string,
-	program cel.Program,
-	entityIsFrom bool,
-) ([]uuid.UUID, error) {
-	numWorkers := runtime.GOMAXPROCS(0)
-	batches := make(chan []EntityInfo, numWorkers)
+func (l *streamingCandidateLoader) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
+	batches := make(chan []EntityInfo, runtime.GOMAXPROCS(0))
+	errCh := make(chan error, 1)
 
-	g, ctx := errgroup.WithContext(ctx)
+	go func() {
+		errCh <- l.getter.StreamCandidateEntities(ctx, workspaceID, entityType, 5000, batches)
+	}()
 
-	g.Go(func() error {
-		return c.getter.StreamCandidateEntities(ctx, entity.WorkspaceID, candidateType, streamBatchSize, batches)
-	})
-
-	var mu sync.Mutex
-	var matchedIDs []uuid.UUID
-	for range numWorkers {
-		g.Go(func() error {
-			celCtx := map[string]any{
-				"from": nil,
-				"to":   nil,
-			}
-			var local []uuid.UUID
-			for batch := range batches {
-				for _, candidate := range batch {
-					if candidate.ID == entity.ID {
-						continue
-					}
-
-					if entityIsFrom {
-						celCtx["from"] = entity.Raw
-						celCtx["to"] = candidate.Raw
-					} else {
-						celCtx["from"] = candidate.Raw
-						celCtx["to"] = entity.Raw
-					}
-
-					ok, err := celutil.EvalBool(program, celCtx)
-					if err != nil {
-						return fmt.Errorf("eval CEL for candidate %s: %w", candidate.ID, err)
-					}
-					if ok {
-						local = append(local, candidate.ID)
-					}
-				}
-			}
-			if len(local) > 0 {
-				mu.Lock()
-				matchedIDs = append(matchedIDs, local...)
-				mu.Unlock()
-			}
-			return nil
-		})
+	var candidates []eval.EntityData
+	for batch := range batches {
+		for _, e := range batch {
+			candidates = append(candidates, eval.EntityData{
+				ID:          e.ID,
+				WorkspaceID: e.WorkspaceID,
+				EntityType:  e.EntityType,
+				Raw:         e.Raw,
+			})
+		}
 	}
 
-	if err := g.Wait(); err != nil {
+	if err := <-errCh; err != nil {
 		return nil, err
 	}
+	return candidates, nil
+}
 
-	return matchedIDs, nil
+func toEvalEntity(e *EntityInfo) *eval.EntityData {
+	return &eval.EntityData{
+		ID:          e.ID,
+		WorkspaceID: e.WorkspaceID,
+		EntityType:  e.EntityType,
+		Raw:         e.Raw,
+	}
+}
+
+func toEvalRules(rules []RuleInfo) []eval.Rule {
+	out := make([]eval.Rule, len(rules))
+	for i, r := range rules {
+		out[i] = eval.Rule{
+			ID:        r.ID,
+			Reference: r.Reference,
+			Cel:       r.Cel,
+			FromType:  r.FromType,
+			ToType:    r.ToType,
+		}
+	}
+	return out
 }
 
 // NewController creates a Controller with the given dependencies.
