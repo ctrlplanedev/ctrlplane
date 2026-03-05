@@ -36,7 +36,7 @@ func EvaluateRule(
 	rule *Rule,
 	candidates []EntityData,
 ) ([]Match, error) {
-	ctx, span := tracer.Start(ctx, "eval.EvaluateRule")
+	_, span := tracer.Start(ctx, "eval.EvaluateRule")
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("rule.id", rule.ID.String()),
@@ -123,10 +123,10 @@ func EvaluateRules(
 		rule := &rules[i]
 
 		var candidateType string
-		switch {
-		case entity.EntityType == rule.FromType:
+		switch entity.EntityType {
+		case rule.FromType:
 			candidateType = rule.ToType
-		case entity.EntityType == rule.ToType:
+		case rule.ToType:
 			candidateType = rule.FromType
 		default:
 			continue
