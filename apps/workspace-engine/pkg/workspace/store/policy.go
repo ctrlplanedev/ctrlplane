@@ -7,7 +7,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var policiesTracer = otel.Tracer("workspace/store/policies")
 
 func NewPolicies(store *Store) *Policies {
 	return &Policies{
@@ -34,6 +38,9 @@ func (p *Policies) Get(id string) (*oapi.Policy, bool) {
 }
 
 func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
+	_, span := policiesTracer.Start(ctx, "UpsertPolicy")
+	defer span.End()
+
 	if policy.Metadata == nil {
 		policy.Metadata = make(map[string]string)
 	}
@@ -52,6 +59,8 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 	}
 
 	if err := p.repo.Set(policy); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert policy")
 		log.Error("Failed to upsert policy", "error", err)
 		return
 	}

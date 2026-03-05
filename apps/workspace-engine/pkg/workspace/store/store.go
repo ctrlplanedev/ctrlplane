@@ -27,12 +27,26 @@ func WithDBDeploymentVersions(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridDeploymentVersions(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.DeploymentVersions.SetRepo(hybridrepo.NewDeploymentVersionRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBDeployments replaces the default in-memory DeploymentRepo
 // with a DB-backed implementation.
 func WithDBDeployments(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.Deployments.SetRepo(dbRepo.Deployments())
+	}
+}
+
+func WithHybridDeployments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Deployments.SetRepo(hybridrepo.NewDeploymentRepo(dbRepo, s.repo))
 	}
 }
 
@@ -45,12 +59,26 @@ func WithDBResources(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridResources(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Resources.SetRepo(hybridrepo.NewResourceRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBEnvironments replaces the default in-memory EnvironmentRepo
 // with a DB-backed implementation.
 func WithDBEnvironments(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.Environments.SetRepo(dbRepo.Environments())
+	}
+}
+
+func WithHybridEnvironments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Environments.SetRepo(hybridrepo.NewEnvironmentRepo(dbRepo, s.repo))
 	}
 }
 
@@ -63,12 +91,26 @@ func WithDBSystems(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridSystems(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Systems.SetRepo(hybridrepo.NewSystemRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBJobAgents replaces the default in-memory JobAgentRepo
 // with a DB-backed implementation.
 func WithDBJobAgents(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.JobAgents.SetRepo(dbRepo.JobAgents())
+	}
+}
+
+func WithHybridJobAgents(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.JobAgents.SetRepo(hybridrepo.NewJobAgentRepo(dbRepo, s.repo))
 	}
 }
 
@@ -99,6 +141,13 @@ func WithDBResourceProviders(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridResourceProviders(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.ResourceProviders.SetRepo(hybridrepo.NewResourceProviderRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBSystemDeployments replaces the default in-memory SystemDeploymentRepo
 // with a DB-backed implementation.
 func WithDBSystemDeployments(ctx context.Context) StoreOption {
@@ -108,12 +157,26 @@ func WithDBSystemDeployments(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridSystemDeployments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.SystemDeployments.SetRepo(hybridrepo.NewSystemDeploymentRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBSystemEnvironments replaces the default in-memory SystemEnvironmentRepo
 // with a DB-backed implementation.
 func WithDBSystemEnvironments(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.SystemEnvironments.SetRepo(dbRepo.SystemEnvironments())
+	}
+}
+
+func WithHybridSystemEnvironments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.SystemEnvironments.SetRepo(hybridrepo.NewSystemEnvironmentRepo(dbRepo, s.repo))
 	}
 }
 
@@ -144,12 +207,26 @@ func WithDBPolicies(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridPolicies(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Policies.SetRepo(hybridrepo.NewPolicyRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBUserApprovalRecords replaces the default in-memory UserApprovalRecordRepo
 // with a DB-backed implementation.
 func WithDBUserApprovalRecords(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.UserApprovalRecords.SetRepo(dbRepo.UserApprovalRecords())
+	}
+}
+
+func WithHybridUserApprovalRecords(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.UserApprovalRecords.SetRepo(hybridrepo.NewUserApprovalRecordRepo(dbRepo, s.repo))
 	}
 }
 
@@ -162,12 +239,26 @@ func WithDBDeploymentVariables(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridDeploymentVariables(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.DeploymentVariables.SetRepo(hybridrepo.NewDeploymentVariableRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBDeploymentVariableValues replaces the default in-memory DeploymentVariableValueRepo
 // with a DB-backed implementation.
 func WithDBDeploymentVariableValues(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.DeploymentVariableValues.SetRepo(dbRepo.DeploymentVariableValues())
+	}
+}
+
+func WithHybridDeploymentVariableValues(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.DeploymentVariableValues.SetRepo(hybridrepo.NewDeploymentVariableValueRepo(dbRepo, s.repo))
 	}
 }
 
@@ -180,12 +271,26 @@ func WithDBWorkflows(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridWorkflows(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Workflows.SetRepo(hybridrepo.NewWorkflowRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBWorkflowJobTemplates replaces the default in-memory WorkflowJobTemplateRepo
 // with a DB-backed implementation.
 func WithDBWorkflowJobTemplates(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.WorkflowJobTemplates.SetRepo(dbRepo.WorkflowJobTemplates())
+	}
+}
+
+func WithHybridWorkflowJobTemplates(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.WorkflowJobTemplates.SetRepo(hybridrepo.NewWorkflowJobTemplateRepo(dbRepo, s.repo))
 	}
 }
 
@@ -198,6 +303,13 @@ func WithDBWorkflowRuns(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridWorkflowRuns(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.WorkflowRuns.SetRepo(hybridrepo.NewWorkflowRunRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBWorkflowJobs replaces the default in-memory WorkflowJobRepo
 // with a DB-backed implementation.
 func WithDBWorkflowJobs(ctx context.Context) StoreOption {
@@ -207,12 +319,26 @@ func WithDBWorkflowJobs(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridWorkflowJobs(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.WorkflowJobs.SetRepo(hybridrepo.NewWorkflowJobRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBResourceVariables replaces the default in-memory ResourceVariableRepo
 // with a DB-backed implementation.
 func WithDBResourceVariables(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.ResourceVariables.SetRepo(dbRepo.ResourceVariables())
+	}
+}
+
+func WithHybridResourceVariables(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.ResourceVariables.SetRepo(hybridrepo.NewResourceVariableRepo(dbRepo, s.repo))
 	}
 }
 

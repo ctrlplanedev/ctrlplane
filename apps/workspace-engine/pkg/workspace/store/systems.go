@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var systemsTracer = otel.Tracer("workspace/store/systems")
 
 func NewSystems(store *Store) *Systems {
 	return &Systems{
@@ -30,7 +34,12 @@ func (s *Systems) Get(id string) (*oapi.System, bool) {
 }
 
 func (s *Systems) Upsert(ctx context.Context, system *oapi.System) error {
+	_, span := systemsTracer.Start(ctx, "UpsertSystem")
+	defer span.End()
+
 	if err := s.repo.Set(system); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert system")
 		log.Error("Failed to upsert system", "error", err)
 	}
 	s.store.changeset.RecordUpsert(system)

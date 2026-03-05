@@ -8,7 +8,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var userApprovalRecordsTracer = otel.Tracer("workspace/store/user_approval_records")
 
 type UserApprovalRecords struct {
 	repo  repository.UserApprovalRecordRepo
@@ -27,7 +31,12 @@ func (u *UserApprovalRecords) SetRepo(repo repository.UserApprovalRecordRepo) {
 }
 
 func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
+	_, span := userApprovalRecordsTracer.Start(ctx, "UpsertUserApprovalRecord")
+	defer span.End()
+
 	if err := u.repo.Set(userApprovalRecord); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert user approval record")
 		log.Error("Failed to upsert user approval record", "error", err)
 		return
 	}

@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var deploymentVersionsTracer = otel.Tracer("workspace/store/deployment_versions")
 
 func NewDeploymentVersions(store *Store) *DeploymentVersions {
 	return &DeploymentVersions{
@@ -38,7 +42,12 @@ func (d *DeploymentVersions) GetByDeploymentID(deploymentID string) ([]*oapi.Dep
 }
 
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
+	_, span := deploymentVersionsTracer.Start(ctx, "UpsertDeploymentVersion")
+	defer span.End()
+
 	if err := d.repo.Set(version); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert deployment version")
 		log.Error("Failed to upsert deployment version", "error", err)
 	}
 	d.store.changeset.RecordUpsert(version)

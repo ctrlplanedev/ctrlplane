@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -53,6 +54,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	}
 
 	if err := r.repo.Set(resource); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert resource")
 		return nil, err
 	}
 	r.store.changeset.RecordUpsert(resource)

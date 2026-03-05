@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var deploymentsTracer = otel.Tracer("workspace/store/deployments")
@@ -41,6 +42,8 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 	defer span.End()
 
 	if err := e.repo.Set(deployment); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert deployment")
 		log.Error("Failed to upsert deployment", "error", err)
 	}
 	e.store.changeset.RecordUpsert(deployment)

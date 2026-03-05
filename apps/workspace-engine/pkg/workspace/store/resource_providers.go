@@ -6,7 +6,11 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var resourceProvidersTracer = otel.Tracer("workspace/store/resource_providers")
 
 type ResourceProviders struct {
 	repo      repository.ResourceProviderRepo
@@ -36,7 +40,12 @@ func (r *ResourceProviders) Items() map[string]*oapi.ResourceProvider {
 }
 
 func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvider *oapi.ResourceProvider) {
+	_, span := resourceProvidersTracer.Start(ctx, "UpsertResourceProvider")
+	defer span.End()
+
 	if err := r.repo.Set(resourceProvider); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert resource provider")
 		log.Error("Failed to upsert resource provider", "error", err)
 	}
 	r.store.changeset.RecordUpsert(resourceProvider)
