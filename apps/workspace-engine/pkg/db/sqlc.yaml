@@ -28,6 +28,7 @@ sql:
       - queries/job_verification_metric.sql
       - queries/jobs.sql
       - queries/computed_relationships.sql
+      - queries/relationship_rules.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -117,6 +118,11 @@ sql:
           - column: "policy_rule_verification.metrics"
             go_type:
               type: "[]byte"
+
+          # RelationshipRule
+          - column: "relationship_rule.metadata"
+            go_type:
+              type: "map[string]string"
 
           # ResourceVariable
           - column: "resource_variable.value"
