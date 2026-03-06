@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
@@ -10,6 +11,8 @@ import (
 	hybridrepo "workspace-engine/pkg/workspace/store/repository/hybrid"
 	"workspace-engine/pkg/workspace/store/repository/memory"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -459,6 +462,232 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 
 	// Rebuild in-memory link stores from persisted link entities.
 	s.repo.RestoreLinks()
+
+	// Migrate legacy changelog entities into the active repos.
+	// After Router().Apply(), the in-memory repo may contain entities
+	// loaded from changelog_entry records. When the DB backend is
+	// active, sync them so they are available through the DB-backed repos.
+	if config.Global.MigrateLegacyEntities {
+		if setStatus != nil {
+			setStatus("Migrating legacy systems")
+		}
+		for _, sys := range s.repo.Systems().Items() {
+			if err := s.Systems.repo.Set(sys); err != nil {
+				log.Warn("Failed to migrate legacy system",
+					"system_id", sys.Id, "name", sys.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy job agents")
+		}
+		for _, ja := range s.repo.JobAgents().Items() {
+			if err := s.JobAgents.repo.Set(ja); err != nil {
+				log.Warn("Failed to migrate legacy job agent",
+					"job_agent_id", ja.Id, "name", ja.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy deployments")
+		}
+		for _, d := range s.repo.Deployments().Items() {
+			if err := s.Deployments.repo.Set(d); err != nil {
+				log.Warn("Failed to migrate legacy deployment",
+					"deployment_id", d.Id, "name", d.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy environments")
+		}
+		for _, env := range s.repo.Environments().Items() {
+			if err := s.Environments.repo.Set(env); err != nil {
+				log.Warn("Failed to migrate legacy environment",
+					"environment_id", env.Id, "name", env.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy deployment versions")
+		}
+		for _, v := range s.repo.DeploymentVersions().Items() {
+			if err := s.DeploymentVersions.repo.Set(v); err != nil {
+				log.Warn("Failed to migrate legacy deployment version",
+					"version_id", v.Id, "name", v.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy resource providers")
+		}
+		for _, rp := range s.repo.ResourceProviders().Items() {
+			if err := s.ResourceProviders.repo.Set(rp); err != nil {
+				log.Warn("Failed to migrate legacy resource provider",
+					"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy resources")
+		}
+		for _, r := range s.repo.Resources().Items() {
+			if err := s.Resources.repo.Set(r); err != nil {
+				log.Warn("Failed to migrate legacy resource",
+					"resource_id", r.Id, "name", r.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy policies")
+		}
+		for _, pol := range s.repo.Policies().Items() {
+			if err := s.Policies.repo.Set(pol); err != nil {
+				log.Warn("Failed to migrate legacy policy",
+					"policy_id", pol.Id, "name", pol.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy policy skips")
+		}
+		for _, ps := range s.repo.PolicySkips().Items() {
+			if err := s.PolicySkips.repo.Set(ps); err != nil {
+				log.Warn("Failed to migrate legacy policy skip",
+					"policy_skip_id", ps.Id, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy user approval records")
+		}
+		for _, uar := range s.repo.UserApprovalRecords().Items() {
+			if err := s.UserApprovalRecords.repo.Set(uar); err != nil {
+				log.Warn("Failed to migrate legacy user approval record",
+					"key", uar.Key(), "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy deployment variables")
+		}
+		for _, dv := range s.repo.DeploymentVariables().Items() {
+			if err := s.DeploymentVariables.repo.Set(dv); err != nil {
+				log.Warn("Failed to migrate legacy deployment variable",
+					"id", dv.Id, "key", dv.Key, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy deployment variable values")
+		}
+		for _, dvv := range s.repo.DeploymentVariableValues().Items() {
+			if err := s.DeploymentVariableValues.repo.Set(dvv); err != nil {
+				log.Warn("Failed to migrate legacy deployment variable value",
+					"id", dvv.Id, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy workflows")
+		}
+		for _, wf := range s.repo.Workflows().Items() {
+			if err := s.Workflows.repo.Set(wf); err != nil {
+				log.Warn("Failed to migrate legacy workflow",
+					"id", wf.Id, "name", wf.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy workflow job templates")
+		}
+		for _, wjt := range s.repo.WorkflowJobTemplates().Items() {
+			if err := s.WorkflowJobTemplates.repo.Set(wjt); err != nil {
+				log.Warn("Failed to migrate legacy workflow job template",
+					"id", wjt.Id, "name", wjt.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy workflow runs")
+		}
+		for _, wr := range s.repo.WorkflowRuns().Items() {
+			if err := s.WorkflowRuns.repo.Set(wr); err != nil {
+				log.Warn("Failed to migrate legacy workflow run",
+					"id", wr.Id, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy workflow jobs")
+		}
+		for _, wj := range s.repo.WorkflowJobs().Items() {
+			if err := s.WorkflowJobs.repo.Set(wj); err != nil {
+				log.Warn("Failed to migrate legacy workflow job",
+					"id", wj.Id, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy resource variables")
+		}
+		for _, rv := range s.repo.ResourceVariables().Items() {
+			if err := s.ResourceVariables.repo.Set(rv); err != nil {
+				log.Warn("Failed to migrate legacy resource variable",
+					"key", rv.ID(), "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy relationship rules")
+		}
+		for _, rr := range s.repo.RelationshipRules.Items() {
+			if err := s.Relationships.repo.Set(rr); err != nil {
+				log.Warn("Failed to migrate legacy relationship rule",
+					"id", rr.Id, "name", rr.Name, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy releases")
+		}
+		for _, rel := range s.repo.Releases().Items() {
+			if rel.Id == uuid.Nil {
+				rel.Id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(rel.ContentHash()))
+			}
+			if err := s.Releases.repo.Set(rel); err != nil {
+				log.Warn("Failed to migrate legacy release",
+					"content_hash", rel.ContentHash(), "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy jobs")
+		}
+		for _, job := range s.repo.Jobs.Items() {
+			if err := s.Jobs.repo.Set(job); err != nil {
+				log.Warn("Failed to migrate legacy job",
+					"job_id", job.Id, "error", err)
+			}
+		}
+
+		if setStatus != nil {
+			setStatus("Migrating legacy job release IDs")
+		}
+		for _, job := range s.repo.Jobs.Items() {
+			if job.ReleaseId == "" {
+				continue
+			}
+			if _, err := uuid.Parse(job.ReleaseId); err == nil {
+				continue
+			}
+			job.ReleaseId = uuid.NewSHA1(uuid.NameSpaceOID, []byte(job.ReleaseId)).String()
+			if err := s.Jobs.repo.Set(job); err != nil {
+				log.Warn("Failed to migrate legacy job release ID",
+					"job_id", job.Id, "error", err)
+			}
+		}
+	}
 
 	if setStatus != nil {
 		setStatus("Computing release targets")
