@@ -41,10 +41,6 @@ func parseTimestamp(s string) (time.Time, error) {
 
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
-type Getters interface {
-	GetApprovalRecords(versionID, environmentID string) []*oapi.UserApprovalRecord
-}
-
 type AnyApprovalEvaluator struct {
 	getters       Getters
 	ruleId        string
@@ -65,7 +61,7 @@ func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) ev
 		return nil
 	}
 
-	return NewEvaluator(&storeGetters{store: store}, approvalRule)
+	return NewEvaluator(&StoreGetters{store: store}, approvalRule)
 }
 
 func NewEvaluator(getters Getters, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
@@ -120,7 +116,16 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithSatisfiedAt(version.CreatedAt)
 	}
 
-	approvalRecords := m.getters.GetApprovalRecords(version.Id, environment.Id)
+	approvalRecords, err := m.getters.GetApprovalRecords(ctx, version.Id, environment.Id)
+	if err != nil {
+		return results.
+			NewPendingResult("approval",
+				fmt.Sprintf("Failed to get approval records: %v", err),
+			).
+			WithDetail("version_id", version.Id).
+			WithDetail("environment_id", environment.Id)
+	}
+
 	minApprovals := int(m.rule.MinApprovals)
 
 	approvers := make([]string, len(approvalRecords))

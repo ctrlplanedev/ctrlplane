@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Environment: {
     type: 'object',
-    required: ['id', 'name', 'createdAt', 'metadata'],
+    required: ['id', 'name', 'createdAt', 'metadata', 'workspaceId'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -11,6 +11,7 @@ local openapi = import '../lib/openapi.libsonnet';
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
+      workspaceId: { type: 'string' },
     },
   },
 

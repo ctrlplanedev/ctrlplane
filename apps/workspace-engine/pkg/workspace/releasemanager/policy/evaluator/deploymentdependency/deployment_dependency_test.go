@@ -122,7 +122,7 @@ func TestDeploymentDependencyEvaluator_UnsatisfiedDependencyFails(t *testing.T) 
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
 		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
@@ -154,7 +154,7 @@ func TestDeploymentDependencyEvaluator_SatisfiedDependencyPasses(t *testing.T) {
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
 		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
@@ -193,7 +193,7 @@ func TestDeploymentDependencyEvaluator_MixedSatisfactionsFails(t *testing.T) {
 	cel := fmt.Sprintf("deployment.id != '%s'", deployment3.Id)
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget3.EnvironmentId},
@@ -233,7 +233,7 @@ func TestDeploymentDependencyEvaluator_FailedJobsFails(t *testing.T) {
 	cel := fmt.Sprintf("deployment.id != '%s'", deployment3.Id)
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget3.EnvironmentId},
@@ -273,7 +273,7 @@ func TestDeploymentDependencyEvaluator_FailsIfLatestJobIsNotSuccessful(t *testin
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
 		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
@@ -312,7 +312,7 @@ func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJob
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
 		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
@@ -343,7 +343,7 @@ func TestDeploymentDependencyEvaluator_NoMatchingDeploymentsFails(t *testing.T) 
 	cel := "deployment.id == 'non-existing-deployment'"
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
@@ -374,7 +374,7 @@ func TestDeploymentDependencyEvaluator_NotEnoughUpstreamReleaseTargetsFails(t *t
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluator(st, rule)
+	eval := NewEvaluatorFromStore(st, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},

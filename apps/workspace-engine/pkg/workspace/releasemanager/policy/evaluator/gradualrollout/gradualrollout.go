@@ -8,7 +8,9 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -44,7 +46,14 @@ type GradualRolloutEvaluator struct {
 }
 
 func NewEvaluatorFromStore(store *store.Store, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {
-	if rolloutRule == nil || rolloutRule.GradualRollout == nil || store == nil {
+	if store == nil {
+		return nil
+	}
+	return NewEvaluator(NewStoreGetters(store), rolloutRule)
+}
+
+func NewEvaluator(getters Getters, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {
+	if rolloutRule == nil || rolloutRule.GradualRollout == nil || getters == nil {
 		return nil
 	}
 
@@ -56,7 +65,7 @@ func NewEvaluatorFromStore(store *store.Store, rolloutRule *oapi.PolicyRule) eva
 	}
 
 	return evaluator.WithMemoization(&GradualRolloutEvaluator{
-		getters:    &storeGetters{store: store},
+		getters:    getters,
 		ruleId:     rolloutRule.Id,
 		rule:       rolloutRule.GradualRollout,
 		hashingFn:  fnvHashingFn,
@@ -107,7 +116,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Conte
 		return &scope.Version.CreatedAt
 	}
 
-	approvalEvaluator := e.getters.NewApprovalEvaluator(rule)
+	approvalEvaluator := approval.NewEvaluator(e.getters, rule)
 	if approvalEvaluator == nil {
 		return nil
 	}
@@ -145,7 +154,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx
 		return &scope.Version.CreatedAt
 	}
 
-	environmentProgressionEvaluator := e.getters.NewEnvironmentProgressionEvaluator(rule)
+	environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.getters, rule)
 	if environmentProgressionEvaluator == nil {
 		return nil
 	}
@@ -165,7 +174,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	// - deployment window rules:
 	//   - allow windows: rollout starts when window opens (if outside)
 	//   - deny windows: rollout starts when window ends (if inside)
-	policiesForTarget, err := e.getters.GetPolicies(ctx, releaseTarget)
+	policiesForTarget, err := e.getters.GetPoliciesForReleaseTarget(ctx, releaseTarget)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +262,11 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	// - Allow windows: if outside, push to when window opens
 	// - Deny windows: if inside, push to when window ends
 	finalStartTime := baseStartTime
-	if !e.getters.HasCurrentRelease(ctx, releaseTarget) {
+	hasCurrentRelease, err := e.getters.HasCurrentRelease(ctx, releaseTarget)
+	if err != nil {
+		return nil, err
+	}
+	if !hasCurrentRelease {
 		return finalStartTime, nil
 	}
 	for _, windowRule := range deploymentWindowRules {

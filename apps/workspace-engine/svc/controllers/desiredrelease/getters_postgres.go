@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/svc/controllers/desiredrelease/convert"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -44,9 +43,9 @@ func (g *PostgresGetter) GetReleaseTargetScope(ctx context.Context, rt *ReleaseT
 	}
 
 	return &evaluator.EvaluatorScope{
-		Deployment:  convert.Deployment(depRow),
-		Environment: convert.Environment(envRow),
-		Resource:    convert.Resource(resRow),
+		Deployment:  db.ToOapiDeployment(depRow),
+		Environment: db.ToOapiEnvironment(envRow),
+		Resource:    db.ToOapiResource(resRow),
 	}, nil
 }
 
@@ -61,7 +60,7 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 
 	versions := make([]*oapi.DeploymentVersion, 0, len(rows))
 	for _, row := range rows {
-		versions = append(versions, convert.DeploymentVersion(row))
+		versions = append(versions, db.ToOapiDeploymentVersion(row))
 	}
 	return versions, nil
 }
@@ -76,7 +75,7 @@ func (g *PostgresGetter) GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]
 	}
 	policiesOAPI := make([]*oapi.Policy, 0, len(policies))
 	for _, policy := range policies {
-		policiesOAPI = append(policiesOAPI, convert.Policy(policy))
+		policiesOAPI = append(policiesOAPI, db.ToOapiPolicy(policy))
 	}
 	return policiesOAPI, nil
 }
@@ -91,7 +90,7 @@ func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, envi
 	}
 	approvalRecordsOAPI := make([]*oapi.UserApprovalRecord, 0, len(approvalRecords))
 	for _, approvalRecord := range approvalRecords {
-		approvalRecordsOAPI = append(approvalRecordsOAPI, convert.UserApprovalRecord(approvalRecord))
+		approvalRecordsOAPI = append(approvalRecordsOAPI, db.ToOapiUserApprovalRecord(approvalRecord))
 	}
 	return approvalRecordsOAPI, nil
 }
@@ -107,7 +106,7 @@ func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environm
 	}
 	result := make([]*oapi.PolicySkip, 0, len(policySkips))
 	for _, skip := range policySkips {
-		result = append(result, convert.PolicySkip(skip))
+		result = append(result, db.ToOapiPolicySkip(skip))
 	}
 	return result, nil
 }
@@ -156,7 +155,7 @@ func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarge
 			EnvironmentId: rt.EnvironmentID.String(),
 			ResourceId:    rt.ResourceID.String(),
 		},
-		Version:            *convert.DeploymentVersion(versionRow),
+		Version:            *db.ToOapiDeploymentVersion(versionRow),
 		Variables:          map[string]oapi.LiteralValue{},
 		EncryptedVariables: []string{},
 		CreatedAt:          createdAt,
@@ -180,11 +179,11 @@ func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentI
 
 		oapiValues := make([]oapi.DeploymentVariableValue, 0, len(values))
 		for _, val := range values {
-			oapiValues = append(oapiValues, convert.DeploymentVariableValue(val))
+			oapiValues = append(oapiValues, db.ToOapiDeploymentVariableValue(val))
 		}
 
 		result = append(result, oapi.DeploymentVariableWithValues{
-			Variable: convert.DeploymentVariable(v),
+			Variable: db.ToOapiDeploymentVariable(v),
 			Values:   oapiValues,
 		})
 	}
@@ -199,7 +198,7 @@ func (g *PostgresGetter) GetResourceVariables(ctx context.Context, resourceID st
 
 	result := make(map[string]oapi.ResourceVariable, len(rows))
 	for _, row := range rows {
-		result[row.Key] = convert.ResourceVariable(row)
+		result[row.Key] = db.ToOapiResourceVariable(row)
 	}
 	return result, nil
 }

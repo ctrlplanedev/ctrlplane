@@ -419,6 +419,7 @@ type Environment struct {
 	Metadata         map[string]string `json:"metadata"`
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	WorkspaceId      string            `json:"workspaceId"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -449,6 +450,7 @@ type EnvironmentWithSystems struct {
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
 	Systems          []System          `json:"systems"`
+	WorkspaceId      string            `json:"workspaceId"`
 }
 
 // ErrorResponse defines model for ErrorResponse.

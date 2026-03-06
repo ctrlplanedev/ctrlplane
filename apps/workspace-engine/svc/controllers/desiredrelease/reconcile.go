@@ -7,7 +7,6 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/policymatch"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 
@@ -63,12 +62,13 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 // (newest-first) and sets r.version to the first passing version. Returns
 // the earliest NextEvaluationTime when all versions are blocked.
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
-	oapiRT := r.rt.ToOAPI()
-	evalGetter := &policyevalAdapter{getter: r.getter, rt: r.rt}
-	evals := policyeval.CollectEvaluators(ctx, evalGetter, oapiRT, r.policies)
-	var nextTime *time.Time
-	r.version, nextTime = policyeval.FindDeployableVersion(ctx, evalGetter, oapiRT, r.versions, evals, *r.scope)
-	return nextTime
+	return nil
+	// oapiRT := r.rt.ToOAPI()
+	// evalGetter := &policyevalAdapter{getter: r.getter, rt: r.rt}
+	// evals := policyeval.CollectEvaluators(ctx, evalGetter, oapiRT, r.policies)
+	// var nextTime *time.Time
+	// r.version, nextTime = policyeval.FindDeployableVersion(ctx, evalGetter, oapiRT, r.versions, evals, *r.scope)
+	// return nextTime
 }
 
 func (r *reconciler) resolveVariables(ctx context.Context) error {
