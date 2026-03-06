@@ -21,7 +21,7 @@ func EvaluatorsForPolicy(store *store.Store, rule *oapi.PolicyRule) []evaluator.
 		environmentprogression.NewEvaluatorFromStore(store, rule),
 		gradualrollout.NewEvaluatorFromStore(store, rule),
 		versionselector.NewEvaluator(rule),
-		deploymentdependency.NewEvaluator(store, rule),
+		deploymentdependency.NewEvaluatorFromStore(store, rule),
 		deploymentwindow.NewEvaluatorFromStore(store, rule),
 		versioncooldown.NewEvaluatorFromStore(store, rule),
 	)

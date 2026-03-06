@@ -11,23 +11,33 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deployableversions"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 )
 
 // Getter provides the data-access methods needed by policy evaluators.
 type Getter interface {
-	GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
-	HasCurrentRelease(ctx context.Context, rt *oapi.ReleaseTarget) (bool, error)
-	GetCurrentRelease(ctx context.Context, rt *oapi.ReleaseTarget) (*oapi.Release, error)
+	approval.Getters
+	environmentprogression.Getters
+	deploymentwindow.Getters
+	// deploymentdependency.Getters
+	versioncooldown.Getters
+	deployableversions.Getters
+
 	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
 }
 
 // ruleEvaluators returns evaluators for a single policy rule.
 func ruleEvaluators(ctx context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
+		approval.NewEvaluator(getter, rule),
+		environmentprogression.NewEvaluator(getter, rule),
+		// gradualrollout.NewEvaluator(getter, rule),
 		versionselector.NewEvaluator(rule),
-		approval.NewEvaluator(&approvalAdapter{getter: getter, ctx: ctx}, rule),
-		deploymentwindow.NewEvaluator(&deploymentWindowAdapter{getter: getter, ctx: ctx}, rule),
+		// deploymentdependency.NewEvaluator(getter, rule),
+		deploymentwindow.NewEvaluator(getter, rule),
+		versioncooldown.NewEvaluator(getter, rule),
 	)
 }
 
