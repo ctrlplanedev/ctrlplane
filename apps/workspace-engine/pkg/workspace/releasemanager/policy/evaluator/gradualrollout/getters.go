@@ -57,7 +57,10 @@ func (s *StoreGetters) GetPolicySkips(versionID, environmentID, resourceID strin
 
 func (s *StoreGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
 	_, _, err := s.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
-	return err == nil, err
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (s *StoreGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
