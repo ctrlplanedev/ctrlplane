@@ -58,6 +58,16 @@ export default function SettingsLayout() {
           API Keys
         </NavLink>
         <NavLink
+          to={`/${workspace.slug}/settings/work-queue`}
+          className={
+            isActive(`/${workspace.slug}/settings/work-queue`)
+              ? activeLinkStyle
+              : defaultLinkStyle
+          }
+        >
+          Work Queue
+        </NavLink>
+        <NavLink
           to={`/${workspace.slug}/settings/delete-workspace`}
           className={
             isActive(`/${workspace.slug}/settings/delete-workspace`)
@@ -68,7 +78,7 @@ export default function SettingsLayout() {
           Delete Workspace
         </NavLink>
       </div>
-      <div className="flex-grow">
+      <div className="min-w-0 flex-grow">
         <Outlet />
       </div>
     </div>
