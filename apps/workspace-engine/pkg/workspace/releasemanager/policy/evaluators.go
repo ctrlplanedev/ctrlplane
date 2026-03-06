@@ -36,3 +36,32 @@ func EvaluatorsForSummary(store *store.Store, rule *oapi.PolicyRule) []evaluator
 		versioncooldown.NewSummaryEvaluatorFromStore(store, rule),
 	)
 }
+
+// EvaluatorsForEnvironmentSummary returns evaluators scoped to an environment
+// (no version/resource/deployment needed). Used by the policy-summary controller
+// for the "environment" scope channel.
+func EvaluatorsForEnvironmentSummary(store *store.Store, rule *oapi.PolicyRule) []evaluator.Evaluator {
+	return evaluator.CollectEvaluators(
+		deploymentwindow.NewSummaryEvaluatorFromStore(store, rule),
+	)
+}
+
+// EvaluatorsForEnvironmentVersionSummary returns evaluators scoped to an
+// (environment, version) pair. Used by the policy-summary controller for the
+// "environment-version" scope channel.
+func EvaluatorsForEnvironmentVersionSummary(store *store.Store, rule *oapi.PolicyRule) []evaluator.Evaluator {
+	return evaluator.CollectEvaluators(
+		approval.NewEvaluatorFromStore(store, rule),
+		environmentprogression.NewEvaluatorFromStore(store, rule),
+		gradualrollout.NewSummaryEvaluatorFromStore(store, rule),
+	)
+}
+
+// EvaluatorsForDeploymentVersionSummary returns evaluators scoped to a
+// (deployment, version) pair. Used by the policy-summary controller for the
+// "deployment-version" scope channel.
+func EvaluatorsForDeploymentVersionSummary(store *store.Store, rule *oapi.PolicyRule) []evaluator.Evaluator {
+	return evaluator.CollectEvaluators(
+		versioncooldown.NewSummaryEvaluatorFromStore(store, rule),
+	)
+}
