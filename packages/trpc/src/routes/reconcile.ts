@@ -49,9 +49,7 @@ export const reconcileRouter = router({
         deploymentId: z.string().uuid(),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      enqueueDeploymentSelectorEval(ctx.db, input),
-    ),
+    .mutation(({ ctx, input }) => enqueueDeploymentSelectorEval(ctx.db, input)),
 
   triggerEnvironmentSelectorEval: protectedProcedure
     .input(
