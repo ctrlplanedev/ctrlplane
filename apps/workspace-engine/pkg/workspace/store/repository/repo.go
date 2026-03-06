@@ -12,6 +12,7 @@ type Repo interface {
 	SystemDeployments() SystemDeploymentRepo
 	SystemEnvironments() SystemEnvironmentRepo
 	Policies() PolicyRepo
+	PolicySkips() PolicySkipRepo
 	UserApprovalRecords() UserApprovalRecordRepo
 	ResourceVariables() ResourceVariableRepo
 	DeploymentVariables() DeploymentVariableRepo

@@ -214,6 +214,22 @@ func WithHybridPolicies(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBPolicySkips replaces the default in-memory PolicySkipRepo
+// with a DB-backed implementation.
+func WithDBPolicySkips(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.PolicySkips.SetRepo(dbRepo.PolicySkips())
+	}
+}
+
+func WithHybridPolicySkips(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.PolicySkips.SetRepo(hybridrepo.NewPolicySkipRepo(dbRepo, s.repo))
+	}
+}
+
 // WithDBUserApprovalRecords replaces the default in-memory UserApprovalRecordRepo
 // with a DB-backed implementation.
 func WithDBUserApprovalRecords(ctx context.Context) StoreOption {
@@ -520,6 +536,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.Policies.repo.Set(pol); err != nil {
 			log.Warn("Failed to migrate legacy policy",
 				"policy_id", pol.Id, "name", pol.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy policy skips")
+	}
+	for _, ps := range s.repo.PolicySkips().Items() {
+		if err := s.PolicySkips.repo.Set(ps); err != nil {
+			log.Warn("Failed to migrate legacy policy skip",
+				"policy_skip_id", ps.Id, "error", err)
 		}
 	}
 

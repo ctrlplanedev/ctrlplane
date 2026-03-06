@@ -117,6 +117,14 @@ type PolicyRepo interface {
 	Items() map[string]*oapi.Policy
 }
 
+// PolicySkipRepo defines the contract for policy skip storage.
+type PolicySkipRepo interface {
+	Get(id string) (*oapi.PolicySkip, bool)
+	Set(entity *oapi.PolicySkip) error
+	Remove(id string) error
+	Items() map[string]*oapi.PolicySkip
+}
+
 // DeploymentVariableRepo defines the contract for deployment variable storage.
 type DeploymentVariableRepo interface {
 	Get(id string) (*oapi.DeploymentVariable, bool)

@@ -57,7 +57,7 @@ func New(wsId string) *InMemory {
 		deploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
 		environments:             createTypedStore[*oapi.Environment](router, "environment"),
 		policies:                 createTypedStore[*oapi.Policy](router, "policy"),
-		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
+		policySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		systems:                  createTypedStore[*oapi.System](router, "system"),
 		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
@@ -95,7 +95,7 @@ type InMemory struct {
 
 	environments     cmap.ConcurrentMap[string, *oapi.Environment]
 	policies         cmap.ConcurrentMap[string, *oapi.Policy]
-	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
+	policySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
 	systems          cmap.ConcurrentMap[string, *oapi.System]
 	releases         *indexstore.Store[*oapi.Release]
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
@@ -432,6 +432,11 @@ func (a *systemEnvironmentRepoAdapter) Unlink(systemID, environmentID string) er
 // Policies implements repository.Repo.
 func (s *InMemory) Policies() repository.PolicyRepo {
 	return &cmapRepoAdapter[*oapi.Policy]{store: &s.policies}
+}
+
+// PolicySkips implements repository.Repo.
+func (s *InMemory) PolicySkips() repository.PolicySkipRepo {
+	return &cmapRepoAdapter[*oapi.PolicySkip]{store: &s.policySkips}
 }
 
 // userApprovalRecordRepoAdapter wraps a cmap to satisfy UserApprovalRecordRepo.
