@@ -4,41 +4,53 @@ import (
 	"context"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewPolicySkips(store *Store) *PolicySkips {
 	return &PolicySkips{
-		repo:  store.repo,
+		repo:  store.repo.PolicySkips(),
 		store: store,
 	}
 }
 
 type PolicySkips struct {
-	repo  *memory.InMemory
+	repo  repository.PolicySkipRepo
 	store *Store
 }
 
+func (pb *PolicySkips) SetRepo(repo repository.PolicySkipRepo) {
+	pb.repo = repo
+}
+
 func (pb *PolicySkips) Items() map[string]*oapi.PolicySkip {
-	return pb.repo.PolicySkips.Items()
+	return pb.repo.Items()
 }
 
 func (pb *PolicySkips) Get(id string) (*oapi.PolicySkip, bool) {
-	return pb.repo.PolicySkips.Get(id)
+	return pb.repo.Get(id)
 }
 
 func (pb *PolicySkips) Upsert(ctx context.Context, skip *oapi.PolicySkip) {
-	pb.repo.PolicySkips.Set(skip.Id, skip)
+	if err := pb.repo.Set(skip); err != nil {
+		log.Error("Failed to upsert policy skip", "error", err)
+		return
+	}
 	pb.store.changeset.RecordUpsert(skip)
 }
 
 func (pb *PolicySkips) Remove(ctx context.Context, id string) {
-	skip, ok := pb.repo.PolicySkips.Get(id)
+	skip, ok := pb.repo.Get(id)
 	if !ok || skip == nil {
 		return
 	}
 
-	pb.repo.PolicySkips.Remove(id)
+	if err := pb.repo.Remove(id); err != nil {
+		log.Error("Failed to remove policy skip", "error", err)
+		return
+	}
 	pb.store.changeset.RecordDelete(skip)
 }
 
@@ -57,17 +69,15 @@ func (pb *PolicySkips) GetForTarget(
 	now := time.Now()
 
 	// Try exact match: version + environment + resource
-	for _, skip := range pb.repo.PolicySkips.Items() {
+	for _, skip := range pb.repo.Items() {
 		if skip.VersionId != versionId {
 			continue
 		}
 
-		// Check if expired
 		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
-		// Exact match
 		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId &&
 			skip.ResourceId != nil && *skip.ResourceId == resourceId {
 			return skip
@@ -75,17 +85,15 @@ func (pb *PolicySkips) GetForTarget(
 	}
 
 	// Try environment wildcard: version + environment (all resources)
-	for _, skip := range pb.repo.PolicySkips.Items() {
+	for _, skip := range pb.repo.Items() {
 		if skip.VersionId != versionId {
 			continue
 		}
 
-		// Check if expired
 		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
-		// Environment match, resource wildcard
 		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId &&
 			skip.ResourceId == nil {
 			return skip
@@ -93,17 +101,15 @@ func (pb *PolicySkips) GetForTarget(
 	}
 
 	// Try full wildcard: version only (all environments and resources)
-	for _, skip := range pb.repo.PolicySkips.Items() {
+	for _, skip := range pb.repo.Items() {
 		if skip.VersionId != versionId {
 			continue
 		}
 
-		// Check if expired
 		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
-		// Full wildcard
 		if skip.EnvironmentId == nil && skip.ResourceId == nil {
 			return skip
 		}
@@ -122,24 +128,20 @@ func (pb *PolicySkips) GetAllForTarget(
 	now := time.Now()
 	var matches []*oapi.PolicySkip
 
-	// Collect all matching non-expired skips
-	for _, skip := range pb.repo.PolicySkips.Items() {
+	for _, skip := range pb.repo.Items() {
 		if skip.VersionId != versionId {
 			continue
 		}
 
-		// Check if expired
 		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
-		// Check if this skip matches the target
 		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId {
 			if skip.ResourceId == nil || *skip.ResourceId == resourceId {
 				matches = append(matches, skip)
 			}
 		} else if skip.EnvironmentId == nil {
-			// Full wildcard matches
 			matches = append(matches, skip)
 		}
 	}
