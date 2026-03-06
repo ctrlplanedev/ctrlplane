@@ -297,6 +297,12 @@ func (s *InMemory) ResourceProviders() repository.ResourceProviderRepo {
 	return &cmapRepoAdapter[*oapi.ResourceProvider]{store: &s.resourceProviders}
 }
 
+// RelationshipRulesRepo returns the in-memory relationship rules wrapped as a
+// RelationshipRuleRepo interface for use by the hybrid store.
+func (s *InMemory) RelationshipRulesRepo() repository.RelationshipRuleRepo {
+	return &cmapRepoAdapter[*oapi.RelationshipRule]{store: &s.RelationshipRules}
+}
+
 func (s *InMemory) Router() *persistence.RepositoryRouter {
 	return s.router
 }

@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository/db/jobs"
 	"workspace-engine/pkg/workspace/store/repository/db/policies"
 	"workspace-engine/pkg/workspace/store/repository/db/policyskips"
+	"workspace-engine/pkg/workspace/store/repository/db/relationshiprules"
 	"workspace-engine/pkg/workspace/store/repository/db/releases"
 	"workspace-engine/pkg/workspace/store/repository/db/resourceproviders"
 	"workspace-engine/pkg/workspace/store/repository/db/resources"
@@ -44,6 +45,7 @@ type DBRepo struct {
 	workflowJobTemplates     repository.WorkflowJobTemplateRepo
 	workflowRuns             repository.WorkflowRunRepo
 	workflowJobs             repository.WorkflowJobRepo
+	relationshipRules        repository.RelationshipRuleRepo
 }
 
 func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
@@ -130,6 +132,10 @@ func (d *DBRepo) WorkflowJobs() repository.WorkflowJobRepo {
 	return d.workflowJobs
 }
 
+func (d *DBRepo) RelationshipRules() repository.RelationshipRuleRepo {
+	return d.relationshipRules
+}
+
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
 		deploymentVersions:       deploymentversions.NewRepo(ctx, workspaceID),
@@ -153,5 +159,6 @@ func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 		workflowJobTemplates:     workflows.NewWorkflowJobTemplateRepo(ctx, workspaceID),
 		workflowRuns:             workflows.NewWorkflowRunRepo(ctx, workspaceID),
 		workflowJobs:             workflows.NewWorkflowJobRepo(ctx, workspaceID),
+		relationshipRules:        relationshiprules.NewRepo(ctx, workspaceID),
 	}
 }

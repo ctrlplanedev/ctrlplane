@@ -358,6 +358,13 @@ func WithHybridResourceVariables(ctx context.Context) StoreOption {
 	}
 }
 
+func WithHybridRelationshipRules(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Relationships.SetRepo(hybridrepo.NewRelationshipRuleRepo(dbRepo, s.repo))
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -626,6 +633,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.ResourceVariables.repo.Set(rv); err != nil {
 			log.Warn("Failed to migrate legacy resource variable",
 				"key", rv.ID(), "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy relationship rules")
+	}
+	for _, rr := range s.repo.RelationshipRules.Items() {
+		if err := s.Relationships.repo.Set(rr); err != nil {
+			log.Warn("Failed to migrate legacy relationship rule",
+				"id", rr.Id, "name", rr.Name, "error", err)
 		}
 	}
 
