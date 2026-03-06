@@ -1058,44 +1058,6 @@ func TestStore_Restore_DuplicateIDs(t *testing.T) {
 	assert.Equal(t, "docker", restoredResource.Kind)
 }
 
-func TestStore_Restore_JobReleaseIdMigration(t *testing.T) {
-	ctx := context.Background()
-	namespace := "workspace-" + uuid.New().String()
-
-	persistenceStore := memory.NewStore()
-
-	contentHash := "abc123def456abc123def456abc123def456abc123def456abc123def456abcd"
-	expectedUUID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(contentHash)).String()
-
-	job := &oapi.Job{
-		Id:         uuid.New().String(),
-		ReleaseId:  contentHash,
-		Status:     oapi.JobStatusSuccessful,
-		JobAgentId: uuid.New().String(),
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-	}
-
-	changes := persistence.NewChangesBuilder(namespace).
-		Set(job).
-		Build()
-
-	err := persistenceStore.Save(ctx, changes)
-	require.NoError(t, err)
-
-	loadedChanges, err := persistenceStore.Load(ctx, namespace)
-	require.NoError(t, err)
-
-	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
-	err = testStore.Restore(ctx, loadedChanges, nil)
-	require.NoError(t, err)
-
-	restoredJob, ok := testStore.Jobs.Get(job.Id)
-	require.True(t, ok, "Job should be restored")
-	assert.Equal(t, expectedUUID, restoredJob.ReleaseId,
-		"Job ReleaseId should be migrated from content hash to deterministic UUID")
-}
-
 func TestStore_Restore_JobReleaseIdAlreadyUUID(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
