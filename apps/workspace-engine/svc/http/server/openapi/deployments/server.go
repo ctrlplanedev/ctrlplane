@@ -398,6 +398,7 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 				item.LatestJob = &oapi.JobSummary{
 					Id:            state.LatestJob.Job.Id,
 					Links:         &map[string]string{},
+					Message:       state.LatestJob.Job.Message,
 					Status:        state.LatestJob.Job.Status,
 					Verifications: state.LatestJob.Verifications,
 				}
