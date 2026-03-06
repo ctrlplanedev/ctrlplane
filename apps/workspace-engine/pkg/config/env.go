@@ -40,4 +40,6 @@ type Config struct {
 	RegisterAddress string `envconfig:"REGISTER_ADDRESS" default:""`
 
 	TraceTokenSecret string `envconfig:"TRACE_TOKEN_SECRET" default:"secret"`
+
+	MigrateLegacyEntities bool `envconfig:"MIGRATE_LEGACY_ENTITIES" default:"true"`
 }
