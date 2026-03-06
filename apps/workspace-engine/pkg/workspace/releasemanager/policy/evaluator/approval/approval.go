@@ -52,14 +52,6 @@ type AnyApprovalEvaluator struct {
 	rule          *oapi.AnyApprovalRule
 }
 
-type storeGetters struct {
-	store *store.Store
-}
-
-func (s *storeGetters) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
-	return s.store.UserApprovalRecords.GetApprovalRecords(versionID, environmentID), nil
-}
-
 func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
 	if approvalRule == nil || approvalRule.AnyApproval == nil || store == nil {
 		return nil

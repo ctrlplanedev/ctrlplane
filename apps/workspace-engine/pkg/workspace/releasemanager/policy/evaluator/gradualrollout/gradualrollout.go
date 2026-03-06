@@ -8,7 +8,9 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -56,12 +58,29 @@ func NewEvaluatorFromStore(store *store.Store, rolloutRule *oapi.PolicyRule) eva
 	}
 
 	return evaluator.WithMemoization(&GradualRolloutEvaluator{
-		getters:    &storeGetters{store: store},
+		getters:    NewStoreGetters(store),
 		ruleId:     rolloutRule.Id,
 		rule:       rolloutRule.GradualRollout,
 		hashingFn:  fnvHashingFn,
 		timeGetter: timeGetter,
 	})
+}
+
+func NewEvaluator(getters Getters, rolloutRule *oapi.PolicyRule) *GradualRolloutEvaluator {
+	timeGetter := func() time.Time {
+		return time.Now()
+	}
+	if testTimeGetterFactory != nil {
+		timeGetter = testTimeGetterFactory
+	}
+
+	return &GradualRolloutEvaluator{
+		getters:    getters,
+		ruleId:     rolloutRule.Id,
+		rule:       rolloutRule.GradualRollout,
+		hashingFn:  fnvHashingFn,
+		timeGetter: timeGetter,
+	}
 }
 
 // ScopeFields declares that this evaluator cares about Environment, Version, and ReleaseTarget.
@@ -107,11 +126,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Conte
 		return &scope.Version.CreatedAt
 	}
 
-	approvalEvaluator := e.getters.NewApprovalEvaluator(rule)
-	if approvalEvaluator == nil {
-		return nil
-	}
-
+	approvalEvaluator := approval.NewEvaluator(e.getters, rule)
 	result := approvalEvaluator.Evaluate(ctx, scope)
 	if !result.Allowed || result.SatisfiedAt == nil {
 		return nil
@@ -145,11 +160,7 @@ func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx
 		return &scope.Version.CreatedAt
 	}
 
-	environmentProgressionEvaluator := e.getters.NewEnvironmentProgressionEvaluator(rule)
-	if environmentProgressionEvaluator == nil {
-		return nil
-	}
-
+	environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.getters, rule)
 	result := environmentProgressionEvaluator.Evaluate(ctx, scope)
 	if !result.Allowed || result.SatisfiedAt == nil {
 		return nil
@@ -165,11 +176,6 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	// - deployment window rules:
 	//   - allow windows: rollout starts when window opens (if outside)
 	//   - deny windows: rollout starts when window ends (if inside)
-	policiesForTarget, err := e.getters.GetPolicies(ctx, releaseTarget)
-	if err != nil {
-		return nil, err
-	}
-
 	var approvalSatisfiedAt *time.Time
 	var foundApprovalPolicy bool
 
@@ -185,6 +191,11 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	}
 
 	allSkips := e.getters.GetPolicySkips(version.Id, environment.Id, releaseTarget.ResourceId)
+
+	policiesForTarget, err := e.getters.GetPoliciesForTarget(ctx, releaseTarget)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, policy := range policiesForTarget {
 		if !policy.Enabled {

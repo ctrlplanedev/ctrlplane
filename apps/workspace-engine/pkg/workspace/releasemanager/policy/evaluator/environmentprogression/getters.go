@@ -39,3 +39,7 @@ func (s *storeGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget
 func (s *storeGetters) GetRelease(releaseID string) (*oapi.Release, bool) {
 	return s.store.Releases.Get(releaseID)
 }
+
+func NewStoreGetters(store *store.Store) *storeGetters {
+	return &storeGetters{store: store}
+}
