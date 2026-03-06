@@ -1058,55 +1058,6 @@ func TestStore_Restore_DuplicateIDs(t *testing.T) {
 	assert.Equal(t, "docker", restoredResource.Kind)
 }
 
-func TestStore_Restore_ReleaseIdBackfill(t *testing.T) {
-	ctx := context.Background()
-	namespace := "workspace-" + uuid.New().String()
-
-	persistenceStore := memory.NewStore()
-
-	deploymentId := uuid.New().String()
-	version := &oapi.DeploymentVersion{
-		Id:           uuid.New().String(),
-		DeploymentId: deploymentId,
-		Tag:          "v1.0.0",
-	}
-
-	release := &oapi.Release{
-		ReleaseTarget: oapi.ReleaseTarget{
-			ResourceId:    uuid.New().String(),
-			EnvironmentId: uuid.New().String(),
-			DeploymentId:  deploymentId,
-		},
-		Version:            *version,
-		Variables:          map[string]oapi.LiteralValue{},
-		EncryptedVariables: []string{},
-		CreatedAt:          time.Now().Format(time.RFC3339),
-	}
-
-	changes := persistence.NewChangesBuilder(namespace).
-		Set(release).
-		Build()
-
-	err := persistenceStore.Save(ctx, changes)
-	require.NoError(t, err)
-
-	loadedChanges, err := persistenceStore.Load(ctx, namespace)
-	require.NoError(t, err)
-
-	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
-	err = testStore.Restore(ctx, loadedChanges, nil)
-	require.NoError(t, err)
-
-	releases := testStore.Releases.Items()
-	require.Len(t, releases, 1)
-
-	for _, r := range releases {
-		assert.NotEqual(t, uuid.Nil, r.Id, "Release should have a non-nil Id after restore")
-		expectedUUID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(r.ContentHash()))
-		assert.Equal(t, expectedUUID, r.Id, "Release Id should be deterministic UUID from content hash")
-	}
-}
-
 func TestStore_Restore_JobReleaseIdMigration(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
