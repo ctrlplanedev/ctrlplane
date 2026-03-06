@@ -10,6 +10,13 @@ import {
   lte,
   sql,
 } from "@ctrlplane/db";
+import {
+  enqueue,
+  enqueueDeploymentSelectorEval,
+  enqueueEnvironmentSelectorEval,
+  enqueueManyRelationshipEval,
+  enqueueRelationshipEval,
+} from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -33,55 +40,7 @@ export const reconcileRouter = router({
           .optional(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const [scope] = await ctx.db
-        .insert(schema.reconcileWorkScope)
-        .values({
-          workspaceId: input.workspaceId,
-          kind: input.kind,
-          scopeType: input.scopeType,
-          scopeId: input.scopeId,
-          priority: input.priority,
-          notBefore: input.notBefore ?? new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [
-            schema.reconcileWorkScope.workspaceId,
-            schema.reconcileWorkScope.kind,
-            schema.reconcileWorkScope.scopeType,
-            schema.reconcileWorkScope.scopeId,
-          ],
-          set: {
-            eventTs: new Date(),
-            priority: input.priority,
-            notBefore: input.notBefore ?? new Date(),
-          },
-        })
-        .returning();
-
-      if (input.payload && scope) {
-        await ctx.db
-          .insert(schema.reconcileWorkPayload)
-          .values({
-            scopeRef: scope.id,
-            payloadType: input.payload.payloadType,
-            payloadKey: input.payload.payloadKey,
-            payload: input.payload.payload,
-          })
-          .onConflictDoUpdate({
-            target: [
-              schema.reconcileWorkPayload.scopeRef,
-              schema.reconcileWorkPayload.payloadType,
-              schema.reconcileWorkPayload.payloadKey,
-            ],
-            set: {
-              payload: input.payload.payload,
-            },
-          });
-      }
-
-      return scope;
-    }),
+    .mutation(({ ctx, input }) => enqueue(ctx.db, input)),
 
   triggerDeploymentSelectorEval: protectedProcedure
     .input(
@@ -90,27 +49,9 @@ export const reconcileRouter = router({
         deploymentId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const [scope] = await ctx.db
-        .insert(schema.reconcileWorkScope)
-        .values({
-          workspaceId: input.workspaceId,
-          kind: "deployment-resource-selector-eval",
-          scopeType: "deployment",
-          scopeId: input.deploymentId,
-        })
-        .onConflictDoUpdate({
-          target: [
-            schema.reconcileWorkScope.workspaceId,
-            schema.reconcileWorkScope.kind,
-            schema.reconcileWorkScope.scopeType,
-            schema.reconcileWorkScope.scopeId,
-          ],
-          set: { eventTs: new Date(), notBefore: new Date() },
-        })
-        .returning();
-      return scope;
-    }),
+    .mutation(({ ctx, input }) =>
+      enqueueDeploymentSelectorEval(ctx.db, input),
+    ),
 
   triggerEnvironmentSelectorEval: protectedProcedure
     .input(
@@ -119,27 +60,9 @@ export const reconcileRouter = router({
         environmentId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const [scope] = await ctx.db
-        .insert(schema.reconcileWorkScope)
-        .values({
-          workspaceId: input.workspaceId,
-          kind: "environment-resource-selector-eval",
-          scopeType: "environment",
-          scopeId: input.environmentId,
-        })
-        .onConflictDoUpdate({
-          target: [
-            schema.reconcileWorkScope.workspaceId,
-            schema.reconcileWorkScope.kind,
-            schema.reconcileWorkScope.scopeType,
-            schema.reconcileWorkScope.scopeId,
-          ],
-          set: { eventTs: new Date(), notBefore: new Date() },
-        })
-        .returning();
-      return scope;
-    }),
+    .mutation(({ ctx, input }) =>
+      enqueueEnvironmentSelectorEval(ctx.db, input),
+    ),
 
   triggerRelationshipEval: protectedProcedure
     .input(
@@ -149,28 +72,7 @@ export const reconcileRouter = router({
         entityId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const scopeId = `${input.entityType}:${input.entityId}`;
-      const [scope] = await ctx.db
-        .insert(schema.reconcileWorkScope)
-        .values({
-          workspaceId: input.workspaceId,
-          kind: "relationship-eval",
-          scopeType: "entity",
-          scopeId,
-        })
-        .onConflictDoUpdate({
-          target: [
-            schema.reconcileWorkScope.workspaceId,
-            schema.reconcileWorkScope.kind,
-            schema.reconcileWorkScope.scopeType,
-            schema.reconcileWorkScope.scopeId,
-          ],
-          set: { eventTs: new Date(), notBefore: new Date() },
-        })
-        .returning();
-      return scope;
-    }),
+    .mutation(({ ctx, input }) => enqueueRelationshipEval(ctx.db, input)),
 
   triggerRelationshipEvalForRule: protectedProcedure
     .input(
@@ -208,43 +110,29 @@ export const reconcileRouter = router({
           .where(eq(schema.environment.workspaceId, input.workspaceId)),
       ]);
 
-      const values = [
+      const items = [
         ...resources.map((r) => ({
           workspaceId: input.workspaceId,
-          kind: "relationship-eval" as const,
-          scopeType: "entity" as const,
-          scopeId: `resource:${r.id}`,
+          entityType: "resource" as const,
+          entityId: r.id,
         })),
         ...deployments.map((d) => ({
           workspaceId: input.workspaceId,
-          kind: "relationship-eval" as const,
-          scopeType: "entity" as const,
-          scopeId: `deployment:${d.id}`,
+          entityType: "deployment" as const,
+          entityId: d.id,
         })),
         ...environments.map((e) => ({
           workspaceId: input.workspaceId,
-          kind: "relationship-eval" as const,
-          scopeType: "entity" as const,
-          scopeId: `environment:${e.id}`,
+          entityType: "environment" as const,
+          entityId: e.id,
         })),
       ];
 
-      if (values.length === 0) return { enqueued: 0 };
+      if (items.length === 0) return { enqueued: 0 };
 
-      await ctx.db
-        .insert(schema.reconcileWorkScope)
-        .values(values)
-        .onConflictDoUpdate({
-          target: [
-            schema.reconcileWorkScope.workspaceId,
-            schema.reconcileWorkScope.kind,
-            schema.reconcileWorkScope.scopeType,
-            schema.reconcileWorkScope.scopeId,
-          ],
-          set: { eventTs: new Date(), notBefore: new Date() },
-        });
+      await enqueueManyRelationshipEval(ctx.db, items);
 
-      return { enqueued: values.length };
+      return { enqueued: items.length };
     }),
 
   listWorkScopes: protectedProcedure

@@ -19,6 +19,10 @@
     "./queries": {
       "types": "./src/queries/index.ts",
       "default": "./dist/src/queries/index.js"
+    },
+    "./reconcilers": {
+      "types": "./src/reconcilers/index.ts",
+      "default": "./dist/src/reconcilers/index.js"
     }
   },
   "license": "MIT",
