@@ -5,74 +5,78 @@ import (
 	"fmt"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
+
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel/codes"
 )
 
-// ResolveValue resolves a single oapi.Value to a concrete LiteralValue.
+// relatedLookup resolves a reference name to matched related entities.
+type relatedLookup func(ctx context.Context, reference string) (*eval.EntityData, error)
+
+// resolveValue resolves a single oapi.Value to a concrete LiteralValue.
 //
 // Literal values are returned as-is. Reference values are resolved by
-// finding related entities through the resolver and traversing the property
-// path on the matched entity. Sensitive values are not resolved and return
-// an error — they must be handled by a separate decryption path.
-func ResolveValue(
+// finding related entities through the lookup and traversing the property
+// path on the matched entity's raw data. Sensitive values return an error.
+func resolveValue(
 	ctx context.Context,
-	resolver RelatedEntityResolver,
-	resourceID string,
-	entity *oapi.RelatableEntity,
+	lookup relatedLookup,
 	value *oapi.Value,
-) (*oapi.LiteralValue, error) {
-	_, span := tracer.Start(ctx, "variableresolver.ResolveValue")
+) *oapi.LiteralValue {
+	_, span := tracer.Start(ctx, "variableresolver.resolveValue")
 	defer span.End()
 
 	valueType, err := value.GetType()
 	if err != nil {
-		return nil, fmt.Errorf("determine value type: %w", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "get value type failed")
+		log.Error("get value type failed", "error", err)
+		return nil
 	}
 
 	switch valueType {
 	case "literal":
-		return resolveLiteral(value)
+		lv, err := value.AsLiteralValue()
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "extract literal value failed")
+			log.Error("extract literal value failed", "error", err)
+			return nil
+		}
+		return &lv
 	case "reference":
-		return resolveReference(ctx, resolver, value, entity)
+		lv, err := resolveReference(ctx, lookup, value)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve reference failed")
+			log.Error("resolve reference failed", "error", err)
+			return nil
+		}
+		return lv
 	case "sensitive":
-		return nil, fmt.Errorf("sensitive values are not resolved by the variable resolver")
+		return nil
 	default:
-		return nil, fmt.Errorf("unsupported value type: %s", valueType)
+		return nil
 	}
-}
-
-func resolveLiteral(value *oapi.Value) (*oapi.LiteralValue, error) {
-	lv, err := value.AsLiteralValue()
-	if err != nil {
-		return nil, fmt.Errorf("extract literal value: %w", err)
-	}
-	return &lv, nil
 }
 
 func resolveReference(
 	ctx context.Context,
-	resolver RelatedEntityResolver,
+	lookup relatedLookup,
 	value *oapi.Value,
-	entity *oapi.RelatableEntity,
 ) (*oapi.LiteralValue, error) {
 	rv, err := value.AsReferenceValue()
 	if err != nil {
 		return nil, fmt.Errorf("extract reference value: %w", err)
 	}
 
-	refs, err := resolver.ResolveRelated(ctx, rv.Reference)
+	entity, err := lookup(ctx, rv.Reference)
 	if err != nil {
-		return nil, fmt.Errorf("resolve related entities for reference %q: %w", rv.Reference, err)
+		return nil, fmt.Errorf("resolve related for reference %q: %w", rv.Reference, err)
 	}
-	if len(refs) == 0 {
-		return nil, fmt.Errorf(
-			"reference %q not found for entity %s-%s",
-			rv.Reference, entity.GetType(), entity.GetID(),
-		)
+	if entity == nil {
+		return nil, nil
 	}
-
-	lv, err := getPropertyReflection(refs[0].Raw, rv.Path)
-	if err != nil {
-		return nil, fmt.Errorf("resolve property path %v on reference %q: %w", rv.Path, rv.Reference, err)
-	}
-	return lv, nil
+	return getMapProperty(entity.Raw, rv.Path)
 }

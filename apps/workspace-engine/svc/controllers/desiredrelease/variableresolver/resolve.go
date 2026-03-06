@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sort"
 
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/eval"
 
 	"github.com/google/uuid"
@@ -19,18 +19,15 @@ import (
 var tracer = otel.Tracer("desiredrelease/variableresolver")
 
 // Getter provides the data needed to resolve deployment variables for a
-// release target. Implementations backed by Postgres or in-memory mocks
-// both satisfy this interface.
+// release target.
 type Getter interface {
 	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
 	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
-	GetAllRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
+	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
 	GetAllEntities(ctx context.Context, workspaceID uuid.UUID) ([]eval.EntityData, error)
 }
 
-// Scope carries the already-resolved entities for the release target so the
-// resolver can evaluate CEL resource selectors and resolve reference
-// variables without additional lookups.
+// Scope carries the already-resolved entities for the release target.
 type Scope struct {
 	Resource    *oapi.Resource
 	Deployment  *oapi.Deployment
@@ -48,10 +45,12 @@ func Resolve(
 	ctx context.Context,
 	getter Getter,
 	scope *Scope,
-	deploymentID, resourceID string,
 ) (map[string]oapi.LiteralValue, error) {
 	ctx, span := tracer.Start(ctx, "variableresolver.Resolve")
 	defer span.End()
+
+	deploymentID := scope.Deployment.Id
+	resourceID := scope.Resource.Id
 
 	span.SetAttributes(
 		attribute.String("deployment.id", deploymentID),
@@ -78,40 +77,24 @@ func Resolve(
 	}
 	span.SetAttributes(attribute.Int("resource_variables.count", len(resourceVars)))
 
-	wsID, err := uuid.Parse(scope.Resource.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("parse workspace id: %w", err)
-	}
-
-	rules, err := getter.GetAllRelationshipRules(ctx, wsID)
+	rc, err := buildResolveContext(ctx, getter, scope.Resource)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "get relationship rules failed")
-		return nil, fmt.Errorf("get relationship rules: %w", err)
+		return nil, err
 	}
-
-	applicableRules := []eval.Rule{}
-	for _, rule := range rules {
-		if rule.Reference == "resource" {
-			applicableRules = append(applicableRules, rule)
-		}
-	}
-
-	resolver := newRealtimeResolver(getter, scope.Resource, wsID, applicableRules)
-
-	entity := relationships.NewResourceEntity(scope.Resource)
 
 	resolved := make(map[string]oapi.LiteralValue, len(deploymentVars))
-
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
 
-		if lv := resolveFromResource(ctx, resolver, resourceID, key, resourceVars, entity); lv != nil {
-			resolved[key] = *lv
-			continue
+		if rv, ok := resourceVars[key]; ok {
+			if lv := resolveValue(ctx, rc.resolveRelated, &rv.Value); lv != nil {
+				resolved[key] = *lv
+				continue
+			}
 		}
 
-		if lv := resolveFromValues(ctx, resolver, resourceID, dv.Values, scope.Resource, entity); lv != nil {
+		if lv := resolveFromValues(ctx, rc, dv.Values, scope.Resource); lv != nil {
 			resolved[key] = *lv
 			continue
 		}
@@ -124,36 +107,56 @@ func Resolve(
 	return resolved, nil
 }
 
-// resolveFromResource checks if a resource variable exists for the given key
-// and resolves it.
-func resolveFromResource(
-	ctx context.Context,
-	resolver RelatedEntityResolver,
-	resourceID string,
-	key string,
-	resourceVars map[string]oapi.ResourceVariable,
-	entity *oapi.RelatableEntity,
-) *oapi.LiteralValue {
-	rv, ok := resourceVars[key]
-	if !ok {
-		return nil
-	}
-	lv, err := ResolveValue(ctx, resolver, resourceID, entity, &rv.Value)
+func buildResolveContext(ctx context.Context, getter Getter, resource *oapi.Resource) (*resolveContext, error) {
+	wsID, err := uuid.Parse(resource.WorkspaceId)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
-	return lv
+	resID, err := uuid.Parse(resource.Id)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
+
+	rules, err := getter.GetRelationshipRules(ctx, wsID)
+	if err != nil {
+		return nil, fmt.Errorf("get relationship rules: %w", err)
+	}
+
+	allCandidates, err := getter.GetAllEntities(ctx, wsID)
+	if err != nil {
+		return nil, fmt.Errorf("get all entities: %w", err)
+	}
+
+	rawMap, err := celutil.EntityToMap(resource)
+	if err != nil {
+		return nil, fmt.Errorf("convert resource to CEL map: %w", err)
+	}
+	rawMap["type"] = "resource"
+
+	candidateIdx := make(map[string]*eval.EntityData, len(allCandidates))
+	for i := range allCandidates {
+		c := &allCandidates[i]
+		candidateIdx[c.EntityType+"-"+c.ID.String()] = c
+	}
+
+	return &resolveContext{
+		entity: &eval.EntityData{
+			ID: resID, WorkspaceID: wsID,
+			EntityType: "resource", Raw: rawMap,
+		},
+		rules:        rules,
+		candidates:   allCandidates,
+		candidateIdx: candidateIdx,
+	}, nil
 }
 
 // resolveFromValues finds the highest-priority deployment variable value
 // whose resource selector matches the target resource, then resolves it.
 func resolveFromValues(
 	ctx context.Context,
-	resolver RelatedEntityResolver,
-	resourceID string,
+	rc *resolveContext,
 	values []oapi.DeploymentVariableValue,
 	resource *oapi.Resource,
-	entity *oapi.RelatableEntity,
 ) *oapi.LiteralValue {
 	matched := make([]oapi.DeploymentVariableValue, 0, len(values))
 	for _, v := range values {
@@ -175,100 +178,9 @@ func resolveFromValues(
 	})
 
 	for _, v := range matched {
-		lv, err := ResolveValue(ctx, resolver, resourceID, entity, &v.Value)
-		if err == nil && lv != nil {
+		if lv := resolveValue(ctx, rc.resolveRelated, &v.Value); lv != nil {
 			return lv
 		}
 	}
 	return nil
-}
-
-func entityDataToRelatableEntity(data *eval.EntityData) (*oapi.RelatableEntity, error) {
-	entity := &oapi.RelatableEntity{}
-
-	switch data.EntityType {
-	case "resource":
-		r := mapToResource(data)
-		if err := entity.FromResource(r); err != nil {
-			return nil, err
-		}
-	case "deployment":
-		d := mapToDeployment(data)
-		if err := entity.FromDeployment(d); err != nil {
-			return nil, err
-		}
-	case "environment":
-		e := mapToEnvironment(data)
-		if err := entity.FromEnvironment(e); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("unsupported entity type: %s", data.EntityType)
-	}
-
-	return entity, nil
-}
-
-func mapToResource(data *eval.EntityData) oapi.Resource {
-	raw := data.Raw
-	r := oapi.Resource{
-		Id:          data.ID.String(),
-		WorkspaceId: data.WorkspaceID.String(),
-	}
-	if v, ok := raw["name"].(string); ok {
-		r.Name = v
-	}
-	if v, ok := raw["kind"].(string); ok {
-		r.Kind = v
-	}
-	if v, ok := raw["version"].(string); ok {
-		r.Version = v
-	}
-	if v, ok := raw["identifier"].(string); ok {
-		r.Identifier = v
-	}
-	if v, ok := raw["config"].(map[string]any); ok {
-		r.Config = v
-	}
-	if v, ok := raw["metadata"].(map[string]any); ok {
-		md := make(map[string]string, len(v))
-		for k, val := range v {
-			if s, ok := val.(string); ok {
-				md[k] = s
-			}
-		}
-		r.Metadata = md
-	}
-	return r
-}
-
-func mapToDeployment(data *eval.EntityData) oapi.Deployment {
-	raw := data.Raw
-	d := oapi.Deployment{
-		Id: data.ID.String(),
-	}
-	if v, ok := raw["name"].(string); ok {
-		d.Name = v
-	}
-	if v, ok := raw["slug"].(string); ok {
-		d.Slug = v
-	}
-	if v, ok := raw["description"].(string); ok {
-		d.Description = &v
-	}
-	return d
-}
-
-func mapToEnvironment(data *eval.EntityData) oapi.Environment {
-	raw := data.Raw
-	e := oapi.Environment{
-		Id: data.ID.String(),
-	}
-	if v, ok := raw["name"].(string); ok {
-		e.Name = v
-	}
-	if v, ok := raw["description"].(string); ok {
-		e.Description = &v
-	}
-	return e
 }

@@ -78,7 +78,6 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 	}
 	vars, err := variableresolver.Resolve(
 		ctx, r.getter, varScope,
-		r.rt.DeploymentID.String(), r.rt.ResourceID.String(),
 	)
 	if err != nil {
 		return err

@@ -2,49 +2,35 @@ package variableresolver
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
 	"workspace-engine/pkg/oapi"
 )
 
-// getPropertyReflection uses reflection to get a property value (fallback method)
-func getPropertyReflection(entity any, propertyPath []string) (*oapi.LiteralValue, error) {
-	if len(propertyPath) == 0 {
-		return convertValue(entity)
-	}
-
-	v := reflect.ValueOf(entity)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	if v.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("entity is not a struct")
-	}
-
-	// Get the first property
-	fieldName := propertyPath[0]
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		// Try case-insensitive match
-		field = v.FieldByNameFunc(func(name string) bool {
-			return strings.EqualFold(name, fieldName)
-		})
-		if !field.IsValid() {
-			return nil, fmt.Errorf("field %s not found", fieldName)
+// getMapProperty traverses a map[string]any by the given path and converts
+// the final value to an oapi.LiteralValue.
+func getMapProperty(m map[string]any, path []string) (*oapi.LiteralValue, error) {
+	var current any = m
+	for _, key := range path {
+		switch v := current.(type) {
+		case map[string]any:
+			val, ok := v[key]
+			if !ok {
+				return nil, fmt.Errorf("key %q not found", key)
+			}
+			current = val
+		case map[string]string:
+			val, ok := v[key]
+			if !ok {
+				return nil, fmt.Errorf("key %q not found", key)
+			}
+			current = val
+		default:
+			return nil, fmt.Errorf("cannot traverse into %T for key %q", current, key)
 		}
 	}
-
-	// If this is the last element, return the field value
-	if len(propertyPath) == 1 {
-		return convertValue(field.Interface())
-	}
-
-	return getPropertyReflection(field.Interface(), propertyPath[1:])
+	return convertValue(current)
 }
 
-
-// convertValue converts a Go value to an oapi.LiteralValue
+// convertValue converts a Go value to an oapi.LiteralValue.
 func convertValue(val any) (*oapi.LiteralValue, error) {
 	switch v := val.(type) {
 	case *oapi.LiteralValue:
@@ -82,7 +68,6 @@ func convertValue(val any) (*oapi.LiteralValue, error) {
 		err := lv.FromObjectValue(oapi.ObjectValue{Object: v})
 		return lv, err
 	case map[string]string:
-		// Convert map[string]string to map[string]any
 		m := make(map[string]any, len(v))
 		for k, val := range v {
 			m[k] = val
@@ -98,4 +83,3 @@ func convertValue(val any) (*oapi.LiteralValue, error) {
 		return nil, fmt.Errorf("unexpected variable value type: %T", val)
 	}
 }
-

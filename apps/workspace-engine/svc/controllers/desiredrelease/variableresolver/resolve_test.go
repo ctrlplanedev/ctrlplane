@@ -13,19 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// mock RelatedEntityResolver (for ResolveValue tests)
-// ---------------------------------------------------------------------------
-
-type mockResolver struct {
-	related map[string][]*oapi.RelatableEntity
-}
-
-func (m *mockResolver) ResolveRelated(_ context.Context, reference string) ([]*oapi.RelatableEntity, error) {
-	return m.related[reference], nil
-}
-
-// ---------------------------------------------------------------------------
-// mock Getter (for Resolve tests)
+// mock Getter
 // ---------------------------------------------------------------------------
 
 type mockGetter struct {
@@ -103,39 +91,28 @@ func referenceValue(ref string, path ...string) oapi.Value {
 	return *v
 }
 
-func makeResourceEntity(res *oapi.Resource) oapi.RelatableEntity {
-	e := oapi.RelatableEntity{}
-	_ = e.FromResource(*res)
-	return e
+// mockLookup builds a relatedLookup from a map of reference → entity data.
+func mockLookup(related map[string]*eval.EntityData) relatedLookup {
+	return func(_ context.Context, reference string) (*eval.EntityData, error) {
+		return related[reference], nil
+	}
 }
 
-func makeDeploymentEntity(dep *oapi.Deployment) oapi.RelatableEntity {
-	e := oapi.RelatableEntity{}
-	_ = e.FromDeployment(*dep)
-	return e
+// noopLookup is a lookup that always returns nil (for literal-only tests).
+var noopLookup relatedLookup = func(_ context.Context, _ string) (*eval.EntityData, error) {
+	return nil, nil
 }
-
-func makeEnvironmentEntity(env *oapi.Environment) oapi.RelatableEntity {
-	e := oapi.RelatableEntity{}
-	_ = e.FromEnvironment(*env)
-	return e
-}
-
-// emptyResolver is a no-op resolver used for literal-only tests.
-var emptyResolver = &mockResolver{}
 
 // emptyGetter is a no-op getter used for Resolve tests without references.
 var emptyGetter = &mockGetter{}
 
 // ---------------------------------------------------------------------------
-// ResolveValue tests — literal
+// resolveValue tests — literal
 // ---------------------------------------------------------------------------
 
 func TestResolveValue_Literal_String(t *testing.T) {
-	scope := newScope()
 	val := literalStringValue("hello")
-	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), noopLookup, &val)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -143,10 +120,8 @@ func TestResolveValue_Literal_String(t *testing.T) {
 }
 
 func TestResolveValue_Literal_Int(t *testing.T) {
-	scope := newScope()
 	val := literalIntValue(42)
-	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), noopLookup, &val)
 	require.NoError(t, err)
 	i, err := lv.AsIntegerValue()
 	require.NoError(t, err)
@@ -154,10 +129,8 @@ func TestResolveValue_Literal_Int(t *testing.T) {
 }
 
 func TestResolveValue_Literal_Bool(t *testing.T) {
-	scope := newScope()
 	val := literalBoolValue(true)
-	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), noopLookup, &val)
 	require.NoError(t, err)
 	b, err := lv.AsBooleanValue()
 	require.NoError(t, err)
@@ -165,31 +138,19 @@ func TestResolveValue_Literal_Bool(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ResolveValue tests — reference
+// resolveValue tests — reference
 // ---------------------------------------------------------------------------
 
 func TestResolveValue_Reference_ResourceName(t *testing.T) {
-	scope := newScope()
-	entity := makeResourceEntity(scope.Resource)
-	relatedResource := &oapi.Resource{
-		Id:          uuid.New().String(),
-		Name:        "db-server",
-		Kind:        "Database",
-		Version:     "v1",
-		Identifier:  "db-server",
-		WorkspaceId: scope.Resource.WorkspaceId,
-		Metadata:    map[string]string{},
-		Config:      map[string]any{},
-	}
-	relatedEntity := makeResourceEntity(relatedResource)
-	resolver := &mockResolver{
-		related: map[string][]*oapi.RelatableEntity{
-			"database": {&relatedEntity},
+	lookup := mockLookup(map[string]*eval.EntityData{
+		"database": {
+			ID: uuid.New(), EntityType: "resource",
+			Raw: map[string]any{"name": "db-server", "kind": "Database"},
 		},
-	}
+	})
 
 	val := referenceValue("database", "name")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), lookup, &val)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -197,27 +158,18 @@ func TestResolveValue_Reference_ResourceName(t *testing.T) {
 }
 
 func TestResolveValue_Reference_ResourceMetadata(t *testing.T) {
-	scope := newScope()
-	entity := makeResourceEntity(scope.Resource)
-	relatedResource := &oapi.Resource{
-		Id:          uuid.New().String(),
-		Name:        "vpc",
-		Kind:        "Network",
-		Version:     "v1",
-		Identifier:  "vpc",
-		WorkspaceId: scope.Resource.WorkspaceId,
-		Metadata:    map[string]string{"cidr": "10.0.0.0/16"},
-		Config:      map[string]any{},
-	}
-	relatedEntity := makeResourceEntity(relatedResource)
-	resolver := &mockResolver{
-		related: map[string][]*oapi.RelatableEntity{
-			"network": {&relatedEntity},
+	lookup := mockLookup(map[string]*eval.EntityData{
+		"network": {
+			ID: uuid.New(), EntityType: "resource",
+			Raw: map[string]any{
+				"name":     "vpc",
+				"metadata": map[string]any{"cidr": "10.0.0.0/16"},
+			},
 		},
-	}
+	})
 
 	val := referenceValue("network", "metadata", "cidr")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), lookup, &val)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -225,22 +177,15 @@ func TestResolveValue_Reference_ResourceMetadata(t *testing.T) {
 }
 
 func TestResolveValue_Reference_DeploymentName(t *testing.T) {
-	scope := newScope()
-	entity := makeResourceEntity(scope.Resource)
-	relatedDep := &oapi.Deployment{
-		Id:   uuid.New().String(),
-		Name: "api-service",
-		Slug: "api-service",
-	}
-	relatedEntity := makeDeploymentEntity(relatedDep)
-	resolver := &mockResolver{
-		related: map[string][]*oapi.RelatableEntity{
-			"parent-deployment": {&relatedEntity},
+	lookup := mockLookup(map[string]*eval.EntityData{
+		"parent-deployment": {
+			ID: uuid.New(), EntityType: "deployment",
+			Raw: map[string]any{"name": "api-service", "slug": "api-service"},
 		},
-	}
+	})
 
 	val := referenceValue("parent-deployment", "name")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), lookup, &val)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -248,21 +193,15 @@ func TestResolveValue_Reference_DeploymentName(t *testing.T) {
 }
 
 func TestResolveValue_Reference_EnvironmentName(t *testing.T) {
-	scope := newScope()
-	entity := makeResourceEntity(scope.Resource)
-	relatedEnv := &oapi.Environment{
-		Id:   uuid.New().String(),
-		Name: "staging",
-	}
-	relatedEntity := makeEnvironmentEntity(relatedEnv)
-	resolver := &mockResolver{
-		related: map[string][]*oapi.RelatableEntity{
-			"env": {&relatedEntity},
+	lookup := mockLookup(map[string]*eval.EntityData{
+		"env": {
+			ID: uuid.New(), EntityType: "environment",
+			Raw: map[string]any{"name": "staging"},
 		},
-	}
+	})
 
 	val := referenceValue("env", "name")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), lookup, &val)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -270,38 +209,56 @@ func TestResolveValue_Reference_EnvironmentName(t *testing.T) {
 }
 
 func TestResolveValue_Reference_NotFound(t *testing.T) {
-	scope := newScope()
-	entity := makeResourceEntity(scope.Resource)
 	val := referenceValue("nonexistent", "name")
-	_, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, err := resolveValue(context.Background(), noopLookup, &val)
+	require.NoError(t, err)
+	assert.Nil(t, lv, "unresolved reference should return nil so callers fall through")
+}
+
+func TestResolveValue_Reference_BadPath(t *testing.T) {
+	lookup := mockLookup(map[string]*eval.EntityData{
+		"database": {
+			ID: uuid.New(), EntityType: "resource",
+			Raw: map[string]any{
+				"name":     "db",
+				"metadata": map[string]any{},
+			},
+		},
+	})
+
+	val := referenceValue("database", "metadata", "missing_key")
+	_, err := resolveValue(context.Background(), lookup, &val)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
 
-func TestResolveValue_Reference_BadPath(t *testing.T) {
-	scope := newScope()
-	entity := makeResourceEntity(scope.Resource)
-	relatedResource := &oapi.Resource{
-		Id:          uuid.New().String(),
-		Name:        "db",
-		Kind:        "Database",
-		Version:     "v1",
-		Identifier:  "db",
-		WorkspaceId: scope.Resource.WorkspaceId,
-		Metadata:    map[string]string{},
-		Config:      map[string]any{},
-	}
-	relatedEntity := makeResourceEntity(relatedResource)
-	resolver := &mockResolver{
-		related: map[string][]*oapi.RelatableEntity{
-			"database": {&relatedEntity},
+func TestResolveValue_Reference_NestedConfig(t *testing.T) {
+	lookup := mockLookup(map[string]*eval.EntityData{
+		"self": {
+			ID: uuid.New(), EntityType: "resource",
+			Raw: map[string]any{
+				"config": map[string]any{
+					"networking": map[string]any{"vpc_id": "vpc-12345"},
+				},
+			},
 		},
-	}
+	})
 
-	val := referenceValue("database", "metadata", "missing_key")
-	_, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	val := referenceValue("self", "config", "networking", "vpc_id")
+	lv, err := resolveValue(context.Background(), lookup, &val)
+	require.NoError(t, err)
+	s, err := lv.AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "vpc-12345", string(s))
+}
+
+func TestResolveValue_Sensitive_ReturnsError(t *testing.T) {
+	v := &oapi.Value{}
+	_ = v.FromSensitiveValue(oapi.SensitiveValue{ValueHash: "abc123"})
+
+	_, err := resolveValue(context.Background(), noopLookup, v)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
+	assert.Contains(t, err.Error(), "sensitive")
 }
 
 // ---------------------------------------------------------------------------
@@ -336,7 +293,7 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "region")
 	s, err := resolved["region"].AsStringValue()
@@ -370,7 +327,7 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "image")
 	s, err := resolved["image"].AsStringValue()
@@ -398,7 +355,7 @@ func TestResolve_DefaultValueFallback(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "replicas")
 	i, err := resolved["replicas"].AsIntegerValue()
@@ -425,7 +382,7 @@ func TestResolve_NoMatchNoDefault_KeyAbsent(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	assert.NotContains(t, resolved, "optional")
 }
@@ -469,7 +426,7 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	s, err := resolved["image"].AsStringValue()
 	require.NoError(t, err)
@@ -516,7 +473,7 @@ func TestResolve_MultipleVariables(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	assert.Len(t, resolved, 3)
 
@@ -537,7 +494,7 @@ func TestResolve_MultipleVariables(t *testing.T) {
 func TestResolve_NoDeploymentVars_EmptyMap(t *testing.T) {
 	scope := newScope()
 
-	resolved, err := Resolve(context.Background(), emptyGetter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), emptyGetter, scope)
 	require.NoError(t, err)
 	assert.Empty(t, resolved)
 }
@@ -550,16 +507,6 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 	scope := newScope()
 	resourceID := uuid.MustParse(scope.Resource.Id)
 	relatedResourceID := uuid.New()
-	relatedResource := &oapi.Resource{
-		Id:          relatedResourceID.String(),
-		Name:        "db-server",
-		Kind:        "Database",
-		Version:     "v1",
-		Identifier:  "db-server",
-		WorkspaceId: scope.Resource.WorkspaceId,
-		Metadata:    map[string]string{"host": "db.internal"},
-		Config:      map[string]any{},
-	}
 
 	ruleID := uuid.New()
 	getter := &mockGetter{
@@ -601,7 +548,7 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 					EntityType:  "resource",
 					Raw: map[string]any{
 						"type": "resource", "id": relatedResourceID.String(),
-						"name": relatedResource.Name, "kind": relatedResource.Kind,
+						"name": "db-server", "kind": "Database",
 						"version": "v1", "identifier": "db-server",
 						"config": map[string]any{}, "metadata": map[string]any{"host": "db.internal"},
 					},
@@ -610,7 +557,7 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "db_host")
 	s, err := resolved["db_host"].AsStringValue()
@@ -677,7 +624,7 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "cluster_endpoint")
 	s, err := resolved["cluster_endpoint"].AsStringValue()
@@ -760,7 +707,7 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	assert.Len(t, resolved, 2)
 
@@ -803,52 +750,10 @@ func TestResolve_ResourceVarRefFails_FallsToDeploymentValue(t *testing.T) {
 		rules: []eval.Rule{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(context.Background(), getter, scope)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "db_host")
 	s, err := resolved["db_host"].AsStringValue()
 	require.NoError(t, err)
 	assert.Equal(t, "fallback-host", string(s))
-}
-
-// ---------------------------------------------------------------------------
-// Resolve tests — reference to resource config (nested path)
-// ---------------------------------------------------------------------------
-
-func TestResolveValue_Reference_ResourceConfig(t *testing.T) {
-	scope := newScope()
-	scope.Resource.Config = map[string]any{
-		"networking": map[string]any{
-			"vpc_id": "vpc-12345",
-		},
-	}
-	entity := makeResourceEntity(scope.Resource)
-	relatedEntity := makeResourceEntity(scope.Resource)
-	resolver := &mockResolver{
-		related: map[string][]*oapi.RelatableEntity{
-			"self": {&relatedEntity},
-		},
-	}
-
-	val := referenceValue("self", "config", "networking", "vpc_id")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
-	require.NoError(t, err)
-	s, err := lv.AsStringValue()
-	require.NoError(t, err)
-	assert.Equal(t, "vpc-12345", string(s))
-}
-
-// ---------------------------------------------------------------------------
-// Resolve tests — sensitive value returns error
-// ---------------------------------------------------------------------------
-
-func TestResolveValue_Sensitive_ReturnsError(t *testing.T) {
-	scope := newScope()
-	v := &oapi.Value{}
-	_ = v.FromSensitiveValue(oapi.SensitiveValue{ValueHash: "abc123"})
-
-	entity := makeResourceEntity(scope.Resource)
-	_, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, v)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "sensitive")
 }
