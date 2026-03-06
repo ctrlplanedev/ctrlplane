@@ -2,6 +2,7 @@ package variableresolver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"workspace-engine/pkg/oapi"
@@ -46,6 +47,14 @@ func (m *mockGetter) GetRelationshipRules(_ context.Context, _ uuid.UUID) ([]eva
 }
 func (m *mockGetter) LoadCandidates(_ context.Context, _ uuid.UUID, entityType string) ([]eval.EntityData, error) {
 	return m.candidates[entityType], nil
+}
+func (m *mockGetter) GetEntityByID(_ context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+	for i := range m.candidates[entityType] {
+		if m.candidates[entityType][i].ID == entityID {
+			return &m.candidates[entityType][i], nil
+		}
+	}
+	return nil, fmt.Errorf("%s with id %s not found", entityType, entityID)
 }
 
 // ---------------------------------------------------------------------------

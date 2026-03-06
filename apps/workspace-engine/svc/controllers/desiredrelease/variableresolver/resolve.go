@@ -27,6 +27,7 @@ type Getter interface {
 	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
 	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
 	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
+	GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error)
 }
 
 // Scope carries the already-resolved entities for the release target so the
@@ -183,21 +184,16 @@ func (r *realtimeResolver) ResolveRelated(ctx context.Context, reference string)
 			relatedType = m.FromEntityType
 		}
 
-		candidates, err := r.getter.LoadCandidates(ctx, r.workspaceID, relatedType)
+		entity, err := r.getter.GetEntityByID(ctx, relatedID, relatedType)
 		if err != nil {
-			return nil, fmt.Errorf("load candidate for matched entity %s: %w", relatedID, err)
+			return nil, fmt.Errorf("get matched entity %s: %w", relatedID, err)
 		}
 
-		for i := range candidates {
-			if candidates[i].ID == relatedID {
-				re, err := entityDataToRelatableEntity(&candidates[i])
-				if err != nil {
-					return nil, fmt.Errorf("convert matched entity: %w", err)
-				}
-				result = append(result, re)
-				break
-			}
+		re, err := entityDataToRelatableEntity(entity)
+		if err != nil {
+			return nil, fmt.Errorf("convert matched entity: %w", err)
 		}
+		result = append(result, re)
 	}
 
 	return result, nil
