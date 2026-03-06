@@ -48,7 +48,7 @@ func ruleEvaluators(ctx context.Context, getter Getter, rule *oapi.PolicyRule) [
 func CollectEvaluators(ctx context.Context, getter Getter, rt *oapi.ReleaseTarget, policies []*oapi.Policy) []evaluator.Evaluator {
 	evals := []evaluator.Evaluator{
 		deployableversions.NewEvaluator(
-			&deployableVersionsAdapter{getter: getter, ctx: ctx, rt: rt},
+			getter,
 		),
 	}
 

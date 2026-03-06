@@ -15,6 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+var _ Getter = &PostgresGetter{}
+
 type PostgresGetter struct{}
 
 func (g *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error) {
@@ -66,7 +68,7 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 	return versions, nil
 }
 
-func (g *PostgresGetter) GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error) {
+func (g *PostgresGetter) GetPoliciesForReleaseTarget(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error) {
 	policies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
 		WorkspaceID: rt.WorkspaceID,
 		Limit:       pgtype.Int4{Int32: 5000, Valid: true},

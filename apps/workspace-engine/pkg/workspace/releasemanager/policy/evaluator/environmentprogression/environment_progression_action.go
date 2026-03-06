@@ -19,17 +19,13 @@ var actionTracer = otel.Tracer("EnvironmentProgressionAction")
 type ReconcileFn func(ctx context.Context, targets []*oapi.ReleaseTarget) error
 
 type EnvironmentProgressionAction struct {
-	getters     Getters
+	store       *store.Store
 	reconcileFn ReconcileFn
 }
 
-func NewEnvironmentProgressionActionFromStore(store *store.Store, reconcileFn ReconcileFn) *EnvironmentProgressionAction {
-	return NewEnvironmentProgressionAction(&storeGetters{store: store}, reconcileFn)
-}
-
-func NewEnvironmentProgressionAction(getters Getters, reconcileFn ReconcileFn) *EnvironmentProgressionAction {
+func NewEnvironmentProgressionAction(store *store.Store, reconcileFn ReconcileFn) *EnvironmentProgressionAction {
 	return &EnvironmentProgressionAction{
-		getters:     getters,
+		store:       store,
 		reconcileFn: reconcileFn,
 	}
 }
@@ -53,8 +49,8 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 		return nil
 	}
 
-	environment := a.getEnvironment(actx.Release.ReleaseTarget.EnvironmentId)
-	if environment == nil {
+	environment, ok := a.store.Environments.Get(actx.Release.ReleaseTarget.EnvironmentId)
+	if !ok {
 		return nil
 	}
 
@@ -68,8 +64,9 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 	}
 
 	version := &actx.Release.Version
+	getters := &storeGetters{store: a.store}
 	policiesThatCrossedThreshold := a.filterPoliciesWhereThresholdJustCrossed(
-		ctx, environment, version, actx.Job, progressionDependentPolicies,
+		ctx, getters, environment, version, actx.Job, progressionDependentPolicies,
 	)
 
 	if len(policiesThatCrossedThreshold) == 0 {
@@ -89,17 +86,9 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 	return a.reconcileFn(ctx, progressionDependentTargets)
 }
 
-func (a *EnvironmentProgressionAction) getEnvironment(envId string) *oapi.Environment {
-	env, ok := a.getters.GetEnvironment(envId)
-	if !ok {
-		return nil
-	}
-	return env
-}
-
 func (a *EnvironmentProgressionAction) getProgressionDependentPolicies(ctx context.Context, environment *oapi.Environment) ([]*oapi.Policy, error) {
 	policies := make([]*oapi.Policy, 0)
-	for _, policy := range a.getters.GetPolicies() {
+	for _, policy := range a.store.Policies.Items() {
 		for _, rule := range policy.Rules {
 			if rule.EnvironmentProgression == nil {
 				continue
@@ -126,21 +115,21 @@ func (a *EnvironmentProgressionAction) getProgressionDependentPolicies(ctx conte
 func (a *EnvironmentProgressionAction) getProgressionDependentTargets(ctx context.Context, policies []*oapi.Policy, deploymentId string) ([]*oapi.ReleaseTarget, error) {
 	targetMap := make(map[string]*oapi.ReleaseTarget)
 
-	deploymentTargets, err := a.getters.GetReleaseTargetsForDeployment(ctx, deploymentId)
+	deploymentTargets, err := a.store.ReleaseTargets.GetForDeployment(ctx, deploymentId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployment targets: %w", err)
 	}
 
 	for _, target := range deploymentTargets {
-		environment, ok := a.getters.GetEnvironment(target.EnvironmentId)
+		environment, ok := a.store.Environments.Get(target.EnvironmentId)
 		if !ok {
 			continue
 		}
-		resource, ok := a.getters.GetResource(target.ResourceId)
+		resource, ok := a.store.Resources.Get(target.ResourceId)
 		if !ok {
 			continue
 		}
-		deployment, ok := a.getters.GetDeployment(target.DeploymentId)
+		deployment, ok := a.store.Deployments.Get(target.DeploymentId)
 		if !ok {
 			continue
 		}
@@ -161,6 +150,7 @@ func (a *EnvironmentProgressionAction) getProgressionDependentTargets(ctx contex
 
 func (a *EnvironmentProgressionAction) filterPoliciesWhereThresholdJustCrossed(
 	ctx context.Context,
+	getters Getters,
 	dependencyEnv *oapi.Environment,
 	version *oapi.DeploymentVersion,
 	job *oapi.Job,
@@ -174,7 +164,7 @@ func (a *EnvironmentProgressionAction) filterPoliciesWhereThresholdJustCrossed(
 			continue
 		}
 
-		if a.didThresholdJustCross(ctx, dependencyEnv, version, job, rule) {
+		if a.didThresholdJustCross(ctx, getters, dependencyEnv, version, job, rule) {
 			result = append(result, policy)
 		}
 	}
@@ -193,6 +183,7 @@ func (a *EnvironmentProgressionAction) getEnvironmentProgressionRule(policy *oap
 
 func (a *EnvironmentProgressionAction) didThresholdJustCross(
 	ctx context.Context,
+	getters Getters,
 	dependencyEnv *oapi.Environment,
 	version *oapi.DeploymentVersion,
 	job *oapi.Job,
@@ -215,7 +206,7 @@ func (a *EnvironmentProgressionAction) didThresholdJustCross(
 		minPercentage = *rule.MinimumSuccessPercentage
 	}
 
-	tracker := NewReleaseTargetJobTracker(ctx, a.getters, dependencyEnv, version, successStatuses)
+	tracker := NewReleaseTargetJobTracker(ctx, getters, dependencyEnv, version, successStatuses)
 
 	if len(tracker.ReleaseTargets) == 0 {
 		return false

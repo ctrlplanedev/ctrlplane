@@ -42,7 +42,7 @@ func parseTimestamp(s string) (time.Time, error) {
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
 type Getters interface {
-	GetApprovalRecords(versionID, environmentID string) []*oapi.UserApprovalRecord
+	GetApprovalRecords(ctx context.Context,versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
 }
 
 type AnyApprovalEvaluator struct {
@@ -56,8 +56,8 @@ type storeGetters struct {
 	store *store.Store
 }
 
-func (s *storeGetters) GetApprovalRecords(versionID, environmentID string) []*oapi.UserApprovalRecord {
-	return s.store.UserApprovalRecords.GetApprovalRecords(versionID, environmentID)
+func (s *storeGetters) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+	return s.store.UserApprovalRecords.GetApprovalRecords(versionID, environmentID), nil
 }
 
 func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
@@ -120,7 +120,15 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithSatisfiedAt(version.CreatedAt)
 	}
 
-	approvalRecords := m.getters.GetApprovalRecords(version.Id, environment.Id)
+	approvalRecords, err := m.getters.GetApprovalRecords(ctx, version.Id, environment.Id)
+	if err != nil {
+		return results.
+			NewPendingResult("approval",
+				fmt.Sprintf("Failed to get approval records: %v", err),
+			).
+			WithDetail("version_id", version.Id).
+			WithDetail("environment_id", environment.Id)
+	}
 	minApprovals := int(m.rule.MinApprovals)
 
 	approvers := make([]string, len(approvalRecords))

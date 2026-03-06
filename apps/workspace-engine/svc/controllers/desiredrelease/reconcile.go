@@ -50,7 +50,7 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 	}
 	r.versions = versions
 
-	policies, err := r.getter.GetPolicies(ctx, r.rt)
+	policies, err := r.getter.GetPoliciesForReleaseTarget(ctx, r.rt)
 	if err != nil {
 		return fmt.Errorf("get policies: %w", err)
 	}
@@ -64,10 +64,9 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 // the earliest NextEvaluationTime when all versions are blocked.
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 	oapiRT := r.rt.ToOAPI()
-	evalGetter := &policyevalAdapter{getter: r.getter, rt: r.rt}
-	evals := policyeval.CollectEvaluators(ctx, evalGetter, oapiRT, r.policies)
+	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
 	var nextTime *time.Time
-	r.version, nextTime = policyeval.FindDeployableVersion(ctx, evalGetter, oapiRT, r.versions, evals, *r.scope)
+	r.version, nextTime = policyeval.FindDeployableVersion(ctx, r.getter, oapiRT, r.versions, evals, *r.scope)
 	return nextTime
 }
 
@@ -77,9 +76,8 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 		Deployment:  r.scope.Deployment,
 		Environment: r.scope.Environment,
 	}
-	varGetter := &variableResolverAdapter{getter: r.getter}
 	vars, err := variableresolver.Resolve(
-		ctx, varGetter, varScope,
+		ctx, r.getter, varScope,
 		r.rt.DeploymentID.String(), r.rt.ResourceID.String(),
 	)
 	if err != nil {

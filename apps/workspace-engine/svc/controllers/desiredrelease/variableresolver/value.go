@@ -5,15 +5,7 @@ import (
 	"fmt"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships"
 )
-
-// RelatedEntityResolver resolves a reference name to the matched related
-// entities for a resource. Implementations may evaluate relationship rules
-// in realtime or return pre-computed/mocked results.
-type RelatedEntityResolver interface {
-	ResolveRelated(ctx context.Context, reference string) ([]*oapi.RelatableEntity, error)
-}
 
 // ResolveValue resolves a single oapi.Value to a concrete LiteralValue.
 //
@@ -78,7 +70,7 @@ func resolveReference(
 		)
 	}
 
-	lv, err := relationships.GetPropertyValue(refs[0], rv.Path)
+	lv, err := getPropertyReflection(refs[0].Raw, rv.Path)
 	if err != nil {
 		return nil, fmt.Errorf("resolve property path %v on reference %q: %w", rv.Path, rv.Reference, err)
 	}

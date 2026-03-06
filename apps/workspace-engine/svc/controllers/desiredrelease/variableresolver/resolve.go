@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
@@ -25,8 +24,8 @@ var tracer = otel.Tracer("desiredrelease/variableresolver")
 type Getter interface {
 	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
 	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
-	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
-	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
+	GetAllRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
+	GetAllEntities(ctx context.Context, workspaceID uuid.UUID) ([]eval.EntityData, error)
 }
 
 // Scope carries the already-resolved entities for the release target so the
@@ -84,123 +83,45 @@ func Resolve(
 		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
 
-	rules, err := getter.GetRelationshipRules(ctx, wsID)
+	rules, err := getter.GetAllRelationshipRules(ctx, wsID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "get relationship rules failed")
 		return nil, fmt.Errorf("get relationship rules: %w", err)
 	}
 
-	resolver := newRealtimeResolver(getter, scope.Resource, wsID, rules)
+	applicableRules := []eval.Rule{}
+	for _, rule := range rules {
+		if rule.Reference == "resource" {
+			applicableRules = append(applicableRules, rule)
+		}
+	}
+
+	resolver := newRealtimeResolver(getter, scope.Resource, wsID, applicableRules)
 
 	entity := relationships.NewResourceEntity(scope.Resource)
 
 	resolved := make(map[string]oapi.LiteralValue, len(deploymentVars))
-	var fromResource, fromValue, fromDefault int
 
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
 
 		if lv := resolveFromResource(ctx, resolver, resourceID, key, resourceVars, entity); lv != nil {
 			resolved[key] = *lv
-			fromResource++
 			continue
 		}
 
 		if lv := resolveFromValues(ctx, resolver, resourceID, dv.Values, scope.Resource, entity); lv != nil {
 			resolved[key] = *lv
-			fromValue++
 			continue
 		}
 
 		if dv.Variable.DefaultValue != nil {
 			resolved[key] = *dv.Variable.DefaultValue
-			fromDefault++
 		}
 	}
 
-	span.SetAttributes(
-		attribute.Int("resolved.total", len(resolved)),
-		attribute.Int("resolved.from_resource", fromResource),
-		attribute.Int("resolved.from_value", fromValue),
-		attribute.Int("resolved.from_default", fromDefault),
-	)
 	return resolved, nil
-}
-
-// realtimeResolver evaluates relationship rules in realtime to resolve
-// references, ensuring no stale data is used.
-type realtimeResolver struct {
-	getter      Getter
-	resource    *oapi.Resource
-	workspaceID uuid.UUID
-	rules       []eval.Rule
-}
-
-func newRealtimeResolver(getter Getter, resource *oapi.Resource, workspaceID uuid.UUID, rules []eval.Rule) *realtimeResolver {
-	return &realtimeResolver{
-		getter:      getter,
-		resource:    resource,
-		workspaceID: workspaceID,
-		rules:       rules,
-	}
-}
-
-func (r *realtimeResolver) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
-	return r.getter.LoadCandidates(ctx, workspaceID, entityType)
-}
-
-func (r *realtimeResolver) ResolveRelated(ctx context.Context, reference string) ([]*oapi.RelatableEntity, error) {
-	resID, err := uuid.Parse(r.resource.Id)
-	if err != nil {
-		return nil, fmt.Errorf("parse resource id: %w", err)
-	}
-
-	rawMap, err := celutil.EntityToMap(r.resource)
-	if err != nil {
-		return nil, fmt.Errorf("convert resource to map: %w", err)
-	}
-	rawMap["type"] = "resource"
-
-	entity := &eval.EntityData{
-		ID:          resID,
-		WorkspaceID: r.workspaceID,
-		EntityType:  "resource",
-		Raw:         rawMap,
-	}
-
-	matches, err := eval.ResolveForReference(ctx, r, entity, r.rules, reference)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*oapi.RelatableEntity
-	for _, m := range matches {
-		relatedID := m.ToEntityID
-		relatedType := m.ToEntityType
-		if m.ToEntityID == resID {
-			relatedID = m.FromEntityID
-			relatedType = m.FromEntityType
-		}
-
-		candidates, err := r.getter.LoadCandidates(ctx, r.workspaceID, relatedType)
-		if err != nil {
-			return nil, fmt.Errorf("load candidate for matched entity %s: %w", relatedID, err)
-		}
-
-		for i := range candidates {
-			if candidates[i].ID == relatedID {
-				re, err := entityDataToRelatableEntity(&candidates[i])
-				if err != nil {
-					return nil, fmt.Errorf("convert matched entity: %w", err)
-				}
-				result = append(result, re)
-				break
-			}
-		}
-	}
-
-	return result, nil
 }
 
 // resolveFromResource checks if a resource variable exists for the given key

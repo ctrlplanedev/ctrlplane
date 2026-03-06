@@ -55,19 +55,6 @@ func nameMatchRule(ruleID uuid.UUID, ref, fromType, toType string) Rule {
 	return Rule{ID: ruleID, Reference: ref, Cel: cel}
 }
 
-// mockLoader returns pre-configured candidates by entity type.
-type mockLoader struct {
-	candidates map[string][]EntityData
-	err        error
-}
-
-func (m *mockLoader) LoadCandidates(_ context.Context, _ uuid.UUID, entityType string) ([]EntityData, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.candidates[entityType], nil
-}
-
 // sortMatches provides deterministic ordering for assertions.
 func sortMatches(ms []Match) {
 	sort.Slice(ms, func(i, j int) bool {
@@ -314,11 +301,9 @@ func TestEvaluateRules_MultipleRules(t *testing.T) {
 
 	entity := resourceEntity(entityID, wsID, "web", "Server", nil)
 
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"deployment":  {deploymentEntity(depID, wsID, "web", "web", nil)},
-			"environment": {environmentEntity(envID, wsID, "web")},
-		},
+	candidates := []EntityData{
+		deploymentEntity(depID, wsID, "web", "web", nil),
+		environmentEntity(envID, wsID, "web"),
 	}
 
 	rules := []Rule{
@@ -326,7 +311,7 @@ func TestEvaluateRules_MultipleRules(t *testing.T) {
 		nameMatchRule(newID(), "env", "resource", "environment"),
 	}
 
-	matches, err := EvaluateRules(context.Background(), loader, &entity, rules)
+	matches, err := EvaluateRules(context.Background(), &entity, candidates, rules)
 	require.NoError(t, err)
 	require.Len(t, matches, 2)
 
@@ -342,210 +327,40 @@ func TestEvaluateRules_SkipsIrrelevantRules(t *testing.T) {
 	wsID := newID()
 	entity := environmentEntity(newID(), wsID, "prod")
 
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"deployment": {deploymentEntity(newID(), wsID, "prod", "prod", nil)},
-		},
+	candidates := []EntityData{
+		deploymentEntity(newID(), wsID, "prod", "prod", nil),
 	}
 
 	rules := []Rule{
 		nameMatchRule(newID(), "dep", "resource", "deployment"),
 	}
 
-	matches, err := EvaluateRules(context.Background(), loader, &entity, rules)
+	matches, err := EvaluateRules(context.Background(), &entity, candidates, rules)
 	require.NoError(t, err)
 	assert.Empty(t, matches)
 }
 
 func TestEvaluateRules_EmptyRules(t *testing.T) {
 	entity := resourceEntity(newID(), newID(), "web", "Server", nil)
-	loader := &mockLoader{}
 
-	matches, err := EvaluateRules(context.Background(), loader, &entity, nil)
+	matches, err := EvaluateRules(context.Background(), &entity, nil, nil)
 	require.NoError(t, err)
 	assert.Empty(t, matches)
-}
-
-func TestEvaluateRules_LoaderError(t *testing.T) {
-	wsID := newID()
-	entity := resourceEntity(newID(), wsID, "web", "Server", nil)
-
-	loader := &mockLoader{err: fmt.Errorf("db connection failed")}
-	rules := []Rule{nameMatchRule(newID(), "dep", "resource", "deployment")}
-
-	_, err := EvaluateRules(context.Background(), loader, &entity, rules)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "load candidates")
-	assert.Contains(t, err.Error(), "db connection failed")
 }
 
 func TestEvaluateRules_CELErrorPropagated(t *testing.T) {
 	wsID := newID()
 	entity := resourceEntity(newID(), wsID, "web", "Server", nil)
 
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"deployment": {deploymentEntity(newID(), wsID, "web", "web", nil)},
-		},
+	candidates := []EntityData{
+		deploymentEntity(newID(), wsID, "web", "web", nil),
 	}
 
 	rules := []Rule{{
 		ID: newID(), Reference: "bad", Cel: "not valid!!!",
 	}}
 
-	_, err := EvaluateRules(context.Background(), loader, &entity, rules)
+	_, err := EvaluateRules(context.Background(), &entity, candidates, rules)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "evaluate rule")
-}
-
-// ---------------------------------------------------------------------------
-// ResolveForReference
-// ---------------------------------------------------------------------------
-
-func TestResolveForReference_FiltersToMatchingReference(t *testing.T) {
-	wsID := newID()
-	entityID := newID()
-	dbID := newID()
-	cacheID := newID()
-
-	entity := resourceEntity(entityID, wsID, "web", "Server", nil)
-
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"resource": {
-				resourceEntity(dbID, wsID, "web", "Database", nil),
-				resourceEntity(cacheID, wsID, "web", "Cache", nil),
-			},
-		},
-	}
-
-	dbRuleID := newID()
-	cacheRuleID := newID()
-
-	rules := []Rule{
-		{
-			ID: dbRuleID, Reference: "database",
-			Cel: `to.kind == "Database"`,
-		},
-		{
-			ID: cacheRuleID, Reference: "cache",
-			Cel: `to.kind == "Cache"`,
-		},
-	}
-
-	matches, err := ResolveForReference(context.Background(), loader, &entity, rules, "database")
-	require.NoError(t, err)
-	require.Len(t, matches, 1)
-	assert.Equal(t, dbRuleID, matches[0].RuleID)
-	assert.Equal(t, "database", matches[0].Reference)
-	assert.Equal(t, dbID, matches[0].ToEntityID)
-}
-
-func TestResolveForReference_NoMatchingReference(t *testing.T) {
-	entity := resourceEntity(newID(), newID(), "web", "Server", nil)
-	loader := &mockLoader{}
-	rules := []Rule{nameMatchRule(newID(), "dep", "resource", "deployment")}
-
-	matches, err := ResolveForReference(context.Background(), loader, &entity, rules, "nonexistent")
-	require.NoError(t, err)
-	assert.Nil(t, matches)
-}
-
-func TestResolveForReference_EmptyRules(t *testing.T) {
-	entity := resourceEntity(newID(), newID(), "web", "Server", nil)
-	loader := &mockLoader{}
-
-	matches, err := ResolveForReference(context.Background(), loader, &entity, nil, "anything")
-	require.NoError(t, err)
-	assert.Nil(t, matches)
-}
-
-func TestResolveForReference_MultipleRulesSameReference(t *testing.T) {
-	wsID := newID()
-	entityID := newID()
-	c1 := newID()
-	c2 := newID()
-
-	entity := resourceEntity(entityID, wsID, "web", "Server", nil)
-
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"resource": {
-				resourceEntity(c1, wsID, "db-primary", "Database", nil),
-				resourceEntity(c2, wsID, "db-replica", "Database", nil),
-			},
-		},
-	}
-
-	rules := []Rule{
-		{
-			ID: newID(), Reference: "database",
-			Cel: `to.name == "db-primary"`,
-		},
-		{
-			ID: newID(), Reference: "database",
-			Cel: `to.name == "db-replica"`,
-		},
-	}
-
-	matches, err := ResolveForReference(context.Background(), loader, &entity, rules, "database")
-	require.NoError(t, err)
-	require.Len(t, matches, 2)
-
-	matchedIDs := map[uuid.UUID]bool{}
-	for _, m := range matches {
-		matchedIDs[m.ToEntityID] = true
-	}
-	assert.True(t, matchedIDs[c1])
-	assert.True(t, matchedIDs[c2])
-}
-
-func TestResolveForReference_CrossTypeRule(t *testing.T) {
-	wsID := newID()
-	entityID := newID()
-	depID := newID()
-
-	entity := resourceEntity(entityID, wsID, "api", "Server", nil)
-
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"deployment": {deploymentEntity(depID, wsID, "api", "api", nil)},
-		},
-	}
-
-	rules := []Rule{
-		nameMatchRule(newID(), "deploy", "resource", "deployment"),
-	}
-
-	matches, err := ResolveForReference(context.Background(), loader, &entity, rules, "deploy")
-	require.NoError(t, err)
-	require.Len(t, matches, 1)
-	assert.Equal(t, entityID, matches[0].FromEntityID)
-	assert.Equal(t, depID, matches[0].ToEntityID)
-}
-
-func TestResolveForReference_ReverseDirection(t *testing.T) {
-	wsID := newID()
-	entityID := newID()
-	resID := newID()
-
-	entity := deploymentEntity(entityID, wsID, "api", "api", nil)
-
-	loader := &mockLoader{
-		candidates: map[string][]EntityData{
-			"resource": {resourceEntity(resID, wsID, "api", "Server", nil)},
-		},
-	}
-
-	rules := []Rule{
-		nameMatchRule(newID(), "res", "resource", "deployment"),
-	}
-
-	matches, err := ResolveForReference(context.Background(), loader, &entity, rules, "res")
-	require.NoError(t, err)
-	require.Len(t, matches, 1)
-	assert.Equal(t, resID, matches[0].FromEntityID)
-	assert.Equal(t, "resource", matches[0].FromEntityType)
-	assert.Equal(t, entityID, matches[0].ToEntityID)
-	assert.Equal(t, "deployment", matches[0].ToEntityType)
 }

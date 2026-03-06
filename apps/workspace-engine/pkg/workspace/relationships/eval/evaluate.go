@@ -119,27 +119,18 @@ func EvaluateRule(
 // candidates via the provided loader. Returns all matches across all rules.
 func EvaluateRules(
 	ctx context.Context,
-	loader CandidateLoader,
 	entity *EntityData,
+	candidates []EntityData,
 	rules []Rule,
 ) ([]Match, error) {
 	ctx, span := tracer.Start(ctx, "eval.EvaluateRules")
 	defer span.End()
 
-	var allCandidates []EntityData
-	for _, entityType := range knownEntityTypes {
-		candidates, err := loader.LoadCandidates(ctx, entity.WorkspaceID, entityType)
-		if err != nil {
-			return nil, fmt.Errorf("load candidates for entity %s (type %s): %w", entity.ID, entityType, err)
-		}
-		allCandidates = append(allCandidates, candidates...)
-	}
-
 	var allMatches []Match
 	for i := range rules {
 		rule := &rules[i]
 
-		matches, err := EvaluateRule(ctx, entity, rule, allCandidates)
+		matches, err := EvaluateRule(ctx, entity, rule, candidates)
 		if err != nil {
 			return nil, fmt.Errorf("evaluate rule %s: %w", rule.ID, err)
 		}
@@ -148,35 +139,4 @@ func EvaluateRules(
 
 	span.SetAttributes(attribute.Int("matches.total", len(allMatches)))
 	return allMatches, nil
-}
-
-// ResolveForReference finds all entities related to entity through rules
-// matching the given reference name. Only rules whose Reference field
-// matches are evaluated, keeping the candidate search targeted.
-func ResolveForReference(
-	ctx context.Context,
-	loader CandidateLoader,
-	entity *EntityData,
-	rules []Rule,
-	reference string,
-) ([]Match, error) {
-	ctx, span := tracer.Start(ctx, "eval.ResolveForReference")
-	defer span.End()
-	span.SetAttributes(
-		attribute.String("reference", reference),
-		attribute.String("entity.id", entity.ID.String()),
-	)
-
-	filtered := make([]Rule, 0, len(rules))
-	for _, r := range rules {
-		if r.Reference == reference {
-			filtered = append(filtered, r)
-		}
-	}
-
-	if len(filtered) == 0 {
-		return nil, nil
-	}
-
-	return EvaluateRules(ctx, loader, entity, filtered)
 }
