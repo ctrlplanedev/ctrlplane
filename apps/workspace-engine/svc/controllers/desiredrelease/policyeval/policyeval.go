@@ -9,9 +9,11 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 )
 
@@ -21,6 +23,8 @@ type Getter interface {
 	environmentprogression.Getters
 	deploymentwindow.Getters
 	gradualrollout.Getters
+	versioncooldown.Getters
+	deploymentdependency.Getters
 }
 
 // ruleEvaluators returns evaluators for a single policy rule.
@@ -31,7 +35,7 @@ func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []e
 		environmentprogression.NewEvaluator(getter, rule),
 		gradualrollout.NewEvaluator(getter, rule),
 		versionselector.NewEvaluator(rule),
-		// deploymentdependency.NewEvaluator(getter, rule),
+		deploymentdependency.NewEvaluator(getter, rule),
 		deploymentwindow.NewEvaluator(getter, rule),
 		// versioncooldown.NewEvaluator(getter, rule),
 	)
