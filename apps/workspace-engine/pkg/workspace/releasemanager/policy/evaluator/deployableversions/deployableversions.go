@@ -68,7 +68,13 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 		// Paused versions are "grandfathered in" - they can continue on targets
 		// where they're already deployed, but cannot deploy to new targets.
 		// Check if this paused version has an existing release for this target.
-		releases := e.getters.GetReleases()
+		releases, err := e.getters.GetReleases()
+		if err != nil {
+			return results.NewDeniedResult("Failed to get releases").
+				WithDetail("version_id", version.Id).
+				WithDetail("version_status", version.Status).
+				WithDetail("error", err.Error())
+		}
 		for _, release := range releases {
 			if release == nil {
 				continue

@@ -117,7 +117,12 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 	_, span := tracer.Start(ctx, "DeploymentWindowEvaluator.Evaluate")
 	defer span.End()
 
-	if !e.getters.HasCurrentRelease(ctx, scope.ReleaseTarget()) {
+	hasCurrentRelease, err := e.getters.HasCurrentRelease(ctx, scope.ReleaseTarget())
+	if err != nil {
+		return results.NewDeniedResult("Failed to check if current release exists").
+			WithDetail("error", err.Error())
+	}
+	if !hasCurrentRelease {
 		return results.NewAllowedResult("No previous version deployed - deployment window ignored").
 			WithDetail("reason", "first_deployment")
 	}

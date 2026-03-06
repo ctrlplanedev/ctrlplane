@@ -13,28 +13,17 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 )
-
-// Getter provides the data-access methods needed by policy evaluators.
-type Getter interface {
-	approval.Getters
-	environmentprogression.Getters
-	deploymentwindow.Getters
-	deploymentdependency.Getters
-	versioncooldown.Getters
-	deployableversions.Getters
-
-	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
-}
 
 // ruleEvaluators returns evaluators for a single policy rule.
 func ruleEvaluators(ctx context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		approval.NewEvaluator(getter, rule),
 		environmentprogression.NewEvaluator(getter, rule),
-		// gradualrollout.NewEvaluator(getter, rule),
+		gradualrollout.NewEvaluator(getter, rule),
 		versionselector.NewEvaluator(rule),
 		deploymentdependency.NewEvaluator(getter, rule),
 		deploymentwindow.NewEvaluator(getter, rule),
