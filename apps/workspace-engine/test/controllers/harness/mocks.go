@@ -141,6 +141,17 @@ func (g *DesiredReleaseGetter) LoadCandidates(_ context.Context, _ uuid.UUID, en
 	return nil, nil
 }
 
+func (g *DesiredReleaseGetter) GetEntityByID(_ context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+	if g.Candidates != nil {
+		for i := range g.Candidates[entityType] {
+			if g.Candidates[entityType][i].ID == entityID {
+				return &g.Candidates[entityType][i], nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("%s with id %s not found", entityType, entityID)
+}
+
 // DesiredReleaseSetter implements desiredrelease.Setter.
 // When JobDispatchQueue is set, it also enqueues a job-dispatch item for
 // each release that is set, bridging the desired-release and job-dispatch

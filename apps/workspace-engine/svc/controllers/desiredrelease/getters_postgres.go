@@ -305,6 +305,80 @@ FROM environment
 WHERE workspace_id = $1
 `
 
+const getResourceByIDSQL = `
+SELECT id, workspace_id, name, kind, version, identifier,
+       provider_id, config, metadata, created_at, updated_at
+FROM resource
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+const getDeploymentByIDSQL = `
+SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+FROM deployment
+WHERE id = $1
+`
+
+const getEnvironmentByIDSQL = `
+SELECT id, workspace_id, name, description, metadata, created_at
+FROM environment
+WHERE id = $1
+`
+
+func (g *PostgresGetter) GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+	pool := db.GetPool(ctx)
+
+	var query string
+	var buildMap func(values []any) map[string]any
+	switch entityType {
+	case "resource":
+		query = getResourceByIDSQL
+		buildMap = rowToResourceMap
+	case "deployment":
+		query = getDeploymentByIDSQL
+		buildMap = rowToDeploymentMap
+	case "environment":
+		query = getEnvironmentByIDSQL
+		buildMap = rowToEnvironmentMap
+	default:
+		return nil, fmt.Errorf("unknown entity type: %s", entityType)
+	}
+
+	rows, err := pool.Query(ctx, query, entityID)
+	if err != nil {
+		return nil, fmt.Errorf("query %s by id %s: %w", entityType, entityID, err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("iterate %s row: %w", entityType, err)
+		}
+		return nil, fmt.Errorf("%s with id %s not found", entityType, entityID)
+	}
+
+	values, err := rows.Values()
+	if err != nil {
+		return nil, fmt.Errorf("scan %s row: %w", entityType, err)
+	}
+
+	id, ok := values[0].([16]byte)
+	if !ok {
+		return nil, fmt.Errorf("invalid id type for %s %s", entityType, entityID)
+	}
+
+	wsID, ok := values[1].([16]byte)
+	if !ok {
+		return nil, fmt.Errorf("invalid workspace_id type for %s %s", entityType, entityID)
+	}
+
+	return &eval.EntityData{
+		ID:          uuid.UUID(id),
+		WorkspaceID: uuid.UUID(wsID),
+		EntityType:  entityType,
+		Raw:         buildMap(values),
+	}, nil
+}
+
 func rowToResourceMap(values []any) map[string]any {
 	m := map[string]any{"type": "resource"}
 	if len(values) > 0 {

@@ -56,6 +56,10 @@ func (a *variableResolverAdapter) LoadCandidates(ctx context.Context, workspaceI
 	return a.getter.LoadCandidates(ctx, workspaceID, entityType)
 }
 
+func (a *variableResolverAdapter) GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+	return a.getter.GetEntityByID(ctx, entityID, entityType)
+}
+
 func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion, variables map[string]oapi.LiteralValue) *oapi.Release {
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
