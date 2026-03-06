@@ -8,6 +8,7 @@ import { jobAgentsRouter } from "./routes/job-agents.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { policiesRouter } from "./routes/policies.js";
 import { policySkipsRouter } from "./routes/policy-skips.js";
+import { reconcileRouter } from "./routes/reconcile.js";
 import { redeployRouter } from "./routes/redeploy.js";
 import { relationshipsRouter } from "./routes/relationships.js";
 import { releaseTargetsRouter } from "./routes/release-targets.js";
@@ -36,6 +37,7 @@ export const appRouter = router({
   github: githubRouter,
   policies: policiesRouter,
   policySkips: policySkipsRouter,
+  reconcile: reconcileRouter,
   redeploy: redeployRouter,
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
