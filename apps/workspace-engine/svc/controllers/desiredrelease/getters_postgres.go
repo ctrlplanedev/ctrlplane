@@ -224,8 +224,6 @@ func (g *PostgresGetter) GetRelationshipRules(ctx context.Context, workspaceID u
 			ID:        row.ID,
 			Reference: row.Reference,
 			Cel:       row.Cel,
-			FromType:  m[1],
-			ToType:    m[2],
 		})
 	}
 	return rules, nil
@@ -297,7 +295,7 @@ WHERE workspace_id = $1 AND deleted_at IS NULL
 `
 
 const listDeploymentsSQL = `
-SELECT id, workspace_id, name, slug, description, job_agent_id, job_agent_config, metadata
+SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
 FROM deployment
 WHERE workspace_id = $1
 `
@@ -349,13 +347,10 @@ func rowToDeploymentMap(values []any) map[string]any {
 		m["name"] = values[2]
 	}
 	if len(values) > 3 {
-		m["slug"] = values[3]
+		m["description"] = values[3]
 	}
-	if len(values) > 4 {
-		m["description"] = values[4]
-	}
-	if len(values) > 7 {
-		if md, ok := values[7].(map[string]string); ok {
+	if len(values) > 6 {
+		if md, ok := values[6].(map[string]string); ok {
 			m["metadata"] = stringMapToAnyMap(md)
 		}
 	}

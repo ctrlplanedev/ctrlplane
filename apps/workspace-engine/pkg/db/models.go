@@ -506,7 +506,7 @@ type RelationshipRule struct {
 	WorkspaceID uuid.UUID
 	Reference   string
 	Cel         string
-	Metadata    []byte
+	Metadata    map[string]string
 }
 
 type Release struct {

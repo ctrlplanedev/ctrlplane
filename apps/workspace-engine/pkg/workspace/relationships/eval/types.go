@@ -18,8 +18,6 @@ type Rule struct {
 	ID        uuid.UUID
 	Reference string
 	Cel       string
-	FromType  string
-	ToType    string
 }
 
 // Match is a single directional relationship edge produced by evaluation.

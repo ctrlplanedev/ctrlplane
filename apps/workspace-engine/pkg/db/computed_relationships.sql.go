@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const bulkUpsertComputedRelationships = `-- name: BulkUpsertComputedRelationships :exec
@@ -64,6 +65,102 @@ func (q *Queries) DeleteComputedRelationshipsForEntity(ctx context.Context, arg 
 	return err
 }
 
+const getActiveResourceByID = `-- name: GetActiveResourceByID :one
+SELECT id, workspace_id, name, kind, version, identifier,
+       provider_id, config, metadata
+FROM resource
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type GetActiveResourceByIDRow struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Kind        string
+	Version     string
+	Identifier  string
+	ProviderID  uuid.UUID
+	Config      map[string]any
+	Metadata    map[string]string
+}
+
+func (q *Queries) GetActiveResourceByID(ctx context.Context, id uuid.UUID) (GetActiveResourceByIDRow, error) {
+	row := q.db.QueryRow(ctx, getActiveResourceByID, id)
+	var i GetActiveResourceByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Kind,
+		&i.Version,
+		&i.Identifier,
+		&i.ProviderID,
+		&i.Config,
+		&i.Metadata,
+	)
+	return i, err
+}
+
+const getDeploymentForRelEval = `-- name: GetDeploymentForRelEval :one
+SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+FROM deployment
+WHERE id = $1
+`
+
+type GetDeploymentForRelEvalRow struct {
+	ID             uuid.UUID
+	WorkspaceID    uuid.UUID
+	Name           string
+	Description    string
+	JobAgentID     uuid.UUID
+	JobAgentConfig map[string]any
+	Metadata       map[string]string
+}
+
+func (q *Queries) GetDeploymentForRelEval(ctx context.Context, id uuid.UUID) (GetDeploymentForRelEvalRow, error) {
+	row := q.db.QueryRow(ctx, getDeploymentForRelEval, id)
+	var i GetDeploymentForRelEvalRow
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Description,
+		&i.JobAgentID,
+		&i.JobAgentConfig,
+		&i.Metadata,
+	)
+	return i, err
+}
+
+const getEnvironmentForRelEval = `-- name: GetEnvironmentForRelEval :one
+SELECT id, workspace_id, name, description, metadata, created_at
+FROM environment
+WHERE id = $1
+`
+
+type GetEnvironmentForRelEvalRow struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Description pgtype.Text
+	Metadata    map[string]string
+	CreatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) GetEnvironmentForRelEval(ctx context.Context, id uuid.UUID) (GetEnvironmentForRelEvalRow, error) {
+	row := q.db.QueryRow(ctx, getEnvironmentForRelEval, id)
+	var i GetEnvironmentForRelEvalRow
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Description,
+		&i.Metadata,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getRelationshipRulesForWorkspace = `-- name: GetRelationshipRulesForWorkspace :many
 SELECT id, reference, cel
 FROM relationship_rule
@@ -87,6 +184,141 @@ func (q *Queries) GetRelationshipRulesForWorkspace(ctx context.Context, workspac
 	for rows.Next() {
 		var i GetRelationshipRulesForWorkspaceRow
 		if err := rows.Scan(&i.ID, &i.Reference, &i.Cel); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveResourcesByWorkspace = `-- name: ListActiveResourcesByWorkspace :many
+SELECT id, workspace_id, name, kind, version, identifier,
+       provider_id, config, metadata
+FROM resource
+WHERE workspace_id = $1 AND deleted_at IS NULL
+`
+
+type ListActiveResourcesByWorkspaceRow struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Kind        string
+	Version     string
+	Identifier  string
+	ProviderID  uuid.UUID
+	Config      map[string]any
+	Metadata    map[string]string
+}
+
+func (q *Queries) ListActiveResourcesByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ListActiveResourcesByWorkspaceRow, error) {
+	rows, err := q.db.Query(ctx, listActiveResourcesByWorkspace, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveResourcesByWorkspaceRow
+	for rows.Next() {
+		var i ListActiveResourcesByWorkspaceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Kind,
+			&i.Version,
+			&i.Identifier,
+			&i.ProviderID,
+			&i.Config,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDeploymentsByWorkspace = `-- name: ListDeploymentsByWorkspace :many
+SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+FROM deployment
+WHERE workspace_id = $1
+`
+
+type ListDeploymentsByWorkspaceRow struct {
+	ID             uuid.UUID
+	WorkspaceID    uuid.UUID
+	Name           string
+	Description    string
+	JobAgentID     uuid.UUID
+	JobAgentConfig map[string]any
+	Metadata       map[string]string
+}
+
+func (q *Queries) ListDeploymentsByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ListDeploymentsByWorkspaceRow, error) {
+	rows, err := q.db.Query(ctx, listDeploymentsByWorkspace, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDeploymentsByWorkspaceRow
+	for rows.Next() {
+		var i ListDeploymentsByWorkspaceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Description,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEnvironmentsByWorkspace = `-- name: ListEnvironmentsByWorkspace :many
+SELECT id, workspace_id, name, description, metadata, created_at
+FROM environment
+WHERE workspace_id = $1
+`
+
+type ListEnvironmentsByWorkspaceRow struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Description pgtype.Text
+	Metadata    map[string]string
+	CreatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) ListEnvironmentsByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ListEnvironmentsByWorkspaceRow, error) {
+	rows, err := q.db.Query(ctx, listEnvironmentsByWorkspace, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEnvironmentsByWorkspaceRow
+	for rows.Next() {
+		var i ListEnvironmentsByWorkspaceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Description,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

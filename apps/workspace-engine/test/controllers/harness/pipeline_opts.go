@@ -471,8 +471,6 @@ func WithRelatedResource(reference string, res *oapi.Resource) PipelineOption {
 			ID:        uuid.New(),
 			Reference: reference,
 			Cel:       cel,
-			FromType:  "resource",
-			ToType:    "resource",
 		})
 
 		if sc.Candidates == nil {

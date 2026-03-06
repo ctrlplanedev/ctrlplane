@@ -21,9 +21,7 @@ type RuleInfo struct {
 	Reference string
 	// Cel is the full CEL expression combining type filters, selector
 	// filters, and the matcher logic.
-	Cel      string
-	FromType string
-	ToType   string
+	Cel string
 }
 
 // ExistingRelationship represents a currently stored relationship for an entity.

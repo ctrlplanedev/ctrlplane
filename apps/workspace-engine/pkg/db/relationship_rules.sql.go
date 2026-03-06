@@ -12,28 +12,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteRelationshipRule = `-- name: DeleteRelationshipRule :exec
+DELETE FROM relationship_rule WHERE id = $1
+`
+
+func (q *Queries) DeleteRelationshipRule(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRelationshipRule, id)
+	return err
+}
+
 const getRelationshipRuleByID = `-- name: GetRelationshipRuleByID :one
 SELECT id, name, description, workspace_id, reference, cel, metadata
 FROM relationship_rule
 WHERE id = $1
 `
 
-type GetRelationshipRuleByIDRow struct {
-	ID          uuid.UUID
-	Name        string
-	Description pgtype.Text
-	WorkspaceID uuid.UUID
-	Reference   string
-	Cel         string
-	Metadata    map[string]string
-}
-
-func (q *Queries) GetRelationshipRuleByID(ctx context.Context, id uuid.UUID) (GetRelationshipRuleByIDRow, error) {
+func (q *Queries) GetRelationshipRuleByID(ctx context.Context, id uuid.UUID) (RelationshipRule, error) {
 	row := q.db.QueryRow(ctx, getRelationshipRuleByID, id)
-	var i GetRelationshipRuleByIDRow
+	var i RelationshipRule
 	err := row.Scan(
-		&i.ID, &i.Name, &i.Description, &i.WorkspaceID,
-		&i.Reference, &i.Cel, &i.Metadata,
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WorkspaceID,
+		&i.Reference,
+		&i.Cel,
+		&i.Metadata,
 	)
 	return i, err
 }
@@ -44,28 +48,23 @@ FROM relationship_rule
 WHERE workspace_id = $1
 `
 
-type ListRelationshipRulesByWorkspaceIDRow struct {
-	ID          uuid.UUID
-	Name        string
-	Description pgtype.Text
-	WorkspaceID uuid.UUID
-	Reference   string
-	Cel         string
-	Metadata    map[string]string
-}
-
-func (q *Queries) ListRelationshipRulesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListRelationshipRulesByWorkspaceIDRow, error) {
+func (q *Queries) ListRelationshipRulesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]RelationshipRule, error) {
 	rows, err := q.db.Query(ctx, listRelationshipRulesByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListRelationshipRulesByWorkspaceIDRow
+	var items []RelationshipRule
 	for rows.Next() {
-		var i ListRelationshipRulesByWorkspaceIDRow
+		var i RelationshipRule
 		if err := rows.Scan(
-			&i.ID, &i.Name, &i.Description, &i.WorkspaceID,
-			&i.Reference, &i.Cel, &i.Metadata,
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.WorkspaceID,
+			&i.Reference,
+			&i.Cel,
+			&i.Metadata,
 		); err != nil {
 			return nil, err
 		}
@@ -97,34 +96,25 @@ type UpsertRelationshipRuleParams struct {
 	Metadata    map[string]string
 }
 
-type UpsertRelationshipRuleRow struct {
-	ID          uuid.UUID
-	Name        string
-	Description pgtype.Text
-	WorkspaceID uuid.UUID
-	Reference   string
-	Cel         string
-	Metadata    map[string]string
-}
-
-func (q *Queries) UpsertRelationshipRule(ctx context.Context, arg UpsertRelationshipRuleParams) (UpsertRelationshipRuleRow, error) {
+func (q *Queries) UpsertRelationshipRule(ctx context.Context, arg UpsertRelationshipRuleParams) (RelationshipRule, error) {
 	row := q.db.QueryRow(ctx, upsertRelationshipRule,
-		arg.ID, arg.Name, arg.Description, arg.WorkspaceID,
-		arg.Reference, arg.Cel, arg.Metadata,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.WorkspaceID,
+		arg.Reference,
+		arg.Cel,
+		arg.Metadata,
 	)
-	var i UpsertRelationshipRuleRow
+	var i RelationshipRule
 	err := row.Scan(
-		&i.ID, &i.Name, &i.Description, &i.WorkspaceID,
-		&i.Reference, &i.Cel, &i.Metadata,
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WorkspaceID,
+		&i.Reference,
+		&i.Cel,
+		&i.Metadata,
 	)
 	return i, err
-}
-
-const deleteRelationshipRule = `-- name: DeleteRelationshipRule :exec
-DELETE FROM relationship_rule WHERE id = $1
-`
-
-func (q *Queries) DeleteRelationshipRule(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteRelationshipRule, id)
-	return err
 }

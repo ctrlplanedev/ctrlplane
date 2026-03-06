@@ -14,6 +14,8 @@ import (
 
 var tracer = otel.Tracer("workspace-engine/pkg/workspace/relationships/eval")
 
+var knownEntityTypes = []string{"resource", "deployment", "environment"}
+
 var celEnv, _ = celutil.NewEnvBuilder().
 	WithMapVariables("from", "to").
 	WithStandardExtensions().
@@ -23,6 +25,24 @@ var celEnv, _ = celutil.NewEnvBuilder().
 // Streaming-based and direct-query implementations can coexist.
 type CandidateLoader interface {
 	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]EntityData, error)
+}
+
+// celMap returns the CEL evaluation map for an entity, ensuring "type" and
+// "id" are always accessible even if the caller's Raw map omits them.
+func celMap(e *EntityData) map[string]any {
+	if e.Raw == nil {
+		return map[string]any{
+			"type": e.EntityType,
+			"id":   e.ID.String(),
+		}
+	}
+	if _, ok := e.Raw["type"]; !ok {
+		e.Raw["type"] = e.EntityType
+	}
+	if _, ok := e.Raw["id"]; !ok {
+		e.Raw["id"] = e.ID.String()
+	}
+	return e.Raw
 }
 
 // EvaluateRule evaluates a single rule for the given entity against a set of
@@ -40,8 +60,6 @@ func EvaluateRule(
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("rule.id", rule.ID.String()),
-		attribute.String("rule.from_type", rule.FromType),
-		attribute.String("rule.to_type", rule.ToType),
 		attribute.String("entity.type", entity.EntityType),
 	)
 
@@ -53,53 +71,43 @@ func EvaluateRule(
 	celCtx := map[string]any{"from": nil, "to": nil}
 	var matches []Match
 
-	if entity.EntityType == rule.FromType {
-		for _, candidate := range candidates {
-			if candidate.ID == entity.ID {
-				continue
-			}
-			celCtx["from"] = entity.Raw
-			celCtx["to"] = candidate.Raw
-
-			ok, err := celutil.EvalBool(program, celCtx)
-			if err != nil {
-				return nil, fmt.Errorf("eval CEL for candidate %s: %w", candidate.ID, err)
-			}
-			if ok {
-				matches = append(matches, Match{
-					RuleID:         rule.ID,
-					Reference:      rule.Reference,
-					FromEntityType: entity.EntityType,
-					FromEntityID:   entity.ID,
-					ToEntityType:   rule.ToType,
-					ToEntityID:     candidate.ID,
-				})
-			}
+	for _, candidate := range candidates {
+		if candidate.ID == entity.ID {
+			continue
 		}
-	}
 
-	if entity.EntityType == rule.ToType {
-		for _, candidate := range candidates {
-			if candidate.ID == entity.ID {
-				continue
-			}
-			celCtx["from"] = candidate.Raw
-			celCtx["to"] = entity.Raw
+		celCtx["from"] = celMap(entity)
+		celCtx["to"] = celMap(&candidate)
+		ok, err := celutil.EvalBool(program, celCtx)
+		if err != nil {
+			return nil, fmt.Errorf("eval CEL for candidate %s: %w", candidate.ID, err)
+		}
+		if ok {
+			matches = append(matches, Match{
+				RuleID:         rule.ID,
+				Reference:      rule.Reference,
+				FromEntityType: entity.EntityType,
+				FromEntityID:   entity.ID,
+				ToEntityType:   candidate.EntityType,
+				ToEntityID:     candidate.ID,
+			})
+		}
 
-			ok, err := celutil.EvalBool(program, celCtx)
-			if err != nil {
-				return nil, fmt.Errorf("eval CEL for candidate %s: %w", candidate.ID, err)
-			}
-			if ok {
-				matches = append(matches, Match{
-					RuleID:         rule.ID,
-					Reference:      rule.Reference,
-					FromEntityType: rule.FromType,
-					FromEntityID:   candidate.ID,
-					ToEntityType:   entity.EntityType,
-					ToEntityID:     entity.ID,
-				})
-			}
+		celCtx["from"] = celMap(&candidate)
+		celCtx["to"] = celMap(entity)
+		ok, err = celutil.EvalBool(program, celCtx)
+		if err != nil {
+			return nil, fmt.Errorf("eval CEL for candidate %s: %w", candidate.ID, err)
+		}
+		if ok {
+			matches = append(matches, Match{
+				RuleID:         rule.ID,
+				Reference:      rule.Reference,
+				FromEntityType: candidate.EntityType,
+				FromEntityID:   candidate.ID,
+				ToEntityType:   entity.EntityType,
+				ToEntityID:     entity.ID,
+			})
 		}
 	}
 
@@ -118,26 +126,20 @@ func EvaluateRules(
 	ctx, span := tracer.Start(ctx, "eval.EvaluateRules")
 	defer span.End()
 
+	var allCandidates []EntityData
+	for _, entityType := range knownEntityTypes {
+		candidates, err := loader.LoadCandidates(ctx, entity.WorkspaceID, entityType)
+		if err != nil {
+			return nil, fmt.Errorf("load candidates for entity %s (type %s): %w", entity.ID, entityType, err)
+		}
+		allCandidates = append(allCandidates, candidates...)
+	}
+
 	var allMatches []Match
 	for i := range rules {
 		rule := &rules[i]
 
-		var candidateType string
-		switch entity.EntityType {
-		case rule.FromType:
-			candidateType = rule.ToType
-		case rule.ToType:
-			candidateType = rule.FromType
-		default:
-			continue
-		}
-
-		candidates, err := loader.LoadCandidates(ctx, entity.WorkspaceID, candidateType)
-		if err != nil {
-			return nil, fmt.Errorf("load candidates for rule %s (type %s): %w", rule.ID, candidateType, err)
-		}
-
-		matches, err := EvaluateRule(ctx, entity, rule, candidates)
+		matches, err := EvaluateRule(ctx, entity, rule, allCandidates)
 		if err != nil {
 			return nil, fmt.Errorf("evaluate rule %s: %w", rule.ID, err)
 		}

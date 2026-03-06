@@ -128,12 +128,10 @@ func environmentEntity(id, workspaceID uuid.UUID, name string, metadata map[stri
 	}
 }
 
-func makeRule(id uuid.UUID, cel, fromType, toType string) RuleInfo {
+func makeRule(id uuid.UUID, cel string) RuleInfo {
 	return RuleInfo{
-		ID:       id,
-		Cel:      cel,
-		FromType: fromType,
-		ToType:   toType,
+		ID:  id,
+		Cel: cel,
 	}
 }
 
@@ -285,7 +283,7 @@ func TestProcess_EntityIsFrom_MatchingCandidates(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(depID1, wsID, "deploy-1", "deploy-1", map[string]any{"team": "platform"}),
@@ -338,7 +336,7 @@ func TestProcess_EntityIsTo_MatchingCandidates(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"resource": {
 				resourceEntity(resID1, wsID, "res-1", "Pod", map[string]any{"app": "web"}),
@@ -390,7 +388,7 @@ func TestProcess_EntityIsBothFromAndTo(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "resource")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"resource": {
 				entity, // itself — should be skipped
@@ -441,7 +439,7 @@ func TestProcess_NoMatchingCandidates(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(newID(), wsID, "dep", "dep", map[string]any{"team": "beta"}),
@@ -473,7 +471,7 @@ func TestProcess_EntityTypeNotInAnyRule(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(newID(), celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(newID(), celExpr)},
 	}
 	setter := &mockSetter{}
 	ctrl := NewController(getter, setter)
@@ -506,8 +504,8 @@ func TestProcess_MultipleRules(t *testing.T) {
 	getter := &mockGetter{
 		entityInfo: &entity,
 		rules: []RuleInfo{
-			makeRule(ruleA, celA, "resource", "deployment"),
-			makeRule(ruleB, celB, "resource", "environment"),
+			makeRule(ruleA, celA),
+			makeRule(ruleB, celB),
 		},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
@@ -564,7 +562,7 @@ func TestProcess_SkipsSelfInCandidates(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "resource")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"resource": {entity}, // only itself
 		},
@@ -593,7 +591,7 @@ func TestProcess_CELCompileError(t *testing.T) {
 	getter := &mockGetter{
 		entityInfo: &entity,
 		rules: []RuleInfo{
-			makeRule(newID(), "this is not valid CEL !!!", "resource", "deployment"),
+			makeRule(newID(), "this is not valid CEL !!!"),
 		},
 		candidates: map[string][]EntityInfo{
 			"deployment": {deploymentEntity(newID(), wsID, "d", "d", nil)},
@@ -645,7 +643,7 @@ func TestProcess_StreamCandidatesError(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo:    &entity,
-		rules:         []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:         []RuleInfo{makeRule(ruleID, celExpr)},
 		candidatesErr: fmt.Errorf("stream failed"),
 	}
 	ctrl := NewController(getter, &mockSetter{})
@@ -698,7 +696,7 @@ func TestProcess_CEL_NameMatching(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(matchID, wsID, "shared-name", "shared-name", nil),
@@ -762,7 +760,7 @@ func TestProcess_CEL_ConfigFieldMatching(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {matchDep, noMatchDep},
 		},
@@ -796,7 +794,7 @@ func TestProcess_CEL_StringContains(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(matchID, wsID, "api-server-deploy", "api-server", nil),
@@ -841,7 +839,7 @@ func TestProcess_CEL_MissingKeyNonMatch(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {depWithoutMetadata},
 		},
@@ -873,7 +871,7 @@ func TestProcess_CEL_LogicalOr(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(matchByName, wsID, "my-api", "something", nil),
@@ -917,7 +915,7 @@ func TestProcess_CEL_MatchAll(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(depA, wsID, "a", "a", nil),
@@ -950,7 +948,7 @@ func TestProcess_CEL_MatchNone(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(newID(), wsID, "a", "a", nil),
@@ -983,7 +981,7 @@ func TestProcess_EnvironmentToResource(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "environment", "resource")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"resource": {
 				resourceEntity(resMatch, wsID, "prod-db", "Database", map[string]any{"tier": "prod"}),
@@ -1035,7 +1033,7 @@ func TestProcess_LargeCandidateSet(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": candidates,
 		},
@@ -1076,7 +1074,7 @@ func TestProcess_RuleIrrelevantToEntity(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "deployment", "environment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 	}
 	setter := &mockSetter{}
 	ctrl := NewController(getter, setter)
@@ -1103,7 +1101,7 @@ func TestProcess_EmptyCandidateStream(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {},
 		},
@@ -1135,7 +1133,7 @@ func TestProcess_RelationshipDirectionCorrectness(t *testing.T) {
 
 		getter := &mockGetter{
 			entityInfo: &entity,
-			rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+			rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 			candidates: map[string][]EntityInfo{
 				"deployment": {deploymentEntity(candidateID, wsID, "dep", "dep", nil)},
 			},
@@ -1165,7 +1163,7 @@ func TestProcess_RelationshipDirectionCorrectness(t *testing.T) {
 
 		getter := &mockGetter{
 			entityInfo: &entity,
-			rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+			rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 			candidates: map[string][]EntityInfo{
 				"resource": {resourceEntity(candidateID, wsID, "res", "Pod", nil)},
 			},
@@ -1203,7 +1201,7 @@ func TestProcess_CEL_HasMacro(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(matchID, wsID, "d1", "d1", map[string]any{"special": "true"}),
@@ -1268,7 +1266,7 @@ func TestProcess_CEL_NumericComparison(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {matchDep, noMatchDep},
 		},
@@ -1302,7 +1300,7 @@ func TestProcess_CEL_InListMatching(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {deploymentEntity(matchID, wsID, "d", "d", nil)},
 		},
@@ -1338,7 +1336,7 @@ func TestProcess_CEL_DirectionalContextAssignment(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {candidate},
 		},
@@ -1370,7 +1368,7 @@ func TestProcess_CEL_DirectionalContextAssignment_Reverse(t *testing.T) {
 
 	getter := &mockGetter{
 		entityInfo: &entity,
-		rules:      []RuleInfo{makeRule(ruleID, celExpr, "resource", "deployment")},
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"resource": {candidate},
 		},
@@ -1387,6 +1385,218 @@ func TestProcess_CEL_DirectionalContextAssignment_Reverse(t *testing.T) {
 	require.Len(t, rels, 1, "candidate named 'alpha' should be placed in 'from' context and match")
 	assert.Equal(t, candID, rels[0].FromEntityID)
 	assert.Equal(t, entityID, rels[0].ToEntityID)
+}
+
+// ---------------------------------------------------------------------------
+// Metadata property equality: incoming and outgoing connection counts
+// ---------------------------------------------------------------------------
+
+func TestProcess_MetadataPropertyEquality_IncomingOutgoing(t *testing.T) {
+	wsID := newID()
+	ruleID := newID()
+
+	celExpr := `from.type == "resource" && to.type == "deployment" && from.metadata.region == to.metadata.region`
+
+	depUSEast1 := newID()
+	depUSEast2 := newID()
+	depEUWest := newID()
+
+	resUSEast1 := newID()
+	resUSEast2 := newID()
+	resUSEast3 := newID()
+	resEUWest := newID()
+
+	deployments := []EntityInfo{
+		deploymentEntity(depUSEast1, wsID, "dep-us-1", "dep-us-1", map[string]any{"region": "us-east"}),
+		deploymentEntity(depUSEast2, wsID, "dep-us-2", "dep-us-2", map[string]any{"region": "us-east"}),
+		deploymentEntity(depEUWest, wsID, "dep-eu", "dep-eu", map[string]any{"region": "eu-west"}),
+	}
+
+	resources := []EntityInfo{
+		resourceEntity(resUSEast1, wsID, "res-us-1", "Service", map[string]any{"region": "us-east"}),
+		resourceEntity(resUSEast2, wsID, "res-us-2", "Service", map[string]any{"region": "us-east"}),
+		resourceEntity(resUSEast3, wsID, "res-us-3", "Service", map[string]any{"region": "us-east"}),
+		resourceEntity(resEUWest, wsID, "res-eu", "Service", map[string]any{"region": "eu-west"}),
+	}
+
+	t.Run("resource entity produces outgoing edges to matching deployments", func(t *testing.T) {
+		entity := resources[0] // region=us-east
+		getter := &mockGetter{
+			entityInfo: &entity,
+			rules:      []RuleInfo{makeRule(ruleID, celExpr)},
+			candidates: map[string][]EntityInfo{"deployment": deployments},
+		}
+		setter := &mockSetter{}
+		ctrl := NewController(getter, setter)
+
+		_, err := ctrl.Process(context.Background(), reconcile.Item{
+			ScopeID: FormatScopeID("resource", entity.ID.String()),
+		})
+		require.NoError(t, err)
+		require.Len(t, setter.calls, 1)
+
+		rels := setter.calls[0].relationships
+		assert.Len(t, rels, 2, "resource with region=us-east should connect to 2 deployments with region=us-east")
+
+		for _, rel := range rels {
+			assert.Equal(t, ruleID, rel.RuleID)
+			assert.Equal(t, "resource", rel.FromEntityType)
+			assert.Equal(t, entity.ID, rel.FromEntityID, "entity should be on the 'from' side")
+			assert.Equal(t, "deployment", rel.ToEntityType)
+		}
+		toIDs := []uuid.UUID{rels[0].ToEntityID, rels[1].ToEntityID}
+		sort.Slice(toIDs, func(i, j int) bool { return toIDs[i].String() < toIDs[j].String() })
+		expected := []uuid.UUID{depUSEast1, depUSEast2}
+		sort.Slice(expected, func(i, j int) bool { return expected[i].String() < expected[j].String() })
+		assert.Equal(t, expected, toIDs)
+	})
+
+	t.Run("deployment entity produces incoming edges from matching resources", func(t *testing.T) {
+		entity := deployments[0] // region=us-east
+		getter := &mockGetter{
+			entityInfo: &entity,
+			rules:      []RuleInfo{makeRule(ruleID, celExpr)},
+			candidates: map[string][]EntityInfo{"resource": resources},
+		}
+		setter := &mockSetter{}
+		ctrl := NewController(getter, setter)
+
+		_, err := ctrl.Process(context.Background(), reconcile.Item{
+			ScopeID: FormatScopeID("deployment", entity.ID.String()),
+		})
+		require.NoError(t, err)
+		require.Len(t, setter.calls, 1)
+
+		rels := setter.calls[0].relationships
+		assert.Len(t, rels, 3, "deployment with region=us-east should have 3 incoming edges from resources with region=us-east")
+
+		for _, rel := range rels {
+			assert.Equal(t, ruleID, rel.RuleID)
+			assert.Equal(t, "resource", rel.FromEntityType)
+			assert.Equal(t, "deployment", rel.ToEntityType)
+			assert.Equal(t, entity.ID, rel.ToEntityID, "entity should be on the 'to' side")
+		}
+		fromIDs := make([]uuid.UUID, len(rels))
+		for i, r := range rels {
+			fromIDs[i] = r.FromEntityID
+		}
+		sort.Slice(fromIDs, func(i, j int) bool { return fromIDs[i].String() < fromIDs[j].String() })
+		expected := []uuid.UUID{resUSEast1, resUSEast2, resUSEast3}
+		sort.Slice(expected, func(i, j int) bool { return expected[i].String() < expected[j].String() })
+		assert.Equal(t, expected, fromIDs)
+	})
+
+	t.Run("eu-west resource only connects to eu-west deployment", func(t *testing.T) {
+		entity := resources[3] // region=eu-west
+		getter := &mockGetter{
+			entityInfo: &entity,
+			rules:      []RuleInfo{makeRule(ruleID, celExpr)},
+			candidates: map[string][]EntityInfo{"deployment": deployments},
+		}
+		setter := &mockSetter{}
+		ctrl := NewController(getter, setter)
+
+		_, err := ctrl.Process(context.Background(), reconcile.Item{
+			ScopeID: FormatScopeID("resource", entity.ID.String()),
+		})
+		require.NoError(t, err)
+
+		rels := setter.calls[0].relationships
+		require.Len(t, rels, 1, "resource with region=eu-west should connect to 1 deployment")
+		assert.Equal(t, depEUWest, rels[0].ToEntityID)
+	})
+
+	t.Run("eu-west deployment only has incoming from eu-west resource", func(t *testing.T) {
+		entity := deployments[2] // region=eu-west
+		getter := &mockGetter{
+			entityInfo: &entity,
+			rules:      []RuleInfo{makeRule(ruleID, celExpr)},
+			candidates: map[string][]EntityInfo{"resource": resources},
+		}
+		setter := &mockSetter{}
+		ctrl := NewController(getter, setter)
+
+		_, err := ctrl.Process(context.Background(), reconcile.Item{
+			ScopeID: FormatScopeID("deployment", entity.ID.String()),
+		})
+		require.NoError(t, err)
+
+		rels := setter.calls[0].relationships
+		require.Len(t, rels, 1, "deployment with region=eu-west should have 1 incoming edge")
+		assert.Equal(t, resEUWest, rels[0].FromEntityID)
+		assert.Equal(t, entity.ID, rels[0].ToEntityID)
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Same-type metadata equality: incoming + outgoing on self-referential rule
+// ---------------------------------------------------------------------------
+
+func TestProcess_SameTypeMetadataEquality_IncomingOutgoing(t *testing.T) {
+	wsID := newID()
+	ruleID := newID()
+
+	celExpr := `from.type == "resource" && to.type == "resource" && from.metadata.cluster == to.metadata.cluster`
+
+	entityID := newID()
+	peerA := newID()
+	peerB := newID()
+	differentCluster := newID()
+
+	entity := resourceEntity(entityID, wsID, "main", "Pod", map[string]any{"cluster": "prod-1"})
+
+	candidates := []EntityInfo{
+		entity,
+		resourceEntity(peerA, wsID, "peer-a", "Pod", map[string]any{"cluster": "prod-1"}),
+		resourceEntity(peerB, wsID, "peer-b", "Pod", map[string]any{"cluster": "prod-1"}),
+		resourceEntity(differentCluster, wsID, "staging", "Pod", map[string]any{"cluster": "staging"}),
+	}
+
+	getter := &mockGetter{
+		entityInfo: &entity,
+		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
+		candidates: map[string][]EntityInfo{"resource": candidates},
+	}
+	setter := &mockSetter{}
+	ctrl := NewController(getter, setter)
+
+	_, err := ctrl.Process(context.Background(), reconcile.Item{
+		ScopeID: FormatScopeID("resource", entityID.String()),
+	})
+	require.NoError(t, err)
+	require.Len(t, setter.calls, 1)
+
+	rels := setter.calls[0].relationships
+
+	var outgoing, incoming []ComputedRelationship
+	for _, rel := range rels {
+		if rel.FromEntityID == entityID {
+			outgoing = append(outgoing, rel)
+		}
+		if rel.ToEntityID == entityID {
+			incoming = append(incoming, rel)
+		}
+	}
+
+	assert.Len(t, outgoing, 2, "entity should have 2 outgoing edges (to peerA and peerB)")
+	assert.Len(t, incoming, 2, "entity should have 2 incoming edges (from peerA and peerB)")
+	assert.Len(t, rels, 4, "total relationships = 2 outgoing + 2 incoming")
+
+	outToIDs := make([]uuid.UUID, len(outgoing))
+	for i, r := range outgoing {
+		outToIDs[i] = r.ToEntityID
+	}
+	sort.Slice(outToIDs, func(i, j int) bool { return outToIDs[i].String() < outToIDs[j].String() })
+	expectedPeers := []uuid.UUID{peerA, peerB}
+	sort.Slice(expectedPeers, func(i, j int) bool { return expectedPeers[i].String() < expectedPeers[j].String() })
+	assert.Equal(t, expectedPeers, outToIDs)
+
+	inFromIDs := make([]uuid.UUID, len(incoming))
+	for i, r := range incoming {
+		inFromIDs[i] = r.FromEntityID
+	}
+	sort.Slice(inFromIDs, func(i, j int) bool { return inFromIDs[i].String() < inFromIDs[j].String() })
+	assert.Equal(t, expectedPeers, inFromIDs)
 }
 
 // ---------------------------------------------------------------------------
@@ -1408,8 +1618,8 @@ func TestProcess_MixedRuleResults(t *testing.T) {
 	getter := &mockGetter{
 		entityInfo: &entity,
 		rules: []RuleInfo{
-			makeRule(ruleMatches, matchCel, "resource", "deployment"),
-			makeRule(ruleNoMatch, noMatchCel, "resource", "deployment"),
+			makeRule(ruleMatches, matchCel),
+			makeRule(ruleNoMatch, noMatchCel),
 		},
 		candidates: map[string][]EntityInfo{
 			"deployment": {

@@ -161,8 +161,6 @@ func toEvalRules(rules []RuleInfo) []eval.Rule {
 			ID:        r.ID,
 			Reference: r.Reference,
 			Cel:       r.Cel,
-			FromType:  r.FromType,
-			ToType:    r.ToType,
 		}
 	}
 	return out

@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { and, eq, or, sql } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -174,6 +176,113 @@ export const resourcesRouter = router({
         },
       );
       return result.data;
+    }),
+
+  computedRelations: protectedProcedure
+    .input(z.object({ resourceId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const { resourceId } = input;
+
+      const cer = schema.computedEntityRelationship;
+      const rule = schema.relationshipRule;
+      const res = schema.resource;
+      const dep = schema.deployment;
+      const env = schema.environment;
+
+      const rows = await ctx.db
+        .select({
+          ruleId: cer.ruleId,
+          ruleName: rule.name,
+          ruleReference: rule.reference,
+          fromEntityType: cer.fromEntityType,
+          fromEntityId: cer.fromEntityId,
+          toEntityType: cer.toEntityType,
+          toEntityId: cer.toEntityId,
+          relatedEntityName: sql<string>`
+            COALESCE(
+              ${res.name},
+              ${dep.name},
+              ${env.name}
+            )
+          `.as("related_entity_name"),
+          relatedEntityType: sql<string>`
+            CASE
+              WHEN ${res.id} IS NOT NULL THEN 'resource'
+              WHEN ${dep.id} IS NOT NULL THEN 'deployment'
+              WHEN ${env.id} IS NOT NULL THEN 'environment'
+            END
+          `.as("related_entity_type"),
+          relatedEntityId: sql<string>`
+            COALESCE(
+              ${res.id}::text,
+              ${dep.id}::text,
+              ${env.id}::text
+            )
+          `.as("related_entity_id"),
+          resourceKind: res.kind,
+          resourceVersion: res.version,
+          resourceIdentifier: res.identifier,
+          direction: sql<string>`
+            CASE
+              WHEN ${cer.fromEntityId} = ${resourceId}::uuid
+                   AND ${cer.fromEntityType} = 'resource'
+                THEN 'outgoing'
+              ELSE 'incoming'
+            END
+          `.as("direction"),
+        })
+        .from(cer)
+        .innerJoin(rule, eq(cer.ruleId, rule.id))
+        .leftJoin(
+          res,
+          and(
+            eq(
+              res.id,
+              sql`CASE
+                WHEN ${cer.fromEntityId} = ${resourceId}::uuid AND ${cer.fromEntityType} = 'resource'
+                  THEN ${cer.toEntityId}
+                ELSE ${cer.fromEntityId}
+              END`,
+            ),
+            sql`${res.deletedAt} IS NULL`,
+          ),
+        )
+        .leftJoin(
+          dep,
+          eq(
+            dep.id,
+            sql`CASE
+              WHEN ${cer.fromEntityId} = ${resourceId}::uuid AND ${cer.fromEntityType} = 'resource'
+                THEN ${cer.toEntityId}
+              ELSE ${cer.fromEntityId}
+            END`,
+          ),
+        )
+        .leftJoin(
+          env,
+          eq(
+            env.id,
+            sql`CASE
+              WHEN ${cer.fromEntityId} = ${resourceId}::uuid AND ${cer.fromEntityType} = 'resource'
+                THEN ${cer.toEntityId}
+              ELSE ${cer.fromEntityId}
+            END`,
+          ),
+        )
+        .where(
+          or(
+            and(
+              eq(cer.fromEntityId, resourceId),
+              eq(cer.fromEntityType, "resource"),
+            ),
+            and(
+              eq(cer.toEntityId, resourceId),
+              eq(cer.toEntityType, "resource"),
+            ),
+          ),
+        );
+
+      return rows;
     }),
 
   releaseTargets: protectedProcedure

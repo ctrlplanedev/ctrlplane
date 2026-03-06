@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 import { ChevronDown } from "lucide-react";
+import { Link } from "react-router";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
@@ -25,6 +25,7 @@ import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { ResourceIcon } from "../../../components/ui/resource-icon";
+import { ComputedRelationsSection } from "./_components/ComputedRelationsSection";
 import { LinksSection } from "./_components/LinksSection";
 import { MetadataSection } from "./_components/MetadataSection";
 import { RelationsSection } from "./_components/RelationsSection";
@@ -67,7 +68,7 @@ export function PageHeader() {
   );
 }
 
-export function ResourceHeader() {
+function ResourceHeader() {
   const { resource } = useResource();
   return (
     <div className="flex items-start gap-4">
@@ -84,9 +85,9 @@ export function ResourceHeader() {
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span className="font-mono">{resource.identifier}</span>
           <span>•</span>
-          <span>
-            {resource.kind} v{resource.version}
-          </span>
+          <span>{resource.kind}</span>
+          <span>•</span>
+          <span>{resource.version}</span>
         </div>
       </div>
     </div>
@@ -181,6 +182,7 @@ export default function ResourceDetail() {
 
           <ResourceVariables />
           <ReleaseTargets />
+          <ComputedRelationsSection />
         </div>
       </div>
     </>

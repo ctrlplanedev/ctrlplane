@@ -83,6 +83,170 @@ export const reconcileRouter = router({
       return scope;
     }),
 
+  triggerDeploymentSelectorEval: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        deploymentId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [scope] = await ctx.db
+        .insert(schema.reconcileWorkScope)
+        .values({
+          workspaceId: input.workspaceId,
+          kind: "deployment-resource-selector-eval",
+          scopeType: "deployment",
+          scopeId: input.deploymentId,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.reconcileWorkScope.workspaceId,
+            schema.reconcileWorkScope.kind,
+            schema.reconcileWorkScope.scopeType,
+            schema.reconcileWorkScope.scopeId,
+          ],
+          set: { eventTs: new Date(), notBefore: new Date() },
+        })
+        .returning();
+      return scope;
+    }),
+
+  triggerEnvironmentSelectorEval: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [scope] = await ctx.db
+        .insert(schema.reconcileWorkScope)
+        .values({
+          workspaceId: input.workspaceId,
+          kind: "environment-resource-selector-eval",
+          scopeType: "environment",
+          scopeId: input.environmentId,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.reconcileWorkScope.workspaceId,
+            schema.reconcileWorkScope.kind,
+            schema.reconcileWorkScope.scopeType,
+            schema.reconcileWorkScope.scopeId,
+          ],
+          set: { eventTs: new Date(), notBefore: new Date() },
+        })
+        .returning();
+      return scope;
+    }),
+
+  triggerRelationshipEval: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        entityType: z.enum(["resource", "deployment", "environment"]),
+        entityId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const scopeId = `${input.entityType}:${input.entityId}`;
+      const [scope] = await ctx.db
+        .insert(schema.reconcileWorkScope)
+        .values({
+          workspaceId: input.workspaceId,
+          kind: "relationship-eval",
+          scopeType: "entity",
+          scopeId,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.reconcileWorkScope.workspaceId,
+            schema.reconcileWorkScope.kind,
+            schema.reconcileWorkScope.scopeType,
+            schema.reconcileWorkScope.scopeId,
+          ],
+          set: { eventTs: new Date(), notBefore: new Date() },
+        })
+        .returning();
+      return scope;
+    }),
+
+  triggerRelationshipEvalForRule: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        ruleId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const rule = await ctx.db
+        .select()
+        .from(schema.relationshipRule)
+        .where(
+          and(
+            eq(schema.relationshipRule.id, input.ruleId),
+            eq(schema.relationshipRule.workspaceId, input.workspaceId),
+          ),
+        )
+        .then((rows) => rows[0]);
+
+      if (!rule) throw new Error("Relationship rule not found");
+
+      const [resources, deployments, environments] = await Promise.all([
+        ctx.db
+          .select({ id: schema.resource.id })
+          .from(schema.resource)
+          .where(eq(schema.resource.workspaceId, input.workspaceId)),
+        ctx.db
+          .select({ id: schema.deployment.id })
+          .from(schema.deployment)
+          .where(eq(schema.deployment.workspaceId, input.workspaceId)),
+        ctx.db
+          .select({ id: schema.environment.id })
+          .from(schema.environment)
+          .where(eq(schema.environment.workspaceId, input.workspaceId)),
+      ]);
+
+      const values = [
+        ...resources.map((r) => ({
+          workspaceId: input.workspaceId,
+          kind: "relationship-eval" as const,
+          scopeType: "entity" as const,
+          scopeId: `resource:${r.id}`,
+        })),
+        ...deployments.map((d) => ({
+          workspaceId: input.workspaceId,
+          kind: "relationship-eval" as const,
+          scopeType: "entity" as const,
+          scopeId: `deployment:${d.id}`,
+        })),
+        ...environments.map((e) => ({
+          workspaceId: input.workspaceId,
+          kind: "relationship-eval" as const,
+          scopeType: "entity" as const,
+          scopeId: `environment:${e.id}`,
+        })),
+      ];
+
+      if (values.length === 0) return { enqueued: 0 };
+
+      await ctx.db
+        .insert(schema.reconcileWorkScope)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [
+            schema.reconcileWorkScope.workspaceId,
+            schema.reconcileWorkScope.kind,
+            schema.reconcileWorkScope.scopeType,
+            schema.reconcileWorkScope.scopeId,
+          ],
+          set: { eventTs: new Date(), notBefore: new Date() },
+        });
+
+      return { enqueued: values.length };
+    }),
+
   listWorkScopes: protectedProcedure
     .input(
       z.object({

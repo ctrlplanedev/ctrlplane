@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"testing"
 
@@ -24,9 +25,7 @@ func resourceEntity(id, wsID uuid.UUID, name, kind string, extra map[string]any)
 		"name": name,
 		"kind": kind,
 	}
-	for k, v := range extra {
-		raw[k] = v
-	}
+	maps.Copy(raw, extra)
 	return EntityData{ID: id, WorkspaceID: wsID, EntityType: "resource", Raw: raw}
 }
 
@@ -37,9 +36,7 @@ func deploymentEntity(id, wsID uuid.UUID, name, slug string, extra map[string]an
 		"name": name,
 		"slug": slug,
 	}
-	for k, v := range extra {
-		raw[k] = v
-	}
+	maps.Copy(raw, extra)
 	return EntityData{ID: id, WorkspaceID: wsID, EntityType: "deployment", Raw: raw}
 }
 
@@ -55,7 +52,7 @@ func nameMatchRule(ruleID uuid.UUID, ref, fromType, toType string) Rule {
 		`from.type == "%s" && to.type == "%s" && from.name == to.name`,
 		fromType, toType,
 	)
-	return Rule{ID: ruleID, Reference: ref, Cel: cel, FromType: fromType, ToType: toType}
+	return Rule{ID: ruleID, Reference: ref, Cel: cel}
 }
 
 // mockLoader returns pre-configured candidates by entity type.
@@ -142,7 +139,6 @@ func TestEvaluateRule_EntityIsBothFromAndTo(t *testing.T) {
 
 	rule := Rule{
 		ID: ruleID, Reference: "peer", Cel: `from.type == "resource" && to.type == "resource" && from.name == to.name`,
-		FromType: "resource", ToType: "resource",
 	}
 
 	matches, err := EvaluateRule(context.Background(), &entity, &rule, []EntityData{candidate1, candidate2})
@@ -180,7 +176,6 @@ func TestEvaluateRule_SkipsSelf(t *testing.T) {
 
 	rule := Rule{
 		ID: newID(), Reference: "self", Cel: `from.type == "resource" && to.type == "resource" && true`,
-		FromType: "resource", ToType: "resource",
 	}
 
 	matches, err := EvaluateRule(context.Background(), &entity, &rule, []EntityData{self})
@@ -214,7 +209,6 @@ func TestEvaluateRule_CELCompileError(t *testing.T) {
 	entity := resourceEntity(newID(), newID(), "web", "Server", nil)
 	rule := Rule{
 		ID: newID(), Reference: "bad", Cel: "this is not valid CEL !!!",
-		FromType: "resource", ToType: "deployment",
 	}
 	candidate := deploymentEntity(newID(), newID(), "web", "web", nil)
 
@@ -267,8 +261,7 @@ func TestEvaluateRule_CEL_MetadataFieldMatch(t *testing.T) {
 
 	rule := Rule{
 		ID: newID(), Reference: "same-region",
-		Cel:      `from.type == "resource" && to.type == "resource" && from.metadata.region == to.metadata.region`,
-		FromType: "resource", ToType: "resource",
+		Cel: `from.metadata.region == to.metadata.region`,
 	}
 
 	// Same-type rule: entity is evaluated as both from and to.
@@ -300,8 +293,7 @@ func TestEvaluateRule_CEL_IDMatch(t *testing.T) {
 
 	rule := Rule{
 		ID: newID(), Reference: "db",
-		Cel:      fmt.Sprintf(`from.type == "resource" && to.type == "resource" && to.id == "%s"`, targetID.String()),
-		FromType: "resource", ToType: "resource",
+		Cel: fmt.Sprintf(`to.id == "%s"`, targetID.String()),
 	}
 
 	matches, err := EvaluateRule(context.Background(), &entity, &rule, candidates)
@@ -399,7 +391,6 @@ func TestEvaluateRules_CELErrorPropagated(t *testing.T) {
 
 	rules := []Rule{{
 		ID: newID(), Reference: "bad", Cel: "not valid!!!",
-		FromType: "resource", ToType: "deployment",
 	}}
 
 	_, err := EvaluateRules(context.Background(), loader, &entity, rules)
@@ -434,13 +425,11 @@ func TestResolveForReference_FiltersToMatchingReference(t *testing.T) {
 	rules := []Rule{
 		{
 			ID: dbRuleID, Reference: "database",
-			Cel:      `from.type == "resource" && to.type == "resource" && to.kind == "Database"`,
-			FromType: "resource", ToType: "resource",
+			Cel: `to.kind == "Database"`,
 		},
 		{
 			ID: cacheRuleID, Reference: "cache",
-			Cel:      `from.type == "resource" && to.type == "resource" && to.kind == "Cache"`,
-			FromType: "resource", ToType: "resource",
+			Cel: `to.kind == "Cache"`,
 		},
 	}
 
@@ -491,13 +480,11 @@ func TestResolveForReference_MultipleRulesSameReference(t *testing.T) {
 	rules := []Rule{
 		{
 			ID: newID(), Reference: "database",
-			Cel:      `from.type == "resource" && to.type == "resource" && to.name == "db-primary"`,
-			FromType: "resource", ToType: "resource",
+			Cel: `to.name == "db-primary"`,
 		},
 		{
 			ID: newID(), Reference: "database",
-			Cel:      `from.type == "resource" && to.type == "resource" && to.name == "db-replica"`,
-			FromType: "resource", ToType: "resource",
+			Cel: `to.name == "db-replica"`,
 		},
 	}
 

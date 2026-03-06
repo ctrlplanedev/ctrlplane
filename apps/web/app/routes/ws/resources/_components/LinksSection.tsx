@@ -19,7 +19,7 @@ export function LinksSection() {
   if (Object.keys(links).length === 0) return null;
 
   return (
-    <>
+    <div className="flex items-center gap-2">
       {Object.entries(links).map(([name, url]) => (
         <a
           key={name}
@@ -32,6 +32,6 @@ export function LinksSection() {
           {name}
         </a>
       ))}
-    </>
+    </div>
   );
 }

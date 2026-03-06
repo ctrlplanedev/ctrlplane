@@ -581,8 +581,6 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 			ID:        ruleID,
 			Reference: "database",
 			Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Database"`,
-			FromType:  "resource",
-			ToType:    "resource",
 		}},
 		candidates: map[string][]eval.EntityData{
 			"resource": {
@@ -650,8 +648,6 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 			ID:        ruleID,
 			Reference: "cluster",
 			Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Cluster"`,
-			FromType:  "resource",
-			ToType:    "resource",
 		}},
 		candidates: map[string][]eval.EntityData{
 			"resource": {
@@ -735,8 +731,6 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 			ID:        ruleID,
 			Reference: "vpc",
 			Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Network"`,
-			FromType:  "resource",
-			ToType:    "resource",
 		}},
 		candidates: map[string][]eval.EntityData{
 			"resource": {
