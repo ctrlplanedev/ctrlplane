@@ -6,8 +6,8 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/relationships/eval"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
