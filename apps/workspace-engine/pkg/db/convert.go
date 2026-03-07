@@ -82,10 +82,6 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 		CreatedAt:   row.CreatedAt,
 	})
 
-	type ruleID struct {
-		Id string `json:"id"`
-	}
-
 	type approvalJSON struct {
 		Id           string `json:"id"`
 		MinApprovals int32  `json:"minApprovals"`
@@ -141,12 +137,12 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 	}
 
 	type progressionJSON struct {
-		Id                           string       `json:"id"`
-		DependsOnEnvironmentSelector string       `json:"dependsOnEnvironmentSelector"`
-		MaximumAgeHours              *int32       `json:"maximumAgeHours"`
-		MinimumSoakTimeMinutes       *int32       `json:"minimumSoakTimeMinutes"`
-		MinimumSuccessPercentage     *float32     `json:"minimumSuccessPercentage"`
-		SuccessStatuses              *[]string    `json:"successStatuses"`
+		Id                           string    `json:"id"`
+		DependsOnEnvironmentSelector string    `json:"dependsOnEnvironmentSelector"`
+		MaximumAgeHours              *int32    `json:"maximumAgeHours"`
+		MinimumSoakTimeMinutes       *int32    `json:"minimumSoakTimeMinutes"`
+		MinimumSuccessPercentage     *float32  `json:"minimumSuccessPercentage"`
+		SuccessStatuses              *[]string `json:"successStatuses"`
 	}
 	var progs []progressionJSON
 	_ = json.Unmarshal(row.EnvironmentProgressionRules, &progs)
