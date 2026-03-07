@@ -58,7 +58,7 @@ func (p *PostgresGetResources) GetResources(ctx context.Context, workspaceID str
 		if err := rows.Scan(
 			&r.ID, &r.Version, &r.Name, &r.Kind, &r.Identifier,
 			&r.ProviderID, &r.WorkspaceID, &r.Config,
-			&r.CreatedAt, &r.UpdatedAt, &r.DeletedAt, &r.Metadata,
+			&r.CreatedAt, &r.UpdatedAt, &r.Metadata,
 		); err != nil {
 			return nil, fmt.Errorf("scan resource: %w", err)
 		}
