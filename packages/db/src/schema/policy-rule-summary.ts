@@ -13,15 +13,11 @@ import {
 import { deployment } from "./deployment.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { environment } from "./environment.js";
-import { workspace } from "./workspace.js";
 
 export const policyRuleSummary = pgTable(
   "policy_rule_summary",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    workspaceId: uuid("workspace_id")
-      .notNull()
-      .references(() => workspace.id, { onDelete: "cascade" }),
     ruleId: uuid("rule_id").notNull(),
 
     deploymentId: uuid("deployment_id").references(() => deployment.id, {
@@ -50,7 +46,6 @@ export const policyRuleSummary = pgTable(
     uniqueIndex().on(t.ruleId, t.deploymentId, t.environmentId, t.versionId),
     index().on(t.deploymentId, t.versionId),
     index().on(t.environmentId),
-    index().on(t.workspaceId),
   ],
 );
 

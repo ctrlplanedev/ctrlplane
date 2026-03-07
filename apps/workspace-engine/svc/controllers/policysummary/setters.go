@@ -10,7 +10,6 @@ import (
 
 // RuleSummaryRow is the DB representation of a single rule evaluation result.
 type RuleSummaryRow struct {
-	WorkspaceID   uuid.UUID
 	RuleID        uuid.UUID
 	DeploymentID  *uuid.UUID
 	EnvironmentID *uuid.UUID

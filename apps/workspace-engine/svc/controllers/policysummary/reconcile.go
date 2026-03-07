@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/svc/controllers/policysummary/summaryeval"
 
 	"github.com/google/uuid"
 )
@@ -22,13 +23,11 @@ type reconciler struct {
 	setter      Setter
 }
 
-// reconcileEnvironment handles the "environment" scope channel.
-// Runs: deployment window evaluator.
 func (r *reconciler) reconcileEnvironment(ctx context.Context, scope *EnvironmentScope) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "policysummary.reconcileEnvironment")
 	defer span.End()
 
-	env, err := r.getter.GetEnvironment(ctx, scope.EnvironmentID)
+	env, err := r.getter.GetEnvironment(ctx, scope.EnvironmentID.String())
 	if err != nil {
 		return nil, fmt.Errorf("get environment: %w", err)
 	}
@@ -43,8 +42,7 @@ func (r *reconciler) reconcileEnvironment(ctx context.Context, scope *Environmen
 	}
 
 	rows, nextTime := r.evaluateAndCollect(ctx, policies, evalScope, func(rule *oapi.PolicyRule) []evaluator.Evaluator {
-		// TODO: return only environment-scoped summary evaluators (deployment window)
-		return nil
+		return summaryeval.EnvironmentRuleEvaluators(rule)
 	})
 
 	for i := range rows {
@@ -58,13 +56,11 @@ func (r *reconciler) reconcileEnvironment(ctx context.Context, scope *Environmen
 	return &ReconcileResult{NextReconcileAt: nextTime}, nil
 }
 
-// reconcileEnvironmentVersion handles the "environment-version" scope channel.
-// Runs: approval, environment progression, gradual rollout evaluators.
 func (r *reconciler) reconcileEnvironmentVersion(ctx context.Context, scope *EnvironmentVersionScope) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "policysummary.reconcileEnvironmentVersion")
 	defer span.End()
 
-	env, err := r.getter.GetEnvironment(ctx, scope.EnvironmentID)
+	env, err := r.getter.GetEnvironment(ctx, scope.EnvironmentID.String())
 	if err != nil {
 		return nil, fmt.Errorf("get environment: %w", err)
 	}
@@ -85,9 +81,7 @@ func (r *reconciler) reconcileEnvironmentVersion(ctx context.Context, scope *Env
 	}
 
 	rows, nextTime := r.evaluateAndCollect(ctx, policies, evalScope, func(rule *oapi.PolicyRule) []evaluator.Evaluator {
-		// TODO: return environment-version-scoped summary evaluators
-		// (approval, environment progression, gradual rollout)
-		return nil
+		return summaryeval.EnvironmentVersionRuleEvaluators(r.getter, rule)
 	})
 
 	for i := range rows {
@@ -102,13 +96,11 @@ func (r *reconciler) reconcileEnvironmentVersion(ctx context.Context, scope *Env
 	return &ReconcileResult{NextReconcileAt: nextTime}, nil
 }
 
-// reconcileDeploymentVersion handles the "deployment-version" scope channel.
-// Runs: version cooldown evaluator.
 func (r *reconciler) reconcileDeploymentVersion(ctx context.Context, scope *DeploymentVersionScope) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "policysummary.reconcileDeploymentVersion")
 	defer span.End()
 
-	deployment, err := r.getter.GetDeployment(ctx, scope.DeploymentID)
+	deployment, err := r.getter.GetDeployment(ctx, scope.DeploymentID.String())
 	if err != nil {
 		return nil, fmt.Errorf("get deployment: %w", err)
 	}
@@ -129,8 +121,7 @@ func (r *reconciler) reconcileDeploymentVersion(ctx context.Context, scope *Depl
 	}
 
 	rows, nextTime := r.evaluateAndCollect(ctx, policies, evalScope, func(rule *oapi.PolicyRule) []evaluator.Evaluator {
-		// TODO: return deployment-version-scoped summary evaluators (version cooldown)
-		return nil
+		return summaryeval.DeploymentVersionRuleEvaluators(r.getter, rule)
 	})
 
 	for i := range rows {
@@ -145,9 +136,6 @@ func (r *reconciler) reconcileDeploymentVersion(ctx context.Context, scope *Depl
 	return &ReconcileResult{NextReconcileAt: nextTime}, nil
 }
 
-// evaluateAndCollect runs the given evaluator factory against all policies and
-// collects RuleSummaryRows. Returns the rows and the earliest NextEvaluationTime
-// across all evaluations (for RequeueAfter).
 func (r *reconciler) evaluateAndCollect(
 	ctx context.Context,
 	policies []*oapi.Policy,
@@ -170,9 +158,8 @@ func (r *reconciler) evaluateAndCollect(
 
 				result := eval.Evaluate(ctx, scope)
 				rows = append(rows, RuleSummaryRow{
-					WorkspaceID: r.workspaceID,
-					RuleID:      uuid.MustParse(rule.Id),
-					Evaluation:  result,
+					RuleID:     uuid.MustParse(rule.Id),
+					Evaluation: result,
 				})
 
 				if result.NextEvaluationTime != nil {

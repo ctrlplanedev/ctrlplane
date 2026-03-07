@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -77,9 +78,10 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 
 	kind := events.PolicySummaryKind
 	queue := postgres.NewForKinds(pgxPool, kind)
+	queries := db.New(pgxPool)
 	controller := &Controller{
-		getter: &PostgresGetter{},
-		setter: &PostgresSetter{},
+		getter: NewPostgresGetter(queries),
+		setter: NewPostgresSetter(queries),
 	}
 	worker, err := reconcile.NewWorker(
 		kind,

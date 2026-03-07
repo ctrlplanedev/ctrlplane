@@ -86,6 +86,13 @@ func HandleEnvironmentCreated(
 			releasemanager.WithTrigger(trace.TriggerEnvironmentCreated))
 	}
 
+	if err := events.EnqueuePolicySummary(ws.Queue(), ctx, events.EnvironmentSummaryParams{
+		WorkspaceID:   ws.ID,
+		EnvironmentID: environment.Id,
+	}.ToParams()); err != nil {
+		log.Error("failed to enqueue policy summary for environment created", "error", err)
+	}
+
 	return nil
 }
 
@@ -180,6 +187,13 @@ func HandleEnvironmentUpdated(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerEnvironmentUpdated))
+
+	if err := events.EnqueuePolicySummary(ws.Queue(), ctx, events.EnvironmentSummaryParams{
+		WorkspaceID:   ws.ID,
+		EnvironmentID: environment.Id,
+	}.ToParams()); err != nil {
+		log.Error("failed to enqueue policy summary for environment updated", "error", err)
+	}
 
 	return nil
 }

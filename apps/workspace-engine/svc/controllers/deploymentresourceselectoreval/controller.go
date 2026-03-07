@@ -89,6 +89,9 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		if err := c.enqueueReleaseTargets(ctx, deployment.WorkspaceID, releaseTargets); err != nil {
 			return reconcile.Result{}, fmt.Errorf("enqueue release targets: %w", err)
 		}
+		if err := c.enqueuePolicySummaries(ctx, deployment.WorkspaceID, releaseTargets); err != nil {
+			log.Error("failed to enqueue policy summaries", "error", err)
+		}
 	}
 
 	return reconcile.Result{}, nil
@@ -110,6 +113,25 @@ func (c *Controller) enqueueReleaseTargets(ctx context.Context, workspaceID uuid
 		}
 	}
 	return events.EnqueueManyDesiredRelease(c.queue, ctx, params)
+}
+
+func (c *Controller) enqueuePolicySummaries(ctx context.Context, workspaceID uuid.UUID, releaseTargets []ReleaseTarget) error {
+	wsID := workspaceID.String()
+	seen := make(map[string]struct{})
+	var params []events.PolicySummaryParams
+
+	for _, rt := range releaseTargets {
+		key := rt.EnvironmentID.String()
+		if _, ok := seen[key]; !ok {
+			seen[key] = struct{}{}
+			params = append(params, events.EnvironmentSummaryParams{
+				WorkspaceID:   wsID,
+				EnvironmentID: rt.EnvironmentID.String(),
+			}.ToParams())
+		}
+	}
+
+	return events.EnqueueManyPolicySummary(c.queue, ctx, params)
 }
 
 // evalResources streams resources from the DB and evaluates the CEL selector

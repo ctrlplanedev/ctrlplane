@@ -425,3 +425,22 @@ CREATE TABLE job_verification_metric_measurement (
     message TEXT NOT NULL DEFAULT '',
     status job_verification_status NOT NULL
 );
+
+CREATE TABLE policy_rule_summary (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rule_id UUID NOT NULL,
+    deployment_id UUID,
+    environment_id UUID,
+    version_id UUID,
+    allowed BOOLEAN NOT NULL,
+    action_required BOOLEAN NOT NULL DEFAULT false,
+    action_type TEXT,
+    message TEXT NOT NULL,
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    satisfied_at TIMESTAMPTZ,
+    next_evaluation_at TIMESTAMPTZ,
+    evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX policy_rule_summary_scope_idx
+    ON policy_rule_summary (rule_id, deployment_id, environment_id, version_id);

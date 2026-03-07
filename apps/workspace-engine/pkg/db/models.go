@@ -464,6 +464,22 @@ type PolicyRuleRollback struct {
 	CreatedAt             pgtype.Timestamptz
 }
 
+type PolicyRuleSummary struct {
+	ID               uuid.UUID
+	RuleID           uuid.UUID
+	DeploymentID     uuid.UUID
+	EnvironmentID    uuid.UUID
+	VersionID        uuid.UUID
+	Allowed          bool
+	ActionRequired   bool
+	ActionType       pgtype.Text
+	Message          string
+	Details          map[string]any
+	SatisfiedAt      pgtype.Timestamptz
+	NextEvaluationAt pgtype.Timestamptz
+	EvaluatedAt      pgtype.Timestamptz
+}
+
 type PolicyRuleVerification struct {
 	ID        uuid.UUID
 	PolicyID  uuid.UUID

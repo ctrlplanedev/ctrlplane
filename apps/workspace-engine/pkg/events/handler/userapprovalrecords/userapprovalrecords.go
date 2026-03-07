@@ -7,6 +7,7 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -50,6 +51,16 @@ func getRelevantTargets(ctx context.Context, ws *workspace.Workspace, userApprov
 	return releaseTargets, nil
 }
 
+func enqueuePolicySummary(ctx context.Context, ws *workspace.Workspace, record *oapi.UserApprovalRecord) {
+	if err := events.EnqueuePolicySummary(ws.Queue(), ctx, events.EnvironmentVersionSummaryParams{
+		WorkspaceID:   ws.ID,
+		EnvironmentID: record.EnvironmentId,
+		VersionID:     record.VersionId,
+	}.ToParams()); err != nil {
+		log.Error("failed to enqueue policy summary for approval", "error", err)
+	}
+}
+
 func HandleUserApprovalRecordCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -87,6 +98,8 @@ func HandleUserApprovalRecordCreated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalCreated))
 
+	enqueuePolicySummary(ctx, ws, userApprovalRecord)
+
 	return nil
 }
 
@@ -122,6 +135,8 @@ func HandleUserApprovalRecordUpdated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
 
+	enqueuePolicySummary(ctx, ws, userApprovalRecord)
+
 	return nil
 }
 
@@ -156,6 +171,8 @@ func HandleUserApprovalRecordDeleted(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
+
+	enqueuePolicySummary(ctx, ws, userApprovalRecord)
 
 	return nil
 }
