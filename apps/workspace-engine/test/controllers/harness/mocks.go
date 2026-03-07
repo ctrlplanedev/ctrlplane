@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/policies/match"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -98,8 +99,8 @@ func (g *DesiredReleaseGetter) GetCandidateVersions(_ context.Context, _ uuid.UU
 	return g.Versions, nil
 }
 
-func (g *DesiredReleaseGetter) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
-	return g.Policies, nil
+func (g *DesiredReleaseGetter) GetPoliciesForReleaseTarget(ctx context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+	return match.Filter(ctx, g.Policies, g.Scope.ToTarget()), nil
 }
 
 func (g *DesiredReleaseGetter) GetApprovalRecords(_ context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
