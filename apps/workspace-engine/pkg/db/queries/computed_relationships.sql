@@ -52,6 +52,13 @@ VALUES (@rule_id, @from_entity_type, @from_entity_id, @to_entity_type, @to_entit
 ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO UPDATE
 SET last_evaluated_at = NOW();
 
+-- name: GetExistingRelationshipsForEntity :many
+-- Returns all computed relationships where the given entity appears
+-- as either the "from" or "to" side.
+SELECT rule_id, from_entity_id, to_entity_id
+FROM computed_entity_relationship
+WHERE from_entity_id = @entity_id OR to_entity_id = @entity_id;
+
 -- name: BulkUpsertComputedRelationships :exec
 -- Inserts many computed relationships in one query, updating last_evaluated_at on conflict.
 INSERT INTO computed_entity_relationship (

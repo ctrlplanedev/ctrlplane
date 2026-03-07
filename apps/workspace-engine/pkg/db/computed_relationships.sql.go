@@ -161,6 +161,40 @@ func (q *Queries) GetEnvironmentForRelEval(ctx context.Context, id uuid.UUID) (G
 	return i, err
 }
 
+const getExistingRelationshipsForEntity = `-- name: GetExistingRelationshipsForEntity :many
+SELECT rule_id, from_entity_id, to_entity_id
+FROM computed_entity_relationship
+WHERE from_entity_id = $1 OR to_entity_id = $1
+`
+
+type GetExistingRelationshipsForEntityRow struct {
+	RuleID       uuid.UUID
+	FromEntityID uuid.UUID
+	ToEntityID   uuid.UUID
+}
+
+// Returns all computed relationships where the given entity appears
+// as either the "from" or "to" side.
+func (q *Queries) GetExistingRelationshipsForEntity(ctx context.Context, entityID uuid.UUID) ([]GetExistingRelationshipsForEntityRow, error) {
+	rows, err := q.db.Query(ctx, getExistingRelationshipsForEntity, entityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetExistingRelationshipsForEntityRow
+	for rows.Next() {
+		var i GetExistingRelationshipsForEntityRow
+		if err := rows.Scan(&i.RuleID, &i.FromEntityID, &i.ToEntityID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRelationshipRulesForWorkspace = `-- name: GetRelationshipRulesForWorkspace :many
 SELECT id, reference, cel
 FROM relationship_rule

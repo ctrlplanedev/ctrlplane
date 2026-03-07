@@ -136,10 +136,8 @@ func EvaluateRules(
 	}
 
 	var allMatches []Match
-	for i := range rules {
-		rule := &rules[i]
-
-		matches, err := EvaluateRule(ctx, entity, rule, allCandidates)
+	for _, rule := range rules {
+		matches, err := EvaluateRule(ctx, entity, &rule, allCandidates)
 		if err != nil {
 			return nil, fmt.Errorf("evaluate rule %s: %w", rule.ID, err)
 		}

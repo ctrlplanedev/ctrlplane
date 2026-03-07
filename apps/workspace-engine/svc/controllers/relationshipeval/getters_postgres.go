@@ -122,8 +122,22 @@ func (g *PostgresGetter) StreamCandidateEntities(ctx context.Context, workspaceI
 }
 
 func (g *PostgresGetter) GetExistingRelationships(ctx context.Context, entityID uuid.UUID) ([]ExistingRelationship, error) {
-	// TODO: implement query against computed_entity_relationship table once schema is defined
-	return nil, nil
+	q := db.GetQueries(ctx)
+
+	rows, err := q.GetExistingRelationshipsForEntity(ctx, entityID)
+	if err != nil {
+		return nil, fmt.Errorf("get existing relationships for entity %s: %w", entityID, err)
+	}
+
+	rels := make([]ExistingRelationship, 0, len(rows))
+	for _, row := range rows {
+		rels = append(rels, ExistingRelationship{
+			RuleID:       row.RuleID,
+			FromEntityID: row.FromEntityID,
+			ToEntityID:   row.ToEntityID,
+		})
+	}
+	return rels, nil
 }
 
 // sendBatches is a generic helper that partitions a slice of rows into
