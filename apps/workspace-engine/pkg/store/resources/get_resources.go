@@ -42,7 +42,7 @@ func (p *PostgresGetResources) GetResources(ctx context.Context, workspaceID str
 			baseQuery += " AND " + filter.Clause
 			args = append(args, filter.Args...)
 
-			log.Info("get resources optimization sql filter: %s", filter.Clause)
+			log.Info("get resources optimization sql filter: %s", "filter", filter.Clause)
 		}
 	}
 
