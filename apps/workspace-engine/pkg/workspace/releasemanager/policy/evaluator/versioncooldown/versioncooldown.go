@@ -54,7 +54,7 @@ func NewEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) eval
 	if store == nil {
 		return nil
 	}
-	return NewEvaluator(&storeGetters{store: store}, policyRule)
+	return NewEvaluator(NewStoreGetters(store), policyRule)
 }
 
 func NewEvaluator(getters Getters, policyRule *oapi.PolicyRule) evaluator.Evaluator {
@@ -146,8 +146,8 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 	}
 
 	if latestInProgressJob != nil {
-		release, ok := e.getters.GetRelease(latestInProgressJob.ReleaseId)
-		if ok && release != nil {
+		release, _ := e.getters.GetRelease(ctx, latestInProgressJob.ReleaseId)
+		if release != nil {
 			return &referenceResult{version: &release.Version, source: "in_progress"}
 		}
 	}
@@ -167,8 +167,8 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 	})
 
 	for _, job := range successfulJobs {
-		release, ok := e.getters.GetRelease(job.ReleaseId)
-		if !ok || release == nil {
+		release, _ := e.getters.GetRelease(ctx, job.ReleaseId)
+		if release == nil {
 			continue
 		}
 

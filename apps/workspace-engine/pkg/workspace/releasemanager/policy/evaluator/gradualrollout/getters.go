@@ -2,53 +2,69 @@ package gradualrollout
 
 import (
 	"context"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
+type approvalGetters = approval.Getters
+type environmentProgressionGetters = environmentprogression.Getters
+
 type Getters interface {
-	GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error)
-	GetPolicySkips(versionID, environmentID, resourceID string) []*oapi.PolicySkip
-	HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) bool
-	GetResource(resourceID string) (*oapi.Resource, bool)
-	GetDeployment(deploymentID string) (*oapi.Deployment, bool)
+	approvalGetters
+	environmentProgressionGetters
+
+	GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error)
+	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
+	HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error)
 	GetReleaseTargets() ([]*oapi.ReleaseTarget, error)
-	NewApprovalEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator
-	NewEnvironmentProgressionEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator
-	NewGradualRolloutEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator
 }
 
-var _ Getters = (*storeGetters)(nil)
+// ---------------------------------------------------------------------------
+// Store-backed implementation
+// ---------------------------------------------------------------------------
 
-type storeGetters struct {
+type approvalStoreGetters = approval.StoreGetters
+type environmentProgressionStoreGetters = environmentprogression.StoreGetters
+
+var _ Getters = (*StoreGetters)(nil)
+
+type StoreGetters struct {
+	*approvalStoreGetters
+	*environmentProgressionStoreGetters
 	store *store.Store
 }
 
-func (s *storeGetters) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+func NewStoreGetters(store *store.Store) *StoreGetters {
+	return &StoreGetters{
+		approvalStoreGetters:               approval.NewStoreGetters(store),
+		environmentProgressionStoreGetters: environmentprogression.NewStoreGetters(store),
+		store:                              store,
+	}
+}
+
+func (s *StoreGetters) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
 	return s.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 }
 
-func (s *storeGetters) GetPolicySkips(versionID, environmentID, resourceID string) []*oapi.PolicySkip {
-	return s.store.PolicySkips.GetAllForTarget(versionID, environmentID, resourceID)
+func (s *StoreGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	ps := s.store.PolicySkips.GetAllForTarget(versionID, environmentID, resourceID)
+	return ps, nil
 }
 
-func (s *storeGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) bool {
+func (s *StoreGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
 	_, _, err := s.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
-	return err == nil
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
 }
 
-func (s *storeGetters) GetResource(resourceID string) (*oapi.Resource, bool) {
-	return s.store.Resources.Get(resourceID)
-}
-
-func (s *storeGetters) GetDeployment(deploymentID string) (*oapi.Deployment, bool) {
-	return s.store.Deployments.Get(deploymentID)
-}
-
-func (s *storeGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
+func (s *StoreGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
 	items, err := s.store.ReleaseTargets.Items()
 	if err != nil {
 		return nil, err
@@ -60,14 +76,61 @@ func (s *storeGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
 	return targets, nil
 }
 
-func (s *storeGetters) NewApprovalEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return approval.NewEvaluatorFromStore(s.store, rule)
+// ---------------------------------------------------------------------------
+// Postgres-backed implementation
+// ---------------------------------------------------------------------------
+
+type approvalPostgresGetters = approval.PostgresGetters
+type environmentProgressionPostgresGetters = environmentprogression.PostgresGetters
+
+var _ Getters = (*PostgresGetters)(nil)
+
+type PostgresGetters struct {
+	*approvalPostgresGetters
+	*environmentProgressionPostgresGetters
+	queries *db.Queries
 }
 
-func (s *storeGetters) NewEnvironmentProgressionEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return environmentprogression.NewEvaluatorFromStore(s.store, rule)
+func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+	return &PostgresGetters{
+		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
+		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries),
+		queries:                               queries,
+	}
 }
 
-func (s *storeGetters) NewGradualRolloutEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return NewEvaluatorFromStore(s.store, rule)
+func (p *PostgresGetters) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+	panic("not implemented: GetPoliciesForReleaseTarget")
+}
+
+func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	skips, err := p.queries.ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
+		VersionID:     uuid.MustParse(versionID),
+		EnvironmentID: uuid.MustParse(environmentID),
+		ResourceID:    uuid.MustParse(resourceID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	ps := make([]*oapi.PolicySkip, 0, len(skips))
+	for _, skip := range skips {
+		ps = append(ps, db.ToOapiPolicySkip(skip))
+	}
+	return ps, nil
+}
+
+func (p *PostgresGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
+	releases, err := p.queries.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
+		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
+		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
+		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(releases) > 0, nil
+}
+
+func (p *PostgresGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
+	panic("not implemented: GetReleaseTargets")
 }

@@ -538,13 +538,17 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
+               },
+               "workspaceId": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
                "createdAt",
-               "metadata"
+               "metadata",
+               "workspaceId"
             ],
             "type": "object"
          },

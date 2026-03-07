@@ -107,8 +107,8 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 		rtJobs := t.getters.GetJobsForReleaseTarget(rt)
 		for _, job := range rtJobs {
 			// Get the release to check version
-			release, ok := t.getters.GetRelease(job.ReleaseId)
-			if !ok || release == nil {
+			release, _ := t.getters.GetRelease(ctx, job.ReleaseId)
+			if release == nil {
 				continue
 			}
 			// Filter by version ID

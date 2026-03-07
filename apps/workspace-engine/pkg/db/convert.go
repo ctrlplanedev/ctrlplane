@@ -1,15 +1,14 @@
-package convert
+package db
 
 import (
 	"encoding/json"
 
-	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 )
 
-func Deployment(row db.Deployment) *oapi.Deployment {
+func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
 		Id:             row.ID.String(),
 		Name:           row.Name,
@@ -26,7 +25,7 @@ func Deployment(row db.Deployment) *oapi.Deployment {
 	return d
 }
 
-func Environment(row db.Environment) *oapi.Environment {
+func ToOapiEnvironment(row Environment) *oapi.Environment {
 	e := &oapi.Environment{
 		Id:       row.ID.String(),
 		Name:     row.Name,
@@ -41,7 +40,7 @@ func Environment(row db.Environment) *oapi.Environment {
 	return e
 }
 
-func Resource(row db.GetResourceByIDRow) *oapi.Resource {
+func ToOapiResource(row GetResourceByIDRow) *oapi.Resource {
 	r := &oapi.Resource{
 		Id:          row.ID.String(),
 		Name:        row.Name,
@@ -70,7 +69,7 @@ func Resource(row db.GetResourceByIDRow) *oapi.Resource {
 	return r
 }
 
-func Policy(row db.Policy) *oapi.Policy {
+func ToOapiPolicy(row Policy) *oapi.Policy {
 	p := &oapi.Policy{
 		Id:          row.ID.String(),
 		Name:        row.Name,
@@ -89,7 +88,7 @@ func Policy(row db.Policy) *oapi.Policy {
 	return p
 }
 
-func UserApprovalRecord(row db.UserApprovalRecord) *oapi.UserApprovalRecord {
+func ToOapiUserApprovalRecord(row UserApprovalRecord) *oapi.UserApprovalRecord {
 	r := &oapi.UserApprovalRecord{
 		VersionId:     row.VersionID.String(),
 		UserId:        row.UserID.String(),
@@ -105,7 +104,7 @@ func UserApprovalRecord(row db.UserApprovalRecord) *oapi.UserApprovalRecord {
 	return r
 }
 
-func PolicySkip(row db.PolicySkip) *oapi.PolicySkip {
+func ToOapiPolicySkip(row PolicySkip) *oapi.PolicySkip {
 	s := &oapi.PolicySkip{
 		Id:        row.ID.String(),
 		CreatedBy: row.CreatedBy,
@@ -131,7 +130,7 @@ func PolicySkip(row db.PolicySkip) *oapi.PolicySkip {
 	return s
 }
 
-func DeploymentVariable(row db.DeploymentVariable) oapi.DeploymentVariable {
+func ToOapiDeploymentVariable(row DeploymentVariable) oapi.DeploymentVariable {
 	v := oapi.DeploymentVariable{
 		Id:           row.ID.String(),
 		DeploymentId: row.DeploymentID.String(),
@@ -149,7 +148,7 @@ func DeploymentVariable(row db.DeploymentVariable) oapi.DeploymentVariable {
 	return v
 }
 
-func DeploymentVariableValue(row db.DeploymentVariableValue) oapi.DeploymentVariableValue {
+func ToOapiDeploymentVariableValue(row DeploymentVariableValue) oapi.DeploymentVariableValue {
 	v := oapi.DeploymentVariableValue{
 		Id:                   row.ID.String(),
 		DeploymentVariableId: row.DeploymentVariableID.String(),
@@ -167,7 +166,7 @@ func DeploymentVariableValue(row db.DeploymentVariableValue) oapi.DeploymentVari
 	return v
 }
 
-func ResourceVariable(row db.ResourceVariable) oapi.ResourceVariable {
+func ToOapiResourceVariable(row ResourceVariable) oapi.ResourceVariable {
 	v := oapi.ResourceVariable{
 		ResourceId: row.ResourceID.String(),
 		Key:        row.Key,
@@ -178,7 +177,37 @@ func ResourceVariable(row db.ResourceVariable) oapi.ResourceVariable {
 	return v
 }
 
-func DeploymentVersion(row db.DeploymentVersion) *oapi.DeploymentVersion {
+func ToOapiSystem(row System) *oapi.System {
+	s := &oapi.System{
+		Id:          row.ID.String(),
+		Name:        row.Name,
+		WorkspaceId: row.WorkspaceID.String(),
+	}
+	if row.Description != "" {
+		s.Description = &row.Description
+	}
+	return s
+}
+
+func ToOapiRelease(row Release) *oapi.Release {
+	var createdAt string
+	if row.CreatedAt.Valid {
+		createdAt = row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00")
+	}
+	return &oapi.Release{
+		Id:        row.ID,
+		CreatedAt: createdAt,
+		ReleaseTarget: oapi.ReleaseTarget{
+			ResourceId:    row.ResourceID.String(),
+			EnvironmentId: row.EnvironmentID.String(),
+			DeploymentId:  row.DeploymentID.String(),
+		},
+		EncryptedVariables: []string{},
+		Variables:          map[string]oapi.LiteralValue{},
+	}
+}
+
+func ToOapiDeploymentVersion(row DeploymentVersion) *oapi.DeploymentVersion {
 	v := &oapi.DeploymentVersion{
 		Id:             row.ID.String(),
 		Name:           row.Name,
@@ -196,4 +225,61 @@ func DeploymentVersion(row db.DeploymentVersion) *oapi.DeploymentVersion {
 		v.CreatedAt = row.CreatedAt.Time
 	}
 	return v
+}
+
+func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
+	j := &oapi.Job{
+		Id:        row.ID.String(),
+		Status:    oapi.JobStatus(row.Status),
+		ReleaseId: row.ReleaseID.String(),
+	}
+	if row.CreatedAt.Valid {
+		j.CreatedAt = row.CreatedAt.Time
+	}
+	if row.CompletedAt.Valid {
+		t := row.CompletedAt.Time
+		j.CompletedAt = &t
+	}
+	if row.StartedAt.Valid {
+		t := row.StartedAt.Time
+		j.StartedAt = &t
+	}
+	if row.UpdatedAt.Valid {
+		j.UpdatedAt = row.UpdatedAt.Time
+	}
+	if row.ExternalID.Valid {
+		j.ExternalId = &row.ExternalID.String
+	}
+	if row.Message.Valid {
+		j.Message = &row.Message.String
+	}
+	if row.JobAgentID.Valid {
+		j.JobAgentId = uuid.UUID(row.JobAgentID.Bytes).String()
+	}
+	if len(row.JobAgentConfig) > 0 {
+		var cfg oapi.JobAgentConfig
+		if err := json.Unmarshal(row.JobAgentConfig, &cfg); err == nil {
+			j.JobAgentConfig = cfg
+		}
+	}
+	j.Metadata = parseJobMetadata(row.Metadata)
+	return j
+}
+
+func parseJobMetadata(raw []byte) map[string]string {
+	if len(raw) == 0 {
+		return map[string]string{}
+	}
+	var items []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	if err := json.Unmarshal(raw, &items); err != nil {
+		return map[string]string{}
+	}
+	result := make(map[string]string, len(items))
+	for _, item := range items {
+		result[item.Key] = item.Value
+	}
+	return result
 }

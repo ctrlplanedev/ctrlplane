@@ -32,7 +32,7 @@ func NewEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) eval
 	if store == nil {
 		return nil
 	}
-	return NewEvaluator(&storeGetters{store: store}, policyRule)
+	return NewEvaluator(&StoreGetters{store: store}, policyRule)
 }
 
 // NewEvaluator creates a new DeploymentWindowEvaluator from a policy rule.
@@ -117,7 +117,12 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 	_, span := tracer.Start(ctx, "DeploymentWindowEvaluator.Evaluate")
 	defer span.End()
 
-	if !e.getters.HasCurrentRelease(ctx, scope.ReleaseTarget()) {
+	hasCurrentRelease, err := e.getters.HasCurrentRelease(ctx, scope.ReleaseTarget())
+	if err != nil {
+		return results.NewDeniedResult("Failed to check if current release exists").
+			WithDetail("error", err.Error())
+	}
+	if !hasCurrentRelease {
 		return results.NewAllowedResult("No previous version deployed - deployment window ignored").
 			WithDetail("reason", "first_deployment")
 	}

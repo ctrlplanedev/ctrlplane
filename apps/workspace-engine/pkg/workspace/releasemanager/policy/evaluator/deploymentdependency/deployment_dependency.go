@@ -22,20 +22,27 @@ func celToSelector(cel string) *oapi.Selector {
 var tracer = otel.Tracer("DeploymentDependencyEvaluator")
 
 type DeploymentDependencyEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.DeploymentDependencyRule
+	getters Getters
+	ruleId  string
+	rule    *oapi.DeploymentDependencyRule
 }
 
-func NewEvaluator(store *store.Store, dependencyRule *oapi.PolicyRule) evaluator.Evaluator {
+func NewEvaluatorFromStore(store *store.Store, dependencyRule *oapi.PolicyRule) evaluator.Evaluator {
 	if dependencyRule == nil || dependencyRule.DeploymentDependency == nil || store == nil {
+		return nil
+	}
+	return NewEvaluator(NewStoreGetters(store), dependencyRule)
+}
+
+func NewEvaluator(getters Getters, dependencyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if dependencyRule == nil || dependencyRule.DeploymentDependency == nil || getters == nil {
 		return nil
 	}
 
 	return evaluator.WithMemoization(&DeploymentDependencyEvaluator{
-		store:  store,
-		ruleId: dependencyRule.Id,
-		rule:   dependencyRule.DeploymentDependency,
+		getters: getters,
+		ruleId:  dependencyRule.Id,
+		rule:    dependencyRule.DeploymentDependency,
 	})
 }
 
@@ -55,10 +62,14 @@ func (e *DeploymentDependencyEvaluator) Complexity() int {
 	return 3
 }
 
-func (e *DeploymentDependencyEvaluator) findMatchingDeployments(ctx context.Context) ([]*oapi.Deployment, error) {
+func (e *DeploymentDependencyEvaluator) findMatchingDeployments(ctx context.Context, scope evaluator.EvaluatorScope) ([]*oapi.Deployment, error) {
 	deploymentSelector := celToSelector(e.rule.DependsOn)
+	deployments, err := e.getters.GetAllDeployments(ctx, scope.Environment.WorkspaceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployments: %w", err)
+	}
 	matchingDeployments := make([]*oapi.Deployment, 0)
-	for _, deployment := range e.store.Deployments.Items() {
+	for _, deployment := range deployments {
 		matched, err := selector.Match(ctx, deploymentSelector, deployment)
 		if err != nil {
 			return nil, fmt.Errorf("failed to match deployment selector: %w", err)
@@ -72,7 +83,7 @@ func (e *DeploymentDependencyEvaluator) findMatchingDeployments(ctx context.Cont
 
 func (e *DeploymentDependencyEvaluator) getUpstreamReleaseTargets(ctx context.Context, matchingDeployments []*oapi.Deployment, resourceID string) []*oapi.ReleaseTarget {
 	upstreamReleaseTargets := make([]*oapi.ReleaseTarget, 0, len(matchingDeployments))
-	resourceTargets := e.store.ReleaseTargets.GetForResource(ctx, resourceID)
+	resourceTargets := e.getters.GetReleaseTargetsForResource(ctx, resourceID)
 	deploymentToTargetMap := make(map[string]*oapi.ReleaseTarget)
 
 	for _, resourceTarget := range resourceTargets {
@@ -89,7 +100,7 @@ func (e *DeploymentDependencyEvaluator) getUpstreamReleaseTargets(ctx context.Co
 }
 
 func (e *DeploymentDependencyEvaluator) checkUpstreamTargetHasSuccessfulRelease(upstreamReleaseTarget *oapi.ReleaseTarget) bool {
-	latestJob := e.store.Jobs.GetLatestCompletedJobForReleaseTarget(upstreamReleaseTarget)
+	latestJob := e.getters.GetLatestCompletedJobForReleaseTarget(upstreamReleaseTarget)
 	if latestJob == nil {
 		return false
 	}
@@ -108,7 +119,7 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 		attribute.String("dependsOn", dependsOn),
 	)
 
-	matchingDeployments, err := e.findMatchingDeployments(ctx)
+	matchingDeployments, err := e.findMatchingDeployments(ctx, scope)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(

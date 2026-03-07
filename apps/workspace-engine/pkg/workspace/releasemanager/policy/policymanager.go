@@ -46,7 +46,7 @@ func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 		environmentprogression.NewEvaluatorFromStore(m.store, rule),
 		gradualrollout.NewEvaluatorFromStore(m.store, rule),
 		versionselector.NewEvaluator(rule),
-		deploymentdependency.NewEvaluator(m.store, rule),
+		deploymentdependency.NewEvaluatorFromStore(m.store, rule),
 		deploymentwindow.NewEvaluatorFromStore(m.store, rule),
 		versioncooldown.NewEvaluatorFromStore(m.store, rule),
 	)

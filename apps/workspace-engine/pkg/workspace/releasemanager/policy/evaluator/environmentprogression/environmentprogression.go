@@ -34,7 +34,7 @@ func NewEvaluatorFromStore(
 	if store == nil {
 		return nil
 	}
-	return NewEvaluator(&storeGetters{store: store}, environmentProgressionRule)
+	return NewEvaluator(NewStoreGetters(store), environmentProgressionRule)
 }
 
 func NewEvaluator(
@@ -167,7 +167,10 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	var matchedEnvs []*oapi.Environment
 
 	// Iterate through all environments
-	envItems := e.getters.GetEnvironments()
+	envItems, err := e.getters.GetAllEnvironments(ctx, environment.WorkspaceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all environments: %w", err)
+	}
 	envSystemIDs := e.getters.GetSystemIDsForEnvironment(environment.Id)
 	for _, env := range envItems {
 		candidateSystemIDs := e.getters.GetSystemIDsForEnvironment(env.Id)

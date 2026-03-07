@@ -2,30 +2,38 @@ package desiredrelease
 
 import (
 	"context"
-
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/svc/controllers/desiredrelease/policyeval"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 
 	"github.com/google/uuid"
 )
 
+type postgresGetter = variableresolver.Getter
+type policyevalGetter = policyeval.Getter
+
 type Getter interface {
+	postgresGetter
+	policyevalGetter
+
 	ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
+
+	// ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
 	GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error)
 	GetCandidateVersions(ctx context.Context, deploymentID uuid.UUID) ([]*oapi.DeploymentVersion, error)
-	GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error)
 
-	GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
-	HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error)
-	GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error)
-	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
+	// GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
+	// HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error)
+	// GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error)
+	// GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
 
-	// Variable resolution
-	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
-	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
+	// // Variable resolution
+	// GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
+	// GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
 
-	// Realtime relationship resolution
-	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
-	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
+	// // Realtime relationship resolution
+	// GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
+	// LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
+	// GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error)
 }

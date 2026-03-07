@@ -20,7 +20,7 @@ func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) eva
 	if rule == nil || rule.GradualRollout == nil || store == nil {
 		return nil
 	}
-	return &GradualRolloutEnvironmentSummaryEvaluator{getters: &storeGetters{store: store}, ruleId: rule.Id, rule: rule.GradualRollout}
+	return &GradualRolloutEnvironmentSummaryEvaluator{getters: NewStoreGetters(store), ruleId: rule.Id, rule: rule.GradualRollout}
 }
 
 func (e *GradualRolloutEnvironmentSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -102,15 +102,15 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
-		resource, _ := e.getters.GetResource(releaseTarget.ResourceId)
-		deployment, _ := e.getters.GetDeployment(releaseTarget.DeploymentId)
+		resource, _ := e.getters.GetResource(ctx, releaseTarget.ResourceId)
+		deployment, _ := e.getters.GetDeployment(ctx, releaseTarget.DeploymentId)
 		scope := evaluator.EvaluatorScope{
 			Environment: environment,
 			Version:     version,
 			Resource:    resource,
 			Deployment:  deployment,
 		}
-		evaluation := e.getters.NewGradualRolloutEvaluator(&oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
+		evaluation := NewEvaluator(e.getters, &oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 		var targetTime *time.Time

@@ -19,16 +19,6 @@ import (
 
 var tracer = otel.Tracer("desiredrelease/variableresolver")
 
-// Getter provides the data needed to resolve deployment variables for a
-// release target. Implementations backed by Postgres or in-memory mocks
-// both satisfy this interface.
-type Getter interface {
-	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
-	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
-	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
-	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
-}
-
 // Scope carries the already-resolved entities for the release target so the
 // resolver can evaluate CEL resource selectors and resolve reference
 // variables without additional lookups.
@@ -183,21 +173,16 @@ func (r *realtimeResolver) ResolveRelated(ctx context.Context, reference string)
 			relatedType = m.FromEntityType
 		}
 
-		candidates, err := r.getter.LoadCandidates(ctx, r.workspaceID, relatedType)
+		entity, err := r.getter.GetEntityByID(ctx, relatedID, relatedType)
 		if err != nil {
-			return nil, fmt.Errorf("load candidate for matched entity %s: %w", relatedID, err)
+			return nil, fmt.Errorf("get matched entity %s: %w", relatedID, err)
 		}
 
-		for i := range candidates {
-			if candidates[i].ID == relatedID {
-				re, err := entityDataToRelatableEntity(&candidates[i])
-				if err != nil {
-					return nil, fmt.Errorf("convert matched entity: %w", err)
-				}
-				result = append(result, re)
-				break
-			}
+		re, err := entityDataToRelatableEntity(entity)
+		if err != nil {
+			return nil, fmt.Errorf("convert matched entity: %w", err)
 		}
+		result = append(result, re)
 	}
 
 	return result, nil

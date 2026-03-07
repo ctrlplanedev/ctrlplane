@@ -18,6 +18,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var _ desiredrelease.Getter = (*DesiredReleaseGetter)(nil)
+
 // ---------------------------------------------------------------------------
 // deploymentresourceselectoreval mocks
 // ---------------------------------------------------------------------------
@@ -96,7 +98,7 @@ func (g *DesiredReleaseGetter) GetCandidateVersions(_ context.Context, _ uuid.UU
 	return g.Versions, nil
 }
 
-func (g *DesiredReleaseGetter) GetPolicies(_ context.Context, _ *desiredrelease.ReleaseTarget) ([]*oapi.Policy, error) {
+func (g *DesiredReleaseGetter) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
 	return g.Policies, nil
 }
 
@@ -107,7 +109,7 @@ func (g *DesiredReleaseGetter) GetApprovalRecords(_ context.Context, versionID, 
 	return g.ApprovalRecords, nil
 }
 
-func (g *DesiredReleaseGetter) HasCurrentRelease(_ context.Context, _ *desiredrelease.ReleaseTarget) (bool, error) {
+func (g *DesiredReleaseGetter) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget) (bool, error) {
 	return g.HasRelease, nil
 }
 
@@ -139,6 +141,66 @@ func (g *DesiredReleaseGetter) LoadCandidates(_ context.Context, _ uuid.UUID, en
 		return g.Candidates[entityType], nil
 	}
 	return nil, nil
+}
+
+func (g *DesiredReleaseGetter) GetEntityByID(_ context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+	if g.Candidates != nil {
+		for i := range g.Candidates[entityType] {
+			if g.Candidates[entityType][i].ID == entityID {
+				return &g.Candidates[entityType][i], nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("%s with id %s not found", entityType, entityID)
+}
+
+func (g *DesiredReleaseGetter) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetDeployment(_ context.Context, _ string) (*oapi.Deployment, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetEnvironment(_ context.Context, _ string) (*oapi.Environment, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetResource(_ context.Context, _ string) (*oapi.Resource, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetRelease(_ context.Context, _ string) (*oapi.Release, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetSystemIDsForEnvironment(_ string) []string {
+	return nil
+}
+func (g *DesiredReleaseGetter) GetReleaseTargetsForEnvironment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetReleaseTargetsForDeployment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map[string]*oapi.Job {
+	return nil
+}
+func (g *DesiredReleaseGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
+	return nil, nil
+}
+func (g *DesiredReleaseGetter) GetJobVerificationStatus(_ string) oapi.JobVerificationStatus {
+	return oapi.JobVerificationStatusCancelled
+}
+func (g *DesiredReleaseGetter) NewVersionCooldownEvaluator(_ *oapi.PolicyRule) evaluator.Evaluator {
+	return nil
+}
+func (g *DesiredReleaseGetter) GetReleaseTargetsForResource(_ context.Context, _ string) []*oapi.ReleaseTarget {
+	return nil
+}
+func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget) *oapi.Job {
+	return nil
 }
 
 // DesiredReleaseSetter implements desiredrelease.Setter.
