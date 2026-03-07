@@ -3,7 +3,7 @@ package evaluator
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/desiredrelease/policymatch"
+	"workspace-engine/pkg/policies/match"
 )
 
 // ScopeFields is a bitmask that declares which EvaluatorScope fields an evaluator
@@ -91,8 +91,8 @@ func (s EvaluatorScope) ReleaseTarget() *oapi.ReleaseTarget {
 	}
 }
 
-func (s EvaluatorScope) ToTarget() *policymatch.Target {
-	return &policymatch.Target{
+func (s EvaluatorScope) ToTarget() *match.Target {
+	return &match.Target{
 		Environment: s.Environment,
 		Deployment:  s.Deployment,
 		Resource:    s.Resource,

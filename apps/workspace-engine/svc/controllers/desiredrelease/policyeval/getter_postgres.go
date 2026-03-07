@@ -4,7 +4,6 @@ import (
 	"context"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
@@ -31,12 +30,12 @@ func NewPostgresGetter(queries *db.Queries) Getter {
 	}
 }
 
-func (g *PostgresGetter) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
-	return g.versioncooldown.GetJobVerificationStatus(jobID)
+func (g *PostgresGetter) GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error) {
+	return g.versioncooldown.GetAllReleaseTargets(ctx, workspaceID)
 }
 
-func (g *PostgresGetter) NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return g.versioncooldown.NewVersionCooldownEvaluator(rule)
+func (g *PostgresGetter) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
+	return g.versioncooldown.GetJobVerificationStatus(jobID)
 }
 
 func (g *PostgresGetter) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {

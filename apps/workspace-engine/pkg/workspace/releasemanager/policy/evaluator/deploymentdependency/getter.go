@@ -2,10 +2,13 @@ package deploymentdependency
 
 import (
 	"context"
+	"log/slog"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	legacystore "workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 type deploymentGetter = store.DeploymentGetter
@@ -47,9 +50,34 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 }
 
 func (p *PostgresGetters) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {
-	panic("unimplemented")
+	rows, err := p.queries.GetReleaseTargetsForResource(ctx, uuid.MustParse(resourceID))
+	if err != nil {
+		slog.Error("failed to get release targets for resource", "resourceID", resourceID, "error", err)
+		return nil
+	}
+	targets := make([]*oapi.ReleaseTarget, len(rows))
+	for i, row := range rows {
+		targets[i] = &oapi.ReleaseTarget{
+			DeploymentId:  row.DeploymentID.String(),
+			EnvironmentId: row.EnvironmentID.String(),
+			ResourceId:    row.ResourceID.String(),
+		}
+	}
+	return targets
 }
 
 func (p *PostgresGetters) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
-	panic("unimplemented")
+	if releaseTarget == nil {
+		return nil
+	}
+	row, err := p.queries.GetLatestCompletedJobForReleaseTarget(context.Background(), db.GetLatestCompletedJobForReleaseTargetParams{
+		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
+		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
+	})
+	if err != nil {
+		slog.Error("failed to get latest completed job for release target", "releaseTarget", releaseTarget.Key(), "error", err)
+		return nil
+	}
+	return db.ToOapiJobFromLatestCompleted(row)
 }

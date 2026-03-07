@@ -14,16 +14,17 @@ type VersionCooldownVersionSummaryEvaluator struct {
 	getters Getters
 	ruleId  string
 	rule    *oapi.VersionCooldownRule
+	wsId    string
 }
 
 func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
 	if store == nil {
 		return nil
 	}
-	return NewSummaryEvaluator(NewStoreGetters(store), rule)
+	return NewSummaryEvaluator(NewStoreGetters(store), store.ID(), rule)
 }
 
-func NewSummaryEvaluator(getters Getters, rule *oapi.PolicyRule) evaluator.Evaluator {
+func NewSummaryEvaluator(getters Getters, wsId string, rule *oapi.PolicyRule) evaluator.Evaluator {
 	if rule == nil || rule.VersionCooldown == nil || getters == nil {
 		return nil
 	}
@@ -58,7 +59,7 @@ func pluralize(count int) string {
 func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
 	version := scope.Version
 
-	allReleaseTargets, err := e.getters.GetReleaseTargets()
+	allReleaseTargets, err := e.getters.GetAllReleaseTargets(ctx, e.wsId)
 	if err != nil {
 		return results.NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
 			WithDetail("error", err.Error())
@@ -87,7 +88,7 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 			Resource:    resource,
 			Deployment:  deployment,
 		}
-		evaluation := e.getters.NewVersionCooldownEvaluator(&oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
+		evaluation := NewEvaluator(e.getters, &oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 

@@ -227,6 +227,10 @@ func ToOapiDeploymentVersion(row DeploymentVersion) *oapi.DeploymentVersion {
 	return v
 }
 
+func ToOapiJobFromLatestCompleted(row GetLatestCompletedJobForReleaseTargetRow) *oapi.Job {
+	return ToOapiJob(ListJobsByReleaseIDRow(row))
+}
+
 func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 	j := &oapi.Job{
 		Id:        row.ID.String(),

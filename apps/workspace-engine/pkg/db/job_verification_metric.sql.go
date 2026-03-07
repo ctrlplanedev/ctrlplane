@@ -12,6 +12,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getAggregateJobVerificationStatus = `-- name: GetAggregateJobVerificationStatus :one
+SELECT
+  CASE
+    WHEN COUNT(*) = 0 THEN ''
+    WHEN bool_or(COALESCE(mc.failures, 0) > COALESCE(jvm.failure_threshold, 0)) THEN 'failed'
+    WHEN bool_or(COALESCE(mc.total, 0) < jvm.count
+                 AND COALESCE(mc.failures, 0) <= COALESCE(jvm.failure_threshold, 0)) THEN 'running'
+    ELSE 'passed'
+  END::text AS status
+FROM job_verification_metric jvm
+LEFT JOIN LATERAL (
+  SELECT
+    COUNT(*)::int AS total,
+    COUNT(*) FILTER (WHERE mm.status = 'failed')::int AS failures
+  FROM job_verification_metric_measurement mm
+  WHERE mm.job_verification_metric_status_id = jvm.id
+) mc ON true
+WHERE jvm.job_id = $1
+`
+
+// Returns the aggregate verification status for a job:
+// 'passed' if all metrics have completed with enough measurements and no failures above threshold,
+// 'running' if any metric is still incomplete,
+// 'failed' if any metric has exceeded its failure threshold.
+// Returns ” (empty string) if the job has no verification metrics.
+func (q *Queries) GetAggregateJobVerificationStatus(ctx context.Context, jobID uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getAggregateJobVerificationStatus, jobID)
+	var status string
+	err := row.Scan(&status)
+	return status, err
+}
+
 const getJobDispatchContext = `-- name: GetJobDispatchContext :one
 SELECT j.dispatch_context
 FROM job j

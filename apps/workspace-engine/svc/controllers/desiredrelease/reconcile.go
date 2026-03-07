@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
-	"workspace-engine/svc/controllers/desiredrelease/policymatch"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 
 	"github.com/charmbracelet/log"
@@ -55,7 +54,7 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get policies: %w", err)
 	}
-	r.policies = policymatch.Filter(ctx, policies, r.scope.ToTarget())
+	r.policies = policies
 
 	return nil
 }

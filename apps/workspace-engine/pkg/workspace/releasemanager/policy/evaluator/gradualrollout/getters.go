@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/store"
@@ -82,25 +83,24 @@ func (s *StoreGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
 
 type approvalPostgresGetters = approval.PostgresGetters
 type environmentProgressionPostgresGetters = environmentprogression.PostgresGetters
+type policiesForReleaseTargetGetter = policies.GetPoliciesForReleaseTarget
 
 var _ Getters = (*PostgresGetters)(nil)
 
 type PostgresGetters struct {
 	*approvalPostgresGetters
 	*environmentProgressionPostgresGetters
+	policiesForReleaseTargetGetter
 	queries *db.Queries
 }
 
 func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 	return &PostgresGetters{
+		policiesForReleaseTargetGetter:        &policies.PostgresGetPoliciesForReleaseTarget{},
 		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
 		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries),
 		queries:                               queries,
 	}
-}
-
-func (p *PostgresGetters) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
-	panic("not implemented: GetPoliciesForReleaseTarget")
 }
 
 func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {

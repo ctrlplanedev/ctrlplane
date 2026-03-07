@@ -91,6 +91,81 @@ func (q *Queries) GetJobByID(ctx context.Context, id uuid.UUID) (GetJobByIDRow, 
 	return i, err
 }
 
+const getLatestCompletedJobForReleaseTarget = `-- name: GetLatestCompletedJobForReleaseTarget :one
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = $1
+  AND r.environment_id = $2
+  AND r.resource_id = $3
+  AND j.completed_at IS NOT NULL
+ORDER BY j.completed_at DESC
+LIMIT 1
+`
+
+type GetLatestCompletedJobForReleaseTargetParams struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+type GetLatestCompletedJobForReleaseTargetRow struct {
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
+}
+
+// Returns the most recently completed job for a given release target
+// (deployment, environment, resource triple).
+func (q *Queries) GetLatestCompletedJobForReleaseTarget(ctx context.Context, arg GetLatestCompletedJobForReleaseTargetParams) (GetLatestCompletedJobForReleaseTargetRow, error) {
+	row := q.db.QueryRow(ctx, getLatestCompletedJobForReleaseTarget, arg.DeploymentID, arg.EnvironmentID, arg.ResourceID)
+	var i GetLatestCompletedJobForReleaseTargetRow
+	err := row.Scan(
+		&i.ID,
+		&i.JobAgentID,
+		&i.JobAgentConfig,
+		&i.ExternalID,
+		&i.Status,
+		&i.Message,
+		&i.CreatedAt,
+		&i.StartedAt,
+		&i.CompletedAt,
+		&i.UpdatedAt,
+		&i.DispatchContext,
+		&i.ReleaseID,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const getWorkspaceIDByReleaseID = `-- name: GetWorkspaceIDByReleaseID :one
 SELECT d.workspace_id
 FROM release r
@@ -268,6 +343,90 @@ func (q *Queries) ListJobsByReleaseID(ctx context.Context, releaseID uuid.UUID) 
 	var items []ListJobsByReleaseIDRow
 	for rows.Next() {
 		var i ListJobsByReleaseIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ExternalID,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.UpdatedAt,
+			&i.DispatchContext,
+			&i.ReleaseID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByReleaseTarget = `-- name: ListJobsByReleaseTarget :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = $1
+  AND r.environment_id = $2
+  AND r.resource_id = $3
+`
+
+type ListJobsByReleaseTargetParams struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+type ListJobsByReleaseTargetRow struct {
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
+}
+
+// Returns all jobs for a given release target (deployment, environment, resource triple).
+func (q *Queries) ListJobsByReleaseTarget(ctx context.Context, arg ListJobsByReleaseTargetParams) ([]ListJobsByReleaseTargetRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByReleaseTarget, arg.DeploymentID, arg.EnvironmentID, arg.ResourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByReleaseTargetRow
+	for rows.Next() {
+		var i ListJobsByReleaseTargetRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.JobAgentID,
