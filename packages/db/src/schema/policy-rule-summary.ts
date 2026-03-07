@@ -10,7 +10,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { deployment } from "./deployment.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { environment } from "./environment.js";
 
@@ -20,15 +19,12 @@ export const policyRuleSummary = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     ruleId: uuid("rule_id").notNull(),
 
-    deploymentId: uuid("deployment_id").references(() => deployment.id, {
-      onDelete: "cascade",
-    }),
-    environmentId: uuid("environment_id").references(() => environment.id, {
-      onDelete: "cascade",
-    }),
-    versionId: uuid("version_id").references(() => deploymentVersion.id, {
-      onDelete: "cascade",
-    }),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environment.id, { onDelete: "cascade" }),
+    versionId: uuid("version_id")
+      .notNull()
+      .references(() => deploymentVersion.id, { onDelete: "cascade" }),
 
     allowed: boolean("allowed").notNull(),
     actionRequired: boolean("action_required").notNull().default(false),
@@ -43,19 +39,14 @@ export const policyRuleSummary = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex().on(t.ruleId, t.deploymentId, t.environmentId, t.versionId),
-    index().on(t.deploymentId, t.versionId),
-    index().on(t.environmentId),
+    uniqueIndex().on(t.ruleId, t.environmentId, t.versionId),
+    index().on(t.environmentId, t.versionId),
   ],
 );
 
 export const policyRuleSummaryRelations = relations(
   policyRuleSummary,
   ({ one }) => ({
-    deployment: one(deployment, {
-      fields: [policyRuleSummary.deploymentId],
-      references: [deployment.id],
-    }),
     environment: one(environment, {
       fields: [policyRuleSummary.environmentId],
       references: [environment.id],

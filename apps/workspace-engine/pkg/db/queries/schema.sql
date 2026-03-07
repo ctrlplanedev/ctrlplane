@@ -429,9 +429,8 @@ CREATE TABLE job_verification_metric_measurement (
 CREATE TABLE policy_rule_summary (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     rule_id UUID NOT NULL,
-    deployment_id UUID,
-    environment_id UUID,
-    version_id UUID,
+    environment_id UUID NOT NULL,
+    version_id UUID NOT NULL,
     allowed BOOLEAN NOT NULL,
     action_required BOOLEAN NOT NULL DEFAULT false,
     action_type TEXT,
@@ -443,4 +442,4 @@ CREATE TABLE policy_rule_summary (
 );
 
 CREATE UNIQUE INDEX policy_rule_summary_scope_idx
-    ON policy_rule_summary (rule_id, deployment_id, environment_id, version_id);
+    ON policy_rule_summary (rule_id, environment_id, version_id);

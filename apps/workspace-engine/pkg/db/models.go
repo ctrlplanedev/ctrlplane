@@ -467,7 +467,6 @@ type PolicyRuleRollback struct {
 type PolicyRuleSummary struct {
 	ID               uuid.UUID
 	RuleID           uuid.UUID
-	DeploymentID     uuid.UUID
 	EnvironmentID    uuid.UUID
 	VersionID        uuid.UUID
 	Allowed          bool

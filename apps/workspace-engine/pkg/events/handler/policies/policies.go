@@ -6,7 +6,6 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -46,25 +45,6 @@ func getAffectedTargets(ctx context.Context, ws *workspace.Workspace, policyID s
 	return affectedTargets
 }
 
-func enqueuePolicySummariesForTargets(ctx context.Context, ws *workspace.Workspace, targets []*oapi.ReleaseTarget) {
-	envSeen := make(map[string]struct{})
-	var params []events.PolicySummaryParams
-
-	for _, rt := range targets {
-		if _, ok := envSeen[rt.EnvironmentId]; !ok {
-			envSeen[rt.EnvironmentId] = struct{}{}
-			params = append(params, events.EnvironmentSummaryParams{
-				WorkspaceID:   ws.ID,
-				EnvironmentID: rt.EnvironmentId,
-			}.ToParams())
-		}
-	}
-
-	if err := events.EnqueueManyPolicySummary(ws.Queue(), ctx, params); err != nil {
-		log.Error("failed to enqueue policy summaries for policy change", "error", err)
-	}
-}
-
 func HandlePolicyCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -89,8 +69,6 @@ func HandlePolicyCreated(
 		"affected_targets_count", len(affectedTargets))
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
-
-	enqueuePolicySummariesForTargets(ctx, ws, affectedTargets)
 
 	return nil
 }
@@ -141,8 +119,6 @@ func HandlePolicyUpdated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
-	enqueuePolicySummariesForTargets(ctx, ws, affectedTargets)
-
 	return nil
 }
 
@@ -167,8 +143,6 @@ func HandlePolicyDeleted(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
-
-	enqueuePolicySummariesForTargets(ctx, ws, affectedTargets)
 
 	return nil
 }

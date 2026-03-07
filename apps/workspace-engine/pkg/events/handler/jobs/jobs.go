@@ -6,7 +6,6 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
@@ -42,9 +41,6 @@ func HandleJobUpdated(
 		ws.Jobs().Upsert(ctx, &jobUpdateEvent.Job)
 		dirtyStateForJob(ctx, ws, &jobUpdateEvent.Job)
 		triggerActionsOnStatusChange(ctx, ws, &jobUpdateEvent.Job, previousStatus)
-		if jobUpdateEvent.Job.Status != previousStatus {
-			enqueuePolicySummaryForJob(ctx, ws, &jobUpdateEvent.Job)
-		}
 		return nil
 	}
 
@@ -62,10 +58,6 @@ func HandleJobUpdated(
 
 	// Trigger actions on status change
 	triggerActionsOnStatusChange(ctx, ws, mergedJob, previousStatus)
-
-	if mergedJob.Status != previousStatus {
-		enqueuePolicySummaryForJob(ctx, ws, mergedJob)
-	}
 
 	go func() {
 		if err := MaybeAddCommitStatusFromJob(ws, mergedJob); err != nil {
@@ -113,20 +105,6 @@ func dirtyStateForJob(ctx context.Context, ws *workspace.Workspace, job *oapi.Jo
 
 	ws.ReleaseManager().DirtyCurrentAndJob(&release.ReleaseTarget)
 	ws.ReleaseManager().RecomputeState(ctx)
-}
-
-func enqueuePolicySummaryForJob(ctx context.Context, ws *workspace.Workspace, job *oapi.Job) {
-	release, exists := ws.Releases().Get(job.ReleaseId)
-	if !exists {
-		return
-	}
-	if err := events.EnqueuePolicySummary(ws.Queue(), ctx, events.EnvironmentVersionSummaryParams{
-		WorkspaceID:   ws.ID,
-		EnvironmentID: release.ReleaseTarget.EnvironmentId,
-		VersionID:     release.Version.Id,
-	}.ToParams()); err != nil {
-		log.Error("failed to enqueue policy summary for job update", "error", err)
-	}
 }
 
 func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool) {

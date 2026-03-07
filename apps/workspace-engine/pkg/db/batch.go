@@ -209,19 +209,19 @@ func (b *UpsertChangelogEntryBatchResults) Close() error {
 const upsertPolicyRuleSummary = `-- name: UpsertPolicyRuleSummary :batchexec
 INSERT INTO policy_rule_summary (
     id, rule_id,
-    deployment_id, environment_id, version_id,
+    environment_id, version_id,
     allowed, action_required, action_type,
     message, details,
     satisfied_at, next_evaluation_at, evaluated_at
 )
 VALUES (
     gen_random_uuid(), $1,
-    $2, $3, $4,
-    $5, $6, $7,
-    $8, $9,
-    $10, $11, NOW()
+    $2, $3,
+    $4, $5, $6,
+    $7, $8,
+    $9, $10, NOW()
 )
-ON CONFLICT (rule_id, deployment_id, environment_id, version_id) DO UPDATE
+ON CONFLICT (rule_id, environment_id, version_id) DO UPDATE
 SET allowed = EXCLUDED.allowed,
     action_required = EXCLUDED.action_required,
     action_type = EXCLUDED.action_type,
@@ -240,7 +240,6 @@ type UpsertPolicyRuleSummaryBatchResults struct {
 
 type UpsertPolicyRuleSummaryParams struct {
 	RuleID           uuid.UUID
-	DeploymentID     uuid.UUID
 	EnvironmentID    uuid.UUID
 	VersionID        uuid.UUID
 	Allowed          bool
@@ -257,7 +256,6 @@ func (q *Queries) UpsertPolicyRuleSummary(ctx context.Context, arg []UpsertPolic
 	for _, a := range arg {
 		vals := []interface{}{
 			a.RuleID,
-			a.DeploymentID,
 			a.EnvironmentID,
 			a.VersionID,
 			a.Allowed,

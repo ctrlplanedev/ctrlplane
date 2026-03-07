@@ -37,7 +37,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		attribute.String("item.scope_id", item.ScopeID),
 	)
 
-	result, err := Reconcile(ctx, item.WorkspaceID, item.ScopeType, item.ScopeID, c.getter, c.setter)
+	result, err := Reconcile(ctx, item.WorkspaceID, item.ScopeID, c.getter, c.setter)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

@@ -6,44 +6,15 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("events/handler/deploymentversion")
-
-func enqueuePolicySummaries(ctx context.Context, ws *workspace.Workspace, version *oapi.DeploymentVersion, releaseTargets []*oapi.ReleaseTarget) {
-	seen := make(map[string]struct{})
-	var params []events.PolicySummaryParams
-
-	for _, rt := range releaseTargets {
-		evKey := rt.EnvironmentId + ":" + version.Id
-		if _, ok := seen[evKey]; !ok {
-			seen[evKey] = struct{}{}
-			params = append(params, events.EnvironmentVersionSummaryParams{
-				WorkspaceID:   ws.ID,
-				EnvironmentID: rt.EnvironmentId,
-				VersionID:     version.Id,
-			}.ToParams())
-		}
-	}
-
-	params = append(params, events.DeploymentVersionSummaryParams{
-		WorkspaceID:  ws.ID,
-		DeploymentID: version.DeploymentId,
-		VersionID:    version.Id,
-	}.ToParams())
-
-	if err := events.EnqueueManyPolicySummary(ws.Queue(), ctx, params); err != nil {
-		log.Error("failed to enqueue policy summaries for version change", "error", err)
-	}
-}
 
 func HandleDeploymentVersionCreated(
 	ctx context.Context,
@@ -75,8 +46,6 @@ func HandleDeploymentVersionCreated(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVersionCreated))
-
-	enqueuePolicySummaries(ctx, ws, deploymentVersion, releaseTargets)
 
 	return nil
 }
@@ -111,8 +80,6 @@ func HandleDeploymentVersionUpdated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVersionCreated))
 
-	enqueuePolicySummaries(ctx, ws, deploymentVersion, releaseTargets)
-
 	return nil
 }
 
@@ -146,8 +113,6 @@ func HandleDeploymentVersionDeleted(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVersionCreated))
-
-	enqueuePolicySummaries(ctx, ws, deploymentVersion, releaseTargets)
 
 	return nil
 }

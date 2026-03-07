@@ -6,7 +6,6 @@ import (
 
 	"workspace-engine/pkg/db"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -18,13 +17,6 @@ type PostgresSetter struct {
 
 func NewPostgresSetter(queries *db.Queries) *PostgresSetter {
 	return &PostgresSetter{queries: queries}
-}
-
-func uuidOrZero(id *uuid.UUID) uuid.UUID {
-	if id != nil {
-		return *id
-	}
-	return uuid.Nil
 }
 
 func (s *PostgresSetter) UpsertRuleSummaries(ctx context.Context, rows []RuleSummaryRow) error {
@@ -58,9 +50,8 @@ func (s *PostgresSetter) UpsertRuleSummaries(ctx context.Context, rows []RuleSum
 
 		params[i] = db.UpsertPolicyRuleSummaryParams{
 			RuleID:           row.RuleID,
-			DeploymentID:     uuidOrZero(row.DeploymentID),
-			EnvironmentID:    uuidOrZero(row.EnvironmentID),
-			VersionID:        uuidOrZero(row.VersionID),
+			EnvironmentID:    row.EnvironmentID,
+			VersionID:        row.VersionID,
 			Allowed:          eval.Allowed,
 			ActionRequired:   eval.ActionRequired,
 			ActionType:       actionType,

@@ -8,12 +8,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// RuleSummaryRow is the DB representation of a single rule evaluation result.
 type RuleSummaryRow struct {
 	RuleID        uuid.UUID
-	DeploymentID  *uuid.UUID
-	EnvironmentID *uuid.UUID
-	VersionID     *uuid.UUID
+	EnvironmentID uuid.UUID
+	VersionID     uuid.UUID
 	Evaluation    *oapi.RuleEvaluation
 }
 

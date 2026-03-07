@@ -1,5 +1,5 @@
 {
-  "id": "3df5913d-902e-428c-a708-251431c2beec",
+  "id": "d464f8e2-1ddf-4304-ad5e-56e0af89c19a",
   "prevId": "b0a123af-2a56-4139-9a3f-bc2d37bbb11b",
   "version": "7",
   "dialect": "postgresql",
@@ -5006,23 +5006,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "deployment_id": {
-          "name": "deployment_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "environment_id": {
           "name": "environment_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "version_id": {
           "name": "version_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "allowed": {
           "name": "allowed",
@@ -5077,17 +5071,11 @@
         }
       },
       "indexes": {
-        "policy_rule_summary_rule_id_deployment_id_environment_id_version_id_index": {
-          "name": "policy_rule_summary_rule_id_deployment_id_environment_id_version_id_index",
+        "policy_rule_summary_rule_id_environment_id_version_id_index": {
+          "name": "policy_rule_summary_rule_id_environment_id_version_id_index",
           "columns": [
             {
               "expression": "rule_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "deployment_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5110,11 +5098,11 @@
           "method": "btree",
           "with": {}
         },
-        "policy_rule_summary_deployment_id_version_id_index": {
-          "name": "policy_rule_summary_deployment_id_version_id_index",
+        "policy_rule_summary_environment_id_version_id_index": {
+          "name": "policy_rule_summary_environment_id_version_id_index",
           "columns": [
             {
-              "expression": "deployment_id",
+              "expression": "environment_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5130,37 +5118,9 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "policy_rule_summary_environment_id_index": {
-          "name": "policy_rule_summary_environment_id_index",
-          "columns": [
-            {
-              "expression": "environment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
-        "policy_rule_summary_deployment_id_deployment_id_fk": {
-          "name": "policy_rule_summary_deployment_id_deployment_id_fk",
-          "tableFrom": "policy_rule_summary",
-          "tableTo": "deployment",
-          "columnsFrom": [
-            "deployment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "policy_rule_summary_environment_id_environment_id_fk": {
           "name": "policy_rule_summary_environment_id_environment_id_fk",
           "tableFrom": "policy_rule_summary",

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/policysummary/summaryeval"
 
@@ -23,41 +21,8 @@ type reconciler struct {
 	setter      Setter
 }
 
-func (r *reconciler) reconcileEnvironment(ctx context.Context, scope *EnvironmentScope) (*ReconcileResult, error) {
-	ctx, span := tracer.Start(ctx, "policysummary.reconcileEnvironment")
-	defer span.End()
-
-	env, err := r.getter.GetEnvironment(ctx, scope.EnvironmentID.String())
-	if err != nil {
-		return nil, fmt.Errorf("get environment: %w", err)
-	}
-
-	evalScope := evaluator.EvaluatorScope{
-		Environment: env,
-	}
-
-	policies, err := r.getter.GetPoliciesForEnvironment(ctx, r.workspaceID, scope.EnvironmentID)
-	if err != nil {
-		return nil, fmt.Errorf("get policies: %w", err)
-	}
-
-	rows, nextTime := r.evaluateAndCollect(ctx, policies, evalScope, func(rule *oapi.PolicyRule) []evaluator.Evaluator {
-		return summaryeval.EnvironmentRuleEvaluators(rule)
-	})
-
-	for i := range rows {
-		rows[i].EnvironmentID = &scope.EnvironmentID
-	}
-
-	if err := r.setter.UpsertRuleSummaries(ctx, rows); err != nil {
-		return nil, fmt.Errorf("upsert rule summaries: %w", err)
-	}
-
-	return &ReconcileResult{NextReconcileAt: nextTime}, nil
-}
-
-func (r *reconciler) reconcileEnvironmentVersion(ctx context.Context, scope *EnvironmentVersionScope) (*ReconcileResult, error) {
-	ctx, span := tracer.Start(ctx, "policysummary.reconcileEnvironmentVersion")
+func (r *reconciler) reconcile(ctx context.Context, scope *Scope) (*ReconcileResult, error) {
+	ctx, span := tracer.Start(ctx, "policysummary.reconcile")
 	defer span.End()
 
 	env, err := r.getter.GetEnvironment(ctx, scope.EnvironmentID.String())
@@ -80,86 +45,26 @@ func (r *reconciler) reconcileEnvironmentVersion(ctx context.Context, scope *Env
 		return nil, fmt.Errorf("get policies: %w", err)
 	}
 
-	rows, nextTime := r.evaluateAndCollect(ctx, policies, evalScope, func(rule *oapi.PolicyRule) []evaluator.Evaluator {
-		return summaryeval.EnvironmentVersionRuleEvaluators(r.getter, rule)
-	})
-
-	for i := range rows {
-		rows[i].EnvironmentID = &scope.EnvironmentID
-		rows[i].VersionID = &scope.VersionID
-	}
-
-	if err := r.setter.UpsertRuleSummaries(ctx, rows); err != nil {
-		return nil, fmt.Errorf("upsert rule summaries: %w", err)
-	}
-
-	return &ReconcileResult{NextReconcileAt: nextTime}, nil
-}
-
-func (r *reconciler) reconcileDeploymentVersion(ctx context.Context, scope *DeploymentVersionScope) (*ReconcileResult, error) {
-	ctx, span := tracer.Start(ctx, "policysummary.reconcileDeploymentVersion")
-	defer span.End()
-
-	deployment, err := r.getter.GetDeployment(ctx, scope.DeploymentID.String())
-	if err != nil {
-		return nil, fmt.Errorf("get deployment: %w", err)
-	}
-
-	version, err := r.getter.GetVersion(ctx, scope.VersionID)
-	if err != nil {
-		return nil, fmt.Errorf("get version: %w", err)
-	}
-
-	evalScope := evaluator.EvaluatorScope{
-		Deployment: deployment,
-		Version:    version,
-	}
-
-	policies, err := r.getter.GetPoliciesForDeployment(ctx, r.workspaceID, scope.DeploymentID)
-	if err != nil {
-		return nil, fmt.Errorf("get policies: %w", err)
-	}
-
-	rows, nextTime := r.evaluateAndCollect(ctx, policies, evalScope, func(rule *oapi.PolicyRule) []evaluator.Evaluator {
-		return summaryeval.DeploymentVersionRuleEvaluators(r.getter, rule)
-	})
-
-	for i := range rows {
-		rows[i].DeploymentID = &scope.DeploymentID
-		rows[i].VersionID = &scope.VersionID
-	}
-
-	if err := r.setter.UpsertRuleSummaries(ctx, rows); err != nil {
-		return nil, fmt.Errorf("upsert rule summaries: %w", err)
-	}
-
-	return &ReconcileResult{NextReconcileAt: nextTime}, nil
-}
-
-func (r *reconciler) evaluateAndCollect(
-	ctx context.Context,
-	policies []*oapi.Policy,
-	scope evaluator.EvaluatorScope,
-	evaluatorFactory func(rule *oapi.PolicyRule) []evaluator.Evaluator,
-) ([]RuleSummaryRow, *time.Time) {
 	var rows []RuleSummaryRow
 	var nextTime *time.Time
 
 	for _, p := range policies {
 		for _, rule := range p.Rules {
-			evals := evaluatorFactory(&rule)
+			evals := summaryeval.RuleEvaluators(r.getter, &rule)
 			for _, eval := range evals {
 				if eval == nil {
 					continue
 				}
-				if !scope.HasFields(eval.ScopeFields()) {
+				if !evalScope.HasFields(eval.ScopeFields()) {
 					continue
 				}
 
-				result := eval.Evaluate(ctx, scope)
+				result := eval.Evaluate(ctx, evalScope)
 				rows = append(rows, RuleSummaryRow{
-					RuleID:     uuid.MustParse(rule.Id),
-					Evaluation: result,
+					RuleID:        uuid.MustParse(rule.Id),
+					EnvironmentID: scope.EnvironmentID,
+					VersionID:     scope.VersionID,
+					Evaluation:    result,
 				})
 
 				if result.NextEvaluationTime != nil {
@@ -171,39 +76,24 @@ func (r *reconciler) evaluateAndCollect(
 		}
 	}
 
-	return rows, nextTime
+	if err := r.setter.UpsertRuleSummaries(ctx, rows); err != nil {
+		return nil, fmt.Errorf("upsert rule summaries: %w", err)
+	}
+
+	return &ReconcileResult{NextReconcileAt: nextTime}, nil
 }
 
-func Reconcile(ctx context.Context, workspaceID string, scopeType string, scopeID string, getter Getter, setter Setter) (*ReconcileResult, error) {
+func Reconcile(ctx context.Context, workspaceID string, scopeID string, getter Getter, setter Setter) (*ReconcileResult, error) {
+	scope, err := ParseScope(scopeID)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &reconciler{
 		workspaceID: uuid.MustParse(workspaceID),
 		getter:      getter,
 		setter:      setter,
 	}
 
-	switch scopeType {
-	case events.PolicySummaryScopeEnvironment:
-		scope, err := ParseEnvironmentScope(scopeID)
-		if err != nil {
-			return nil, err
-		}
-		return r.reconcileEnvironment(ctx, scope)
-
-	case events.PolicySummaryScopeEnvironmentVersion:
-		scope, err := ParseEnvironmentVersionScope(scopeID)
-		if err != nil {
-			return nil, err
-		}
-		return r.reconcileEnvironmentVersion(ctx, scope)
-
-	case events.PolicySummaryScopeDeploymentVersion:
-		scope, err := ParseDeploymentVersionScope(scopeID)
-		if err != nil {
-			return nil, err
-		}
-		return r.reconcileDeploymentVersion(ctx, scope)
-
-	default:
-		return nil, fmt.Errorf("unknown policy summary scope type: %s", scopeType)
-	}
+	return r.reconcile(ctx, scope)
 }

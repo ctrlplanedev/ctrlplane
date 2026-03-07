@@ -20,102 +20,9 @@ func (q *Queries) DeletePolicyRuleSummariesByRuleID(ctx context.Context, ruleID 
 	return err
 }
 
-const listPolicyRuleSummariesByDeploymentAndVersion = `-- name: ListPolicyRuleSummariesByDeploymentAndVersion :many
-SELECT id, rule_id,
-       deployment_id, environment_id, version_id,
-       allowed, action_required, action_type,
-       message, details,
-       satisfied_at, next_evaluation_at, evaluated_at
-FROM policy_rule_summary
-WHERE deployment_id = $1 AND version_id = $2
-`
-
-type ListPolicyRuleSummariesByDeploymentAndVersionParams struct {
-	DeploymentID uuid.UUID
-	VersionID    uuid.UUID
-}
-
-func (q *Queries) ListPolicyRuleSummariesByDeploymentAndVersion(ctx context.Context, arg ListPolicyRuleSummariesByDeploymentAndVersionParams) ([]PolicyRuleSummary, error) {
-	rows, err := q.db.Query(ctx, listPolicyRuleSummariesByDeploymentAndVersion, arg.DeploymentID, arg.VersionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []PolicyRuleSummary
-	for rows.Next() {
-		var i PolicyRuleSummary
-		if err := rows.Scan(
-			&i.ID,
-			&i.RuleID,
-			&i.DeploymentID,
-			&i.EnvironmentID,
-			&i.VersionID,
-			&i.Allowed,
-			&i.ActionRequired,
-			&i.ActionType,
-			&i.Message,
-			&i.Details,
-			&i.SatisfiedAt,
-			&i.NextEvaluationAt,
-			&i.EvaluatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listPolicyRuleSummariesByEnvironment = `-- name: ListPolicyRuleSummariesByEnvironment :many
-SELECT id, rule_id,
-       deployment_id, environment_id, version_id,
-       allowed, action_required, action_type,
-       message, details,
-       satisfied_at, next_evaluation_at, evaluated_at
-FROM policy_rule_summary
-WHERE environment_id = $1
-`
-
-func (q *Queries) ListPolicyRuleSummariesByEnvironment(ctx context.Context, environmentID uuid.UUID) ([]PolicyRuleSummary, error) {
-	rows, err := q.db.Query(ctx, listPolicyRuleSummariesByEnvironment, environmentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []PolicyRuleSummary
-	for rows.Next() {
-		var i PolicyRuleSummary
-		if err := rows.Scan(
-			&i.ID,
-			&i.RuleID,
-			&i.DeploymentID,
-			&i.EnvironmentID,
-			&i.VersionID,
-			&i.Allowed,
-			&i.ActionRequired,
-			&i.ActionType,
-			&i.Message,
-			&i.Details,
-			&i.SatisfiedAt,
-			&i.NextEvaluationAt,
-			&i.EvaluatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listPolicyRuleSummariesByEnvironmentAndVersion = `-- name: ListPolicyRuleSummariesByEnvironmentAndVersion :many
 SELECT id, rule_id,
-       deployment_id, environment_id, version_id,
+       environment_id, version_id,
        allowed, action_required, action_type,
        message, details,
        satisfied_at, next_evaluation_at, evaluated_at
@@ -140,7 +47,6 @@ func (q *Queries) ListPolicyRuleSummariesByEnvironmentAndVersion(ctx context.Con
 		if err := rows.Scan(
 			&i.ID,
 			&i.RuleID,
-			&i.DeploymentID,
 			&i.EnvironmentID,
 			&i.VersionID,
 			&i.Allowed,

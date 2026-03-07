@@ -9,21 +9,14 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 )
 
-func EnvironmentRuleEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
+// RuleEvaluators returns all summary evaluators for a given policy rule.
+func RuleEvaluators(getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		deploymentwindow.NewSummaryEvaluator(rule),
-	)
-}
-
-func EnvironmentVersionRuleEvaluators(getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
-	return evaluator.CollectEvaluators(
 		approval.NewEvaluator(getter, rule),
 		environmentprogression.NewEvaluator(getter, rule),
-	)
-}
-
-func DeploymentVersionRuleEvaluators(getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
-	return evaluator.CollectEvaluators(
 		versioncooldown.NewSummaryEvaluator(getter, rule),
+		// TODO: add gradualrollout.NewSummaryEvaluator(getter, rule)
+		// once the getter-based constructor is added
 	)
 }
