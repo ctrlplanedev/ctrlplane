@@ -19,5 +19,5 @@ type Setter interface {
 	// JobVerification record (with metric statuses initialised from the
 	// specs), and enqueues one "verification" queue item per metric.
 	// When specs is empty it only creates the job.
-	CreateJobWithVerification(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error
+	CreateVerifications(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error
 }

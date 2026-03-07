@@ -2,32 +2,31 @@ package jobdispatch
 
 import (
 	"context"
-
 	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 )
 
 type Getter interface {
-	ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
+	GetJob(ctx context.Context, jobID uuid.UUID) (*oapi.Job, error)
+	GetRelease(ctx context.Context, releaseID uuid.UUID) (*oapi.Release, error)
+	GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error)
+	GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error)
+	// ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
 
-	// GetDesiredRelease returns the current desired release for the target,
-	// or nil if no desired release has been computed yet.
-	GetDesiredRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error)
+	// // GetDesiredRelease returns the current desired release for the target,
+	// // or nil if no desired release has been computed yet.
+	// GetDesiredRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error)
 
-	// GetJobsForRelease returns all jobs linked to the given release ID,
-	// ordered by creation time descending.
-	GetJobsForRelease(ctx context.Context, releaseID uuid.UUID) ([]oapi.Job, error)
+	// // GetJobsForRelease returns all jobs linked to the given release ID,
+	// // ordered by creation time descending.
+	// GetJobsForRelease(ctx context.Context, releaseID uuid.UUID) ([]oapi.Job, error)
 
-	// GetActiveJobsForTarget returns jobs in a processing state
-	// (pending, inProgress, actionRequired) for the release target.
-	GetActiveJobsForTarget(ctx context.Context, rt *ReleaseTarget) ([]oapi.Job, error)
+	// // GetActiveJobsForTarget returns jobs in a processing state
+	// // (pending, inProgress, actionRequired) for the release target.
+	// GetActiveJobsForTarget(ctx context.Context, rt *ReleaseTarget) ([]oapi.Job, error)
 
-	// GetJobAgentsForDeployment returns the job agents configured for the
-	// deployment, including merged config from agent + deployment layers.
-	GetJobAgentsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]oapi.JobAgent, error)
-
-	// GetVerificationPolicies returns the verification metric specs from
-	// policy_rule_verification rows that match the given release target.
+	// // GetVerificationPolicies returns the verification metric specs from
+	// // policy_rule_verification rows that match the given release target.
 	GetVerificationPolicies(ctx context.Context, rt *ReleaseTarget) ([]oapi.VerificationMetricSpec, error)
 }

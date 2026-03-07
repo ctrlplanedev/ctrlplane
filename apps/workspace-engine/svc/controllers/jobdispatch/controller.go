@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -43,30 +44,22 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		attribute.String("item.scope_id", item.ScopeID),
 	)
 
-	rt, err := NewReleaseTarget(item.ScopeID)
+	jobID := uuid.MustParse(item.ScopeID)
+	job, err := c.getter.GetJob(ctx, jobID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return reconcile.Result{}, fmt.Errorf("parse release target: %w", err)
+		return reconcile.Result{}, fmt.Errorf("get job: %w", err)
 	}
 
-	exists, err := c.getter.ReleaseTargetExists(ctx, rt)
-	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("check release target exists: %w", err)
-	}
+	span.SetAttributes(attribute.String("job", fmt.Sprintf("%+v", job)))
 
-	span.SetAttributes(attribute.Bool("release_target.exists", exists))
-	if !exists {
-		return reconcile.Result{}, nil
-	}
-
-	result, err := Reconcile(ctx, c.getter, c.setter, c.verifier, rt)
+	result, err := Reconcile(ctx, c.getter, c.setter, c.verifier, c.dispatcher, job)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return reconcile.Result{}, fmt.Errorf("reconcile job dispatch: %w", err)
 	}
-
 	if result.RequeueAfter != nil {
 		span.SetAttributes(attribute.String("requeue_after", result.RequeueAfter.String()))
 		return reconcile.Result{RequeueAfter: *result.RequeueAfter}, nil

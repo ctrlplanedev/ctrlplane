@@ -2,7 +2,6 @@ package jobdispatch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"workspace-engine/pkg/db"
@@ -31,35 +30,11 @@ func (s *PostgresSetter) UpdateJob(
 }
 
 // CreateJobWithVerification implements [Setter].
-func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
+func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
 	queries := db.GetQueries(ctx)
 
 	jobID := uuid.MustParse(job.Id)
 	releaseID := uuid.MustParse(job.ReleaseId)
-	agentID := uuid.MustParse(job.JobAgentId)
-
-	agentConfig, err := json.Marshal(job.JobAgentConfig)
-	if err != nil {
-		return fmt.Errorf("marshal job agent config: %w", err)
-	}
-
-	if err := queries.InsertJob(ctx, db.InsertJobParams{
-		ID:             jobID,
-		JobAgentID:     pgtype.UUID{Bytes: agentID, Valid: true},
-		JobAgentConfig: agentConfig,
-		Status:         db.JobStatus(job.Status),
-		CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
-		UpdatedAt:      pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
-	}); err != nil {
-		return fmt.Errorf("insert job: %w", err)
-	}
-
-	if err := queries.InsertReleaseJob(ctx, db.InsertReleaseJobParams{
-		ReleaseID: releaseID,
-		JobID:     jobID,
-	}); err != nil {
-		return fmt.Errorf("insert release_job: %w", err)
-	}
 
 	if len(specs) == 0 {
 		return nil

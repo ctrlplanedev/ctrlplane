@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/verification"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -19,90 +18,127 @@ type ReconcileResult struct {
 	RequeueAfter *time.Duration
 }
 
+func getRelease(ctx context.Context, getter Getter, job *oapi.Job) (*oapi.Release, error) {
+	ctx, span := tracer.Start(ctx, "jobdispatch.getRelease")
+	defer span.End()
+
+	releaseID := uuid.MustParse(job.ReleaseId)
+	release, err := getter.GetRelease(ctx, releaseID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, recordErr(span, "get release", err)
+	}
+
+	span.SetAttributes(attribute.String("release.id", release.Id.String()))
+	span.SetAttributes(attribute.String("release.content_hash", release.ContentHash()))
+	return release, nil
+}
+
+func getDeployment(ctx context.Context, getter Getter, release *oapi.Release) (*oapi.Deployment, error) {
+	ctx, span := tracer.Start(ctx, "jobdispatch.getDeployment")
+	defer span.End()
+
+	deploymentID := uuid.MustParse(release.Version.DeploymentId)
+	deployment, err := getter.GetDeployment(ctx, deploymentID)
+	if err != nil {
+		return nil, recordErr(span, "get deployment", err)
+	}
+	return deployment, nil
+}
+
+func getJobAgents(ctx context.Context, getter Getter, release *oapi.Release) ([]oapi.JobAgent, error) {
+	ctx, span := tracer.Start(ctx, "jobdispatch.getJobAgents")
+	defer span.End()
+
+	deployment, err := getDeployment(ctx, getter, release)
+	if err != nil {
+		return nil, err
+	}
+
+	if deployment.JobAgents == nil {
+		return nil, fmt.Errorf("deployment job agents are nil")
+	}
+
+	jobAgents := make([]oapi.JobAgent, 0)
+	for _, jobAgent := range *deployment.JobAgents {
+		jobAgent, err := getter.GetJobAgent(ctx, uuid.MustParse(jobAgent.Ref))
+		if err != nil {
+			return nil, err
+		}
+		jobAgents = append(jobAgents, *jobAgent)
+	}
+	return jobAgents, nil
+}
+
+func getAgentSpecs(ctx context.Context, verifier AgentVerifier, getter Getter, release *oapi.Release) ([]oapi.VerificationMetricSpec, error) {
+	ctx, span := tracer.Start(ctx, "jobdispatch.getAgentSpecs")
+	defer span.End()
+
+	agents, err := getJobAgents(ctx, getter, release)
+	if err != nil {
+		return nil, err
+	}
+
+	specs := make([]oapi.VerificationMetricSpec, 0)
+	for _, agent := range agents {
+		agentSpecs, err := verifier.AgentVerifications(agent.Type, agent.Config)
+		if err != nil {
+			return nil, recordErr(span, fmt.Sprintf("get agent verifications for agent %s", agent.Id), err)
+		}
+		specs = append(specs, agentSpecs...)
+	}
+	return specs, nil
+}
+
 // Reconcile evaluates whether a job should be created for the release target's
 // desired release, and if so creates and persists the job(s). The verifier
 // resolves agent-declared verification specs; pass nil when no agent
 // verifier is available.
-func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier AgentVerifier, rt *ReleaseTarget) (*ReconcileResult, error) {
+func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier AgentVerifier, dispatcher Dispatcher, job *oapi.Job) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.Reconcile")
 	defer span.End()
 
-	release, err := getter.GetDesiredRelease(ctx, rt)
+	release, err := getRelease(ctx, getter, job)
 	if err != nil {
-		return nil, recordErr(span, "get desired release", err)
+		return nil, err
 	}
-	if release == nil {
-		span.AddEvent("no desired release")
-		return &ReconcileResult{}, nil
-	}
-	span.SetAttributes(attribute.String("release.id", release.Id.String()))
-	span.SetAttributes(attribute.String("release.content_hash", release.ContentHash()))
 
-	releaseID := release.UUID()
-
-	existingJobs, err := getter.GetJobsForRelease(ctx, releaseID)
+	agents, err := getJobAgents(ctx, getter, release)
 	if err != nil {
-		return nil, recordErr(span, "get jobs for release", err)
-	}
-	if hasSuccessfulJob(existingJobs) {
-		span.AddEvent("release already has a successful job")
-		return &ReconcileResult{}, nil
-	}
-
-	activeJobs, err := getter.GetActiveJobsForTarget(ctx, rt)
-	if err != nil {
-		return nil, recordErr(span, "get active jobs for target", err)
-	}
-	if len(activeJobs) > 0 {
-		span.AddEvent("release target has active jobs, requeueing")
-		d := 5 * time.Second
-		return &ReconcileResult{RequeueAfter: &d}, nil
-	}
-
-	// TODO: Check retry policy — if the release has exhausted its retry
-	// budget, return without creating a new job.
-
-	agents, err := getter.GetJobAgentsForDeployment(ctx, rt.DeploymentID)
-	if err != nil {
-		return nil, recordErr(span, "get job agents", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
 	}
 	if len(agents) == 0 {
 		span.AddEvent("no job agents configured for deployment")
 		return &ReconcileResult{}, nil
 	}
-	span.SetAttributes(attribute.Int("job_agents.count", len(agents)))
 
-	for _, agent := range agents {
-		job := buildJob(release, &agent)
+	releaseTarget := &ReleaseTarget{
+		DeploymentID:  uuid.MustParse(release.ReleaseTarget.DeploymentId),
+		EnvironmentID: uuid.MustParse(release.ReleaseTarget.EnvironmentId),
+		ResourceID:    uuid.MustParse(release.ReleaseTarget.ResourceId),
+	}
 
-		policySpecs, err := getter.GetVerificationPolicies(ctx, rt)
-		if err != nil {
-			return nil, recordErr(span, fmt.Sprintf("get verification policies for agent %s", agent.Id), err)
-		}
+	policySpecs, err := getter.GetVerificationPolicies(ctx, releaseTarget)
+	if err != nil {
+		return nil, err
+	}
 
-		var agentSpecs []oapi.VerificationMetricSpec
-		if verifier != nil {
-			agentSpecs, err = verifier.AgentVerifications(agent.Type, agent.Config)
-			if err != nil {
-				log.Warn("Failed to get agent verifications",
-					"agent_type", agent.Type,
-					"error", err,
-				)
-			}
-		}
+	agentSpecs, err := getAgentSpecs(ctx, verifier, getter, release)
+	if err != nil {
+		return nil, err
+	}
 
-		specs := verification.MergeAndDeduplicate(policySpecs, agentSpecs)
+	specs := verification.MergeAndDeduplicate(policySpecs, agentSpecs)
 
-		if err := setter.CreateJobWithVerification(ctx, job, specs); err != nil {
-			return nil, recordErr(span, fmt.Sprintf("create job for agent %s", agent.Id), err)
-		}
-		span.AddEvent("job created",
-			trace.WithAttributes(
-				attribute.String("job.id", job.Id),
-				attribute.String("job_agent.id", agent.Id),
-				attribute.Int("verification_specs", len(specs)),
-			),
-		)
+	if err := dispatcher.Dispatch(ctx, job); err != nil {
+		return nil, recordErr(span, "dispatch job", err)
+	}
+
+	if err := setter.CreateVerifications(ctx, job, specs); err != nil {
+		return nil, recordErr(span, "create verifications", err)
 	}
 
 	return &ReconcileResult{}, nil

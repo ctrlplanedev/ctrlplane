@@ -388,6 +388,10 @@ func ToOapiJobFromLatestCompleted(row GetLatestCompletedJobForReleaseTargetRow) 
 	return ToOapiJob(ListJobsByReleaseIDRow(row))
 }
 
+func ToOapiJobFromGetJobByIDRow(row GetJobByIDRow) *oapi.Job {
+	return ToOapiJob(ListJobsByReleaseIDRow(row))
+}
+
 func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 	j := &oapi.Job{
 		Id:        row.ID.String(),
@@ -443,4 +447,14 @@ func parseJobMetadata(raw []byte) map[string]string {
 		result[item.Key] = item.Value
 	}
 	return result
+}
+
+func ToOapiJobAgent(row JobAgent) *oapi.JobAgent {
+	return &oapi.JobAgent{
+		Id:          row.ID.String(),
+		WorkspaceId: row.WorkspaceID.String(),
+		Name:        row.Name,
+		Type:        row.Type,
+		Config:      oapi.JobAgentConfig(row.Config),
+	}
 }
