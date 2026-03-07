@@ -16,7 +16,6 @@ var _ jobagents.Getter = &PostgresGetter{}
 
 type PostgresGetter struct{}
 
-// GetJob implements [Getter].
 func (p *PostgresGetter) GetJob(ctx context.Context, jobID uuid.UUID) (*oapi.Job, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetJobByID(ctx, jobID)
@@ -26,7 +25,6 @@ func (p *PostgresGetter) GetJob(ctx context.Context, jobID uuid.UUID) (*oapi.Job
 	return db.ToOapiJobFromGetJobByIDRow(row), nil
 }
 
-// GetRelease implements [Getter].
 func (p *PostgresGetter) GetRelease(ctx context.Context, releaseID uuid.UUID) (*oapi.Release, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetReleaseByID(ctx, releaseID)
@@ -36,7 +34,6 @@ func (p *PostgresGetter) GetRelease(ctx context.Context, releaseID uuid.UUID) (*
 	return db.ToOapiRelease(row), nil
 }
 
-// GetDeployment implements [Getter].
 func (p *PostgresGetter) GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetDeploymentByID(ctx, deploymentID)
@@ -46,7 +43,6 @@ func (p *PostgresGetter) GetDeployment(ctx context.Context, deploymentID uuid.UU
 	return db.ToOapiDeployment(row), nil
 }
 
-// GetJobAgent implements [Getter].
 func (p *PostgresGetter) GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetJobAgentByID(ctx, jobAgentID)
@@ -56,47 +52,6 @@ func (p *PostgresGetter) GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) 
 	return db.ToOapiJobAgent(row), nil
 }
 
-// // GetEnvironment implements [jobagents.Getter].
-// func (p *PostgresGetter) GetEnvironment(id string) (*oapi.Environment, bool) {
-// 	panic("unimplemented")
-// }
-
-// // GetJobAgent implements [jobagents.Getter].
-// func (p *PostgresGetter) GetJobAgent(id string) (*oapi.JobAgent, bool) {
-// 	panic("unimplemented")
-// }
-
-// // GetResource implements [jobagents.Getter].
-// func (p *PostgresGetter) GetResource(id string) (*oapi.Resource, bool) {
-// 	panic("unimplemented")
-// }
-
-// // GetActiveJobsForTarget implements [Getter].
-// func (p *PostgresGetter) GetActiveJobsForTarget(ctx context.Context, rt *ReleaseTarget) ([]oapi.Job, error) {
-// 	panic("unimplemented")
-// }
-
-// // GetDesiredRelease implements [Getter].
-// func (p *PostgresGetter) GetDesiredRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error) {
-// 	panic("unimplemented")
-// }
-
-// // GetJobAgentsForDeployment implements [Getter].
-// func (p *PostgresGetter) GetJobAgentsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]oapi.JobAgent, error) {
-// 	queries := db.GetQueries(ctx)
-// }
-
-// // GetJobsForRelease implements [Getter].
-// func (p *PostgresGetter) GetJobsForRelease(ctx context.Context, releaseID uuid.UUID) ([]oapi.Job, error) {
-// 	panic("unimplemented")
-// }
-
-// // ReleaseTargetExists implements [Getter].
-// func (p *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error) {
-// 	panic("unimplemented")
-// }
-
-// // GetVerificationPolicies implements [Getter].
 func (p *PostgresGetter) GetVerificationPolicies(ctx context.Context, rt *ReleaseTarget) ([]oapi.VerificationMetricSpec, error) {
 	queries := db.GetQueries(ctx)
 

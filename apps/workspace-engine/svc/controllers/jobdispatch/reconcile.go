@@ -91,10 +91,7 @@ func getAgentSpecs(ctx context.Context, verifier AgentVerifier, getter Getter, r
 	return specs, nil
 }
 
-// Reconcile evaluates whether a job should be created for the release target's
-// desired release, and if so creates and persists the job(s). The verifier
-// resolves agent-declared verification specs; pass nil when no agent
-// verifier is available.
+// Reconcile dispatches a job and enqueues verifications for the job.
 func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier AgentVerifier, dispatcher Dispatcher, job *oapi.Job) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.Reconcile")
 	defer span.End()

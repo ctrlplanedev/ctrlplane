@@ -18,7 +18,6 @@ type PostgresSetter struct {
 	Queue reconcile.Queue
 }
 
-// UpdateJob implements [testrunner.Setter].
 func (s *PostgresSetter) UpdateJob(
 	ctx context.Context,
 	jobID string,
@@ -29,7 +28,6 @@ func (s *PostgresSetter) UpdateJob(
 	panic("unimplemented")
 }
 
-// CreateJobWithVerification implements [Setter].
 func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
 	queries := db.GetQueries(ctx)
 
