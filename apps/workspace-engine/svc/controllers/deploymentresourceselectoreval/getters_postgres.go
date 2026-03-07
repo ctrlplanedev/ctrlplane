@@ -6,11 +6,22 @@ import (
 
 	"workspace-engine/pkg/db"
 
+	"workspace-engine/pkg/store/resources"
+
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type PostgresGetter struct{}
+type resourcesGetter = resources.GetResources
+
+type PostgresGetter struct {
+	resourcesGetter
+}
+
+func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
+	return &PostgresGetter{
+		resourcesGetter: &resources.PostgresGetResources{},
+	}
+}
 
 func (g *PostgresGetter) GetDeploymentInfo(ctx context.Context, deploymentID uuid.UUID) (*DeploymentInfo, error) {
 	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, deploymentID)
@@ -21,17 +32,8 @@ func (g *PostgresGetter) GetDeploymentInfo(ctx context.Context, deploymentID uui
 	return &DeploymentInfo{
 		ResourceSelector: row.ResourceSelector.String,
 		WorkspaceID:      row.WorkspaceID,
-		Raw:              row,
 	}, nil
 }
-
-const listResourcesSQL = `
-SELECT id, version, name, kind, identifier, provider_id, workspace_id,
-       config, created_at, updated_at, deleted_at, metadata
-FROM resource
-WHERE workspace_id = $1
-  AND deleted_at IS NULL
-`
 
 func (g *PostgresGetter) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error) {
 	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeployment(ctx, deploymentID)
@@ -47,75 +49,4 @@ func (g *PostgresGetter) GetReleaseTargetsForDeployment(ctx context.Context, dep
 		}
 	}
 	return targets, nil
-}
-
-func (g *PostgresGetter) StreamResources(ctx context.Context, workspaceID uuid.UUID, batchSize int, batches chan<- []ResourceInfo) error {
-	defer close(batches)
-
-	rows, err := db.GetPool(ctx).Query(ctx, listResourcesSQL, workspaceID)
-	if err != nil {
-		return fmt.Errorf("query resources for workspace %s: %w", workspaceID, err)
-	}
-	defer rows.Close()
-
-	batch := make([]ResourceInfo, 0, batchSize)
-	for rows.Next() {
-		var (
-			id         uuid.UUID
-			version    string
-			name       string
-			kind       string
-			identifier string
-			providerID uuid.UUID
-			wsID       uuid.UUID
-			config     map[string]any
-			createdAt  pgtype.Timestamptz
-			updatedAt  pgtype.Timestamptz
-			deletedAt  pgtype.Timestamptz
-			metadata   map[string]string
-		)
-		if err := rows.Scan(
-			&id, &version, &name, &kind, &identifier, &providerID, &wsID,
-			&config, &createdAt, &updatedAt, &deletedAt, &metadata,
-		); err != nil {
-			return fmt.Errorf("scan resource row: %w", err)
-		}
-
-		batch = append(batch, ResourceInfo{
-			ID: id,
-			Raw: map[string]any{
-				"id":         id,
-				"version":    version,
-				"name":       name,
-				"kind":       kind,
-				"identifier": identifier,
-				"providerId": providerID,
-				"config":     config,
-				"metadata":   metadata,
-			},
-		})
-
-		if len(batch) >= batchSize {
-			select {
-			case batches <- batch:
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-			batch = make([]ResourceInfo, 0, batchSize)
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate resources for workspace %s: %w", workspaceID, err)
-	}
-
-	if len(batch) > 0 {
-		select {
-		case batches <- batch:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-
-	return nil
 }

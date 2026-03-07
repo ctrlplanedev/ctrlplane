@@ -46,10 +46,6 @@ func WithDeployment(opts ...DeploymentOption) PipelineOption {
 		for _, o := range opts {
 			o(sc)
 		}
-		sc.DeploymentRaw = map[string]any{
-			"name":     sc.DeploymentName,
-			"metadata": map[string]any{},
-		}
 	}
 }
 
@@ -139,6 +135,43 @@ func WithPolicySkip(ruleID, versionID string, opts ...PolicySkipOption) Pipeline
 	}
 }
 
+// ApprovalRecordOption configures a UserApprovalRecord.
+type ApprovalRecordOption func(*oapi.UserApprovalRecord)
+
+// ApprovalRecordReason sets the reason on an approval record.
+func ApprovalRecordReason(reason string) ApprovalRecordOption {
+	return func(r *oapi.UserApprovalRecord) { r.Reason = &reason }
+}
+
+// ApprovalRecordCreatedAt sets the creation time on an approval record.
+func ApprovalRecordCreatedAt(t time.Time) ApprovalRecordOption {
+	return func(r *oapi.UserApprovalRecord) { r.CreatedAt = t.Format(time.RFC3339) }
+}
+
+// ApprovalRecordUserID sets the user ID on an approval record.
+func ApprovalRecordUserID(userID string) ApprovalRecordOption {
+	return func(r *oapi.UserApprovalRecord) { r.UserId = userID }
+}
+
+// WithApprovalRecord adds a pre-seeded approval record to the scenario.
+// The record's VersionId and EnvironmentId are populated from the scenario
+// at build time unless overridden by opts.
+func WithApprovalRecord(status oapi.ApprovalStatus, versionID, environmentID string, opts ...ApprovalRecordOption) PipelineOption {
+	return func(sc *ScenarioState) {
+		rec := &oapi.UserApprovalRecord{
+			Status:        status,
+			VersionId:     versionID,
+			EnvironmentId: environmentID,
+			UserId:        "test-user",
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		for _, o := range opts {
+			o(rec)
+		}
+		sc.ApprovalRecords = append(sc.ApprovalRecords, rec)
+	}
+}
+
 // PolicySkipReason overrides the default reason on a policy skip.
 func PolicySkipReason(reason string) PolicySkipOption {
 	return func(ps *oapi.PolicySkip) { ps.Reason = reason }
@@ -210,6 +243,11 @@ func VersionStatus(status oapi.DeploymentVersionStatus) VersionOption {
 // VersionMetadata sets the metadata on a deployment version.
 func VersionMetadata(metadata map[string]string) VersionOption {
 	return func(v *oapi.DeploymentVersion) { v.Metadata = metadata }
+}
+
+// VersionCreatedAt sets the creation time on a deployment version.
+func VersionCreatedAt(t time.Time) VersionOption {
+	return func(v *oapi.DeploymentVersion) { v.CreatedAt = t }
 }
 
 // ---------------------------------------------------------------------------
@@ -308,13 +346,43 @@ func WithApprovalRule(minApprovals int32) PolicyRuleOption {
 	}
 }
 
+// DeploymentWindowOption configures fields on a DeploymentWindowRule.
+type DeploymentWindowOption func(*oapi.DeploymentWindowRule)
+
+// DenyWindow configures the deployment window as a deny window.
+func DenyWindow() DeploymentWindowOption {
+	return func(r *oapi.DeploymentWindowRule) {
+		f := false
+		r.AllowWindow = &f
+	}
+}
+
+// AllowWindow explicitly marks the deployment window as an allow window.
+func AllowWindow() DeploymentWindowOption {
+	return func(r *oapi.DeploymentWindowRule) {
+		t := true
+		r.AllowWindow = &t
+	}
+}
+
+// WindowTimezone sets the IANA timezone on the deployment window rule.
+func WindowTimezone(tz string) DeploymentWindowOption {
+	return func(r *oapi.DeploymentWindowRule) {
+		r.Timezone = &tz
+	}
+}
+
 // WithDeploymentWindowRule configures a deployment window rule.
-func WithDeploymentWindowRule(rrule string, durationMinutes int32) PolicyRuleOption {
+func WithDeploymentWindowRule(rrule string, durationMinutes int32, opts ...DeploymentWindowOption) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
-		r.DeploymentWindow = &oapi.DeploymentWindowRule{
+		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rrule,
 			DurationMinutes: durationMinutes,
 		}
+		for _, o := range opts {
+			o(rule)
+		}
+		r.DeploymentWindow = rule
 	}
 }
 
@@ -331,6 +399,80 @@ func WithVersionSelectorRule(cel string) PolicyRuleOption {
 func WithVersionCooldownRule(intervalSeconds int32) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
 		r.VersionCooldown = &oapi.VersionCooldownRule{IntervalSeconds: intervalSeconds}
+	}
+}
+
+// WithGradualRolloutRule configures a gradual rollout rule with the given
+// time scale interval (seconds) and rollout type ("linear" or "linear-normalized").
+func WithGradualRolloutRule(timeScaleInterval int32, rolloutType oapi.GradualRolloutRuleRolloutType) PolicyRuleOption {
+	return func(r *oapi.PolicyRule) {
+		r.GradualRollout = &oapi.GradualRolloutRule{
+			TimeScaleInterval: timeScaleInterval,
+			RolloutType:       rolloutType,
+		}
+	}
+}
+
+// WithDeploymentDependencyRule configures a deployment dependency rule with a
+// CEL expression that matches upstream deployment(s).
+func WithDeploymentDependencyRule(dependsOn string) PolicyRuleOption {
+	return func(r *oapi.PolicyRule) {
+		r.DeploymentDependency = &oapi.DeploymentDependencyRule{
+			DependsOn: dependsOn,
+		}
+	}
+}
+
+// EnvironmentProgressionOption configures fields on an EnvironmentProgressionRule.
+type EnvironmentProgressionOption func(*oapi.EnvironmentProgressionRule)
+
+// EnvProgressionMinSuccessPercentage sets the minimum success percentage
+// required in the dependency environment before progression is allowed.
+func EnvProgressionMinSuccessPercentage(pct float32) EnvironmentProgressionOption {
+	return func(r *oapi.EnvironmentProgressionRule) {
+		r.MinimumSuccessPercentage = &pct
+	}
+}
+
+// EnvProgressionMinSoakTimeMinutes sets the minimum soak time (minutes) to
+// wait after the dependency environment reaches a success state.
+func EnvProgressionMinSoakTimeMinutes(minutes int32) EnvironmentProgressionOption {
+	return func(r *oapi.EnvironmentProgressionRule) {
+		r.MinimumSockTimeMinutes = &minutes
+	}
+}
+
+// EnvProgressionMaxAgeHours sets the maximum age (hours) of a dependency
+// deployment before progression is blocked.
+func EnvProgressionMaxAgeHours(hours int32) EnvironmentProgressionOption {
+	return func(r *oapi.EnvironmentProgressionRule) {
+		r.MaximumAgeHours = &hours
+	}
+}
+
+// EnvProgressionSuccessStatuses sets the job statuses considered "success"
+// when evaluating the dependency environment.
+func EnvProgressionSuccessStatuses(statuses ...oapi.JobStatus) EnvironmentProgressionOption {
+	return func(r *oapi.EnvironmentProgressionRule) {
+		r.SuccessStatuses = &statuses
+	}
+}
+
+// WithEnvironmentProgressionRule configures an environment progression rule.
+// The dependsOnSelector is a CEL expression matching dependency environments.
+// Use EnvironmentProgressionOption funcs to configure success percentage,
+// soak time, max age, and success statuses.
+func WithEnvironmentProgressionRule(dependsOnSelector string, opts ...EnvironmentProgressionOption) PolicyRuleOption {
+	return func(r *oapi.PolicyRule) {
+		sel := &oapi.Selector{}
+		_ = sel.FromCelSelector(oapi.CelSelector{Cel: dependsOnSelector})
+		rule := &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: *sel,
+		}
+		for _, o := range opts {
+			o(rule)
+		}
+		r.EnvironmentProgression = rule
 	}
 }
 
@@ -519,22 +661,21 @@ func ReferenceValue(reference string, path ...string) oapi.Value {
 // Internal builders: convert ScenarioState into mock data
 // ---------------------------------------------------------------------------
 
-func buildSelectorResources(sc *ScenarioState) []selectoreval.ResourceInfo {
-	out := make([]selectoreval.ResourceInfo, len(sc.Resources))
+func buildSelectorResources(sc *ScenarioState) []*oapi.Resource {
+	out := make([]*oapi.Resource, len(sc.Resources))
 	for i, rd := range sc.Resources {
-		meta := map[string]any{
-			"labels": rd.Labels,
+		metadata := make(map[string]string)
+		for k, v := range rd.Labels {
+			metadata[k] = fmt.Sprintf("%v", v)
 		}
 		for k, v := range rd.Metadata {
-			meta[k] = v
+			metadata[k] = fmt.Sprintf("%v", v)
 		}
-		out[i] = selectoreval.ResourceInfo{
-			ID: rd.ID,
-			Raw: map[string]any{
-				"name":     rd.Name,
-				"kind":     rd.Kind,
-				"metadata": meta,
-			},
+		out[i] = &oapi.Resource{
+			Id:       rd.ID.String(),
+			Name:     rd.Name,
+			Kind:     rd.Kind,
+			Metadata: metadata,
 		}
 	}
 	return out
@@ -574,8 +715,9 @@ func buildEvaluatorScope(sc *ScenarioState) *evaluator.EvaluatorScope {
 
 	return &evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{
-			Id:   sc.EnvironmentID.String(),
-			Name: sc.EnvironmentName,
+			Id:          sc.EnvironmentID.String(),
+			Name:        sc.EnvironmentName,
+			WorkspaceId: sc.WorkspaceID.String(),
 		},
 		Deployment: &oapi.Deployment{
 			Id:   sc.DeploymentID.String(),

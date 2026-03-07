@@ -88,7 +88,7 @@ func TestPipeline_SelectorMatchesNone(t *testing.T) {
 func TestPipeline_SelectorByLabel(t *testing.T) {
 	p := NewTestPipeline(t,
 		WithDeployment(
-			DeploymentSelector(`resource.metadata.labels.pool == "gpu"`),
+			DeploymentSelector(`resource.metadata.pool == "gpu"`),
 		),
 		WithEnvironment(EnvironmentName("compute")),
 		WithResource(
@@ -194,31 +194,6 @@ func TestPipeline_VersionWithReadyStatus(t *testing.T) {
 
 	p.AssertReleaseCreated(t)
 	p.AssertReleaseVersion(t, 0, "v1.0.0")
-}
-
-// ---------------------------------------------------------------------------
-// Deployment cross-reference in selector
-// ---------------------------------------------------------------------------
-
-func TestPipeline_DeploymentCrossReferenceSelector(t *testing.T) {
-	p := NewTestPipeline(t,
-		WithDeployment(
-			DeploymentSelector(`deployment.name == resource.name`),
-			DeploymentName("web-server"),
-		),
-		WithEnvironment(EnvironmentName("prod")),
-		WithResource(ResourceName("web-server"), ResourceKind("Pod")),
-		WithResource(ResourceName("api-server"), ResourceKind("Pod")),
-		WithVersion(VersionTag("v1.0.0")),
-	)
-
-	p.EnqueueSelectorEval()
-	p.ProcessSelectorEvals()
-
-	assert.Len(t, p.ComputedResources(), 1, "only web-server should match")
-
-	p.ProcessDesiredReleases()
-	p.AssertReleaseCreated(t)
 }
 
 // ===========================================================================

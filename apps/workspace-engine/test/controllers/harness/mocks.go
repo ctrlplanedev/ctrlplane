@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/store/resources"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
@@ -28,7 +29,7 @@ var _ desiredrelease.Getter = (*DesiredReleaseGetter)(nil)
 // SelectorEvalGetter implements deploymentresourceselectoreval.Getter.
 type SelectorEvalGetter struct {
 	Deployment     *selectoreval.DeploymentInfo
-	Resources      []selectoreval.ResourceInfo
+	Resources      []*oapi.Resource
 	ReleaseTargets []selectoreval.ReleaseTarget
 }
 
@@ -36,12 +37,8 @@ func (g *SelectorEvalGetter) GetDeploymentInfo(_ context.Context, _ uuid.UUID) (
 	return g.Deployment, nil
 }
 
-func (g *SelectorEvalGetter) StreamResources(_ context.Context, _ uuid.UUID, _ int, batches chan<- []selectoreval.ResourceInfo) error {
-	defer close(batches)
-	if len(g.Resources) > 0 {
-		batches <- g.Resources
-	}
-	return nil
+func (g *SelectorEvalGetter) GetResources(_ context.Context, _ string, _ resources.GetResourcesOptions) ([]*oapi.Resource, error) {
+	return g.Resources, nil
 }
 
 func (g *SelectorEvalGetter) GetReleaseTargetsForDeployment(_ context.Context, _ uuid.UUID) ([]selectoreval.ReleaseTarget, error) {
@@ -80,11 +77,29 @@ type DesiredReleaseGetter struct {
 	RelationshipRules []eval.Rule
 	Candidates        map[string][]eval.EntityData
 
+	ReleaseTargetsList          []*oapi.ReleaseTarget
+	ReleaseTargetsByEnvironment map[string][]*oapi.ReleaseTarget
+	ReleaseTargetsByDeployment  map[string][]*oapi.ReleaseTarget
+	ReleaseTargetsByResource    map[string][]*oapi.ReleaseTarget
+	AllReleaseTargetsList       []*oapi.ReleaseTarget
+	JobsByReleaseTarget         map[string]map[string]*oapi.Job
+	LatestCompletedJobs         map[string]*oapi.Job
+	JobVerificationStatuses     map[string]oapi.JobVerificationStatus
+	Deployments                 map[string]*oapi.Deployment
+	Environments                map[string]*oapi.Environment
+	Resources                   map[string]*oapi.Resource
+	Releases                    map[string]*oapi.Release
+	SystemIDsByEnvironment      map[string][]string
+	AllPoliciesMap              map[string]*oapi.Policy
+
 	// ApprovalRecordsFn allows per-version/per-environment logic when set.
 	ApprovalRecordsFn func(versionID, environmentID string) []*oapi.UserApprovalRecord
 
 	// PolicySkipsFn allows per-version/per-environment/per-resource logic when set.
 	PolicySkipsFn func(versionID, environmentID, resourceID string) []*oapi.PolicySkip
+
+	// HasCurrentReleaseFn allows per-release-target logic when set.
+	HasCurrentReleaseFn func(rt *oapi.ReleaseTarget) bool
 }
 
 func (g *DesiredReleaseGetter) ReleaseTargetExists(_ context.Context, _ *desiredrelease.ReleaseTarget) (bool, error) {
@@ -110,7 +125,10 @@ func (g *DesiredReleaseGetter) GetApprovalRecords(_ context.Context, versionID, 
 	return g.ApprovalRecords, nil
 }
 
-func (g *DesiredReleaseGetter) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget) (bool, error) {
+func (g *DesiredReleaseGetter) HasCurrentRelease(_ context.Context, rt *oapi.ReleaseTarget) (bool, error) {
+	if g.HasCurrentReleaseFn != nil {
+		return g.HasCurrentReleaseFn(rt), nil
+	}
 	return g.HasRelease, nil
 }
 
@@ -156,54 +174,91 @@ func (g *DesiredReleaseGetter) GetEntityByID(_ context.Context, entityID uuid.UU
 }
 
 func (g *DesiredReleaseGetter) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
-	return nil, nil
+	return g.Deployments, nil
 }
-func (g *DesiredReleaseGetter) GetDeployment(_ context.Context, _ string) (*oapi.Deployment, error) {
+func (g *DesiredReleaseGetter) GetDeployment(_ context.Context, id string) (*oapi.Deployment, error) {
+	if g.Deployments != nil {
+		return g.Deployments[id], nil
+	}
 	return nil, nil
 }
 func (g *DesiredReleaseGetter) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+	return g.Environments, nil
+}
+func (g *DesiredReleaseGetter) GetEnvironment(_ context.Context, id string) (*oapi.Environment, error) {
+	if g.Environments != nil {
+		return g.Environments[id], nil
+	}
 	return nil, nil
 }
-func (g *DesiredReleaseGetter) GetEnvironment(_ context.Context, _ string) (*oapi.Environment, error) {
+func (g *DesiredReleaseGetter) GetResource(_ context.Context, id string) (*oapi.Resource, error) {
+	if g.Resources != nil {
+		return g.Resources[id], nil
+	}
 	return nil, nil
 }
-func (g *DesiredReleaseGetter) GetResource(_ context.Context, _ string) (*oapi.Resource, error) {
-	return nil, nil
-}
-func (g *DesiredReleaseGetter) GetRelease(_ context.Context, _ string) (*oapi.Release, error) {
+func (g *DesiredReleaseGetter) GetRelease(_ context.Context, id string) (*oapi.Release, error) {
+	if g.Releases != nil {
+		return g.Releases[id], nil
+	}
 	return nil, nil
 }
 func (g *DesiredReleaseGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {
-	return nil, nil
+	return g.AllPoliciesMap, nil
 }
-func (g *DesiredReleaseGetter) GetSystemIDsForEnvironment(_ string) []string {
+func (g *DesiredReleaseGetter) GetSystemIDsForEnvironment(envID string) []string {
+	if g.SystemIDsByEnvironment != nil {
+		return g.SystemIDsByEnvironment[envID]
+	}
 	return nil
 }
-func (g *DesiredReleaseGetter) GetReleaseTargetsForEnvironment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+func (g *DesiredReleaseGetter) GetReleaseTargetsForEnvironment(_ context.Context, envID string) ([]*oapi.ReleaseTarget, error) {
+	if g.ReleaseTargetsByEnvironment != nil {
+		return g.ReleaseTargetsByEnvironment[envID], nil
+	}
 	return nil, nil
 }
-func (g *DesiredReleaseGetter) GetReleaseTargetsForDeployment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+func (g *DesiredReleaseGetter) GetReleaseTargetsForDeployment(_ context.Context, depID string) ([]*oapi.ReleaseTarget, error) {
+	if g.ReleaseTargetsByDeployment != nil {
+		return g.ReleaseTargetsByDeployment[depID], nil
+	}
 	return nil, nil
 }
-func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+	if g.JobsByReleaseTarget != nil {
+		key := rt.DeploymentId + ":" + rt.EnvironmentId + ":" + rt.ResourceId
+		return g.JobsByReleaseTarget[key]
+	}
 	return nil
 }
 func (g *DesiredReleaseGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
-	return nil, nil
+	return g.ReleaseTargetsList, nil
 }
-func (g *DesiredReleaseGetter) GetJobVerificationStatus(_ string) oapi.JobVerificationStatus {
+func (g *DesiredReleaseGetter) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
+	if g.JobVerificationStatuses != nil {
+		if s, ok := g.JobVerificationStatuses[jobID]; ok {
+			return s
+		}
+	}
 	return oapi.JobVerificationStatusCancelled
 }
 func (g *DesiredReleaseGetter) NewVersionCooldownEvaluator(_ *oapi.PolicyRule) evaluator.Evaluator {
 	return nil
 }
 func (g *DesiredReleaseGetter) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
-	return nil, nil
+	return g.AllReleaseTargetsList, nil
 }
-func (g *DesiredReleaseGetter) GetReleaseTargetsForResource(_ context.Context, _ string) []*oapi.ReleaseTarget {
+func (g *DesiredReleaseGetter) GetReleaseTargetsForResource(_ context.Context, resourceID string) []*oapi.ReleaseTarget {
+	if g.ReleaseTargetsByResource != nil {
+		return g.ReleaseTargetsByResource[resourceID]
+	}
 	return nil
 }
-func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget) *oapi.Job {
+func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(rt *oapi.ReleaseTarget) *oapi.Job {
+	if g.LatestCompletedJobs != nil {
+		key := rt.DeploymentId + ":" + rt.EnvironmentId + ":" + rt.ResourceId
+		return g.LatestCompletedJobs[key]
+	}
 	return nil
 }
 

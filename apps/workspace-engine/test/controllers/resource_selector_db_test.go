@@ -9,6 +9,7 @@ import (
 
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/store/resources"
 	deployselector "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	envselector "workspace-engine/svc/controllers/environmentresourceselectoreval"
 	. "workspace-engine/test/controllers/harness"
@@ -154,24 +155,18 @@ func setupDBFixture(t *testing.T, pool *pgxpool.Pool) *dbFixture {
 }
 
 // TestPostgresGetter_DeploymentResourceCELEvaluation verifies that the
-// deployment PostgresGetter produces resource and deployment Raw values that
-// CEL can evaluate without "unsupported conversion to ref.Val" errors.
-//
-// This is a regression test: previously, the getter returned raw
-// db.ListResourcesByWorkspaceIDRow structs which CEL could not convert.
+// deployment PostgresGetter produces resource values that CEL can evaluate
+// without "unsupported conversion to ref.Val" errors.
 func TestPostgresGetter_DeploymentResourceCELEvaluation(t *testing.T) {
 	pool := requireTestDB(t)
 	f := setupDBFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &deployselector.PostgresGetter{}
+	getter := deployselector.NewPostgresGetter(nil)
 
-	t.Run("StreamResources returns CEL-compatible maps", func(t *testing.T) {
-		batches := make(chan []deployselector.ResourceInfo, 1)
-		go func() {
-			err := getter.StreamResources(ctx, f.workspaceID, 100, batches)
-			require.NoError(t, err)
-		}()
+	t.Run("GetResources returns CEL-compatible maps", func(t *testing.T) {
+		resources, err := getter.GetResources(ctx, f.workspaceID.String(), resources.GetResourcesOptions{})
+		require.NoError(t, err)
 
 		celEnv, err := celutil.NewEnvBuilder().
 			WithMapVariables("resource").
@@ -183,102 +178,34 @@ func TestPostgresGetter_DeploymentResourceCELEvaluation(t *testing.T) {
 		require.NoError(t, err)
 
 		var matchCount int
-		for batch := range batches {
-			for _, res := range batch {
-				celCtx := map[string]any{"resource": res.Raw}
-				ok, err := celutil.EvalBool(prg, celCtx)
-				require.NoError(t, err, "CEL eval must not fail for resource %s", res.ID)
-				if ok {
-					matchCount++
-				}
+		for _, res := range resources {
+			resourceMap, mapErr := celutil.EntityToMap(res)
+			require.NoError(t, mapErr, "EntityToMap must succeed for resource %s", res.Id)
+			celCtx := map[string]any{"resource": resourceMap}
+			ok, evalErr := celutil.EvalBool(prg, celCtx)
+			require.NoError(t, evalErr, "CEL eval must not fail for resource %s", res.Id)
+			if ok {
+				matchCount++
 			}
 		}
 		assert.Equal(t, 1, matchCount, "exactly one resource should have kubernetes/status=running")
 	})
 
-	t.Run("GetDeploymentInfo returns CEL-compatible deployment via EntityToMap", func(t *testing.T) {
-		info, err := getter.GetDeploymentInfo(ctx, f.deploymentID)
-		require.NoError(t, err)
-
-		deploymentMap, err := celutil.EntityToMap(info.Raw)
-		require.NoError(t, err, "EntityToMap must succeed for deployment DB row")
-
-		_, hasName := deploymentMap["Name"]
-		assert.True(t, hasName, "deployment map should contain Name key after EntityToMap")
-
-		celEnv, err := celutil.NewEnvBuilder().
-			WithMapVariables("resource", "deployment").
-			WithStandardExtensions().
-			BuildCached(1 * time.Hour)
-		require.NoError(t, err)
-
-		prg, err := celEnv.Compile(`deployment.Name == "test-deployment"`)
-		require.NoError(t, err)
-
-		celCtx := map[string]any{
-			"resource":   map[string]any{"name": "dummy", "kind": "Server", "metadata": map[string]any{}},
-			"deployment": deploymentMap,
-		}
-		ok, err := celutil.EvalBool(prg, celCtx)
-		require.NoError(t, err, "CEL eval must not fail for deployment from DB")
-		assert.True(t, ok)
-	})
-
-	t.Run("cross-reference selector works with DB data", func(t *testing.T) {
-		info, err := getter.GetDeploymentInfo(ctx, f.deploymentID)
-		require.NoError(t, err)
-
-		deploymentMap, err := celutil.EntityToMap(info.Raw)
-		require.NoError(t, err)
-
-		celEnv, err := celutil.NewEnvBuilder().
-			WithMapVariables("resource", "deployment").
-			WithStandardExtensions().
-			BuildCached(1 * time.Hour)
-		require.NoError(t, err)
-
-		prg, err := celEnv.Compile(`resource.kind == "GoogleKubernetesEngine" && resource.metadata["google/project"] == "my-project"`)
-		require.NoError(t, err)
-
-		batches := make(chan []deployselector.ResourceInfo, 1)
-		go func() {
-			err := getter.StreamResources(ctx, f.workspaceID, 100, batches)
-			require.NoError(t, err)
-		}()
-
-		var matched int
-		for batch := range batches {
-			for _, res := range batch {
-				celCtx := map[string]any{
-					"resource":   res.Raw,
-					"deployment": deploymentMap,
-				}
-				ok, err := celutil.EvalBool(prg, celCtx)
-				require.NoError(t, err, "CEL eval must not fail for resource %s", res.ID)
-				if ok {
-					matched++
-				}
-			}
-		}
-		assert.Equal(t, 1, matched)
-	})
 }
 
-// TestPostgresGetter_EnvironmentResourceCELEvaluation verifies the environment
-// PostgresGetter produces resource Raw values compatible with CEL.
+// TestPostgresGetter_EnvironmentResourceCELEvaluation verifies that the
+// environment PostgresGetter produces resource values that CEL can evaluate
+// without "unsupported conversion to ref.Val" errors.
 func TestPostgresGetter_EnvironmentResourceCELEvaluation(t *testing.T) {
 	pool := requireTestDB(t)
 	f := setupDBFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &envselector.PostgresGetter{}
+	getter := envselector.NewPostgresGetter(nil)
 
-	t.Run("StreamResources returns CEL-compatible maps", func(t *testing.T) {
-		batches := make(chan []envselector.ResourceInfo, 1)
-		go func() {
-			err := getter.StreamResources(ctx, f.workspaceID, 100, batches)
-			require.NoError(t, err)
-		}()
+	t.Run("GetResources returns CEL-compatible maps", func(t *testing.T) {
+		resources, err := getter.GetResources(ctx, f.workspaceID.String(), resources.GetResourcesOptions{})
+		require.NoError(t, err)
 
 		celEnv, err := celutil.NewEnvBuilder().
 			WithMapVariables("resource").
@@ -290,16 +217,16 @@ func TestPostgresGetter_EnvironmentResourceCELEvaluation(t *testing.T) {
 		require.NoError(t, err)
 
 		var matchCount int
-		for batch := range batches {
-			for _, res := range batch {
-				celCtx := map[string]any{"resource": res.Raw}
-				ok, err := celutil.EvalBool(prg, celCtx)
-				require.NoError(t, err, "CEL eval must not fail for resource %s", res.ID)
-				if ok {
-					matchCount++
-				}
+		for _, res := range resources {
+			resourceMap, mapErr := celutil.EntityToMap(res)
+			require.NoError(t, mapErr, "EntityToMap must succeed for resource %s", res.Id)
+			celCtx := map[string]any{"resource": resourceMap}
+			ok, evalErr := celutil.EvalBool(prg, celCtx)
+			require.NoError(t, evalErr, "CEL eval must not fail for resource %s", res.Id)
+			if ok {
+				matchCount++
 			}
 		}
-		assert.Equal(t, 1, matchCount)
+		assert.Equal(t, 1, matchCount, "exactly one resource should be GoogleKubernetesEngine")
 	})
 }

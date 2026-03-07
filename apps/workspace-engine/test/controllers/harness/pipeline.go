@@ -65,16 +65,16 @@ type ScenarioState struct {
 
 	DeploymentSelector string
 	DeploymentName     string
-	DeploymentRaw      map[string]any
 
 	EnvironmentID   uuid.UUID
 	EnvironmentName string
 
-	Resources   []ResourceDef
-	Versions    []*oapi.DeploymentVersion
-	Policies    []*oapi.Policy
-	PolicySkips []*oapi.PolicySkip
-	JobAgents   []oapi.JobAgent
+	Resources       []ResourceDef
+	Versions        []*oapi.DeploymentVersion
+	Policies        []*oapi.Policy
+	PolicySkips     []*oapi.PolicySkip
+	ApprovalRecords []*oapi.UserApprovalRecord
+	JobAgents       []oapi.JobAgent
 
 	DeploymentVars    []oapi.DeploymentVariableWithValues
 	ResourceVars      map[string]oapi.ResourceVariable
@@ -102,7 +102,6 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 		DeploymentID:       uuid.New(),
 		DeploymentSelector: "true",
 		DeploymentName:     "test-deployment",
-		DeploymentRaw:      map[string]any{"name": "test-deployment", "metadata": map[string]any{}},
 
 		EnvironmentID:   uuid.New(),
 		EnvironmentName: "default",
@@ -118,7 +117,6 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 		Deployment: &selectoreval.DeploymentInfo{
 			ResourceSelector: sc.DeploymentSelector,
 			WorkspaceID:      sc.WorkspaceID,
-			Raw:              sc.DeploymentRaw,
 		},
 		Resources:      buildSelectorResources(sc),
 		ReleaseTargets: releaseTargets,
@@ -131,6 +129,7 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 		Versions:          sc.Versions,
 		Policies:          sc.Policies,
 		PolicySkips:       sc.PolicySkips,
+		ApprovalRecords:   sc.ApprovalRecords,
 		DeploymentVars:    sc.DeploymentVars,
 		ResourceVars:      sc.ResourceVars,
 		RelationshipRules: sc.RelationshipRules,

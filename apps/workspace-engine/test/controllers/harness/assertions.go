@@ -140,3 +140,27 @@ func (p *TestPipeline) AssertJobReleaseID(t *testing.T, idx int, releaseID strin
 		"job index %d out of range (have %d)", idx, len(p.JobDispatchSetter.Jobs))
 	assert.Equal(t, releaseID, p.JobDispatchSetter.Jobs[idx].ReleaseId)
 }
+
+// ---------------------------------------------------------------------------
+// Requeue assertions
+// ---------------------------------------------------------------------------
+
+// AssertHasRequeues asserts that at least one requeue record was captured
+// during the last Run/RunRound cycle.
+func (p *TestPipeline) AssertHasRequeues(t *testing.T) {
+	t.Helper()
+	require.NotEmpty(t, p.requeues, "expected at least one requeue record")
+}
+
+// AssertNoRequeues asserts that no requeue records were captured during
+// the last Run/RunRound cycle.
+func (p *TestPipeline) AssertNoRequeues(t *testing.T) {
+	t.Helper()
+	assert.Empty(t, p.requeues, "expected no requeue records")
+}
+
+// AssertRequeueCount asserts the exact number of requeue records captured.
+func (p *TestPipeline) AssertRequeueCount(t *testing.T, n int) {
+	t.Helper()
+	assert.Len(t, p.requeues, n)
+}

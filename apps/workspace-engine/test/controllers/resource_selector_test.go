@@ -1,9 +1,10 @@
 package controllers_test
 
 import (
+	"fmt"
 	"testing"
 
-	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
+	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
 
 	"github.com/google/uuid"
@@ -187,41 +188,13 @@ func TestSelector_NameFilter_ExactMatch(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Cross-reference: deployment.name == resource.name
-// (maps to TestEngine_DeploymentRemovalWithResources pattern)
-// ---------------------------------------------------------------------------
-
-func TestSelector_CrossReference_DeploymentNameMatchesResourceName(t *testing.T) {
-	p := NewTestPipeline(t,
-		WithDeployment(
-			DeploymentName("web-server"),
-			DeploymentSelector(`deployment.name == resource.name`),
-		),
-		WithEnvironment(EnvironmentName("prod")),
-		WithResource(ResourceName("web-server"), ResourceKind("Pod")),
-		WithResource(ResourceName("api-server"), ResourceKind("Pod")),
-		WithResource(ResourceName("worker"), ResourceKind("Pod")),
-		WithVersion(VersionTag("v1.0.0")),
-	)
-
-	p.EnqueueSelectorEval()
-	p.ProcessSelectorEvals()
-
-	assert.Len(t, p.ComputedResources(), 1, "only web-server resource should match")
-
-	p.ProcessDesiredReleases()
-	p.AssertReleaseCreated(t)
-	p.AssertReleaseVersion(t, 0, "v1.0.0")
-}
-
-// ---------------------------------------------------------------------------
 // Label-based selectors
 // ---------------------------------------------------------------------------
 
 func TestSelector_LabelFilter_MatchesByPool(t *testing.T) {
 	p := NewTestPipeline(t,
 		WithDeployment(
-			DeploymentSelector(`resource.metadata.labels.pool == "gpu"`),
+			DeploymentSelector(`resource.metadata.pool == "gpu"`),
 		),
 		WithEnvironment(EnvironmentName("compute")),
 		WithResource(
@@ -780,30 +753,6 @@ func TestSelector_Dynamic_FilterMatchesNothing_ThenMatches(t *testing.T) {
 	assert.Len(t, p.ComputedResources(), 1, "round 2: Node filter now matches node-1")
 }
 
-func TestSelector_Dynamic_CrossReference_ThenDrop(t *testing.T) {
-	p := NewTestPipeline(t,
-		WithDeployment(
-			DeploymentName("api-server"),
-			DeploymentSelector(`deployment.name == resource.name`),
-		),
-		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("api-server"), ResourceKind("Pod")),
-		WithResource(ResourceName("web-server"), ResourceKind("Pod")),
-		WithResource(ResourceName("worker"), ResourceKind("Pod")),
-		WithVersion(VersionTag("v1.0.0")),
-	)
-
-	p.Run()
-	assert.Len(t, p.ComputedResources(), 1, "round 1: only api-server matches cross-ref")
-
-	// Switch to a non-cross-ref selector that matches more.
-	p.SelectorGetter.Deployment.ResourceSelector = `resource.kind == "Pod"`
-	p.EnqueueSelectorEval()
-	p.Run()
-
-	assert.Len(t, p.ComputedResources(), 3, "round 2: all 3 Pods match kind filter")
-}
-
 func TestSelector_Dynamic_ResourcesChangeAlongsideFilter(t *testing.T) {
 	p := NewTestPipeline(t,
 		WithDeployment(
@@ -905,19 +854,18 @@ func mustNewUUID() uuid.UUID {
 	return uuid.New()
 }
 
-func buildResourceInfo(rd ResourceDef) selectoreval.ResourceInfo {
-	meta := map[string]any{
-		"labels": rd.Labels,
+func buildResourceInfo(rd ResourceDef) *oapi.Resource {
+	metadata := make(map[string]string)
+	for k, v := range rd.Labels {
+		metadata[k] = fmt.Sprintf("%v", v)
 	}
 	for k, v := range rd.Metadata {
-		meta[k] = v
+		metadata[k] = fmt.Sprintf("%v", v)
 	}
-	return selectoreval.ResourceInfo{
-		ID: rd.ID,
-		Raw: map[string]any{
-			"name":     rd.Name,
-			"kind":     rd.Kind,
-			"metadata": meta,
-		},
+	return &oapi.Resource{
+		Id:       rd.ID.String(),
+		Name:     rd.Name,
+		Kind:     rd.Kind,
+		Metadata: metadata,
 	}
 }

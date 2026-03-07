@@ -5,7 +5,9 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +21,7 @@ import (
 type mockGetter struct {
 	environment *EnvironmentInfo
 	envErr      error
-	resources   []ResourceInfo
+	resources   []*oapi.Resource
 	listErr     error
 }
 
@@ -27,15 +29,8 @@ func (m *mockGetter) GetEnvironmentInfo(_ context.Context, _ uuid.UUID) (*Enviro
 	return m.environment, m.envErr
 }
 
-func (m *mockGetter) StreamResources(_ context.Context, _ uuid.UUID, _ int, batches chan<- []ResourceInfo) error {
-	defer close(batches)
-	if m.listErr != nil {
-		return m.listErr
-	}
-	if len(m.resources) > 0 {
-		batches <- m.resources
-	}
-	return nil
+func (m *mockGetter) GetResources(_ context.Context, _ string, _ resources.GetResourcesOptions) ([]*oapi.Resource, error) {
+	return m.resources, m.listErr
 }
 
 type mockSetter struct {
@@ -56,40 +51,32 @@ func (m *mockSetter) SetComputedEnvironmentResources(_ context.Context, environm
 // Helpers
 // ---------------------------------------------------------------------------
 
-func makeResource(name, kind string) ResourceInfo {
-	return ResourceInfo{
-		ID: uuid.New(),
-		Raw: map[string]any{
-			"name": name,
-			"kind": kind,
-			"metadata": map[string]any{
-				"labels": map[string]any{},
-			},
-		},
+func makeResource(name, kind string) *oapi.Resource {
+	return &oapi.Resource{
+		Id:       uuid.New().String(),
+		Name:     name,
+		Kind:     kind,
+		Metadata: map[string]string{},
 	}
 }
 
-func makeResourceWithLabels(name, kind string, labels map[string]any) ResourceInfo {
-	return ResourceInfo{
-		ID: uuid.New(),
-		Raw: map[string]any{
-			"name": name,
-			"kind": kind,
-			"metadata": map[string]any{
-				"labels": labels,
-			},
-		},
+func makeResourceWithLabels(name, kind string, labels map[string]string) *oapi.Resource {
+	return &oapi.Resource{
+		Id:       uuid.New().String(),
+		Name:     name,
+		Kind:     kind,
+		Metadata: labels,
 	}
+}
+
+func resourceID(r *oapi.Resource) uuid.UUID {
+	return uuid.MustParse(r.Id)
 }
 
 func makeEnvironment(selector string) *EnvironmentInfo {
 	return &EnvironmentInfo{
 		ResourceSelector: selector,
 		WorkspaceID:      uuid.New(),
-		Raw: map[string]any{
-			"name":     "test-environment",
-			"metadata": map[string]any{},
-		},
 	}
 }
 
@@ -130,7 +117,6 @@ func TestProcess_InvalidSelector(t *testing.T) {
 		environment: &EnvironmentInfo{
 			ResourceSelector: ">>>invalid<<<",
 			WorkspaceID:      uuid.New(),
-			Raw:              map[string]any{},
 		},
 	}
 	c := &Controller{getter: getter, setter: &mockSetter{}}
@@ -157,7 +143,7 @@ func TestProcess_SetterError(t *testing.T) {
 	environmentID := uuid.New()
 	getter := &mockGetter{
 		environment: makeEnvironment("true"),
-		resources:   []ResourceInfo{makeResource("r1", "Node")},
+		resources:   []*oapi.Resource{makeResource("r1", "Node")},
 	}
 	setter := &mockSetter{err: errors.New("write failed")}
 	c := &Controller{getter: getter, setter: setter}
@@ -171,7 +157,7 @@ func TestProcess_DelegatesCorrectEnvironmentID(t *testing.T) {
 	environmentID := uuid.New()
 	getter := &mockGetter{
 		environment: makeEnvironment("true"),
-		resources:   []ResourceInfo{},
+		resources:   []*oapi.Resource{},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -192,7 +178,7 @@ func TestProcess_MatchAllResources(t *testing.T) {
 
 	getter := &mockGetter{
 		environment: makeEnvironment("true"),
-		resources:   []ResourceInfo{r1, r2, r3},
+		resources:   []*oapi.Resource{r1, r2, r3},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -200,15 +186,15 @@ func TestProcess_MatchAllResources(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 3)
-	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, r2.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, r3.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r1))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r2))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r3))
 }
 
 func TestProcess_MatchNoResources(t *testing.T) {
 	getter := &mockGetter{
 		environment: makeEnvironment("false"),
-		resources: []ResourceInfo{
+		resources: []*oapi.Resource{
 			makeResource("node-1", "Node"),
 			makeResource("node-2", "Node"),
 		},
@@ -224,7 +210,7 @@ func TestProcess_MatchNoResources(t *testing.T) {
 func TestProcess_EmptyResourceList(t *testing.T) {
 	getter := &mockGetter{
 		environment: makeEnvironment("true"),
-		resources:   []ResourceInfo{},
+		resources:   []*oapi.Resource{},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -241,7 +227,7 @@ func TestProcess_FilterByKind(t *testing.T) {
 
 	getter := &mockGetter{
 		environment: makeEnvironment(`resource.kind == "Node"`),
-		resources:   []ResourceInfo{node1, pod, node2},
+		resources:   []*oapi.Resource{node1, pod, node2},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -249,8 +235,8 @@ func TestProcess_FilterByKind(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, node1.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, node2.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(node1))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(node2))
 }
 
 func TestProcess_FilterByName(t *testing.T) {
@@ -260,7 +246,7 @@ func TestProcess_FilterByName(t *testing.T) {
 
 	getter := &mockGetter{
 		environment: makeEnvironment(`resource.name.endsWith("-server")`),
-		resources:   []ResourceInfo{r1, r2, r3},
+		resources:   []*oapi.Resource{r1, r2, r3},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -268,18 +254,18 @@ func TestProcess_FilterByName(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, r2.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r1))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r2))
 }
 
 func TestProcess_FilterByLabel(t *testing.T) {
-	gpu := makeResourceWithLabels("node-1", "Node", map[string]any{"pool": "gpu"})
-	cpu := makeResourceWithLabels("node-2", "Node", map[string]any{"pool": "cpu"})
-	gpu2 := makeResourceWithLabels("node-3", "Node", map[string]any{"pool": "gpu"})
+	gpu := makeResourceWithLabels("node-1", "Node", map[string]string{"pool": "gpu"})
+	cpu := makeResourceWithLabels("node-2", "Node", map[string]string{"pool": "cpu"})
+	gpu2 := makeResourceWithLabels("node-3", "Node", map[string]string{"pool": "gpu"})
 
 	getter := &mockGetter{
-		environment: makeEnvironment(`resource.metadata.labels.pool == "gpu"`),
-		resources:   []ResourceInfo{gpu, cpu, gpu2},
+		environment: makeEnvironment(`resource.metadata.pool == "gpu"`),
+		resources:   []*oapi.Resource{gpu, cpu, gpu2},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -287,33 +273,33 @@ func TestProcess_FilterByLabel(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, gpu.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, gpu2.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(gpu))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(gpu2))
 }
 
 func TestProcess_CompoundSelector(t *testing.T) {
-	match := makeResourceWithLabels("gpu-node-1", "Node", map[string]any{
+	match := makeResourceWithLabels("gpu-node-1", "Node", map[string]string{
 		"pool": "gpu",
 		"env":  "production",
 	})
-	wrongKind := makeResourceWithLabels("gpu-pod-1", "Pod", map[string]any{
+	wrongKind := makeResourceWithLabels("gpu-pod-1", "Pod", map[string]string{
 		"pool": "gpu",
 		"env":  "production",
 	})
-	wrongLabel := makeResourceWithLabels("cpu-node-1", "Node", map[string]any{
+	wrongLabel := makeResourceWithLabels("cpu-node-1", "Node", map[string]string{
 		"pool": "cpu",
 		"env":  "production",
 	})
-	wrongEnv := makeResourceWithLabels("gpu-node-2", "Node", map[string]any{
+	wrongEnv := makeResourceWithLabels("gpu-node-2", "Node", map[string]string{
 		"pool": "gpu",
 		"env":  "staging",
 	})
 
 	getter := &mockGetter{
 		environment: makeEnvironment(
-			`resource.kind == "Node" && resource.metadata.labels.pool == "gpu" && resource.metadata.labels.env == "production"`,
+			`resource.kind == "Node" && resource.metadata.pool == "gpu" && resource.metadata.env == "production"`,
 		),
-		resources: []ResourceInfo{match, wrongKind, wrongLabel, wrongEnv},
+		resources: []*oapi.Resource{match, wrongKind, wrongLabel, wrongEnv},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -321,16 +307,16 @@ func TestProcess_CompoundSelector(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
-	assert.Contains(t, setter.calledWith.resourceIDs, match.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(match))
 }
 
 func TestProcess_MissingKeyReturnsNoMatch(t *testing.T) {
-	withLabel := makeResourceWithLabels("node-1", "Node", map[string]any{"tier": "critical"})
+	withLabel := makeResourceWithLabels("node-1", "Node", map[string]string{"tier": "critical"})
 	withoutLabel := makeResource("node-2", "Node")
 
 	getter := &mockGetter{
-		environment: makeEnvironment(`resource.metadata.labels.tier == "critical"`),
-		resources:   []ResourceInfo{withLabel, withoutLabel},
+		environment: makeEnvironment(`resource.metadata.tier == "critical"`),
+		resources:   []*oapi.Resource{withLabel, withoutLabel},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -338,55 +324,7 @@ func TestProcess_MissingKeyReturnsNoMatch(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 1)
-	assert.Contains(t, setter.calledWith.resourceIDs, withLabel.ID)
-}
-
-func TestProcess_EnvironmentCrossReference(t *testing.T) {
-	environment := &EnvironmentInfo{
-		ResourceSelector: `resource.kind == "Node" && environment.name == "production"`,
-		WorkspaceID:      uuid.New(),
-		Raw: map[string]any{
-			"name":     "production",
-			"metadata": map[string]any{},
-		},
-	}
-
-	node := makeResource("node-1", "Node")
-	pod := makeResource("pod-1", "Pod")
-
-	getter := &mockGetter{
-		environment: environment,
-		resources:   []ResourceInfo{node, pod},
-	}
-	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
-
-	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
-	require.NoError(t, err)
-	assert.Len(t, setter.calledWith.resourceIDs, 1)
-	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
-}
-
-func TestProcess_EnvironmentCrossReference_NoMatch(t *testing.T) {
-	environment := &EnvironmentInfo{
-		ResourceSelector: `environment.name == "production"`,
-		WorkspaceID:      uuid.New(),
-		Raw: map[string]any{
-			"name":     "staging",
-			"metadata": map[string]any{},
-		},
-	}
-
-	getter := &mockGetter{
-		environment: environment,
-		resources:   []ResourceInfo{makeResource("node-1", "Node")},
-	}
-	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
-
-	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
-	require.NoError(t, err)
-	assert.Empty(t, setter.calledWith.resourceIDs)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(withLabel))
 }
 
 func TestProcess_NameStartsWith(t *testing.T) {
@@ -396,7 +334,7 @@ func TestProcess_NameStartsWith(t *testing.T) {
 
 	getter := &mockGetter{
 		environment: makeEnvironment(`resource.name.startsWith("prod-")`),
-		resources:   []ResourceInfo{match1, match2, noMatch},
+		resources:   []*oapi.Resource{match1, match2, noMatch},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -404,27 +342,27 @@ func TestProcess_NameStartsWith(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, match1.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, match2.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(match1))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(match2))
 }
 
 func TestProcess_LargeResourceSet(t *testing.T) {
-	resources := make([]ResourceInfo, 500)
+	res := make([]*oapi.Resource, 500)
 	expectedIDs := make([]uuid.UUID, 0)
-	for i := range resources {
+	for i := range res {
 		kind := "Pod"
 		if i%3 == 0 {
 			kind = "Node"
 		}
-		resources[i] = makeResource("r-"+uuid.New().String(), kind)
+		res[i] = makeResource("r-"+uuid.New().String(), kind)
 		if kind == "Node" {
-			expectedIDs = append(expectedIDs, resources[i].ID)
+			expectedIDs = append(expectedIDs, resourceID(res[i]))
 		}
 	}
 
 	getter := &mockGetter{
 		environment: makeEnvironment(`resource.kind == "Node"`),
-		resources:   resources,
+		resources:   res,
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -444,7 +382,7 @@ func TestProcess_OrSelector(t *testing.T) {
 
 	getter := &mockGetter{
 		environment: makeEnvironment(`resource.kind == "Node" || resource.kind == "Pod"`),
-		resources:   []ResourceInfo{node, pod, svc},
+		resources:   []*oapi.Resource{node, pod, svc},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -452,8 +390,8 @@ func TestProcess_OrSelector(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, pod.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(node))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(pod))
 }
 
 func TestProcess_NegationSelector(t *testing.T) {
@@ -463,7 +401,7 @@ func TestProcess_NegationSelector(t *testing.T) {
 
 	getter := &mockGetter{
 		environment: makeEnvironment(`resource.kind != "Service"`),
-		resources:   []ResourceInfo{node, pod, svc},
+		resources:   []*oapi.Resource{node, pod, svc},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -471,45 +409,18 @@ func TestProcess_NegationSelector(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, node.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, pod.ID)
-}
-
-func TestProcess_EnvironmentNameEqualsResourceName(t *testing.T) {
-	environment := &EnvironmentInfo{
-		ResourceSelector: `environment.name == resource.name`,
-		WorkspaceID:      uuid.New(),
-		Raw: map[string]any{
-			"name":     "web-server",
-			"metadata": map[string]any{},
-		},
-	}
-
-	match := makeResource("web-server", "Pod")
-	noMatch1 := makeResource("api-server", "Pod")
-	noMatch2 := makeResource("worker", "Pod")
-
-	getter := &mockGetter{
-		environment: environment,
-		resources:   []ResourceInfo{match, noMatch1, noMatch2},
-	}
-	setter := &mockSetter{}
-	c := &Controller{getter: getter, setter: setter}
-
-	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
-	require.NoError(t, err)
-	assert.Len(t, setter.calledWith.resourceIDs, 1)
-	assert.Contains(t, setter.calledWith.resourceIDs, match.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(node))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(pod))
 }
 
 func TestProcess_InListSelector(t *testing.T) {
-	r1 := makeResourceWithLabels("n1", "Node", map[string]any{"env": "prod"})
-	r2 := makeResourceWithLabels("n2", "Node", map[string]any{"env": "staging"})
-	r3 := makeResourceWithLabels("n3", "Node", map[string]any{"env": "dev"})
+	r1 := makeResourceWithLabels("n1", "Node", map[string]string{"env": "prod"})
+	r2 := makeResourceWithLabels("n2", "Node", map[string]string{"env": "staging"})
+	r3 := makeResourceWithLabels("n3", "Node", map[string]string{"env": "dev"})
 
 	getter := &mockGetter{
-		environment: makeEnvironment(`resource.metadata.labels.env in ["prod", "staging"]`),
-		resources:   []ResourceInfo{r1, r2, r3},
+		environment: makeEnvironment(`resource.metadata.env in ["prod", "staging"]`),
+		resources:   []*oapi.Resource{r1, r2, r3},
 	}
 	setter := &mockSetter{}
 	c := &Controller{getter: getter, setter: setter}
@@ -517,6 +428,6 @@ func TestProcess_InListSelector(t *testing.T) {
 	_, err := c.Process(context.Background(), processItem(uuid.New().String()))
 	require.NoError(t, err)
 	assert.Len(t, setter.calledWith.resourceIDs, 2)
-	assert.Contains(t, setter.calledWith.resourceIDs, r1.ID)
-	assert.Contains(t, setter.calledWith.resourceIDs, r2.ID)
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r1))
+	assert.Contains(t, setter.calledWith.resourceIDs, resourceID(r2))
 }

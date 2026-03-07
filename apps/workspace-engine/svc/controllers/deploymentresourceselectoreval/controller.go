@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,11 +29,9 @@ var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentresourcesel
 var _ reconcile.Processor = (*Controller)(nil)
 
 var celEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("resource", "deployment").
+	WithMapVariables("resource").
 	WithStandardExtensions().
 	BuildCached(12 * time.Hour)
-
-const streamBatchSize = 5000
 
 type Controller struct {
 	getter Getter
@@ -112,51 +111,56 @@ func (c *Controller) enqueueReleaseTargets(ctx context.Context, workspaceID uuid
 	return events.EnqueueManyDesiredRelease(c.queue, ctx, params)
 }
 
-// evalResources streams resources from the DB and evaluates the CEL selector
-// concurrently, returning the IDs of all matched resources.
+// evalResources loads all resources, then evaluates the CEL selector in
+// parallel by splitting the slice into one chunk per worker.
 func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentInfo, selector cel.Program) ([]uuid.UUID, error) {
 	ctx, span := tracer.Start(ctx, "EvalResources")
 	defer span.End()
 
-	numWorkers := runtime.GOMAXPROCS(0)
-	span.SetAttributes(attribute.Int("num_workers", numWorkers))
-	batches := make(chan []ResourceInfo, numWorkers)
-
-	g, ctx := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		_, streamSpan := tracer.Start(ctx, "StreamResources")
-		defer streamSpan.End()
-		err := c.getter.StreamResources(ctx, deployment.WorkspaceID, streamBatchSize, batches)
-		return err
+	wsId := deployment.WorkspaceID.String()
+	allResources, err := c.getter.GetResources(ctx, wsId, resources.GetResourcesOptions{
+		BestEffortCEL: deployment.ResourceSelector,
 	})
-
-	deploymentMap, err := celutil.EntityToMap(deployment.Raw)
 	if err != nil {
-		return nil, fmt.Errorf("convert deployment to map: %w", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("collect resources: %w", err)
 	}
 
+	n := len(allResources)
+	span.SetAttributes(attribute.Int("resource_count", n))
+	if n == 0 {
+		return nil, nil
+	}
+
+	numWorkers := runtime.GOMAXPROCS(0)
+	chunkSize := (n + numWorkers - 1) / numWorkers
+	span.SetAttributes(attribute.Int("num_workers", numWorkers))
+
+	g, ctx := errgroup.WithContext(ctx)
 	var mu sync.Mutex
 	var matchedIDs []uuid.UUID
-	for range numWorkers {
+
+	for start := 0; start < n; start += chunkSize {
+		chunk := allResources[start:min(start+chunkSize, n)]
 		g.Go(func() error {
-			_, evalSpan := tracer.Start(ctx, "EvalResource.Worker")
+			_, evalSpan := tracer.Start(ctx, "EvalResources.Worker")
 			defer evalSpan.End()
-			celCtx := map[string]any{
-				"resource":   nil,
-				"deployment": deploymentMap,
-			}
 			var local []uuid.UUID
-			for batch := range batches {
-				for _, resource := range batch {
-					celCtx["resource"] = resource.Raw
-					ok, err := celutil.EvalBool(selector, celCtx)
-					if err != nil {
-						return fmt.Errorf("eval selector for resource %s: %w", resource.ID, err)
-					}
-					if ok {
-						local = append(local, resource.ID)
-					}
+			for _, r := range chunk {
+				resourceMap, err := celutil.EntityToMap(r)
+				if err != nil {
+					return fmt.Errorf("convert resource %s to map: %w", r.Id, err)
+				}
+				celCtx := map[string]any{
+					"resource": resourceMap,
+				}
+				ok, err := celutil.EvalBool(selector, celCtx)
+				if err != nil {
+					return fmt.Errorf("eval selector for resource %s: %w", r.Id, err)
+				}
+				if ok {
+					local = append(local, uuid.MustParse(r.Id))
 				}
 			}
 			if len(local) > 0 {
