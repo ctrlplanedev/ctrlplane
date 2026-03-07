@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,11 +64,11 @@ func (m *mockGetter) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget)
 	return false, nil
 }
 func (m *mockGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) { return nil, nil }
+func (m *mockGetter) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+	return nil, nil
+}
 func (m *mockGetter) GetJobVerificationStatus(_ string) oapi.JobVerificationStatus {
 	return oapi.JobVerificationStatusCancelled
-}
-func (m *mockGetter) NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return nil
 }
 
 // ---------------------------------------------------------------------------
@@ -123,14 +124,15 @@ func evalTypes(evals []evaluator.Evaluator) []string {
 
 func TestRuleEvaluators(t *testing.T) {
 	getter := &mockGetter{}
+	wsId := uuid.New().String()
 
 	t.Run("returns empty for nil rule", func(t *testing.T) {
-		evals := RuleEvaluators(getter, nil)
+		evals := RuleEvaluators(getter, wsId, nil)
 		assert.Empty(t, evals)
 	})
 
 	t.Run("returns empty for nil getter with non-nil rule", func(t *testing.T) {
-		evals := RuleEvaluators(nil, ruleWithApproval("r-1"))
+		evals := RuleEvaluators(nil, wsId, ruleWithApproval("r-1"))
 		// deployment window doesn't need a getter, so it may still return
 		// but approval/envprogression/cooldown need a getter and return nil
 		for _, e := range evals {
@@ -141,30 +143,30 @@ func TestRuleEvaluators(t *testing.T) {
 	})
 
 	t.Run("returns empty for rule without relevant fields", func(t *testing.T) {
-		evals := RuleEvaluators(getter, emptyRule("r-1"))
+		evals := RuleEvaluators(getter, wsId, emptyRule("r-1"))
 		assert.Empty(t, evals)
 	})
 
 	t.Run("returns deployment window evaluator", func(t *testing.T) {
-		evals := RuleEvaluators(getter, ruleWithDeploymentWindow("r-1"))
+		evals := RuleEvaluators(getter, wsId, ruleWithDeploymentWindow("r-1"))
 		require.Len(t, evals, 1)
 		assert.Equal(t, evaluator.RuleTypeDeploymentWindow, evals[0].RuleType())
 	})
 
 	t.Run("returns approval evaluator", func(t *testing.T) {
-		evals := RuleEvaluators(getter, ruleWithApproval("r-1"))
+		evals := RuleEvaluators(getter, wsId, ruleWithApproval("r-1"))
 		require.Len(t, evals, 1)
 		assert.Equal(t, evaluator.RuleTypeApproval, evals[0].RuleType())
 	})
 
 	t.Run("returns environment progression evaluator", func(t *testing.T) {
-		evals := RuleEvaluators(getter, ruleWithEnvironmentProgression("r-1"))
+		evals := RuleEvaluators(getter, wsId, ruleWithEnvironmentProgression("r-1"))
 		require.Len(t, evals, 1)
 		assert.Equal(t, evaluator.RuleTypeEnvironmentProgression, evals[0].RuleType())
 	})
 
 	t.Run("returns version cooldown evaluator", func(t *testing.T) {
-		evals := RuleEvaluators(getter, ruleWithVersionCooldown("r-1"))
+		evals := RuleEvaluators(getter, wsId, ruleWithVersionCooldown("r-1"))
 		require.Len(t, evals, 1)
 		assert.Equal(t, evaluator.RuleTypeVersionCooldown, evals[0].RuleType())
 	})
@@ -180,7 +182,7 @@ func TestRuleEvaluators(t *testing.T) {
 			EnvironmentProgression: &oapi.EnvironmentProgressionRule{},
 			VersionCooldown:        &oapi.VersionCooldownRule{IntervalSeconds: 300},
 		}
-		evals := RuleEvaluators(getter, rule)
+		evals := RuleEvaluators(getter, wsId, rule)
 		types := evalTypes(evals)
 		assert.Contains(t, types, evaluator.RuleTypeDeploymentWindow)
 		assert.Contains(t, types, evaluator.RuleTypeApproval)

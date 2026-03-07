@@ -50,7 +50,7 @@ func (r *reconciler) reconcile(ctx context.Context, scope *Scope) (*ReconcileRes
 
 	for _, p := range policies {
 		for _, rule := range p.Rules {
-			evals := summaryeval.RuleEvaluators(r.getter, &rule)
+			evals := summaryeval.RuleEvaluators(r.getter, r.workspaceID.String(), &rule)
 			for _, eval := range evals {
 				if eval == nil {
 					continue

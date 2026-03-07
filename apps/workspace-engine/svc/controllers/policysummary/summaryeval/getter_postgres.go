@@ -1,9 +1,9 @@
 package summaryeval
 
 import (
+	"context"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 )
@@ -26,12 +26,8 @@ func (g *PostgresGetter) GetJobVerificationStatus(jobID string) oapi.JobVerifica
 	return g.versioncooldown.GetJobVerificationStatus(jobID)
 }
 
-func (g *PostgresGetter) NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return g.versioncooldown.NewVersionCooldownEvaluator(rule)
-}
-
-func (g *PostgresGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
-	return g.versioncooldown.GetReleaseTargets()
+func (g *PostgresGetter) GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error) {
+	return g.versioncooldown.GetAllReleaseTargets(ctx, workspaceID)
 }
 
 func (g *PostgresGetter) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
