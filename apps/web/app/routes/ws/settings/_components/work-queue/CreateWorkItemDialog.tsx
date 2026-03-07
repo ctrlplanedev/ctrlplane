@@ -31,6 +31,7 @@ type Template =
   | "environment-selector"
   | "relationship-entity"
   | "relationship-rule"
+  | "policy-summary"
   | "advanced";
 
 const TEMPLATES: { value: Template; label: string; description: string }[] = [
@@ -56,6 +57,12 @@ const TEMPLATES: { value: Template; label: string; description: string }[] = [
     label: "Relationship Eval (Rule)",
     description:
       "Re-evaluate relationships for all entities in the workspace. Useful after changing a rule.",
+  },
+  {
+    value: "policy-summary",
+    label: "Policy Summary Eval",
+    description:
+      "Re-evaluate policy summaries for an environment + version pair.",
   },
   {
     value: "advanced",
@@ -298,6 +305,63 @@ function RelationshipRuleForm({
       <DialogFooter>
         <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? "Triggering…" : "Trigger Eval for All Entities"}
+        </Button>
+      </DialogFooter>
+      {mutation.error && (
+        <p className="text-sm text-destructive">{mutation.error.message}</p>
+      )}
+    </form>
+  );
+}
+
+function PolicySummaryForm({
+  workspaceId,
+  onDone,
+}: {
+  workspaceId: string;
+  onDone: () => void;
+}) {
+  const [environmentId, setEnvironmentId] = useState("");
+  const [versionId, setVersionId] = useState("");
+  const invalidate = useInvalidateAll();
+  const mutation = trpc.reconcile.triggerPolicySummary.useMutation({
+    onSuccess: () => {
+      invalidate();
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        mutation.mutate({ workspaceId, environmentId, versionId });
+      }}
+      className="flex flex-col gap-4"
+    >
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ps-environmentId">Environment ID *</Label>
+        <Input
+          id="ps-environmentId"
+          placeholder="UUID of the environment"
+          value={environmentId}
+          onChange={(e) => setEnvironmentId(e.target.value)}
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ps-versionId">Version ID *</Label>
+        <Input
+          id="ps-versionId"
+          placeholder="UUID of the deployment version"
+          value={versionId}
+          onChange={(e) => setVersionId(e.target.value)}
+          required
+        />
+      </div>
+      <DialogFooter>
+        <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending ? "Triggering…" : "Trigger Eval"}
         </Button>
       </DialogFooter>
       {mutation.error && (
@@ -578,6 +642,9 @@ export const CreateWorkItemDialog: React.FC<{
         )}
         {template === "relationship-rule" && (
           <RelationshipRuleForm workspaceId={workspaceId} onDone={close} />
+        )}
+        {template === "policy-summary" && (
+          <PolicySummaryForm workspaceId={workspaceId} onDone={close} />
         )}
         {template === "advanced" && (
           <AdvancedForm workspaceId={workspaceId} onDone={close} />

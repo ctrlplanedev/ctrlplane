@@ -9,6 +9,8 @@ import (
 	"workspace-engine/svc/controllers/policysummary/summaryeval"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -41,6 +43,7 @@ func (r *reconciler) reconcile(ctx context.Context, scope *Scope) (*ReconcileRes
 	}
 
 	policies, err := r.getter.GetPoliciesForEnvironment(ctx, r.workspaceID, scope.EnvironmentID)
+	span.SetAttributes(attribute.Int("policies_count", len(policies)))
 	if err != nil {
 		return nil, fmt.Errorf("get policies: %w", err)
 	}
@@ -49,8 +52,10 @@ func (r *reconciler) reconcile(ctx context.Context, scope *Scope) (*ReconcileRes
 	var nextTime *time.Time
 
 	for _, p := range policies {
+		span.AddEvent("policy_rule_count", trace.WithAttributes(attribute.Int("rules_count", len(p.Rules))))
 		for _, rule := range p.Rules {
 			evals := summaryeval.RuleEvaluators(r.getter, r.workspaceID.String(), &rule)
+			span.AddEvent("found_evaluators", trace.WithAttributes(attribute.Int("evaluators_count", len(evals))))
 			for _, eval := range evals {
 				if eval == nil {
 					continue
@@ -75,6 +80,8 @@ func (r *reconciler) reconcile(ctx context.Context, scope *Scope) (*ReconcileRes
 			}
 		}
 	}
+
+	span.SetAttributes(attribute.Int("rows_count", len(rows)))
 
 	if err := r.setter.UpsertRuleSummaries(ctx, rows); err != nil {
 		return nil, fmt.Errorf("upsert rule summaries: %w", err)
