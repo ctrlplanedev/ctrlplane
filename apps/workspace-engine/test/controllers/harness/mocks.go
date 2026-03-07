@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/resources"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -301,6 +302,10 @@ type DesiredReleaseSetter struct {
 
 	JobDispatchQueue reconcile.Queue
 	WorkspaceID      string
+}
+
+func (s *DesiredReleaseSetter) UpsertRuleEvaluations(_ context.Context, _ []policies.RuleEvaluationParams) error {
+	return nil
 }
 
 func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, rt *desiredrelease.ReleaseTarget, r *oapi.Release) error {

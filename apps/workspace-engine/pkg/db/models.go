@@ -433,7 +433,7 @@ type PolicyRuleEvaluation struct {
 	ActionRequired   bool
 	ActionType       pgtype.Text
 	Message          string
-	Details          []byte
+	Details          map[string]any
 	SatisfiedAt      pgtype.Timestamptz
 	NextEvaluationAt pgtype.Timestamptz
 	EvaluatedAt      pgtype.Timestamptz

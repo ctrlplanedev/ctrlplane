@@ -4,11 +4,22 @@ import (
 	"context"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/policies"
 
 	"github.com/charmbracelet/log"
 )
 
-type PostgresSetter struct{}
+type PostgresSetter struct {
+	upsertRuleEvaluationsSetter
+}
+
+var _ Setter = (*PostgresSetter)(nil)
+
+func NewPostgresSetter() *PostgresSetter {
+	return &PostgresSetter{
+		upsertRuleEvaluationsSetter: &policies.PostgresUpsertRuleEvaluations{},
+	}
+}
 
 func (s *PostgresSetter) SetDesiredRelease(ctx context.Context, rt *ReleaseTarget, release *oapi.Release) error {
 	log.Info("setting desired release", "version", release.Version.Id)

@@ -130,6 +130,11 @@ sql:
             go_type:
               type: "map[string]any"
 
+          # PolicyRuleEvaluation
+          - column: "policy_rule_evaluation.details"
+            go_type:
+              type: "map[string]any"
+
           # ResourceVariable
           - column: "resource_variable.value"
             go_type:
