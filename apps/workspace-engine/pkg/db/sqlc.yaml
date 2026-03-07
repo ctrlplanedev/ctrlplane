@@ -29,7 +29,7 @@ sql:
       - queries/jobs.sql
       - queries/computed_relationships.sql
       - queries/relationship_rules.sql
-      - queries/policy_rule_summary.sql
+      - queries/policy_rule_evaluation.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
