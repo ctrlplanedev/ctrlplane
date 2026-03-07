@@ -12,6 +12,7 @@ import (
 	"github.com/google/cel-go/cel"
 
 	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -173,9 +174,10 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
+	ctx := context.Background()
 	kind := events.EnvironmentResourceselectorEvalKind
 	controller := &Controller{
-		getter: &PostgresGetter{},
+		getter: NewPostgresGetter(db.GetQueries(ctx)),
 		setter: &PostgresSetter{},
 	}
 	worker, err := reconcile.NewWorker(

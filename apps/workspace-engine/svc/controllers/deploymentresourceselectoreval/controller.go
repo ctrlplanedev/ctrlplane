@@ -12,6 +12,7 @@ import (
 	"github.com/google/cel-go/cel"
 
 	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -207,8 +208,9 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 
 	kind := events.DeploymentResourceselectorEvalKind
 	queue := postgres.NewForKinds(pgxPool, kind)
+	ctx := context.Background()
 	controller := &Controller{
-		getter: &PostgresGetter{},
+		getter: NewPostgresGetter(db.GetQueries(ctx)),
 		setter: &PostgresSetter{},
 		queue:  queue,
 	}
