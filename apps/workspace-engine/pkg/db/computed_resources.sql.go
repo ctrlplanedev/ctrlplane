@@ -55,6 +55,50 @@ func (q *Queries) GetReleaseTargetsForDeployment(ctx context.Context, deployment
 	return items, nil
 }
 
+const getReleaseTargetsForEnvironment = `-- name: GetReleaseTargetsForEnvironment :many
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cer.environment_id = $1
+`
+
+type GetReleaseTargetsForEnvironmentRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns all valid release targets for an environment by joining computed
+// resource tables through the system link tables.
+func (q *Queries) GetReleaseTargetsForEnvironment(ctx context.Context, environmentID uuid.UUID) ([]GetReleaseTargetsForEnvironmentRow, error) {
+	rows, err := q.db.Query(ctx, getReleaseTargetsForEnvironment, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReleaseTargetsForEnvironmentRow
+	for rows.Next() {
+		var i GetReleaseTargetsForEnvironmentRow
+		if err := rows.Scan(&i.DeploymentID, &i.EnvironmentID, &i.ResourceID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReleaseTargetsForResource = `-- name: GetReleaseTargetsForResource :many
 SELECT DISTINCT
     cdr.deployment_id,

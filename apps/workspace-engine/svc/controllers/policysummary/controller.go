@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -25,6 +24,7 @@ var tracer = otel.Tracer("workspace-engine/svc/controllers/policysummary")
 var _ reconcile.Processor = (*Controller)(nil)
 
 type Controller struct {
+	getter Getter
 	setter Setter
 }
 
@@ -37,14 +37,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		attribute.String("item.scope_id", item.ScopeID),
 	)
 
-	ws, ok := manager.Workspaces().Get(item.WorkspaceID)
-	if !ok {
-		return reconcile.Result{}, fmt.Errorf("workspace %s not found", item.WorkspaceID)
-	}
-
-	getter := NewStoreGetter(ws)
-
-	result, err := Reconcile(ctx, item.WorkspaceID, item.ScopeID, getter, c.setter)
+	result, err := Reconcile(ctx, item.WorkspaceID, item.ScopeID, c.getter, c.setter)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -57,6 +50,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func NewController(getter Getter, setter Setter) *Controller {
+	return &Controller{getter: getter, setter: setter}
 }
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
@@ -83,6 +80,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	queue := postgres.NewForKinds(pgxPool, kind)
 	queries := db.New(pgxPool)
 	controller := &Controller{
+		getter: NewPostgresGetter(queries),
 		setter: NewPostgresSetter(queries),
 	}
 	worker, err := reconcile.NewWorker(

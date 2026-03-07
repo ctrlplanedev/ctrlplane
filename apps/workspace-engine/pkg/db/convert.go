@@ -69,6 +69,167 @@ func ToOapiResource(row GetResourceByIDRow) *oapi.Resource {
 	return r
 }
 
+func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Policy {
+	p := ToOapiPolicy(Policy{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		Selector:    row.Selector,
+		Metadata:    row.Metadata,
+		Priority:    row.Priority,
+		Enabled:     row.Enabled,
+		WorkspaceID: row.WorkspaceID,
+		CreatedAt:   row.CreatedAt,
+	})
+
+	type ruleID struct {
+		Id string `json:"id"`
+	}
+
+	type approvalJSON struct {
+		Id           string `json:"id"`
+		MinApprovals int32  `json:"minApprovals"`
+	}
+	var approvals []approvalJSON
+	_ = json.Unmarshal(row.ApprovalRules, &approvals)
+	for _, a := range approvals {
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:       a.Id,
+			PolicyId: p.Id,
+			AnyApproval: &oapi.AnyApprovalRule{
+				MinApprovals: a.MinApprovals,
+			},
+		})
+	}
+
+	type windowJSON struct {
+		Id              string  `json:"id"`
+		AllowWindow     *bool   `json:"allowWindow"`
+		DurationMinutes int32   `json:"durationMinutes"`
+		Rrule           string  `json:"rrule"`
+		Timezone        *string `json:"timezone"`
+	}
+	var windows []windowJSON
+	_ = json.Unmarshal(row.DeploymentWindowRules, &windows)
+	for _, w := range windows {
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:       w.Id,
+			PolicyId: p.Id,
+			DeploymentWindow: &oapi.DeploymentWindowRule{
+				AllowWindow:     w.AllowWindow,
+				DurationMinutes: w.DurationMinutes,
+				Rrule:           w.Rrule,
+				Timezone:        w.Timezone,
+			},
+		})
+	}
+
+	type dependencyJSON struct {
+		Id        string `json:"id"`
+		DependsOn string `json:"dependsOn"`
+	}
+	var deps []dependencyJSON
+	_ = json.Unmarshal(row.DeploymentDependencyRules, &deps)
+	for _, d := range deps {
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:       d.Id,
+			PolicyId: p.Id,
+			DeploymentDependency: &oapi.DeploymentDependencyRule{
+				DependsOn: d.DependsOn,
+			},
+		})
+	}
+
+	type progressionJSON struct {
+		Id                           string       `json:"id"`
+		DependsOnEnvironmentSelector string       `json:"dependsOnEnvironmentSelector"`
+		MaximumAgeHours              *int32       `json:"maximumAgeHours"`
+		MinimumSoakTimeMinutes       *int32       `json:"minimumSoakTimeMinutes"`
+		MinimumSuccessPercentage     *float32     `json:"minimumSuccessPercentage"`
+		SuccessStatuses              *[]string    `json:"successStatuses"`
+	}
+	var progs []progressionJSON
+	_ = json.Unmarshal(row.EnvironmentProgressionRules, &progs)
+	for _, pr := range progs {
+		var depSelector oapi.Selector
+		_ = json.Unmarshal([]byte(pr.DependsOnEnvironmentSelector), &depSelector)
+		rule := oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: depSelector,
+			MaximumAgeHours:              pr.MaximumAgeHours,
+			MinimumSockTimeMinutes:       pr.MinimumSoakTimeMinutes,
+			MinimumSuccessPercentage:     pr.MinimumSuccessPercentage,
+		}
+		if pr.SuccessStatuses != nil {
+			statuses := make([]oapi.JobStatus, len(*pr.SuccessStatuses))
+			for i, s := range *pr.SuccessStatuses {
+				statuses[i] = oapi.JobStatus(s)
+			}
+			rule.SuccessStatuses = &statuses
+		}
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:                     pr.Id,
+			PolicyId:               p.Id,
+			EnvironmentProgression: &rule,
+		})
+	}
+
+	type rolloutJSON struct {
+		Id                string `json:"id"`
+		RolloutType       string `json:"rolloutType"`
+		TimeScaleInterval int32  `json:"timeScaleInterval"`
+	}
+	var rollouts []rolloutJSON
+	_ = json.Unmarshal(row.GradualRolloutRules, &rollouts)
+	for _, r := range rollouts {
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:       r.Id,
+			PolicyId: p.Id,
+			GradualRollout: &oapi.GradualRolloutRule{
+				RolloutType:       oapi.GradualRolloutRuleRolloutType(r.RolloutType),
+				TimeScaleInterval: r.TimeScaleInterval,
+			},
+		})
+	}
+
+	type cooldownJSON struct {
+		Id              string `json:"id"`
+		IntervalSeconds int32  `json:"intervalSeconds"`
+	}
+	var cooldowns []cooldownJSON
+	_ = json.Unmarshal(row.VersionCooldownRules, &cooldowns)
+	for _, c := range cooldowns {
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:       c.Id,
+			PolicyId: p.Id,
+			VersionCooldown: &oapi.VersionCooldownRule{
+				IntervalSeconds: c.IntervalSeconds,
+			},
+		})
+	}
+
+	type selectorJSON struct {
+		Id          string  `json:"id"`
+		Description *string `json:"description"`
+		Selector    string  `json:"selector"`
+	}
+	var selectors []selectorJSON
+	_ = json.Unmarshal(row.VersionSelectorRules, &selectors)
+	for _, s := range selectors {
+		var vSelector oapi.Selector
+		_ = json.Unmarshal([]byte(s.Selector), &vSelector)
+		p.Rules = append(p.Rules, oapi.PolicyRule{
+			Id:       s.Id,
+			PolicyId: p.Id,
+			VersionSelector: &oapi.VersionSelectorRule{
+				Description: s.Description,
+				Selector:    vSelector,
+			},
+		})
+	}
+
+	return p
+}
+
 func ToOapiPolicy(row Policy) *oapi.Policy {
 	p := &oapi.Policy{
 		Id:          row.ID.String(),
