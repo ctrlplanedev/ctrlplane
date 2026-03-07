@@ -6,12 +6,12 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+
+	"github.com/google/uuid"
 )
 
 type Getter interface {
-	GetJobAgent(id string) (*oapi.JobAgent, bool)
-	GetEnvironment(id string) (*oapi.Environment, bool)
-	GetResource(id string) (*oapi.Resource, bool)
+	GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error)
 }
 
 type Registry struct {
@@ -32,8 +32,8 @@ func (r *Registry) Register(dispatcher types.Dispatchable) {
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
-	jobAgent, ok := r.getter.GetJobAgent(job.JobAgentId)
-	if !ok {
+	jobAgent, err := r.getter.GetJobAgent(ctx, uuid.MustParse(job.JobAgentId))
+	if err != nil {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)
 	}
 
