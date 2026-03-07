@@ -36,4 +36,3 @@ func EvaluatorsForSummary(store *store.Store, rule *oapi.PolicyRule) []evaluator
 		versioncooldown.NewSummaryEvaluatorFromStore(store, rule),
 	)
 }
-
