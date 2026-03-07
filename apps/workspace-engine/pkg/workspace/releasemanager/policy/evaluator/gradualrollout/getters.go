@@ -19,7 +19,7 @@ type Getters interface {
 	environmentProgressionGetters
 
 	GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error)
-	GetPolicySkips(versionID, environmentID, resourceID string) []*oapi.PolicySkip
+	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
 	HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error)
 	GetReleaseTargets() ([]*oapi.ReleaseTarget, error)
 }
@@ -51,8 +51,9 @@ func (s *StoreGetters) GetPoliciesForReleaseTarget(ctx context.Context, releaseT
 	return s.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 }
 
-func (s *StoreGetters) GetPolicySkips(versionID, environmentID, resourceID string) []*oapi.PolicySkip {
-	return s.store.PolicySkips.GetAllForTarget(versionID, environmentID, resourceID)
+func (s *StoreGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	ps := s.store.PolicySkips.GetAllForTarget(versionID, environmentID, resourceID)
+	return ps, nil
 }
 
 func (s *StoreGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
@@ -90,7 +91,7 @@ type PostgresGetters struct {
 	queries *db.Queries
 }
 
-func NewPostgresGetters(queries *db.Queries, workspaceID uuid.UUID) *PostgresGetters {
+func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 	return &PostgresGetters{
 		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
 		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries),
@@ -102,8 +103,20 @@ func (p *PostgresGetters) GetPoliciesForReleaseTarget(ctx context.Context, relea
 	panic("not implemented: GetPoliciesForReleaseTarget")
 }
 
-func (p *PostgresGetters) GetPolicySkips(versionID, environmentID, resourceID string) []*oapi.PolicySkip {
-	panic("not implemented: GetPolicySkips")
+func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	skips, err := p.queries.ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
+		VersionID:     uuid.MustParse(versionID),
+		EnvironmentID: uuid.MustParse(environmentID),
+		ResourceID:    uuid.MustParse(resourceID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	ps := make([]*oapi.PolicySkip, 0, len(skips))
+	for _, skip := range skips {
+		ps = append(ps, db.ToOapiPolicySkip(skip))
+	}
+	return ps, nil
 }
 
 func (p *PostgresGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {

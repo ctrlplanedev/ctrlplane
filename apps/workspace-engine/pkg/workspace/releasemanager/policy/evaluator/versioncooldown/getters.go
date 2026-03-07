@@ -1,34 +1,53 @@
 package versioncooldown
 
 import (
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
+	legacystore "workspace-engine/pkg/workspace/store"
 )
 
+type environmentGetter = store.EnvironmentGetter
+type deploymentGetter = store.DeploymentGetter
+type releaseGetter = store.ReleaseGetter
+type resourceGetter = store.ResourceGetter
+
 type Getters interface {
+	environmentGetter
+	deploymentGetter
+	releaseGetter
+	resourceGetter
+
 	GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
-	GetRelease(releaseID string) (*oapi.Release, bool)
 	GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus
 	GetReleaseTargets() ([]*oapi.ReleaseTarget, error)
-	GetEnvironment(environmentID string) (*oapi.Environment, bool)
-	GetResource(resourceID string) (*oapi.Resource, bool)
-	GetDeployment(deploymentID string) (*oapi.Deployment, bool)
 	NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator
 }
 
 var _ Getters = (*storeGetters)(nil)
 
+func NewStoreGetters(ls *legacystore.Store) *storeGetters {
+	return &storeGetters{
+		environmentGetter: store.NewStoreEnvironmentGetter(ls),
+		deploymentGetter:  store.NewStoreDeploymentGetter(ls),
+		releaseGetter:     store.NewStoreReleaseGetter(ls),
+		resourceGetter:    store.NewStoreResourceGetter(ls),
+		store:             ls,
+	}
+}
+
 type storeGetters struct {
-	store *store.Store
+	environmentGetter
+	deploymentGetter
+	releaseGetter
+	resourceGetter
+
+	store *legacystore.Store
 }
 
 func (s *storeGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
-}
-
-func (s *storeGetters) GetRelease(releaseID string) (*oapi.Release, bool) {
-	return s.store.Releases.Get(releaseID)
 }
 
 func (s *storeGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
@@ -47,18 +66,45 @@ func (s *storeGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
 	return targets, nil
 }
 
-func (s *storeGetters) GetEnvironment(environmentID string) (*oapi.Environment, bool) {
-	return s.store.Environments.Get(environmentID)
-}
-
-func (s *storeGetters) GetResource(resourceID string) (*oapi.Resource, bool) {
-	return s.store.Resources.Get(resourceID)
-}
-
-func (s *storeGetters) GetDeployment(deploymentID string) (*oapi.Deployment, bool) {
-	return s.store.Deployments.Get(deploymentID)
-}
-
 func (s *storeGetters) NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
 	return NewEvaluatorFromStore(s.store, rule)
+}
+
+var _ Getters = (*PostgresGetters)(nil)
+
+func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+	return &PostgresGetters{
+		queries:           queries,
+		environmentGetter: store.NewPostgresEnvironmentGetter(queries),
+		deploymentGetter:  store.NewPostgresDeploymentGetter(queries),
+		releaseGetter:     store.NewPostgresReleaseGetter(queries),
+		resourceGetter:    store.NewPostgresResourceGetter(queries),
+	}
+}
+
+type PostgresGetters struct {
+	environmentGetter
+	deploymentGetter
+	releaseGetter
+	resourceGetter
+	queries *db.Queries
+}
+
+// GetJobsForReleaseTarget implements [Getters].
+func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+	panic("unimplemented")
+}
+
+// GetReleaseTargets implements [Getters].
+func (p *PostgresGetters) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
+	panic("unimplemented")
+}
+
+// NewVersionCooldownEvaluator implements [Getters].
+func (p *PostgresGetters) NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
+	panic("unimplemented")
+}
+
+func (p *PostgresGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
+	return oapi.JobVerificationStatusCancelled
 }

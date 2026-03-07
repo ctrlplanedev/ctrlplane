@@ -11,6 +11,7 @@ import (
 )
 
 type DeploymentGetter interface {
+	GetAllDeployments(ctx context.Context, workspaceID string) (map[string]*oapi.Deployment, error)
 	GetDeployment(ctx context.Context, deploymentID string) (*oapi.Deployment, error)
 }
 
@@ -32,9 +33,25 @@ func (g *PostgresDeploymentGetter) GetDeployment(ctx context.Context, deployment
 	return db.ToOapiDeployment(deployment), nil
 }
 
+func (g *PostgresDeploymentGetter) GetAllDeployments(ctx context.Context, workspaceID string) (map[string]*oapi.Deployment, error) {
+	deployments, err := g.queries.ListDeploymentsByWorkspaceID(ctx, db.ListDeploymentsByWorkspaceIDParams{
+		WorkspaceID: uuid.MustParse(workspaceID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]*oapi.Deployment, len(deployments))
+	for _, deployment := range deployments {
+		result[deployment.ID.String()] = db.ToOapiDeployment(deployment)
+	}
+	return result, nil
+}
+
 type StoreDeploymentGetter struct {
 	store *legacystore.Store
 }
+
+var _ DeploymentGetter = (*StoreDeploymentGetter)(nil)
 
 func NewStoreDeploymentGetter(store *legacystore.Store) *StoreDeploymentGetter {
 	return &StoreDeploymentGetter{store: store}
@@ -46,4 +63,9 @@ func (s *StoreDeploymentGetter) GetDeployment(ctx context.Context, deploymentID 
 		return nil, fmt.Errorf("deployment not found")
 	}
 	return deployment, nil
+}
+
+func (s *StoreDeploymentGetter) GetAllDeployments(ctx context.Context, _ string) (map[string]*oapi.Deployment, error) {
+	deployments := s.store.Deployments.Items()
+	return deployments, nil
 }

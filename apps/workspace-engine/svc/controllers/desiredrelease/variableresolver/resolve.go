@@ -19,17 +19,6 @@ import (
 
 var tracer = otel.Tracer("desiredrelease/variableresolver")
 
-// Getter provides the data needed to resolve deployment variables for a
-// release target. Implementations backed by Postgres or in-memory mocks
-// both satisfy this interface.
-type Getter interface {
-	GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error)
-	GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error)
-	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
-	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error)
-	GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error)
-}
-
 // Scope carries the already-resolved entities for the release target so the
 // resolver can evaluate CEL resource selectors and resolve reference
 // variables without additional lookups.

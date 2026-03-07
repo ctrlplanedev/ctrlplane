@@ -62,9 +62,9 @@ func (e *DeploymentDependencyEvaluator) Complexity() int {
 	return 3
 }
 
-func (e *DeploymentDependencyEvaluator) findMatchingDeployments(ctx context.Context) ([]*oapi.Deployment, error) {
+func (e *DeploymentDependencyEvaluator) findMatchingDeployments(ctx context.Context, scope evaluator.EvaluatorScope) ([]*oapi.Deployment, error) {
 	deploymentSelector := celToSelector(e.rule.DependsOn)
-	deployments, err := e.getters.GetDeployments(ctx)
+	deployments, err := e.getters.GetAllDeployments(ctx, scope.Environment.WorkspaceId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployments: %w", err)
 	}
@@ -119,7 +119,7 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 		attribute.String("dependsOn", dependsOn),
 	)
 
-	matchingDeployments, err := e.findMatchingDeployments(ctx)
+	matchingDeployments, err := e.findMatchingDeployments(ctx, scope)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(

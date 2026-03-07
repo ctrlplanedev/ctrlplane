@@ -2,12 +2,16 @@ package deploymentdependency
 
 import (
 	"context"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/pkg/store"
+	legacystore "workspace-engine/pkg/workspace/store"
 )
 
+type deploymentGetter = store.DeploymentGetter
+
 type Getters interface {
-	GetDeployments(ctx context.Context) ([]*oapi.Deployment, error)
+	deploymentGetter
 	GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget
 	GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job
 }
@@ -15,20 +19,12 @@ type Getters interface {
 var _ Getters = (*StoreGetters)(nil)
 
 type StoreGetters struct {
-	store *store.Store
+	deploymentGetter
+	store *legacystore.Store
 }
 
-func NewStoreGetters(store *store.Store) *StoreGetters {
-	return &StoreGetters{store: store}
-}
-
-func (s *StoreGetters) GetDeployments(ctx context.Context) ([]*oapi.Deployment, error) {
-	items := s.store.Deployments.Items()
-	deployments := make([]*oapi.Deployment, 0, len(items))
-	for _, d := range items {
-		deployments = append(deployments, d)
-	}
-	return deployments, nil
+func NewStoreGetters(ls *legacystore.Store) *StoreGetters {
+	return &StoreGetters{store: ls, deploymentGetter: store.NewStoreDeploymentGetter(ls)}
 }
 
 func (s *StoreGetters) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {
@@ -37,4 +33,23 @@ func (s *StoreGetters) GetReleaseTargetsForResource(ctx context.Context, resourc
 
 func (s *StoreGetters) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
 	return s.store.Jobs.GetLatestCompletedJobForReleaseTarget(releaseTarget)
+}
+
+var _ Getters = (*PostgresGetters)(nil)
+
+type PostgresGetters struct {
+	deploymentGetter
+	queries *db.Queries
+}
+
+func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+	return &PostgresGetters{queries: queries, deploymentGetter: store.NewPostgresDeploymentGetter(queries)}
+}
+
+func (p *PostgresGetters) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {
+	panic("unimplemented")
+}
+
+func (p *PostgresGetters) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
+	panic("unimplemented")
 }

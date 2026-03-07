@@ -1,64 +1,10 @@
 package desiredrelease
 
 import (
-	"context"
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships/eval"
-
-	"github.com/google/uuid"
 )
-
-// policyevalAdapter bridges the desiredrelease Getter (which uses
-// *ReleaseTarget) to the policyeval.Getter interface (which uses
-// *oapi.ReleaseTarget).
-type policyevalAdapter struct {
-	getter Getter
-	rt     *ReleaseTarget
-}
-
-func (a *policyevalAdapter) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
-	return a.getter.GetApprovalRecords(ctx, versionID, environmentID)
-}
-
-func (a *policyevalAdapter) HasCurrentRelease(ctx context.Context, _ *oapi.ReleaseTarget) (bool, error) {
-	return a.getter.HasCurrentRelease(ctx, a.rt)
-}
-
-func (a *policyevalAdapter) GetCurrentRelease(ctx context.Context, _ *oapi.ReleaseTarget) (*oapi.Release, error) {
-	return a.getter.GetCurrentRelease(ctx, a.rt)
-}
-
-func (a *policyevalAdapter) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
-	return a.getter.GetPolicySkips(ctx, versionID, environmentID, resourceID)
-}
-
-// variableResolverAdapter bridges the desiredrelease Getter to the
-// variableresolver.Getter interface.
-type variableResolverAdapter struct {
-	getter Getter
-}
-
-func (a *variableResolverAdapter) GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error) {
-	return a.getter.GetDeploymentVariables(ctx, deploymentID)
-}
-
-func (a *variableResolverAdapter) GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error) {
-	return a.getter.GetResourceVariables(ctx, resourceID)
-}
-
-func (a *variableResolverAdapter) GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error) {
-	return a.getter.GetRelationshipRules(ctx, workspaceID)
-}
-
-func (a *variableResolverAdapter) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
-	return a.getter.LoadCandidates(ctx, workspaceID, entityType)
-}
-
-func (a *variableResolverAdapter) GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
-	return a.getter.GetEntityByID(ctx, entityID, entityType)
-}
 
 func buildRelease(rt *ReleaseTarget, version *oapi.DeploymentVersion, variables map[string]oapi.LiteralValue) *oapi.Release {
 	return &oapi.Release{

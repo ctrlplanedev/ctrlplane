@@ -183,7 +183,7 @@ func TestPostgresGetter_HasCurrentRelease(t *testing.T) {
 	getter := &desiredrelease.PostgresGetter{}
 	rt := newReleaseTarget(f)
 
-	has, err := getter.HasCurrentRelease(ctx, rt)
+	has, err := getter.HasCurrentRelease(ctx, rt.ToOAPI())
 	require.NoError(t, err)
 	assert.False(t, has, "no releases yet")
 
@@ -200,7 +200,7 @@ func TestPostgresGetter_HasCurrentRelease(t *testing.T) {
 		uuid.New(), f.resourceID, f.environmentID, f.deploymentID, versionID)
 	require.NoError(t, err)
 
-	has, err = getter.HasCurrentRelease(ctx, rt)
+	has, err = getter.HasCurrentRelease(ctx, rt.ToOAPI())
 	require.NoError(t, err)
 	assert.True(t, has)
 }

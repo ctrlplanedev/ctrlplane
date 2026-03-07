@@ -61,7 +61,7 @@ func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) ev
 		return nil
 	}
 
-	return NewEvaluator(&StoreGetters{store: store}, approvalRule)
+	return NewEvaluator(NewStoreGetters(store), approvalRule)
 }
 
 func NewEvaluator(getters Getters, approvalRule *oapi.PolicyRule) evaluator.Evaluator {

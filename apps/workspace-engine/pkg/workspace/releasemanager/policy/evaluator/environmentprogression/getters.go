@@ -11,18 +11,21 @@ import (
 )
 
 type environmentGetter = store.EnvironmentGetter
+type deploymentGetter = store.DeploymentGetter
+type resourceGetter = store.ResourceGetter
+type releaseGetter = store.ReleaseGetter
 
 type Getters interface {
 	environmentGetter
+	deploymentGetter
+	resourceGetter
+	releaseGetter
 
 	GetSystemIDsForEnvironment(environmentID string) []string
 	GetReleaseTargetsForEnvironment(ctx context.Context, environmentID string) ([]*oapi.ReleaseTarget, error)
 	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
 	GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
-	GetRelease(releaseID string) (*oapi.Release, bool)
-	GetResource(resourceID string) (*oapi.Resource, bool)
-	GetDeployment(deploymentID string) (*oapi.Deployment, bool)
-	GetPolicies() map[string]*oapi.Policy
+	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -33,6 +36,10 @@ var _ Getters = (*StoreGetters)(nil)
 
 type StoreGetters struct {
 	environmentGetter
+	deploymentGetter
+	resourceGetter
+	releaseGetter
+
 	store *legacystore.Store
 }
 
@@ -40,6 +47,9 @@ func NewStoreGetters(ls *legacystore.Store) *StoreGetters {
 	return &StoreGetters{
 		store:             ls,
 		environmentGetter: store.NewStoreEnvironmentGetter(ls),
+		deploymentGetter:  store.NewStoreDeploymentGetter(ls),
+		resourceGetter:    store.NewStoreResourceGetter(ls),
+		releaseGetter:     store.NewStoreReleaseGetter(ls),
 	}
 }
 
@@ -59,20 +69,9 @@ func (s *StoreGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget
 	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 }
 
-func (s *StoreGetters) GetRelease(releaseID string) (*oapi.Release, bool) {
-	return s.store.Releases.Get(releaseID)
-}
-
-func (s *StoreGetters) GetResource(resourceID string) (*oapi.Resource, bool) {
-	return s.store.Resources.Get(resourceID)
-}
-
-func (s *StoreGetters) GetDeployment(deploymentID string) (*oapi.Deployment, bool) {
-	return s.store.Deployments.Get(deploymentID)
-}
-
-func (s *StoreGetters) GetPolicies() map[string]*oapi.Policy {
-	return s.store.Policies.Items()
+func (s *StoreGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
+	pol := s.store.Policies.Items()
+	return pol, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +82,10 @@ var _ Getters = (*PostgresGetters)(nil)
 
 type PostgresGetters struct {
 	environmentGetter
+	deploymentGetter
+	resourceGetter
+	releaseGetter
+
 	queries *db.Queries
 }
 
@@ -90,6 +93,8 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 	return &PostgresGetters{
 		queries:           queries,
 		environmentGetter: store.NewPostgresEnvironmentGetter(queries),
+		deploymentGetter:  store.NewPostgresDeploymentGetter(queries),
+		resourceGetter:    store.NewPostgresResourceGetter(queries),
 	}
 }
 
@@ -187,45 +192,17 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTar
 	return result
 }
 
-func (p *PostgresGetters) GetRelease(releaseID string) (*oapi.Release, bool) {
-	ctx := context.TODO()
-	row, err := p.queries.GetReleaseByID(ctx, uuid.MustParse(releaseID))
-	if err != nil {
-		return nil, false
-	}
-	return db.ToOapiRelease(row), true
-}
-
-func (p *PostgresGetters) GetResource(resourceID string) (*oapi.Resource, bool) {
-	ctx := context.TODO()
-	row, err := p.queries.GetResourceByID(ctx, uuid.MustParse(resourceID))
-	if err != nil {
-		return nil, false
-	}
-	return db.ToOapiResource(row), true
-}
-
-func (p *PostgresGetters) GetDeployment(deploymentID string) (*oapi.Deployment, bool) {
-	ctx := context.TODO()
-	row, err := p.queries.GetDeploymentByID(ctx, uuid.MustParse(deploymentID))
-	if err != nil {
-		return nil, false
-	}
-	return db.ToOapiDeployment(row), true
-}
-
-func (p *PostgresGetters) GetPolicies() map[string]*oapi.Policy {
-	ctx := context.TODO()
+func (p *PostgresGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
 	rows, err := p.queries.ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: uuid.MustParse(""),
+		WorkspaceID: uuid.MustParse(workspaceID),
 	})
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	result := make(map[string]*oapi.Policy, len(rows))
 	for _, row := range rows {
 		pol := db.ToOapiPolicy(row)
 		result[pol.Id] = pol
 	}
-	return result
+	return result, nil
 }

@@ -3,6 +3,7 @@ package policyeval
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"slices"
 	"time"
 
@@ -17,27 +18,16 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 )
 
-// Getter provides the data-access methods needed by policy evaluators.
-type Getter interface {
-	approval.Getters
-	environmentprogression.Getters
-	deploymentwindow.Getters
-	gradualrollout.Getters
-	versioncooldown.Getters
-	deploymentdependency.Getters
-}
-
 // ruleEvaluators returns evaluators for a single policy rule.
 func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		// deployableversions.NewEvaluator(getter),
+		versionselector.NewEvaluator(rule),
 		approval.NewEvaluator(getter, rule),
 		environmentprogression.NewEvaluator(getter, rule),
 		gradualrollout.NewEvaluator(getter, rule),
-		versionselector.NewEvaluator(rule),
 		deploymentdependency.NewEvaluator(getter, rule),
 		deploymentwindow.NewEvaluator(getter, rule),
-		// versioncooldown.NewEvaluator(getter, rule),
+		versioncooldown.NewEvaluator(getter, rule),
 	)
 }
 
@@ -78,23 +68,26 @@ func FindDeployableVersion(
 	versions []*oapi.DeploymentVersion,
 	evals []evaluator.Evaluator,
 	scope evaluator.EvaluatorScope,
-) (*oapi.DeploymentVersion, *time.Time) {
+) (*oapi.DeploymentVersion, *time.Time, error) {
 	var earliest *time.Time
 
 	for _, version := range versions {
 		scope.Version = version
 
-		skips := getter.GetPolicySkips(version.Id, rt.EnvironmentId, rt.ResourceId)
+		skips, err := getter.GetPolicySkips(ctx, version.Id, rt.EnvironmentId, rt.ResourceId)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get policy skips: %w", err)
+		}
 
 		eligible, nextTime := evaluateVersion(ctx, evals, scope, skips)
 		if eligible {
-			return version, nil
+			return version, nil, nil
 		}
 		if nextTime != nil && (earliest == nil || nextTime.Before(*earliest)) {
 			earliest = nextTime
 		}
 	}
-	return nil, earliest
+	return nil, earliest, nil
 }
 
 // buildSkipSet returns the set of rule IDs that have a non-expired policy skip.

@@ -1,4 +1,4 @@
-package desiredrelease
+package variableresolver
 
 import (
 	"context"
@@ -8,62 +8,21 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/svc/controllers/desiredrelease/policyeval"
-	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type policiesGetter = policyeval.Getter
-type variableResolverGetter = variableresolver.Getter
-
 var _ Getter = (*PostgresGetter)(nil)
 
-func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
+func NewPostgresGetter(queries *db.Queries) Getter {
 	return &PostgresGetter{
-		policiesGetter:         policyeval.NewPostgresGetter(queries),
-		variableResolverGetter: variableresolver.NewPostgresGetter(queries),
+		queries: queries,
 	}
 }
 
 type PostgresGetter struct {
-	policiesGetter
-	variableResolverGetter
-}
-
-func (g *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error) {
-	return db.GetQueries(ctx).ReleaseTargetExists(ctx, db.ReleaseTargetExistsParams{
-		DeploymentID:  rt.DeploymentID,
-		EnvironmentID: rt.EnvironmentID,
-		ResourceID:    rt.ResourceID,
-	})
-}
-
-func (g *PostgresGetter) GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error) {
-	q := db.GetQueries(ctx)
-
-	depRow, err := q.GetDeploymentByID(ctx, rt.DeploymentID)
-	if err != nil {
-		return nil, fmt.Errorf("get deployment %s: %w", rt.DeploymentID, err)
-	}
-
-	envRow, err := q.GetEnvironmentByID(ctx, rt.EnvironmentID)
-	if err != nil {
-		return nil, fmt.Errorf("get environment %s: %w", rt.EnvironmentID, err)
-	}
-
-	resRow, err := q.GetResourceByID(ctx, rt.ResourceID)
-	if err != nil {
-		return nil, fmt.Errorf("get resource %s: %w", rt.ResourceID, err)
-	}
-
-	return &evaluator.EvaluatorScope{
-		Deployment:  db.ToOapiDeployment(depRow),
-		Environment: db.ToOapiEnvironment(envRow),
-		Resource:    db.ToOapiResource(resRow),
-	}, nil
+	queries *db.Queries
 }
 
 func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID uuid.UUID) ([]*oapi.DeploymentVersion, error) {
@@ -80,21 +39,6 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 		versions = append(versions, db.ToOapiDeploymentVersion(row))
 	}
 	return versions, nil
-}
-
-func (g *PostgresGetter) GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error) {
-	policies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: rt.WorkspaceID,
-		Limit:       pgtype.Int4{Int32: 5000, Valid: true},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list policies for workspace %s: %w", rt.WorkspaceID, err)
-	}
-	policiesOAPI := make([]*oapi.Policy, 0, len(policies))
-	for _, policy := range policies {
-		policiesOAPI = append(policiesOAPI, db.ToOapiPolicy(policy))
-	}
-	return policiesOAPI, nil
 }
 
 func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
@@ -126,45 +70,6 @@ func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environm
 		result = append(result, db.ToOapiPolicySkip(skip))
 	}
 	return result, nil
-}
-
-func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error) {
-	q := db.GetQueries(ctx)
-
-	releases, err := q.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    rt.ResourceID,
-		EnvironmentID: rt.EnvironmentID,
-		DeploymentID:  rt.DeploymentID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list releases for release target: %w", err)
-	}
-	if len(releases) == 0 {
-		return nil, nil
-	}
-
-	latest := releases[0]
-	versionRow, err := q.GetDeploymentVersionByID(ctx, latest.VersionID)
-	if err != nil {
-		return nil, fmt.Errorf("get version %s: %w", latest.VersionID, err)
-	}
-
-	createdAt := ""
-	if latest.CreatedAt.Valid {
-		createdAt = latest.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00")
-	}
-
-	return &oapi.Release{
-		ReleaseTarget: oapi.ReleaseTarget{
-			DeploymentId:  rt.DeploymentID.String(),
-			EnvironmentId: rt.EnvironmentID.String(),
-			ResourceId:    rt.ResourceID.String(),
-		},
-		Version:            *db.ToOapiDeploymentVersion(versionRow),
-		Variables:          map[string]oapi.LiteralValue{},
-		EncryptedVariables: []string{},
-		CreatedAt:          createdAt,
-	}, nil
 }
 
 func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error) {

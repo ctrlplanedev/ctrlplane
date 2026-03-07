@@ -193,7 +193,10 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 		Version:     version,
 	}
 
-	allSkips := e.getters.GetPolicySkips(version.Id, environment.Id, releaseTarget.ResourceId)
+	allSkips, err := e.getters.GetPolicySkips(ctx, version.Id, environment.Id, releaseTarget.ResourceId)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, policy := range policiesForTarget {
 		if !policy.Enabled {
@@ -321,11 +324,11 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	environment := scope.Environment
 	version := scope.Version
 	releaseTarget := scope.ReleaseTarget()
-	resource, ok := e.getters.GetResource(releaseTarget.ResourceId)
-	if !ok {
+	resource, err := e.getters.GetResource(ctx, releaseTarget.ResourceId)
+	if err != nil {
 		return results.
-			NewDeniedResult(fmt.Sprintf("Resource not found: %s", releaseTarget.ResourceId)).
-			WithDetail("error", fmt.Sprintf("Resource not found: %s", releaseTarget.ResourceId))
+			NewDeniedResult(fmt.Sprintf("Failed to get resource: %v", err)).
+			WithDetail("error", err.Error())
 	}
 
 	releaseTargets, err := e.getReleaseTargets(environment, version)

@@ -20,7 +20,7 @@ func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) eva
 	if store == nil {
 		return nil
 	}
-	return NewSummaryEvaluator(&storeGetters{store: store}, rule)
+	return NewSummaryEvaluator(NewStoreGetters(store), rule)
 }
 
 func NewSummaryEvaluator(getters Getters, rule *oapi.PolicyRule) evaluator.Evaluator {
@@ -78,9 +78,9 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
-		environment, _ := e.getters.GetEnvironment(releaseTarget.EnvironmentId)
-		resource, _ := e.getters.GetResource(releaseTarget.ResourceId)
-		deployment, _ := e.getters.GetDeployment(releaseTarget.DeploymentId)
+		environment, _ := e.getters.GetEnvironment(ctx, releaseTarget.EnvironmentId)
+		resource, _ := e.getters.GetResource(ctx, releaseTarget.ResourceId)
+		deployment, _ := e.getters.GetDeployment(ctx, releaseTarget.DeploymentId)
 		scope := evaluator.EvaluatorScope{
 			Environment: environment,
 			Version:     version,

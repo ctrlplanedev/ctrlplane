@@ -16,6 +16,10 @@ type Getters interface {
 
 var _ Getters = (*StoreGetters)(nil)
 
+func NewStoreGetters(store *store.Store) *StoreGetters {
+	return &StoreGetters{store: store}
+}
+
 type StoreGetters struct {
 	store *store.Store
 }
@@ -29,6 +33,12 @@ func (s *StoreGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oap
 }
 
 var _ Getters = (*PostgresGetters)(nil)
+
+func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+	return &PostgresGetters{
+		queries: queries,
+	}
+}
 
 type PostgresGetters struct {
 	queries *db.Queries
