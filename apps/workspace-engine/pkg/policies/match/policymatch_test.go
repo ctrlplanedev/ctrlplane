@@ -1,4 +1,4 @@
-package policymatch
+package match
 
 import (
 	"context"

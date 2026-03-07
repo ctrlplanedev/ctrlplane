@@ -108,6 +108,64 @@ FROM job j
 LEFT JOIN release_job rj ON rj.job_id = j.id
 WHERE j.job_agent_id = $1;
 
+-- name: GetLatestCompletedJobForReleaseTarget :one
+-- Returns the most recently completed job for a given release target
+-- (deployment, environment, resource triple).
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = @deployment_id
+  AND r.environment_id = @environment_id
+  AND r.resource_id = @resource_id
+  AND j.completed_at IS NOT NULL
+ORDER BY j.completed_at DESC
+LIMIT 1;
+
+-- name: ListJobsByReleaseTarget :many
+-- Returns all jobs for a given release target (deployment, environment, resource triple).
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = @deployment_id
+  AND r.environment_id = @environment_id
+  AND r.resource_id = @resource_id;
+
 -- name: ListJobsByReleaseID :many
 SELECT
   j.id,

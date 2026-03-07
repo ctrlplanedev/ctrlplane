@@ -73,6 +73,30 @@ JOIN release r ON r.id = rj.release_id
 JOIN deployment d ON d.id = r.deployment_id
 WHERE jvm.id = $1;
 
+-- name: GetAggregateJobVerificationStatus :one
+-- Returns the aggregate verification status for a job:
+-- 'passed' if all metrics have completed with enough measurements and no failures above threshold,
+-- 'running' if any metric is still incomplete,
+-- 'failed' if any metric has exceeded its failure threshold.
+-- Returns '' (empty string) if the job has no verification metrics.
+SELECT
+  CASE
+    WHEN COUNT(*) = 0 THEN ''
+    WHEN bool_or(COALESCE(mc.failures, 0) > COALESCE(jvm.failure_threshold, 0)) THEN 'failed'
+    WHEN bool_or(COALESCE(mc.total, 0) < jvm.count
+                 AND COALESCE(mc.failures, 0) <= COALESCE(jvm.failure_threshold, 0)) THEN 'running'
+    ELSE 'passed'
+  END::text AS status
+FROM job_verification_metric jvm
+LEFT JOIN LATERAL (
+  SELECT
+    COUNT(*)::int AS total,
+    COUNT(*) FILTER (WHERE mm.status = 'failed')::int AS failures
+  FROM job_verification_metric_measurement mm
+  WHERE mm.job_verification_metric_status_id = jvm.id
+) mc ON true
+WHERE jvm.job_id = @job_id;
+
 -- name: GetJobDispatchContext :one
 SELECT j.dispatch_context
 FROM job j

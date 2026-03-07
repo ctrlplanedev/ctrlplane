@@ -196,6 +196,9 @@ func (g *DesiredReleaseGetter) GetJobVerificationStatus(_ string) oapi.JobVerifi
 func (g *DesiredReleaseGetter) NewVersionCooldownEvaluator(_ *oapi.PolicyRule) evaluator.Evaluator {
 	return nil
 }
+func (g *DesiredReleaseGetter) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+	return nil, nil
+}
 func (g *DesiredReleaseGetter) GetReleaseTargetsForResource(_ context.Context, _ string) []*oapi.ReleaseTarget {
 	return nil
 }

@@ -55,6 +55,95 @@ func (q *Queries) GetReleaseTargetsForDeployment(ctx context.Context, deployment
 	return items, nil
 }
 
+const getReleaseTargetsForResource = `-- name: GetReleaseTargetsForResource :many
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cdr.resource_id = $1
+`
+
+type GetReleaseTargetsForResourceRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns all valid release targets for a resource by joining computed
+// resource tables through the system link tables.
+func (q *Queries) GetReleaseTargetsForResource(ctx context.Context, resourceID uuid.UUID) ([]GetReleaseTargetsForResourceRow, error) {
+	rows, err := q.db.Query(ctx, getReleaseTargetsForResource, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReleaseTargetsForResourceRow
+	for rows.Next() {
+		var i GetReleaseTargetsForResourceRow
+		if err := rows.Scan(&i.DeploymentID, &i.EnvironmentID, &i.ResourceID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getReleaseTargetsForWorkspace = `-- name: GetReleaseTargetsForWorkspace :many
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+JOIN deployment d
+    ON d.id = cdr.deployment_id
+WHERE d.workspace_id = $1
+`
+
+type GetReleaseTargetsForWorkspaceRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns all valid release targets for a workspace.
+func (q *Queries) GetReleaseTargetsForWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]GetReleaseTargetsForWorkspaceRow, error) {
+	rows, err := q.db.Query(ctx, getReleaseTargetsForWorkspace, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReleaseTargetsForWorkspaceRow
+	for rows.Next() {
+		var i GetReleaseTargetsForWorkspaceRow
+		if err := rows.Scan(&i.DeploymentID, &i.EnvironmentID, &i.ResourceID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const releaseTargetExists = `-- name: ReleaseTargetExists :one
 SELECT EXISTS (
     SELECT 1
