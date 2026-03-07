@@ -40,7 +40,6 @@ func HandleJobUpdated(
 	if jobUpdateEvent.FieldsToUpdate == nil || len(*jobUpdateEvent.FieldsToUpdate) == 0 {
 		ws.Jobs().Upsert(ctx, &jobUpdateEvent.Job)
 		dirtyStateForJob(ctx, ws, &jobUpdateEvent.Job)
-		// Trigger actions on status change
 		triggerActionsOnStatusChange(ctx, ws, &jobUpdateEvent.Job, previousStatus)
 		return nil
 	}

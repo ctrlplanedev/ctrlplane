@@ -29,6 +29,7 @@ sql:
       - queries/jobs.sql
       - queries/computed_relationships.sql
       - queries/relationship_rules.sql
+      - queries/policy_rule_summary.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -123,6 +124,11 @@ sql:
           - column: "relationship_rule.metadata"
             go_type:
               type: "map[string]string"
+
+          # PolicyRuleSummary
+          - column: "policy_rule_summary.details"
+            go_type:
+              type: "map[string]any"
 
           # ResourceVariable
           - column: "resource_variable.value"

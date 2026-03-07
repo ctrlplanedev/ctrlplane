@@ -24,6 +24,20 @@ RETURNING *;
 -- name: DeletePolicy :exec
 DELETE FROM policy WHERE id = $1;
 
+-- name: ListPoliciesWithRulesByWorkspaceID :many
+SELECT
+  p.id, p.name, p.description, p.selector, p.metadata, p.priority, p.enabled, p.workspace_id, p.created_at,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'minApprovals', r.min_approvals)) FROM policy_rule_any_approval r WHERE r.policy_id = p.id), '[]'::json) AS approval_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'allowWindow', r.allow_window, 'durationMinutes', r.duration_minutes, 'rrule', r.rrule, 'timezone', r.timezone)) FROM policy_rule_deployment_window r WHERE r.policy_id = p.id), '[]'::json) AS deployment_window_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'dependsOn', r.depends_on)) FROM policy_rule_deployment_dependency r WHERE r.policy_id = p.id), '[]'::json) AS deployment_dependency_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'dependsOnEnvironmentSelector', r.depends_on_environment_selector, 'maximumAgeHours', r.maximum_age_hours, 'minimumSoakTimeMinutes', r.minimum_soak_time_minutes, 'minimumSuccessPercentage', r.minimum_success_percentage, 'successStatuses', r.success_statuses)) FROM policy_rule_environment_progression r WHERE r.policy_id = p.id), '[]'::json) AS environment_progression_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'rolloutType', r.rollout_type, 'timeScaleInterval', r.time_scale_interval)) FROM policy_rule_gradual_rollout r WHERE r.policy_id = p.id), '[]'::json) AS gradual_rollout_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'intervalSeconds', r.interval_seconds)) FROM policy_rule_version_cooldown r WHERE r.policy_id = p.id), '[]'::json) AS version_cooldown_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'description', r.description, 'selector', r.selector)) FROM policy_rule_version_selector r WHERE r.policy_id = p.id), '[]'::json) AS version_selector_rules
+FROM policy p
+WHERE p.workspace_id = $1
+ORDER BY p.priority DESC, p.created_at DESC;
+
 -- ============================================================
 -- policy_rule_any_approval
 -- ============================================================

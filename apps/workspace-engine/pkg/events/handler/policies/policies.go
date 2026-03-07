@@ -2,13 +2,13 @@ package policies
 
 import (
 	"context"
+	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"encoding/json"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
