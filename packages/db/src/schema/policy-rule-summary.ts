@@ -13,7 +13,6 @@ import {
 import { deployment } from "./deployment.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { environment } from "./environment.js";
-import { policy } from "./policy.js";
 import { workspace } from "./workspace.js";
 
 export const policyRuleSummary = pgTable(
@@ -23,11 +22,7 @@ export const policyRuleSummary = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
-    policyId: uuid("policy_id")
-      .notNull()
-      .references(() => policy.id, { onDelete: "cascade" }),
-    ruleId: text("rule_id").notNull(),
-    ruleType: text("rule_type").notNull(),
+    ruleId: uuid("rule_id").notNull(),
 
     deploymentId: uuid("deployment_id").references(() => deployment.id, {
       onDelete: "cascade",
@@ -62,10 +57,6 @@ export const policyRuleSummary = pgTable(
 export const policyRuleSummaryRelations = relations(
   policyRuleSummary,
   ({ one }) => ({
-    policy: one(policy, {
-      fields: [policyRuleSummary.policyId],
-      references: [policy.id],
-    }),
     deployment: one(deployment, {
       fields: [policyRuleSummary.deploymentId],
       references: [deployment.id],

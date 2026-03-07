@@ -171,9 +171,7 @@ func (r *reconciler) evaluateAndCollect(
 				result := eval.Evaluate(ctx, scope)
 				rows = append(rows, RuleSummaryRow{
 					WorkspaceID: r.workspaceID,
-					PolicyID:    uuid.MustParse(p.Id),
-					RuleID:      rule.Id,
-					RuleType:    eval.RuleType(),
+					RuleID:      uuid.MustParse(rule.Id),
 					Evaluation:  result,
 				})
 
