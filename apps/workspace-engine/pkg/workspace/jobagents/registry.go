@@ -78,14 +78,8 @@ func (r *Registry) shouldEnqueue() bool {
 }
 
 func (r *Registry) enqueueJobDispatch(ctx context.Context, job *oapi.Job) error {
-	release, ok := r.store.Releases.Get(job.ReleaseId)
-	if !ok {
-		return fmt.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
-	}
 	return events.EnqueueJobDispatch(r.queue, ctx, events.JobDispatchParams{
-		WorkspaceID:   r.store.ID(),
-		DeploymentID:  release.ReleaseTarget.DeploymentId,
-		EnvironmentID: release.ReleaseTarget.EnvironmentId,
-		ResourceID:    release.ReleaseTarget.ResourceId,
+		WorkspaceID: r.store.ID(),
+		JobID:       job.Id,
 	})
 }

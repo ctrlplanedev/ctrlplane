@@ -2,6 +2,8 @@ package jobdispatch
 
 import (
 	"context"
+	"fmt"
+
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -31,7 +33,15 @@ func (p *PostgresGetter) GetRelease(ctx context.Context, releaseID uuid.UUID) (*
 	if err != nil {
 		return nil, err
 	}
-	return db.ToOapiRelease(row), nil
+	release := db.ToOapiRelease(row)
+
+	versionRow, err := queries.GetDeploymentVersionByID(ctx, row.VersionID)
+	if err != nil {
+		return nil, fmt.Errorf("get version %s for release %s: %w", row.VersionID, releaseID, err)
+	}
+	release.Version = *db.ToOapiDeploymentVersion(versionRow)
+
+	return release, nil
 }
 
 func (p *PostgresGetter) GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error) {
