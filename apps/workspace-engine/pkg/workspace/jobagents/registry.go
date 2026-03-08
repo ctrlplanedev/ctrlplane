@@ -3,8 +3,12 @@ package jobagents
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace/jobagents/argo"
 	"workspace-engine/pkg/workspace/jobagents/github"
 	"workspace-engine/pkg/workspace/jobagents/terraformcloud"
@@ -17,12 +21,14 @@ import (
 type Registry struct {
 	dispatchers map[string]types.Dispatchable
 	store       *store.Store
+	queue       reconcile.Queue
 }
 
-func NewRegistry(store *store.Store, verifications *verification.Manager) *Registry {
+func NewRegistry(store *store.Store, verifications *verification.Manager, queue reconcile.Queue) *Registry {
 	r := &Registry{}
 	r.dispatchers = make(map[string]types.Dispatchable)
 	r.store = store
+	r.queue = queue
 
 	r.Register(testrunner.New(store))
 	r.Register(argo.NewArgoApplication(store, verifications))
@@ -38,6 +44,10 @@ func (r *Registry) Register(dispatcher types.Dispatchable) {
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
+	if r.shouldEnqueue() {
+		return r.enqueueJobDispatch(ctx, job)
+	}
+
 	jobAgent, ok := r.store.JobAgents.Get(job.JobAgentId)
 	if !ok {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)
@@ -49,4 +59,33 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	return dispatcher.Dispatch(ctx, job)
+}
+
+func (r *Registry) shouldEnqueue() bool {
+	if r.queue == nil {
+		return false
+	}
+	svcList := strings.TrimSpace(config.Global.Services)
+	if svcList == "" {
+		return true
+	}
+	for name := range strings.SplitSeq(svcList, ",") {
+		if strings.TrimSpace(name) == events.JobDispatchKind {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Registry) enqueueJobDispatch(ctx context.Context, job *oapi.Job) error {
+	release, ok := r.store.Releases.Get(job.ReleaseId)
+	if !ok {
+		return fmt.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
+	}
+	return events.EnqueueJobDispatch(r.queue, ctx, events.JobDispatchParams{
+		WorkspaceID:   r.store.ID(),
+		DeploymentID:  release.ReleaseTarget.DeploymentId,
+		EnvironmentID: release.ReleaseTarget.EnvironmentId,
+		ResourceID:    release.ReleaseTarget.ResourceId,
+	})
 }

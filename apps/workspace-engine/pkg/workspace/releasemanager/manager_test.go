@@ -23,7 +23,7 @@ func setupTestManager(t *testing.T) (*Manager, *store.Store) {
 	testStore := store.New("test-workspace", cs)
 	traceStore := spanstore.NewInMemoryStore()
 	verificationManager := verification.NewManager(testStore)
-	jobAgentRegistry := jobagents.NewRegistry(testStore, verificationManager)
+	jobAgentRegistry := jobagents.NewRegistry(testStore, verificationManager, nil)
 	manager := New(testStore, traceStore, verificationManager, jobAgentRegistry)
 	return manager, testStore
 }
