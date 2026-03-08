@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, useParams } from "react-router";
+import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -460,7 +461,13 @@ export default function ReleaseTargetEvaluationsPage() {
   const utils = trpc.useUtils();
   const triggerReconcile = trpc.reconcile.triggerDesiredRelease.useMutation({
     onSuccess: () => {
+      toast.success("Reconciliation queued for this release target");
       utils.releaseTargets.evaluations.invalidate();
+    },
+    onError: (error) => {
+      toast.error("Failed to queue reconciliation", {
+        description: error.message,
+      });
     },
   });
 
