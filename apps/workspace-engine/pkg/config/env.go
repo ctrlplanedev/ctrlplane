@@ -16,8 +16,9 @@ func init() {
 
 type Config struct {
 	// Server configuration
-	Host string `envconfig:"HOST" default:"0.0.0.0"`
-	Port int    `envconfig:"PORT" default:"8081"`
+	Host      string `envconfig:"HOST" default:"0.0.0.0"`
+	Port      int    `envconfig:"PORT" default:"8081"`
+	PprofPort int    `envconfig:"PPROF_PORT" default:"6060"`
 
 	// Kafka configuration
 	KafkaBrokers       string `envconfig:"KAFKA_BROKERS" default:"localhost:9092"`
@@ -42,4 +43,7 @@ type Config struct {
 	TraceTokenSecret string `envconfig:"TRACE_TOKEN_SECRET" default:"secret"`
 
 	MigrateLegacyEntities bool `envconfig:"MIGRATE_LEGACY_ENTITIES" default:"true"`
+
+	// Comma-separated list of services to run (empty means all).
+	Services string `envconfig:"SERVICES" default:""`
 }
