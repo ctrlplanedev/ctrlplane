@@ -131,9 +131,6 @@ func (w *Worker) Run(ctx context.Context) error {
 			if err != nil {
 				log.Error("error claiming items", "error", err)
 			}
-			for _, item := range items {
-				log.Info("item", "item", item.ID, "kind", item.Kind, "scopeType", item.ScopeType, "scopeID", item.ScopeID)
-			}
 			if err == nil && len(items) > 0 {
 				w.startItems(ctx, items, sem, doneCh)
 				// If we filled all currently available slots, immediately loop to try
