@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
@@ -16,6 +17,8 @@ import (
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 type Registry struct {
@@ -78,6 +81,22 @@ func (r *Registry) shouldEnqueue() bool {
 }
 
 func (r *Registry) enqueueJobDispatch(ctx context.Context, job *oapi.Job) error {
+	jobID, err := uuid.Parse(job.Id)
+	if err != nil {
+		return fmt.Errorf("parse job id: %w", err)
+	}
+	releaseID, err := uuid.Parse(job.ReleaseId)
+	if err != nil {
+		return fmt.Errorf("parse release id: %w", err)
+	}
+
+	if err := db.GetQueries(ctx).InsertReleaseJob(ctx, db.InsertReleaseJobParams{
+		ReleaseID: releaseID,
+		JobID:     jobID,
+	}); err != nil {
+		return fmt.Errorf("insert release job: %w", err)
+	}
+
 	return events.EnqueueJobDispatch(r.queue, ctx, events.JobDispatchParams{
 		WorkspaceID: r.store.ID(),
 		JobID:       job.Id,

@@ -207,8 +207,7 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 }
 
 const insertReleaseJob = `-- name: InsertReleaseJob :exec
-INSERT INTO release_job (release_id, job_id) VALUES ($1, $2) 
-ON CONFLICT (release_id, job_id) DO NOTHING
+INSERT INTO release_job (release_id, job_id) VALUES ($1, $2)
 `
 
 type InsertReleaseJobParams struct {
