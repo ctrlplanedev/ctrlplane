@@ -2,7 +2,6 @@ package jobdispatch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"workspace-engine/pkg/db"
@@ -26,7 +25,32 @@ func (s *PostgresSetter) UpdateJob(
 	message string,
 	metadata map[string]string,
 ) error {
-	panic("unimplemented")
+	jobIDUUID, err := uuid.Parse(jobID)
+	if err != nil {
+		return fmt.Errorf("parse job id: %w", err)
+	}
+
+	queries := db.GetQueries(ctx)
+
+	if err := queries.UpdateJobStatus(ctx, db.UpdateJobStatusParams{
+		ID:      jobIDUUID,
+		Status:  db.JobStatus(status),
+		Message: pgtype.Text{String: message, Valid: true},
+	}); err != nil {
+		return fmt.Errorf("update job status: %w", err)
+	}
+
+	for k, v := range metadata {
+		if err := queries.UpsertJobMetadata(ctx, db.UpsertJobMetadataParams{
+			JobID: jobIDUUID,
+			Key:   k,
+			Value: v,
+		}); err != nil {
+			return fmt.Errorf("upsert job metadata: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
@@ -40,33 +64,33 @@ func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job,
 	if err != nil {
 		return fmt.Errorf("parse release id: %w", err)
 	}
-	agentIDUUID, err := uuid.Parse(job.JobAgentId)
-	if err != nil {
-		return fmt.Errorf("parse agent id: %w", err)
-	}
+	// agentIDUUID, err := uuid.Parse(job.JobAgentId)
+	// if err != nil {
+	// 	return fmt.Errorf("parse agent id: %w", err)
+	// }
 
-	agentConfig, err := json.Marshal(job.JobAgentConfig)
-	if err != nil {
-		return fmt.Errorf("marshal job agent config: %w", err)
-	}
+	// agentConfig, err := json.Marshal(job.JobAgentConfig)
+	// if err != nil {
+	// 	return fmt.Errorf("marshal job agent config: %w", err)
+	// }
 
-	if err := queries.InsertJob(ctx, db.InsertJobParams{
-		ID:             jobIDUUID,
-		JobAgentID:     pgtype.UUID{Bytes: agentIDUUID, Valid: true},
-		JobAgentConfig: agentConfig,
-		Status:         db.JobStatus(job.Status),
-		CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
-		UpdatedAt:      pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
-	}); err != nil {
-		return fmt.Errorf("insert job: %w", err)
-	}
+	// if err := queries.InsertJob(ctx, db.InsertJobParams{
+	// 	ID:             jobIDUUID,
+	// 	JobAgentID:     pgtype.UUID{Bytes: agentIDUUID, Valid: true},
+	// 	JobAgentConfig: agentConfig,
+	// 	Status:         db.JobStatus(job.Status),
+	// 	CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
+	// 	UpdatedAt:      pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
+	// }); err != nil {
+	// 	return fmt.Errorf("insert job: %w", err)
+	// }
 
-	if err := queries.InsertReleaseJob(ctx, db.InsertReleaseJobParams{
-		ReleaseID: releaseIDUUID,
-		JobID:     jobIDUUID,
-	}); err != nil {
-		return fmt.Errorf("insert release_job: %w", err)
-	}
+	// if err := queries.InsertReleaseJob(ctx, db.InsertReleaseJobParams{
+	// 	ReleaseID: releaseIDUUID,
+	// 	JobID:     jobIDUUID,
+	// }); err != nil {
+	// 	return fmt.Errorf("insert release_job: %w", err)
+	// }
 
 	if len(specs) == 0 {
 		return nil

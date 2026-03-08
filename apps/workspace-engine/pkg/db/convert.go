@@ -38,6 +38,12 @@ func ToOapiDeployment(row Deployment) *oapi.Deployment {
 		s := row.JobAgentID.String()
 		d.JobAgentId = &s
 	}
+	if row.JobAgents != nil {
+		var jobAgents []oapi.DeploymentJobAgent
+		if err := json.Unmarshal(row.JobAgents, &jobAgents); err == nil {
+			d.JobAgents = &jobAgents
+		}
+	}
 	return d
 }
 

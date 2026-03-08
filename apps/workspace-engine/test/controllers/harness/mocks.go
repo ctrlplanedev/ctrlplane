@@ -417,7 +417,7 @@ type JobDispatchSetter struct {
 	VerificationSpecs [][]oapi.VerificationMetricSpec
 }
 
-func (s *JobDispatchSetter) UpdateJob(_ context.Context, _ string, _ oapi.JobStatus, _ string, _ map[string]string) error {
+func (s *JobDispatchSetter) UpdateJob(_ context.Context, _ *oapi.Job) error {
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/verification"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -55,6 +56,8 @@ func getJobAgents(ctx context.Context, getter Getter, release *oapi.Release) ([]
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info("deployment", "deployment", deployment)
 
 	if deployment.JobAgents == nil {
 		return nil, fmt.Errorf("deployment job agents are nil")

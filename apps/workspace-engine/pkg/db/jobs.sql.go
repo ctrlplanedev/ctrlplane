@@ -207,7 +207,8 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 }
 
 const insertReleaseJob = `-- name: InsertReleaseJob :exec
-INSERT INTO release_job (release_id, job_id) VALUES ($1, $2)
+INSERT INTO release_job (release_id, job_id) VALUES ($1, $2) 
+ON CONFLICT (release_id, job_id) DO NOTHING
 `
 
 type InsertReleaseJobParams struct {
@@ -526,6 +527,25 @@ func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UU
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateJobStatus = `-- name: UpdateJobStatus :exec
+UPDATE job
+SET status = $2,
+    message = $3,
+    updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateJobStatusParams struct {
+	ID      uuid.UUID
+	Status  JobStatus
+	Message pgtype.Text
+}
+
+func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error {
+	_, err := q.db.Exec(ctx, updateJobStatus, arg.ID, arg.Status, arg.Message)
+	return err
 }
 
 const upsertJob = `-- name: UpsertJob :exec

@@ -3,7 +3,8 @@ INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated
 VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: InsertReleaseJob :exec
-INSERT INTO release_job (release_id, job_id) VALUES ($1, $2);
+INSERT INTO release_job (release_id, job_id) VALUES ($1, $2) 
+ON CONFLICT (release_id, job_id) DO NOTHING;
 
 -- name: GetWorkspaceIDByReleaseID :one
 SELECT d.workspace_id
@@ -53,6 +54,13 @@ INSERT INTO job_metadata (job_id, key, value)
 VALUES ($1, $2, $3)
 ON CONFLICT (job_id, key) DO UPDATE
 SET value = EXCLUDED.value;
+
+-- name: UpdateJobStatus :exec
+UPDATE job
+SET status = $2,
+    message = $3,
+    updated_at = NOW()
+WHERE id = $1;
 
 -- name: DeleteJobMetadataByJobID :exec
 DELETE FROM job_metadata WHERE job_id = $1;
