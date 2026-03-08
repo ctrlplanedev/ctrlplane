@@ -101,9 +101,6 @@ func (m *mockReconcileGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map
 func (m *mockReconcileGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
-	return nil, nil
-}
 func (m *mockReconcileGetter) GetJobVerificationStatus(_ string) oapi.JobVerificationStatus {
 	return ""
 }

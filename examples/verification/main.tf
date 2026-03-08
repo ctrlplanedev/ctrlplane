@@ -78,3 +78,19 @@ resource "ctrlplane_policy" "test" {
     }
   }
 }
+
+resource "ctrlplane_policy" "test2" {
+  name     = "test2"
+  selector = "deployment.name.contains('') && true"
+
+  any_approval {
+    min_approvals = 1
+  }
+
+  deployment_window {
+    duration_minutes = 10
+    rrule            = "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR"
+    timezone         = "America/New_York"
+    allow_window     = true
+  }
+}

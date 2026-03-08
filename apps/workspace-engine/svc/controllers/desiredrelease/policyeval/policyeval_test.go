@@ -115,9 +115,6 @@ func (m *mockGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oa
 func (m *mockGetter) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
 	return nil, nil
 }
-func (m *mockGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
-	return nil, nil
-}
 func (m *mockGetter) GetJobVerificationStatus(_ string) oapi.JobVerificationStatus {
 	return ""
 }

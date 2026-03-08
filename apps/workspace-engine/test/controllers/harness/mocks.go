@@ -260,9 +260,6 @@ func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(rt *oapi.ReleaseTarget) m
 	}
 	return nil
 }
-func (g *DesiredReleaseGetter) GetReleaseTargets() ([]*oapi.ReleaseTarget, error) {
-	return g.ReleaseTargetsList, nil
-}
 func (g *DesiredReleaseGetter) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
 	if g.JobVerificationStatuses != nil {
 		if s, ok := g.JobVerificationStatuses[jobID]; ok {
