@@ -7,6 +7,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
@@ -74,7 +75,7 @@ func makeEnvironment(selector string) *EnvironmentInfo {
 func processItem(scopeID string) reconcile.Item {
 	return reconcile.Item{
 		ID:        1,
-		Kind:      "environment-resource-selector-eval",
+		Kind:      events.EnvironmentResourceselectorEvalKind,
 		ScopeType: "environment",
 		ScopeID:   scopeID,
 		EventTS:   time.Now(),
