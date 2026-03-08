@@ -34,16 +34,16 @@ func (p *PostgresGetReleaseTargetsForDeploymentAndEnvironment) GetReleaseTargets
 		return nil, fmt.Errorf("parse environment id: %w", err)
 	}
 
-	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeployment(ctx, depID)
+	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeploymentAndEnvironment(ctx, db.GetReleaseTargetsForDeploymentAndEnvironmentParams{
+		DeploymentID:  depID,
+		EnvironmentID: envID,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get release targets for deployment: %w", err)
+		return nil, fmt.Errorf("get release targets for deployment and environment: %w", err)
 	}
 
 	targets := make([]oapi.ReleaseTarget, 0, len(rows))
 	for _, row := range rows {
-		if row.EnvironmentID != envID {
-			continue
-		}
 		targets = append(targets, oapi.ReleaseTarget{
 			DeploymentId:  row.DeploymentID.String(),
 			EnvironmentId: row.EnvironmentID.String(),
