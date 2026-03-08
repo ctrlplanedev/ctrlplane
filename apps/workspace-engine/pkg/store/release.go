@@ -25,7 +25,11 @@ func NewPostgresReleaseGetter(queries *db.Queries) *PostgresReleaseGetter {
 }
 
 func (g *PostgresReleaseGetter) GetRelease(ctx context.Context, releaseID string) (*oapi.Release, error) {
-	release, err := g.queries.GetReleaseByID(ctx, uuid.MustParse(releaseID))
+	releaseIDUUID, err := uuid.Parse(releaseID)
+	if err != nil {
+		return nil, fmt.Errorf("parse release id: %w", err)
+	}
+	release, err := g.queries.GetReleaseByID(ctx, releaseIDUUID)
 	if err != nil {
 		return nil, err
 	}

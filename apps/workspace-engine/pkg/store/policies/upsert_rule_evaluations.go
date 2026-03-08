@@ -37,7 +37,11 @@ func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(ctx context.Contex
 
 	batchParams := make([]db.BatchUpsertPolicyRuleEvaluationParams, 0, len(evaluations))
 	for _, e := range evaluations {
-		batchParams = append(batchParams, toDBParams(e))
+		dbParams, err := toDBParams(e)
+		if err != nil {
+			return fmt.Errorf("to db params: %w", err)
+		}
+		batchParams = append(batchParams, dbParams)
 	}
 
 	results := db.GetQueries(ctx).BatchUpsertPolicyRuleEvaluation(ctx, batchParams)
@@ -50,7 +54,7 @@ func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(ctx context.Contex
 	return batchErr
 }
 
-func toDBParams(e RuleEvaluationParams) db.BatchUpsertPolicyRuleEvaluationParams {
+func toDBParams(e RuleEvaluationParams) (db.BatchUpsertPolicyRuleEvaluationParams, error) {
 	var actionType pgtype.Text
 	if e.Evaluation.ActionType != nil {
 		actionType = pgtype.Text{String: string(*e.Evaluation.ActionType), Valid: true}
@@ -71,11 +75,28 @@ func toDBParams(e RuleEvaluationParams) db.BatchUpsertPolicyRuleEvaluationParams
 		details = map[string]any{}
 	}
 
+	ruleID, err := uuid.Parse(e.RuleID)
+	if err != nil {
+		return db.BatchUpsertPolicyRuleEvaluationParams{}, fmt.Errorf("parse rule id: %w", err)
+	}
+	environmentID, err := uuid.Parse(e.EnvironmentID)
+	if err != nil {
+		return db.BatchUpsertPolicyRuleEvaluationParams{}, fmt.Errorf("parse environment id: %w", err)
+	}
+	versionID, err := uuid.Parse(e.VersionID)
+	if err != nil {
+		return db.BatchUpsertPolicyRuleEvaluationParams{}, fmt.Errorf("parse version id: %w", err)
+	}
+	resourceID, err := uuid.Parse(e.ResourceID)
+	if err != nil {
+		return db.BatchUpsertPolicyRuleEvaluationParams{}, fmt.Errorf("parse resource id: %w", err)
+	}
+
 	return db.BatchUpsertPolicyRuleEvaluationParams{
-		RuleID:           uuid.MustParse(e.RuleID),
-		EnvironmentID:    uuid.MustParse(e.EnvironmentID),
-		VersionID:        uuid.MustParse(e.VersionID),
-		ResourceID:       uuid.MustParse(e.ResourceID),
+		RuleID:           ruleID,
+		EnvironmentID:    environmentID,
+		VersionID:        versionID,
+		ResourceID:       resourceID,
 		Allowed:          e.Evaluation.Allowed,
 		ActionRequired:   e.Evaluation.ActionRequired,
 		ActionType:       actionType,
@@ -83,5 +104,5 @@ func toDBParams(e RuleEvaluationParams) db.BatchUpsertPolicyRuleEvaluationParams
 		Details:          details,
 		SatisfiedAt:      satisfiedAt,
 		NextEvaluationAt: nextEvaluationAt,
-	}
+	}, nil
 }

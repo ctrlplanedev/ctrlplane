@@ -34,9 +34,18 @@ func (s *PostgresSetter) UpdateJob(
 func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
 	queries := db.GetQueries(ctx)
 
-	jobID := uuid.MustParse(job.Id)
-	releaseID := uuid.MustParse(job.ReleaseId)
-	agentID := uuid.MustParse(job.JobAgentId)
+	jobIDUUID, err := uuid.Parse(job.Id)
+	if err != nil {
+		return fmt.Errorf("parse job id: %w", err)
+	}
+	releaseIDUUID, err := uuid.Parse(job.ReleaseId)
+	if err != nil {
+		return fmt.Errorf("parse release id: %w", err)
+	}
+	agentIDUUID, err := uuid.Parse(job.JobAgentId)
+	if err != nil {
+		return fmt.Errorf("parse agent id: %w", err)
+	}
 
 	agentConfig, err := json.Marshal(job.JobAgentConfig)
 	if err != nil {
@@ -44,8 +53,8 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 	}
 
 	if err := queries.InsertJob(ctx, db.InsertJobParams{
-		ID:             jobID,
-		JobAgentID:     pgtype.UUID{Bytes: agentID, Valid: true},
+		ID:             jobIDUUID,
+		JobAgentID:     pgtype.UUID{Bytes: agentIDUUID, Valid: true},
 		JobAgentConfig: agentConfig,
 		Status:         db.JobStatus(job.Status),
 		CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
@@ -55,8 +64,8 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 	}
 
 	if err := queries.InsertReleaseJob(ctx, db.InsertReleaseJobParams{
-		ReleaseID: releaseID,
-		JobID:     jobID,
+		ReleaseID: releaseIDUUID,
+		JobID:     jobIDUUID,
 	}); err != nil {
 		return fmt.Errorf("insert release_job: %w", err)
 	}
@@ -65,7 +74,7 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 		return nil
 	}
 
-	workspaceID, err := queries.GetWorkspaceIDByReleaseID(ctx, releaseID)
+	workspaceID, err := queries.GetWorkspaceIDByReleaseID(ctx, releaseIDUUID)
 	if err != nil {
 		return fmt.Errorf("get workspace id: %w", err)
 	}
@@ -77,7 +86,7 @@ func (s *PostgresSetter) CreateJobWithVerification(ctx context.Context, job *oap
 		}
 
 		metric, err := queries.InsertJobVerificationMetric(ctx, db.InsertJobVerificationMetricParams{
-			JobID:            jobID,
+			JobID:            jobIDUUID,
 			Name:             spec.Name,
 			Provider:         providerJSON,
 			IntervalSeconds:  spec.IntervalSeconds,

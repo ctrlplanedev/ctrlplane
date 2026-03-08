@@ -2,6 +2,7 @@ package gradualrollout
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
@@ -104,10 +105,22 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 }
 
 func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	versionIDUUID, err := uuid.Parse(versionID)
+	if err != nil {
+		return nil, fmt.Errorf("parse version id: %w", err)
+	}
+	environmentIDUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
+	resourceIDUUID, err := uuid.Parse(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
 	skips, err := p.queries.ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
-		VersionID:     uuid.MustParse(versionID),
-		EnvironmentID: uuid.MustParse(environmentID),
-		ResourceID:    uuid.MustParse(resourceID),
+		VersionID:     versionIDUUID,
+		EnvironmentID: environmentIDUUID,
+		ResourceID:    resourceIDUUID,
 	})
 	if err != nil {
 		return nil, err
@@ -120,10 +133,22 @@ func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environ
 }
 
 func (p *PostgresGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
+	resourceIDUUID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		return false, fmt.Errorf("parse resource id: %w", err)
+	}
+	environmentIDUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		return false, fmt.Errorf("parse environment id: %w", err)
+	}
+	deploymentIDUUID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		return false, fmt.Errorf("parse deployment id: %w", err)
+	}
 	releases, err := p.queries.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+		ResourceID:    resourceIDUUID,
+		EnvironmentID: environmentIDUUID,
+		DeploymentID:  deploymentIDUUID,
 	})
 	if err != nil {
 		return false, err
