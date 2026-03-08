@@ -16,7 +16,11 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
+
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("workspace/desiredrelease/policyeval")
 
 // ruleEvaluators returns evaluators for a single policy rule.
 func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
@@ -83,6 +87,9 @@ func FindDeployableVersion(
 	evals []evaluator.Evaluator,
 	scope evaluator.EvaluatorScope,
 ) (*FindDeployableVersionResult, error) {
+	_, span := tracer.Start(ctx, "FindDeployableVersion")
+	defer span.End()
+
 	var earliest *time.Time
 	var allEvaluations []VersionedEvaluation
 
@@ -189,6 +196,9 @@ func evaluateVersion(ctx context.Context, evals []evaluator.Evaluator, scope eva
 		result := eval.Evaluate(ctx, scope)
 		if result != nil {
 			evaluations = append(evaluations, result)
+			if !result.Allowed {
+				return evaluations, nil
+			}
 		}
 	}
 	return evaluations, nil

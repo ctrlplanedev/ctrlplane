@@ -27,6 +27,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { trpc } from "~/api/trpc";
 
 type Template =
+  | "desired-release"
   | "deployment-selector"
   | "environment-selector"
   | "relationship-entity"
@@ -35,6 +36,12 @@ type Template =
   | "advanced";
 
 const TEMPLATES: { value: Template; label: string; description: string }[] = [
+  {
+    value: "desired-release",
+    label: "Desired Release",
+    description:
+      "Enqueue a desired release evaluation for a specific release target.",
+  },
   {
     value: "deployment-selector",
     label: "Deployment Selector Eval",
@@ -91,6 +98,74 @@ function useInvalidateAll() {
     utils.reconcile.stats.invalidate();
     utils.reconcile.chartData.invalidate();
   };
+}
+
+function DesiredReleaseForm({
+  workspaceId,
+  onDone,
+}: {
+  workspaceId: string;
+  onDone: () => void;
+}) {
+  const [deploymentId, setDeploymentId] = useState("");
+  const [environmentId, setEnvironmentId] = useState("");
+  const [resourceId, setResourceId] = useState("");
+  const invalidate = useInvalidateAll();
+  const mutation = trpc.reconcile.triggerDesiredRelease.useMutation({
+    onSuccess: () => {
+      invalidate();
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        mutation.mutate({ workspaceId, deploymentId, environmentId, resourceId });
+      }}
+      className="flex flex-col gap-4"
+    >
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="dr-deploymentId">Deployment ID *</Label>
+        <Input
+          id="dr-deploymentId"
+          placeholder="UUID of the deployment"
+          value={deploymentId}
+          onChange={(e) => setDeploymentId(e.target.value)}
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="dr-environmentId">Environment ID *</Label>
+        <Input
+          id="dr-environmentId"
+          placeholder="UUID of the environment"
+          value={environmentId}
+          onChange={(e) => setEnvironmentId(e.target.value)}
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="dr-resourceId">Resource ID *</Label>
+        <Input
+          id="dr-resourceId"
+          placeholder="UUID of the resource"
+          value={resourceId}
+          onChange={(e) => setResourceId(e.target.value)}
+          required
+        />
+      </div>
+      <DialogFooter>
+        <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending ? "Enqueuing…" : "Enqueue Desired Release"}
+        </Button>
+      </DialogFooter>
+      {mutation.error && (
+        <p className="text-sm text-destructive">{mutation.error.message}</p>
+      )}
+    </form>
+  );
 }
 
 function DeploymentSelectorForm({
@@ -631,6 +706,9 @@ export const CreateWorkItemDialog: React.FC<{
           </div>
         )}
 
+        {template === "desired-release" && (
+          <DesiredReleaseForm workspaceId={workspaceId} onDone={close} />
+        )}
         {template === "deployment-selector" && (
           <DeploymentSelectorForm workspaceId={workspaceId} onDone={close} />
         )}

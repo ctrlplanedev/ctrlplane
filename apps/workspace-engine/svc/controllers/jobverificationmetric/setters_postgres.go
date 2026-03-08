@@ -7,6 +7,7 @@ import (
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
 
 	"github.com/google/uuid"
@@ -65,12 +66,11 @@ func (s *PostgresSetter) CompleteMetric(ctx context.Context, metricID string, st
 		return fmt.Errorf("get release target for metric: %w", err)
 	}
 
-	scopeID := rt.DeploymentID.String() + ":" + rt.EnvironmentID.String() + ":" + rt.ResourceID.String()
-	if err := s.Queue.Enqueue(ctx, reconcile.EnqueueParams{
-		WorkspaceID: rt.WorkspaceID.String(),
-		Kind:        "desired-release",
-		ScopeType:   "release-target",
-		ScopeID:     scopeID,
+	if err := events.EnqueueDesiredRelease(s.Queue, ctx, events.DesiredReleaseEvalParams{
+		WorkspaceID:   rt.WorkspaceID.String(),
+		ResourceID:    rt.ResourceID.String(),
+		EnvironmentID: rt.EnvironmentID.String(),
+		DeploymentID:  rt.DeploymentID.String(),
 	}); err != nil {
 		return fmt.Errorf("enqueue desired-release: %w", err)
 	}
