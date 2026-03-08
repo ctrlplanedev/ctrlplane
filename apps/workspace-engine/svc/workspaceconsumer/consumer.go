@@ -108,7 +108,7 @@ func (s *Service) configureManager() error {
 				wsstore.WithHybridResourceVariables(bgCtx),
 				wsstore.WithHybridRelationshipRules(bgCtx),
 				wsstore.WithHybridReleases(bgCtx),
-				wsstore.WithHybridJobs(bgCtx),
+				wsstore.WithDBJobs(bgCtx),
 			),
 		),
 	)

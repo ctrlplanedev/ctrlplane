@@ -3,7 +3,6 @@ package jobagents
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
@@ -65,19 +64,7 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 }
 
 func (r *Registry) shouldEnqueue() bool {
-	if r.queue == nil {
-		return false
-	}
-	svcList := strings.TrimSpace(config.Global.Services)
-	if svcList == "" {
-		return true
-	}
-	for name := range strings.SplitSeq(svcList, ",") {
-		if strings.TrimSpace(name) == events.JobDispatchKind {
-			return true
-		}
-	}
-	return false
+	return r.queue != nil && config.IsServiceEnabled(events.JobDispatchKind)
 }
 
 func (r *Registry) enqueueJobDispatch(ctx context.Context, job *oapi.Job) error {
