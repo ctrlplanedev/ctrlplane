@@ -95,6 +95,7 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 		environmentGetter: store.NewPostgresEnvironmentGetter(queries),
 		deploymentGetter:  store.NewPostgresDeploymentGetter(queries),
 		resourceGetter:    store.NewPostgresResourceGetter(queries),
+		releaseGetter:     store.NewPostgresReleaseGetter(queries),
 	}
 }
 
