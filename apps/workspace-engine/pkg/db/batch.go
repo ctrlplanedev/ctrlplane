@@ -18,6 +18,87 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const batchUpsertPolicyRuleEvaluation = `-- name: BatchUpsertPolicyRuleEvaluation :batchexec
+INSERT INTO policy_rule_evaluation (
+    rule_id, environment_id, version_id, resource_id,
+    allowed, action_required, action_type, message, details,
+    satisfied_at, next_evaluation_at, evaluated_at
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+ON CONFLICT (rule_id, environment_id, version_id, resource_id) DO UPDATE
+SET allowed            = EXCLUDED.allowed,
+    action_required    = EXCLUDED.action_required,
+    action_type        = EXCLUDED.action_type,
+    message            = EXCLUDED.message,
+    details            = EXCLUDED.details,
+    satisfied_at       = EXCLUDED.satisfied_at,
+    next_evaluation_at = EXCLUDED.next_evaluation_at,
+    evaluated_at       = EXCLUDED.evaluated_at
+`
+
+type BatchUpsertPolicyRuleEvaluationBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type BatchUpsertPolicyRuleEvaluationParams struct {
+	RuleID           uuid.UUID
+	EnvironmentID    uuid.UUID
+	VersionID        uuid.UUID
+	ResourceID       uuid.UUID
+	Allowed          bool
+	ActionRequired   bool
+	ActionType       pgtype.Text
+	Message          string
+	Details          map[string]any
+	SatisfiedAt      pgtype.Timestamptz
+	NextEvaluationAt pgtype.Timestamptz
+}
+
+func (q *Queries) BatchUpsertPolicyRuleEvaluation(ctx context.Context, arg []BatchUpsertPolicyRuleEvaluationParams) *BatchUpsertPolicyRuleEvaluationBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.RuleID,
+			a.EnvironmentID,
+			a.VersionID,
+			a.ResourceID,
+			a.Allowed,
+			a.ActionRequired,
+			a.ActionType,
+			a.Message,
+			a.Details,
+			a.SatisfiedAt,
+			a.NextEvaluationAt,
+		}
+		batch.Queue(batchUpsertPolicyRuleEvaluation, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &BatchUpsertPolicyRuleEvaluationBatchResults{br, len(arg), false}
+}
+
+func (b *BatchUpsertPolicyRuleEvaluationBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *BatchUpsertPolicyRuleEvaluationBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const batchUpsertResource = `-- name: BatchUpsertResource :batchexec
 INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id,
                       config, created_at, updated_at, deleted_at, metadata)
@@ -202,93 +283,6 @@ func (b *UpsertChangelogEntryBatchResults) Exec(f func(int, error)) {
 }
 
 func (b *UpsertChangelogEntryBatchResults) Close() error {
-	b.closed = true
-	return b.br.Close()
-}
-
-const upsertPolicyRuleSummary = `-- name: UpsertPolicyRuleSummary :batchexec
-INSERT INTO policy_rule_summary (
-    id, rule_id,
-    environment_id, version_id,
-    allowed, action_required, action_type,
-    message, details,
-    satisfied_at, next_evaluation_at, evaluated_at
-)
-VALUES (
-    gen_random_uuid(), $1,
-    $2, $3,
-    $4, $5, $6,
-    $7, $8,
-    $9, $10, NOW()
-)
-ON CONFLICT (rule_id, environment_id, version_id) DO UPDATE
-SET allowed = EXCLUDED.allowed,
-    action_required = EXCLUDED.action_required,
-    action_type = EXCLUDED.action_type,
-    message = EXCLUDED.message,
-    details = EXCLUDED.details,
-    satisfied_at = EXCLUDED.satisfied_at,
-    next_evaluation_at = EXCLUDED.next_evaluation_at,
-    evaluated_at = NOW()
-`
-
-type UpsertPolicyRuleSummaryBatchResults struct {
-	br     pgx.BatchResults
-	tot    int
-	closed bool
-}
-
-type UpsertPolicyRuleSummaryParams struct {
-	RuleID           uuid.UUID
-	EnvironmentID    uuid.UUID
-	VersionID        uuid.UUID
-	Allowed          bool
-	ActionRequired   bool
-	ActionType       pgtype.Text
-	Message          string
-	Details          map[string]any
-	SatisfiedAt      pgtype.Timestamptz
-	NextEvaluationAt pgtype.Timestamptz
-}
-
-func (q *Queries) UpsertPolicyRuleSummary(ctx context.Context, arg []UpsertPolicyRuleSummaryParams) *UpsertPolicyRuleSummaryBatchResults {
-	batch := &pgx.Batch{}
-	for _, a := range arg {
-		vals := []interface{}{
-			a.RuleID,
-			a.EnvironmentID,
-			a.VersionID,
-			a.Allowed,
-			a.ActionRequired,
-			a.ActionType,
-			a.Message,
-			a.Details,
-			a.SatisfiedAt,
-			a.NextEvaluationAt,
-		}
-		batch.Queue(upsertPolicyRuleSummary, vals...)
-	}
-	br := q.db.SendBatch(ctx, batch)
-	return &UpsertPolicyRuleSummaryBatchResults{br, len(arg), false}
-}
-
-func (b *UpsertPolicyRuleSummaryBatchResults) Exec(f func(int, error)) {
-	defer b.br.Close()
-	for t := 0; t < b.tot; t++ {
-		if b.closed {
-			if f != nil {
-				f(t, ErrBatchAlreadyClosed)
-			}
-			continue
-		}
-		_, err := b.br.Exec()
-		if f != nil {
-			f(t, err)
-		}
-	}
-}
-
-func (b *UpsertPolicyRuleSummaryBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

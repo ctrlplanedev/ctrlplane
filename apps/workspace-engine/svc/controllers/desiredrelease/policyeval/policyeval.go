@@ -16,7 +16,11 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
+
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("workspace/desiredrelease/policyeval")
 
 // ruleEvaluators returns evaluators for a single policy rule.
 func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
@@ -53,10 +57,24 @@ func CollectEvaluators(ctx context.Context, getter Getter, rt *oapi.ReleaseTarge
 	return evals
 }
 
+// VersionedEvaluation pairs a rule evaluation with the version it was
+// evaluated against, since oapi.RuleEvaluation does not carry a version ID.
+type VersionedEvaluation struct {
+	VersionID string
+	*oapi.RuleEvaluation
+}
+
+// FindDeployableVersionResult holds the outcome of evaluating candidate
+// versions against policy rules.
+type FindDeployableVersionResult struct {
+	Version     *oapi.DeploymentVersion
+	NextTime    *time.Time
+	Evaluations []VersionedEvaluation
+}
+
 // FindDeployableVersion iterates candidate versions (newest-first) and returns
-// the first one that passes every evaluator. When no version qualifies, the
-// second return value is the earliest NextEvaluationTime across all denials,
-// telling the caller when to retry.
+// the first one that passes every evaluator. When no version qualifies,
+// NextTime is the earliest NextEvaluationTime across all evaluations.
 //
 // Policy skips are fetched per candidate version via getter.GetPolicySkips.
 // Any evaluator whose RuleId matches a non-expired skip is automatically
@@ -68,58 +86,120 @@ func FindDeployableVersion(
 	versions []*oapi.DeploymentVersion,
 	evals []evaluator.Evaluator,
 	scope evaluator.EvaluatorScope,
-) (*oapi.DeploymentVersion, *time.Time, error) {
+) (*FindDeployableVersionResult, error) {
+	_, span := tracer.Start(ctx, "FindDeployableVersion")
+	defer span.End()
+
 	var earliest *time.Time
+	var allEvaluations []VersionedEvaluation
 
 	for _, version := range versions {
 		scope.Version = version
 
 		skips, err := getter.GetPolicySkips(ctx, version.Id, rt.EnvironmentId, rt.ResourceId)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get policy skips: %w", err)
+			return nil, fmt.Errorf("get policy skips: %w", err)
 		}
 
-		eligible, nextTime := evaluateVersion(ctx, evals, scope, skips)
-		if eligible {
-			return version, nil, nil
+		eligible, err := evaluateVersion(ctx, evals, scope, skips)
+		if err != nil {
+			return nil, fmt.Errorf("evaluate version: %w", err)
 		}
-		if nextTime != nil && (earliest == nil || nextTime.Before(*earliest)) {
-			earliest = nextTime
+
+		for _, e := range eligible {
+			allEvaluations = append(allEvaluations, VersionedEvaluation{
+				VersionID:      version.Id,
+				RuleEvaluation: e,
+			})
+		}
+
+		nextEvaluationTime := eligible.NextEvaluationTime()
+		if nextEvaluationTime != nil && (earliest == nil || nextEvaluationTime.Before(*earliest)) {
+			earliest = nextEvaluationTime
+		}
+
+		if eligible.Allowed() {
+			return &FindDeployableVersionResult{
+				Version:     version,
+				NextTime:    earliest,
+				Evaluations: allEvaluations,
+			}, nil
 		}
 	}
-	return nil, earliest, nil
+	return &FindDeployableVersionResult{
+		NextTime:    earliest,
+		Evaluations: allEvaluations,
+	}, nil
 }
 
 // buildSkipSet returns the set of rule IDs that have a non-expired policy skip.
-func buildSkipSet(skips []*oapi.PolicySkip) map[string]bool {
-	set := make(map[string]bool, len(skips))
+func buildSkipSet(skips []*oapi.PolicySkip) map[string]oapi.PolicySkip {
+	set := make(map[string]oapi.PolicySkip, len(skips))
 	for _, s := range skips {
 		if !s.IsExpired() {
-			set[s.RuleId] = true
+			set[s.RuleId] = *s
 		}
 	}
 	return set
 }
 
+type RuleEvaluations []*oapi.RuleEvaluation
+
+func (e RuleEvaluations) NextEvaluationTime() *time.Time {
+	var soonest *time.Time
+	for _, eval := range e {
+		if eval.NextEvaluationTime != nil {
+			if soonest == nil || eval.NextEvaluationTime.Before(*soonest) {
+				soonest = eval.NextEvaluationTime
+			}
+		}
+	}
+	return soonest
+}
+
+func (e RuleEvaluations) Allowed() bool {
+	for _, eval := range e {
+		if !eval.Allowed {
+			return false
+		}
+	}
+	return true
+}
+
 // evaluateVersion runs every evaluator against the scope and short-circuits
 // on the first denial. Evaluators whose RuleId appears in skips are bypassed.
-func evaluateVersion(ctx context.Context, evals []evaluator.Evaluator, scope evaluator.EvaluatorScope, skips []*oapi.PolicySkip) (bool, *time.Time) {
+func evaluateVersion(ctx context.Context, evals []evaluator.Evaluator, scope evaluator.EvaluatorScope, skips []*oapi.PolicySkip) (RuleEvaluations, error) {
 	skipped := buildSkipSet(skips)
-
+	evaluations := RuleEvaluations{}
 	for _, eval := range evals {
 		if !scope.HasFields(eval.ScopeFields()) {
 			continue
 		}
-		if skipped[eval.RuleId()] {
+
+		if skip, ok := skipped[eval.RuleId()]; ok {
+			evaluation := oapi.NewRuleEvaluation().
+				Allow().
+				WithRuleId(eval.RuleId()).
+				WithMessage(fmt.Sprintf("Policy skipped: %s", skip.Reason)).
+				WithSatisfiedAt(skip.CreatedAt).
+				WithDetail("skip_reason", skip.Reason).
+				WithDetail("skip_expires_at", skip.ExpiresAt)
+
+			if skip.ExpiresAt != nil {
+				evaluation.WithNextEvaluationTime(*skip.ExpiresAt)
+			}
+
+			evaluations = append(evaluations, evaluation)
 			continue
 		}
+
 		result := eval.Evaluate(ctx, scope)
-		if result == nil || !result.Allowed {
-			if result != nil {
-				return false, result.NextEvaluationTime
+		if result != nil {
+			evaluations = append(evaluations, result)
+			if !result.Allowed {
+				return evaluations, nil
 			}
-			return false, nil
 		}
 	}
-	return true, nil
+	return evaluations, nil
 }

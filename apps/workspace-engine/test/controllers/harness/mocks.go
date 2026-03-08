@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/resources"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -19,6 +22,11 @@ import (
 
 	"github.com/google/uuid"
 )
+
+var celEnv, _ = celutil.NewEnvBuilder().
+	WithMapVariables("resource").
+	WithStandardExtensions().
+	BuildCached(12 * time.Hour)
 
 var _ desiredrelease.Getter = (*DesiredReleaseGetter)(nil)
 
@@ -37,8 +45,29 @@ func (g *SelectorEvalGetter) GetDeploymentInfo(_ context.Context, _ uuid.UUID) (
 	return g.Deployment, nil
 }
 
-func (g *SelectorEvalGetter) GetResources(_ context.Context, _ string, _ resources.GetResourcesOptions) ([]*oapi.Resource, error) {
-	return g.Resources, nil
+func (g *SelectorEvalGetter) GetResources(_ context.Context, _ string, opts resources.GetResourcesOptions) ([]*oapi.Resource, error) {
+	if opts.CEL == "" {
+		return g.Resources, nil
+	}
+	program, err := celEnv.Compile(opts.CEL)
+	if err != nil {
+		return nil, fmt.Errorf("compile CEL: %w", err)
+	}
+	var matched []*oapi.Resource
+	for _, r := range g.Resources {
+		resourceMap, err := celutil.EntityToMap(r)
+		if err != nil {
+			continue
+		}
+		ok, err := celutil.EvalBool(program, map[string]any{"resource": resourceMap})
+		if err != nil {
+			continue
+		}
+		if ok {
+			matched = append(matched, r)
+		}
+	}
+	return matched, nil
 }
 
 func (g *SelectorEvalGetter) GetReleaseTargetsForDeployment(_ context.Context, _ uuid.UUID) ([]selectoreval.ReleaseTarget, error) {
@@ -273,6 +302,10 @@ type DesiredReleaseSetter struct {
 
 	JobDispatchQueue reconcile.Queue
 	WorkspaceID      string
+}
+
+func (s *DesiredReleaseSetter) UpsertRuleEvaluations(_ context.Context, _ []policies.RuleEvaluationParams) error {
+	return nil
 }
 
 func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, rt *desiredrelease.ReleaseTarget, r *oapi.Release) error {

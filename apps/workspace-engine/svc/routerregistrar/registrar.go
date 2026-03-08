@@ -52,10 +52,20 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 
 	log.Info("Registering with router", "http_address", httpAddress, "partitions", assignedPartitions)
-	if err := s.client.Register(ctx, httpAddress, assignedPartitions); err != nil {
-		log.Error("Failed to register with router", "error", err)
-		return nil
+	for attempt := 1; ; attempt++ {
+		if err := s.client.Register(ctx, httpAddress, assignedPartitions); err != nil {
+			backoff := time.Duration(min(attempt, 30)) * time.Second
+			log.Error("Failed to register with router, retrying", "error", err, "attempt", attempt, "backoff", backoff)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(backoff):
+				continue
+			}
+		}
+		break
 	}
+	log.Info("Successfully registered with router", "http_address", httpAddress, "partitions", assignedPartitions)
 
 	go s.client.StartHeartbeat(ctx, 15*time.Second)
 	return nil

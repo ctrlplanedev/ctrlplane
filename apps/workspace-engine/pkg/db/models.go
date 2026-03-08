@@ -423,6 +423,22 @@ type PolicyRuleEnvironmentProgression struct {
 	CreatedAt                    pgtype.Timestamptz
 }
 
+type PolicyRuleEvaluation struct {
+	ID               uuid.UUID
+	RuleID           uuid.UUID
+	EnvironmentID    uuid.UUID
+	VersionID        uuid.UUID
+	ResourceID       uuid.UUID
+	Allowed          bool
+	ActionRequired   bool
+	ActionType       pgtype.Text
+	Message          string
+	Details          map[string]any
+	SatisfiedAt      pgtype.Timestamptz
+	NextEvaluationAt pgtype.Timestamptz
+	EvaluatedAt      pgtype.Timestamptz
+}
+
 type PolicyRuleGradualRollout struct {
 	ID                uuid.UUID
 	PolicyID          uuid.UUID
@@ -462,21 +478,6 @@ type PolicyRuleRollback struct {
 	OnJobStatuses         []string
 	OnVerificationFailure pgtype.Bool
 	CreatedAt             pgtype.Timestamptz
-}
-
-type PolicyRuleSummary struct {
-	ID               uuid.UUID
-	RuleID           uuid.UUID
-	EnvironmentID    uuid.UUID
-	VersionID        uuid.UUID
-	Allowed          bool
-	ActionRequired   bool
-	ActionType       pgtype.Text
-	Message          string
-	Details          map[string]any
-	SatisfiedAt      pgtype.Timestamptz
-	NextEvaluationAt pgtype.Timestamptz
-	EvaluatedAt      pgtype.Timestamptz
 }
 
 type PolicyRuleVerification struct {

@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"sync"
 	"time"
 	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
-	"github.com/google/cel-go/cel"
 
-	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
@@ -23,16 +20,10 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"golang.org/x/sync/errgroup"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentresourceselectoreval")
 var _ reconcile.Processor = (*Controller)(nil)
-
-var celEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("resource").
-	WithStandardExtensions().
-	BuildCached(12 * time.Hour)
 
 type Controller struct {
 	getter Getter
@@ -64,14 +55,16 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	selector, err := celEnv.Compile(deployment.ResourceSelector)
+	resources, err := c.getter.GetResources(ctx, deployment.WorkspaceID.String(), resources.GetResourcesOptions{
+		CEL: deployment.ResourceSelector,
+	})
 	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("compile deployment selector: %w", err)
+		return reconcile.Result{}, fmt.Errorf("get resources: %w", err)
 	}
 
-	matchedIDs, err := c.evalResources(ctx, deployment, selector)
-	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("eval selectors: %w", err)
+	matchedIDs := make([]uuid.UUID, 0, len(resources))
+	for _, resource := range resources {
+		matchedIDs = append(matchedIDs, uuid.MustParse(resource.Id))
 	}
 
 	if err := c.setter.SetComputedDeploymentResources(ctx, deploymentID, matchedIDs); err != nil {
@@ -110,74 +103,6 @@ func (c *Controller) enqueueReleaseTargets(ctx context.Context, workspaceID uuid
 		}
 	}
 	return events.EnqueueManyDesiredRelease(c.queue, ctx, params)
-}
-
-// evalResources loads all resources, then evaluates the CEL selector in
-// parallel by splitting the slice into one chunk per worker.
-func (c *Controller) evalResources(ctx context.Context, deployment *DeploymentInfo, selector cel.Program) ([]uuid.UUID, error) {
-	ctx, span := tracer.Start(ctx, "EvalResources")
-	defer span.End()
-
-	wsId := deployment.WorkspaceID.String()
-	allResources, err := c.getter.GetResources(ctx, wsId, resources.GetResourcesOptions{
-		BestEffortCEL: deployment.ResourceSelector,
-	})
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("collect resources: %w", err)
-	}
-
-	n := len(allResources)
-	span.SetAttributes(attribute.Int("resource_count", n))
-	if n == 0 {
-		return nil, nil
-	}
-
-	numWorkers := runtime.GOMAXPROCS(0)
-	chunkSize := (n + numWorkers - 1) / numWorkers
-	span.SetAttributes(attribute.Int("num_workers", numWorkers))
-
-	g, ctx := errgroup.WithContext(ctx)
-	var mu sync.Mutex
-	var matchedIDs []uuid.UUID
-
-	for start := 0; start < n; start += chunkSize {
-		chunk := allResources[start:min(start+chunkSize, n)]
-		g.Go(func() error {
-			_, evalSpan := tracer.Start(ctx, "EvalResources.Worker")
-			defer evalSpan.End()
-			var local []uuid.UUID
-			for _, r := range chunk {
-				resourceMap, err := celutil.EntityToMap(r)
-				if err != nil {
-					return fmt.Errorf("convert resource %s to map: %w", r.Id, err)
-				}
-				celCtx := map[string]any{
-					"resource": resourceMap,
-				}
-				ok, err := celutil.EvalBool(selector, celCtx)
-				if err != nil {
-					return fmt.Errorf("eval selector for resource %s: %w", r.Id, err)
-				}
-				if ok {
-					local = append(local, uuid.MustParse(r.Id))
-				}
-			}
-			if len(local) > 0 {
-				mu.Lock()
-				matchedIDs = append(matchedIDs, local...)
-				mu.Unlock()
-			}
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	return matchedIDs, nil
 }
 
 // NewController creates a Controller with the given dependencies.

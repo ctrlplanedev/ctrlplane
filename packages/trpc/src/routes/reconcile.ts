@@ -13,6 +13,7 @@ import {
 import {
   enqueue,
   enqueueDeploymentSelectorEval,
+  enqueueDesiredRelease,
   enqueueEnvironmentSelectorEval,
   enqueueManyRelationshipEval,
   enqueuePolicySummary,
@@ -133,6 +134,17 @@ export const reconcileRouter = router({
 
       return { enqueued: items.length };
     }),
+
+  triggerDesiredRelease: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        deploymentId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+        resourceId: z.string().uuid(),
+      }),
+    )
+    .mutation(({ ctx, input }) => enqueueDesiredRelease(ctx.db, input)),
 
   triggerPolicySummary: protectedProcedure
     .input(

@@ -2,6 +2,7 @@ package policyeval
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -65,7 +66,8 @@ func fullScope() evaluator.EvaluatorScope {
 // ---------------------------------------------------------------------------
 
 type mockGetter struct {
-	policySkips []*oapi.PolicySkip
+	policySkips    []*oapi.PolicySkip
+	policySkipsErr error
 }
 
 func (m *mockGetter) GetApprovalRecords(_ context.Context, _, _ string) ([]*oapi.UserApprovalRecord, error) {
@@ -75,7 +77,7 @@ func (m *mockGetter) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget)
 	return false, nil
 }
 func (m *mockGetter) GetPolicySkips(_ context.Context, _, _, _ string) ([]*oapi.PolicySkip, error) {
-	return m.policySkips, nil
+	return m.policySkips, m.policySkipsErr
 }
 func (m *mockGetter) GetEnvironment(_ context.Context, _ string) (*oapi.Environment, error) {
 	return nil, nil
@@ -140,9 +142,10 @@ func TestEvaluateVersion(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("passes with no evaluators", func(t *testing.T) {
-		ok, nextTime := evaluateVersion(ctx, nil, fullScope(), nil)
-		assert.True(t, ok)
-		assert.Nil(t, nextTime)
+		result, err := evaluateVersion(ctx, nil, fullScope(), nil)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
+		assert.Nil(t, result.NextEvaluationTime())
 	})
 
 	t.Run("passes when all evaluators allow", func(t *testing.T) {
@@ -150,20 +153,21 @@ func TestEvaluateVersion(t *testing.T) {
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 		}
-		ok, nextTime := evaluateVersion(ctx, evals, fullScope(), nil)
-		assert.True(t, ok)
-		assert.Nil(t, nextTime)
+		result, err := evaluateVersion(ctx, evals, fullScope(), nil)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
+		assert.Nil(t, result.NextEvaluationTime())
 	})
 
-	t.Run("short-circuits on first denial", func(t *testing.T) {
+	t.Run("returns all evaluations including denials", func(t *testing.T) {
 		second := &mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion}
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion},
 			second,
 		}
-		ok, _ := evaluateVersion(ctx, evals, fullScope(), nil)
-		assert.False(t, ok)
-		assert.Equal(t, 0, second.calls, "second evaluator should not be called")
+		result, err := evaluateVersion(ctx, evals, fullScope(), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Allowed())
 	})
 
 	t.Run("returns NextEvaluationTime from denial", func(t *testing.T) {
@@ -171,19 +175,20 @@ func TestEvaluateVersion(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: denyWithNextTime(nextEval), scopeFields: evaluator.ScopeVersion},
 		}
-		ok, nextTime := evaluateVersion(ctx, evals, fullScope(), nil)
-		assert.False(t, ok)
-		require.NotNil(t, nextTime)
-		assert.Equal(t, nextEval, *nextTime)
+		result, err := evaluateVersion(ctx, evals, fullScope(), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Allowed())
+		require.NotNil(t, result.NextEvaluationTime())
+		assert.Equal(t, nextEval, *result.NextEvaluationTime())
 	})
 
-	t.Run("returns nil NextEvaluationTime when result is nil", func(t *testing.T) {
+	t.Run("nil evaluator result produces empty evaluations", func(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: nil, scopeFields: evaluator.ScopeVersion},
 		}
-		ok, nextTime := evaluateVersion(ctx, evals, fullScope(), nil)
-		assert.False(t, ok)
-		assert.Nil(t, nextTime)
+		result, err := evaluateVersion(ctx, evals, fullScope(), nil)
+		require.NoError(t, err)
+		assert.Empty(t, result)
 	})
 
 	t.Run("skips evaluator when scope lacks required fields", func(t *testing.T) {
@@ -191,28 +196,29 @@ func TestEvaluateVersion(t *testing.T) {
 		scope := evaluator.EvaluatorScope{
 			Environment: &oapi.Environment{Id: "env-1"},
 		}
-		ok, _ := evaluateVersion(ctx, []evaluator.Evaluator{e}, scope, nil)
-		assert.True(t, ok, "evaluator needing Version should be skipped when Version is nil")
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, scope, nil)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed(), "evaluator needing Version should be skipped when Version is nil")
 		assert.Equal(t, 0, e.calls)
 	})
 
 	t.Run("runs evaluator with zero scope fields regardless of scope", func(t *testing.T) {
 		e := &mockEvaluator{result: allowResult(), scopeFields: 0}
-		ok, _ := evaluateVersion(ctx, []evaluator.Evaluator{e}, evaluator.EvaluatorScope{}, nil)
-		assert.True(t, ok)
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, evaluator.EvaluatorScope{}, nil)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
 		assert.Equal(t, 1, e.calls)
 	})
 
-	t.Run("denial on second evaluator still short-circuits", func(t *testing.T) {
-		third := &mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion}
+	t.Run("collects evaluations from all evaluators", func(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 			&mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion},
-			third,
 		}
-		ok, _ := evaluateVersion(ctx, evals, fullScope(), nil)
-		assert.False(t, ok)
-		assert.Equal(t, 0, third.calls)
+		result, err := evaluateVersion(ctx, evals, fullScope(), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Allowed())
+		assert.Len(t, result, 2)
 	})
 }
 
@@ -229,10 +235,10 @@ func TestFindDeployableVersion(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 		}
-		v, nextTime, err := FindDeployableVersion(ctx, getter, rt, nil, evals, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, nil, evals, fullScope())
 		require.NoError(t, err)
-		assert.Nil(t, v)
-		assert.Nil(t, nextTime)
+		assert.Nil(t, result.Version)
+		assert.Nil(t, result.NextTime)
 	})
 
 	t.Run("returns first version when all evaluators allow", func(t *testing.T) {
@@ -240,11 +246,11 @@ func TestFindDeployableVersion(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 		}
-		v, nextTime, err := FindDeployableVersion(ctx, getter, rt, versions, evals, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, evals, fullScope())
 		require.NoError(t, err)
-		require.NotNil(t, v)
-		assert.Equal(t, "v1", v.Id)
-		assert.Nil(t, nextTime)
+		require.NotNil(t, result.Version)
+		assert.Equal(t, "v1", result.Version.Id)
+		assert.Nil(t, result.NextTime)
 	})
 
 	t.Run("skips denied version and returns second", func(t *testing.T) {
@@ -258,10 +264,10 @@ func TestFindDeployableVersion(t *testing.T) {
 				return allowResult()
 			},
 		}
-		v, _, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{denyFirst}, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{denyFirst}, fullScope())
 		require.NoError(t, err)
-		require.NotNil(t, v)
-		assert.Equal(t, "v2", v.Id)
+		require.NotNil(t, result.Version)
+		assert.Equal(t, "v2", result.Version.Id)
 	})
 
 	t.Run("returns nil with earliest NextEvaluationTime when no version qualifies", func(t *testing.T) {
@@ -278,11 +284,11 @@ func TestFindDeployableVersion(t *testing.T) {
 			},
 		}
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
-		v, nextTime, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		require.NoError(t, err)
-		assert.Nil(t, v)
-		require.NotNil(t, nextTime)
-		assert.Equal(t, early, *nextTime)
+		assert.Nil(t, result.Version)
+		require.NotNil(t, result.NextTime)
+		assert.Equal(t, early, *result.NextTime)
 	})
 
 	t.Run("handles mix of nil and non-nil NextEvaluationTime", func(t *testing.T) {
@@ -298,29 +304,29 @@ func TestFindDeployableVersion(t *testing.T) {
 			},
 		}
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
-		v, nextTime, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		require.NoError(t, err)
-		assert.Nil(t, v)
-		require.NotNil(t, nextTime)
-		assert.Equal(t, theTime, *nextTime)
+		assert.Nil(t, result.Version)
+		require.NotNil(t, result.NextTime)
+		assert.Equal(t, theTime, *result.NextTime)
 	})
 
 	t.Run("returns nil when all denials have nil NextEvaluationTime", func(t *testing.T) {
 		e := &mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion}
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
-		v, nextTime, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		require.NoError(t, err)
-		assert.Nil(t, v)
-		assert.Nil(t, nextTime)
+		assert.Nil(t, result.Version)
+		assert.Nil(t, result.NextTime)
 	})
 
 	t.Run("no evaluators means every version is eligible", func(t *testing.T) {
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
-		v, nextTime, err := FindDeployableVersion(ctx, getter, rt, versions, nil, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, nil, fullScope())
 		require.NoError(t, err)
-		require.NotNil(t, v)
-		assert.Equal(t, "v1", v.Id)
-		assert.Nil(t, nextTime)
+		require.NotNil(t, result.Version)
+		assert.Equal(t, "v1", result.Version.Id)
+		assert.Nil(t, result.NextTime)
 	})
 
 	t.Run("sets scope.Version for each candidate", func(t *testing.T) {
@@ -333,7 +339,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			},
 		}
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2"), version("v3")}
-		_, _, _ = FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		_, _ = FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		assert.Equal(t, []string{"v1", "v2", "v3"}, seen)
 	})
 
@@ -347,11 +353,42 @@ func TestFindDeployableVersion(t *testing.T) {
 			},
 		}
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2"), version("v3")}
-		v, _, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		require.NoError(t, err)
-		require.NotNil(t, v)
-		assert.Equal(t, "v1", v.Id)
+		require.NotNil(t, result.Version)
+		assert.Equal(t, "v1", result.Version.Id)
 		assert.Equal(t, []string{"v1"}, seen, "should stop after first eligible version")
+	})
+
+	t.Run("returns error when GetPolicySkips fails", func(t *testing.T) {
+		errGetter := &mockGetter{policySkipsErr: errors.New("db connection failed")}
+		versions := []*oapi.DeploymentVersion{version("v1")}
+		evals := []evaluator.Evaluator{
+			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
+		}
+		result, err := FindDeployableVersion(ctx, errGetter, rt, versions, evals, fullScope())
+		require.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "get policy skips")
+	})
+
+	t.Run("collects versioned evaluations across versions", func(t *testing.T) {
+		e := &conditionalEvaluator{
+			scopeFields: evaluator.ScopeVersion,
+			fn: func(_ context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+				if scope.Version.Id == "v1" {
+					return denyResult()
+				}
+				return allowResult()
+			},
+		}
+		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
+		result, err := FindDeployableVersion(ctx, getter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		require.NoError(t, err)
+		require.NotNil(t, result.Version)
+		assert.Len(t, result.Evaluations, 2)
+		assert.Equal(t, "v1", result.Evaluations[0].VersionID)
+		assert.Equal(t, "v2", result.Evaluations[1].VersionID)
 	})
 }
 
@@ -473,9 +510,10 @@ func TestEvaluateVersion_PolicySkips(t *testing.T) {
 		skips := []*oapi.PolicySkip{
 			{Id: "skip-1", RuleId: "rule-1", VersionId: "v-1", CreatedAt: time.Now()},
 		}
-		ok, nextTime := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
-		assert.True(t, ok)
-		assert.Nil(t, nextTime)
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
+		assert.Nil(t, result.NextEvaluationTime())
 		assert.Equal(t, 0, e.calls, "evaluator should not be called when skip matches")
 	})
 
@@ -484,8 +522,9 @@ func TestEvaluateVersion_PolicySkips(t *testing.T) {
 		skips := []*oapi.PolicySkip{
 			{Id: "skip-1", RuleId: "rule-other", VersionId: "v-1", CreatedAt: time.Now()},
 		}
-		ok, _ := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
-		assert.False(t, ok)
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
+		require.NoError(t, err)
+		assert.False(t, result.Allowed())
 		assert.Equal(t, 1, e.calls)
 	})
 
@@ -495,8 +534,9 @@ func TestEvaluateVersion_PolicySkips(t *testing.T) {
 		skips := []*oapi.PolicySkip{
 			{Id: "skip-1", RuleId: "rule-1", VersionId: "v-1", CreatedAt: time.Now(), ExpiresAt: &expiredAt},
 		}
-		ok, _ := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
-		assert.False(t, ok)
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
+		require.NoError(t, err)
+		assert.False(t, result.Allowed())
 		assert.Equal(t, 1, e.calls, "expired skip should not bypass evaluator")
 	})
 
@@ -506,17 +546,46 @@ func TestEvaluateVersion_PolicySkips(t *testing.T) {
 		skips := []*oapi.PolicySkip{
 			{Id: "skip-1", RuleId: "rule-1", VersionId: "v-1", CreatedAt: time.Now()},
 		}
-		ok, _ := evaluateVersion(ctx, []evaluator.Evaluator{skippedEval, normalEval}, fullScope(), skips)
-		assert.True(t, ok)
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{skippedEval, normalEval}, fullScope(), skips)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
 		assert.Equal(t, 0, skippedEval.calls, "skipped evaluator should not be called")
 		assert.Equal(t, 1, normalEval.calls, "non-skipped evaluator should still be called")
 	})
 
 	t.Run("nil skips behaves like no skips", func(t *testing.T) {
 		e := &mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion, ruleID: "rule-1"}
-		ok, _ := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), nil)
-		assert.False(t, ok)
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Allowed())
 		assert.Equal(t, 1, e.calls)
+	})
+
+	t.Run("skip with ExpiresAt sets NextEvaluationTime on evaluation", func(t *testing.T) {
+		e := &mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion, ruleID: "rule-1"}
+		expiresAt := time.Now().Add(2 * time.Hour)
+		skips := []*oapi.PolicySkip{
+			{Id: "skip-1", RuleId: "rule-1", VersionId: "v-1", CreatedAt: time.Now(), ExpiresAt: &expiresAt},
+		}
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
+		require.Len(t, result, 1)
+		require.NotNil(t, result[0].NextEvaluationTime)
+		assert.Equal(t, expiresAt, *result[0].NextEvaluationTime)
+		assert.Equal(t, 0, e.calls, "evaluator should not be called when skip matches")
+	})
+
+	t.Run("skip without ExpiresAt does not set NextEvaluationTime", func(t *testing.T) {
+		e := &mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion, ruleID: "rule-1"}
+		skips := []*oapi.PolicySkip{
+			{Id: "skip-1", RuleId: "rule-1", VersionId: "v-1", CreatedAt: time.Now()},
+		}
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
+		require.NoError(t, err)
+		assert.True(t, result.Allowed())
+		require.Len(t, result, 1)
+		assert.Nil(t, result[0].NextEvaluationTime)
 	})
 }
 
@@ -536,19 +605,19 @@ func TestFindDeployableVersion_PolicySkips(t *testing.T) {
 		}
 		e := &mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion, ruleID: "rule-1"}
 		versions := []*oapi.DeploymentVersion{version("v1")}
-		v, _, err := FindDeployableVersion(ctx, skipGetter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		result, err := FindDeployableVersion(ctx, skipGetter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		require.NoError(t, err)
-		require.NotNil(t, v)
-		assert.Equal(t, "v1", v.Id)
+		require.NotNil(t, result.Version)
+		assert.Equal(t, "v1", result.Version.Id)
 	})
 
 	t.Run("no skips means denied version is blocked", func(t *testing.T) {
 		noSkipGetter := &mockGetter{}
 		e := &mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion, ruleID: "rule-1"}
 		versions := []*oapi.DeploymentVersion{version("v1")}
-		v, _, err := FindDeployableVersion(ctx, noSkipGetter, rt, versions, []evaluator.Evaluator{e}, fullScope())
+		result, err := FindDeployableVersion(ctx, noSkipGetter, rt, versions, []evaluator.Evaluator{e}, fullScope())
 		require.NoError(t, err)
-		assert.Nil(t, v)
+		assert.Nil(t, result.Version)
 	})
 }
 
@@ -568,8 +637,10 @@ func TestBuildSkipSet(t *testing.T) {
 			{Id: "s2", RuleId: "rule-b", CreatedAt: time.Now()},
 		}
 		set := buildSkipSet(skips)
-		assert.True(t, set["rule-a"])
-		assert.True(t, set["rule-b"])
+		_, hasA := set["rule-a"]
+		_, hasB := set["rule-b"]
+		assert.True(t, hasA)
+		assert.True(t, hasB)
 	})
 
 	t.Run("excludes expired skips", func(t *testing.T) {
@@ -579,8 +650,10 @@ func TestBuildSkipSet(t *testing.T) {
 			{Id: "s2", RuleId: "rule-b", CreatedAt: time.Now(), ExpiresAt: &expired},
 		}
 		set := buildSkipSet(skips)
-		assert.True(t, set["rule-a"])
-		assert.False(t, set["rule-b"])
+		_, hasA := set["rule-a"]
+		_, hasB := set["rule-b"]
+		assert.True(t, hasA)
+		assert.False(t, hasB)
 	})
 }
 
