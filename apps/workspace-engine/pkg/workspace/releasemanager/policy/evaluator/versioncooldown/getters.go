@@ -98,10 +98,25 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTar
 	if releaseTarget == nil {
 		return nil
 	}
+	deploymentIDUUID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		log.Error("failed to parse deployment id", "deploymentID", releaseTarget.DeploymentId, "error", err)
+		return nil
+	}
+	environmentIDUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		log.Error("failed to parse environment id", "environmentID", releaseTarget.EnvironmentId, "error", err)
+		return nil
+	}
+	resourceIDUUID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		log.Error("failed to parse resource id", "resourceID", releaseTarget.ResourceId, "error", err)
+		return nil
+	}
 	rows, err := p.queries.ListJobsByReleaseTarget(context.Background(), db.ListJobsByReleaseTargetParams{
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
+		DeploymentID:  deploymentIDUUID,
+		EnvironmentID: environmentIDUUID,
+		ResourceID:    resourceIDUUID,
 	})
 	if err != nil {
 		log.Error("failed to get jobs for release target", "releaseTarget", releaseTarget.Key(), "error", err)

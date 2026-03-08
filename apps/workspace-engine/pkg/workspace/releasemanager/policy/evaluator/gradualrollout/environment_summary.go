@@ -78,7 +78,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	environment := scope.Environment
 	version := scope.Version
 
-	allReleaseTargets, err := e.getters.GetReleaseTargets()
+	allReleaseTargets, err := e.getters.GetReleaseTargetsForDeployment(ctx, version.DeploymentId)
 	if err != nil {
 		return results.NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
 			WithDetail("error", err.Error())
@@ -86,7 +86,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 
 	releaseTargets := make([]*oapi.ReleaseTarget, 0, len(allReleaseTargets))
 	for _, releaseTarget := range allReleaseTargets {
-		if releaseTarget.EnvironmentId == environment.Id && releaseTarget.DeploymentId == version.DeploymentId {
+		if releaseTarget.EnvironmentId == environment.Id {
 			releaseTargets = append(releaseTargets, releaseTarget)
 		}
 	}

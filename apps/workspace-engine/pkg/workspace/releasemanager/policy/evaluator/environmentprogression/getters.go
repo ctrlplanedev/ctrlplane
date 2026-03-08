@@ -5,6 +5,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
+	"workspace-engine/pkg/store/releasetargets"
 	legacystore "workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -14,6 +15,7 @@ type environmentGetter = store.EnvironmentGetter
 type deploymentGetter = store.DeploymentGetter
 type resourceGetter = store.ResourceGetter
 type releaseGetter = store.ReleaseGetter
+type releaseTargetForDeploymentAndEnvironmentGetter = releasetargets.GetReleaseTargetsForDeploymentAndEnvironment
 
 type Getters interface {
 	environmentGetter
@@ -21,8 +23,9 @@ type Getters interface {
 	resourceGetter
 	releaseGetter
 
+	releaseTargetForDeploymentAndEnvironmentGetter
+
 	GetSystemIDsForEnvironment(environmentID string) []string
-	GetReleaseTargetsForEnvironment(ctx context.Context, environmentID string) ([]*oapi.ReleaseTarget, error)
 	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
 	GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
 	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
@@ -57,6 +60,20 @@ func (s *StoreGetters) GetSystemIDsForEnvironment(environmentID string) []string
 	return s.store.SystemEnvironments.GetSystemIDsForEnvironment(environmentID)
 }
 
+func (s *StoreGetters) GetReleaseTargetsForDeploymentAndEnvironment(ctx context.Context, deploymentID, environmentID string) ([]oapi.ReleaseTarget, error) {
+	envTargets, err := s.store.ReleaseTargets.GetForEnvironment(ctx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	rts := make([]oapi.ReleaseTarget, 0, len(envTargets))
+	for _, target := range envTargets {
+		if target.DeploymentId == deploymentID {
+			rts = append(rts, *target)
+		}
+	}
+	return rts, nil
+}
+
 func (s *StoreGetters) GetReleaseTargetsForEnvironment(ctx context.Context, environmentID string) ([]*oapi.ReleaseTarget, error) {
 	return s.store.ReleaseTargets.GetForEnvironment(ctx, environmentID)
 }
@@ -85,6 +102,7 @@ type PostgresGetters struct {
 	deploymentGetter
 	resourceGetter
 	releaseGetter
+	releaseTargetForDeploymentAndEnvironmentGetter
 
 	queries *db.Queries
 }
@@ -95,6 +113,8 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 		environmentGetter: store.NewPostgresEnvironmentGetter(queries),
 		deploymentGetter:  store.NewPostgresDeploymentGetter(queries),
 		resourceGetter:    store.NewPostgresResourceGetter(queries),
+		releaseGetter:     store.NewPostgresReleaseGetter(queries),
+		releaseTargetForDeploymentAndEnvironmentGetter: &releasetargets.PostgresGetReleaseTargetsForDeploymentAndEnvironment{},
 	}
 }
 

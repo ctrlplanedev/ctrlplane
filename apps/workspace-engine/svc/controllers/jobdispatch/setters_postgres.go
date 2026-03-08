@@ -2,6 +2,7 @@ package jobdispatch
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"workspace-engine/pkg/db"
@@ -31,14 +32,47 @@ func (s *PostgresSetter) UpdateJob(
 func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
 	queries := db.GetQueries(ctx)
 
-	jobID := uuid.MustParse(job.Id)
-	releaseID := uuid.MustParse(job.ReleaseId)
+	jobIDUUID, err := uuid.Parse(job.Id)
+	if err != nil {
+		return fmt.Errorf("parse job id: %w", err)
+	}
+	releaseIDUUID, err := uuid.Parse(job.ReleaseId)
+	if err != nil {
+		return fmt.Errorf("parse release id: %w", err)
+	}
+	agentIDUUID, err := uuid.Parse(job.JobAgentId)
+	if err != nil {
+		return fmt.Errorf("parse agent id: %w", err)
+	}
+
+	agentConfig, err := json.Marshal(job.JobAgentConfig)
+	if err != nil {
+		return fmt.Errorf("marshal job agent config: %w", err)
+	}
+
+	if err := queries.InsertJob(ctx, db.InsertJobParams{
+		ID:             jobIDUUID,
+		JobAgentID:     pgtype.UUID{Bytes: agentIDUUID, Valid: true},
+		JobAgentConfig: agentConfig,
+		Status:         db.JobStatus(job.Status),
+		CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
+		UpdatedAt:      pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
+	}); err != nil {
+		return fmt.Errorf("insert job: %w", err)
+	}
+
+	if err := queries.InsertReleaseJob(ctx, db.InsertReleaseJobParams{
+		ReleaseID: releaseIDUUID,
+		JobID:     jobIDUUID,
+	}); err != nil {
+		return fmt.Errorf("insert release_job: %w", err)
+	}
 
 	if len(specs) == 0 {
 		return nil
 	}
 
-	workspaceID, err := queries.GetWorkspaceIDByReleaseID(ctx, releaseID)
+	workspaceID, err := queries.GetWorkspaceIDByReleaseID(ctx, releaseIDUUID)
 	if err != nil {
 		return fmt.Errorf("get workspace id: %w", err)
 	}
@@ -50,7 +84,7 @@ func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job,
 		}
 
 		metric, err := queries.InsertJobVerificationMetric(ctx, db.InsertJobVerificationMetricParams{
-			JobID:            jobID,
+			JobID:            jobIDUUID,
 			Name:             spec.Name,
 			Provider:         providerJSON,
 			IntervalSeconds:  spec.IntervalSeconds,

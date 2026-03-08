@@ -7,6 +7,7 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -18,6 +19,21 @@ import (
 
 var tracer = otel.Tracer("events/handler/userapprovalrecords")
 
+func requeueDesiredReleaseEvaluations(ctx context.Context, ws *workspace.Workspace, rt []*oapi.ReleaseTarget) error {
+	params := make([]events.DesiredReleaseEvalParams, 0, len(rt))
+	for _, rt := range rt {
+		params = append(params, events.DesiredReleaseEvalParams{
+			WorkspaceID:   ws.ID,
+			ResourceID:    rt.ResourceId,
+			EnvironmentID: rt.EnvironmentId,
+			DeploymentID:  rt.DeploymentId,
+		})
+	}
+	if err := events.EnqueueManyDesiredRelease(ws.Queue(), ctx, params); err != nil {
+		return err
+	}
+	return nil
+}
 func getRelevantTargets(ctx context.Context, ws *workspace.Workspace, userApprovalRecord *oapi.UserApprovalRecord) ([]*oapi.ReleaseTarget, error) {
 	ctx, span := tracer.Start(ctx, "getRelevantTargets")
 	defer span.End()
@@ -87,6 +103,8 @@ func HandleUserApprovalRecordCreated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalCreated))
 
+	requeueDesiredReleaseEvaluations(ctx, ws, relevantTargets)
+
 	return nil
 }
 
@@ -122,6 +140,8 @@ func HandleUserApprovalRecordUpdated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
 
+	requeueDesiredReleaseEvaluations(ctx, ws, relevantTargets)
+
 	return nil
 }
 
@@ -156,6 +176,8 @@ func HandleUserApprovalRecordDeleted(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
+
+	requeueDesiredReleaseEvaluations(ctx, ws, relevantTargets)
 
 	return nil
 }

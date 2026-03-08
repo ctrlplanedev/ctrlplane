@@ -208,7 +208,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// 1 out of 3 targets successful = 33.33%
 	percentage := tracker.GetSuccessPercentage()
@@ -282,7 +282,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
 	// 2 out of 2 targets successful = 100%
 	percentage := tracker.GetSuccessPercentage()
@@ -427,7 +427,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
 	// Soak time is based on most recent success (5 minutes ago)
 	// So 3 minutes soak time SHOULD be met (5 > 3)
@@ -820,7 +820,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
 	// Should track both jobs
 	jobs := tracker.Jobs()
@@ -932,7 +932,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	st.Jobs.Upsert(ctx, job3)
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
 	// Should return the timestamp of the 2nd success (completedAt2)
@@ -1009,7 +1009,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 	st.Jobs.Upsert(ctx, job1)
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
 	// Only have 1 success, so should return zero time
@@ -1030,7 +1030,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTarget
 	version, _ := st.DeploymentVersions.Get("version-1")
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{}
 
 	// With no release targets, should return zero time
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
@@ -1057,7 +1057,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJob
 	}
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
 	// With no successful jobs, should return zero time
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
@@ -1128,7 +1128,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	st.Jobs.Upsert(ctx, job2)
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
 	// With zero or negative minimum percentage, should default to 100%
 	// Need 2 successes (ceil(2 * 1.0) = 2)
@@ -1237,7 +1237,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	st.Jobs.Upsert(ctx, job3)
 
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
-	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
 	// Successes in order: completedAt2 (10:05), completedAt1 (10:10), completedAt3 (10:15)

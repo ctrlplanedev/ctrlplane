@@ -8,6 +8,22 @@ import (
 	"github.com/google/uuid"
 )
 
+// celToSelector converts a raw CEL expression string (as stored in the DB)
+// into an oapi.Selector union. It first tries JSON unmarshal for
+// forward-compatibility, then falls back to wrapping the string as a
+// CelSelector.
+func celToSelector(raw string) oapi.Selector {
+	var sel oapi.Selector
+	if err := json.Unmarshal([]byte(raw), &sel); err == nil {
+		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
+			return sel
+		}
+	}
+	var s oapi.Selector
+	_ = s.FromCelSelector(oapi.CelSelector{Cel: raw})
+	return s
+}
+
 func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
 		Id:             row.ID.String(),
@@ -27,9 +43,10 @@ func ToOapiDeployment(row Deployment) *oapi.Deployment {
 
 func ToOapiEnvironment(row Environment) *oapi.Environment {
 	e := &oapi.Environment{
-		Id:       row.ID.String(),
-		Name:     row.Name,
-		Metadata: row.Metadata,
+		Id:          row.ID.String(),
+		Name:        row.Name,
+		Metadata:    row.Metadata,
+		WorkspaceId: row.WorkspaceID.String(),
 	}
 	if row.Description.Valid {
 		e.Description = &row.Description.String
@@ -147,8 +164,7 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 	var progs []progressionJSON
 	_ = json.Unmarshal(row.EnvironmentProgressionRules, &progs)
 	for _, pr := range progs {
-		var depSelector oapi.Selector
-		_ = json.Unmarshal([]byte(pr.DependsOnEnvironmentSelector), &depSelector)
+		depSelector := celToSelector(pr.DependsOnEnvironmentSelector)
 		rule := oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: depSelector,
 			MaximumAgeHours:              pr.MaximumAgeHours,

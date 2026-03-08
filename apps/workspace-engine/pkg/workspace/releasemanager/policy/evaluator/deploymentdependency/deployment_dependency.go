@@ -124,29 +124,35 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 		span.RecordError(err)
 		return results.NewDeniedResult(
 			fmt.Sprintf("Deployment dependency: failed to find matching deployments: %v", err),
-		).WithDetail("error", err.Error()).WithDetail("deployment_id", scope.Deployment.Id)
+		).
+			WithDetail("error", err.Error()).
+			WithDetail("deployment_id", scope.Deployment.Id)
 	}
 
 	if len(matchingDeployments) == 0 {
 		return results.NewDeniedResult(
 			fmt.Sprintf("Deployment dependency: no matching deployments found for selector: %v", dependsOn),
-		).WithDetail("dependsOn", dependsOn)
+		).
+			WithDetail("depends_on", dependsOn)
 	}
 
 	upstreamReleaseTargets := e.getUpstreamReleaseTargets(ctx, matchingDeployments, scope.Resource.Id)
 	if len(upstreamReleaseTargets) != cap(upstreamReleaseTargets) {
 		return results.NewDeniedResult(
 			fmt.Sprintf("Deployment dependency: some upstream release targets not found for resource: %v", scope.Resource.Id),
-		).WithDetail("dependsOn", dependsOn)
+		).
+			WithDetail("depends_on", dependsOn)
 	}
 
 	for _, upstreamReleaseTarget := range upstreamReleaseTargets {
 		if !e.checkUpstreamTargetHasSuccessfulRelease(upstreamReleaseTarget) {
 			return results.NewDeniedResult(
 				fmt.Sprintf("Deployment dependency: upstream release target %s has no successful release", upstreamReleaseTarget.Key()),
-			).WithDetail("upstream_release_target_key", upstreamReleaseTarget.Key())
+			).
+				WithDetail("upstream_release_target_key", upstreamReleaseTarget.Key())
 		}
 	}
 
-	return results.NewAllowedResult("Deployment dependency: all upstream release targets have successful releases")
+	return results.
+		NewAllowedResult("Deployment dependency: all upstream release targets have successful releases")
 }

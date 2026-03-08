@@ -26,6 +26,10 @@ export default [
           "routes/ws/deployments/page.$deploymentId.release-targets.tsx",
         ),
         route(
+          ":deploymentId/release-targets/:releaseTargetKey",
+          "routes/ws/deployments/page.$deploymentId.release-targets.$releaseTargetKey.tsx",
+        ),
+        route(
           ":deploymentId/policies",
           "routes/ws/deployments/page.$deploymentId.policies.tsx",
         ),

@@ -66,6 +66,7 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 	oapiRT := r.rt.ToOAPI()
 	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
+
 	result, err := policyeval.FindDeployableVersion(ctx, r.getter, oapiRT, r.versions, evals, *r.scope)
 	if err != nil {
 		log.Error("find deployable version", "error", err)
@@ -131,7 +132,11 @@ func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Se
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
 	defer span.End()
 
-	r := &reconciler{workspaceID: uuid.MustParse(workspaceID), getter: getter, setter: setter, rt: rt}
+	workspaceIDUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
+	r := &reconciler{workspaceID: workspaceIDUUID, getter: getter, setter: setter, rt: rt}
 	r.rt.WorkspaceID = r.workspaceID
 
 	if err := r.loadInput(ctx); err != nil {

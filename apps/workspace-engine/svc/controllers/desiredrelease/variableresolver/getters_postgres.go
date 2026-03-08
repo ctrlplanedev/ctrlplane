@@ -42,9 +42,17 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 }
 
 func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+	versionIDUUID, err := uuid.Parse(versionID)
+	if err != nil {
+		return nil, fmt.Errorf("parse version id: %w", err)
+	}
+	environmentIDUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
 	approvalRecords, err := db.GetQueries(ctx).ListApprovedRecordsByVersionAndEnvironment(ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
-		VersionID:     uuid.MustParse(versionID),
-		EnvironmentID: uuid.MustParse(environmentID),
+		VersionID:     versionIDUUID,
+		EnvironmentID: environmentIDUUID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list approval records for workspace %s: %w", versionID, err)
@@ -57,10 +65,22 @@ func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, envi
 }
 
 func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+	versionIDUUID, err := uuid.Parse(versionID)
+	if err != nil {
+		return nil, fmt.Errorf("parse version id: %w", err)
+	}
+	environmentIDUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
+	resourceIDUUID, err := uuid.Parse(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
 	policySkips, err := db.GetQueries(ctx).ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
-		VersionID:     uuid.MustParse(versionID),
-		EnvironmentID: uuid.MustParse(environmentID),
-		ResourceID:    uuid.MustParse(resourceID),
+		VersionID:     versionIDUUID,
+		EnvironmentID: environmentIDUUID,
+		ResourceID:    resourceIDUUID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list policy skips for version %s: %w", versionID, err)
@@ -75,7 +95,11 @@ func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environm
 func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error) {
 	q := db.GetQueries(ctx)
 
-	vars, err := q.ListDeploymentVariablesByDeploymentID(ctx, uuid.MustParse(deploymentID))
+	deploymentIDUUID, err := uuid.Parse(deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
+	vars, err := q.ListDeploymentVariablesByDeploymentID(ctx, deploymentIDUUID)
 	if err != nil {
 		return nil, fmt.Errorf("list deployment variables for %s: %w", deploymentID, err)
 	}
@@ -101,7 +125,11 @@ func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentI
 }
 
 func (g *PostgresGetter) GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error) {
-	rows, err := db.GetQueries(ctx).ListResourceVariablesByResourceID(ctx, uuid.MustParse(resourceID))
+	resourceIDUUID, err := uuid.Parse(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
+	rows, err := db.GetQueries(ctx).ListResourceVariablesByResourceID(ctx, resourceIDUUID)
 	if err != nil {
 		return nil, fmt.Errorf("list resource variables for %s: %w", resourceID, err)
 	}

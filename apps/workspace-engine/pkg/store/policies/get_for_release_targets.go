@@ -25,31 +25,41 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(ctx co
 	ctx, span := tracer.Start(ctx, "Store.GetPoliciesForReleaseTarget")
 	defer span.End()
 
-	deployment, err := db.GetQueries(ctx).GetDeploymentByID(ctx, uuid.MustParse(releaseTarget.DeploymentId))
+	deploymentID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
+	deployment, err := db.GetQueries(ctx).GetDeploymentByID(ctx, deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("get deployment by id: %w", err)
 	}
 
-	environment, err := db.GetQueries(ctx).GetEnvironmentByID(ctx, uuid.MustParse(releaseTarget.EnvironmentId))
+	environmentID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
+	environment, err := db.GetQueries(ctx).GetEnvironmentByID(ctx, environmentID)
 	if err != nil {
 		return nil, fmt.Errorf("get environment by id: %w", err)
 	}
 
-	resource, err := db.GetQueries(ctx).GetResourceByID(ctx, uuid.MustParse(releaseTarget.ResourceId))
+	resourceID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
+	resource, err := db.GetQueries(ctx).GetResourceByID(ctx, resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("get resource by id: %w", err)
 	}
 
-	allPolicies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: environment.WorkspaceID,
-	})
+	allPolicies, err := db.GetQueries(ctx).ListPoliciesWithRulesByWorkspaceID(ctx, environment.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("get policies for release target: %w", err)
 	}
 
 	policiesOapi := make([]*oapi.Policy, 0, len(allPolicies))
 	for _, policy := range allPolicies {
-		policiesOapi = append(policiesOapi, db.ToOapiPolicy(policy))
+		policiesOapi = append(policiesOapi, db.ToOapiPolicyWithRules(policy))
 	}
 
 	policies := match.Filter(ctx, policiesOapi, &match.Target{

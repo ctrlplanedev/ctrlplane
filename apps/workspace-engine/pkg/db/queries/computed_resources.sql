@@ -39,6 +39,23 @@ JOIN system_environment se
     AND se.system_id = sd.system_id
 WHERE cdr.deployment_id = @deployment_id;
 
+-- name: GetReleaseTargetsForDeploymentAndEnvironment :many
+-- Returns all valid release targets for a deployment and environment pair.
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cdr.deployment_id = @deployment_id
+  AND cer.environment_id = @environment_id;
+
 -- name: GetReleaseTargetsForResource :many
 -- Returns all valid release targets for a resource by joining computed
 -- resource tables through the system link tables.

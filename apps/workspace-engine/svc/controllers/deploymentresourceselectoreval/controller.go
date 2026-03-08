@@ -64,7 +64,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	matchedIDs := make([]uuid.UUID, 0, len(resources))
 	for _, resource := range resources {
-		matchedIDs = append(matchedIDs, uuid.MustParse(resource.Id))
+		resourceIDUUID, err := uuid.Parse(resource.Id)
+		if err != nil {
+			log.Error("failed to parse resource id", "resource_id", resource.Id, "error", err)
+			continue
+		}
+		matchedIDs = append(matchedIDs, resourceIDUUID)
 	}
 
 	if err := c.setter.SetComputedDeploymentResources(ctx, deploymentID, matchedIDs); err != nil {

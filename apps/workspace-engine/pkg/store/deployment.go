@@ -34,8 +34,12 @@ func (g *PostgresDeploymentGetter) GetDeployment(ctx context.Context, deployment
 }
 
 func (g *PostgresDeploymentGetter) GetAllDeployments(ctx context.Context, workspaceID string) (map[string]*oapi.Deployment, error) {
+	id, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
 	deployments, err := g.queries.ListDeploymentsByWorkspaceID(ctx, db.ListDeploymentsByWorkspaceIDParams{
-		WorkspaceID: uuid.MustParse(workspaceID),
+		WorkspaceID: id,
 	})
 	if err != nil {
 		return nil, err
