@@ -35,9 +35,9 @@ export const releaseTargetsRouter = router({
   evaluations: protectedProcedure
     .input(
       z.object({
-        environmentId: z.string().uuid(),
-        resourceId: z.string().uuid(),
-        versionId: z.string().uuid().optional(),
+        environmentId: z.string(),
+        resourceId: z.uuid(),
+        deploymentId: z.string(),
         limit: z.number().int().min(1).max(100).default(20),
       }),
     )
@@ -46,12 +46,6 @@ export const releaseTargetsRouter = router({
         eq(schema.policyRuleEvaluation.environmentId, input.environmentId),
         eq(schema.policyRuleEvaluation.resourceId, input.resourceId),
       ];
-
-      if (input.versionId != null) {
-        conditions.push(
-          eq(schema.policyRuleEvaluation.versionId, input.versionId),
-        );
-      }
 
       const recentVersionRows = await ctx.db
         .selectDistinct({
@@ -66,7 +60,12 @@ export const releaseTargetsRouter = router({
             schema.deploymentVersion.id,
           ),
         )
-        .where(and(...conditions))
+        .where(
+          and(
+            ...conditions,
+            eq(schema.deploymentVersion.deploymentId, input.deploymentId),
+          ),
+        )
         .orderBy(desc(schema.deploymentVersion.createdAt))
         .limit(input.limit);
 
@@ -104,7 +103,8 @@ export const releaseTargetsRouter = router({
         );
 
       const ruleIds = [...new Set(rows.map((r) => r.evaluation.ruleId))];
-      if (ruleIds.length === 0) return rows.map((r) => ({ ...r, policy: null }));
+      if (ruleIds.length === 0)
+        return rows.map((r) => ({ ...r, policy: null }));
 
       const ruleTables = [
         schema.policyRuleAnyApproval,
@@ -146,7 +146,7 @@ export const releaseTargetsRouter = router({
 
       return rows.map((r) => {
         const policyId = ruleToPolicyId.get(r.evaluation.ruleId);
-        const p = policyId ? policyMap.get(policyId) ?? null : null;
+        const p = policyId ? (policyMap.get(policyId) ?? null) : null;
         return { ...r, policy: p };
       });
     }),

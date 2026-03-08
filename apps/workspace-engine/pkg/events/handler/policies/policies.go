@@ -46,15 +46,15 @@ func getAffectedTargets(ctx context.Context, ws *workspace.Workspace, policyID s
 	return affectedTargets
 }
 
-func enqueueAffectedTargets(ctx context.Context, ws *workspace.Workspace, targets []*oapi.ReleaseTarget) {
+func enqueueAffectedTargets(ctx context.Context, ws *workspace.Workspace, targets map[string]*oapi.ReleaseTarget) {
 	params := make([]events.DesiredReleaseEvalParams, len(targets))
-	for i, rt := range targets {
-		params[i] = events.DesiredReleaseEvalParams{
+	for _, rt := range targets {
+		params = append(params, events.DesiredReleaseEvalParams{
 			WorkspaceID:   ws.ID,
 			ResourceID:    rt.ResourceId,
 			EnvironmentID: rt.EnvironmentId,
 			DeploymentID:  rt.DeploymentId,
-		}
+		})
 	}
 	if err := events.EnqueueManyDesiredRelease(ws.Queue(), ctx, params); err != nil {
 		log.Error("failed to enqueue desired release for policy change", "error", err)
@@ -86,7 +86,10 @@ func HandlePolicyCreated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
-	enqueueAffectedTargets(ctx, ws, affectedTargets)
+	releaseTargets, err := ws.ReleaseTargets().Items()
+	if err == nil {
+		enqueueAffectedTargets(ctx, ws, releaseTargets)
+	}
 
 	return nil
 }
@@ -137,7 +140,10 @@ func HandlePolicyUpdated(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
-	enqueueAffectedTargets(ctx, ws, affectedTargets)
+	releaseTargets, err := ws.ReleaseTargets().Items()
+	if err == nil {
+		enqueueAffectedTargets(ctx, ws, releaseTargets)
+	}
 
 	return nil
 }
@@ -164,7 +170,10 @@ func HandlePolicyDeleted(
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
 		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
-	enqueueAffectedTargets(ctx, ws, affectedTargets)
+	releaseTargets, err := ws.ReleaseTargets().Items()
+	if err == nil {
+		enqueueAffectedTargets(ctx, ws, releaseTargets)
+	}
 
 	return nil
 }

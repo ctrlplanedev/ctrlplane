@@ -7,12 +7,14 @@ import {
   CalendarClock,
   Check,
   Clock,
+  RefreshCw,
   ShieldCheck,
   Timer,
   UserCheck,
   X,
 } from "lucide-react";
 import { Link, useParams } from "react-router";
+import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -397,7 +399,7 @@ function VersionGroup({
 export default function ReleaseTargetEvaluationsPage() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
-  const { releaseTargetKey } = useParams();
+  const { releaseTargetKey, deploymentId } = useParams();
 
   const parsed = useMemo(
     () => (releaseTargetKey ? parseReleaseTargetKey(releaseTargetKey) : null),
@@ -408,8 +410,12 @@ export default function ReleaseTargetEvaluationsPage() {
     {
       environmentId: parsed?.environmentId ?? "",
       resourceId: parsed?.resourceId ?? "",
+      deploymentId: deploymentId ?? "",
     },
-    { enabled: parsed != null, refetchInterval: 15_000 },
+    {
+      enabled: parsed != null && deploymentId != null,
+      refetchInterval: 15_000,
+    },
   );
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
@@ -451,6 +457,19 @@ export default function ReleaseTargetEvaluationsPage() {
   }, [rows]);
 
   const latestItems = versionGroups[0]?.items ?? [];
+
+  const utils = trpc.useUtils();
+  const triggerReconcile = trpc.reconcile.triggerDesiredRelease.useMutation({
+    onSuccess: () => {
+      toast.success("Reconciliation queued for this release target");
+      utils.releaseTargets.evaluations.invalidate();
+    },
+    onError: (error) => {
+      toast.error("Failed to queue reconciliation", {
+        description: error.message,
+      });
+    },
+  });
 
   const resourceName =
     releaseTarget?.resource.name ?? parsed?.resourceId ?? "Unknown";
@@ -501,7 +520,7 @@ export default function ReleaseTargetEvaluationsPage() {
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-semibold">{resourceName}</h1>
             <p className="text-sm text-muted-foreground">
               Policy evaluations for {environmentName} &middot;{" "}
@@ -509,6 +528,25 @@ export default function ReleaseTargetEvaluationsPage() {
               {versionGroups.length !== 1 ? "s" : ""}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={parsed == null || triggerReconcile.isPending}
+            onClick={() => {
+              if (parsed == null) return;
+              triggerReconcile.mutate({
+                workspaceId: workspace.id,
+                deploymentId: parsed.deploymentId,
+                environmentId: parsed.environmentId,
+                resourceId: parsed.resourceId,
+              });
+            }}
+          >
+            <RefreshCw
+              className={`mr-2 size-3.5 ${triggerReconcile.isPending ? "animate-spin" : ""}`}
+            />
+            Reconcile
+          </Button>
         </div>
 
         {evaluationsQuery.isLoading && (
@@ -518,7 +556,7 @@ export default function ReleaseTargetEvaluationsPage() {
           </div>
         )}
 
-        {!evaluationsQuery.isLoading && rows.length === 0 && (
+        {rows.length === 0 && (
           <div className="py-12 text-center text-sm text-muted-foreground">
             No policy evaluations found for this release target.
           </div>
