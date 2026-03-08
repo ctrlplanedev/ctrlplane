@@ -397,7 +397,7 @@ function VersionGroup({
 export default function ReleaseTargetEvaluationsPage() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
-  const { releaseTargetKey } = useParams();
+  const { releaseTargetKey, deploymentId } = useParams();
 
   const parsed = useMemo(
     () => (releaseTargetKey ? parseReleaseTargetKey(releaseTargetKey) : null),
@@ -408,8 +408,12 @@ export default function ReleaseTargetEvaluationsPage() {
     {
       environmentId: parsed?.environmentId ?? "",
       resourceId: parsed?.resourceId ?? "",
+      deploymentId: deploymentId ?? "",
     },
-    { enabled: parsed != null, refetchInterval: 15_000 },
+    {
+      enabled: parsed != null && deploymentId != null,
+      refetchInterval: 15_000,
+    },
   );
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
@@ -518,7 +522,7 @@ export default function ReleaseTargetEvaluationsPage() {
           </div>
         )}
 
-        {!evaluationsQuery.isLoading && rows.length === 0 && (
+        {rows.length === 0 && (
           <div className="py-12 text-center text-sm text-muted-foreground">
             No policy evaluations found for this release target.
           </div>
