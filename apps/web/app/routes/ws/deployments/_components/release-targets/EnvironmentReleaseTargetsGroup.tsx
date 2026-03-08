@@ -3,11 +3,12 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
 import { ChevronRight, ExternalLink } from "lucide-react";
+import { Link } from "react-router";
 
-import type { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { ResourceIcon } from "~/components/ui/resource-icon";
 import { TableCell, TableRow } from "~/components/ui/table";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
 import { JobStatusBadge } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
@@ -52,6 +53,7 @@ function JobLinks({ links }: { links?: Record<string, string> }) {
 }
 
 function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
+  const { workspace } = useWorkspace();
   const verifications = rt.latestJob?.verifications ?? [];
   const summaries = verifications.map(verificationSummary).flat();
 
@@ -79,7 +81,12 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
       <TableCell>
         <div className="flex items-center gap-2">
           <ResourceIcon kind={rt.resource.kind} version={rt.resource.version} />
-          {rt.resource.name}
+          <Link
+            to={`/${workspace.slug}/resources/${encodeURIComponent(rt.resource.identifier)}`}
+            className="hover:underline"
+          >
+            {rt.resource.name}
+          </Link>
         </div>
       </TableCell>
       <TableCell>
