@@ -69,9 +69,15 @@ type VersionInfo = {
   status: string;
 };
 
+type PolicyInfo = {
+  id: string;
+  name: string;
+};
+
 type EvalResultRow = {
   evaluation: Evaluation;
   version: VersionInfo;
+  policy: PolicyInfo | null;
 };
 
 function StatusIcon({ evaluation }: { evaluation: Evaluation }) {
@@ -275,16 +281,76 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
   );
 }
 
+type EvalWithPolicy = {
+  evaluation: Evaluation;
+  policy: PolicyInfo | null;
+};
+
+function PolicyGroup({
+  policy,
+  items,
+}: {
+  policy: PolicyInfo;
+  items: Evaluation[];
+}) {
+  const { workspace } = useWorkspace();
+  const allPassing = items.every((e) => e.allowed);
+  const hasBlocking = items.some((e) => !e.allowed);
+
+  return (
+    <div className="space-y-2 rounded-lg border p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <Link
+          to={`/${workspace.slug}/policies`}
+          className="text-sm font-medium hover:underline"
+        >
+          {policy.name}
+        </Link>
+        {allPassing && (
+          <Badge className="bg-green-500/10 text-xs text-green-600 dark:text-green-400">
+            Passing
+          </Badge>
+        )}
+        {hasBlocking && (
+          <Badge className="bg-red-500/10 text-xs text-red-600 dark:text-red-400">
+            Blocking
+          </Badge>
+        )}
+      </div>
+      <div className="space-y-2">
+        {items
+          .sort((a, b) => a.ruleId.localeCompare(b.ruleId))
+          .map((evaluation) => (
+            <EvalRow key={evaluation.id} evaluation={evaluation} />
+          ))}
+      </div>
+    </div>
+  );
+}
+
 function VersionGroup({
   version,
-  evaluations,
+  items,
 }: {
   version: VersionInfo;
-  evaluations: Evaluation[];
+  items: EvalWithPolicy[];
 }) {
-  const allPassing = evaluations.every((e) => e.allowed);
-  const hasBlocking = evaluations.some((e) => !e.allowed);
+  const allPassing = items.every((e) => e.evaluation.allowed);
+  const hasBlocking = items.some((e) => !e.evaluation.allowed);
   const versionLabel = version.name || version.tag;
+
+  const policyGroups = useMemo(() => {
+    const grouped = _.groupBy(items, (item) => item.policy?.id ?? "unknown");
+    return Object.entries(grouped)
+      .map(([policyId, group]) => ({
+        policyId,
+        policy: group[0].policy,
+        evaluations: group.map((g) => g.evaluation),
+      }))
+      .sort((a, b) =>
+        (a.policy?.name ?? "").localeCompare(b.policy?.name ?? ""),
+      );
+  }, [items]);
 
   return (
     <div className="space-y-3">
@@ -311,10 +377,18 @@ function VersionGroup({
           })}
         </span>
       </div>
-      <div className="space-y-2">
-        {evaluations.map((evaluation) => (
-          <EvalRow key={evaluation.id} evaluation={evaluation} />
-        ))}
+      <div className="space-y-4">
+        {policyGroups.map(({ policyId, policy, evaluations }) =>
+          policy != null ? (
+            <PolicyGroup key={policyId} policy={policy} items={evaluations} />
+          ) : (
+            <div key={policyId} className="space-y-2">
+              {evaluations.map((evaluation) => (
+                <EvalRow key={evaluation.id} evaluation={evaluation} />
+              ))}
+            </div>
+          ),
+        )}
       </div>
     </div>
   );
@@ -337,8 +411,6 @@ export default function ReleaseTargetEvaluationsPage() {
     },
     { enabled: parsed != null, refetchInterval: 15_000 },
   );
-
-  console.log(evaluationsQuery.data);
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,
@@ -366,7 +438,10 @@ export default function ReleaseTargetEvaluationsPage() {
       .map(([versionId, items]) => ({
         versionId,
         version: items[0].version,
-        evaluations: items.map((r) => r.evaluation),
+        items: items.map((r) => ({
+          evaluation: r.evaluation,
+          policy: r.policy,
+        })),
       }))
       .sort(
         (a, b) =>
@@ -375,7 +450,7 @@ export default function ReleaseTargetEvaluationsPage() {
       );
   }, [rows]);
 
-  const latestEvaluations = versionGroups[0]?.evaluations ?? [];
+  const latestItems = versionGroups[0]?.items ?? [];
 
   const resourceName =
     releaseTarget?.resource.name ?? parsed?.resourceId ?? "Unknown";
@@ -451,9 +526,9 @@ export default function ReleaseTargetEvaluationsPage() {
 
         {rows.length > 0 && (
           <div className="space-y-6">
-            {versionGroups.map(({ versionId, version, evaluations }, idx) => (
+            {versionGroups.map(({ versionId, version, items }, idx) => (
               <div key={versionId}>
-                {idx === 0 && latestEvaluations.length > 0 && (
+                {idx === 0 && latestItems.length > 0 && (
                   <div className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Latest Version
                   </div>
@@ -463,7 +538,7 @@ export default function ReleaseTargetEvaluationsPage() {
                     History
                   </div>
                 )}
-                <VersionGroup version={version} evaluations={evaluations} />
+                <VersionGroup version={version} items={items} />
               </div>
             ))}
           </div>
