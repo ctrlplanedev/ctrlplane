@@ -313,40 +313,59 @@ func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(rt *oapi.Re
 }
 
 // DesiredReleaseSetter implements desiredrelease.Setter.
-// When JobDispatchQueue is set, it also enqueues a job-dispatch item for
-// each release that is set, bridging the desired-release and job-dispatch
-// controllers in end-to-end pipeline tests.
+// When JobDispatchQueue is set, it also creates a pending job and enqueues
+// a job-dispatch item (keyed by job ID) for each release that is set,
+// bridging the desired-release and job-dispatch controllers in pipeline tests.
 type DesiredReleaseSetter struct {
 	mu        sync.Mutex
 	Releases  []*oapi.Release
 	CallCount int
 
-	JobDispatchQueue reconcile.Queue
-	WorkspaceID      string
+	JobDispatchQueue  reconcile.Queue
+	JobDispatchGetter *JobDispatchGetter
+	WorkspaceID       string
+	Agents            []oapi.JobAgent
 }
 
 func (s *DesiredReleaseSetter) UpsertRuleEvaluations(_ context.Context, _ []policies.RuleEvaluationParams) error {
 	return nil
 }
 
-func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, rt *desiredrelease.ReleaseTarget, r *oapi.Release) error {
+func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, _ *desiredrelease.ReleaseTarget, r *oapi.Release) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.CallCount++
 	s.Releases = append(s.Releases, r)
 
-	if s.JobDispatchQueue != nil {
-		scopeID := fmt.Sprintf("%s:%s:%s",
-			rt.DeploymentID.String(),
-			rt.EnvironmentID.String(),
-			rt.ResourceID.String(),
-		)
-		_ = s.JobDispatchQueue.Enqueue(ctx, reconcile.EnqueueParams{
-			WorkspaceID: s.WorkspaceID,
-			Kind:        KindJobDispatch,
-			ScopeType:   "release-target",
-			ScopeID:     scopeID,
-		})
+	if s.JobDispatchQueue != nil && len(s.Agents) > 0 {
+		for _, agent := range s.Agents {
+			job := &oapi.Job{
+				Id:             uuid.New().String(),
+				ReleaseId:      r.Id.String(),
+				JobAgentId:     agent.Id,
+				JobAgentConfig: agent.Config,
+				Status:         oapi.JobStatusPending,
+				Metadata:       map[string]string{},
+				CreatedAt:      time.Now(),
+				UpdatedAt:      time.Now(),
+			}
+
+			if s.JobDispatchGetter != nil {
+				s.JobDispatchGetter.mu.Lock()
+				if s.JobDispatchGetter.Jobs == nil {
+					s.JobDispatchGetter.Jobs = make(map[string]*oapi.Job)
+				}
+				s.JobDispatchGetter.Jobs[job.Id] = job
+				s.JobDispatchGetter.mu.Unlock()
+			}
+
+			_ = s.JobDispatchQueue.Enqueue(ctx, reconcile.EnqueueParams{
+				WorkspaceID: s.WorkspaceID,
+				Kind:        KindJobDispatch,
+				ScopeType:   "job",
+				ScopeID:     job.Id,
+			})
+		}
 	}
 	return nil
 }
@@ -354,6 +373,11 @@ func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, rt *desire
 // ---------------------------------------------------------------------------
 // jobdispatch mocks
 // ---------------------------------------------------------------------------
+
+type noopDispatcher struct{}
+
+func (d *noopDispatcher) Dispatch(_ context.Context, _ *oapi.Job) error { return nil }
+
 
 // JobDispatchGetter implements jobdispatch.Getter.
 type JobDispatchGetter struct {

@@ -148,16 +148,32 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 
 	releaseSetter.JobDispatchQueue = qs.jobDispatchQueue
 	releaseSetter.WorkspaceID = sc.WorkspaceID.String()
+	releaseSetter.Agents = sc.JobAgents
 
 	selectorCtrl := selectoreval.NewController(selectorGetter, selectorSetter, qs.shared)
 	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter)
 
+	var deploymentJobAgents *[]oapi.DeploymentJobAgent
+	if len(sc.JobAgents) > 0 {
+		agents := make([]oapi.DeploymentJobAgent, len(sc.JobAgents))
+		for i, a := range sc.JobAgents {
+			agents[i] = oapi.DeploymentJobAgent{Ref: a.Id}
+		}
+		deploymentJobAgents = &agents
+	}
+
 	jobDispatchGetter := &JobDispatchGetter{
 		ReleaseSetter: releaseSetter,
 		Agents:        sc.JobAgents,
+		Deployment: &oapi.Deployment{
+			Id:        sc.DeploymentID.String(),
+			Name:      sc.DeploymentName,
+			JobAgents: deploymentJobAgents,
+		},
 	}
+	releaseSetter.JobDispatchGetter = jobDispatchGetter
 	jobDispatchSetter := &JobDispatchSetter{}
-	jobDispatchCtrl := jobdispatch.NewController(jobDispatchGetter, jobDispatchSetter, nil, nil)
+	jobDispatchCtrl := jobdispatch.NewController(jobDispatchGetter, jobDispatchSetter, &noopDispatcher{}, nil)
 
 	return &TestPipeline{
 		t:                 t,

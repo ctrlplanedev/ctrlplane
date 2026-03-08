@@ -78,6 +78,10 @@ func getAgentSpecs(ctx context.Context, verifier AgentVerifier, getter Getter, r
 	ctx, span := tracer.Start(ctx, "jobdispatch.getAgentSpecs")
 	defer span.End()
 
+	if verifier == nil {
+		return nil, nil
+	}
+
 	agents, err := getJobAgents(ctx, getter, release)
 	if err != nil {
 		return nil, err
