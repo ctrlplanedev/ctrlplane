@@ -60,10 +60,12 @@ export const releaseTargetsRouter = router({
             schema.deploymentVersion.id,
           ),
         )
-        .where(and(
-          ...conditions,
-          eq(schema.deploymentVersion.deploymentId, input.deploymentId),
-        ))
+        .where(
+          and(
+            ...conditions,
+            eq(schema.deploymentVersion.deploymentId, input.deploymentId),
+          ),
+        )
         .orderBy(desc(schema.deploymentVersion.createdAt))
         .limit(input.limit);
 
@@ -101,7 +103,8 @@ export const releaseTargetsRouter = router({
         );
 
       const ruleIds = [...new Set(rows.map((r) => r.evaluation.ruleId))];
-      if (ruleIds.length === 0) return rows.map((r) => ({ ...r, policy: null }));
+      if (ruleIds.length === 0)
+        return rows.map((r) => ({ ...r, policy: null }));
 
       const ruleTables = [
         schema.policyRuleAnyApproval,
@@ -143,7 +146,7 @@ export const releaseTargetsRouter = router({
 
       return rows.map((r) => {
         const policyId = ruleToPolicyId.get(r.evaluation.ruleId);
-        const p = policyId ? policyMap.get(policyId) ?? null : null;
+        const p = policyId ? (policyMap.get(policyId) ?? null) : null;
         return { ...r, policy: p };
       });
     }),
