@@ -197,9 +197,6 @@ func evaluateVersion(ctx context.Context, evals []evaluator.Evaluator, scope eva
 		if result != nil {
 			result.WithRuleId(eval.RuleId())
 			evaluations = append(evaluations, result)
-			if !result.Allowed {
-				return evaluations, nil
-			}
 		}
 	}
 	return evaluations, nil

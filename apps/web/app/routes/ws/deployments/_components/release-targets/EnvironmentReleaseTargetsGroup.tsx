@@ -2,7 +2,7 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
-import { ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronRight, ExternalLink, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
 
 import { Button, buttonVariants } from "~/components/ui/button";
@@ -76,6 +76,8 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
     ? currentVersionTag
     : `${currentVersionTag} → ${desiredVersionTag}`;
 
+  const releaseTargetKey = `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`;
+
   return (
     <TableRow key={rt.releaseTarget.resourceId}>
       <TableCell>
@@ -86,6 +88,13 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
             className="hover:underline"
           >
             {rt.resource.name}
+          </Link>
+          <Link
+            to={`/${workspace.slug}/deployments/${rt.releaseTarget.deploymentId}/release-targets/${releaseTargetKey}`}
+            className="text-muted-foreground hover:text-foreground"
+            title="View policy evaluations"
+          >
+            <ShieldCheck className="size-3.5" />
           </Link>
         </div>
       </TableCell>

@@ -6,6 +6,7 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -15,6 +16,26 @@ import (
 )
 
 var tracer = otel.Tracer("events/handler/deploymentversion")
+
+func requeueDesiredReleaseEvaluations(ctx context.Context, ws *workspace.Workspace, deploymentId string) error {
+	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deploymentId)
+	if err != nil {
+		return err
+	}
+	params := make([]events.DesiredReleaseEvalParams, 0, len(releaseTargets))
+	for _, rt := range releaseTargets {
+		params = append(params, events.DesiredReleaseEvalParams{
+			WorkspaceID:   ws.ID,
+			ResourceID:    rt.ResourceId,
+			EnvironmentID: rt.EnvironmentId,
+			DeploymentID:  deploymentId,
+		})
+	}
+	if err := events.EnqueueManyDesiredRelease(ws.Queue(), ctx, params); err != nil {
+		return err
+	}
+	return nil
+}
 
 func HandleDeploymentVersionCreated(
 	ctx context.Context,
@@ -46,6 +67,8 @@ func HandleDeploymentVersionCreated(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVersionCreated))
+
+	requeueDesiredReleaseEvaluations(ctx, ws, deploymentVersion.DeploymentId)
 
 	return nil
 }
@@ -79,6 +102,8 @@ func HandleDeploymentVersionUpdated(
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVersionCreated))
+
+	requeueDesiredReleaseEvaluations(ctx, ws, deploymentVersion.DeploymentId)
 
 	return nil
 }

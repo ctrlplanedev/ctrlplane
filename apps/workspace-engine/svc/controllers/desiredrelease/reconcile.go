@@ -66,6 +66,7 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 	oapiRT := r.rt.ToOAPI()
 	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
+
 	result, err := policyeval.FindDeployableVersion(ctx, r.getter, oapiRT, r.versions, evals, *r.scope)
 	if err != nil {
 		log.Error("find deployable version", "error", err)
