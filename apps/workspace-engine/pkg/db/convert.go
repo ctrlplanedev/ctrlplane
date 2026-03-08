@@ -27,9 +27,10 @@ func ToOapiDeployment(row Deployment) *oapi.Deployment {
 
 func ToOapiEnvironment(row Environment) *oapi.Environment {
 	e := &oapi.Environment{
-		Id:       row.ID.String(),
-		Name:     row.Name,
-		Metadata: row.Metadata,
+		Id:          row.ID.String(),
+		Name:        row.Name,
+		Metadata:    row.Metadata,
+		WorkspaceId: row.WorkspaceID.String(),
 	}
 	if row.Description.Valid {
 		e.Description = &row.Description.String
