@@ -64,6 +64,9 @@ func (p *PostgresGetResources) GetResources(ctx context.Context, workspaceID str
 	defer rows.Close()
 
 	program, err := celEnv.Compile(options.CEL)
+	if err != nil {
+		return nil, fmt.Errorf("compile CEL program: %w", err)
+	}
 
 	var resources []*oapi.Resource
 	for rows.Next() {
