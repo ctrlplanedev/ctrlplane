@@ -82,21 +82,6 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 	return versions, nil
 }
 
-func (g *PostgresGetter) GetPolicies(ctx context.Context, rt *ReleaseTarget) ([]*oapi.Policy, error) {
-	policies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: rt.WorkspaceID,
-		Limit:       pgtype.Int4{Int32: 5000, Valid: true},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list policies for workspace %s: %w", rt.WorkspaceID, err)
-	}
-	policiesOAPI := make([]*oapi.Policy, 0, len(policies))
-	for _, policy := range policies {
-		policiesOAPI = append(policiesOAPI, db.ToOapiPolicy(policy))
-	}
-	return policiesOAPI, nil
-}
-
 func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
 	versionIDUUID, err := uuid.Parse(versionID)
 	if err != nil {

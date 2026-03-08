@@ -7,6 +7,7 @@ import {
   CalendarClock,
   Check,
   Clock,
+  RefreshCw,
   ShieldCheck,
   Timer,
   UserCheck,
@@ -456,6 +457,13 @@ export default function ReleaseTargetEvaluationsPage() {
 
   const latestItems = versionGroups[0]?.items ?? [];
 
+  const utils = trpc.useUtils();
+  const triggerReconcile = trpc.reconcile.triggerDesiredRelease.useMutation({
+    onSuccess: () => {
+      utils.releaseTargets.evaluations.invalidate();
+    },
+  });
+
   const resourceName =
     releaseTarget?.resource.name ?? parsed?.resourceId ?? "Unknown";
   const environmentName = releaseTarget?.environment.name ?? "Unknown";
@@ -505,7 +513,7 @@ export default function ReleaseTargetEvaluationsPage() {
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-semibold">{resourceName}</h1>
             <p className="text-sm text-muted-foreground">
               Policy evaluations for {environmentName} &middot;{" "}
@@ -513,6 +521,25 @@ export default function ReleaseTargetEvaluationsPage() {
               {versionGroups.length !== 1 ? "s" : ""}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={parsed == null || triggerReconcile.isPending}
+            onClick={() => {
+              if (parsed == null) return;
+              triggerReconcile.mutate({
+                workspaceId: workspace.id,
+                deploymentId: parsed.deploymentId,
+                environmentId: parsed.environmentId,
+                resourceId: parsed.resourceId,
+              });
+            }}
+          >
+            <RefreshCw
+              className={`mr-2 size-3.5 ${triggerReconcile.isPending ? "animate-spin" : ""}`}
+            />
+            Reconcile
+          </Button>
         </div>
 
         {evaluationsQuery.isLoading && (

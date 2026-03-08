@@ -151,30 +151,6 @@ func TestPostgresGetter_GetCandidateVersions(t *testing.T) {
 	assert.Equal(t, "v1.0.0", versions[0].Tag)
 }
 
-func TestPostgresGetter_GetPolicies(t *testing.T) {
-	pool := requireTestDB(t)
-	f := setupFixture(t, pool)
-	ctx := context.Background()
-
-	policyID := uuid.New()
-	_, err := pool.Exec(ctx,
-		`INSERT INTO policy (id, name, selector, priority, enabled, workspace_id)
-		 VALUES ($1, $2, $3, $4, $5, $6)`,
-		policyID, "test-policy", "true", 10, true, f.workspaceID)
-	require.NoError(t, err)
-
-	getter := &desiredrelease.PostgresGetter{}
-	rt := newReleaseTarget(f)
-	policies, err := getter.GetPolicies(ctx, rt)
-	require.NoError(t, err)
-
-	assert.Len(t, policies, 1)
-	assert.Equal(t, policyID.String(), policies[0].Id)
-	assert.Equal(t, "test-policy", policies[0].Name)
-	assert.Equal(t, 10, policies[0].Priority)
-	assert.True(t, policies[0].Enabled)
-}
-
 func TestPostgresGetter_HasCurrentRelease(t *testing.T) {
 	pool := requireTestDB(t)
 	f := setupFixture(t, pool)
