@@ -40,16 +40,14 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(ctx co
 		return nil, fmt.Errorf("get resource by id: %w", err)
 	}
 
-	allPolicies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: environment.WorkspaceID,
-	})
+	allPolicies, err := db.GetQueries(ctx).ListPoliciesWithRulesByWorkspaceID(ctx, environment.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("get policies for release target: %w", err)
 	}
 
 	policiesOapi := make([]*oapi.Policy, 0, len(allPolicies))
 	for _, policy := range allPolicies {
-		policiesOapi = append(policiesOapi, db.ToOapiPolicy(policy))
+		policiesOapi = append(policiesOapi, db.ToOapiPolicyWithRules(policy))
 	}
 
 	policies := match.Filter(ctx, policiesOapi, &match.Target{
