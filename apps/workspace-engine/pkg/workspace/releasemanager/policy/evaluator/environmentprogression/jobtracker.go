@@ -13,19 +13,9 @@ import (
 
 var jobTrackerTracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression/jobtracker")
 
-func getReleaseTargets(ctx context.Context, getters Getters, version *oapi.DeploymentVersion, environment *oapi.Environment) []*oapi.ReleaseTarget {
-	envTargets, err := getters.GetReleaseTargetsForEnvironment(ctx, environment.Id)
-	if err != nil {
-		return nil
-	}
-	// Filter by deployment ID (smaller set after index lookup)
-	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(envTargets))
-	for _, releaseTarget := range envTargets {
-		if releaseTarget.DeploymentId == version.DeploymentId {
-			releaseTargetsList = append(releaseTargetsList, releaseTarget)
-		}
-	}
-	return releaseTargetsList
+func getReleaseTargets(ctx context.Context, getters Getters, version *oapi.DeploymentVersion, environment *oapi.Environment) []oapi.ReleaseTarget {
+	envTargets, _ := getters.GetReleaseTargetsForDeploymentAndEnvironment(ctx, version.DeploymentId, environment.Id)
+	return envTargets
 }
 
 // ReleaseTargetJobTracker tracks release targets and their associated jobs for a specific
@@ -36,7 +26,7 @@ type ReleaseTargetJobTracker struct {
 
 	Environment     *oapi.Environment
 	Version         *oapi.DeploymentVersion
-	ReleaseTargets  []*oapi.ReleaseTarget
+	ReleaseTargets  []oapi.ReleaseTarget
 	SuccessStatuses map[oapi.JobStatus]bool
 
 	// Cached computed values
@@ -104,7 +94,7 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	// Use indexed lookup through release targets instead of scanning all jobs
 	for _, rt := range t.ReleaseTargets {
 		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
-		rtJobs := t.getters.GetJobsForReleaseTarget(rt)
+		rtJobs := t.getters.GetJobsForReleaseTarget(&rt)
 		for _, job := range rtJobs {
 			// Get the release to check version
 			release, _ := t.getters.GetRelease(ctx, job.ReleaseId)

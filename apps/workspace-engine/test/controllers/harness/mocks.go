@@ -251,7 +251,31 @@ func (g *DesiredReleaseGetter) GetReleaseTargetsForDeployment(_ context.Context,
 	if g.ReleaseTargetsByDeployment != nil {
 		return g.ReleaseTargetsByDeployment[depID], nil
 	}
-	return nil, nil
+	var results []*oapi.ReleaseTarget
+	for _, rt := range g.ReleaseTargetsList {
+		if rt.DeploymentId == depID {
+			results = append(results, rt)
+		}
+	}
+	return results, nil
+}
+func (g *DesiredReleaseGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, depID, envID string) ([]oapi.ReleaseTarget, error) {
+	var source []*oapi.ReleaseTarget
+	switch {
+	case g.ReleaseTargetsByDeployment != nil:
+		source = g.ReleaseTargetsByDeployment[depID]
+	case g.ReleaseTargetsByEnvironment != nil:
+		source = g.ReleaseTargetsByEnvironment[envID]
+	default:
+		source = g.ReleaseTargetsList
+	}
+	var results []oapi.ReleaseTarget
+	for _, rt := range source {
+		if rt.DeploymentId == depID && rt.EnvironmentId == envID {
+			results = append(results, *rt)
+		}
+	}
+	return results, nil
 }
 func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(rt *oapi.ReleaseTarget) map[string]*oapi.Job {
 	if g.JobsByReleaseTarget != nil {

@@ -106,6 +106,9 @@ func (m *mockGetter) GetReleaseTargetsForEnvironment(_ context.Context, _ string
 func (m *mockGetter) GetReleaseTargetsForDeployment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
+func (m *mockGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, _, _ string) ([]oapi.ReleaseTarget, error) {
+	return nil, nil
+}
 func (m *mockGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return nil
 }
