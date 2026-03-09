@@ -1,7 +1,8 @@
+import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, eq, or, sql } from "@ctrlplane/db";
+import { and, count, eq, inArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -152,128 +153,136 @@ export const resourcesRouter = router({
         resourceId: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, resourceId } = input;
-      const result = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations",
-        {
-          params: {
-            path: {
-              workspaceId,
-              relatableEntityType: "resource",
-              entityId: resourceId,
-            },
-          },
-        },
-      );
-      return result.data;
-    }),
-
-  computedRelations: protectedProcedure
-    .input(z.object({ resourceId: z.uuid() }))
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input, ctx }) => {
       const { resourceId } = input;
 
-      const cer = schema.computedEntityRelationship;
-      const rule = schema.relationshipRule;
-      const res = schema.resource;
-      const dep = schema.deployment;
-      const env = schema.environment;
-
-      const rows = await ctx.db
+      const outgoingRows = await ctx.db
         .select({
-          ruleId: cer.ruleId,
-          ruleName: rule.name,
-          ruleReference: rule.reference,
-          fromEntityType: cer.fromEntityType,
-          fromEntityId: cer.fromEntityId,
-          toEntityType: cer.toEntityType,
-          toEntityId: cer.toEntityId,
-          relatedEntityName: sql<string>`
-            COALESCE(
-              ${res.name},
-              ${dep.name},
-              ${env.name}
-            )
-          `.as("related_entity_name"),
-          relatedEntityType: sql<string>`
-            CASE
-              WHEN ${res.id} IS NOT NULL THEN 'resource'
-              WHEN ${dep.id} IS NOT NULL THEN 'deployment'
-              WHEN ${env.id} IS NOT NULL THEN 'environment'
-            END
-          `.as("related_entity_type"),
-          relatedEntityId: sql<string>`
-            COALESCE(
-              ${res.id}::text,
-              ${dep.id}::text,
-              ${env.id}::text
-            )
-          `.as("related_entity_id"),
-          resourceKind: res.kind,
-          resourceVersion: res.version,
-          resourceIdentifier: res.identifier,
-          direction: sql<string>`
-            CASE
-              WHEN ${cer.fromEntityId} = ${resourceId}::uuid
-                   AND ${cer.fromEntityType} = 'resource'
-                THEN 'outgoing'
-              ELSE 'incoming'
-            END
-          `.as("direction"),
+          ruleId: schema.computedEntityRelationship.ruleId,
+          relatedEntityType: schema.computedEntityRelationship.toEntityType,
+          relatedEntityId: schema.computedEntityRelationship.toEntityId,
+          ruleName: schema.relationshipRule.name,
+          ruleReference: schema.relationshipRule.reference,
         })
-        .from(cer)
-        .innerJoin(rule, eq(cer.ruleId, rule.id))
-        .leftJoin(
-          res,
-          and(
-            eq(
-              res.id,
-              sql`CASE
-                WHEN ${cer.fromEntityId} = ${resourceId}::uuid AND ${cer.fromEntityType} = 'resource'
-                  THEN ${cer.toEntityId}
-                ELSE ${cer.fromEntityId}
-              END`,
-            ),
-            sql`${res.deletedAt} IS NULL`,
-          ),
-        )
-        .leftJoin(
-          dep,
+        .from(schema.computedEntityRelationship)
+        .innerJoin(
+          schema.relationshipRule,
           eq(
-            dep.id,
-            sql`CASE
-              WHEN ${cer.fromEntityId} = ${resourceId}::uuid AND ${cer.fromEntityType} = 'resource'
-                THEN ${cer.toEntityId}
-              ELSE ${cer.fromEntityId}
-            END`,
-          ),
-        )
-        .leftJoin(
-          env,
-          eq(
-            env.id,
-            sql`CASE
-              WHEN ${cer.fromEntityId} = ${resourceId}::uuid AND ${cer.fromEntityType} = 'resource'
-                THEN ${cer.toEntityId}
-              ELSE ${cer.fromEntityId}
-            END`,
+            schema.computedEntityRelationship.ruleId,
+            schema.relationshipRule.id,
           ),
         )
         .where(
-          or(
-            and(
-              eq(cer.fromEntityId, resourceId),
-              eq(cer.fromEntityType, "resource"),
-            ),
-            and(
-              eq(cer.toEntityId, resourceId),
-              eq(cer.toEntityType, "resource"),
-            ),
+          and(
+            eq(schema.computedEntityRelationship.fromEntityId, resourceId),
+            eq(schema.computedEntityRelationship.fromEntityType, "resource"),
           ),
         );
 
-      return rows;
+      const incomingRows = await ctx.db
+        .select({
+          ruleId: schema.computedEntityRelationship.ruleId,
+          relatedEntityType: schema.computedEntityRelationship.fromEntityType,
+          relatedEntityId: schema.computedEntityRelationship.fromEntityId,
+          ruleName: schema.relationshipRule.name,
+          ruleReference: schema.relationshipRule.reference,
+        })
+        .from(schema.computedEntityRelationship)
+        .innerJoin(
+          schema.relationshipRule,
+          eq(
+            schema.computedEntityRelationship.ruleId,
+            schema.relationshipRule.id,
+          ),
+        )
+        .where(
+          and(
+            eq(schema.computedEntityRelationship.toEntityId, resourceId),
+            eq(schema.computedEntityRelationship.toEntityType, "resource"),
+          ),
+        );
+
+      const allRows = [
+        ...outgoingRows.map((r) => ({ ...r, direction: "to" as const })),
+        ...incomingRows.map((r) => ({ ...r, direction: "from" as const })),
+      ];
+
+      const entityIdsByType = {
+        resource: [
+          ...new Set(
+            allRows
+              .filter((r) => r.relatedEntityType === "resource")
+              .map((r) => r.relatedEntityId),
+          ),
+        ],
+        deployment: [
+          ...new Set(
+            allRows
+              .filter((r) => r.relatedEntityType === "deployment")
+              .map((r) => r.relatedEntityId),
+          ),
+        ],
+        environment: [
+          ...new Set(
+            allRows
+              .filter((r) => r.relatedEntityType === "environment")
+              .map((r) => r.relatedEntityId),
+          ),
+        ],
+      };
+
+      const [resources, deployments, environments] = await Promise.all([
+        entityIdsByType.resource.length > 0
+          ? ctx.db
+              .select()
+              .from(schema.resource)
+              .where(inArray(schema.resource.id, entityIdsByType.resource))
+          : [],
+        entityIdsByType.deployment.length > 0
+          ? ctx.db
+              .select()
+              .from(schema.deployment)
+              .where(inArray(schema.deployment.id, entityIdsByType.deployment))
+          : [],
+        entityIdsByType.environment.length > 0
+          ? ctx.db
+              .select()
+              .from(schema.environment)
+              .where(
+                inArray(schema.environment.id, entityIdsByType.environment),
+              )
+          : [],
+      ]);
+
+      const entityMap = new Map<string, Record<string, unknown>>();
+      for (const r of resources) entityMap.set(r.id, r);
+      for (const d of deployments) entityMap.set(d.id, d);
+      for (const e of environments) entityMap.set(e.id, e);
+
+      const relations: Record<
+        string,
+        Array<{
+          direction: "from" | "to";
+          entityId: string;
+          entityType: string;
+          entity: Record<string, unknown>;
+          rule: { id: string; name: string };
+        }>
+      > = {};
+
+      for (const row of allRows) {
+        const ref = row.ruleReference;
+        if (!relations[ref]) relations[ref] = [];
+        relations[ref].push({
+          direction: row.direction,
+          entityId: row.relatedEntityId,
+          entityType: row.relatedEntityType,
+          entity: entityMap.get(row.relatedEntityId) ?? {},
+          rule: { id: row.ruleId, name: row.ruleName },
+        });
+      }
+
+      return { relations };
     }),
 
   releaseTargets: protectedProcedure
@@ -285,23 +294,84 @@ export const resourcesRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { workspaceId, identifier, limit, offset } = input;
-      const resourceIdentifier = encodeURIComponent(identifier);
-      const result = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets",
-        {
-          params: { path: { workspaceId, resourceIdentifier } },
-          query: { limit, offset },
+
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(
+          eq(schema.resource.workspaceId, workspaceId),
+          eq(schema.resource.identifier, identifier),
+        ),
+      });
+
+      if (!resource)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Resource not found",
+        });
+
+      const [countResult] = await ctx.db
+        .select({ total: count() })
+        .from(schema.releaseTargetDesiredRelease)
+        .where(eq(schema.releaseTargetDesiredRelease.resourceId, resource.id));
+
+      const total = countResult?.total ?? 0;
+
+      const currentVersionTag = sql<string | null>`(
+        SELECT dv.tag FROM "release" r
+        JOIN "deployment_version" dv ON dv.id = r.version_id
+        WHERE r.resource_id = ${schema.releaseTargetDesiredRelease.resourceId}
+          AND r.environment_id = ${schema.releaseTargetDesiredRelease.environmentId}
+          AND r.deployment_id = ${schema.releaseTargetDesiredRelease.deploymentId}
+        ORDER BY r.created_at DESC
+        LIMIT 1
+      )`;
+
+      const rows = await ctx.db
+        .select({
+          resourceId: schema.releaseTargetDesiredRelease.resourceId,
+          environmentId: schema.releaseTargetDesiredRelease.environmentId,
+          deploymentId: schema.releaseTargetDesiredRelease.deploymentId,
+          deploymentName: schema.deployment.name,
+          environmentName: schema.environment.name,
+          currentVersionTag,
+        })
+        .from(schema.releaseTargetDesiredRelease)
+        .innerJoin(
+          schema.deployment,
+          eq(
+            schema.releaseTargetDesiredRelease.deploymentId,
+            schema.deployment.id,
+          ),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(
+            schema.releaseTargetDesiredRelease.environmentId,
+            schema.environment.id,
+          ),
+        )
+        .where(eq(schema.releaseTargetDesiredRelease.resourceId, resource.id))
+        .limit(limit)
+        .offset(offset);
+
+      const items = rows.map((row) => ({
+        deployment: { id: row.deploymentId, name: row.deploymentName },
+        environment: { id: row.environmentId, name: row.environmentName },
+        releaseTarget: {
+          resourceId: row.resourceId,
+          environmentId: row.environmentId,
+          deploymentId: row.deploymentId,
         },
-      );
+        resource: { id: row.resourceId },
+        state: {
+          currentRelease: row.currentVersionTag
+            ? { version: { tag: row.currentVersionTag } }
+            : undefined,
+        },
+      }));
 
-      if (result.error != null)
-        throw new Error(
-          `Failed to fetch release targets: ${JSON.stringify(result.error)}`,
-        );
-
-      return result.data;
+      return { items, limit, offset, total };
     }),
 
   variables: protectedProcedure

@@ -61,17 +61,12 @@ export const systemsRouter = router({
   delete: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string(),
-        systemId: z.string().uuid(),
+        workspaceId: z.uuid(),
+        systemId: z.uuid(),
       }),
     )
     .mutation(async ({ input }) => {
       const { workspaceId, systemId } = input;
-
-      // Prevent deletion of default system
-      if (systemId === "00000000-0000-0000-0000-000000000000") {
-        throw new Error("Cannot delete the default system");
-      }
 
       const response = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/systems/{systemId}",
