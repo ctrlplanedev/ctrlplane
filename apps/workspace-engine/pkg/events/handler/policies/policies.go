@@ -47,7 +47,7 @@ func getAffectedTargets(ctx context.Context, ws *workspace.Workspace, policyID s
 }
 
 func enqueueAffectedTargets(ctx context.Context, ws *workspace.Workspace, targets map[string]*oapi.ReleaseTarget) {
-	params := make([]events.DesiredReleaseEvalParams, len(targets))
+	params := make([]events.DesiredReleaseEvalParams, 0, len(targets))
 	for _, rt := range targets {
 		params = append(params, events.DesiredReleaseEvalParams{
 			WorkspaceID:   ws.ID,
