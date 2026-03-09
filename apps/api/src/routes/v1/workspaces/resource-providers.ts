@@ -157,7 +157,7 @@ const setResourceProviderResources: AsyncTypedHandler<
     );
   });
 
-  res.status(200).json({ ok: true });
+  res.status(202).json({ ok: true, method: "direct" });
 };
 
 export const resourceProvidersRouter = Router({ mergeParams: true })
