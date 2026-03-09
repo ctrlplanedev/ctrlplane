@@ -409,7 +409,7 @@ export function LazyLoadDeploymentCard({
 
   const numTargets = rtQuery.data?.total ?? 0;
 
-  const releaseTargets = rtQuery.data?.items ?? [];
+  const releaseTargets = rtQuery.data ?? [];
 
   const latestVersion = versions.data?.[0];
   const deploymentsLast24h = last24hDeployments?.length ?? 0;

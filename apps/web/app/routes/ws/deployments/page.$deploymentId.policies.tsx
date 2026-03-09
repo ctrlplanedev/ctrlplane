@@ -342,7 +342,7 @@ const DeploymentPolicies: React.FC = () => {
     );
   }, [policiesQuery.data]);
 
-  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const releaseTargets = releaseTargetsQuery.data ?? [];
 
   const releaseTargetsByKey = useMemo(() => {
     return new Map(

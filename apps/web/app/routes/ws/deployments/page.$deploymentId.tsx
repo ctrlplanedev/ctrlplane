@@ -78,8 +78,8 @@ export default function DeploymentDetail() {
   });
 
   const releaseTargets = useMemo(
-    () => releaseTargetsQuery.data?.items ?? [],
-    [releaseTargetsQuery.data?.items],
+    () => releaseTargetsQuery.data ?? [],
+    [releaseTargetsQuery.data],
   );
 
   // Fetch all environments from the system

@@ -419,14 +419,13 @@ export default function ReleaseTargetEvaluationsPage() {
   );
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,
   });
 
   const releaseTarget = useMemo(() => {
-    return releaseTargetsQuery.data?.items.find(
+    return releaseTargetsQuery.data?.find(
       (rt) =>
         rt.releaseTarget.resourceId === parsed?.resourceId &&
         rt.releaseTarget.environmentId === parsed.environmentId,

@@ -116,6 +116,14 @@ CREATE TABLE release (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE release_target_desired_release (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    resource_id UUID NOT NULL,
+    environment_id UUID NOT NULL,
+    deployment_id UUID NOT NULL,
+    desired_release_id UUID REFERENCES release(id) ON DELETE SET NULL
+);
+
 CREATE TABLE release_variable (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     release_id UUID NOT NULL REFERENCES release(id) ON DELETE CASCADE,

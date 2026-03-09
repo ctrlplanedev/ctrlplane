@@ -539,6 +539,14 @@ type ReleaseJob struct {
 	JobID     uuid.UUID
 }
 
+type ReleaseTargetDesiredRelease struct {
+	ID               uuid.UUID
+	ResourceID       uuid.UUID
+	EnvironmentID    uuid.UUID
+	DeploymentID     uuid.UUID
+	DesiredReleaseID uuid.UUID
+}
+
 type ReleaseVariable struct {
 	ID        uuid.UUID
 	ReleaseID uuid.UUID

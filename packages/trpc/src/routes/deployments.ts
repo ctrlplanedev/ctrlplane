@@ -42,13 +42,13 @@ const getAgentsArrayWithLegacyAgent = (
   const agentsArrayWithLegacyAgent = [
     ...agentsArray,
     deployment.jobAgentId != null &&
-    deployment.jobAgentId !== "" &&
-    deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
+      deployment.jobAgentId !== "" &&
+      deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
       ? {
-          ref: deployment.jobAgentId,
-          config: deployment.jobAgentConfig,
-          selector: "true",
-        }
+        ref: deployment.jobAgentId,
+        config: deployment.jobAgentConfig,
+        selector: "true",
+      }
       : null,
   ].filter(isPresent);
   return agentsArrayWithLegacyAgent;
@@ -135,50 +135,6 @@ export const deploymentsRouter = router({
       }),
     )
     .query(async ({ input, ctx }) => {
-      console.log(
-        await ctx.db
-          .selectDistinctOn(
-            [schema.deployment.id, schema.resource.id, schema.environment.id],
-            {
-              deployment: schema.deployment,
-              environment: schema.environment,
-              resource: schema.resource,
-            },
-          )
-          .from(schema.computedDeploymentResource)
-          .innerJoin(
-            schema.deployment,
-            eq(
-              schema.computedDeploymentResource.deploymentId,
-              schema.deployment.id,
-            ),
-          )
-          .innerJoin(
-            schema.resource,
-            eq(
-              schema.computedDeploymentResource.resourceId,
-              schema.resource.id,
-            ),
-          )
-          .innerJoin(
-            schema.systemDeployment,
-            eq(
-              schema.computedDeploymentResource.deploymentId,
-              schema.systemDeployment.deploymentId,
-            ),
-          )
-          .innerJoin(
-            schema.systemEnvironment,
-            eq(
-              schema.systemDeployment.systemId,
-              schema.systemEnvironment.systemId,
-            ),
-          )
-          .innerJoin(
-            schema.environment,
-            eq(schema.systemEnvironment.environmentId, schema.environment.id),
-          ),
-      );
       const releaseTargets = await ctx.db
         .selectDistinctOn(
           [schema.deployment.id, schema.resource.id, schema.environment.id],
@@ -352,12 +308,12 @@ export const deploymentsRouter = router({
         latestJob:
           rt.latestJob != null
             ? {
-                ...rt.latestJob,
-                verifications: buildVerifications(
-                  rt.latestJob.id,
-                  rt.latestJob.createdAt,
-                ),
-              }
+              ...rt.latestJob,
+              verifications: buildVerifications(
+                rt.latestJob.id,
+                rt.latestJob.createdAt,
+              ),
+            }
             : null,
       }));
     }),
@@ -440,7 +396,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
+              validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });

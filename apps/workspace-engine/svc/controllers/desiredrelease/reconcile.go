@@ -64,6 +64,10 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 // (newest-first) and sets r.version to the first passing version. Returns
 // the earliest NextEvaluationTime when all versions are blocked.
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
+	if len(r.versions) == 0 {
+		return nil
+	}
+
 	oapiRT := r.rt.ToOAPI()
 	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
 
@@ -117,6 +121,10 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 	return nil
 }
 
+func (r *reconciler) persistNoDesiredRelease(ctx context.Context) error {
+	return r.setter.SetDesiredRelease(ctx, r.rt, nil)
+}
+
 func (r *reconciler) persistRelease(ctx context.Context) (*oapi.Release, error) {
 	release := buildRelease(r.rt, r.version, r.vars)
 	if err := r.setter.SetDesiredRelease(ctx, r.rt, release); err != nil {
@@ -132,6 +140,8 @@ func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Se
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
 	defer span.End()
 
+	log.Info("reconcile", "workspaceID", workspaceID, "rt", rt)
+
 	workspaceIDUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("parse workspace id: %w", err)
@@ -142,18 +152,23 @@ func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Se
 	if err := r.loadInput(ctx); err != nil {
 		return nil, recordErr(span, "load input", err)
 	}
-	if len(r.versions) == 0 {
-		return &ReconcileResult{}, nil
-	}
+
+	log.Info("find deployable version", "versions", len(r.versions))
 
 	nextTime := r.findDeployableVersion(ctx)
 	if r.version == nil {
+		if err := r.persistNoDesiredRelease(ctx); err != nil {
+			return nil, recordErr(span, "persist no desired release", err)
+		}
 		return &ReconcileResult{NextReconcileAt: nextTime}, nil
 	}
 
 	if err := r.resolveVariables(ctx); err != nil {
 		return nil, recordErr(span, "resolve variables", err)
 	}
+
+	fmt.Println("version", r.version.Tag)
+	fmt.Println("variables", r.vars)
 
 	release, err := r.persistRelease(ctx)
 	if err != nil {
