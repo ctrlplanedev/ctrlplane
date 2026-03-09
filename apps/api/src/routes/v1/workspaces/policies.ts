@@ -7,6 +7,8 @@ import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { db } from "@ctrlplane/db/client";
+import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
 
 const listPolicies: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/policies",
@@ -44,6 +46,8 @@ const deletePolicy: AsyncTypedHandler<
       policy.error.error ?? "Policy not found",
       policy.response.status,
     );
+
+  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   try {
     await sendGoEvent({
@@ -98,6 +102,8 @@ const upsertPolicy: AsyncTypedHandler<
 
   // Determine if this is a create or update
   const isUpdate = existingPolicy.data != null;
+
+  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   try {
     await sendGoEvent({
@@ -161,6 +167,8 @@ const createPolicy: AsyncTypedHandler<
       createdAt,
     })),
   };
+
+  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   try {
     await sendGoEvent({
