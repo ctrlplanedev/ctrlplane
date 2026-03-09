@@ -86,7 +86,7 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
       offset: 0,
     });
 
-  const rule = relationshipRules?.items.find((r) => r.id === ruleId);
+  const rule = relationshipRules?.find((r) => r.id === ruleId);
 
   const form = useForm<RelationshipRuleFormData>({
     resolver: zodResolver(relationshipRuleSchema),
@@ -113,34 +113,24 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
     name: "metadata",
   });
 
-  // Load rule data into form when available
   useEffect(() => {
     if (rule) {
-      const fromSelector =
-        rule.fromSelector && "cel" in rule.fromSelector
-          ? rule.fromSelector.cel
-          : "";
-      const toSelector =
-        rule.toSelector && "cel" in rule.toSelector ? rule.toSelector.cel : "";
-      const matcherCel = "cel" in rule.matcher ? rule.matcher.cel : "";
-
-      const metadataArray = Object.entries(rule.metadata).map(
-        ([key, value]) => ({
-          key,
-          value,
-        }),
-      );
+      const metadata: Record<string, string> = rule.metadata ?? {};
+      const metadataArray = Object.entries(metadata).map(([key, value]) => ({
+        key,
+        value,
+      }));
 
       form.reset({
         name: rule.name,
         reference: rule.reference,
         description: rule.description ?? "",
-        relationshipType: rule.relationshipType,
-        fromType: rule.fromType,
-        fromSelectorCel: fromSelector,
-        toType: rule.toType,
-        toSelectorCel: toSelector,
-        matcherCel: matcherCel,
+        relationshipType: "",
+        fromType: "resource",
+        fromSelectorCel: "",
+        toType: "resource",
+        toSelectorCel: "",
+        matcherCel: rule.cel,
         metadata: metadataArray,
       });
     }

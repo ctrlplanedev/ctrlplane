@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import z from "zod";
 
+import { eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
@@ -50,20 +52,17 @@ export const jobAgentsRouter = router({
     }),
 
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
-    .query(async ({ input }) => {
-      const jobAgent = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              jobAgentId: input.jobAgentId,
-            },
-          },
-        },
-      );
-      return jobAgent.data;
+    .input(z.object({ jobAgentId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const jobAgent = await ctx.db.query.jobAgent.findFirst({
+        where: eq(schema.jobAgent.id, input.jobAgentId),
+      });
+      if (jobAgent == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Job agent not found",
+        });
+      return jobAgent;
     }),
 
   create: protectedProcedure

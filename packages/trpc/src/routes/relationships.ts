@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { desc, eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -15,23 +16,14 @@ export const relationshipsRouter = router({
         limit: z.number().optional(),
       }),
     )
-    .query(async ({ input }) => {
-      const result = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/relationship-rules",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-            },
-            query: {
-              offset: input.offset,
-              limit: input.limit,
-            },
-          },
-        },
-      );
-
-      return result.data;
+    .query(async ({ input, ctx }) => {
+      const rules = await ctx.db.query.relationshipRule.findMany({
+        where: eq(schema.relationshipRule.workspaceId, input.workspaceId),
+        offset: input.offset,
+        limit: input.limit,
+        orderBy: [desc(schema.relationshipRule.name)],
+      });
+      return rules;
     }),
 
   create: protectedProcedure

@@ -39,8 +39,7 @@ export function meta() {
   ];
 }
 
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
+const formatRelativeTime = (date: Date) => {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -63,7 +62,7 @@ export default function Providers() {
     offset: 0,
   });
 
-  const items = providers.data?.items ?? [];
+  const items = providers.data ?? [];
 
   const getMetadata = (provider: (typeof items)[number]) =>
     (provider.metadata as Record<string, string> | null | undefined) ?? {};

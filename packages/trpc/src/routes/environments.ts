@@ -33,25 +33,24 @@ export const environmentRouter = router({
   resources: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.uuid(),
         environmentId: z.string(),
         limit: z.number().min(1).max(1000).default(50),
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, limit, offset } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources",
+    .query(async ({ input, ctx }) => {
+      const resources = await ctx.db.query.computedEnvironmentResource.findMany(
         {
-          params: {
-            path: { workspaceId, environmentId },
-            query: { limit, offset },
-          },
+          where: eq(
+            schema.computedEnvironmentResource.environmentId,
+            input.environmentId,
+          ),
+          limit: input.limit,
+          offset: input.offset,
         },
       );
 
-      return result.data;
+      return resources;
     }),
 
   releaseTargets: protectedProcedure

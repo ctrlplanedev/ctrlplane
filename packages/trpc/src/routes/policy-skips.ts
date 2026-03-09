@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { and, eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
@@ -11,21 +13,20 @@ export const policySkipsRouter = router({
   forEnvAndVersion: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string(),
         environmentId: z.string(),
         versionId: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, versionId } = input;
-      const deploymentVersionId = versionId;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/policy-skips/environment/{environmentId}/version/{deploymentVersionId}",
-        {
-          params: { path: { workspaceId, environmentId, deploymentVersionId } },
-        },
-      );
-      return result.data?.items ?? [];
+    .query(async ({ input, ctx }) => {
+      const { environmentId, versionId } = input;
+      const policySkips = await ctx.db.query.policySkip.findMany({
+        where: and(
+          eq(schema.policySkip.environmentId, environmentId),
+          eq(schema.policySkip.versionId, versionId),
+        ),
+      });
+
+      return policySkips;
     }),
 
   createForEnvAndVersion: protectedProcedure

@@ -86,26 +86,17 @@ export const resourcesRouter = router({
         identifier: z.string(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { workspaceId, identifier } = input;
-      // URL encode the identifier to handle special characters like slashes
-      const encodedIdentifier = encodeURIComponent(identifier);
-      const result = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-        {
-          params: {
-            path: { workspaceId, resourceIdentifier: encodedIdentifier },
-          },
-        },
-      );
 
-      if (result.error) {
-        throw new Error(
-          `Failed to fetch resource: ${JSON.stringify(result.error)}`,
-        );
-      }
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(
+          eq(schema.resource.workspaceId, workspaceId),
+          eq(schema.resource.identifier, identifier),
+        ),
+      });
 
-      return result.data;
+      return resource;
     }),
 
   list: protectedProcedure

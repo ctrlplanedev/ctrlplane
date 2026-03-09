@@ -53,7 +53,6 @@ function useSkipForm(environmentId: string, versionId: string) {
       .then(() => form.reset())
       .then(() =>
         utils.policySkips.forEnvAndVersion.invalidate({
-          workspaceId: workspace.id,
           environmentId,
           versionId,
         }),

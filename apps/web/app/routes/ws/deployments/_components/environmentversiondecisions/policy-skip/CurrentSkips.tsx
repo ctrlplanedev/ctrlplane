@@ -8,17 +8,27 @@ import { Button } from "~/components/ui/button";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { getRuleDisplay } from "./utils";
 
+type PolicySkipRecord = {
+  id: string;
+  createdAt: Date;
+  createdBy: string;
+  environmentId: string | null;
+  expiresAt: Date | null;
+  reason: string;
+  resourceId: string | null;
+  ruleId: string;
+  versionId: string;
+};
+
 function useCurrentSkips(environmentId: string, versionId: string) {
-  const { workspace } = useWorkspace();
   const { data, isLoading } = trpc.policySkips.forEnvAndVersion.useQuery({
-    workspaceId: workspace.id,
     environmentId,
     versionId,
   });
-  return { currentSkips: data ?? [], isLoading };
+  return { currentSkips: data, isLoading };
 }
 
-function useDeleteSkip(skip: WorkspaceEngine["schemas"]["PolicySkip"]) {
+function useDeleteSkip(skip: PolicySkipRecord) {
   const { workspace } = useWorkspace();
   const utils = trpc.useUtils();
   const deleteSkipMutation = trpc.policySkips.delete.useMutation();
@@ -28,7 +38,6 @@ function useDeleteSkip(skip: WorkspaceEngine["schemas"]["PolicySkip"]) {
       .then(() => toast.success("Skip deletion queued successfully"))
       .then(() =>
         utils.policySkips.forEnvAndVersion.invalidate({
-          workspaceId: workspace.id,
           environmentId: skip.environmentId ?? "",
           versionId: skip.versionId,
         }),
@@ -41,7 +50,7 @@ function Skip({
   skip,
   rule,
 }: {
-  skip: WorkspaceEngine["schemas"]["PolicySkip"];
+  skip: PolicySkipRecord;
   rule: WorkspaceEngine["schemas"]["PolicyRule"];
 }) {
   const onClickDelete = useDeleteSkip(skip);
@@ -55,7 +64,7 @@ function Skip({
           </span>
         ) : null}
       </span>
-      <div className="flex-grow" />
+      <div className="grow" />
       <Button
         size="icon-sm"
         variant="ghost"
@@ -77,8 +86,7 @@ export function CurrentSkips({
   versionId: string;
   rules: WorkspaceEngine["schemas"]["PolicyRule"][];
 }) {
-  const { currentSkips } = useCurrentSkips(environmentId, versionId);
-  if (currentSkips.length === 0) return null;
+  const { currentSkips = [] } = useCurrentSkips(environmentId, versionId);
   return (
     <div className="space-y-2">
       <h3 className="font-medium">Current skips</h3>
