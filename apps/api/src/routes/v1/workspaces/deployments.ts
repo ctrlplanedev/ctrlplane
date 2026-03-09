@@ -4,6 +4,10 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
+import { takeFirst } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
@@ -121,7 +125,7 @@ const postDeployment: AsyncTypedHandler<
     jobAgents: body.jobAgents ?? [],
   };
 
-  const isValid = await validResourceSelector(body.resourceSelector);
+  const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
   try {
@@ -177,7 +181,7 @@ const upsertDeployment: AsyncTypedHandler<
     return;
   }
 
-  const isValid = await validResourceSelector(body.resourceSelector);
+  const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
   try {
@@ -238,18 +242,24 @@ const createDeploymentVersion: AsyncTypedHandler<
     jobAgentConfig: body.jobAgentConfig ?? {},
     metadata: body.metadata ?? {},
     deploymentId,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
     id: uuidv4(),
   };
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentVersionUpdated,
-    timestamp: Date.now(),
-    data,
+  const version = await db.transaction(async (tx) => {
+    const version = await tx
+      .insert(schema.deploymentVersion)
+      .values(data)
+      .onConflictDoNothing()
+      .returning()
+      .then(takeFirst);
+
+    await enqueueReleaseTargetsForDeployment(tx, workspaceId, deploymentId);
+
+    return version;
   });
 
-  res.status(200).json(data);
+  res.status(200).json(version);
 };
 
 export const deploymentsRouter = Router({ mergeParams: true })

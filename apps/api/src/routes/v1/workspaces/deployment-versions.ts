@@ -2,8 +2,12 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
+
+import { eq, takeFirst } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const upsertUserApprovalRecord: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records",
@@ -47,29 +51,32 @@ const updateDeploymentVersion: AsyncTypedHandler<
   const { workspaceId, deploymentVersionId } = req.params;
   if (req.apiContext == null) throw new ApiError("Unauthorized", 401);
 
-  const deploymentVersionResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
-    { params: { path: { workspaceId, deploymentVersionId } } },
-  );
+  const { createdAt, ...body } = req.body;
 
-  if (deploymentVersionResponse.error != null)
-    throw new ApiError(
-      deploymentVersionResponse.error.error ?? "Unknown error",
-      deploymentVersionResponse.response.status,
+  const setValues = {
+    ...body,
+    ...(createdAt != null ? { createdAt: new Date(createdAt) } : {}),
+  };
+
+  const updatedVersion = await db.transaction(async (tx) => {
+    const existingVersion = await tx
+      .select()
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.id, deploymentVersionId))
+      .then(takeFirst);
+    await tx
+      .update(schema.deploymentVersion)
+      .set(setValues)
+      .where(eq(schema.deploymentVersion.id, deploymentVersionId));
+    await enqueueReleaseTargetsForDeployment(
+      tx,
+      workspaceId,
+      existingVersion.deploymentId,
     );
-  const { data: deploymentVersion } = deploymentVersionResponse;
-
-  const definedFields = req.body;
-  const updatedDeploymentVersion = { ...deploymentVersion, ...definedFields };
-
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentVersionUpdated,
-    timestamp: Date.now(),
-    data: updatedDeploymentVersion,
+    return { ...existingVersion, ...setValues };
   });
 
-  res.status(200).json(updatedDeploymentVersion);
+  res.status(200).json(updatedVersion);
 };
 
 export const deploymentVersionsRouter = Router({ mergeParams: true })

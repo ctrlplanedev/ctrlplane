@@ -5,8 +5,11 @@ import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, asc, desc, eq, inArray } from "@ctrlplane/db";
-import { enqueueDeploymentSelectorEval } from "@ctrlplane/db/reconcilers";
+import { and, asc, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
+import {
+  enqueueDeploymentSelectorEval,
+  enqueueReleaseTargetsForDeployment,
+} from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -559,24 +562,32 @@ export const deploymentsRouter = router({
           .perform(Permission.DeploymentVersionCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, ...versionData } = input;
       const version = {
         id: uuidv4(),
         ...versionData,
         name: versionData.name ?? versionData.tag,
         metadata: {} as Record<string, string>,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
       };
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.DeploymentVersionCreated,
-        timestamp: Date.now(),
-        data: version,
+      const insertedVersion = await ctx.db.transaction(async (tx) => {
+        const insertedVersion = await tx
+          .insert(schema.deploymentVersion)
+          .values(version)
+          .onConflictDoNothing()
+          .returning()
+          .then(takeFirst);
+        await enqueueReleaseTargetsForDeployment(
+          tx,
+          workspaceId,
+          insertedVersion.deploymentId,
+        );
+        return insertedVersion;
       });
 
-      return version;
+      return insertedVersion;
     }),
 
   deleteVariable: protectedProcedure

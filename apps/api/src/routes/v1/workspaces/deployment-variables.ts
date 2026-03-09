@@ -36,10 +36,7 @@ const listDeploymentVariablesByDeployment: AsyncTypedHandler<
           .select()
           .from(deploymentVariableValue)
           .where(
-            inArray(
-              deploymentVariableValue.deploymentVariableId,
-              variableIds,
-            ),
+            inArray(deploymentVariableValue.deploymentVariableId, variableIds),
           )
       : [];
 
@@ -196,7 +193,7 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
   const { body } = req;
 
   if (body.resourceSelector != null) {
-    const isValid = await validResourceSelector(body.resourceSelector);
+    const isValid = validResourceSelector(body.resourceSelector);
     if (!isValid) throw new ApiError("Invalid resource selector", 400);
   }
 
