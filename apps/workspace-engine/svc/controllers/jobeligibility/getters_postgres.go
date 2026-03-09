@@ -2,13 +2,15 @@ package jobeligibility
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 var _ Getter = (*PostgresGetter)(nil)
@@ -35,17 +37,85 @@ func (g *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTar
 
 func (g *PostgresGetter) GetDesiredRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error) {
 	// TODO: Implement once the desired_release DB schema and queries exist.
-	return nil, fmt.Errorf("not implemented")
+	row, err := db.GetQueries(ctx).GetDesiredReleaseByReleaseTarget(ctx, db.GetDesiredReleaseByReleaseTargetParams{
+		ResourceID:    rt.ResourceID,
+		EnvironmentID: rt.EnvironmentID,
+		DeploymentID:  rt.DeploymentID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return db.ToOapiRelease(row), nil
 }
 
-func (g *PostgresGetter) GetJobsForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
-	// TODO: Implement with ListJobsByReleaseTarget query.
-	return nil
+func (g *PostgresGetter) GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+	deploymentID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		log.Error("failed to parse deployment id", "deploymentID", releaseTarget.DeploymentId, "error", err)
+		return nil
+	}
+	environmentID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		log.Error("failed to parse environment id", "environmentID", releaseTarget.EnvironmentId, "error", err)
+		return nil
+	}
+	resourceID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		log.Error("failed to parse resource id", "resourceID", releaseTarget.ResourceId, "error", err)
+		return nil
+	}
+	rows, err := db.GetQueries(ctx).ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
+		DeploymentID:  deploymentID,
+		EnvironmentID: environmentID,
+		ResourceID:    resourceID,
+	})
+	if err != nil {
+		log.Error("failed to get jobs for release target", "releaseTarget", releaseTarget.Key(), "error", err)
+		return nil
+	}
+	jobs := make(map[string]*oapi.Job, len(rows))
+	for _, row := range rows {
+		job := db.ToOapiJob(db.ListJobsByReleaseIDRow(row))
+		jobs[job.Id] = job
+	}
+	return jobs
 }
 
-func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
-	// TODO: Implement with ListJobsByReleaseTarget query + processing state filter.
-	return nil
+func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+	deploymentID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		log.Error("failed to parse deployment id", "deploymentID", releaseTarget.DeploymentId, "error", err)
+		return nil
+	}
+	environmentID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		log.Error("failed to parse environment id", "environmentID", releaseTarget.EnvironmentId, "error", err)
+		return nil
+	}
+	resourceID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		log.Error("failed to parse resource id", "resourceID", releaseTarget.ResourceId, "error", err)
+		return nil
+	}
+	rows, err := db.GetQueries(ctx).ListJobsByReleaseTargetWithStatuses(ctx, db.ListJobsByReleaseTargetWithStatusesParams{
+		DeploymentID:  deploymentID,
+		EnvironmentID: environmentID,
+		ResourceID:    resourceID,
+		Statuses:      []db.JobStatus{db.JobStatusInProgress, db.JobStatusActionRequired, db.JobStatusPending},
+	})
+	if err != nil {
+		log.Error("failed to get jobs for release target", "releaseTarget", releaseTarget.Key(), "error", err)
+		return nil
+	}
+	jobs := make(map[string]*oapi.Job, len(rows))
+	for _, row := range rows {
+		job := db.ToOapiJob(db.ListJobsByReleaseIDRow(row))
+		jobs[job.Id] = job
+	}
+	return jobs
 }
 
 func (g *PostgresGetter) GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error) {

@@ -312,6 +312,11 @@ func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(rt *oapi.Re
 	return nil
 }
 
+type eligibilityCall struct {
+	WorkspaceID string
+	RT          *desiredrelease.ReleaseTarget
+}
+
 // DesiredReleaseSetter implements desiredrelease.Setter.
 // When JobDispatchQueue is set, it also creates a pending job and enqueues
 // a job-dispatch item (keyed by job ID) for each release that is set,
@@ -325,6 +330,8 @@ type DesiredReleaseSetter struct {
 	JobDispatchGetter *JobDispatchGetter
 	WorkspaceID       string
 	Agents            []oapi.JobAgent
+
+	eligibilityCalls []eligibilityCall
 }
 
 func (s *DesiredReleaseSetter) UpsertRuleEvaluations(_ context.Context, _ []policies.RuleEvaluationParams) error {
@@ -367,6 +374,13 @@ func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, _ *desired
 			})
 		}
 	}
+	return nil
+}
+
+func (s *DesiredReleaseSetter) EnqueueJobEligibility(ctx context.Context, workspaceID string, rt *desiredrelease.ReleaseTarget) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.eligibilityCalls = append(s.eligibilityCalls, eligibilityCall{WorkspaceID: workspaceID, RT: rt})
 	return nil
 }
 

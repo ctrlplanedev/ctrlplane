@@ -21,7 +21,7 @@ type mockQueue struct {
 	enqueuedItems []reconcile.EnqueueParams
 	enqueueErr    error
 
-	enqueuedMany [][]reconcile.EnqueueParams
+	enqueuedMany   [][]reconcile.EnqueueParams
 	enqueueManyErr error
 }
 
@@ -60,76 +60,12 @@ func (q *mockQueue) Retry(_ context.Context, _ reconcile.RetryParams) error {
 var _ reconcile.Queue = (*mockQueue)(nil)
 
 // ===========================================================================
-// PostgresGetter — stub contract tests
-//
-// These verify that the unimplemented stubs return errors. When a method gets
-// a real implementation, its test will fail, signaling that a proper test with
-// database fixtures should replace it.
-// ===========================================================================
-
-func TestPostgresGetter_ReleaseTargetExists_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	ok, err := g.ReleaseTargetExists(context.Background(), &ReleaseTarget{})
-	require.Error(t, err)
-	assert.False(t, ok)
-}
-
-func TestPostgresGetter_GetDesiredRelease_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	r, err := g.GetDesiredRelease(context.Background(), &ReleaseTarget{})
-	require.Error(t, err)
-	assert.Nil(t, r)
-}
-
-func TestPostgresGetter_GetJobsForReleaseTarget_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	jobs, err := g.GetJobsForReleaseTarget(context.Background(), &ReleaseTarget{})
-	require.Error(t, err)
-	assert.Nil(t, jobs)
-}
-
-func TestPostgresGetter_GetPoliciesForReleaseTarget_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	policies, err := g.GetPoliciesForReleaseTarget(context.Background(), &oapi.ReleaseTarget{})
-	require.Error(t, err)
-	assert.Nil(t, policies)
-}
-
-func TestPostgresGetter_GetDeployment_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	d, err := g.GetDeployment(context.Background(), uuid.New())
-	require.Error(t, err)
-	assert.Nil(t, d)
-}
-
-func TestPostgresGetter_GetJobAgent_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	a, err := g.GetJobAgent(context.Background(), uuid.New())
-	require.Error(t, err)
-	assert.Nil(t, a)
-}
-
-func TestPostgresGetter_GetEnvironment_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	e, err := g.GetEnvironment(context.Background(), uuid.New())
-	require.Error(t, err)
-	assert.Nil(t, e)
-}
-
-func TestPostgresGetter_GetResource_Stub(t *testing.T) {
-	g := &PostgresGetter{}
-	r, err := g.GetResource(context.Background(), uuid.New())
-	require.Error(t, err)
-	assert.Nil(t, r)
-}
-
-// ===========================================================================
 // PostgresSetter — CreateJob stub
 // ===========================================================================
 
 func TestPostgresSetter_CreateJob_Stub(t *testing.T) {
 	s := &PostgresSetter{Queue: &mockQueue{}}
-	err := s.CreateJob(context.Background(), &oapi.Job{Id: uuid.New().String()})
+	err := s.CreateJob(context.Background(), &oapi.Job{Id: uuid.New().String()}, &oapi.Release{Id: uuid.New()})
 	require.Error(t, err)
 }
 

@@ -1,6 +1,6 @@
 -- name: InsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6);
+INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at, dispatch_context)
+VALUES ($1, $2, $3, $4, $5, $6, $7);
 
 -- name: InsertReleaseJob :exec
 INSERT INTO release_job (release_id, job_id) VALUES ($1, $2);
@@ -172,6 +172,35 @@ JOIN release r ON r.id = rj.release_id
 WHERE r.deployment_id = @deployment_id
   AND r.environment_id = @environment_id
   AND r.resource_id = @resource_id;
+
+-- name: ListJobsByReleaseTargetWithStatuses :many
+-- Returns all jobs for a given release target (deployment, environment, resource triple) with the given statuses.
+-- The statuses are passed in as a comma-separated list of statuses.
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = @deployment_id
+  AND r.environment_id = @environment_id
+  AND r.resource_id = @resource_id
+  AND j.status = ANY(@statuses::job_status[]);
 
 -- name: ListJobsByReleaseID :many
 SELECT

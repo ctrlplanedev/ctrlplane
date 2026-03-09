@@ -25,8 +25,8 @@ type mockGetter struct {
 	release    *oapi.Release
 	releaseErr error
 
-	jobs    []*oapi.Job
-	jobsErr error
+	jobs           []*oapi.Job
+	processingJobs []*oapi.Job
 
 	policies    []*oapi.Policy
 	policiesErr error
@@ -34,8 +34,8 @@ type mockGetter struct {
 	deployment    *oapi.Deployment
 	deploymentErr error
 
-	jobAgents    map[string]*oapi.JobAgent
-	jobAgentErr  error
+	jobAgents   map[string]*oapi.JobAgent
+	jobAgentErr error
 
 	environment    *oapi.Environment
 	environmentErr error
@@ -52,8 +52,20 @@ func (m *mockGetter) GetDesiredRelease(_ context.Context, _ *ReleaseTarget) (*oa
 	return m.release, m.releaseErr
 }
 
-func (m *mockGetter) GetJobsForReleaseTarget(_ context.Context, _ *ReleaseTarget) ([]*oapi.Job, error) {
-	return m.jobs, m.jobsErr
+func (m *mockGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+	result := make(map[string]*oapi.Job, len(m.jobs))
+	for _, j := range m.jobs {
+		result[j.Id] = j
+	}
+	return result
+}
+
+func (m *mockGetter) GetJobsInProcessingStateForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+	result := make(map[string]*oapi.Job, len(m.processingJobs))
+	for _, j := range m.processingJobs {
+		result[j.Id] = j
+	}
+	return result
 }
 
 func (m *mockGetter) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
@@ -98,11 +110,11 @@ type mockSetter struct {
 	createdJobs  []*oapi.Job
 	createJobErr error
 
-	enqueueCalls    []enqueueCall
-	enqueueErr      error
+	enqueueCalls []enqueueCall
+	enqueueErr   error
 }
 
-func (m *mockSetter) CreateJob(_ context.Context, job *oapi.Job) error {
+func (m *mockSetter) CreateJob(_ context.Context, job *oapi.Job, release *oapi.Release) error {
 	if m.createJobErr != nil {
 		return m.createJobErr
 	}
@@ -421,17 +433,6 @@ func TestReconcile_GetDesiredReleaseFails(t *testing.T) {
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get desired release")
-}
-
-func TestReconcile_GetJobsFails(t *testing.T) {
-	rt := testRT()
-	release := testRelease(rt)
-	getter := &mockGetter{release: release, jobsErr: fmt.Errorf("jobs query failed")}
-	setter := &mockSetter{}
-
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "get jobs for release target")
 }
 
 func TestReconcile_GetPoliciesFails(t *testing.T) {
@@ -1117,156 +1118,6 @@ func TestReconcile_EnqueueFails_Error(t *testing.T) {
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "enqueue job dispatch")
-}
-
-// ---------------------------------------------------------------------------
-// 13. calculateBackoff (pure function)
-// ---------------------------------------------------------------------------
-
-func TestCalculateBackoff(t *testing.T) {
-	linear := oapi.RetryRuleBackoffStrategyLinear
-	exponential := oapi.RetryRuleBackoffStrategyExponential
-
-	tests := []struct {
-		name              string
-		attemptCount      int
-		baseBackoff       int32
-		strategy          *oapi.RetryRuleBackoffStrategy
-		maxBackoff        *int32
-		expectedSeconds   int32
-	}{
-		{
-			name:            "linear: constant regardless of attempt",
-			attemptCount:    1,
-			baseBackoff:     30,
-			strategy:        &linear,
-			expectedSeconds: 30,
-		},
-		{
-			name:            "linear: same for attempt 5",
-			attemptCount:    5,
-			baseBackoff:     30,
-			strategy:        &linear,
-			expectedSeconds: 30,
-		},
-		{
-			name:            "nil strategy defaults to linear",
-			attemptCount:    3,
-			baseBackoff:     20,
-			strategy:        nil,
-			expectedSeconds: 20,
-		},
-		{
-			name:            "exponential: attempt 1 -> base * 2^0 = base",
-			attemptCount:    1,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			expectedSeconds: 10,
-		},
-		{
-			name:            "exponential: attempt 2 -> base * 2^1",
-			attemptCount:    2,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			expectedSeconds: 20,
-		},
-		{
-			name:            "exponential: attempt 3 -> base * 2^2",
-			attemptCount:    3,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			expectedSeconds: 40,
-		},
-		{
-			name:            "exponential: attempt 4 -> base * 2^3",
-			attemptCount:    4,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			expectedSeconds: 80,
-		},
-		{
-			name:            "exponential with max cap",
-			attemptCount:    4,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			maxBackoff:      int32Ptr(50),
-			expectedSeconds: 50,
-		},
-		{
-			name:            "exponential below max cap",
-			attemptCount:    2,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			maxBackoff:      int32Ptr(50),
-			expectedSeconds: 20,
-		},
-		{
-			name:            "exponential: attempt 0 -> base * 2^0 = base",
-			attemptCount:    0,
-			baseBackoff:     10,
-			strategy:        &exponential,
-			expectedSeconds: 10,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := calculateBackoff(tt.attemptCount, tt.baseBackoff, tt.strategy, tt.maxBackoff)
-			expected := time.Duration(tt.expectedSeconds) * time.Second
-			assert.Equal(t, expected, result)
-		})
-	}
-}
-
-// ---------------------------------------------------------------------------
-// 14. buildRetryableStatusMap (pure function)
-// ---------------------------------------------------------------------------
-
-func TestBuildRetryableStatusMap(t *testing.T) {
-	t.Run("no policy rule returns nil", func(t *testing.T) {
-		result := buildRetryableStatusMap(nil, false, 0)
-		assert.Nil(t, result)
-	})
-
-	t.Run("explicit statuses", func(t *testing.T) {
-		statuses := []oapi.JobStatus{oapi.JobStatusFailure, oapi.JobStatusCancelled}
-		result := buildRetryableStatusMap(&statuses, true, 3)
-		require.NotNil(t, result)
-		assert.True(t, result[oapi.JobStatusFailure])
-		assert.True(t, result[oapi.JobStatusCancelled])
-		assert.False(t, result[oapi.JobStatusSuccessful])
-		assert.False(t, result[oapi.JobStatusInvalidJobAgent])
-		assert.Len(t, result, 2)
-	})
-
-	t.Run("default statuses maxRetries > 0", func(t *testing.T) {
-		result := buildRetryableStatusMap(nil, true, 3)
-		require.NotNil(t, result)
-		assert.True(t, result[oapi.JobStatusFailure])
-		assert.True(t, result[oapi.JobStatusInvalidIntegration])
-		assert.True(t, result[oapi.JobStatusInvalidJobAgent])
-		assert.False(t, result[oapi.JobStatusSuccessful], "successful should NOT be counted when maxRetries > 0")
-		assert.False(t, result[oapi.JobStatusCancelled])
-		assert.Len(t, result, 3)
-	})
-
-	t.Run("default statuses maxRetries = 0 includes successful", func(t *testing.T) {
-		result := buildRetryableStatusMap(nil, true, 0)
-		require.NotNil(t, result)
-		assert.True(t, result[oapi.JobStatusFailure])
-		assert.True(t, result[oapi.JobStatusInvalidIntegration])
-		assert.True(t, result[oapi.JobStatusInvalidJobAgent])
-		assert.True(t, result[oapi.JobStatusSuccessful], "successful SHOULD be counted when maxRetries = 0")
-		assert.Len(t, result, 4)
-	})
-
-	t.Run("empty explicit statuses uses defaults", func(t *testing.T) {
-		empty := []oapi.JobStatus{}
-		result := buildRetryableStatusMap(&empty, true, 3)
-		require.NotNil(t, result)
-		assert.True(t, result[oapi.JobStatusFailure])
-		assert.Len(t, result, 3)
-	})
 }
 
 // ---------------------------------------------------------------------------

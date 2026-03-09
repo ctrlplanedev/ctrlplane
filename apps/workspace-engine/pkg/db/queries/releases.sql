@@ -91,3 +91,8 @@ SET
     desired_release_id = EXCLUDED.desired_release_id
 RETURNING *;
 
+-- name: GetDesiredReleaseByReleaseTarget :one
+SELECT r.*
+FROM release_target_desired_release rtr
+JOIN release r ON r.id = rtr.desired_release_id
+WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3;

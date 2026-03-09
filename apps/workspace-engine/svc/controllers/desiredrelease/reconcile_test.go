@@ -129,12 +129,18 @@ type mockReconcileSetter struct {
 }
 
 func (s *mockReconcileSetter) SetDesiredRelease(_ context.Context, _ *ReleaseTarget, r *oapi.Release) error {
-	s.releases = append(s.releases, r)
+	if r != nil {
+		s.releases = append(s.releases, r)
+	}
 	return nil
 }
 
 func (s *mockReconcileSetter) UpsertRuleEvaluations(_ context.Context, evals []policies.RuleEvaluationParams) error {
 	s.evaluations = append(s.evaluations, evals...)
+	return nil
+}
+
+func (s *mockReconcileSetter) EnqueueJobEligibility(_ context.Context, _ string, _ *ReleaseTarget) error {
 	return nil
 }
 

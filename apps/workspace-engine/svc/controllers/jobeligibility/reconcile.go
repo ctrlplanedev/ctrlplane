@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
@@ -159,12 +160,12 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 			return fmt.Errorf("get job agent %s: %w", agentRef.Ref, err)
 		}
 
-		job, err := r.buildJob(ctx, jobAgent, deployment)
+		job, err := jobs.NewFactoryFromGetters(r.getter).CreateJobForRelease(ctx, r.release, jobAgent, nil)
 		if err != nil {
 			return fmt.Errorf("build job: %w", err)
 		}
 
-		if err := r.setter.CreateJob(ctx, job); err != nil {
+		if err := r.setter.CreateJob(ctx, job, r.release); err != nil {
 			return fmt.Errorf("create job: %w", err)
 		}
 
@@ -174,49 +175,6 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (r *reconciler) buildJob(ctx context.Context, jobAgent *oapi.JobAgent, deployment *oapi.Deployment) (*oapi.Job, error) {
-	environmentID, err := uuid.Parse(r.release.ReleaseTarget.EnvironmentId)
-	if err != nil {
-		return nil, fmt.Errorf("parse environment id: %w", err)
-	}
-	resourceID, err := uuid.Parse(r.release.ReleaseTarget.ResourceId)
-	if err != nil {
-		return nil, fmt.Errorf("parse resource id: %w", err)
-	}
-
-	environment, err := r.getter.GetEnvironment(ctx, environmentID)
-	if err != nil {
-		return nil, fmt.Errorf("get environment: %w", err)
-	}
-
-	resource, err := r.getter.GetResource(ctx, resourceID)
-	if err != nil {
-		return nil, fmt.Errorf("get resource: %w", err)
-	}
-
-	now := time.Now()
-	return &oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      r.release.Id.String(),
-		JobAgentId:     jobAgent.Id,
-		JobAgentConfig: jobAgent.Config,
-		Status:         oapi.JobStatusPending,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		Metadata:       make(map[string]string),
-		DispatchContext: &oapi.DispatchContext{
-			Release:        r.release,
-			Deployment:     deployment,
-			Environment:    environment,
-			Resource:       resource,
-			JobAgent:       *jobAgent,
-			JobAgentConfig: jobAgent.Config,
-			Version:        &r.release.Version,
-			Variables:      &r.release.Variables,
-		},
-	}, nil
 }
 
 // Reconcile determines job eligibility for a release target and, if eligible,

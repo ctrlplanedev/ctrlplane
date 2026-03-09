@@ -175,6 +175,10 @@ func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Se
 		return nil, recordErr(span, "persist release", err)
 	}
 
+	if err := r.setter.EnqueueJobEligibility(ctx, r.workspaceID.String(), r.rt); err != nil {
+		return nil, recordErr(span, "enqueue job eligibility", err)
+	}
+
 	span.SetStatus(codes.Ok, "reconcile completed: release="+release.Id.String())
 	return &ReconcileResult{}, nil
 }

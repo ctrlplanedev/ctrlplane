@@ -7,6 +7,8 @@ import (
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/store/policies"
 
 	"github.com/google/uuid"
@@ -14,6 +16,7 @@ import (
 
 type PostgresSetter struct {
 	upsertRuleEvaluationsSetter
+	Queue reconcile.Queue
 }
 
 var _ Setter = (*PostgresSetter)(nil)
@@ -77,4 +80,13 @@ func (s *PostgresSetter) SetDesiredRelease(ctx context.Context, rt *ReleaseTarge
 	}
 
 	return nil
+}
+
+func (s *PostgresSetter) EnqueueJobEligibility(ctx context.Context, workspaceID string, rt *ReleaseTarget) error {
+	return events.EnqueueJobEligibility(s.Queue, ctx, events.JobEligibilityParams{
+		WorkspaceID:   workspaceID,
+		ResourceID:    rt.ResourceID.String(),
+		EnvironmentID: rt.EnvironmentID.String(),
+		DeploymentID:  rt.DeploymentID.String(),
+	})
 }
