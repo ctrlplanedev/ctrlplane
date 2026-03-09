@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
@@ -59,15 +58,6 @@ func (q *mockQueue) Retry(_ context.Context, _ reconcile.RetryParams) error {
 
 var _ reconcile.Queue = (*mockQueue)(nil)
 
-// ===========================================================================
-// PostgresSetter — CreateJob stub
-// ===========================================================================
-
-func TestPostgresSetter_CreateJob_Stub(t *testing.T) {
-	s := &PostgresSetter{Queue: &mockQueue{}}
-	err := s.CreateJob(context.Background(), &oapi.Job{Id: uuid.New().String(), ReleaseId: uuid.New().String()}, &oapi.Release{Id: uuid.New()})
-	require.Error(t, err)
-}
 
 // ===========================================================================
 // PostgresSetter — EnqueueJobDispatch (real implementation)

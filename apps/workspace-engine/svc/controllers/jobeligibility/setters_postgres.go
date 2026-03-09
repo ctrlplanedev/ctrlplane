@@ -20,8 +20,6 @@ type PostgresSetter struct {
 }
 
 func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *oapi.Release) error {
-	q := db.GetQueries(ctx)
-
 	jobID, err := uuid.Parse(job.Id)
 	if err != nil {
 		return fmt.Errorf("parse job id: %w", err)
@@ -42,6 +40,14 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 		return fmt.Errorf("marshal dispatch context: %w", err)
 	}
 
+	tx, err := db.GetPool(ctx).Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := db.GetQueries(ctx).WithTx(tx)
+
 	if err := q.InsertJob(ctx, db.InsertJobParams{
 		ID:              jobID,
 		JobAgentID:      pgtype.UUID{Bytes: jobAgentID, Valid: true},
@@ -59,6 +65,10 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 		JobID:     jobID,
 	}); err != nil {
 		return fmt.Errorf("insert release job: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil

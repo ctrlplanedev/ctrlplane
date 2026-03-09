@@ -491,6 +491,7 @@ func TestReconcile_ActiveJobBlocks(t *testing.T) {
 
 			getter, setter := setupHappyPath(rt, release)
 			getter.jobs = []*oapi.Job{activeJob}
+			getter.processingJobs = []*oapi.Job{activeJob}
 
 			result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 			require.NoError(t, err)
@@ -673,12 +674,13 @@ func TestReconcile_ExplicitRetryOnStatuses_OnlyCountsThose(t *testing.T) {
 
 	statuses := []oapi.JobStatus{oapi.JobStatusFailure}
 	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{
-		MaxRetries:      3,
+		MaxRetries:      0,
 		RetryOnStatuses: &statuses,
 	})}
 
 	// cancelled job first (newest), then a failed job
 	// The cancelled job is not in retryOnStatuses, so counting breaks immediately
+	// With maxRetries=0, if cancelled were incorrectly counted the test would fail
 	cancelledJob := testJobForRelease(release, oapi.JobStatusCancelled, time.Now().Add(-30*time.Second))
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{cancelledJob, failedJob}
@@ -693,11 +695,14 @@ func TestReconcile_DefaultRetryOnStatuses_MaxRetriesGT0(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
-	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 5})}
+	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 1})}
 
-	// Successful job should NOT count (not in defaults for maxRetries > 0), breaking chain -> first attempt
+	// Successful job (newest) should NOT count (not in defaults for maxRetries > 0),
+	// breaking the chain before the failure behind it.
+	// With maxRetries=1, if successful were incorrectly counted: count=2 > 1 -> denied.
+	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-2*time.Minute))
 	successfulJob := testJobForRelease(release, oapi.JobStatusSuccessful, time.Now().Add(-time.Minute))
-	getter.jobs = []*oapi.Job{successfulJob}
+	getter.jobs = []*oapi.Job{successfulJob, failedJob}
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
@@ -729,9 +734,10 @@ func TestReconcile_DifferentReleaseBreaksRetryChain(t *testing.T) {
 	oldRelease := testRelease(rt)
 
 	getter, setter := setupHappyPath(rt, release)
-	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 1})}
+	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 0})}
 
-	// Old release's failed job first (newer timestamp), then nothing from current release
+	// Old release's failed job first (newer timestamp), then nothing from current release.
+	// With maxRetries=0, if the old job were incorrectly counted: count=1 > 0 -> denied.
 	oldJob := testJobForRelease(oldRelease, oapi.JobStatusFailure, time.Now().Add(-30*time.Second))
 	getter.jobs = []*oapi.Job{oldJob}
 
@@ -1108,6 +1114,7 @@ func TestReconcile_CreateJobFails_Error(t *testing.T) {
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "create job")
+	assert.Empty(t, setter.enqueueCalls, "should not enqueue when job creation fails")
 }
 
 func TestReconcile_EnqueueFails_Error(t *testing.T) {
