@@ -1,7 +1,5 @@
 import { Fragment, useState } from "react";
 import { SiDatadog } from "@icons-pack/react-simple-icons";
-import { capitalCase } from "change-case";
-import { formatDistanceToNowStrict } from "date-fns";
 import { ChevronRight } from "lucide-react";
 
 import {
@@ -40,9 +38,9 @@ type VerificationMetric = {
   count: number;
   intervalSeconds: number;
   successCondition: string;
-  successThreshold: number | null;
-  failureCondition: string | null;
-  failureThreshold: number | null;
+  successThreshold?: number | null;
+  failureCondition?: string | null;
+  failureThreshold?: number | null;
   measurements: MetricMeasurement[];
 };
 
@@ -166,6 +164,9 @@ function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
   );
 }
 
+const nullToUndefined = <T,>(v: T | null | undefined): T | undefined =>
+  v ?? undefined;
+
 function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   const [open, setOpen] = useState(false);
   const sortedMeasurements = [...metric.measurements].sort(
@@ -173,6 +174,13 @@ function MetricDisplay({ metric }: { metric: VerificationMetric }) {
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
   const latestMeasurement = sortedMeasurements.at(0);
+
+  const displayMetric = {
+    ...metric,
+    failureCondition: nullToUndefined(metric.failureCondition),
+    failureThreshold: metric.failureThreshold ?? 0,
+    successThreshold: metric.successThreshold ?? 0,
+  };
 
   const isArgoCD =
     latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
@@ -197,14 +205,16 @@ function MetricDisplay({ metric }: { metric: VerificationMetric }) {
           )}
           <span className="text-sm font-medium">{metric.name}</span>
           <div className="grow" />
-          <VerificationMetricStatus metric={metric} />
+          <VerificationMetricStatus metric={displayMetric} />
         </div>
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
-        {isArgoCD && <ArgoCDVerificationDisplay metric={metric} />}
-        {isPrometheus && <PrometheusVerificationDisplay metric={metric} />}
-        {isDatadog && <DatadogVerificationDisplay metric={metric} />}
+        {isArgoCD && <ArgoCDVerificationDisplay metric={displayMetric} />}
+        {isPrometheus && (
+          <PrometheusVerificationDisplay metric={displayMetric} />
+        )}
+        {isDatadog && <DatadogVerificationDisplay metric={displayMetric} />}
         {!isArgoCD && !isPrometheus && !isDatadog && (
           <>
             <MetricSummaryDisplay metric={metric} />

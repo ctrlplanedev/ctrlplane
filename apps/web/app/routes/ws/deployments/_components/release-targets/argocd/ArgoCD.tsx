@@ -1,6 +1,5 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Check, ExternalLink, Loader2, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 
 import { cn } from "~/lib/utils";
 import {
@@ -10,8 +9,24 @@ import {
   parseArgoCDProvider,
 } from "./argocd-metric";
 
-type VerificationMetricStatus =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
+type MetricMeasurement = {
+  status: "failed" | "inconclusive" | "passed";
+  data: unknown;
+  measuredAt: Date | string;
+  message?: string;
+};
+
+type VerificationMetricStatus = {
+  name: string;
+  provider: unknown;
+  count: number;
+  intervalSeconds: number;
+  successCondition: string;
+  successThreshold?: number;
+  failureCondition?: string;
+  failureThreshold?: number;
+  measurements: MetricMeasurement[];
+};
 
 const healthStatusConfig: Record<
   string,
@@ -69,9 +84,9 @@ export function ArgoCDVerificationDisplay({
 
   const status = getArgoCDStatus(parsedData);
   const healthConfig = healthStatusConfig[status.healthStatus] ??
-    healthStatusConfig.Unknown ?? { icon: null, className: "" };
+    healthStatusConfig.Unknown;
   const syncConfig = syncStatusConfig[status.syncStatus] ??
-    syncStatusConfig.Unknown ?? { label: "Unknown", className: "" };
+    syncStatusConfig.Unknown;
 
   const provider = parseArgoCDProvider(metric.provider);
   const appUrl = provider

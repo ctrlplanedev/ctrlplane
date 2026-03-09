@@ -1,23 +1,22 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-
 // Shared types for deployment components
 export type DeploymentVersionStatus =
   | "unspecified"
   | "building"
   | "ready"
   | "failed"
-  | "rejected";
+  | "rejected"
+  | "paused";
 
 export type JobStatus =
   | "cancelled"
   | "skipped"
-  | "inProgress"
-  | "actionRequired"
+  | "in_progress"
+  | "action_required"
   | "pending"
   | "failure"
-  | "invalidJobAgent"
-  | "invalidIntegration"
-  | "externalRunNotFound"
+  | "invalid_job_agent"
+  | "invalid_integration"
+  | "external_run_not_found"
   | "successful";
 
 export type DeploymentVersion = {
@@ -50,9 +49,24 @@ export type DeploymentDetail = {
   };
 };
 
-export type Deployment = WorkspaceEngine["schemas"]["Deployment"];
-export type Version = WorkspaceEngine["schemas"]["DeploymentVersion"] & {};
-export type Resource = WorkspaceEngine["schemas"]["Resource"];
+export type Deployment = {
+  id: string;
+  name: string;
+  description: string;
+  workspaceId: string | null;
+  resourceSelector: string | null;
+  jobAgentId: string | null;
+  jobAgentConfig: Record<string, unknown>;
+  metadata: Record<string, string>;
+};
+
+export type Resource = {
+  id: string;
+  name: string;
+  kind: string;
+  identifier: string;
+  version: string;
+};
 
 export type Environment = {
   id: string;
@@ -96,24 +110,39 @@ export type ReleaseTargetWithState = {
     identifier: string;
     kind: string;
     version: string;
+    [key: string]: unknown;
   };
   environment: {
     id: string;
     name: string;
+    [key: string]: unknown;
   };
-  currentVersion?: { id: string; tag: string; name: string } | null;
-  desiredVersion?: { id: string; tag: string; name: string } | null;
+  deployment?: Deployment;
+  currentVersion?: {
+    id: string;
+    tag: string;
+    name: string;
+    [key: string]: unknown;
+  } | null;
+  desiredVersion?: {
+    id: string;
+    tag: string;
+    name: string;
+    [key: string]: unknown;
+  } | null;
   latestJob?: {
     id: string;
-    status: JobStatus;
-    message?: string;
+    status: string;
+    message?: string | null;
+    createdAt: Date;
+    completedAt?: Date | null;
     links?: Record<string, string>;
     verifications: Array<{
       id: string;
       jobId: string;
       metrics: Array<unknown>;
       message?: string;
-      createdAt: string;
+      createdAt: Date | string;
     }>;
   } | null;
 };

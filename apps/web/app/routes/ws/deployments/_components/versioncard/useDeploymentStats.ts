@@ -3,9 +3,9 @@ import type { ReleaseTargetWithState } from "../types";
 
 const failureStatuses = [
   "failure",
-  "invalidJobAgent",
-  "invalidIntegration",
-  "externalRunNotFound",
+  "invalid_job_agent",
+  "invalid_integration",
+  "external_run_not_found",
 ] as const;
 
 export const useDeploymentStats = (

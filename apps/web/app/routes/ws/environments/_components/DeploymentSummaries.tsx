@@ -1,10 +1,8 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { isAfter } from "date-fns";
 import _ from "lodash";
 import { Search } from "lucide-react";
 import { useInView } from "react-intersection-observer";
-import { isPresent } from "ts-is-present";
 
 import { Input } from "~/components/ui/input";
 import { Separator } from "~/components/ui/separator";
@@ -23,10 +21,10 @@ import {
   HealthStatusBadge,
   SyncProgressBadge,
 } from "../../deployments/_components/DeploymentCard";
-
-type Deployment = WorkspaceEngine["schemas"]["Deployment"];
-type ReleaseTargetWithState =
-  WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+import type {
+  Deployment,
+  ReleaseTargetWithState,
+} from "../../deployments/_components/types";
 
 type DeploymentSummaryCardProps = {
   deployment: Deployment;
@@ -41,25 +39,23 @@ function HealthSummary({
 }) {
   const numTargets = releaseTargets.length;
   const isOutOfSync = releaseTargets.some(
-    ({ state }) =>
-      state.desiredRelease?.version.tag !== state.currentRelease?.version.tag,
+    (rt) => rt.desiredVersion?.tag !== rt.currentVersion?.tag,
   );
   const syncedCount = releaseTargets.filter(
-    ({ state }) =>
-      state.desiredRelease?.version.tag === state.currentRelease?.version.tag,
+    (rt) => rt.desiredVersion?.tag === rt.currentVersion?.tag,
   ).length;
   const jobStatusSummary = _.chain(releaseTargets)
-    .groupBy(({ state }) => state.latestJob?.job.status ?? "unknown")
+    .groupBy((rt) => rt.latestJob?.status ?? "unknown")
     .entries()
     .map(([status, releaseTargets]) => [status, releaseTargets.length])
     .fromPairs()
     .value() as Record<string, number>;
 
   const needsAttention =
-    (jobStatusSummary.actionRequired || 0) +
-    (jobStatusSummary.invalidJobAgent || 0) +
-    (jobStatusSummary.invalidIntegration || 0) +
-    (jobStatusSummary.externalRunNotFound || 0);
+    (jobStatusSummary.action_required || 0) +
+    (jobStatusSummary.invalid_job_agent || 0) +
+    (jobStatusSummary.invalid_integration || 0) +
+    (jobStatusSummary.external_run_not_found || 0);
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -89,20 +85,16 @@ function DeploymentSummaryMetrics({
     );
 
   const latestVersion = releaseTargets
-    .map(({ state }) => state.currentRelease?.version ?? null)
-    .filter(isPresent)
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
+    .map((rt) => rt.currentVersion ?? null)
+    .filter((v): v is NonNullable<typeof v> => v != null)
     .at(0);
 
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const last24hCount = releaseTargets.filter(
-    ({ state }) =>
-      state.latestJob?.job.completedAt &&
-      isAfter(new Date(state.latestJob.job.completedAt), twentyFourHoursAgo),
+    (rt) =>
+      rt.latestJob?.completedAt &&
+      isAfter(new Date(rt.latestJob.completedAt), twentyFourHoursAgo),
   ).length;
 
   return (
@@ -110,7 +102,7 @@ function DeploymentSummaryMetrics({
       {latestVersion != null && (
         <DeploymentCardVersionMetric
           tag={latestVersion.tag}
-          createdAt={new Date(latestVersion.createdAt)}
+          createdAt={new Date(latestVersion.createdAt as string)}
         />
       )}
       {latestVersion == null && (
@@ -134,7 +126,7 @@ function DeploymentJobStatusSummary({
   isLoading: boolean;
 }) {
   const jobStatusSummary = _.chain(releaseTargets)
-    .groupBy(({ state }) => state.latestJob?.job.status ?? "unknown")
+    .groupBy((rt) => rt.latestJob?.status ?? "unknown")
     .entries()
     .map(([status, releaseTargets]) => [status, releaseTargets.length])
     .fromPairs()

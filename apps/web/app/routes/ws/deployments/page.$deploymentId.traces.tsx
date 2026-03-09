@@ -146,7 +146,6 @@ export default function DeploymentTraces() {
 
   // Fetch release targets for filtering
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,

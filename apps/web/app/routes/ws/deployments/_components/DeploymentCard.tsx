@@ -150,13 +150,13 @@ const jobStatusBarColor: Record<string, string> = {
   unknown: "bg-neutral-500",
   cancelled: "bg-neutral-500",
   skipped: "bg-neutral-500",
-  inProgress: "bg-blue-500",
-  actionRequired: "bg-yellow-500",
+  in_progress: "bg-blue-500",
+  action_required: "bg-yellow-500",
   pending: "bg-neutral-500",
   failure: "bg-red-500",
-  invalidJobAgent: "bg-orange-400",
-  invalidIntegration: "bg-orange-500",
-  externalRunNotFound: "bg-orange-500",
+  invalid_job_agent: "bg-orange-400",
+  invalid_integration: "bg-orange-500",
+  external_run_not_found: "bg-orange-500",
   successful: "bg-green-500",
 };
 
@@ -165,11 +165,11 @@ const jobStatusTextColor: Record<string, string> = {
   unknown: "text-neutral-500",
   cancelled: "text-neutral-500",
   skipped: "text-neutral-500",
-  inProgress: "text-blue-500",
-  invalidJobAgent: "text-orange-500",
-  invalidIntegration: "text-orange-500",
-  externalRunNotFound: "text-orange-500",
-  actionRequired: "text-yellow-500",
+  in_progress: "text-blue-500",
+  invalid_job_agent: "text-orange-500",
+  invalid_integration: "text-orange-500",
+  external_run_not_found: "text-orange-500",
+  action_required: "text-yellow-500",
   pending: "text-neutral-500",
   failure: "text-red-500",
 };
@@ -179,11 +179,11 @@ const jobStatusDisplayName: Record<string, string> = {
   unknown: "Unknown",
   cancelled: "Cancelled",
   skipped: "Skipped",
-  inProgress: "In Progress",
-  invalidJobAgent: "Invalid Job Agent",
-  invalidIntegration: "Invalid Integration",
-  externalRunNotFound: "External Run Not Found",
-  actionRequired: "Action Required",
+  in_progress: "In Progress",
+  invalid_job_agent: "Invalid Job Agent",
+  invalid_integration: "Invalid Integration",
+  external_run_not_found: "External Run Not Found",
+  action_required: "Action Required",
   pending: "Pending",
   failure: "Failure",
 };
@@ -193,11 +193,11 @@ const jobStatusIcons: Record<string, ReactNode> = {
   unknown: <FileQuestion className="size-2.5" />,
   cancelled: <Ban className="size-2.5" />,
   skipped: <SkipForward className="size-2.5" />,
-  inProgress: <Loader2 className="size-2.5 animate-spin" />,
-  invalidJobAgent: <ServerCrash className="size-2.5" />,
-  invalidIntegration: <ServerCrash className="size-2.5" />,
-  externalRunNotFound: <ServerCrash className="size-2.5" />,
-  actionRequired: <MessageCircleWarning className="size-2.5" />,
+  in_progress: <Loader2 className="size-2.5 animate-spin" />,
+  invalid_job_agent: <ServerCrash className="size-2.5" />,
+  invalid_integration: <ServerCrash className="size-2.5" />,
+  external_run_not_found: <ServerCrash className="size-2.5" />,
+  action_required: <MessageCircleWarning className="size-2.5" />,
   pending: <CircleEllipsis className="size-2.5" />,
   failure: <X className="size-2.5" />,
 };
@@ -284,12 +284,12 @@ type LazyLoadDeploymentCardProps = {
 export const HealthStatusBadge: React.FC<{
   jobStatusSummary: Record<string, number>;
 }> = ({ jobStatusSummary }) => {
-  const hasInProgress = jobStatusSummary.inProgress > 0;
+  const hasInProgress = jobStatusSummary.in_progress > 0;
   const hasFailures =
     (jobStatusSummary.failure || 0) +
-      (jobStatusSummary.invalidJobAgent || 0) +
-      (jobStatusSummary.invalidIntegration || 0) +
-      (jobStatusSummary.externalRunNotFound || 0) >
+      (jobStatusSummary.invalid_job_agent || 0) +
+      (jobStatusSummary.invalid_integration || 0) +
+      (jobStatusSummary.external_run_not_found || 0) >
     0;
   const hasSuccessful = jobStatusSummary.successful > 0;
   const allFailed = hasFailures && !hasSuccessful;
@@ -432,10 +432,10 @@ export function LazyLoadDeploymentCard({
     .value() as Record<string, number>;
 
   const needsAttention =
-    (jobStatusSummary.actionRequired || 0) +
-    (jobStatusSummary.invalidJobAgent || 0) +
-    (jobStatusSummary.invalidIntegration || 0) +
-    (jobStatusSummary.externalRunNotFound || 0);
+    (jobStatusSummary.action_required || 0) +
+    (jobStatusSummary.invalid_job_agent || 0) +
+    (jobStatusSummary.invalid_integration || 0) +
+    (jobStatusSummary.external_run_not_found || 0);
 
   return (
     <DeploymentCard

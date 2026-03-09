@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { asc, eq } from "@ctrlplane/db";
+import { and, asc, desc, eq, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -63,18 +63,191 @@ export const environmentRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, limit, offset } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets",
-        {
-          params: {
-            path: { workspaceId, environmentId },
-            query: { limit, offset },
+    .query(async ({ input, ctx }) => {
+      const releaseTargets = await ctx.db
+        .selectDistinctOn(
+          [schema.deployment.id, schema.resource.id, schema.environment.id],
+          {
+            deployment: schema.deployment,
+            environment: schema.environment,
+            resource: schema.resource,
+            desiredRelease: schema.release,
+            desiredVersion: schema.deploymentVersion,
+            latestJob: schema.job,
           },
+        )
+        .from(schema.computedDeploymentResource)
+        .innerJoin(
+          schema.deployment,
+          eq(
+            schema.computedDeploymentResource.deploymentId,
+            schema.deployment.id,
+          ),
+        )
+        .innerJoin(
+          schema.resource,
+          eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
+        )
+        .innerJoin(
+          schema.systemDeployment,
+          eq(
+            schema.computedDeploymentResource.deploymentId,
+            schema.systemDeployment.deploymentId,
+          ),
+        )
+        .innerJoin(
+          schema.systemEnvironment,
+          eq(
+            schema.systemDeployment.systemId,
+            schema.systemEnvironment.systemId,
+          ),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(schema.systemEnvironment.environmentId, schema.environment.id),
+        )
+        .leftJoin(
+          schema.releaseTargetDesiredRelease,
+          and(
+            eq(
+              schema.releaseTargetDesiredRelease.deploymentId,
+              schema.deployment.id,
+            ),
+            eq(
+              schema.releaseTargetDesiredRelease.resourceId,
+              schema.resource.id,
+            ),
+            eq(
+              schema.releaseTargetDesiredRelease.environmentId,
+              schema.environment.id,
+            ),
+          ),
+        )
+        .leftJoin(
+          schema.release,
+          eq(
+            schema.releaseTargetDesiredRelease.desiredReleaseId,
+            schema.release.id,
+          ),
+        )
+        .leftJoin(
+          schema.deploymentVersion,
+          eq(schema.release.versionId, schema.deploymentVersion.id),
+        )
+        .leftJoin(
+          schema.releaseJob,
+          eq(schema.release.id, schema.releaseJob.releaseId),
+        )
+        .leftJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
+        .where(eq(schema.environment.id, input.environmentId))
+        .orderBy(
+          schema.deployment.id,
+          schema.resource.id,
+          schema.environment.id,
+          desc(schema.job.createdAt),
+        );
+
+      const jobIds = releaseTargets
+        .map((rt) => rt.latestJob?.id)
+        .filter((id): id is string => id != null);
+
+      const rows =
+        jobIds.length > 0
+          ? await ctx.db
+              .select({
+                metric: schema.jobVerificationMetricStatus,
+                measurement: schema.jobVerificationMetricMeasurement,
+              })
+              .from(schema.jobVerificationMetricStatus)
+              .leftJoin(
+                schema.jobVerificationMetricMeasurement,
+                eq(
+                  schema.jobVerificationMetricMeasurement
+                    .jobVerificationMetricStatusId,
+                  schema.jobVerificationMetricStatus.id,
+                ),
+              )
+              .where(inArray(schema.jobVerificationMetricStatus.jobId, jobIds))
+              .orderBy(schema.jobVerificationMetricStatus.jobId)
+          : [];
+
+      type MetricWithMeasurements = {
+        metric: typeof schema.jobVerificationMetricStatus.$inferSelect;
+        measurements: Array<
+          typeof schema.jobVerificationMetricMeasurement.$inferSelect
+        >;
+      };
+
+      const verificationsMap = new Map<
+        string,
+        Map<string, MetricWithMeasurements[]>
+      >();
+
+      for (const row of rows) {
+        const jobId = row.metric.jobId;
+        const groupKey =
+          row.metric.policyRuleVerificationMetricId ?? "ungrouped";
+
+        let byRule = verificationsMap.get(jobId);
+        if (!byRule) {
+          byRule = new Map();
+          verificationsMap.set(jobId, byRule);
+        }
+
+        let metrics = byRule.get(groupKey);
+        if (!metrics) {
+          metrics = [];
+          byRule.set(groupKey, metrics);
+        }
+
+        let existing = metrics.find((m) => m.metric.id === row.metric.id);
+        if (!existing) {
+          existing = { metric: row.metric, measurements: [] };
+          metrics.push(existing);
+        }
+
+        if (row.measurement != null) {
+          existing.measurements.push(row.measurement);
+        }
+      }
+
+      const buildVerifications = (jobId: string, createdAt: Date) => {
+        const byRule = verificationsMap.get(jobId);
+        if (!byRule) return [];
+
+        return [...byRule.entries()].map(([groupKey, metrics]) => ({
+          id: groupKey === "ungrouped" ? jobId : groupKey,
+          jobId,
+          createdAt,
+          metrics: metrics.map((v) => ({
+            ...v.metric,
+            measurements: v.measurements,
+          })),
+        }));
+      };
+
+      return releaseTargets.map((rt) => ({
+        releaseTarget: {
+          resourceId: rt.resource.id,
+          environmentId: rt.environment.id,
+          deploymentId: rt.deployment.id,
         },
-      );
-      return result.data;
+        deployment: rt.deployment,
+        environment: rt.environment,
+        resource: rt.resource,
+        desiredVersion: rt.desiredVersion,
+        currentVersion: rt.desiredVersion,
+        latestJob:
+          rt.latestJob != null
+            ? {
+                ...rt.latestJob,
+                verifications: buildVerifications(
+                  rt.latestJob.id,
+                  rt.latestJob.createdAt,
+                ),
+              }
+            : null,
+      }));
     }),
 
   list: protectedProcedure
@@ -203,6 +376,7 @@ export const environmentRouter = router({
       const { workspaceId, ...environmentData } = input;
       const environment = {
         id: uuidv4(),
+        workspaceId,
         ...environmentData,
         description: environmentData.description ?? "",
         createdAt: new Date().toISOString(),

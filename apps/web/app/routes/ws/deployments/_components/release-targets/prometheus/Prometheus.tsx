@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { formatDistanceToNowStrict } from "date-fns";
 
 import { cn } from "~/lib/utils";
@@ -7,9 +6,24 @@ import {
   parsePrometheusProvider,
 } from "./prometheus-metric";
 
-type VerificationMetricStatus =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
-type MetricMeasurement = VerificationMetricStatus["measurements"][number];
+type MetricMeasurement = {
+  status: "failed" | "inconclusive" | "passed";
+  data: unknown;
+  measuredAt: Date | string;
+  message?: string;
+};
+
+type VerificationMetricStatus = {
+  name: string;
+  provider: unknown;
+  count: number;
+  intervalSeconds: number;
+  successCondition: string;
+  successThreshold?: number;
+  failureCondition?: string;
+  failureThreshold?: number;
+  measurements: MetricMeasurement[];
+};
 
 export function PrometheusVerificationDisplay({
   metric,
