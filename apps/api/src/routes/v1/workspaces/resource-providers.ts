@@ -2,11 +2,18 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, notInArray, sql, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { resourceProvider } from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import {
+  deployment,
+  environment,
+  resource,
+  resourceProvider,
+} from "@ctrlplane/db/schema";
+import {
+  enqueueManyDeploymentSelectorEval,
+  enqueueManyEnvironmentSelectorEval,
+} from "@ctrlplane/db/reconcilers";
 
 const upsertResourceProvider: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resource-providers",
@@ -63,50 +70,94 @@ const setResourceProviderResources: AsyncTypedHandler<
   "put"
 > = async (req, res) => {
   const { workspaceId, providerId } = req.params;
-  const { resources } = req.body;
+  const { resources: incoming } = req.body;
 
-  // Phase 1: Cache the batch in workspace-engine memory
-  // Type assertion needed until SDK types are regenerated from OpenAPI spec
-  const cacheResponse = await getClientFor(workspaceId).POST(
-    "/v1/workspaces/{workspaceId}/resource-providers/cache-batch",
-    {
-      params: {
-        path: { workspaceId },
-      },
-      body: {
-        providerId,
-        resources: resources.map((r: any) => ({
-          id: "",
-          ...r,
-          workspaceId,
-        })),
-      },
-    },
-  );
+  const incomingIdentifiers = incoming.map((r: any) => r.identifier as string);
 
-  const batchId = cacheResponse.data?.batchId;
-  if (batchId == null) {
-    res.status(500).json({
-      error: "Failed to cache batch",
-      details: cacheResponse.error,
-    });
-    return;
-  }
+  await db.transaction(async (tx) => {
+    if (incomingIdentifiers.length > 0) {
+      const existing = await tx
+        .select({
+          id: resource.id,
+          identifier: resource.identifier,
+          providerId: resource.providerId,
+        })
+        .from(resource)
+        .where(
+          and(
+            eq(resource.workspaceId, workspaceId),
+            inArray(resource.identifier, incomingIdentifiers),
+          ),
+        );
 
-  // Phase 2: Send lightweight Kafka event with batch reference
-  // Using type assertion as Event types don't include optional batchId yet
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.ResourceProviderSetResources,
-    timestamp: Date.now(),
-    data: { providerId, batchId },
+      const existingByIdentifier = new Map(
+        existing.map((r) => [r.identifier, r]),
+      );
+
+      for (const r of incoming as any[]) {
+        const match = existingByIdentifier.get(r.identifier);
+
+        if (match?.providerId != null && match.providerId !== providerId)
+          continue;
+
+        await tx
+          .insert(resource)
+          .values({
+            ...r,
+            workspaceId,
+            providerId,
+            config: r.config ?? {},
+            metadata: r.metadata ?? {},
+          })
+          .onConflictDoUpdate({
+            target: [resource.identifier, resource.workspaceId],
+            set: {
+              name: r.name,
+              version: r.version,
+              kind: r.kind,
+              config: r.config ?? {},
+              metadata: r.metadata ?? {},
+              providerId,
+              updatedAt: sql`now()`,
+            },
+          });
+      }
+    }
+
+    await tx
+      .delete(resource)
+      .where(
+        and(
+          eq(resource.workspaceId, workspaceId),
+          eq(resource.providerId, providerId),
+          incomingIdentifiers.length > 0
+            ? notInArray(resource.identifier, incomingIdentifiers)
+            : undefined,
+        ),
+      );
+
+    const deployments = await tx
+      .select({ id: deployment.id })
+      .from(deployment)
+      .where(eq(deployment.workspaceId, workspaceId));
+
+    const environments = await tx
+      .select({ id: environment.id })
+      .from(environment)
+      .where(eq(environment.workspaceId, workspaceId));
+
+    await enqueueManyDeploymentSelectorEval(
+      tx,
+      deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
+    );
+
+    await enqueueManyEnvironmentSelectorEval(
+      tx,
+      environments.map((e) => ({ workspaceId, environmentId: e.id })),
+    );
   });
 
-  res.status(202).json({
-    ok: true,
-    batchId,
-    method: "cached",
-  });
+  res.status(200).json({ ok: true });
 };
 
 export const resourceProvidersRouter = Router({ mergeParams: true })
