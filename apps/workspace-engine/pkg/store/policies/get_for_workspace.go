@@ -16,8 +16,12 @@ type GetPoliciesForWorkspace interface {
 type PostgresGetPoliciesForWorkspace struct{}
 
 func (p *PostgresGetPoliciesForWorkspace) GetPoliciesForWorkspace(ctx context.Context, workspaceID string) ([]*oapi.Policy, error) {
+	wsUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
 	policies, err := db.GetQueries(ctx).ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: uuid.MustParse(workspaceID),
+		WorkspaceID: wsUUID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("get all policies: %w", err)

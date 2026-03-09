@@ -25,7 +25,11 @@ func NewPostgresResourceGetter(queries *db.Queries) *PostgresResourceGetter {
 }
 
 func (g *PostgresResourceGetter) GetResource(ctx context.Context, resourceID string) (*oapi.Resource, error) {
-	resource, err := g.queries.GetResourceByID(ctx, uuid.MustParse(resourceID))
+	resUUID, err := uuid.Parse(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
+	resource, err := g.queries.GetResourceByID(ctx, resUUID)
 	if err != nil {
 		return nil, err
 	}

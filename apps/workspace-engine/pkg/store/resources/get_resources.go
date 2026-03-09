@@ -35,7 +35,10 @@ type PostgresGetResources struct{}
 func (p *PostgresGetResources) GetResources(ctx context.Context, workspaceID string, options GetResourcesOptions) ([]*oapi.Resource, error) {
 	ctx, span := tracer.Start(ctx, "Store.GetResources")
 	defer span.End()
-	wsID := uuid.MustParse(workspaceID)
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
 
 	baseQuery := `SELECT 
 		id, version, name, kind, identifier, provider_id, workspace_id,

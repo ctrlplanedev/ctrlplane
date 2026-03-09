@@ -2,6 +2,7 @@ package versioncooldown
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
@@ -131,7 +132,11 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTar
 }
 
 func (p *PostgresGetters) GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error) {
-	rows, err := p.queries.GetReleaseTargetsForWorkspace(ctx, uuid.MustParse(workspaceID))
+	wsUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
+	rows, err := p.queries.GetReleaseTargetsForWorkspace(ctx, wsUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +152,12 @@ func (p *PostgresGetters) GetAllReleaseTargets(ctx context.Context, workspaceID 
 }
 
 func (p *PostgresGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
-	status, err := p.queries.GetAggregateJobVerificationStatus(context.Background(), uuid.MustParse(jobID))
+	jobUUID, err := uuid.Parse(jobID)
+	if err != nil {
+		slog.Error("parse jobID", "error", err)
+		return ""
+	}
+	status, err := p.queries.GetAggregateJobVerificationStatus(context.Background(), jobUUID)
 	if err != nil {
 		slog.Error("failed to get job verification status", "jobID", jobID, "error", err)
 		return ""

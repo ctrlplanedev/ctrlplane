@@ -2,6 +2,7 @@ package approval
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
@@ -39,9 +40,17 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 }
 
 func (g *PostgresGetters) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+	versionUUID, err := uuid.Parse(versionID)
+	if err != nil {
+		return nil, fmt.Errorf("parse version id: %w", err)
+	}
+	envUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
 	records, err := g.queries.ListApprovedRecordsByVersionAndEnvironment(ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
-		VersionID:     uuid.MustParse(versionID),
-		EnvironmentID: uuid.MustParse(environmentID),
+		VersionID:     versionUUID,
+		EnvironmentID: envUUID,
 	})
 	if err != nil {
 		return nil, err

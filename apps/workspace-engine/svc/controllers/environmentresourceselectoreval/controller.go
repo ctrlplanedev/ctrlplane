@@ -63,7 +63,11 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	matchedIDs := make([]uuid.UUID, 0, len(resources))
 	for _, resource := range resources {
-		matchedIDs = append(matchedIDs, uuid.MustParse(resource.Id))
+		resourceUUID, err := uuid.Parse(resource.Id)
+		if err != nil {
+			return reconcile.Result{}, fmt.Errorf("parse resource id: %w", err)
+		}
+		matchedIDs = append(matchedIDs, resourceUUID)
 	}
 
 	if err := c.setter.SetComputedEnvironmentResources(ctx, environmentID, matchedIDs); err != nil {
