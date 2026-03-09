@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -200,6 +201,11 @@ func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Se
 	}
 
 	allowed, nextTime, reason := r.checkEligibility(ctx)
+	span.SetAttributes(attribute.Bool("allowed", allowed))
+	span.SetAttributes(attribute.String("reason", reason))
+	if nextTime != nil {
+		span.SetAttributes(attribute.String("next_time", nextTime.Format(time.RFC3339)))
+	}
 	if !allowed {
 		if nextTime != nil {
 			span.AddEvent("job creation pending: " + reason)

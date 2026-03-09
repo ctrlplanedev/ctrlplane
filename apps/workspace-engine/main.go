@@ -7,7 +7,6 @@ import (
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
@@ -18,8 +17,6 @@ import (
 	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
-	"workspace-engine/svc/routerregistrar"
-	"workspace-engine/svc/workspaceconsumer"
 	"workspace-engine/svc/workspaceconsumer/kafka"
 	"workspace-engine/svc/workspaceticker"
 
@@ -49,15 +46,15 @@ func main() {
 	messaging.InitProducer(producer)
 	defer messaging.CloseProducer()
 
-	reconcileQueue := postgres.New(db.GetPool(ctx))
-	wsConsumer := workspaceconsumer.New(kafka.Brokers, kafka.Topic, reconcileQueue)
+	// reconcileQueue := postgres.New(db.GetPool(ctx))
+	// wsConsumer := workspaceconsumer.New(kafka.Brokers, kafka.Topic, reconcileQueue)
 
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global),
 		workspaceticker.New(producer),
-		wsConsumer,
-		routerregistrar.New(config.Global, wsConsumer.Consumer()),
+		// wsConsumer,
+		// routerregistrar.New(config.Global, wsConsumer.Consumer()),
 
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),

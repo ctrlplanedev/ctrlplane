@@ -101,9 +101,10 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	ctx := context.Background()
 	kind := events.DesiredReleaseKind
 	queue := postgres.NewForKinds(pgxPool, kind)
+	enqueueQueue := postgres.New(pgxPool)
 	controller := &Controller{
 		getter: NewPostgresGetter(db.GetQueries(ctx)),
-		setter: NewPostgresSetter(),
+		setter: NewPostgresSetter(enqueueQueue),
 	}
 	worker, err := reconcile.NewWorker(
 		kind,

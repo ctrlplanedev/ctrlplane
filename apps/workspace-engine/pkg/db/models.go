@@ -425,6 +425,7 @@ type PolicyRuleEnvironmentProgression struct {
 
 type PolicyRuleEvaluation struct {
 	ID               uuid.UUID
+	RuleType         string
 	RuleID           uuid.UUID
 	EnvironmentID    uuid.UUID
 	VersionID        uuid.UUID

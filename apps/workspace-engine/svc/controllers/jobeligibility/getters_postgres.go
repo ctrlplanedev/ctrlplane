@@ -104,7 +104,7 @@ func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(ctx context.Co
 		DeploymentID:  deploymentID,
 		EnvironmentID: environmentID,
 		ResourceID:    resourceID,
-		Statuses:      []db.JobStatus{db.JobStatusInProgress, db.JobStatusActionRequired, db.JobStatusPending},
+		Statuses:      []string{"in_progress", "action_required", "pending"},
 	})
 	if err != nil {
 		log.Error("failed to get jobs for release target", "releaseTarget", releaseTarget.Key(), "error", err)

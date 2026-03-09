@@ -479,14 +479,14 @@ JOIN release r ON r.id = rj.release_id
 WHERE r.deployment_id = $1
   AND r.environment_id = $2
   AND r.resource_id = $3
-  AND j.status = ANY($4::job_status[])
+  AND j.status::text = ANY($4::text[])
 `
 
 type ListJobsByReleaseTargetWithStatusesParams struct {
 	DeploymentID  uuid.UUID
 	EnvironmentID uuid.UUID
 	ResourceID    uuid.UUID
-	Statuses      []JobStatus
+	Statuses      []string
 }
 
 type ListJobsByReleaseTargetWithStatusesRow struct {

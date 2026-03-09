@@ -21,9 +21,10 @@ type PostgresSetter struct {
 
 var _ Setter = (*PostgresSetter)(nil)
 
-func NewPostgresSetter() *PostgresSetter {
+func NewPostgresSetter(queue reconcile.Queue) *PostgresSetter {
 	return &PostgresSetter{
 		upsertRuleEvaluationsSetter: &policies.PostgresUpsertRuleEvaluations{},
+		Queue:                       queue,
 	}
 }
 

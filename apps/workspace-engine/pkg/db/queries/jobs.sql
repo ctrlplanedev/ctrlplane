@@ -200,7 +200,7 @@ JOIN release r ON r.id = rj.release_id
 WHERE r.deployment_id = @deployment_id
   AND r.environment_id = @environment_id
   AND r.resource_id = @resource_id
-  AND j.status = ANY(@statuses::job_status[]);
+  AND j.status::text = ANY(@statuses::text[]);
 
 -- name: ListJobsByReleaseID :many
 SELECT
