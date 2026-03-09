@@ -148,29 +148,6 @@ func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier Agent
 	return &ReconcileResult{}, nil
 }
 
-func buildJob(release *oapi.Release, agent *oapi.JobAgent) *oapi.Job {
-	now := time.Now()
-	return &oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      release.Id.String(),
-		JobAgentId:     agent.Id,
-		JobAgentConfig: agent.Config,
-		Status:         oapi.JobStatusPending,
-		Metadata:       map[string]string{},
-		CreatedAt:      now,
-		UpdatedAt:      now,
-	}
-}
-
-func hasSuccessfulJob(jobs []oapi.Job) bool {
-	for _, j := range jobs {
-		if j.Status == oapi.JobStatusSuccessful {
-			return true
-		}
-	}
-	return false
-}
-
 func recordErr(span trace.Span, msg string, err error) error {
 	span.RecordError(err)
 	span.SetStatus(codes.Error, msg+" failed")
