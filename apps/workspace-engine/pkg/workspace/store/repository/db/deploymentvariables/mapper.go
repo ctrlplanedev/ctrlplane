@@ -66,13 +66,37 @@ func ToVariableUpsertParams(e *oapi.DeploymentVariable) (db.UpsertDeploymentVari
 	}, nil
 }
 
+func selectorFromString(s string) *oapi.Selector {
+	if s == "" {
+		return nil
+	}
+	var sel oapi.Selector
+	if err := json.Unmarshal([]byte(s), &sel); err == nil {
+		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
+			return &sel
+		}
+	}
+	sel = oapi.Selector{}
+	celJSON, _ := json.Marshal(oapi.CelSelector{Cel: s})
+	_ = sel.UnmarshalJSON(celJSON)
+	return &sel
+}
+
+func selectorToString(sel *oapi.Selector) string {
+	if sel == nil {
+		return ""
+	}
+	cel, err := sel.AsCelSelector()
+	if err == nil && cel.Cel != "" {
+		return cel.Cel
+	}
+	return ""
+}
+
 func ValueToOapi(row db.DeploymentVariableValue) *oapi.DeploymentVariableValue {
 	var resourceSelector *oapi.Selector
 	if row.ResourceSelector.Valid && row.ResourceSelector.String != "" {
-		sel := &oapi.Selector{}
-		celJSON, _ := json.Marshal(oapi.CelSelector{Cel: row.ResourceSelector.String})
-		_ = sel.UnmarshalJSON(celJSON)
-		resourceSelector = sel
+		resourceSelector = selectorFromString(row.ResourceSelector.String)
 	}
 
 	value := oapi.Value{}

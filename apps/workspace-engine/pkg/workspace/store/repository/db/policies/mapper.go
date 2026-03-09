@@ -13,7 +13,13 @@ import (
 )
 
 func selectorFromString(s string) oapi.Selector {
-	sel := oapi.Selector{}
+	var sel oapi.Selector
+	if err := json.Unmarshal([]byte(s), &sel); err == nil {
+		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
+			return sel
+		}
+	}
+	sel = oapi.Selector{}
 	celJSON, _ := json.Marshal(oapi.CelSelector{Cel: s})
 	_ = sel.UnmarshalJSON(celJSON)
 	return sel

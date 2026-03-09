@@ -5,19 +5,27 @@ import (
 
 	"workspace-engine/pkg/oapi"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 )
 
-// celToSelector converts a raw CEL expression string (as stored in the DB)
-// into an oapi.Selector union. It first tries JSON unmarshal for
-// forward-compatibility, then falls back to wrapping the string as a
-// CelSelector.
+// celToSelector converts a raw selector string (as stored in the DB) into an
+// oapi.Selector union. It first tries JSON unmarshal for forward-compatibility
+// with the {"cel":"..."} format, then falls back to wrapping the string as a
+// CelSelector for plain CEL expressions. Unrecognized JSON objects (e.g. legacy
+// JSON selectors) produce a "false" CelSelector.
 func celToSelector(raw string) oapi.Selector {
-	var sel oapi.Selector
-	if err := json.Unmarshal([]byte(raw), &sel); err == nil {
-		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
-			return sel
+	if len(raw) > 0 && raw[0] == '{' {
+		var sel oapi.Selector
+		if err := json.Unmarshal([]byte(raw), &sel); err == nil {
+			if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
+				return sel
+			}
 		}
+		log.Warn("unrecognized JSON selector format, treating as false", "selector", raw)
+		var s oapi.Selector
+		_ = s.FromCelSelector(oapi.CelSelector{Cel: "false"})
+		return s
 	}
 	var s oapi.Selector
 	_ = s.FromCelSelector(oapi.CelSelector{Cel: raw})
@@ -227,8 +235,7 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 	var selectors []selectorJSON
 	_ = json.Unmarshal(row.VersionSelectorRules, &selectors)
 	for _, s := range selectors {
-		var vSelector oapi.Selector
-		_ = json.Unmarshal([]byte(s.Selector), &vSelector)
+		vSelector := celToSelector(s.Selector)
 		p.Rules = append(p.Rules, oapi.PolicyRule{
 			Id:       s.Id,
 			PolicyId: p.Id,
@@ -330,11 +337,9 @@ func ToOapiDeploymentVariableValue(row DeploymentVariableValue) oapi.DeploymentV
 	if len(row.Value) > 0 {
 		_ = json.Unmarshal(row.Value, &v.Value)
 	}
-	if row.ResourceSelector.Valid {
-		var sel oapi.Selector
-		if err := sel.FromCelSelector(oapi.CelSelector{Cel: row.ResourceSelector.String}); err == nil {
-			v.ResourceSelector = &sel
-		}
+	if row.ResourceSelector.Valid && row.ResourceSelector.String != "" {
+		sel := celToSelector(row.ResourceSelector.String)
+		v.ResourceSelector = &sel
 	}
 	return v
 }
