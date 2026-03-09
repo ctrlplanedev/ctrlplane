@@ -556,11 +556,17 @@ export default function ReleaseTargetEvaluationsPage() {
           </div>
         )}
 
-        {rows.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            No policy evaluations found for this release target.
-          </div>
-        )}
+        {rows.length === 0 &&
+          !evaluationsQuery.isLoading &&
+          (releaseTarget == null && !releaseTargetsQuery.isLoading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              This release target does not exist.
+            </div>
+          ) : (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No policy evaluations found for this release target.
+            </div>
+          ))}
 
         {rows.length > 0 && (
           <div className="space-y-6">

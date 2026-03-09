@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,7 +28,12 @@ import {
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
 
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetSummary"];
+type ReleaseTarget = {
+  releaseTarget: { resourceId: string; environmentId: string; deploymentId: string };
+  environment: { id: string; name: string };
+  resource: { id: string; name: string };
+  latestJob?: { status: string } | null;
+};
 
 function useRedeployAll(releaseTargets: ReleaseTarget[]) {
   const { workspace } = useWorkspace();

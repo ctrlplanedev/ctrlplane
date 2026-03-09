@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { Fragment, useState } from "react";
 import { SiDatadog } from "@icons-pack/react-simple-icons";
 import { capitalCase } from "change-case";
@@ -27,10 +26,33 @@ import { isPrometheusProvider } from "./prometheus/prometheus-metric";
 import { PrometheusIcon } from "./prometheus/PrometheusIcon";
 import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
-type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
-type VerificationMetricStatus =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
-type MetricMeasurement = VerificationMetricStatus["measurements"][number];
+type MetricMeasurement = {
+  status: "failed" | "inconclusive" | "passed";
+  data: unknown;
+  measuredAt: Date | string;
+  message?: string;
+};
+
+type VerificationMetric = {
+  id: string;
+  name: string;
+  provider: unknown;
+  count: number;
+  intervalSeconds: number;
+  successCondition: string;
+  successThreshold: number | null;
+  failureCondition: string | null;
+  failureThreshold: number | null;
+  measurements: MetricMeasurement[];
+};
+
+export type JobVerification = {
+  id: string;
+  jobId: string;
+  createdAt: Date | string;
+  message?: string;
+  metrics: VerificationMetric[];
+};
 
 function Measurement({ measurement }: { measurement: MetricMeasurement }) {
   return (
@@ -99,7 +121,7 @@ function getStatusMessage(
 function MetricSummaryDisplay({
   metric,
 }: {
-  metric: VerificationMetricStatus;
+  metric: VerificationMetric;
 }) {
   const passedCount = metric.measurements.filter(
     (m) => m.status === "passed",
@@ -148,7 +170,7 @@ function MetricSummaryDisplay({
   );
 }
 
-function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
+function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   const [open, setOpen] = useState(false);
   const sortedMeasurements = [...metric.measurements].sort(
     (a, b) =>
@@ -205,8 +227,7 @@ type MetricSummary = {
   status: "passed" | "failed" | "inconclusive";
 };
 
-type VerificationMetricStatusType =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
+type VerificationMetricStatusType = VerificationMetric;
 
 const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   if (metric.measurements.length === 0) {

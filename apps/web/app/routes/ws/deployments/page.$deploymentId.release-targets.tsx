@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { camelCase } from "change-case";
 import _ from "lodash";
 import { Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
@@ -92,7 +93,6 @@ export default function ReleaseTargetsPage() {
   const { jobStatus } = useJobStatus();
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     query: searchDebounced,
     limit: 1000,
@@ -116,15 +116,15 @@ export default function ReleaseTargetsPage() {
       environmentIds.has(environment.id),
     ) ?? [];
 
-  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const releaseTargets = releaseTargetsQuery.data ?? [];
   const filteredReleaseTargets = releaseTargets.filter((rt) => {
     if (jobStatus == null) return true;
-    return rt.latestJob?.status === jobStatus;
+    return camelCase(rt.latestJob?.status ?? "") === jobStatus;
   });
 
   const groupByEnvironmentId = _.groupBy(
     filteredReleaseTargets,
-    (rt) => rt.releaseTarget.environmentId,
+    (rt) => rt.environment.id,
   );
   return (
     <>
