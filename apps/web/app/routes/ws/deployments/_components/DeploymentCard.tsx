@@ -392,7 +392,7 @@ export function LazyLoadDeploymentCard({
   const { ref, inView } = useInView();
 
   const rtQuery = trpc.deployment.releaseTargets.useQuery(
-    { workspaceId: workspace.id, deploymentId: deployment.id, limit: 1_000 },
+    { deploymentId: deployment.id, limit: 1_000 },
     { enabled: inView },
   );
 
@@ -407,7 +407,7 @@ export function LazyLoadDeploymentCard({
     return isAfter(createdAt, twentyFourHoursAgo);
   });
 
-  const numTargets = rtQuery.data?.total ?? 0;
+  const numTargets = rtQuery.data?.length ?? 0;
 
   const releaseTargets = rtQuery.data ?? [];
 
