@@ -42,13 +42,13 @@ const getAgentsArrayWithLegacyAgent = (
   const agentsArrayWithLegacyAgent = [
     ...agentsArray,
     deployment.jobAgentId != null &&
-      deployment.jobAgentId !== "" &&
-      deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
+    deployment.jobAgentId !== "" &&
+    deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
       ? {
-        ref: deployment.jobAgentId,
-        config: deployment.jobAgentConfig,
-        selector: "true",
-      }
+          ref: deployment.jobAgentId,
+          config: deployment.jobAgentConfig,
+          selector: "true",
+        }
       : null,
   ].filter(isPresent);
   return agentsArrayWithLegacyAgent;
@@ -308,12 +308,12 @@ export const deploymentsRouter = router({
         latestJob:
           rt.latestJob != null
             ? {
-              ...rt.latestJob,
-              verifications: buildVerifications(
-                rt.latestJob.id,
-                rt.latestJob.createdAt,
-              ),
-            }
+                ...rt.latestJob,
+                verifications: buildVerifications(
+                  rt.latestJob.id,
+                  rt.latestJob.createdAt,
+                ),
+              }
             : null,
       }));
     }),
@@ -396,7 +396,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-              validate.data.errors.length > 0
+            validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });

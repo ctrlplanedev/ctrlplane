@@ -54,12 +54,12 @@ func (s *PostgresSetter) SetDesiredRelease(ctx context.Context, rt *ReleaseTarge
 	}
 
 	releaseRow, err := q.FindOrCreateRelease(ctx, db.FindOrCreateReleaseParams{
-		ID:            release.UUID(),
-		ResourceID:    rt.ResourceID,
-		EnvironmentID: rt.EnvironmentID,
-		DeploymentID:  rt.DeploymentID,
-		VersionID:     versionID,
-		VariableKeys:  variableKeys,
+		ID:             release.UUID(),
+		ResourceID:     rt.ResourceID,
+		EnvironmentID:  rt.EnvironmentID,
+		DeploymentID:   rt.DeploymentID,
+		VersionID:      versionID,
+		VariableKeys:   variableKeys,
 		VariableValues: variableValues,
 	})
 	if err != nil {

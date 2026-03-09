@@ -118,11 +118,7 @@ function getStatusMessage(
   return `Passed: Completed ${totalMeasurements} measurements within failure limit`;
 }
 
-function MetricSummaryDisplay({
-  metric,
-}: {
-  metric: VerificationMetric;
-}) {
+function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
   const passedCount = metric.measurements.filter(
     (m) => m.status === "passed",
   ).length;
@@ -143,7 +139,7 @@ function MetricSummaryDisplay({
     failedCount,
     failureLimit,
     consecutiveSuccessCount,
-    successThreshold,
+    successThreshold ?? undefined,
     totalMeasurements,
     expectedCount,
   );
