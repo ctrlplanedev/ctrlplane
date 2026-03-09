@@ -41,14 +41,11 @@ const jobAgentConfig = z.discriminatedUnion("type", [
 export const jobAgentsRouter = router({
   list: protectedProcedure
     .input(z.object({ workspaceId: z.uuid() }))
-    .query(async ({ input }) => {
-      const jobAgents = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/job-agents",
-        {
-          params: { path: { workspaceId: input.workspaceId } },
-        },
-      );
-      return jobAgents.data;
+    .query(async ({ input, ctx }) => {
+      const jobAgents = await ctx.db.query.jobAgent.findMany({
+        where: eq(schema.jobAgent.workspaceId, input.workspaceId),
+      });
+      return jobAgents;
     }),
 
   get: protectedProcedure

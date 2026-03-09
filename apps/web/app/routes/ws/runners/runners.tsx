@@ -26,7 +26,7 @@ export default function Runners() {
   const jonAgentProviders = trpc.jobAgents.list.useQuery({
     workspaceId: workspace.id,
   });
-  const jobAgentProviders = (jonAgentProviders.data?.items ?? []).sort((a, b) =>
+  const jobAgentProviders = (jonAgentProviders.data ?? []).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
   return (

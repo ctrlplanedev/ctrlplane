@@ -111,10 +111,11 @@ export function CreateDeploymentDialog({
       // Invalidate deployments list to refetch
       await utils.deployment.list.invalidate();
 
-      onSuccess?.({
-        id: deployment.id,
-        slug: deployment.slug,
-      });
+      if (deployment != null)
+        onSuccess?.({
+          id: deployment.id,
+          slug: deployment.name,
+        });
     },
     onError: (error) => {
       const message =

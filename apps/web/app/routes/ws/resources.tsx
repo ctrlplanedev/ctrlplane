@@ -53,7 +53,7 @@ function useCleanedCel(searchDebounced: string) {
   const { data, isLoading } = trpc.validate.resourceSelector.useQuery({
     cel: searchDebounced,
   });
-  if (data?.valid) return { cleanedCel: searchDebounced, isLoading };
+  if (data?.isSuccess) return { cleanedCel: searchDebounced, isLoading };
   const cleanedCel = `resource.name.contains('${searchDebounced}') || resource.identifier.contains('${searchDebounced}')`;
   return { cleanedCel, isLoading };
 }
