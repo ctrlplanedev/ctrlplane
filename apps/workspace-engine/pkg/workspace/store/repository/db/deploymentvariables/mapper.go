@@ -82,17 +82,6 @@ func selectorFromString(s string) *oapi.Selector {
 	return &sel
 }
 
-func selectorToString(sel *oapi.Selector) string {
-	if sel == nil {
-		return ""
-	}
-	cel, err := sel.AsCelSelector()
-	if err == nil && cel.Cel != "" {
-		return cel.Cel
-	}
-	return ""
-}
-
 func ValueToOapi(row db.DeploymentVariableValue) *oapi.DeploymentVariableValue {
 	var resourceSelector *oapi.Selector
 	if row.ResourceSelector.Valid && row.ResourceSelector.String != "" {
