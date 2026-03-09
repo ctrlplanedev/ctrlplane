@@ -1,33 +1,310 @@
+import type { Tx } from "@ctrlplane/db";
 import type { AsyncTypedHandler } from "@/types/api.js";
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { and, count, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
+
+const deleteAllRulesForPolicy = async (tx: Tx, policyId: string) => {
+  await tx
+    .delete(schema.policyRuleAnyApproval)
+    .where(eq(schema.policyRuleAnyApproval.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleDeploymentDependency)
+    .where(eq(schema.policyRuleDeploymentDependency.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleDeploymentWindow)
+    .where(eq(schema.policyRuleDeploymentWindow.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleEnvironmentProgression)
+    .where(eq(schema.policyRuleEnvironmentProgression.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleGradualRollout)
+    .where(eq(schema.policyRuleGradualRollout.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleRetry)
+    .where(eq(schema.policyRuleRetry.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleRollback)
+    .where(eq(schema.policyRuleRollback.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleVerification)
+    .where(eq(schema.policyRuleVerification.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleVersionCooldown)
+    .where(eq(schema.policyRuleVersionCooldown.policyId, policyId));
+  await tx
+    .delete(schema.policyRuleVersionSelector)
+    .where(eq(schema.policyRuleVersionSelector.policyId, policyId));
+};
+
+
+const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
+  for (const rule of rules) {
+    const ruleId: string = rule.id ?? uuidv4();
+
+    if (rule.anyApproval != null)
+      await tx.insert(schema.policyRuleAnyApproval).values({
+        id: ruleId,
+        policyId,
+        minApprovals: rule.anyApproval.minApprovals,
+      });
+
+    if (rule.deploymentDependency != null)
+      await tx.insert(schema.policyRuleDeploymentDependency).values({
+        id: ruleId,
+        policyId,
+        dependsOn: rule.deploymentDependency.dependsOn,
+      });
+
+    if (rule.deploymentWindow != null)
+      await tx.insert(schema.policyRuleDeploymentWindow).values({
+        id: ruleId,
+        policyId,
+        allowWindow: rule.deploymentWindow.allowWindow,
+        durationMinutes: rule.deploymentWindow.durationMinutes,
+        rrule: rule.deploymentWindow.rrule,
+        timezone: rule.deploymentWindow.timezone,
+      });
+
+    if (rule.environmentProgression != null)
+      await tx.insert(schema.policyRuleEnvironmentProgression).values({
+        id: ruleId,
+        policyId,
+        dependsOnEnvironmentSelector: JSON.stringify(
+          rule.environmentProgression.dependsOnEnvironmentSelector,
+        ),
+        maximumAgeHours: rule.environmentProgression.maximumAgeHours,
+        minimumSoakTimeMinutes:
+          rule.environmentProgression.minimumSockTimeMinutes,
+        minimumSuccessPercentage:
+          rule.environmentProgression.minimumSuccessPercentage,
+        successStatuses: rule.environmentProgression.successStatuses,
+      });
+
+    if (rule.gradualRollout != null)
+      await tx.insert(schema.policyRuleGradualRollout).values({
+        id: ruleId,
+        policyId,
+        rolloutType: rule.gradualRollout.rolloutType,
+        timeScaleInterval: rule.gradualRollout.timeScaleInterval,
+      });
+
+    if (rule.retry != null)
+      await tx.insert(schema.policyRuleRetry).values({
+        id: ruleId,
+        policyId,
+        maxRetries: rule.retry.maxRetries,
+        backoffSeconds: rule.retry.backoffSeconds,
+        backoffStrategy: rule.retry.backoffStrategy,
+        maxBackoffSeconds: rule.retry.maxBackoffSeconds,
+        retryOnStatuses: rule.retry.retryOnStatuses,
+      });
+
+    if (rule.verification != null)
+      await tx.insert(schema.policyRuleVerification).values({
+        id: ruleId,
+        policyId,
+        metrics: rule.verification.metrics,
+        triggerOn: rule.verification.triggerOn,
+      });
+
+    if (rule.versionCooldown != null)
+      await tx.insert(schema.policyRuleVersionCooldown).values({
+        id: ruleId,
+        policyId,
+        intervalSeconds: rule.versionCooldown.intervalSeconds,
+      });
+
+    if (rule.versionSelector != null)
+      await tx.insert(schema.policyRuleVersionSelector).values({
+        id: ruleId,
+        policyId,
+        description: rule.versionSelector.description,
+        selector: JSON.stringify(rule.versionSelector.selector),
+      });
+  }
+};
+
+const policyWithRules = {
+  anyApprovalRules: true,
+  deploymentDependencyRules: true,
+  deploymentWindowRules: true,
+  environmentProgressionRules: true,
+  gradualRolloutRules: true,
+  retryRules: true,
+  rollbackRules: true,
+  verificationRules: true,
+  versionCooldownRules: true,
+  versionSelectorRules: true,
+} as const;
+
+type PolicyRow = NonNullable<
+  Awaited<
+    ReturnType<
+      typeof db.query.policy.findFirst<{ with: typeof policyWithRules }>
+    >
+  >
+>;
+
+const formatPolicyRule = (
+  id: string,
+  policyId: string,
+  createdAt: Date,
+  ruleData: Record<string, unknown>,
+) => ({
+  id,
+  policyId,
+  createdAt: createdAt.toISOString(),
+  ...ruleData,
+});
+
+const formatPolicy = (p: PolicyRow) => {
+  const rules = [
+    ...p.anyApprovalRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        anyApproval: { minApprovals: r.minApprovals },
+      }),
+    ),
+    ...p.deploymentDependencyRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        deploymentDependency: { dependsOn: r.dependsOn },
+      }),
+    ),
+    ...p.deploymentWindowRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        deploymentWindow: {
+          allowWindow: r.allowWindow,
+          durationMinutes: r.durationMinutes,
+          rrule: r.rrule,
+          ...(r.timezone != null && { timezone: r.timezone }),
+        },
+      }),
+    ),
+    ...p.environmentProgressionRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        environmentProgression: {
+          dependsOnEnvironmentSelector: JSON.parse(
+            r.dependsOnEnvironmentSelector,
+          ),
+          ...(r.maximumAgeHours != null && {
+            maximumAgeHours: r.maximumAgeHours,
+          }),
+          minimumSockTimeMinutes: r.minimumSoakTimeMinutes,
+          minimumSuccessPercentage: r.minimumSuccessPercentage,
+          ...(r.successStatuses != null && {
+            successStatuses: r.successStatuses,
+          }),
+        },
+      }),
+    ),
+    ...p.gradualRolloutRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        gradualRollout: {
+          rolloutType: r.rolloutType,
+          timeScaleInterval: r.timeScaleInterval,
+        },
+      }),
+    ),
+    ...p.retryRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        retry: {
+          maxRetries: r.maxRetries,
+          ...(r.backoffSeconds != null && {
+            backoffSeconds: r.backoffSeconds,
+          }),
+          ...(r.backoffStrategy != null && {
+            backoffStrategy: r.backoffStrategy,
+          }),
+          ...(r.maxBackoffSeconds != null && {
+            maxBackoffSeconds: r.maxBackoffSeconds,
+          }),
+          ...(r.retryOnStatuses != null && {
+            retryOnStatuses: r.retryOnStatuses,
+          }),
+        },
+      }),
+    ),
+    ...p.rollbackRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        rollback: {
+          ...(r.onJobStatuses != null && {
+            onJobStatuses: r.onJobStatuses,
+          }),
+          ...(r.onVerificationFailure != null && {
+            onVerificationFailure: r.onVerificationFailure,
+          }),
+        },
+      }),
+    ),
+    ...p.verificationRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        verification: {
+          metrics: r.metrics,
+          ...(r.triggerOn != null && { triggerOn: r.triggerOn }),
+        },
+      }),
+    ),
+    ...p.versionCooldownRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        versionCooldown: { intervalSeconds: r.intervalSeconds },
+      }),
+    ),
+    ...p.versionSelectorRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        versionSelector: {
+          selector: JSON.parse(r.selector),
+          ...(r.description != null && { description: r.description }),
+        },
+      }),
+    ),
+  ];
+
+  return {
+    id: p.id,
+    workspaceId: p.workspaceId,
+    createdAt: p.createdAt.toISOString(),
+    name: p.name,
+    ...(p.description != null && { description: p.description }),
+    priority: p.priority,
+    enabled: p.enabled,
+    metadata: p.metadata,
+    selector: p.selector,
+    rules,
+  };
+};
 
 const listPolicies: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/policies",
   "get"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/policies",
-    { params: { path: { workspaceId } } },
-  );
+  const limit = Number(req.query.limit ?? 50);
+  const offset = Number(req.query.offset ?? 0);
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Failed to list policies",
-      response.response.status,
-    );
+  const [policies, countResult] = await Promise.all([
+    db.query.policy.findMany({
+      where: eq(schema.policy.workspaceId, workspaceId),
+      with: policyWithRules,
+      limit,
+      offset,
+    }),
+    db
+      .select({ total: count() })
+      .from(schema.policy)
+      .where(eq(schema.policy.workspaceId, workspaceId)),
+  ]);
 
-  res.status(200).json({ items: response.data.policies ?? [] });
-  return;
+  const total = countResult[0]?.total ?? 0;
+
+  res
+    .status(200)
+    .json({ items: policies.map(formatPolicy), total, limit, offset });
 };
 
 const deletePolicy: AsyncTypedHandler<
@@ -35,31 +312,33 @@ const deletePolicy: AsyncTypedHandler<
   "delete"
 > = async (req, res) => {
   const { workspaceId, policyId } = req.params;
-  const client = getClientFor(workspaceId);
-  const policy = await client.GET(
-    "/v1/workspaces/{workspaceId}/policies/{policyId}",
-    { params: { path: { workspaceId, policyId } } },
-  );
 
-  if (policy.error != null)
-    throw new ApiError(
-      policy.error.error ?? "Policy not found",
-      policy.response.status,
-    );
+  const [deleted] = await db
+    .delete(schema.policy)
+    .where(
+      and(
+        eq(schema.policy.id, policyId),
+        eq(schema.policy.workspaceId, workspaceId),
+      ),
+    )
+    .returning();
+
+  if (!deleted) throw new ApiError("Policy not found", 404);
 
   await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.PolicyDeleted,
-      timestamp: Date.now(),
-      data: policy.data,
-    });
-  } catch {
-    throw new ApiError("Failed to delete policy", 500);
-  }
-  res.status(202).json(policy.data);
+  res.status(202).json({
+    id: deleted.id,
+    workspaceId: deleted.workspaceId,
+    createdAt: deleted.createdAt.toISOString(),
+    name: deleted.name,
+    ...(deleted.description != null && { description: deleted.description }),
+    priority: deleted.priority,
+    enabled: deleted.enabled,
+    metadata: deleted.metadata,
+    selector: deleted.selector,
+    rules: [],
+  });
 };
 
 const upsertPolicy: AsyncTypedHandler<
@@ -68,55 +347,72 @@ const upsertPolicy: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, policyId } = req.params;
   const { body } = req;
-  const client = getClientFor(workspaceId);
-
-  // Check if policy already exists
-  const existingPolicy = await client.GET(
-    "/v1/workspaces/{workspaceId}/policies/{policyId}",
-    { params: { path: { workspaceId, policyId } } },
-  );
 
   const policyIdResult = z.string().uuid().safeParse(policyId);
   if (!policyIdResult.success)
     throw new ApiError("Invalid policy ID: must be a valid UUID v4", 400);
 
-  const createdAt = existingPolicy.data?.createdAt ?? new Date().toISOString();
+  const existing = await db
+    .select({ createdAt: schema.policy.createdAt })
+    .from(schema.policy)
+    .where(eq(schema.policy.id, policyId))
+    .limit(1);
 
-  const policy: WorkspaceEngine["schemas"]["Policy"] = {
+  const now = new Date();
+  const createdAt = existing[0]?.createdAt ?? now;
+  const createdAtStr = createdAt.toISOString();
+
+  const rules = body.rules.map((rule) => ({
+    ...rule,
+    id: rule.id ?? uuidv4(),
+    policyId,
+    createdAt: rule.createdAt ?? createdAtStr,
+  }));
+
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(schema.policy)
+      .values({
+        id: policyId,
+        workspaceId,
+        name: body.name,
+        description: body.description,
+        priority: body.priority,
+        enabled: body.enabled,
+        metadata: body.metadata,
+        selector: body.selector,
+        createdAt,
+      })
+      .onConflictDoUpdate({
+        target: schema.policy.id,
+        set: {
+          name: body.name,
+          description: body.description,
+          priority: body.priority,
+          enabled: body.enabled,
+          metadata: body.metadata,
+          selector: body.selector,
+        },
+      });
+
+    await deleteAllRulesForPolicy(tx, policyId);
+    await insertPolicyRules(tx, policyId, rules);
+  });
+
+  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
+
+  res.status(202).json({
     id: policyId,
     workspaceId,
-    createdAt,
+    createdAt: createdAtStr,
     name: body.name,
     description: body.description,
     priority: body.priority,
     enabled: body.enabled,
     metadata: body.metadata,
-    rules: body.rules.map((rule) => ({
-      ...rule,
-      id: rule.id ?? uuidv4(),
-      policyId,
-      createdAt: rule.createdAt ?? createdAt,
-    })),
     selector: body.selector,
-  };
-
-  // Determine if this is a create or update
-  const isUpdate = existingPolicy.data != null;
-
-  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
-
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: isUpdate ? Event.PolicyUpdated : Event.PolicyCreated,
-      timestamp: Date.now(),
-      data: policy,
-    });
-  } catch {
-    throw new ApiError("Failed to update policy", 500);
-  }
-
-  res.status(202).json(policy);
+    rules,
+  });
 };
 
 const getPolicy: AsyncTypedHandler<
@@ -124,21 +420,18 @@ const getPolicy: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, policyId } = req.params;
-  const client = getClientFor(workspaceId);
 
-  const response = await client.GET(
-    "/v1/workspaces/{workspaceId}/policies/{policyId}",
-    { params: { path: { workspaceId, policyId } } },
-  );
+  const row = await db.query.policy.findFirst({
+    where: and(
+      eq(schema.policy.id, policyId),
+      eq(schema.policy.workspaceId, workspaceId),
+    ),
+    with: policyWithRules,
+  });
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Policy not found",
-      response.response.status,
-    );
+  if (!row) throw new ApiError("Policy not found", 404);
 
-  res.status(200).json(response.data);
-  return;
+  res.status(200).json(formatPolicy(row));
 };
 
 const createPolicy: AsyncTypedHandler<
@@ -149,39 +442,46 @@ const createPolicy: AsyncTypedHandler<
   const { body } = req;
 
   const policyId = uuidv4();
-  const createdAt = new Date().toISOString();
+  const now = new Date();
+  const createdAtStr = now.toISOString();
 
-  const policy: WorkspaceEngine["schemas"]["Policy"] = {
-    id: policyId,
-    workspaceId,
-    enabled: true,
-    priority: 0,
-    createdAt,
-    metadata: {},
-    selector: "true",
-    ...body,
-    rules: (body.rules ?? []).map((rule) => ({
-      ...rule,
-      id: uuidv4(),
-      policyId,
-      createdAt,
-    })),
-  };
+  const rules = (body.rules ?? []).map((rule) => ({
+    ...rule,
+    id: uuidv4(),
+    policyId,
+    createdAt: createdAtStr,
+  }));
+
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.policy).values({
+      id: policyId,
+      workspaceId,
+      name: body.name,
+      description: body.description,
+      priority: body.priority ?? 0,
+      enabled: body.enabled ?? true,
+      metadata: body.metadata ?? {},
+      selector: body.selector ?? "true",
+      createdAt: now,
+    });
+
+    await insertPolicyRules(tx, policyId, rules);
+  });
 
   await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.PolicyCreated,
-      timestamp: Date.now(),
-      data: policy,
-    });
-  } catch {
-    throw new ApiError("Failed to create policy", 500);
-  }
-
-  res.status(202).json(policy);
+  res.status(202).json({
+    id: policyId,
+    workspaceId,
+    createdAt: createdAtStr,
+    name: body.name,
+    description: body.description,
+    priority: body.priority ?? 0,
+    enabled: body.enabled ?? true,
+    metadata: body.metadata ?? {},
+    selector: body.selector ?? "true",
+    rules,
+  });
 };
 
 export const policiesRouter = Router({ mergeParams: true })

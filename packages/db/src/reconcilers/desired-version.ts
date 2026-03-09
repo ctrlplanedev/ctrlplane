@@ -1,8 +1,8 @@
+import { eq } from "drizzle-orm";
+
 import type { Tx } from "../common.js";
 import type { ReconcileWorkScope } from "../schema/reconcile.js";
 import * as schema from "../schema/index.js";
-import { eq } from "drizzle-orm";
-
 import { enqueue, enqueueMany } from "./enqueue.js";
 
 const getAllReleaseTargets = async (db: Tx, workspaceId: string) => {
@@ -92,10 +92,13 @@ export const enqueueAllReleaseTargetsDesiredVersion = async (
   workspaceId: string,
 ) => {
   const releaseTargets = await getAllReleaseTargets(db, workspaceId);
-  return enqueueManyDesiredRelease(db, releaseTargets.map((releaseTarget) => ({
-    workspaceId: workspaceId,
-    deploymentId: releaseTarget.deploymentId,
-    environmentId: releaseTarget.environmentId,
-    resourceId: releaseTarget.resourceId,
-  })));
+  return enqueueManyDesiredRelease(
+    db,
+    releaseTargets.map((releaseTarget) => ({
+      workspaceId: workspaceId,
+      deploymentId: releaseTarget.deploymentId,
+      environmentId: releaseTarget.environmentId,
+      resourceId: releaseTarget.resourceId,
+    })),
+  );
 };

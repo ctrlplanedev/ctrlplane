@@ -3,8 +3,13 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
+import { eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import {
+  deploymentVariable,
+  deploymentVariableValue,
+} from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { validResourceSelector } from "../valid-selector.js";
 
@@ -12,40 +17,90 @@ const listDeploymentVariablesByDeployment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables",
   "get"
 > = async (req, res) => {
-  const { workspaceId, deploymentId } = req.params;
+  const { deploymentId } = req.params;
+  const limit = req.query.limit ?? 100;
+  const offset = req.query.offset ?? 0;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-    { params: { path: { workspaceId, deploymentId } } },
-  );
+  const allVariables = await db
+    .select()
+    .from(deploymentVariable)
+    .where(eq(deploymentVariable.deploymentId, deploymentId));
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Deployment not found",
-      response.response.status,
-    );
+  const total = allVariables.length;
+  const paginatedVariables = allVariables.slice(offset, offset + limit);
+  const variableIds = paginatedVariables.map((v) => v.id);
 
-  res.json(response.data.variables);
+  const values =
+    variableIds.length > 0
+      ? await db
+          .select()
+          .from(deploymentVariableValue)
+          .where(
+            inArray(
+              deploymentVariableValue.deploymentVariableId,
+              variableIds,
+            ),
+          )
+      : [];
+
+  const items = paginatedVariables.map((variable) => ({
+    variable: {
+      id: variable.id,
+      deploymentId: variable.deploymentId,
+      key: variable.key,
+      description: variable.description ?? "",
+      defaultValue: variable.defaultValue ?? undefined,
+    },
+    values: values
+      .filter((v) => v.deploymentVariableId === variable.id)
+      .map((v) => ({
+        id: v.id,
+        deploymentVariableId: v.deploymentVariableId,
+        value: v.value,
+        resourceSelector: v.resourceSelector ?? undefined,
+        priority: v.priority,
+      })),
+  }));
+
+  res.json({ items, total, limit, offset });
 };
 
 const getDeploymentVariable: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}",
   "get"
 > = async (req, res) => {
-  const { workspaceId, variableId } = req.params;
+  const { variableId } = req.params;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}",
-    { params: { path: { workspaceId, variableId } } },
-  );
+  const variable = await db
+    .select()
+    .from(deploymentVariable)
+    .where(eq(deploymentVariable.id, variableId))
+    .then(takeFirstOrNull);
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Deployment variable not found",
-      response.response.status,
-    );
+  if (variable == null)
+    throw new ApiError("Deployment variable not found", 404);
 
-  res.json(response.data);
+  const values = await db
+    .select()
+    .from(deploymentVariableValue)
+    .where(eq(deploymentVariableValue.deploymentVariableId, variableId));
+
+  res.json({
+    variable: {
+      id: variable.id,
+      deploymentId: variable.deploymentId,
+      key: variable.key,
+      description: variable.description ?? "",
+      defaultValue: variable.defaultValue ?? undefined,
+    },
+    values: values.map((v) => ({
+      id: v.id,
+      deploymentVariableId: v.deploymentVariableId,
+      value: v.value,
+      resourceSelector: v.resourceSelector ?? undefined,
+      priority: v.priority,
+    })),
+  });
 };
 
 const upsertDeploymentVariable: AsyncTypedHandler<
@@ -55,7 +110,7 @@ const upsertDeploymentVariable: AsyncTypedHandler<
   const { workspaceId, variableId } = req.params;
   const { body } = req;
 
-  const deploymentVariable: WorkspaceEngine["schemas"]["DeploymentVariable"] = {
+  const variableData: WorkspaceEngine["schemas"]["DeploymentVariable"] = {
     id: variableId,
     deploymentId: body.deploymentId,
     key: body.key,
@@ -67,7 +122,7 @@ const upsertDeploymentVariable: AsyncTypedHandler<
     workspaceId,
     eventType: Event.DeploymentVariableUpdated,
     timestamp: Date.now(),
-    data: deploymentVariable,
+    data: variableData,
   });
 
   res.status(202).json({
@@ -82,47 +137,55 @@ const deleteDeploymentVariable: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, variableId } = req.params;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}",
-    { params: { path: { workspaceId, variableId } } },
-  );
+  const variable = await db
+    .select()
+    .from(deploymentVariable)
+    .where(eq(deploymentVariable.id, variableId))
+    .then(takeFirstOrNull);
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Deployment variable not found",
-      response.response.status,
-    );
-
-  const { variable } = response.data;
+  if (variable == null)
+    throw new ApiError("Deployment variable not found", 404);
 
   await sendGoEvent({
     workspaceId,
     eventType: Event.DeploymentVariableDeleted,
     timestamp: Date.now(),
-    data: variable,
+    data: {
+      id: variable.id,
+      deploymentId: variable.deploymentId,
+      key: variable.key,
+      description: variable.description ?? "",
+      defaultValue:
+        (variable.defaultValue as WorkspaceEngine["schemas"]["DeploymentVariable"]["defaultValue"]) ??
+        undefined,
+    },
   });
 
-  res.status(204).end();
+  res.status(202).json({
+    id: variableId,
+    message: "Deployment variable deletion requested",
+  });
 };
 
 const getDeploymentVariableValue: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}",
   "get"
 > = async (req, res) => {
-  const { workspaceId, valueId } = req.params;
+  const { valueId } = req.params;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}",
-    { params: { path: { workspaceId, valueId } } },
-  );
+  const value = await db
+    .select()
+    .from(deploymentVariableValue)
+    .where(eq(deploymentVariableValue.id, valueId))
+    .then(takeFirstOrNull);
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Deployment variable value not found",
-      response.response.status,
-    );
+  if (value == null)
+    throw new ApiError("Deployment variable value not found", 404);
 
-  res.json(response.data);
+  res.json({
+    ...value,
+    resourceSelector: value.resourceSelector ?? undefined,
+  });
 };
 
 const upsertDeploymentVariableValue: AsyncTypedHandler<
@@ -137,20 +200,19 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
     if (!isValid) throw new ApiError("Invalid resource selector", 400);
   }
 
-  const deploymentVariableValue: WorkspaceEngine["schemas"]["DeploymentVariableValue"] =
-    {
-      id: valueId,
-      deploymentVariableId: body.deploymentVariableId,
-      priority: body.priority,
-      resourceSelector: body.resourceSelector ?? undefined,
-      value: body.value,
-    };
+  const valueData: WorkspaceEngine["schemas"]["DeploymentVariableValue"] = {
+    id: valueId,
+    deploymentVariableId: body.deploymentVariableId,
+    priority: body.priority,
+    resourceSelector: body.resourceSelector ?? undefined,
+    value: body.value,
+  };
 
   await sendGoEvent({
     workspaceId,
     eventType: Event.DeploymentVariableValueUpdated,
     timestamp: Date.now(),
-    data: deploymentVariableValue,
+    data: valueData,
   });
 
   res.status(202).json({
@@ -165,25 +227,35 @@ const deleteDeploymentVariableValue: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, valueId } = req.params;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}",
-    { params: { path: { workspaceId, valueId } } },
-  );
+  const value = await db
+    .select()
+    .from(deploymentVariableValue)
+    .where(eq(deploymentVariableValue.id, valueId))
+    .then(takeFirstOrNull);
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Deployment variable value not found",
-      response.response.status,
-    );
+  if (value == null)
+    throw new ApiError("Deployment variable value not found", 404);
 
   await sendGoEvent({
     workspaceId,
     eventType: Event.DeploymentVariableValueDeleted,
     timestamp: Date.now(),
-    data: response.data,
+    data: {
+      id: value.id,
+      deploymentVariableId: value.deploymentVariableId,
+      value:
+        value.value as WorkspaceEngine["schemas"]["DeploymentVariableValue"]["value"],
+      resourceSelector:
+        (value.resourceSelector as unknown as WorkspaceEngine["schemas"]["DeploymentVariableValue"]["resourceSelector"]) ??
+        undefined,
+      priority: value.priority,
+    },
   });
 
-  res.status(204).end();
+  res.status(202).json({
+    id: valueId,
+    message: "Deployment variable value deletion requested",
+  });
 };
 
 export const listDeploymentVariablesByDeploymentRouter = Router({

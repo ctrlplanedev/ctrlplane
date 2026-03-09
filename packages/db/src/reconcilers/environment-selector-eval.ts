@@ -1,6 +1,5 @@
 import type { Tx } from "../common.js";
 import type { ReconcileWorkScope } from "../schema/reconcile.js";
-
 import { enqueue, enqueueMany } from "./enqueue.js";
 
 const ENVIRONMENT_SELECTOR_EVAL_KIND = "environment-resource-selector-eval";
