@@ -26,7 +26,11 @@ func NewPostgresEnvironmentGetter(queries *db.Queries) *PostgresEnvironmentGette
 }
 
 func (g *PostgresEnvironmentGetter) GetEnvironment(ctx context.Context, environmentID string) (*oapi.Environment, error) {
-	env, err := g.queries.GetEnvironmentByID(ctx, uuid.MustParse(environmentID))
+	envUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
+	env, err := g.queries.GetEnvironmentByID(ctx, envUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -34,8 +38,12 @@ func (g *PostgresEnvironmentGetter) GetEnvironment(ctx context.Context, environm
 }
 
 func (g *PostgresEnvironmentGetter) GetAllEnvironments(ctx context.Context, workspaceID string) (map[string]*oapi.Environment, error) {
+	wsUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
 	envs, err := g.queries.ListEnvironmentsByWorkspaceID(ctx, db.ListEnvironmentsByWorkspaceIDParams{
-		WorkspaceID: uuid.MustParse(workspaceID),
+		WorkspaceID: wsUUID,
 	})
 	if err != nil {
 		return nil, err

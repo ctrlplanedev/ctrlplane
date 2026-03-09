@@ -27,7 +27,11 @@ type rawMeasurement struct {
 }
 
 func (p *PostgresGetter) GetVerificationMetric(ctx context.Context, metricID string) (*metrics.VerificationMetric, error) {
-	row, err := db.GetQueries(ctx).GetVerificationMetricWithMeasurements(ctx, uuid.MustParse(metricID))
+	metricUUID, err := uuid.Parse(metricID)
+	if err != nil {
+		return nil, fmt.Errorf("parse metric id: %w", err)
+	}
+	row, err := db.GetQueries(ctx).GetVerificationMetricWithMeasurements(ctx, metricUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +68,11 @@ func (p *PostgresGetter) GetVerificationMetric(ctx context.Context, metricID str
 }
 
 func (p *PostgresGetter) GetProviderContext(ctx context.Context, metricID string) (*provider.ProviderContext, error) {
-	raw, err := db.GetQueries(ctx).GetJobDispatchContext(ctx, uuid.MustParse(metricID))
+	metricUUID, err := uuid.Parse(metricID)
+	if err != nil {
+		return nil, fmt.Errorf("parse metric id: %w", err)
+	}
+	raw, err := db.GetQueries(ctx).GetJobDispatchContext(ctx, metricUUID)
 	if err != nil {
 		return nil, fmt.Errorf("get job dispatch context: %w", err)
 	}

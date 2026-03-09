@@ -16,7 +16,11 @@ type GetPolicies interface {
 type PostgresGetPolicies struct{}
 
 func (p *PostgresGetPolicies) GetPolicies(ctx context.Context, policyID string) (*oapi.Policy, error) {
-	policy, err := db.GetQueries(ctx).GetPolicyByID(ctx, uuid.MustParse(policyID))
+	polUUID, err := uuid.Parse(policyID)
+	if err != nil {
+		return nil, fmt.Errorf("parse policy id: %w", err)
+	}
+	policy, err := db.GetQueries(ctx).GetPolicyByID(ctx, polUUID)
 	if err != nil {
 		return nil, fmt.Errorf("get policy by id: %w", err)
 	}

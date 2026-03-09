@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
@@ -23,7 +24,11 @@ func NewPostgresSystemGetter(queries *db.Queries) *PostgresSystemGetter {
 }
 
 func (g *PostgresSystemGetter) GetSystem(ctx context.Context, systemID string) (*oapi.System, error) {
-	system, err := g.queries.GetSystemByID(ctx, uuid.MustParse(systemID))
+	sysUUID, err := uuid.Parse(systemID)
+	if err != nil {
+		return nil, fmt.Errorf("parse system id: %w", err)
+	}
+	system, err := g.queries.GetSystemByID(ctx, sysUUID)
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,11 @@ func NewPostgresDeploymentGetter(queries *db.Queries) *PostgresDeploymentGetter 
 }
 
 func (g *PostgresDeploymentGetter) GetDeployment(ctx context.Context, deploymentID string) (*oapi.Deployment, error) {
-	deployment, err := g.queries.GetDeploymentByID(ctx, uuid.MustParse(deploymentID))
+	depUUID, err := uuid.Parse(deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
+	deployment, err := g.queries.GetDeploymentByID(ctx, depUUID)
 	if err != nil {
 		return nil, err
 	}

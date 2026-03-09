@@ -2,6 +2,7 @@ package environmentprogression
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -120,7 +121,11 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 
 func (p *PostgresGetters) GetSystemIDsForEnvironment(environmentID string) []string {
 	ctx := context.TODO()
-	ids, err := p.queries.GetSystemIDsForEnvironment(ctx, uuid.MustParse(environmentID))
+	envUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil
+	}
+	ids, err := p.queries.GetSystemIDsForEnvironment(ctx, envUUID)
 	if err != nil {
 		return nil
 	}
@@ -132,7 +137,10 @@ func (p *PostgresGetters) GetSystemIDsForEnvironment(environmentID string) []str
 }
 
 func (p *PostgresGetters) GetReleaseTargetsForEnvironment(ctx context.Context, environmentID string) ([]*oapi.ReleaseTarget, error) {
-	envUUID := uuid.MustParse(environmentID)
+	envUUID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
 	systemIDs, err := p.queries.GetSystemIDsForEnvironment(ctx, envUUID)
 	if err != nil {
 		return nil, err
@@ -172,7 +180,11 @@ func (p *PostgresGetters) GetReleaseTargetsForEnvironment(ctx context.Context, e
 }
 
 func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error) {
-	rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, uuid.MustParse(deploymentID))
+	depUUID, err := uuid.Parse(deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
+	rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, depUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +225,12 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTar
 }
 
 func (p *PostgresGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
+	wsUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
 	rows, err := p.queries.ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: uuid.MustParse(workspaceID),
+		WorkspaceID: wsUUID,
 	})
 	if err != nil {
 		return nil, err

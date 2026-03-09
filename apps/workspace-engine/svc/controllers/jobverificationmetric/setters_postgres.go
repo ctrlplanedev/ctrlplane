@@ -26,8 +26,13 @@ func (s *PostgresSetter) RecordMeasurement(ctx context.Context, metricID string,
 		return fmt.Errorf("marshal measurement data: %w", err)
 	}
 
+	metricUUID, err := uuid.Parse(metricID)
+	if err != nil {
+		return fmt.Errorf("parse metric id: %w", err)
+	}
+
 	return db.GetQueries(ctx).InsertJobVerificationMetricMeasurement(ctx, db.InsertJobVerificationMetricMeasurementParams{
-		JobVerificationMetricStatusID: uuid.MustParse(metricID),
+		JobVerificationMetricStatusID: metricUUID,
 		Data:                          data,
 		MeasuredAt:                    pgtype.Timestamptz{Time: measurement.MeasuredAt, Valid: true},
 		Message:                       measurement.Message,
@@ -37,7 +42,10 @@ func (s *PostgresSetter) RecordMeasurement(ctx context.Context, metricID string,
 
 func (s *PostgresSetter) CompleteMetric(ctx context.Context, metricID string, status metrics.VerificationStatus) error {
 	queries := db.GetQueries(ctx)
-	metricUUID := uuid.MustParse(metricID)
+	metricUUID, err := uuid.Parse(metricID)
+	if err != nil {
+		return fmt.Errorf("parse metric id: %w", err)
+	}
 
 	siblings, err := queries.GetSiblingMetricStatuses(ctx, metricUUID)
 	if err != nil {

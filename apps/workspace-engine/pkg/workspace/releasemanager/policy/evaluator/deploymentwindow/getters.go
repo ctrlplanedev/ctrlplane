@@ -45,10 +45,22 @@ type PostgresGetters struct {
 }
 
 func (g *PostgresGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
+	resourceUUID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		return false, fmt.Errorf("parse resource id: %w", err)
+	}
+	envUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		return false, fmt.Errorf("parse environment id: %w", err)
+	}
+	depUUID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		return false, fmt.Errorf("parse deployment id: %w", err)
+	}
 	releases, err := db.GetQueries(ctx).ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+		ResourceID:    resourceUUID,
+		EnvironmentID: envUUID,
+		DeploymentID:  depUUID,
 	})
 	if err != nil {
 		return false, fmt.Errorf("list releases for release target: %w", err)
