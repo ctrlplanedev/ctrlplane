@@ -97,7 +97,6 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
-	ctx := context.Background()
 	kind := events.JobEligibilityKind
 	queue := postgres.NewForKinds(pgxPool, kind)
 	enqueueQueue := postgres.New(pgxPool)
@@ -115,6 +114,5 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		log.Fatal("Failed to create job eligibility reconcile worker", "error", err)
 	}
 
-	_ = ctx
 	return worker
 }

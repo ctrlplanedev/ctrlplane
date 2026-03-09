@@ -124,11 +124,11 @@ func (r *reconciler) checkEligibility(ctx context.Context) (bool, *time.Time, st
 		}
 	}
 
-	if hasPending {
-		return false, earliestNextTime, reason
-	}
 	if hasBlocked {
 		return false, nil, reason
+	}
+	if hasPending {
+		return false, earliestNextTime, reason
 	}
 	return true, nil, reason
 }
