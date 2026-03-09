@@ -27,7 +27,7 @@ type Getters interface {
 
 	GetSystemIDsForEnvironment(environmentID string) []string
 	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
-	GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
+	GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
 	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
 }
 
@@ -82,7 +82,7 @@ func (s *StoreGetters) GetReleaseTargetsForDeployment(ctx context.Context, deplo
 	return s.store.ReleaseTargets.GetForDeployment(ctx, deploymentID)
 }
 
-func (s *StoreGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (s *StoreGetters) GetJobsForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 }
 
@@ -187,8 +187,7 @@ func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, de
 	return targets, nil
 }
 
-func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
-	ctx := context.TODO()
+func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	releases, err := p.queries.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
 		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
 		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),

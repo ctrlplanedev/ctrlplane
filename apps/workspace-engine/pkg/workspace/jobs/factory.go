@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents/configs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
@@ -18,15 +17,27 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager/jobs")
 
+type Getters interface {
+	GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error)
+	GetEnvironment(ctx context.Context, environmentID uuid.UUID) (*oapi.Environment, error)
+	GetResource(ctx context.Context, resourceID uuid.UUID) (*oapi.Resource, error)
+}
+
 // Factory creates jobs for releases.
 type Factory struct {
-	store *store.Store
+	getters Getters
 }
 
 // NewFactory creates a new job factory.
 func NewFactory(store *store.Store) *Factory {
 	return &Factory{
-		store: store,
+		getters: NewStoreGetters(store),
+	}
+}
+
+func NewFactoryFromGetters(getters Getters) *Factory {
+	return &Factory{
+		getters: getters,
 	}
 }
 
@@ -82,19 +93,27 @@ func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, a
 	}
 }
 
-func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.DispatchContext, error) {
-	environment, exists := f.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
-	if !exists {
-		return nil, fmt.Errorf("environment %s not found", release.ReleaseTarget.EnvironmentId)
+func (f *Factory) buildDispatchContext(ctx context.Context, release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.DispatchContext, error) {
+	environmentID, err := uuid.Parse(release.ReleaseTarget.EnvironmentId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse environment id: %w", err)
+	}
+	environment, err := f.getters.GetEnvironment(ctx, environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get environment: %w", err)
 	}
 	envCopy, err := deepCopy(environment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy environment: %w", err)
 	}
 
-	resource, exists := f.store.Resources.Get(release.ReleaseTarget.ResourceId)
-	if !exists {
-		return nil, fmt.Errorf("resource %s not found", release.ReleaseTarget.ResourceId)
+	resourceID, err := uuid.Parse(release.ReleaseTarget.ResourceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse resource id: %w", err)
+	}
+	resource, err := f.getters.GetResource(ctx, resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resource: %w", err)
 	}
 	resourceCopy, err := deepCopy(resource)
 	if err != nil {
@@ -144,9 +163,13 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	releaseTarget := release.ReleaseTarget
 
 	// Lookup deployment
-	deployment, exists := f.store.Deployments.Get(releaseTarget.DeploymentId)
-	if !exists {
-		return nil, fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId)
+	deploymentID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse deployment id: %w", err)
+	}
+	deployment, err := f.getters.GetDeployment(ctx, deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
 	}
 
 	if action != nil {
@@ -181,7 +204,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("version_tag", release.Version.Tag)
 	}
 
-	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent)
+	dispatchContext, err := f.buildDispatchContext(ctx, release, deployment, jobAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
 	}
@@ -191,84 +214,6 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 		ReleaseId:       release.Id.String(),
 		JobAgentId:      jobAgent.Id,
 		JobAgentConfig:  jobAgent.Config,
-		Status:          oapi.JobStatusPending,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-		Metadata:        make(map[string]string),
-		DispatchContext: dispatchContext,
-	}, nil
-}
-
-func (f *Factory) buildWorkflowJobConfig(wfJob *oapi.WorkflowJob, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
-	agentConfig := jobAgent.Config
-	workflowJobConfig := wfJob.Config
-	mergedConfig, err := configs.Merge(agentConfig, workflowJobConfig)
-	if err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
-	}
-	return mergedConfig, nil
-}
-
-func (f *Factory) buildWorkflowJobDispatchContext(wfJob *oapi.WorkflowJob, jobAgent *oapi.JobAgent, mergedConfig oapi.JobAgentConfig) (*oapi.DispatchContext, error) {
-	jobAgentCopy, err := deepCopy(jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy job agent: %w", err)
-	}
-
-	workflowJobCopy, err := deepCopy(wfJob)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy workflow job: %w", err)
-	}
-
-	workflowRun, exists := f.store.WorkflowRuns.Get(wfJob.WorkflowRunId)
-	if !exists {
-		return nil, fmt.Errorf("workflow run %s not found", wfJob.WorkflowRunId)
-	}
-	workflowRunCopy, err := deepCopy(workflowRun)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy workflow run: %w", err)
-	}
-
-	workflow, exists := f.store.Workflows.Get(workflowRun.WorkflowId)
-	if !exists {
-		return nil, fmt.Errorf("workflow %s not found", workflowRun.WorkflowId)
-	}
-	workflowCopy, err := deepCopy(workflow)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy workflow: %w", err)
-	}
-
-	return &oapi.DispatchContext{
-		WorkflowJob:    workflowJobCopy,
-		JobAgent:       *jobAgentCopy,
-		JobAgentConfig: mergedConfig,
-		WorkflowRun:    workflowRunCopy,
-		Workflow:       workflowCopy,
-	}, nil
-}
-
-// CreateJobForWorkflowJob creates a job for a given workflow job.
-func (f *Factory) CreateJobForWorkflowJob(ctx context.Context, wfJob *oapi.WorkflowJob) (*oapi.Job, error) {
-	jobAgent, exists := f.store.JobAgents.Get(wfJob.Ref)
-	if !exists {
-		return nil, fmt.Errorf("job agent %s not found", wfJob.Ref)
-	}
-
-	mergedConfig, err := f.buildWorkflowJobConfig(wfJob, jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build workflow job config: %w", err)
-	}
-
-	dispatchContext, err := f.buildWorkflowJobDispatchContext(wfJob, jobAgent, mergedConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build workflow job dispatch context: %w", err)
-	}
-
-	return &oapi.Job{
-		Id:              uuid.New().String(),
-		WorkflowJobId:   wfJob.Id,
-		JobAgentId:      jobAgent.Id,
-		JobAgentConfig:  mergedConfig,
 		Status:          oapi.JobStatusPending,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),

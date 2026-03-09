@@ -111,6 +111,33 @@ func (q *Queries) FindOrCreateRelease(ctx context.Context, arg FindOrCreateRelea
 	return i, err
 }
 
+const getDesiredReleaseByReleaseTarget = `-- name: GetDesiredReleaseByReleaseTarget :one
+SELECT r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at
+FROM release_target_desired_release rtr
+JOIN release r ON r.id = rtr.desired_release_id
+WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3
+`
+
+type GetDesiredReleaseByReleaseTargetParams struct {
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+}
+
+func (q *Queries) GetDesiredReleaseByReleaseTarget(ctx context.Context, arg GetDesiredReleaseByReleaseTargetParams) (Release, error) {
+	row := q.db.QueryRow(ctx, getDesiredReleaseByReleaseTarget, arg.ResourceID, arg.EnvironmentID, arg.DeploymentID)
+	var i Release
+	err := row.Scan(
+		&i.ID,
+		&i.ResourceID,
+		&i.EnvironmentID,
+		&i.DeploymentID,
+		&i.VersionID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getReleaseByID = `-- name: GetReleaseByID :one
 SELECT id, resource_id, environment_id, deployment_id, version_id, created_at FROM release WHERE id = $1
 `

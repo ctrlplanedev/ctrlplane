@@ -98,7 +98,7 @@ func (m *mockReconcileGetter) GetReleaseTargetsForDeployment(_ context.Context, 
 func (m *mockReconcileGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, _, _ string) ([]oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockReconcileGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return nil
 }
 func (m *mockReconcileGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {
@@ -129,12 +129,18 @@ type mockReconcileSetter struct {
 }
 
 func (s *mockReconcileSetter) SetDesiredRelease(_ context.Context, _ *ReleaseTarget, r *oapi.Release) error {
-	s.releases = append(s.releases, r)
+	if r != nil {
+		s.releases = append(s.releases, r)
+	}
 	return nil
 }
 
 func (s *mockReconcileSetter) UpsertRuleEvaluations(_ context.Context, evals []policies.RuleEvaluationParams) error {
 	s.evaluations = append(s.evaluations, evals...)
+	return nil
+}
+
+func (s *mockReconcileSetter) EnqueueJobEligibility(_ context.Context, _ string, _ *ReleaseTarget) error {
 	return nil
 }
 

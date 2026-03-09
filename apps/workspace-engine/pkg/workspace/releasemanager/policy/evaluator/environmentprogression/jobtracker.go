@@ -94,7 +94,7 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	// Use indexed lookup through release targets instead of scanning all jobs
 	for _, rt := range t.ReleaseTargets {
 		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
-		rtJobs := t.getters.GetJobsForReleaseTarget(&rt)
+		rtJobs := t.getters.GetJobsForReleaseTarget(ctx, &rt)
 		for _, job := range rtJobs {
 			// Get the release to check version
 			release, _ := t.getters.GetRelease(ctx, job.ReleaseId)

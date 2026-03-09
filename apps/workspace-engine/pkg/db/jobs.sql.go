@@ -181,17 +181,18 @@ func (q *Queries) GetWorkspaceIDByReleaseID(ctx context.Context, id uuid.UUID) (
 }
 
 const insertJob = `-- name: InsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at, dispatch_context)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type InsertJobParams struct {
-	ID             uuid.UUID
-	JobAgentID     pgtype.UUID
-	JobAgentConfig []byte
-	Status         JobStatus
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	Status          JobStatus
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
 }
 
 func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
@@ -202,6 +203,7 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 		arg.Status,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.DispatchContext,
 	)
 	return err
 }
@@ -427,6 +429,98 @@ func (q *Queries) ListJobsByReleaseTarget(ctx context.Context, arg ListJobsByRel
 	var items []ListJobsByReleaseTargetRow
 	for rows.Next() {
 		var i ListJobsByReleaseTargetRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ExternalID,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.UpdatedAt,
+			&i.DispatchContext,
+			&i.ReleaseID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByReleaseTargetWithStatuses = `-- name: ListJobsByReleaseTargetWithStatuses :many
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '[]'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = $1
+  AND r.environment_id = $2
+  AND r.resource_id = $3
+  AND j.status = ANY($4::job_status[])
+`
+
+type ListJobsByReleaseTargetWithStatusesParams struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+	Statuses      []JobStatus
+}
+
+type ListJobsByReleaseTargetWithStatusesRow struct {
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
+}
+
+// Returns all jobs for a given release target (deployment, environment, resource triple) with the given statuses.
+// The statuses are passed in as a comma-separated list of statuses.
+func (q *Queries) ListJobsByReleaseTargetWithStatuses(ctx context.Context, arg ListJobsByReleaseTargetWithStatusesParams) ([]ListJobsByReleaseTargetWithStatusesRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByReleaseTargetWithStatuses,
+		arg.DeploymentID,
+		arg.EnvironmentID,
+		arg.ResourceID,
+		arg.Statuses,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByReleaseTargetWithStatusesRow
+	for rows.Next() {
+		var i ListJobsByReleaseTargetWithStatusesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.JobAgentID,

@@ -11,16 +11,29 @@ import (
 
 var _ evaluator.JobEvaluator = &ReleaseTargetConcurrencyEvaluator{}
 
-type ReleaseTargetConcurrencyEvaluator struct {
-	store *store.Store
+type Getters interface {
+	GetJobsInProcessingStateForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
 }
 
-func NewReleaseTargetConcurrencyEvaluator(store *store.Store) evaluator.JobEvaluator {
-	return &ReleaseTargetConcurrencyEvaluator{store: store}
+type ReleaseTargetConcurrencyEvaluator struct {
+	getters Getters
+}
+
+// NewReleaseTargetConcurrencyEvaluator creates a concurrency evaluator backed by the in-memory store.
+func NewReleaseTargetConcurrencyEvaluator(s *store.Store) evaluator.JobEvaluator {
+	return NewEvaluator(&storeGetters{store: s})
+}
+
+// NewEvaluator creates a concurrency evaluator with the given getters interface.
+func NewEvaluator(getters Getters) evaluator.JobEvaluator {
+	if getters == nil {
+		return nil
+	}
+	return &ReleaseTargetConcurrencyEvaluator{getters: getters}
 }
 
 func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(ctx context.Context, release *oapi.Release) *oapi.RuleEvaluation {
-	processingJobs := e.store.Jobs.GetJobsInProcessingStateForReleaseTarget(&release.ReleaseTarget)
+	processingJobs := e.getters.GetJobsInProcessingStateForReleaseTarget(ctx, &release.ReleaseTarget)
 
 	if len(processingJobs) != 0 {
 		res := results.NewDeniedResult("Release target has an active job").WithDetail("release_target_key", release.ReleaseTarget.Key())
@@ -31,4 +44,14 @@ func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(ctx context.Context, releas
 	}
 
 	return results.NewAllowedResult("Release target has no active jobs")
+}
+
+var _ Getters = (*storeGetters)(nil)
+
+type storeGetters struct {
+	store *store.Store
+}
+
+func (s *storeGetters) GetJobsInProcessingStateForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+	return s.store.Jobs.GetJobsInProcessingStateForReleaseTarget(releaseTarget)
 }

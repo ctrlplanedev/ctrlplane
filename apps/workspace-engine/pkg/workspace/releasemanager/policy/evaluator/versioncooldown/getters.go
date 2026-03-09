@@ -24,7 +24,7 @@ type Getters interface {
 	releaseGetter
 	resourceGetter
 
-	GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
+	GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
 	GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus
 	GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error)
 }
@@ -50,7 +50,7 @@ type storeGetters struct {
 	store *legacystore.Store
 }
 
-func (s *storeGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (s *storeGetters) GetJobsForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 }
 
@@ -94,7 +94,7 @@ type PostgresGetters struct {
 	queries *db.Queries
 }
 
-func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	if releaseTarget == nil {
 		return nil
 	}
@@ -113,7 +113,7 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTar
 		log.Error("failed to parse resource id", "resourceID", releaseTarget.ResourceId, "error", err)
 		return nil
 	}
-	rows, err := p.queries.ListJobsByReleaseTarget(context.Background(), db.ListJobsByReleaseTargetParams{
+	rows, err := p.queries.ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
 		DeploymentID:  deploymentIDUUID,
 		EnvironmentID: environmentIDUUID,
 		ResourceID:    resourceIDUUID,

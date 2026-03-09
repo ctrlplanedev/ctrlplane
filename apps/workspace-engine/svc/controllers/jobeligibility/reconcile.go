@@ -1,0 +1,224 @@
+package jobeligibility
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobs"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+)
+
+type ReconcileResult struct {
+	NextReconcileAt *time.Time
+}
+
+type reconciler struct {
+	workspaceID uuid.UUID
+
+	getter Getter
+	setter Setter
+	rt     *ReleaseTarget
+
+	release  *oapi.Release
+	policies []*oapi.Policy
+}
+
+func (r *reconciler) loadInput(ctx context.Context) error {
+	release, err := r.getter.GetDesiredRelease(ctx, r.rt)
+	if err != nil {
+		return fmt.Errorf("get desired release: %w", err)
+	}
+	r.release = release
+	if release == nil {
+		return nil
+	}
+
+	policies, err := r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
+	if err != nil {
+		return fmt.Errorf("get policies for release target: %w", err)
+	}
+	r.policies = policies
+
+	return nil
+}
+
+// buildEvaluators constructs the set of job evaluators to run against the release.
+// Static: concurrency check (always applied).
+// Dynamic: retry evaluators built from policy retry rules.
+func (r *reconciler) buildEvaluators() []evaluator.JobEvaluator {
+	evals := []evaluator.JobEvaluator{
+		releasetargetconcurrency.NewEvaluator(r.getter),
+	}
+
+	retryEvals := r.buildRetryEvaluators()
+	evals = append(evals, retryEvals...)
+
+	return evals
+}
+
+func (r *reconciler) buildRetryEvaluators() []evaluator.JobEvaluator {
+	var retryEvals []evaluator.JobEvaluator
+
+	for _, policy := range r.policies {
+		if !policy.Enabled {
+			continue
+		}
+		for _, rule := range policy.Rules {
+			if rule.Retry == nil {
+				continue
+			}
+			eval := retry.NewEvaluator(r.getter, rule.Retry)
+			if eval != nil {
+				retryEvals = append(retryEvals, eval)
+			}
+		}
+	}
+
+	if len(retryEvals) == 0 {
+		eval := retry.NewEvaluator(r.getter, nil)
+		if eval != nil {
+			retryEvals = append(retryEvals, eval)
+		}
+	}
+
+	return retryEvals
+}
+
+// checkEligibility runs all evaluators and returns the eligibility decision.
+func (r *reconciler) checkEligibility(ctx context.Context) (bool, *time.Time, string) {
+	if r.release == nil {
+		return false, nil, "no desired release"
+	}
+
+	evals := r.buildEvaluators()
+
+	var earliestNextTime *time.Time
+	hasPending := false
+	hasBlocked := false
+	reason := "eligible"
+
+	for _, eval := range evals {
+		result := eval.Evaluate(ctx, r.release)
+
+		if result.ActionRequired {
+			hasPending = true
+			reason = result.Message
+			if result.NextEvaluationTime != nil {
+				if earliestNextTime == nil || result.NextEvaluationTime.Before(*earliestNextTime) {
+					earliestNextTime = result.NextEvaluationTime
+				}
+			}
+		}
+
+		if !result.Allowed && !result.ActionRequired {
+			hasBlocked = true
+			reason = result.Message
+			break
+		}
+	}
+
+	if hasBlocked {
+		return false, nil, reason
+	}
+	if hasPending {
+		return false, earliestNextTime, reason
+	}
+	return true, nil, reason
+}
+
+func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
+	deploymentID, err := uuid.Parse(r.release.ReleaseTarget.DeploymentId)
+	if err != nil {
+		return fmt.Errorf("parse deployment id: %w", err)
+	}
+
+	deployment, err := r.getter.GetDeployment(ctx, deploymentID)
+	if err != nil {
+		return fmt.Errorf("get deployment: %w", err)
+	}
+
+	if deployment.JobAgents == nil || len(*deployment.JobAgents) == 0 {
+		return fmt.Errorf("no job agents configured for deployment %s", deployment.Name)
+	}
+
+	for _, agentRef := range *deployment.JobAgents {
+		agentID, err := uuid.Parse(agentRef.Ref)
+		if err != nil {
+			return fmt.Errorf("parse job agent id: %w", err)
+		}
+
+		jobAgent, err := r.getter.GetJobAgent(ctx, agentID)
+		if err != nil {
+			return fmt.Errorf("get job agent %s: %w", agentRef.Ref, err)
+		}
+
+		job, err := jobs.NewFactoryFromGetters(r.getter).CreateJobForRelease(ctx, r.release, jobAgent, nil)
+		if err != nil {
+			return fmt.Errorf("build job: %w", err)
+		}
+
+		if err := r.setter.CreateJob(ctx, job, r.release); err != nil {
+			return fmt.Errorf("create job: %w", err)
+		}
+
+		if err := r.setter.EnqueueJobDispatch(ctx, r.workspaceID.String(), job.Id); err != nil {
+			return fmt.Errorf("enqueue job dispatch: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Reconcile determines job eligibility for a release target and, if eligible,
+// builds a job and enqueues it for dispatch.
+func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Setter, rt *ReleaseTarget) (*ReconcileResult, error) {
+	ctx, span := tracer.Start(ctx, "jobeligibility.Reconcile")
+	defer span.End()
+
+	workspaceIDUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse workspace id: %w", err)
+	}
+
+	r := &reconciler{workspaceID: workspaceIDUUID, getter: getter, setter: setter, rt: rt}
+	r.rt.WorkspaceID = r.workspaceID
+
+	if err := r.loadInput(ctx); err != nil {
+		return nil, recordErr(span, "load input", err)
+	}
+
+	if r.release == nil {
+		return &ReconcileResult{}, nil
+	}
+
+	allowed, nextTime, reason := r.checkEligibility(ctx)
+	if !allowed {
+		if nextTime != nil {
+			span.AddEvent("job creation pending: " + reason)
+			return &ReconcileResult{NextReconcileAt: nextTime}, nil
+		}
+		span.AddEvent("job creation denied: " + reason)
+		return &ReconcileResult{}, nil
+	}
+
+	span.AddEvent("job creation allowed: " + reason)
+	if err := r.buildAndDispatchJob(ctx); err != nil {
+		return nil, recordErr(span, "build and dispatch job", err)
+	}
+
+	return &ReconcileResult{}, nil
+}
+
+func recordErr(span trace.Span, msg string, err error) error {
+	span.RecordError(err)
+	span.SetStatus(codes.Error, msg+" failed")
+	return fmt.Errorf("%s: %w", msg, err)
+}

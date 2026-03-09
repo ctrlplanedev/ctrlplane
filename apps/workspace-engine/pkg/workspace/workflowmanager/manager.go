@@ -3,15 +3,12 @@ package workflowmanager
 import (
 	"context"
 	"fmt"
-	"maps"
 	"time"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 var workflowCelEnv, _ = celutil.NewEnvBuilder().
@@ -83,56 +80,57 @@ func (m *Manager) evaluateJobTemplateIf(jobTemplate oapi.WorkflowJobTemplate, in
 }
 
 func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inputs map[string]any) (*oapi.WorkflowRun, error) {
-	workflow, ok := m.store.Workflows.Get(workflowId)
-	if !ok {
-		return nil, fmt.Errorf("workflow %s not found", workflowId)
-	}
+	return nil, nil
+	// workflow, ok := m.store.Workflows.Get(workflowId)
+	// if !ok {
+	// 	return nil, fmt.Errorf("workflow %s not found", workflowId)
+	// }
 
-	m.maybeSetDefaultInputValues(inputs, workflow)
+	// m.maybeSetDefaultInputValues(inputs, workflow)
 
-	workflowRun := &oapi.WorkflowRun{
-		Id:         uuid.New().String(),
-		WorkflowId: workflowId,
-		Inputs:     maps.Clone(inputs),
-	}
+	// workflowRun := &oapi.WorkflowRun{
+	// 	Id:         uuid.New().String(),
+	// 	WorkflowId: workflowId,
+	// 	Inputs:     maps.Clone(inputs),
+	// }
 
-	m.store.WorkflowRuns.Upsert(ctx, workflowRun)
+	// m.store.WorkflowRuns.Upsert(ctx, workflowRun)
 
-	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflow.Jobs))
-	for idx, jobTemplate := range workflow.Jobs {
-		if jobTemplate.If != nil {
-			shouldRun, err := m.evaluateJobTemplateIf(jobTemplate, inputs)
-			if err != nil {
-				return nil, fmt.Errorf("failed to evaluate CEL expression for job %q: %w", jobTemplate.Name, err)
-			}
-			if !shouldRun {
-				continue
-			}
-		}
+	// workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflow.Jobs))
+	// for idx, jobTemplate := range workflow.Jobs {
+	// 	if jobTemplate.If != nil {
+	// 		shouldRun, err := m.evaluateJobTemplateIf(jobTemplate, inputs)
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("failed to evaluate CEL expression for job %q: %w", jobTemplate.Name, err)
+	// 		}
+	// 		if !shouldRun {
+	// 			continue
+	// 		}
+	// 	}
 
-		wfJob := &oapi.WorkflowJob{
-			Id:            uuid.New().String(),
-			WorkflowRunId: workflowRun.Id,
-			Index:         idx,
-			Ref:           jobTemplate.Ref,
-			Config:        maps.Clone(jobTemplate.Config),
-		}
-		m.store.WorkflowJobs.Upsert(ctx, wfJob)
-		workflowJobs = append(workflowJobs, wfJob)
-	}
+	// 	wfJob := &oapi.WorkflowJob{
+	// 		Id:            uuid.New().String(),
+	// 		WorkflowRunId: workflowRun.Id,
+	// 		Index:         idx,
+	// 		Ref:           jobTemplate.Ref,
+	// 		Config:        maps.Clone(jobTemplate.Config),
+	// 	}
+	// 	m.store.WorkflowJobs.Upsert(ctx, wfJob)
+	// 	workflowJobs = append(workflowJobs, wfJob)
+	// }
 
-	m.store.WorkflowRuns.Upsert(ctx, workflowRun)
+	// m.store.WorkflowRuns.Upsert(ctx, workflowRun)
 
-	for _, wfJob := range workflowJobs {
-		job, err := m.factory.CreateJobForWorkflowJob(ctx, wfJob)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create job for workflow job %q: %w", wfJob.Id, err)
-		}
-		m.store.Jobs.Upsert(ctx, job)
-		if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
-			return nil, fmt.Errorf("failed to dispatch job: %w", err)
-		}
-	}
+	// for _, wfJob := range workflowJobs {
+	// 	job, err := m.factory.CreateJobForWorkflowJob(ctx, wfJob)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to create job for workflow job %q: %w", wfJob.Id, err)
+	// 	}
+	// 	m.store.Jobs.Upsert(ctx, job)
+	// 	if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
+	// 		return nil, fmt.Errorf("failed to dispatch job: %w", err)
+	// 	}
+	// }
 
-	return workflowRun, nil
+	// return workflowRun, nil
 }

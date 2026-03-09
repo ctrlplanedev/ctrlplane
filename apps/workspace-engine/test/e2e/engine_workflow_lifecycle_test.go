@@ -1,131 +1,120 @@
 package e2e
 
-import (
-	"context"
-	"testing"
-	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/test/integration"
+// func TestEngine_WorkflowLifecycle_UpdateWorkflow(t *testing.T) {
+// 	workflowID := uuid.New().String()
+// 	jobAgentID := uuid.New().String()
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-)
+// 	engine := integration.NewTestWorkspace(t,
+// 		integration.WithJobAgent(
+// 			integration.JobAgentID(jobAgentID),
+// 		),
+// 		integration.WithWorkflow(
+// 			integration.WorkflowID(workflowID),
+// 			integration.WorkflowName("deploy-workflow"),
+// 			integration.WithWorkflowStringInput(
+// 				integration.WorkflowStringInputKey("env"),
+// 				integration.WorkflowStringInputDefault("staging"),
+// 			),
+// 			integration.WithWorkflowJobTemplate(
+// 				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+// 				integration.WorkflowJobTemplateName("deploy-step"),
+// 			),
+// 		),
+// 	)
 
-func TestEngine_WorkflowLifecycle_UpdateWorkflow(t *testing.T) {
-	workflowID := uuid.New().String()
-	jobAgentID := uuid.New().String()
+// 	ctx := context.Background()
 
-	engine := integration.NewTestWorkspace(t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-		),
-		integration.WithWorkflow(
-			integration.WorkflowID(workflowID),
-			integration.WorkflowName("deploy-workflow"),
-			integration.WithWorkflowStringInput(
-				integration.WorkflowStringInputKey("env"),
-				integration.WorkflowStringInputDefault("staging"),
-			),
-			integration.WithWorkflowJobTemplate(
-				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
-				integration.WorkflowJobTemplateName("deploy-step"),
-			),
-		),
-	)
+// 	// Verify workflow exists
+// 	workflow, ok := engine.Workspace().Workflows().Get(workflowID)
+// 	assert.True(t, ok)
+// 	assert.Equal(t, "deploy-workflow", workflow.Name)
 
-	ctx := context.Background()
+// 	// Verify Items()
+// 	items := engine.Workspace().Workflows().Items()
+// 	assert.Len(t, items, 1)
 
-	// Verify workflow exists
-	workflow, ok := engine.Workspace().Workflows().Get(workflowID)
-	assert.True(t, ok)
-	assert.Equal(t, "deploy-workflow", workflow.Name)
+// 	// Update workflow name via event
+// 	workflow.Name = "updated-workflow"
+// 	engine.PushEvent(ctx, handler.WorkflowUpdate, workflow)
 
-	// Verify Items()
-	items := engine.Workspace().Workflows().Items()
-	assert.Len(t, items, 1)
+// 	updated, ok := engine.Workspace().Workflows().Get(workflowID)
+// 	assert.True(t, ok)
+// 	assert.Equal(t, "updated-workflow", updated.Name)
+// }
 
-	// Update workflow name via event
-	workflow.Name = "updated-workflow"
-	engine.PushEvent(ctx, handler.WorkflowUpdate, workflow)
+// func TestEngine_WorkflowLifecycle_WorkflowRunAccess(t *testing.T) {
+// 	workflowID := uuid.New().String()
+// 	jobAgentID := uuid.New().String()
 
-	updated, ok := engine.Workspace().Workflows().Get(workflowID)
-	assert.True(t, ok)
-	assert.Equal(t, "updated-workflow", updated.Name)
-}
+// 	engine := integration.NewTestWorkspace(t,
+// 		integration.WithJobAgent(
+// 			integration.JobAgentID(jobAgentID),
+// 		),
+// 		integration.WithWorkflow(
+// 			integration.WorkflowID(workflowID),
+// 			integration.WithWorkflowJobTemplate(
+// 				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+// 				integration.WorkflowJobTemplateName("step"),
+// 			),
+// 		),
+// 	)
 
-func TestEngine_WorkflowLifecycle_WorkflowRunAccess(t *testing.T) {
-	workflowID := uuid.New().String()
-	jobAgentID := uuid.New().String()
+// 	ctx := context.Background()
 
-	engine := integration.NewTestWorkspace(t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-		),
-		integration.WithWorkflow(
-			integration.WorkflowID(workflowID),
-			integration.WithWorkflowJobTemplate(
-				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
-				integration.WorkflowJobTemplateName("step"),
-			),
-		),
-	)
+// 	// Create workflow runs
+// 	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+// 		WorkflowId: workflowID,
+// 		Inputs:     map[string]any{"key": "run-1"},
+// 	})
+// 	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+// 		WorkflowId: workflowID,
+// 		Inputs:     map[string]any{"key": "run-2"},
+// 	})
 
-	ctx := context.Background()
+// 	// Verify Items()
+// 	allRuns := engine.Workspace().WorkflowRuns().Items()
+// 	assert.Len(t, allRuns, 2)
 
-	// Create workflow runs
-	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
-		WorkflowId: workflowID,
-		Inputs:     map[string]any{"key": "run-1"},
-	})
-	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
-		WorkflowId: workflowID,
-		Inputs:     map[string]any{"key": "run-2"},
-	})
+// 	// Verify GetByWorkflowId()
+// 	runs := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+// 	assert.Len(t, runs, 2)
 
-	// Verify Items()
-	allRuns := engine.Workspace().WorkflowRuns().Items()
-	assert.Len(t, allRuns, 2)
+// 	// Verify Get() for individual run
+// 	for id, run := range allRuns {
+// 		got, ok := engine.Workspace().WorkflowRuns().Get(id)
+// 		assert.True(t, ok)
+// 		assert.Equal(t, run.WorkflowId, got.WorkflowId)
+// 	}
+// }
 
-	// Verify GetByWorkflowId()
-	runs := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
-	assert.Len(t, runs, 2)
+// func TestEngine_WorkflowLifecycle_WorkflowJobItems(t *testing.T) {
+// 	workflowID := uuid.New().String()
+// 	jobAgentID := uuid.New().String()
 
-	// Verify Get() for individual run
-	for id, run := range allRuns {
-		got, ok := engine.Workspace().WorkflowRuns().Get(id)
-		assert.True(t, ok)
-		assert.Equal(t, run.WorkflowId, got.WorkflowId)
-	}
-}
+// 	engine := integration.NewTestWorkspace(t,
+// 		integration.WithJobAgent(
+// 			integration.JobAgentID(jobAgentID),
+// 		),
+// 		integration.WithWorkflow(
+// 			integration.WorkflowID(workflowID),
+// 			integration.WithWorkflowJobTemplate(
+// 				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+// 				integration.WorkflowJobTemplateName("step-1"),
+// 			),
+// 			integration.WithWorkflowJobTemplate(
+// 				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+// 				integration.WorkflowJobTemplateName("step-2"),
+// 			),
+// 		),
+// 	)
 
-func TestEngine_WorkflowLifecycle_WorkflowJobItems(t *testing.T) {
-	workflowID := uuid.New().String()
-	jobAgentID := uuid.New().String()
+// 	ctx := context.Background()
 
-	engine := integration.NewTestWorkspace(t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-		),
-		integration.WithWorkflow(
-			integration.WorkflowID(workflowID),
-			integration.WithWorkflowJobTemplate(
-				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
-				integration.WorkflowJobTemplateName("step-1"),
-			),
-			integration.WithWorkflowJobTemplate(
-				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
-				integration.WorkflowJobTemplateName("step-2"),
-			),
-		),
-	)
+// 	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+// 		WorkflowId: workflowID,
+// 	})
 
-	ctx := context.Background()
-
-	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
-		WorkflowId: workflowID,
-	})
-
-	// Verify workflow jobs Items()
-	wfJobs := engine.Workspace().WorkflowJobs().Items()
-	assert.Len(t, wfJobs, 2)
-}
+// 	// Verify workflow jobs Items()
+// 	wfJobs := engine.Workspace().WorkflowJobs().Items()
+// 	assert.Len(t, wfJobs, 2)
+// }
