@@ -342,6 +342,9 @@ func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, _ *desired
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.CallCount++
+	if r == nil {
+		return nil
+	}
 	s.Releases = append(s.Releases, r)
 
 	if s.JobDispatchQueue != nil && len(s.Agents) > 0 {

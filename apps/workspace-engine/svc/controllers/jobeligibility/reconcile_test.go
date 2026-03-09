@@ -540,6 +540,7 @@ func TestReconcile_ActiveJobFromDifferentReleaseStillBlocks(t *testing.T) {
 
 	getter, setter := setupHappyPath(rt, release)
 	getter.jobs = []*oapi.Job{activeJob}
+	getter.processingJobs = []*oapi.Job{activeJob}
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
