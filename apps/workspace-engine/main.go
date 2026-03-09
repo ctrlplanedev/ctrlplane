@@ -13,6 +13,7 @@ import (
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/environmentresourceselectoreval"
 	"workspace-engine/svc/controllers/jobdispatch"
+	"workspace-engine/svc/controllers/jobeligibility"
 	"workspace-engine/svc/controllers/jobverificationmetric"
 	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
@@ -61,6 +62,7 @@ func main() {
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		jobdispatch.New(WorkerID, db.GetPool(ctx)),
+		jobeligibility.New(WorkerID, db.GetPool(ctx)),
 		jobverificationmetric.New(WorkerID, db.GetPool(ctx)),
 		relationshipeval.New(WorkerID, db.GetPool(ctx)),
 		desiredrelease.New(WorkerID, db.GetPool(ctx)),
