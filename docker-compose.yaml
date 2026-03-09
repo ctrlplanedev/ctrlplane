@@ -67,7 +67,7 @@ services:
       - proxy
 
   workspace-engine:
-    image: ctrlplane/workspace-engine:44eec79
+    image: ctrlplane/workspace-engine:a66a69e
     platform: linux/amd64
     restart: always
     env_file: .env.compose
