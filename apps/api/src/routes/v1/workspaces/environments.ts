@@ -1,38 +1,63 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { and, count, eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
+import {
+  enqueueAllReleaseTargetsDesiredVersion,
+  enqueueReleaseTargetsForEnvironment,
+} from "@ctrlplane/db/reconcilers";
 
 import { validResourceSelector } from "../valid-selector.js";
+
+const parseSelector = (raw: string | null | undefined) => {
+  if (raw == null || raw === "false") return undefined;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return { cel: raw };
+  }
+};
+
+const formatEnvironment = (env: typeof schema.environment.$inferSelect) => ({
+  id: env.id,
+  name: env.name,
+  description: env.description ?? undefined,
+  resourceSelector: parseSelector(env.resourceSelector),
+  createdAt: env.createdAt.toISOString(),
+  metadata: env.metadata,
+});
 
 const listEnvironments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/environments",
   "get"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const { limit, offset } = req.query;
+  const limit = req.query.limit ?? 50;
+  const offset = req.query.offset ?? 0;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/environments",
-    {
-      params: {
-        path: { workspaceId },
-        query: { limit, offset },
-      },
-    },
-  );
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(schema.environment)
+    .where(eq(schema.environment.workspaceId, workspaceId));
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Failed to list environments",
-      response.response.status,
-    );
+  const total = countResult?.total ?? 0;
 
-  res.status(200).json(response.data);
+  const environments = await db
+    .select()
+    .from(schema.environment)
+    .where(eq(schema.environment.workspaceId, workspaceId))
+    .limit(limit)
+    .offset(offset);
+
+  res.status(200).json({
+    items: environments.map(formatEnvironment),
+    total,
+    limit,
+    offset,
+  });
 };
 
 const getEnvironment: AsyncTypedHandler<
@@ -40,18 +65,36 @@ const getEnvironment: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, environmentId } = req.params;
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-    { params: { path: { workspaceId, environmentId } } },
-  );
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Environment not found",
-      response.response.status,
-    );
+  const env = await db.query.environment.findFirst({
+    where: and(
+      eq(schema.environment.id, environmentId),
+      eq(schema.environment.workspaceId, workspaceId),
+    ),
+  });
 
-  res.status(200).json(response.data);
+  if (env == null)
+    throw new ApiError("Environment not found", 404);
+
+  const systemRows = await db
+    .select({ system: schema.system })
+    .from(schema.systemEnvironment)
+    .innerJoin(
+      schema.system,
+      eq(schema.systemEnvironment.systemId, schema.system.id),
+    )
+    .where(eq(schema.systemEnvironment.environmentId, environmentId));
+
+  const systems = systemRows.map((r) => ({
+    id: r.system.id,
+    workspaceId: r.system.workspaceId,
+    name: r.system.name,
+    slug: r.system.name,
+    description: r.system.description,
+    metadata: r.system.metadata,
+  }));
+
+  res.status(200).json({ ...formatEnvironment(env), systems });
 };
 
 const deleteEnvironment: AsyncTypedHandler<
@@ -60,27 +103,20 @@ const deleteEnvironment: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, environmentId } = req.params;
 
-  const environmentResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-    { params: { path: { workspaceId, environmentId } } },
-  );
+  const [deleted] = await db
+    .delete(schema.environment)
+    .where(
+      and(
+        eq(schema.environment.id, environmentId),
+        eq(schema.environment.workspaceId, workspaceId),
+      ),
+    )
+    .returning();
 
-  if (environmentResponse.error != null)
-    throw new ApiError(
-      environmentResponse.error.error ?? "Environment not found",
-      environmentResponse.response.status,
-    );
+  if (deleted == null)
+    throw new ApiError("Environment not found", 404);
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.EnvironmentDeleted,
-      timestamp: Date.now(),
-      data: environmentResponse.data,
-    });
-  } catch {
-    throw new ApiError("Failed to delete environment", 500);
-  }
+  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   res
     .status(202)
@@ -94,32 +130,28 @@ const createEnvironment: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
-  const environment: WorkspaceEngine["schemas"]["Environment"] = {
-    id: uuidv4(),
-    workspaceId,
-    createdAt: new Date().toISOString(),
-    metadata: {},
-    ...body,
-  };
-
   const isValid = await validResourceSelector(body.resourceSelector);
-
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  try {
-    await sendGoEvent({
+  const [created] = await db
+    .insert(schema.environment)
+    .values({
+      name: body.name,
+      description: body.description ?? "",
+      resourceSelector:
+        body.resourceSelector != null
+          ? JSON.stringify(body.resourceSelector)
+          : "false",
+      metadata: body.metadata ?? {},
       workspaceId,
-      eventType: Event.EnvironmentCreated,
-      timestamp: Date.now(),
-      data: environment,
-    });
-  } catch {
-    throw new ApiError("Failed to create environment", 500);
-  }
+    })
+    .returning();
+
+  await enqueueReleaseTargetsForEnvironment(db, workspaceId, created!.id);
 
   res
     .status(202)
-    .json({ id: environment.id, message: "Environment creation requested" });
+    .json({ id: created!.id, message: "Environment creation requested" });
 };
 
 export const upsertEnvironmentById: AsyncTypedHandler<
@@ -129,28 +161,36 @@ export const upsertEnvironmentById: AsyncTypedHandler<
   const { workspaceId, environmentId } = req.params;
   const { body } = req;
 
-  const mergedEnvironment = {
-    id: environmentId,
-    workspaceId,
-    createdAt: new Date().toISOString(),
-    metadata: {},
-    ...body,
-  };
-
   const isValid = await validResourceSelector(body.resourceSelector);
-
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  try {
-    await sendGoEvent({
+  await db
+    .insert(schema.environment)
+    .values({
+      id: environmentId,
+      name: body.name,
+      description: body.description ?? "",
+      resourceSelector:
+        body.resourceSelector != null
+          ? JSON.stringify(body.resourceSelector)
+          : "false",
+      metadata: body.metadata ?? {},
       workspaceId,
-      eventType: Event.EnvironmentUpdated,
-      timestamp: Date.now(),
-      data: mergedEnvironment,
+    })
+    .onConflictDoUpdate({
+      target: schema.environment.id,
+      set: {
+        name: body.name,
+        description: body.description ?? "",
+        resourceSelector:
+          body.resourceSelector != null
+            ? JSON.stringify(body.resourceSelector)
+            : "false",
+        metadata: body.metadata ?? {},
+      },
     });
-  } catch {
-    throw new ApiError("Failed to update environment", 500);
-  }
+
+  await enqueueReleaseTargetsForEnvironment(db, workspaceId, environmentId);
 
   res
     .status(202)

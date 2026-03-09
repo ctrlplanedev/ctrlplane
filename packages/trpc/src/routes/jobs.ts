@@ -3,8 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { and, count, desc, eq } from "@ctrlplane/db";
-import * as schema from "@ctrlplane/db/schema";
 import { enqueueDesiredRelease } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -93,8 +93,8 @@ export const jobsRouter = router({
       const metadata =
         jobIds.length > 0
           ? await ctx.db.query.jobMetadata.findMany({
-            where: (jm, { inArray }) => inArray(jm.jobId, jobIds),
-          })
+              where: (jm, { inArray }) => inArray(jm.jobId, jobIds),
+            })
           : [];
 
       const metadataMap = new Map<string, Record<string, string>>();
