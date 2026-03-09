@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
+import { parse } from "cel-js";
 import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
@@ -432,21 +433,12 @@ export const deploymentsRouter = router({
     )
     .mutation(async ({ input }) => {
       const { workspaceId, deploymentId, data } = input;
-      const validate = await getClientFor(workspaceId).POST(
-        "/v1/validate/resource-selector",
-        {
-          body: { resourceSelector: { cel: data.resourceSelectorCel } },
-        },
-      );
+      const cel = parse(data.resourceSelectorCel);
 
-      if (!validate.data?.valid)
+      if (!cel.isSuccess)
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
-              ? validate.data.errors.join(", ")
-              : "Invalid resource selector",
+          message: cel.errors.join(", "),
         });
 
       const deployment = await getClientFor(workspaceId).GET(
