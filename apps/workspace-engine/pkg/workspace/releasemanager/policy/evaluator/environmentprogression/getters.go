@@ -3,6 +3,7 @@ package environmentprogression
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -201,10 +202,25 @@ func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, de
 
 func (p *PostgresGetters) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	ctx := context.TODO()
+	resourceUUID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		slog.Error("parse resource id", "error", err)
+		return nil
+	}
+	environmentUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		slog.Error("parse environment id", "error", err)
+		return nil
+	}
+	deploymentUUID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		slog.Error("parse deployment id", "error", err)
+		return nil
+	}
 	releases, err := p.queries.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+		ResourceID:    resourceUUID,
+		EnvironmentID: environmentUUID,
+		DeploymentID:  deploymentUUID,
 	})
 	if err != nil {
 		return nil

@@ -50,7 +50,12 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 }
 
 func (p *PostgresGetters) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {
-	rows, err := p.queries.GetReleaseTargetsForResource(ctx, uuid.MustParse(resourceID))
+	resourceUUID, err := uuid.Parse(resourceID)
+	if err != nil {
+		slog.Error("parse resource id", "error", err)
+		return nil
+	}
+	rows, err := p.queries.GetReleaseTargetsForResource(ctx, resourceUUID)
 	if err != nil {
 		slog.Error("failed to get release targets for resource", "resourceID", resourceID, "error", err)
 		return nil
@@ -70,10 +75,25 @@ func (p *PostgresGetters) GetLatestCompletedJobForReleaseTarget(releaseTarget *o
 	if releaseTarget == nil {
 		return nil
 	}
+	deploymentUUID, err := uuid.Parse(releaseTarget.DeploymentId)
+	if err != nil {
+		slog.Error("parse deployment id", "error", err)
+		return nil
+	}
+	environmentUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
+	if err != nil {
+		slog.Error("parse environment id", "error", err)
+		return nil
+	}
+	resourceUUID, err := uuid.Parse(releaseTarget.ResourceId)
+	if err != nil {
+		slog.Error("parse resource id", "error", err)
+		return nil
+	}
 	row, err := p.queries.GetLatestCompletedJobForReleaseTarget(context.Background(), db.GetLatestCompletedJobForReleaseTargetParams{
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
+		DeploymentID:  deploymentUUID,
+		EnvironmentID: environmentUUID,
+		ResourceID:    resourceUUID,
 	})
 	if err != nil {
 		slog.Error("failed to get latest completed job for release target", "releaseTarget", releaseTarget.Key(), "error", err)
