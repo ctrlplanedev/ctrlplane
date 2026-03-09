@@ -182,6 +182,19 @@ export const deploymentsRouter = router({
           schema.environment,
           eq(schema.systemEnvironment.environmentId, schema.environment.id),
         )
+        .innerJoin(
+          schema.computedEnvironmentResource,
+          and(
+            eq(
+              schema.computedEnvironmentResource.environmentId,
+              schema.environment.id,
+            ),
+            eq(
+              schema.computedEnvironmentResource.resourceId,
+              schema.resource.id,
+            ),
+          ),
+        )
         .leftJoin(
           schema.releaseTargetDesiredRelease,
           and(
