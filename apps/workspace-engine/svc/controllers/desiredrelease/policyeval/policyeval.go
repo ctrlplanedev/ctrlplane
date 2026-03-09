@@ -57,10 +57,11 @@ func CollectEvaluators(ctx context.Context, getter Getter, rt *oapi.ReleaseTarge
 	return evals
 }
 
-// VersionedEvaluation pairs a rule evaluation with the version it was
-// evaluated against, since oapi.RuleEvaluation does not carry a version ID.
+// VersionedEvaluation pairs a rule evaluation with the version and rule type it
+// was evaluated against, since oapi.RuleEvaluation does not carry these.
 type VersionedEvaluation struct {
 	VersionID string
+	RuleType  string
 	*oapi.RuleEvaluation
 }
 
@@ -109,7 +110,8 @@ func FindDeployableVersion(
 		for _, e := range eligible {
 			allEvaluations = append(allEvaluations, VersionedEvaluation{
 				VersionID:      version.Id,
-				RuleEvaluation: e,
+				RuleType:       e.ruleType,
+				RuleEvaluation: e.RuleEvaluation,
 			})
 		}
 
@@ -143,7 +145,12 @@ func buildSkipSet(skips []*oapi.PolicySkip) map[string]oapi.PolicySkip {
 	return set
 }
 
-type RuleEvaluations []*oapi.RuleEvaluation
+type ruleEvaluation struct {
+	ruleType string
+	*oapi.RuleEvaluation
+}
+
+type RuleEvaluations []ruleEvaluation
 
 func (e RuleEvaluations) NextEvaluationTime() *time.Time {
 	var soonest *time.Time
@@ -189,14 +196,20 @@ func evaluateVersion(ctx context.Context, evals []evaluator.Evaluator, scope eva
 				evaluation.WithNextEvaluationTime(*skip.ExpiresAt)
 			}
 
-			evaluations = append(evaluations, evaluation)
+			evaluations = append(evaluations, ruleEvaluation{
+				ruleType:       eval.RuleType(),
+				RuleEvaluation: evaluation,
+			})
 			continue
 		}
 
 		result := eval.Evaluate(ctx, scope)
 		if result != nil {
 			result.WithRuleId(eval.RuleId())
-			evaluations = append(evaluations, result)
+			evaluations = append(evaluations, ruleEvaluation{
+				ruleType:       eval.RuleType(),
+				RuleEvaluation: result,
+			})
 		}
 	}
 	return evaluations, nil

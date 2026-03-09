@@ -17,6 +17,7 @@ export const policyRuleEvaluation = pgTable(
   "policy_rule_evaluation",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    ruleType: text("rule_type").notNull(),
     ruleId: uuid("rule_id").notNull(),
 
     environmentId: uuid("environment_id")

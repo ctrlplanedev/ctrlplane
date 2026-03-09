@@ -94,6 +94,7 @@ func (r *reconciler) upsertEvaluations(ctx context.Context, rt *oapi.ReleaseTarg
 	params := make([]policies.RuleEvaluationParams, 0, len(evals))
 	for _, e := range evals {
 		params = append(params, policies.RuleEvaluationParams{
+			RuleType:      e.RuleType,
 			RuleID:        e.RuleId,
 			EnvironmentID: rt.EnvironmentId,
 			VersionID:     e.VersionID,

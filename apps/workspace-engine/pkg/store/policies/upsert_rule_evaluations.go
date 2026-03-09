@@ -16,6 +16,7 @@ type UpsertRuleEvaluations interface {
 }
 
 type RuleEvaluationParams struct {
+	RuleType      string
 	RuleID        string
 	EnvironmentID string
 	VersionID     string
@@ -93,6 +94,7 @@ func toDBParams(e RuleEvaluationParams) (db.BatchUpsertPolicyRuleEvaluationParam
 	}
 
 	return db.BatchUpsertPolicyRuleEvaluationParams{
+		RuleType:         e.RuleType,
 		RuleID:           ruleID,
 		EnvironmentID:    environmentID,
 		VersionID:        versionID,

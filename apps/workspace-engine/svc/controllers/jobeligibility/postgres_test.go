@@ -58,7 +58,6 @@ func (q *mockQueue) Retry(_ context.Context, _ reconcile.RetryParams) error {
 
 var _ reconcile.Queue = (*mockQueue)(nil)
 
-
 // ===========================================================================
 // PostgresSetter — EnqueueJobDispatch (real implementation)
 // ===========================================================================

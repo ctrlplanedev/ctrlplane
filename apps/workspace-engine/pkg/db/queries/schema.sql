@@ -436,6 +436,7 @@ CREATE TABLE job_verification_metric_measurement (
 
 CREATE TABLE policy_rule_evaluation (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rule_type TEXT NOT NULL,
     rule_id UUID NOT NULL,
     environment_id UUID NOT NULL,
     version_id UUID NOT NULL,
