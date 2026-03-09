@@ -93,6 +93,7 @@ jobs:
         env:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
           USE_DATABASE_BACKING: "1"
+          SERVICES: "none"
         run: go test -race ./pkg/db/... ./test/e2e/...
 
   tests:
@@ -127,6 +128,8 @@ jobs:
         run: go mod download
 
       - name: Run tests with coverage
+        env:
+          SERVICES: "none"
         run: go test -race ./...
 
   build:

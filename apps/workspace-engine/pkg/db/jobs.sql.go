@@ -528,6 +528,25 @@ func (q *Queries) ListJobsByWorkspaceID(ctx context.Context, workspaceID uuid.UU
 	return items, nil
 }
 
+const updateJobStatus = `-- name: UpdateJobStatus :exec
+UPDATE job
+SET status = $2,
+    message = $3,
+    updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateJobStatusParams struct {
+	ID      uuid.UUID
+	Status  JobStatus
+	Message pgtype.Text
+}
+
+func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error {
+	_, err := q.db.Exec(ctx, updateJobStatus, arg.ID, arg.Status, arg.Message)
+	return err
+}
+
 const upsertJob = `-- name: UpsertJob :exec
 INSERT INTO job (id, job_agent_id, job_agent_config, external_id, status, message, created_at, started_at, completed_at, updated_at, dispatch_context)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)

@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -46,4 +47,19 @@ type Config struct {
 
 	// Comma-separated list of services to run (empty means all).
 	Services string `envconfig:"SERVICES" default:""`
+}
+
+// IsServiceEnabled reports whether kind appears in the SERVICES list.
+// Returns true when the list is empty (all services enabled).
+func IsServiceEnabled(kind string) bool {
+	svcList := strings.TrimSpace(Global.Services)
+	if svcList == "" {
+		return true
+	}
+	for name := range strings.SplitSeq(svcList, ",") {
+		if strings.TrimSpace(name) == kind {
+			return true
+		}
+	}
+	return false
 }

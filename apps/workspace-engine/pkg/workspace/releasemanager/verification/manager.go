@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/svc/controllers/jobverificationmetric"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -51,9 +53,13 @@ func WithHooks(hooks VerificationHooks) ManagerOption {
 	}
 }
 
-// OnLoad restarts goroutines for any unfinished verifications
-// This should be called when the application starts to resume any in-progress verifications
+// Restore restarts goroutines for any unfinished verifications.
+// No-ops when the job-verification-metric controller handles verifications.
 func (m *Manager) Restore(ctx context.Context) error {
+	if config.IsServiceEnabled(jobverificationmetric.JobVerificationMetricKind) {
+		return nil
+	}
+
 	ctx, span := tracer.Start(ctx, "VerificationManager.Restore")
 	defer span.End()
 
@@ -88,12 +94,17 @@ func (m *Manager) Restore(ctx context.Context) error {
 	return nil
 }
 
-// StartVerification creates a new verification and starts goroutines to run measurements
+// StartVerification creates a new verification and starts goroutines to run measurements.
+// No-ops when the job-verification-metric controller handles verifications.
 func (m *Manager) StartVerification(
 	ctx context.Context,
 	job *oapi.Job,
 	metrics []oapi.VerificationMetricSpec,
 ) error {
+	if config.IsServiceEnabled(jobverificationmetric.JobVerificationMetricKind) {
+		return nil
+	}
+
 	ctx, span := tracer.Start(ctx, "StartVerification",
 		trace.WithAttributes(
 			attribute.String("job.id", job.Id),

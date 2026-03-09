@@ -54,6 +54,13 @@ VALUES ($1, $2, $3)
 ON CONFLICT (job_id, key) DO UPDATE
 SET value = EXCLUDED.value;
 
+-- name: UpdateJobStatus :exec
+UPDATE job
+SET status = $2,
+    message = $3,
+    updated_at = NOW()
+WHERE id = $1;
+
 -- name: DeleteJobMetadataByJobID :exec
 DELETE FROM job_metadata WHERE job_id = $1;
 

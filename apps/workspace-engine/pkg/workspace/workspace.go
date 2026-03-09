@@ -38,7 +38,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	}
 
 	ws.verificationManager = verification.NewManager(s)
-	ws.jobAgentRegistry = jobagents.NewRegistry(ws.store, ws.verificationManager)
+	ws.jobAgentRegistry = jobagents.NewRegistry(ws.store, ws.verificationManager, ws.reconcileQueue)
 
 	// Create release manager with trace store (will panic if nil)
 	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager, ws.jobAgentRegistry)

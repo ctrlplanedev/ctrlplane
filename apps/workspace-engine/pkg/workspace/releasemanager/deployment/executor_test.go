@@ -23,7 +23,7 @@ func setupTestExecutor(t *testing.T) (*Executor, *store.Store) {
 	cs := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", cs)
 	testVerification := verification.NewManager(testStore)
-	testJobAgentRegistry := jobagents.NewRegistry(testStore, testVerification)
+	testJobAgentRegistry := jobagents.NewRegistry(testStore, testVerification, nil)
 	executor := NewExecutor(testStore, testJobAgentRegistry)
 	return executor, testStore
 }

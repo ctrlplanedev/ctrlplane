@@ -313,40 +313,59 @@ func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(rt *oapi.Re
 }
 
 // DesiredReleaseSetter implements desiredrelease.Setter.
-// When JobDispatchQueue is set, it also enqueues a job-dispatch item for
-// each release that is set, bridging the desired-release and job-dispatch
-// controllers in end-to-end pipeline tests.
+// When JobDispatchQueue is set, it also creates a pending job and enqueues
+// a job-dispatch item (keyed by job ID) for each release that is set,
+// bridging the desired-release and job-dispatch controllers in pipeline tests.
 type DesiredReleaseSetter struct {
 	mu        sync.Mutex
 	Releases  []*oapi.Release
 	CallCount int
 
-	JobDispatchQueue reconcile.Queue
-	WorkspaceID      string
+	JobDispatchQueue  reconcile.Queue
+	JobDispatchGetter *JobDispatchGetter
+	WorkspaceID       string
+	Agents            []oapi.JobAgent
 }
 
 func (s *DesiredReleaseSetter) UpsertRuleEvaluations(_ context.Context, _ []policies.RuleEvaluationParams) error {
 	return nil
 }
 
-func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, rt *desiredrelease.ReleaseTarget, r *oapi.Release) error {
+func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, _ *desiredrelease.ReleaseTarget, r *oapi.Release) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.CallCount++
 	s.Releases = append(s.Releases, r)
 
-	if s.JobDispatchQueue != nil {
-		scopeID := fmt.Sprintf("%s:%s:%s",
-			rt.DeploymentID.String(),
-			rt.EnvironmentID.String(),
-			rt.ResourceID.String(),
-		)
-		_ = s.JobDispatchQueue.Enqueue(ctx, reconcile.EnqueueParams{
-			WorkspaceID: s.WorkspaceID,
-			Kind:        KindJobDispatch,
-			ScopeType:   "release-target",
-			ScopeID:     scopeID,
-		})
+	if s.JobDispatchQueue != nil && len(s.Agents) > 0 {
+		for _, agent := range s.Agents {
+			job := &oapi.Job{
+				Id:             uuid.New().String(),
+				ReleaseId:      r.Id.String(),
+				JobAgentId:     agent.Id,
+				JobAgentConfig: agent.Config,
+				Status:         oapi.JobStatusPending,
+				Metadata:       map[string]string{},
+				CreatedAt:      time.Now(),
+				UpdatedAt:      time.Now(),
+			}
+
+			if s.JobDispatchGetter != nil {
+				s.JobDispatchGetter.mu.Lock()
+				if s.JobDispatchGetter.Jobs == nil {
+					s.JobDispatchGetter.Jobs = make(map[string]*oapi.Job)
+				}
+				s.JobDispatchGetter.Jobs[job.Id] = job
+				s.JobDispatchGetter.mu.Unlock()
+			}
+
+			_ = s.JobDispatchQueue.Enqueue(ctx, reconcile.EnqueueParams{
+				WorkspaceID: s.WorkspaceID,
+				Kind:        KindJobDispatch,
+				ScopeType:   "job",
+				ScopeID:     job.Id,
+			})
+		}
 	}
 	return nil
 }
@@ -355,61 +374,60 @@ func (s *DesiredReleaseSetter) SetDesiredRelease(ctx context.Context, rt *desire
 // jobdispatch mocks
 // ---------------------------------------------------------------------------
 
-// JobDispatchGetter implements jobdispatch.Getter. It reads releases from
-// the DesiredReleaseSetter so the job dispatch controller can see releases
-// created by the desired-release controller.
+type noopDispatcher struct{}
+
+func (d *noopDispatcher) Dispatch(_ context.Context, _ *oapi.Job) error { return nil }
+
+
+// JobDispatchGetter implements jobdispatch.Getter.
 type JobDispatchGetter struct {
 	mu sync.Mutex
 
 	ReleaseSetter *DesiredReleaseSetter
 	Agents        []oapi.JobAgent
+	Deployment    *oapi.Deployment
+	Jobs          map[string]*oapi.Job
 
-	ExistingJobs         []oapi.Job
-	ActiveJobs           []oapi.Job
 	VerificationPolicies []oapi.VerificationMetricSpec
 }
 
-func (g *JobDispatchGetter) ReleaseTargetExists(_ context.Context, _ *jobdispatch.ReleaseTarget) (bool, error) {
-	return true, nil
-}
-
-func (g *JobDispatchGetter) GetDesiredRelease(_ context.Context, rt *jobdispatch.ReleaseTarget) (*oapi.Release, error) {
+func (g *JobDispatchGetter) GetJob(_ context.Context, jobID uuid.UUID) (*oapi.Job, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	if g.Jobs != nil {
+		if j, ok := g.Jobs[jobID.String()]; ok {
+			return j, nil
+		}
+	}
+	return nil, fmt.Errorf("job %s not found", jobID)
+}
 
-	targetKey := fmt.Sprintf("%s:%s:%s",
-		rt.DeploymentID.String(),
-		rt.EnvironmentID.String(),
-		rt.ResourceID.String(),
-	)
+func (g *JobDispatchGetter) GetRelease(_ context.Context, releaseID uuid.UUID) (*oapi.Release, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 
 	g.ReleaseSetter.mu.Lock()
 	defer g.ReleaseSetter.mu.Unlock()
 
-	for i := len(g.ReleaseSetter.Releases) - 1; i >= 0; i-- {
-		r := g.ReleaseSetter.Releases[i]
-		rKey := fmt.Sprintf("%s:%s:%s",
-			r.ReleaseTarget.DeploymentId,
-			r.ReleaseTarget.EnvironmentId,
-			r.ReleaseTarget.ResourceId,
-		)
-		if rKey == targetKey {
+	for _, r := range g.ReleaseSetter.Releases {
+		if r.Id.String() == releaseID.String() {
 			return r, nil
 		}
 	}
-	return nil, nil
+	return nil, fmt.Errorf("release %s not found", releaseID)
 }
 
-func (g *JobDispatchGetter) GetJobsForRelease(_ context.Context, _ uuid.UUID) ([]oapi.Job, error) {
-	return g.ExistingJobs, nil
+func (g *JobDispatchGetter) GetDeployment(_ context.Context, _ uuid.UUID) (*oapi.Deployment, error) {
+	return g.Deployment, nil
 }
 
-func (g *JobDispatchGetter) GetActiveJobsForTarget(_ context.Context, _ *jobdispatch.ReleaseTarget) ([]oapi.Job, error) {
-	return g.ActiveJobs, nil
-}
-
-func (g *JobDispatchGetter) GetJobAgentsForDeployment(_ context.Context, _ uuid.UUID) ([]oapi.JobAgent, error) {
-	return g.Agents, nil
+func (g *JobDispatchGetter) GetJobAgent(_ context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error) {
+	for i := range g.Agents {
+		if g.Agents[i].Id == jobAgentID.String() {
+			return &g.Agents[i], nil
+		}
+	}
+	return nil, fmt.Errorf("job agent %s not found", jobAgentID)
 }
 
 func (g *JobDispatchGetter) GetVerificationPolicies(_ context.Context, _ *jobdispatch.ReleaseTarget) ([]oapi.VerificationMetricSpec, error) {
@@ -427,7 +445,7 @@ func (s *JobDispatchSetter) UpdateJob(_ context.Context, _ string, _ oapi.JobSta
 	return nil
 }
 
-func (s *JobDispatchSetter) CreateJobWithVerification(_ context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
+func (s *JobDispatchSetter) CreateVerifications(_ context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Jobs = append(s.Jobs, job)
