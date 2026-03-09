@@ -95,10 +95,96 @@ export const enqueueAllReleaseTargetsDesiredVersion = async (
   return enqueueManyDesiredRelease(
     db,
     releaseTargets.map((releaseTarget) => ({
-      workspaceId: workspaceId,
+      workspaceId,
       deploymentId: releaseTarget.deploymentId,
       environmentId: releaseTarget.environmentId,
       resourceId: releaseTarget.resourceId,
+    })),
+  );
+};
+
+export const enqueueReleaseTargetsForEnvironment = async (
+  db: Tx,
+  workspaceId: string,
+  environmentId: string,
+) => {
+  const releaseTargets = await db
+    .selectDistinctOn([schema.deployment.id, schema.resource.id], {
+      deploymentId: schema.deployment.id,
+      resourceId: schema.resource.id,
+    })
+    .from(schema.systemEnvironment)
+    .innerJoin(
+      schema.systemDeployment,
+      eq(schema.systemEnvironment.systemId, schema.systemDeployment.systemId),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.systemDeployment.deploymentId, schema.deployment.id),
+    )
+    .innerJoin(
+      schema.computedEnvironmentResource,
+      eq(
+        schema.systemEnvironment.environmentId,
+        schema.computedEnvironmentResource.environmentId,
+      ),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.systemEnvironment.environmentId, environmentId));
+
+  return enqueueManyDesiredRelease(
+    db,
+    releaseTargets.map((rt) => ({
+      workspaceId,
+      deploymentId: rt.deploymentId,
+      environmentId,
+      resourceId: rt.resourceId,
+    })),
+  );
+};
+
+export const enqueueReleaseTargetsForDeployment = async (
+  db: Tx,
+  workspaceId: string,
+  deploymentId: string,
+) => {
+  const releaseTargets = await db
+    .selectDistinctOn([schema.resource.id, schema.environment.id], {
+      resourceId: schema.resource.id,
+      environmentId: schema.environment.id,
+    })
+    .from(schema.systemDeployment)
+    .innerJoin(
+      schema.systemEnvironment,
+      eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.systemEnvironment.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.computedEnvironmentResource,
+      eq(
+        schema.environment.id,
+        schema.computedEnvironmentResource.environmentId,
+      ),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.systemDeployment.deploymentId, deploymentId));
+
+  return enqueueManyDesiredRelease(
+    db,
+    releaseTargets.map((rt) => ({
+      workspaceId,
+      deploymentId,
+      environmentId: rt.environmentId,
+      resourceId: rt.resourceId,
     })),
   );
 };

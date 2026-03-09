@@ -1,8 +1,11 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { z } from "zod";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { eq } from "@ctrlplane/db";
+import {
+  enqueueReleaseTargetsForDeployment,
+  enqueueReleaseTargetsForEnvironment,
+} from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -19,20 +22,33 @@ export const deploymentVersionsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      const record: WorkspaceEngine["schemas"]["UserApprovalRecord"] = {
-        userId,
-        versionId: input.deploymentVersionId,
-        environmentId: input.environmentId,
-        status: input.status,
-        createdAt: new Date().toISOString(),
-      };
+      const [record] = await ctx.db
+        .insert(schema.userApprovalRecord)
+        .values({
+          userId,
+          versionId: input.deploymentVersionId,
+          environmentId: input.environmentId,
+          status: input.status,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.userApprovalRecord.versionId,
+            schema.userApprovalRecord.userId,
+            schema.userApprovalRecord.environmentId,
+          ],
+          set: {
+            status: input.status,
+            createdAt: new Date(),
+          },
+        })
+        .returning();
 
-      await sendGoEvent({
-        workspaceId: input.workspaceId,
-        eventType: Event.UserApprovalRecordCreated,
-        timestamp: Date.now(),
-        data: record,
-      });
+      if (record != null)
+        await enqueueReleaseTargetsForEnvironment(
+          ctx.db,
+          input.workspaceId,
+          record.environmentId,
+        );
 
       return record;
     }),
@@ -52,25 +68,23 @@ export const deploymentVersionsRouter = router({
         ]),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, versionId, status } = input;
-      const deploymentVersionId = versionId;
-      const client = getClientFor(workspaceId);
-      const versionResponse = await client.GET(
-        "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
-        { params: { path: { workspaceId, deploymentVersionId } } },
-      );
-      if (versionResponse.error != null)
-        throw new Error(versionResponse.error.error);
 
-      const { data: version } = versionResponse;
-      const updatedVersion = { ...version, status };
+      const [updated] = await ctx.db
+        .update(schema.deploymentVersion)
+        .set({ status })
+        .where(eq(schema.deploymentVersion.id, versionId))
+        .returning();
 
-      await sendGoEvent({
+      if (!updated) throw new Error("Deployment version not found");
+
+      await enqueueReleaseTargetsForDeployment(
+        ctx.db,
         workspaceId,
-        eventType: Event.DeploymentVersionUpdated,
-        timestamp: Date.now(),
-        data: updatedVersion,
-      });
+        updated.deploymentId,
+      );
+
+      return updated;
     }),
 });
