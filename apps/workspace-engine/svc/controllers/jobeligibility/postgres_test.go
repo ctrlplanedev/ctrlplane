@@ -65,7 +65,7 @@ var _ reconcile.Queue = (*mockQueue)(nil)
 
 func TestPostgresSetter_CreateJob_Stub(t *testing.T) {
 	s := &PostgresSetter{Queue: &mockQueue{}}
-	err := s.CreateJob(context.Background(), &oapi.Job{Id: uuid.New().String()}, &oapi.Release{Id: uuid.New()})
+	err := s.CreateJob(context.Background(), &oapi.Job{Id: uuid.New().String(), ReleaseId: uuid.New().String()}, &oapi.Release{Id: uuid.New()})
 	require.Error(t, err)
 }
 
