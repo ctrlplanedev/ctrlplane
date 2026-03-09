@@ -1,4 +1,4 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type { RouterOutputs } from "@ctrlplane/trpc";
 import { useState } from "react";
 import { capitalCase } from "change-case";
 import { Copy, EllipsisIcon, Network, TriangleAlert } from "lucide-react";
@@ -34,18 +34,21 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { buildTraceTree } from "../../deployments/_components/trace-utils";
 import { TraceTree } from "../../deployments/_components/TraceTree";
 
-const JOB_STATUSES = [
+type Job = NonNullable<RouterOutputs["jobs"]["list"]>["items"][number];
+type JobStatus = Job["status"];
+
+const JOB_STATUSES: JobStatus[] = [
   "cancelled",
   "skipped",
-  "inProgress",
-  "actionRequired",
+  "in_progress",
+  "action_required",
   "pending",
   "failure",
-  "invalidJobAgent",
-  "invalidIntegration",
-  "externalRunNotFound",
+  "invalid_job_agent",
+  "invalid_integration",
+  "external_run_not_found",
   "successful",
-] as const;
+];
 
 function CopyJobIdAction({
   jobId,
@@ -81,12 +84,11 @@ function UpdateJobStatusAction({
   onClose,
 }: {
   jobId: string;
-  currentStatus: WorkspaceEngine["schemas"]["JobStatus"];
+  currentStatus: JobStatus;
   onClose: () => void;
 }) {
   const { workspace } = useWorkspace();
-  const [status, setStatus] =
-    useState<WorkspaceEngine["schemas"]["JobStatus"]>(currentStatus);
+  const [status, setStatus] = useState<JobStatus>(currentStatus);
 
   const updateJobMutation = trpc.jobs.updateStatus.useMutation();
   const onClick = () =>
@@ -113,9 +115,7 @@ function UpdateJobStatusAction({
 
         <Select
           value={status}
-          onValueChange={(value) =>
-            setStatus(value as WorkspaceEngine["schemas"]["JobStatus"])
-          }
+          onValueChange={(value) => setStatus(value as JobStatus)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select a status" />
@@ -236,11 +236,7 @@ function ViewTraceAction({
   );
 }
 
-export function JobActions({
-  job,
-}: {
-  job: WorkspaceEngine["schemas"]["Job"];
-}) {
+export function JobActions({ job }: { job: Job }) {
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

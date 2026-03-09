@@ -61,9 +61,7 @@ function useReleaseTargets(policyId: string) {
   return { releaseTargets: data ?? [], isLoading };
 }
 
-type Policy = NonNullable<
-  NonNullable<RouterOutputs["policies"]["list"]>["policies"]
->[number];
+type Policy = NonNullable<RouterOutputs["policies"]["list"]>[number];
 
 function PolicyRow({
   policy,
@@ -115,21 +113,50 @@ function PolicyRow({
   );
 }
 
+function getPolicyRules(policy: Policy): Record<string, unknown>[] {
+  const rules: Record<string, unknown>[] = [];
+  for (const r of policy.anyApprovalRules)
+    rules.push({ id: r.id, policyId: r.policyId, anyApproval: { minApprovals: r.minApprovals } });
+  for (const r of policy.deploymentDependencyRules)
+    rules.push({ id: r.id, policyId: r.policyId, deploymentDependency: { dependsOn: r.dependsOn } });
+  for (const r of policy.deploymentWindowRules)
+    rules.push({ id: r.id, policyId: r.policyId, deploymentWindow: { allowWindow: r.allowWindow, durationMinutes: r.durationMinutes, rrule: r.rrule, timezone: r.timezone } });
+  for (const r of policy.environmentProgressionRules)
+    rules.push({ id: r.id, policyId: r.policyId, environmentProgression: { dependsOnEnvironmentSelector: r.dependsOnEnvironmentSelector, maximumAgeHours: r.maximumAgeHours, minimumSoakTimeMinutes: r.minimumSoakTimeMinutes, minimumSuccessPercentage: r.minimumSuccessPercentage, successStatuses: r.successStatuses } });
+  for (const r of policy.gradualRolloutRules)
+    rules.push({ id: r.id, policyId: r.policyId, gradualRollout: { rolloutType: r.rolloutType, timeScaleInterval: r.timeScaleInterval } });
+  for (const r of policy.retryRules)
+    rules.push({ id: r.id, policyId: r.policyId, retry: { maxRetries: r.maxRetries, backoffSeconds: r.backoffSeconds, backoffStrategy: r.backoffStrategy, maxBackoffSeconds: r.maxBackoffSeconds, retryOnStatuses: r.retryOnStatuses } });
+  for (const r of policy.rollbackRules)
+    rules.push({ id: r.id, policyId: r.policyId, rollback: { onJobStatuses: r.onJobStatuses, onVerificationFailure: r.onVerificationFailure } });
+  for (const r of policy.verificationRules)
+    rules.push({ id: r.id, policyId: r.policyId, verification: { metrics: r.metrics, triggerOn: r.triggerOn } });
+  for (const r of policy.versionCooldownRules)
+    rules.push({ id: r.id, policyId: r.policyId, versionCooldown: { intervalSeconds: r.intervalSeconds } });
+  for (const r of policy.versionSelectorRules)
+    rules.push({ id: r.id, policyId: r.policyId, versionSelector: { selector: r.selector, description: r.description } });
+  return rules;
+}
+
 /**
  * Converts a policy object to an editable YAML representation,
  * stripping read-only fields (id, workspaceId, createdAt) from
  * both the policy and its rules.
  */
 function policyToEditableYaml(policy: Policy): string {
-  const { id: _id, workspaceId: _wsId, createdAt: _ca, ...editable } = policy;
-  const rawRules: Record<string, unknown>[] = Array.isArray(editable.rules)
-    ? (editable.rules as Record<string, unknown>[])
-    : [];
-  const rules = rawRules.map((rule) => {
-    const { id: _rId, policyId: _pId, createdAt: _rCa, ...rest } = rule;
-    return rest;
-  });
-  return yaml.dump({ ...editable, rules }, { lineWidth: -1 });
+  const editable = {
+    name: policy.name,
+    description: policy.description,
+    priority: policy.priority,
+    enabled: policy.enabled,
+    metadata: policy.metadata,
+    selector: policy.selector,
+    rules: getPolicyRules(policy).map((rule) => {
+      const { id: _rId, policyId: _pId, ...rest } = rule;
+      return rest;
+    }),
+  };
+  return yaml.dump(editable, { lineWidth: -1 });
 }
 
 function EditPolicyDialog({
@@ -184,7 +211,7 @@ function EditPolicyDialog({
     const description =
       typeof parsed.description === "string"
         ? parsed.description
-        : policy.description;
+        : (policy.description ?? undefined);
     const enabled =
       typeof parsed.enabled === "boolean" ? parsed.enabled : policy.enabled;
     const priority =
@@ -197,7 +224,7 @@ function EditPolicyDialog({
         : (policy.metadata as Record<string, string>);
     const rules = Array.isArray(parsed.rules)
       ? (parsed.rules as Record<string, unknown>[])
-      : (policy.rules as unknown as Record<string, unknown>[]);
+      : getPolicyRules(policy);
     const selector =
       typeof parsed.selector === "string" ? parsed.selector : policy.selector;
 
@@ -354,7 +381,7 @@ export default function Policies() {
     workspaceId: workspace.id,
   });
 
-  const policies = data?.policies ?? [];
+  const policies = data ?? [];
   const total = policies.length;
 
   return (

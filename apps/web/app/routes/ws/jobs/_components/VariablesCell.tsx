@@ -1,4 +1,4 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type { RouterOutputs } from "@ctrlplane/trpc";
 
 import {
   Dialog,
@@ -9,7 +9,8 @@ import {
 } from "~/components/ui/dialog";
 import { TableCell } from "~/components/ui/table";
 
-type VariablesCellProps = { job: WorkspaceEngine["schemas"]["Job"] };
+type Job = NonNullable<RouterOutputs["jobs"]["list"]>["items"][number];
+type VariablesCellProps = { job: Job };
 
 function VariablesDialog({ job }: VariablesCellProps) {
   const variables = job.dispatchContext?.variables ?? {};

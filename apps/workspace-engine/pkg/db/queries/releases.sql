@@ -37,3 +37,57 @@ DELETE FROM release WHERE id = $1;
 
 -- name: DeleteReleaseVariablesByReleaseID :exec
 DELETE FROM release_variable WHERE release_id = $1;
+
+-- name: FindOrCreateRelease :one
+-- Returns an existing release if one already exists for the same release target
+-- with the same version and exact set of variables, otherwise creates a new one.
+WITH existing AS (
+  SELECT r.id
+  FROM release r
+  WHERE r.resource_id = @resource_id
+    AND r.environment_id = @environment_id
+    AND r.deployment_id = @deployment_id
+    AND r.version_id = @version_id
+    AND (SELECT count(*) FROM release_variable rv WHERE rv.release_id = r.id)
+      = COALESCE(array_length(@variable_keys::text[], 1), 0)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM unnest(@variable_keys::text[], @variable_values::jsonb[]) AS vi(key, value)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM release_variable rv
+        WHERE rv.release_id = r.id AND rv.key = vi.key AND rv.value = vi.value
+      )
+    )
+  LIMIT 1
+),
+inserted AS (
+  INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id)
+  SELECT @id, @resource_id, @environment_id, @deployment_id, @version_id
+  WHERE NOT EXISTS (SELECT 1 FROM existing)
+  RETURNING *
+),
+inserted_vars AS (
+  INSERT INTO release_variable (release_id, key, value)
+  SELECT (SELECT id FROM inserted), vi.key, vi.value
+  FROM unnest(@variable_keys::text[], @variable_values::jsonb[]) AS vi(key, value)
+  WHERE EXISTS (SELECT 1 FROM inserted)
+)
+SELECT * FROM inserted
+UNION ALL
+SELECT * FROM release WHERE id = (SELECT id FROM existing)
+LIMIT 1;
+
+-- name: UpsertReleaseDesired :one
+INSERT INTO release_target_desired_release (
+    resource_id,
+    environment_id,
+    deployment_id,
+    desired_release_id
+) VALUES (
+    $1, $2, $3, NULLIF(@desired_release_id, '00000000-0000-0000-0000-000000000000'::uuid)
+)
+ON CONFLICT (resource_id, environment_id, deployment_id) DO UPDATE
+SET 
+    desired_release_id = EXCLUDED.desired_release_id
+RETURNING *;
+

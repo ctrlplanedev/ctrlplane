@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
 import { ChevronRight, ExternalLink, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
 
+import type { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
+import type { JobVerification } from "./Verifications";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { ResourceIcon } from "~/components/ui/resource-icon";
 import { TableCell, TableRow } from "~/components/ui/table";
@@ -15,7 +16,31 @@ import { RedeployDialog } from "../RedeployDialog";
 import { RedeployAllDialog } from "./RedeployAllDialog";
 import { VerificationStatusBadge, verificationSummary } from "./Verifications";
 
-type ReleaseTargetSummary = WorkspaceEngine["schemas"]["ReleaseTargetSummary"];
+type VersionSummary = { id: string; tag: string; name: string };
+
+type ReleaseTargetSummary = {
+  releaseTarget: {
+    resourceId: string;
+    environmentId: string;
+    deploymentId: string;
+  };
+  environment: { id: string; name: string };
+  resource: {
+    id: string;
+    name: string;
+    kind: string;
+    version: string;
+    identifier: string;
+  };
+  desiredVersion?: VersionSummary | null;
+  currentVersion?: VersionSummary | null;
+  latestJob?: {
+    id: string;
+    status: string;
+    message?: string | null;
+    verifications: JobVerification[];
+  } | null;
+};
 
 type EnvironmentReleaseTargetsGroupProps = {
   releaseTargets: ReleaseTargetSummary[];
@@ -101,7 +126,10 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
       <TableCell>
         {rt.latestJob != null && (
           <div className="flex items-center gap-2">
-            {<JobStatusBadge {...rt.latestJob} />}
+            <JobStatusBadge
+              status={rt.latestJob.status as keyof typeof JobStatusDisplayName}
+              message={rt.latestJob.message}
+            />
             <VerificationStatusBadge
               summaries={summaries}
               verifications={verifications}
@@ -109,7 +137,7 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
           </div>
         )}
       </TableCell>
-      <JobLinks links={rt.latestJob?.links} />
+      <JobLinks />
       <TableCell
         className={cn(
           "font-mono text-sm",

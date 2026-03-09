@@ -4,9 +4,7 @@ import { trpc } from "~/api/trpc";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 
 export const useJobAgent = (jobAgentId: string) => {
-  const { workspace } = useWorkspace();
   const jobAgentQuery = trpc.jobAgents.get.useQuery({
-    workspaceId: workspace.id,
     jobAgentId,
   });
 
@@ -18,7 +16,7 @@ export const useAllJobAgents = () => {
   const jobAgentsQuery = trpc.jobAgents.list.useQuery({
     workspaceId: workspace.id,
   });
-  return jobAgentsQuery.data?.items ?? [];
+  return jobAgentsQuery.data ?? [];
 };
 
 export const useSelectedJobAgent = <

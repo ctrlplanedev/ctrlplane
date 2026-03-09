@@ -16,6 +16,26 @@ import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
 
+export const releaseTargetDesiredRelease = pgTable(
+  "release_target_desired_release",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => resource.id, { onDelete: "cascade" }),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environment.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+    desiredReleaseId: uuid("desired_release_id").references(() => release.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => [uniqueIndex().on(t.resourceId, t.environmentId, t.deploymentId)],
+);
+
 export const release = pgTable(
   "release",
   {

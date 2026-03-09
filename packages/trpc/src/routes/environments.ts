@@ -1,12 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { v4 as uuidv4 } from "uuid";
+import { parse } from "cel-js";
 import { z } from "zod";
 
-import { asc, eq } from "@ctrlplane/db";
+import { and, asc, desc, eq, inArray } from "@ctrlplane/db";
+import { enqueueEnvironmentSelectorEval } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -33,25 +32,24 @@ export const environmentRouter = router({
   resources: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.uuid(),
         environmentId: z.string(),
         limit: z.number().min(1).max(1000).default(50),
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, limit, offset } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources",
+    .query(async ({ input, ctx }) => {
+      const resources = await ctx.db.query.computedEnvironmentResource.findMany(
         {
-          params: {
-            path: { workspaceId, environmentId },
-            query: { limit, offset },
-          },
+          where: eq(
+            schema.computedEnvironmentResource.environmentId,
+            input.environmentId,
+          ),
+          limit: input.limit,
+          offset: input.offset,
         },
       );
 
-      return result.data;
+      return resources;
     }),
 
   releaseTargets: protectedProcedure
@@ -63,18 +61,191 @@ export const environmentRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, limit, offset } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets",
-        {
-          params: {
-            path: { workspaceId, environmentId },
-            query: { limit, offset },
+    .query(async ({ input, ctx }) => {
+      const releaseTargets = await ctx.db
+        .selectDistinctOn(
+          [schema.deployment.id, schema.resource.id, schema.environment.id],
+          {
+            deployment: schema.deployment,
+            environment: schema.environment,
+            resource: schema.resource,
+            desiredRelease: schema.release,
+            desiredVersion: schema.deploymentVersion,
+            latestJob: schema.job,
           },
+        )
+        .from(schema.computedDeploymentResource)
+        .innerJoin(
+          schema.deployment,
+          eq(
+            schema.computedDeploymentResource.deploymentId,
+            schema.deployment.id,
+          ),
+        )
+        .innerJoin(
+          schema.resource,
+          eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
+        )
+        .innerJoin(
+          schema.systemDeployment,
+          eq(
+            schema.computedDeploymentResource.deploymentId,
+            schema.systemDeployment.deploymentId,
+          ),
+        )
+        .innerJoin(
+          schema.systemEnvironment,
+          eq(
+            schema.systemDeployment.systemId,
+            schema.systemEnvironment.systemId,
+          ),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(schema.systemEnvironment.environmentId, schema.environment.id),
+        )
+        .leftJoin(
+          schema.releaseTargetDesiredRelease,
+          and(
+            eq(
+              schema.releaseTargetDesiredRelease.deploymentId,
+              schema.deployment.id,
+            ),
+            eq(
+              schema.releaseTargetDesiredRelease.resourceId,
+              schema.resource.id,
+            ),
+            eq(
+              schema.releaseTargetDesiredRelease.environmentId,
+              schema.environment.id,
+            ),
+          ),
+        )
+        .leftJoin(
+          schema.release,
+          eq(
+            schema.releaseTargetDesiredRelease.desiredReleaseId,
+            schema.release.id,
+          ),
+        )
+        .leftJoin(
+          schema.deploymentVersion,
+          eq(schema.release.versionId, schema.deploymentVersion.id),
+        )
+        .leftJoin(
+          schema.releaseJob,
+          eq(schema.release.id, schema.releaseJob.releaseId),
+        )
+        .leftJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
+        .where(eq(schema.environment.id, input.environmentId))
+        .orderBy(
+          schema.deployment.id,
+          schema.resource.id,
+          schema.environment.id,
+          desc(schema.job.createdAt),
+        );
+
+      const jobIds = releaseTargets
+        .map((rt) => rt.latestJob?.id)
+        .filter((id): id is string => id != null);
+
+      const rows =
+        jobIds.length > 0
+          ? await ctx.db
+              .select({
+                metric: schema.jobVerificationMetricStatus,
+                measurement: schema.jobVerificationMetricMeasurement,
+              })
+              .from(schema.jobVerificationMetricStatus)
+              .leftJoin(
+                schema.jobVerificationMetricMeasurement,
+                eq(
+                  schema.jobVerificationMetricMeasurement
+                    .jobVerificationMetricStatusId,
+                  schema.jobVerificationMetricStatus.id,
+                ),
+              )
+              .where(inArray(schema.jobVerificationMetricStatus.jobId, jobIds))
+              .orderBy(schema.jobVerificationMetricStatus.jobId)
+          : [];
+
+      type MetricWithMeasurements = {
+        metric: typeof schema.jobVerificationMetricStatus.$inferSelect;
+        measurements: Array<
+          typeof schema.jobVerificationMetricMeasurement.$inferSelect
+        >;
+      };
+
+      const verificationsMap = new Map<
+        string,
+        Map<string, MetricWithMeasurements[]>
+      >();
+
+      for (const row of rows) {
+        const jobId = row.metric.jobId;
+        const groupKey =
+          row.metric.policyRuleVerificationMetricId ?? "ungrouped";
+
+        let byRule = verificationsMap.get(jobId);
+        if (!byRule) {
+          byRule = new Map();
+          verificationsMap.set(jobId, byRule);
+        }
+
+        let metrics = byRule.get(groupKey);
+        if (!metrics) {
+          metrics = [];
+          byRule.set(groupKey, metrics);
+        }
+
+        let existing = metrics.find((m) => m.metric.id === row.metric.id);
+        if (!existing) {
+          existing = { metric: row.metric, measurements: [] };
+          metrics.push(existing);
+        }
+
+        if (row.measurement != null) {
+          existing.measurements.push(row.measurement);
+        }
+      }
+
+      const buildVerifications = (jobId: string, createdAt: Date) => {
+        const byRule = verificationsMap.get(jobId);
+        if (!byRule) return [];
+
+        return [...byRule.entries()].map(([groupKey, metrics]) => ({
+          id: groupKey === "ungrouped" ? jobId : groupKey,
+          jobId,
+          createdAt,
+          metrics: metrics.map((v) => ({
+            ...v.metric,
+            measurements: v.measurements,
+          })),
+        }));
+      };
+
+      return releaseTargets.map((rt) => ({
+        releaseTarget: {
+          resourceId: rt.resource.id,
+          environmentId: rt.environment.id,
+          deploymentId: rt.deployment.id,
         },
-      );
-      return result.data;
+        deployment: rt.deployment,
+        environment: rt.environment,
+        resource: rt.resource,
+        desiredVersion: rt.desiredVersion,
+        currentVersion: rt.desiredVersion,
+        latestJob:
+          rt.latestJob != null
+            ? {
+                ...rt.latestJob,
+                verifications: buildVerifications(
+                  rt.latestJob.id,
+                  rt.latestJob.createdAt,
+                ),
+              }
+            : null,
+      }));
     }),
 
   list: protectedProcedure
@@ -113,57 +284,34 @@ export const environmentRouter = router({
         }),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, environmentId, data } = input;
-      const validate = await getClientFor(workspaceId).POST(
-        "/v1/validate/resource-selector",
-        {
-          body: {
-            resourceSelector: {
-              cel: data.resourceSelectorCel,
-            },
-          },
-        },
-      );
-
-      if (!validate.data?.valid) {
+      const cel = parse(data.resourceSelectorCel);
+      if (!cel.isSuccess) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
-              ? validate.data.errors.join(", ")
-              : "Invalid resource selector",
+          message: cel.errors.join(", "),
         });
       }
 
-      const env = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+      const [env] = await ctx.db
+        .update(schema.environment)
+        .set({ resourceSelector: data.resourceSelectorCel })
+        .where(eq(schema.environment.id, environmentId))
+        .returning();
 
-      if (!env.data) {
+      if (env == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Environment not found",
         });
-      }
 
-      const updateData = {
-        ...env.data,
-        resourceSelector: {
-          cel: data.resourceSelectorCel,
-        },
-      };
-
-      await sendGoEvent({
+      await enqueueEnvironmentSelectorEval(ctx.db, {
         workspaceId,
-        eventType: Event.EnvironmentUpdated,
-        timestamp: Date.now(),
-        data: updateData,
+        environmentId,
       });
 
-      return env.data;
+      return env;
     }),
 
   create: protectedProcedure
@@ -177,49 +325,48 @@ export const environmentRouter = router({
         resourceSelectorCel: z.string().min(1).max(255),
       }),
     )
-    .mutation(async ({ input }) => {
-      const validate = await getClientFor(input.workspaceId).POST(
-        "/v1/validate/resource-selector",
-        {
-          body: {
-            resourceSelector: {
-              cel: input.resourceSelectorCel,
-            },
-          },
-        },
-      );
-
-      if (!validate.data?.valid) {
+    .mutation(async ({ input, ctx }) => {
+      const cel = parse(input.resourceSelectorCel);
+      if (!cel.isSuccess) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
-              ? validate.data.errors.join(", ")
-              : "Invalid resource selector",
+          message: cel.errors.join(", "),
         });
       }
 
-      const { workspaceId, ...environmentData } = input;
-      const environment = {
-        id: uuidv4(),
-        ...environmentData,
-        description: environmentData.description ?? "",
-        createdAt: new Date().toISOString(),
-        resourceSelector: {
-          cel: environmentData.resourceSelectorCel,
-        },
-        metadata: input.metadata ?? {},
-      };
-
-      await sendGoEvent({
+      const {
         workspaceId,
-        eventType: Event.EnvironmentCreated,
-        timestamp: Date.now(),
-        data: environment,
+        systemIds,
+        name,
+        description,
+        resourceSelectorCel,
+        metadata,
+      } = input;
+
+      const [env] = await ctx.db
+        .insert(schema.environment)
+        .values({
+          workspaceId,
+          name,
+          description: description ?? "",
+          resourceSelector: resourceSelectorCel,
+          metadata: metadata ?? {},
+        })
+        .returning();
+
+      await ctx.db.insert(schema.systemEnvironment).values(
+        systemIds.map((systemId) => ({
+          systemId,
+          environmentId: env!.id,
+        })),
+      );
+
+      await enqueueEnvironmentSelectorEval(ctx.db, {
+        workspaceId,
+        environmentId: env!.id,
       });
 
-      return environment;
+      return env;
     }),
 
   delete: protectedProcedure
@@ -229,27 +376,19 @@ export const environmentRouter = router({
         environmentId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { workspaceId, environmentId } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { environmentId } = input;
 
-      const env = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+      const [env] = await ctx.db
+        .delete(schema.environment)
+        .where(eq(schema.environment.id, environmentId))
+        .returning();
 
-      if (!env.data) {
+      if (env == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Environment not found",
         });
-      }
-
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.EnvironmentDeleted,
-        timestamp: Date.now(),
-        data: env.data,
-      });
 
       return { success: true };
     }),

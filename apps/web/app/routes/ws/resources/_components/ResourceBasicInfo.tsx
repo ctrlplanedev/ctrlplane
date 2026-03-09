@@ -14,7 +14,7 @@ export function ResourceBasicInfo() {
     { enabled: resource.providerId != null },
   );
 
-  const provider = providersData?.items.find(
+  const provider = providersData?.find(
     (p) => p.id === resource.providerId,
   );
 

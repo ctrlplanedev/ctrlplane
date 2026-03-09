@@ -1,0 +1,3 @@
+ALTER TABLE "job_verification_metric" ADD COLUMN "policy_rule_verification_metric_id" uuid;--> statement-breakpoint
+ALTER TABLE "job_verification_metric" ADD CONSTRAINT "job_verification_metric_policy_rule_verification_metric_id_policy_rule_job_verification_metric_id_fk" FOREIGN KEY ("policy_rule_verification_metric_id") REFERENCES "public"."policy_rule_job_verification_metric"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "job_verification_metric_policy_rule_verification_metric_id_index" ON "job_verification_metric" USING btree ("policy_rule_verification_metric_id");

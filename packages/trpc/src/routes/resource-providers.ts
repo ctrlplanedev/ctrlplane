@@ -1,6 +1,7 @@
 import z from "zod";
 
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -13,14 +14,13 @@ export const resourceProvidersRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { workspaceId, limit, offset } = input;
-      const providers = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resource-providers",
-        {
-          params: { path: { workspaceId }, query: { limit, offset } },
-        },
-      );
-      return providers.data;
+      const providers = ctx.db.query.resourceProvider.findMany({
+        where: eq(schema.resourceProvider.workspaceId, workspaceId),
+        offset: offset,
+        limit: limit,
+      });
+      return providers;
     }),
 });

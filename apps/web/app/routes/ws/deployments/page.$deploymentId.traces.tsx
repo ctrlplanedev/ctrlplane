@@ -146,19 +146,18 @@ export default function DeploymentTraces() {
 
   // Fetch release targets for filtering
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,
   });
   const releaseTargetsMap = useMemo(() => {
     return Object.fromEntries(
-      releaseTargetsQuery.data?.items.map((rt) => [
+      releaseTargetsQuery.data?.map((rt) => [
         `${rt.resource.id}-${rt.environment.id}-${rt.releaseTarget.deploymentId}`,
         rt,
       ]) ?? [],
     );
-  }, [releaseTargetsQuery.data?.items]);
+  }, [releaseTargetsQuery.data]);
 
   // Fetch root traces with filters
   const tracesQuery = trpc.deploymentTraces.getUniqueTraces.useQuery(
@@ -187,7 +186,7 @@ export default function DeploymentTraces() {
 
   const traces = tracesQuery.data ?? [];
   const versions = versionsQuery.data;
-  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const releaseTargets = releaseTargetsQuery.data ?? [];
 
   // Filter traces by search query
   const filteredTraces = traces.filter((trace) => {

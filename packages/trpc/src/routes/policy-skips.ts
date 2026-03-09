@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { and, eq } from "@ctrlplane/db";
+import { enqueueReleaseTargetsForEnvironment } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -11,21 +11,18 @@ export const policySkipsRouter = router({
   forEnvAndVersion: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string(),
         environmentId: z.string(),
         versionId: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, versionId } = input;
-      const deploymentVersionId = versionId;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/policy-skips/environment/{environmentId}/version/{deploymentVersionId}",
-        {
-          params: { path: { workspaceId, environmentId, deploymentVersionId } },
-        },
-      );
-      return result.data?.items ?? [];
+    .query(async ({ input, ctx }) => {
+      const { environmentId, versionId } = input;
+      return ctx.db.query.policySkip.findMany({
+        where: and(
+          eq(schema.policySkip.environmentId, environmentId),
+          eq(schema.policySkip.versionId, versionId),
+        ),
+      });
     }),
 
   createForEnvAndVersion: protectedProcedure
@@ -36,6 +33,7 @@ export const policySkipsRouter = router({
         versionId: z.string(),
         ruleId: z.string(),
         expiresAt: z.date().optional(),
+        reason: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -43,22 +41,25 @@ export const policySkipsRouter = router({
         input;
       const userId = ctx.session.user.id;
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.PolicySkipCreated,
-        timestamp: Date.now(),
-        data: {
-          id: uuidv4(),
-          workspaceId,
-          versionId,
-          environmentId,
-          ruleId,
-          expiresAt: expiresAt?.toISOString(),
-          createdAt: new Date().toISOString(),
+      const [skip] = await ctx.db
+        .insert(schema.policySkip)
+        .values({
           createdBy: userId,
-          reason: "Skipped by user",
-        },
-      });
+          environmentId,
+          versionId,
+          ruleId,
+          expiresAt,
+          reason: input.reason ?? "Skipped by user",
+        })
+        .returning();
+
+      await enqueueReleaseTargetsForEnvironment(
+        ctx.db,
+        workspaceId,
+        environmentId,
+      );
+
+      return skip;
     }),
 
   delete: protectedProcedure
@@ -68,22 +69,24 @@ export const policySkipsRouter = router({
         skipId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, skipId } = input;
-      const skip = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/policy-skips/{policySkipId}",
-        {
-          params: { path: { workspaceId, policySkipId: skipId } },
-        },
-      );
-      if (skip.error != null)
+
+      const [deleted] = await ctx.db
+        .delete(schema.policySkip)
+        .where(eq(schema.policySkip.id, skipId))
+        .returning();
+
+      if (!deleted)
         throw new TRPCError({ code: "NOT_FOUND", message: "Skip not found" });
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.PolicySkipDeleted,
-        timestamp: Date.now(),
-        data: skip.data,
-      });
-      return skip.data;
+
+      if (deleted.environmentId != null)
+        await enqueueReleaseTargetsForEnvironment(
+          ctx.db,
+          workspaceId,
+          deleted.environmentId,
+        );
+
+      return deleted;
     }),
 });

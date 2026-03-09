@@ -1,12 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  ArrowRight,
-  Edit,
-  Filter,
-  PlusIcon,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { Edit, PlusIcon, Search, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 
 import { trpc } from "~/api/trpc";
@@ -35,13 +28,6 @@ import {
 } from "~/components/ui/breadcrumb";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -59,8 +45,6 @@ export function meta() {
 export default function RelationshipRules() {
   const { workspace } = useWorkspace();
   const [searchQuery, setSearchQuery] = useState("");
-  const [relationshipTypeFilter, setRelationshipTypeFilter] =
-    useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<{
     id: string;
@@ -74,7 +58,6 @@ export default function RelationshipRules() {
     offset: 0,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   const deleteMutation = trpc.relationships.delete.useMutation();
 
   const handleDeleteClick = (ruleId: string, ruleName: string) => {
@@ -84,7 +67,6 @@ export default function RelationshipRules() {
 
   const handleDeleteConfirm = () => {
     if (ruleToDelete) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       deleteMutation
         .mutateAsync({
           workspaceId: workspace.id,
@@ -101,32 +83,19 @@ export default function RelationshipRules() {
     }
   };
 
-  // Get unique relationship types for filter
-  const relationshipTypes = useMemo(() => {
-    if (!relationshipRules?.items) return [];
-    return Array.from(
-      new Set(relationshipRules.items.map((rule) => rule.relationshipType)),
-    );
-  }, [relationshipRules?.items]);
-
-  // Filter rules based on search and filters
   const filteredRules = useMemo(() => {
-    if (!relationshipRules?.items) return [];
+    if (!relationshipRules) return [];
 
-    return relationshipRules.items.filter((rule) => {
+    return relationshipRules.filter((rule) => {
       const matchesSearch =
         searchQuery === "" ||
         rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesType =
-        relationshipTypeFilter === "all" ||
-        rule.relationshipType === relationshipTypeFilter;
-
-      return matchesSearch && matchesType;
+      return matchesSearch;
     });
-  }, [relationshipRules?.items, searchQuery, relationshipTypeFilter]);
+  }, [relationshipRules, searchQuery]);
 
   return (
     <>
@@ -161,24 +130,6 @@ export default function RelationshipRules() {
                 className="pl-10"
               />
             </div>
-
-            <Select
-              value={relationshipTypeFilter}
-              onValueChange={setRelationshipTypeFilter}
-            >
-              <SelectTrigger className="w-[180px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {relationshipTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <Link
@@ -203,12 +154,12 @@ export default function RelationshipRules() {
                 No relationship rules found
               </h3>
               <p className="text-sm text-muted-foreground">
-                {searchQuery || relationshipTypeFilter !== "all"
-                  ? "Try adjusting your filters to find what you're looking for."
+                {searchQuery
+                  ? "Try adjusting your search to find what you're looking for."
                   : "Get started by creating your first relationship rule."}
               </p>
             </div>
-            {!searchQuery && relationshipTypeFilter === "all" && (
+            {!searchQuery && (
               <Link
                 to={`/${workspace.slug}/relationship-rules/create`}
                 className={buttonVariants({ variant: "default" })}
@@ -232,12 +183,7 @@ export default function RelationshipRules() {
                       <span className="text-base font-semibold">
                         {rule.name}
                       </span>
-                      <Badge variant="secondary">{rule.relationshipType}</Badge>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{rule.fromType}</Badge>
-                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                        <Badge variant="outline">{rule.toType}</Badge>
-                      </div>
+                      <Badge variant="secondary">{rule.reference}</Badge>
                     </div>
 
                     <div className="flex items-center gap-1">
@@ -275,79 +221,31 @@ export default function RelationshipRules() {
 
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium">From</h4>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            Type:
-                          </span>
-                          <Badge variant="outline">{rule.fromType}</Badge>
-                        </div>
-                        {rule.fromSelector && "cel" in rule.fromSelector && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">
-                              Selector:
-                            </span>
-                            <pre className="rounded-md bg-muted p-2 font-mono text-xs">
-                              {rule.fromSelector.cel}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
+                      <h4 className="text-sm font-medium">CEL Expression</h4>
+                      <pre className="rounded-md bg-muted p-3 font-mono text-xs">
+                        {rule.cel}
+                      </pre>
                     </div>
 
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">To</h4>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            Type:
-                          </span>
-                          <Badge variant="outline">{rule.toType}</Badge>
-                        </div>
-                        {rule.toSelector && "cel" in rule.toSelector && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">
-                              Selector:
-                            </span>
-                            <pre className="rounded-md bg-muted p-2 font-mono text-xs">
-                              {rule.toSelector.cel}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Matcher</h4>
-                      {"cel" in rule.matcher ? (
-                        <pre className="rounded-md bg-muted p-3 font-mono text-xs">
-                          {rule.matcher.cel}
-                        </pre>
-                      ) : (
-                        <pre className="rounded-md bg-muted p-3 font-mono text-xs">
-                          {JSON.stringify(rule.matcher, null, 2)}
-                        </pre>
-                      )}
-                    </div>
-
-                    {Object.keys(rule.metadata).length > 0 && (
+                    {Object.keys(rule.metadata ?? {}).length > 0 && (
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Metadata</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(rule.metadata).map(([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex items-center gap-2 rounded-md bg-muted p-2"
-                            >
-                              <span className="text-xs font-medium">
-                                {key}:
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {value}
-                              </span>
-                            </div>
-                          ))}
+                          {Object.entries(rule.metadata ?? {}).map(
+                            ([key, value]) => (
+                              <div
+                                key={key}
+                                className="flex items-center gap-2 rounded-md bg-muted p-2"
+                              >
+                                <span className="text-xs font-medium">
+                                  {key}:
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {value}
+                                </span>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}

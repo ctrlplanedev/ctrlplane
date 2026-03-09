@@ -63,6 +63,12 @@ export const jobVerificationMetricStatus = pgTable(
 
     jobId: uuid("job_id").notNull(),
 
+    policyRuleVerificationMetricId: uuid(
+      "policy_rule_verification_metric_id",
+    ).references(() => policyRuleJobVerificationMetric.id, {
+      onDelete: "set null",
+    }),
+
     name: text("name").notNull(),
     provider: jsonb("provider").notNull(),
 
@@ -75,7 +81,7 @@ export const jobVerificationMetricStatus = pgTable(
     failureCondition: text("failure_condition").default("false"),
     failureThreshold: integer("failure_threshold").default(0),
   },
-  (t) => [index().on(t.jobId)],
+  (t) => [index().on(t.jobId), index().on(t.policyRuleVerificationMetricId)],
 );
 
 export const jobVerificationMetricMeasurement = pgTable(

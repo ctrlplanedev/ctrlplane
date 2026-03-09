@@ -24,8 +24,22 @@ export default function ResourcesLayout() {
     throw new Error(`Resource not found with identifier: ${decodedIdentifier}`);
   }
 
+  const transformedResource = {
+    id: resource.id,
+    identifier: resource.identifier,
+    name: resource.name,
+    kind: resource.kind,
+    version: resource.version,
+    metadata: resource.metadata ?? {},
+    config: resource.config,
+    workspaceId: resource.workspaceId,
+    providerId: resource.providerId ?? undefined,
+    createdAt: resource.createdAt.toISOString(),
+    updatedAt: resource.updatedAt?.toISOString(),
+  };
+
   return (
-    <ResourceProvider resource={resource}>
+    <ResourceProvider resource={transformedResource}>
       <Outlet />
     </ResourceProvider>
   );

@@ -6,28 +6,10 @@ import { and, eq, isNull, or, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
 export const workspaceRouter = router({
-  engineStatus: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid() }))
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/status",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-            },
-          },
-        },
-      );
-
-      return response.data ?? { healthy: false, message: "Engine not found" };
-    }),
-
   create: protectedProcedure
     .input(
       z.object({

@@ -362,10 +362,6 @@ test.describe("Variable Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    for (const release of releases) {
-      console.log(release);
-    }
-
     const release = releases.find((rel) => rel.version.tag === versionTag);
 
     expect(release).toBeDefined();
@@ -616,10 +612,6 @@ test.describe("Variable Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    for (const release of releases) {
-      console.log(release);
-    }
-
     const release = releases.find((rel) => rel.version.tag === versionTag);
     expect(release).toBeDefined();
 

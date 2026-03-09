@@ -1,8 +1,5 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { Fragment, useState } from "react";
 import { SiDatadog } from "@icons-pack/react-simple-icons";
-import { capitalCase } from "change-case";
-import { formatDistanceToNowStrict } from "date-fns";
 import { ChevronRight } from "lucide-react";
 
 import {
@@ -27,10 +24,33 @@ import { isPrometheusProvider } from "./prometheus/prometheus-metric";
 import { PrometheusIcon } from "./prometheus/PrometheusIcon";
 import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
-type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
-type VerificationMetricStatus =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
-type MetricMeasurement = VerificationMetricStatus["measurements"][number];
+type MetricMeasurement = {
+  status: "failed" | "inconclusive" | "passed";
+  data: unknown;
+  measuredAt: Date | string;
+  message?: string;
+};
+
+type VerificationMetric = {
+  id: string;
+  name: string;
+  provider: unknown;
+  count: number;
+  intervalSeconds: number;
+  successCondition: string;
+  successThreshold?: number | null;
+  failureCondition?: string | null;
+  failureThreshold?: number | null;
+  measurements: MetricMeasurement[];
+};
+
+export type JobVerification = {
+  id: string;
+  jobId: string;
+  createdAt: Date | string;
+  message?: string;
+  metrics: VerificationMetric[];
+};
 
 function Measurement({ measurement }: { measurement: MetricMeasurement }) {
   return (
@@ -96,11 +116,7 @@ function getStatusMessage(
   return `Passed: Completed ${totalMeasurements} measurements within failure limit`;
 }
 
-function MetricSummaryDisplay({
-  metric,
-}: {
-  metric: VerificationMetricStatus;
-}) {
+function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
   const passedCount = metric.measurements.filter(
     (m) => m.status === "passed",
   ).length;
@@ -121,7 +137,7 @@ function MetricSummaryDisplay({
     failedCount,
     failureLimit,
     consecutiveSuccessCount,
-    successThreshold,
+    successThreshold ?? undefined,
     totalMeasurements,
     expectedCount,
   );
@@ -148,13 +164,23 @@ function MetricSummaryDisplay({
   );
 }
 
-function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
+const nullToUndefined = <T,>(v: T | null | undefined): T | undefined =>
+  v ?? undefined;
+
+function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   const [open, setOpen] = useState(false);
   const sortedMeasurements = [...metric.measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
   const latestMeasurement = sortedMeasurements.at(0);
+
+  const displayMetric = {
+    ...metric,
+    failureCondition: nullToUndefined(metric.failureCondition),
+    failureThreshold: metric.failureThreshold ?? 0,
+    successThreshold: metric.successThreshold ?? 0,
+  };
 
   const isArgoCD =
     latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
@@ -179,14 +205,16 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
           )}
           <span className="text-sm font-medium">{metric.name}</span>
           <div className="grow" />
-          <VerificationMetricStatus metric={metric} />
+          <VerificationMetricStatus metric={displayMetric} />
         </div>
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
-        {isArgoCD && <ArgoCDVerificationDisplay metric={metric} />}
-        {isPrometheus && <PrometheusVerificationDisplay metric={metric} />}
-        {isDatadog && <DatadogVerificationDisplay metric={metric} />}
+        {isArgoCD && <ArgoCDVerificationDisplay metric={displayMetric} />}
+        {isPrometheus && (
+          <PrometheusVerificationDisplay metric={displayMetric} />
+        )}
+        {isDatadog && <DatadogVerificationDisplay metric={displayMetric} />}
         {!isArgoCD && !isPrometheus && !isDatadog && (
           <>
             <MetricSummaryDisplay metric={metric} />
@@ -205,8 +233,7 @@ type MetricSummary = {
   status: "passed" | "failed" | "inconclusive";
 };
 
-type VerificationMetricStatusType =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
+type VerificationMetricStatusType = VerificationMetric;
 
 const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   if (metric.measurements.length === 0) {

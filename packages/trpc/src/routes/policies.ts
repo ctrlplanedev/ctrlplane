@@ -1,8 +1,10 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
+import { and, eq } from "@ctrlplane/db";
+import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -38,18 +40,23 @@ export const policiesRouter = router({
         workspaceId: z.string().uuid(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { workspaceId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/policies",
-        {
-          params: {
-            path: { workspaceId },
-          },
+      return ctx.db.query.policy.findMany({
+        where: eq(schema.policy.workspaceId, workspaceId),
+        with: {
+          anyApprovalRules: true,
+          deploymentDependencyRules: true,
+          deploymentWindowRules: true,
+          environmentProgressionRules: true,
+          gradualRolloutRules: true,
+          retryRules: true,
+          rollbackRules: true,
+          verificationRules: true,
+          versionCooldownRules: true,
+          versionSelectorRules: true,
         },
-      );
-
-      return result.data;
+      });
     }),
 
   delete: protectedProcedure
@@ -59,34 +66,28 @@ export const policiesRouter = router({
         policyId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, policyId } = input;
 
-      // Get the policy first to send with the event
-      const response = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/policies/{policyId}",
-        {
-          params: {
-            path: { workspaceId, policyId },
-          },
-        },
-      );
+      const [deleted] = await ctx.db
+        .delete(schema.policy)
+        .where(
+          and(
+            eq(schema.policy.id, policyId),
+            eq(schema.policy.workspaceId, workspaceId),
+          ),
+        )
+        .returning();
 
-      if (!response.data) {
-        throw new Error("Policy not found");
-      }
+      if (!deleted)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Policy not found",
+        });
 
-      const policy = response.data;
+      await enqueueAllReleaseTargetsDesiredVersion(ctx.db, workspaceId);
 
-      // Send the delete event - the workspace engine will process it
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.PolicyDeleted,
-        timestamp: Date.now(),
-        data: policy,
-      });
-
-      return policy;
+      return deleted;
     }),
 
   upsert: protectedProcedure
@@ -105,40 +106,209 @@ export const policiesRouter = router({
         }),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, policyId, body } = input;
-      const client = getClientFor(workspaceId);
 
-      // Check if policy already exists
-      const existingPolicy = await client.GET(
-        "/v1/workspaces/{workspaceId}/policies/{policyId}",
-        { params: { path: { workspaceId, policyId } } },
-      );
+      const existing = await ctx.db
+        .select({ createdAt: schema.policy.createdAt })
+        .from(schema.policy)
+        .where(eq(schema.policy.id, policyId))
+        .limit(1);
 
-      const isUpdate = existingPolicy.data != null;
+      const now = new Date();
+      const createdAt = existing[0]?.createdAt ?? now;
 
-      const policy: WorkspaceEngine["schemas"]["Policy"] = {
-        id: policyId,
-        workspaceId,
-        createdAt: existingPolicy.data?.createdAt ?? new Date().toISOString(),
-        name: body.name,
-        description: body.description,
-        priority: body.priority,
-        enabled: body.enabled,
-        metadata: body.metadata,
-        rules:
-          body.rules as unknown as WorkspaceEngine["schemas"]["PolicyRule"][],
-        selector: body.selector,
-      };
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .insert(schema.policy)
+          .values({
+            id: policyId,
+            workspaceId,
+            name: body.name,
+            description: body.description,
+            priority: body.priority,
+            enabled: body.enabled,
+            metadata: body.metadata,
+            selector: body.selector,
+            createdAt,
+          })
+          .onConflictDoUpdate({
+            target: schema.policy.id,
+            set: {
+              name: body.name,
+              description: body.description,
+              priority: body.priority,
+              enabled: body.enabled,
+              metadata: body.metadata,
+              selector: body.selector,
+            },
+          });
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: isUpdate ? Event.PolicyUpdated : Event.PolicyCreated,
-        timestamp: Date.now(),
-        data: policy,
+        // Delete existing rules before re-inserting
+        await tx
+          .delete(schema.policyRuleAnyApproval)
+          .where(eq(schema.policyRuleAnyApproval.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleDeploymentDependency)
+          .where(eq(schema.policyRuleDeploymentDependency.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleDeploymentWindow)
+          .where(eq(schema.policyRuleDeploymentWindow.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleEnvironmentProgression)
+          .where(
+            eq(schema.policyRuleEnvironmentProgression.policyId, policyId),
+          );
+        await tx
+          .delete(schema.policyRuleGradualRollout)
+          .where(eq(schema.policyRuleGradualRollout.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleRetry)
+          .where(eq(schema.policyRuleRetry.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleRollback)
+          .where(eq(schema.policyRuleRollback.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleVerification)
+          .where(eq(schema.policyRuleVerification.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleVersionCooldown)
+          .where(eq(schema.policyRuleVersionCooldown.policyId, policyId));
+        await tx
+          .delete(schema.policyRuleVersionSelector)
+          .where(eq(schema.policyRuleVersionSelector.policyId, policyId));
+
+        // Insert new rules
+        for (const rule of body.rules) {
+          const ruleId: string =
+            typeof rule.id === "string" ? rule.id : uuidv4();
+
+          if (rule.anyApproval != null)
+            await tx.insert(schema.policyRuleAnyApproval).values({
+              id: ruleId,
+              policyId,
+              minApprovals: (rule.anyApproval as { minApprovals: number })
+                .minApprovals,
+            });
+
+          if (rule.deploymentDependency != null)
+            await tx.insert(schema.policyRuleDeploymentDependency).values({
+              id: ruleId,
+              policyId,
+              dependsOn: (rule.deploymentDependency as { dependsOn: string })
+                .dependsOn,
+            });
+
+          if (rule.deploymentWindow != null) {
+            const dw = rule.deploymentWindow as {
+              allowWindow: boolean;
+              durationMinutes: number;
+              rrule: string;
+              timezone?: string;
+            };
+            await tx.insert(schema.policyRuleDeploymentWindow).values({
+              id: ruleId,
+              policyId,
+              allowWindow: dw.allowWindow,
+              durationMinutes: dw.durationMinutes,
+              rrule: dw.rrule,
+              timezone: dw.timezone,
+            });
+          }
+
+          if (rule.environmentProgression != null) {
+            const ep = rule.environmentProgression as {
+              dependsOnEnvironmentSelector: unknown;
+              maximumAgeHours?: number;
+              minimumSockTimeMinutes?: number;
+              minimumSuccessPercentage?: number;
+              successStatuses?: string[];
+            };
+            await tx.insert(schema.policyRuleEnvironmentProgression).values({
+              id: ruleId,
+              policyId,
+              dependsOnEnvironmentSelector: JSON.stringify(
+                ep.dependsOnEnvironmentSelector,
+              ),
+              maximumAgeHours: ep.maximumAgeHours,
+              minimumSoakTimeMinutes: ep.minimumSockTimeMinutes,
+              minimumSuccessPercentage: ep.minimumSuccessPercentage,
+              successStatuses: ep.successStatuses,
+            });
+          }
+
+          if (rule.gradualRollout != null) {
+            const gr = rule.gradualRollout as {
+              rolloutType: string;
+              timeScaleInterval: number;
+            };
+            await tx.insert(schema.policyRuleGradualRollout).values({
+              id: ruleId,
+              policyId,
+              rolloutType: gr.rolloutType,
+              timeScaleInterval: gr.timeScaleInterval,
+            });
+          }
+
+          if (rule.retry != null) {
+            const rt = rule.retry as {
+              maxRetries: number;
+              backoffSeconds?: number;
+              backoffStrategy?: string;
+              maxBackoffSeconds?: number;
+              retryOnStatuses?: string[];
+            };
+            await tx.insert(schema.policyRuleRetry).values({
+              id: ruleId,
+              policyId,
+              maxRetries: rt.maxRetries,
+              backoffSeconds: rt.backoffSeconds,
+              backoffStrategy: rt.backoffStrategy,
+              maxBackoffSeconds: rt.maxBackoffSeconds,
+              retryOnStatuses: rt.retryOnStatuses,
+            });
+          }
+
+          if (rule.verification != null) {
+            const vr = rule.verification as {
+              metrics: unknown;
+              triggerOn?: string;
+            };
+            await tx.insert(schema.policyRuleVerification).values({
+              id: ruleId,
+              policyId,
+              metrics: vr.metrics,
+              triggerOn: vr.triggerOn,
+            });
+          }
+
+          if (rule.versionCooldown != null)
+            await tx.insert(schema.policyRuleVersionCooldown).values({
+              id: ruleId,
+              policyId,
+              intervalSeconds: (
+                rule.versionCooldown as { intervalSeconds: number }
+              ).intervalSeconds,
+            });
+
+          if (rule.versionSelector != null) {
+            const vs = rule.versionSelector as {
+              selector: unknown;
+              description?: string;
+            };
+            await tx.insert(schema.policyRuleVersionSelector).values({
+              id: ruleId,
+              policyId,
+              description: vs.description,
+              selector: JSON.stringify(vs.selector),
+            });
+          }
+        }
       });
 
-      return { id: policyId, message: "Policy update requested" };
+      await enqueueAllReleaseTargetsDesiredVersion(ctx.db, workspaceId);
+
+      return { id: policyId };
     }),
 
   releaseTargets: protectedProcedure
@@ -148,24 +318,9 @@ export const policiesRouter = router({
         policyId: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, policyId } = input;
-      const resp = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets",
-        {
-          params: {
-            path: { workspaceId, policyId },
-          },
-        },
-      );
+    .query(() => {
+      // TODO: Implement
 
-      if (resp.error != null)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            resp.error.error ?? "Failed to get release targets for policy",
-        });
-
-      return resp.data.releaseTargets ?? [];
+      return [];
     }),
 });

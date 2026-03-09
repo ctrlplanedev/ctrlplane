@@ -43,7 +43,7 @@ export const getJobStatusColor = (status: JobStatus) => {
   switch (status) {
     case "successful":
       return "bg-green-500/10 text-green-600 border-green-500/20";
-    case "inProgress":
+    case "in_progress":
       return "bg-blue-500/10 text-blue-600 border-blue-500/20";
     case "failure":
       return "bg-red-500/10 text-red-600 border-red-500/20";
@@ -60,7 +60,7 @@ export const getJobStatusIcon = (status: JobStatus) => {
   switch (status) {
     case "successful":
       return <CheckCircle2 className="h-4 w-4" />;
-    case "inProgress":
+    case "in_progress":
       return <Loader2 className="h-4 w-4 animate-spin" />;
     case "failure":
       return <XCircle className="h-4 w-4" />;

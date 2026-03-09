@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 
-import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -20,7 +19,6 @@ import {
 } from "~/components/ui/collapsible";
 import { ResourceIcon } from "~/components/ui/resource-icon";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { useResource } from "./ResourceProvider";
 
 type Relation = {
   ruleId: string;
@@ -193,15 +191,10 @@ function RuleCollapsible({
 
 export function ComputedRelationsSection() {
   const { workspace } = useWorkspace();
-  const { resource } = useResource();
 
-  const { data: relations, isLoading } =
-    trpc.resource.computedRelations.useQuery({
-      resourceId: resource.id,
-    });
+  const relations: Relation[] = [];
 
-  if (isLoading) return null;
-  if (!relations || relations.length === 0) return null;
+  if (relations.length === 0) return null;
 
   const groups = groupByRule(relations);
 

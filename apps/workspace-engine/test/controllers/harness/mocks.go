@@ -378,7 +378,6 @@ type noopDispatcher struct{}
 
 func (d *noopDispatcher) Dispatch(_ context.Context, _ *oapi.Job) error { return nil }
 
-
 // JobDispatchGetter implements jobdispatch.Getter.
 type JobDispatchGetter struct {
 	mu sync.Mutex

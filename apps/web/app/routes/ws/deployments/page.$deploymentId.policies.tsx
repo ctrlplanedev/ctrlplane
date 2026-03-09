@@ -30,14 +30,19 @@ import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { getRuleDisplay } from "./_components/environmentversiondecisions/policy-skip/utils";
 
+import type { ReleaseTargetWithState } from "./_components/types";
+
 type ResolvedPolicy = WorkspaceEngine["schemas"]["ResolvedPolicy"];
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTarget"];
-type ReleaseTargetWithState =
-  WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
 type PolicyRule = WorkspaceEngine["schemas"]["PolicyRule"];
 type Selector = WorkspaceEngine["schemas"]["Selector"];
 
-const releaseTargetKey = (releaseTarget: ReleaseTarget) =>
+type ReleaseTargetRef = {
+  resourceId: string;
+  environmentId: string;
+  deploymentId: string;
+};
+
+const releaseTargetKey = (releaseTarget: ReleaseTargetRef) =>
   `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`;
 
 const formatSelector = (selector?: Selector) => {
@@ -330,7 +335,6 @@ const DeploymentPolicies: React.FC = () => {
   });
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,
@@ -342,7 +346,7 @@ const DeploymentPolicies: React.FC = () => {
     );
   }, [policiesQuery.data]);
 
-  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const releaseTargets = releaseTargetsQuery.data ?? [];
 
   const releaseTargetsByKey = useMemo(() => {
     return new Map(
@@ -353,22 +357,22 @@ const DeploymentPolicies: React.FC = () => {
     );
   }, [releaseTargets]);
 
-  const resolvePolicyTargets = (policy: ResolvedPolicy) => {
-    return policy.releaseTargets
+  const resolvePolicyTargets = (
+    policy: ResolvedPolicy,
+  ): ReleaseTargetWithState[] => {
+    const resolved = policy.releaseTargets
       .map((releaseTarget) =>
         releaseTargetsByKey.get(releaseTargetKey(releaseTarget)),
       )
-      .filter(
-        (releaseTarget): releaseTarget is ReleaseTargetWithState =>
-          releaseTarget != null,
-      )
-      .sort((a, b) => {
-        const environmentComparison = a.environment.name.localeCompare(
-          b.environment.name,
-        );
-        if (environmentComparison !== 0) return environmentComparison;
-        return a.resource.name.localeCompare(b.resource.name);
-      });
+      .filter((rt): rt is NonNullable<typeof rt> => rt != null);
+
+    return resolved.sort((a, b) => {
+      const environmentComparison = a.environment.name.localeCompare(
+        b.environment.name,
+      );
+      if (environmentComparison !== 0) return environmentComparison;
+      return a.resource.name.localeCompare(b.resource.name);
+    });
   };
 
   const isLoading = policiesQuery.isLoading || releaseTargetsQuery.isLoading;

@@ -1,4 +1,4 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type { RouterOutputs } from "@ctrlplane/trpc";
 import { Copy } from "lucide-react";
 import { useCopyToClipboard } from "react-use";
 import { toast } from "sonner";
@@ -32,7 +32,9 @@ function useReleaseTargets() {
   return data?.items ?? [];
 }
 
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+type ReleaseTarget = NonNullable<
+  RouterOutputs["resource"]["releaseTargets"]
+>["items"][number];
 function key(releaseTarget: ReleaseTarget) {
   const { resource, environment, deployment } = releaseTarget;
   return `${resource.id}-${environment.id}-${deployment.id}`;

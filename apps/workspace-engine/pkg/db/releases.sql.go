@@ -30,6 +30,87 @@ func (q *Queries) DeleteReleaseVariablesByReleaseID(ctx context.Context, release
 	return err
 }
 
+const findOrCreateRelease = `-- name: FindOrCreateRelease :one
+WITH existing AS (
+  SELECT r.id
+  FROM release r
+  WHERE r.resource_id = $1
+    AND r.environment_id = $2
+    AND r.deployment_id = $3
+    AND r.version_id = $4
+    AND (SELECT count(*) FROM release_variable rv WHERE rv.release_id = r.id)
+      = COALESCE(array_length($5::text[], 1), 0)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM unnest($5::text[], $6::jsonb[]) AS vi(key, value)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM release_variable rv
+        WHERE rv.release_id = r.id AND rv.key = vi.key AND rv.value = vi.value
+      )
+    )
+  LIMIT 1
+),
+inserted AS (
+  INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id)
+  SELECT $7, $1, $2, $3, $4
+  WHERE NOT EXISTS (SELECT 1 FROM existing)
+  RETURNING id, resource_id, environment_id, deployment_id, version_id, created_at
+),
+inserted_vars AS (
+  INSERT INTO release_variable (release_id, key, value)
+  SELECT (SELECT id FROM inserted), vi.key, vi.value
+  FROM unnest($5::text[], $6::jsonb[]) AS vi(key, value)
+  WHERE EXISTS (SELECT 1 FROM inserted)
+)
+SELECT id, resource_id, environment_id, deployment_id, version_id, created_at FROM inserted
+UNION ALL
+SELECT id, resource_id, environment_id, deployment_id, version_id, created_at FROM release WHERE id = (SELECT id FROM existing)
+LIMIT 1
+`
+
+type FindOrCreateReleaseParams struct {
+	ResourceID     uuid.UUID
+	EnvironmentID  uuid.UUID
+	DeploymentID   uuid.UUID
+	VersionID      uuid.UUID
+	VariableKeys   []string
+	VariableValues [][]byte
+	ID             uuid.UUID
+}
+
+type FindOrCreateReleaseRow struct {
+	ID            uuid.UUID
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+	VersionID     uuid.UUID
+	CreatedAt     pgtype.Timestamptz
+}
+
+// Returns an existing release if one already exists for the same release target
+// with the same version and exact set of variables, otherwise creates a new one.
+func (q *Queries) FindOrCreateRelease(ctx context.Context, arg FindOrCreateReleaseParams) (FindOrCreateReleaseRow, error) {
+	row := q.db.QueryRow(ctx, findOrCreateRelease,
+		arg.ResourceID,
+		arg.EnvironmentID,
+		arg.DeploymentID,
+		arg.VersionID,
+		arg.VariableKeys,
+		arg.VariableValues,
+		arg.ID,
+	)
+	var i FindOrCreateReleaseRow
+	err := row.Scan(
+		&i.ID,
+		&i.ResourceID,
+		&i.EnvironmentID,
+		&i.DeploymentID,
+		&i.VersionID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getReleaseByID = `-- name: GetReleaseByID :one
 SELECT id, resource_id, environment_id, deployment_id, version_id, created_at FROM release WHERE id = $1
 `
@@ -194,6 +275,46 @@ func (q *Queries) UpsertRelease(ctx context.Context, arg UpsertReleaseParams) (R
 		&i.DeploymentID,
 		&i.VersionID,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const upsertReleaseDesired = `-- name: UpsertReleaseDesired :one
+INSERT INTO release_target_desired_release (
+    resource_id,
+    environment_id,
+    deployment_id,
+    desired_release_id
+) VALUES (
+    $1, $2, $3, NULLIF($4, '00000000-0000-0000-0000-000000000000'::uuid)
+)
+ON CONFLICT (resource_id, environment_id, deployment_id) DO UPDATE
+SET 
+    desired_release_id = EXCLUDED.desired_release_id
+RETURNING id, resource_id, environment_id, deployment_id, desired_release_id
+`
+
+type UpsertReleaseDesiredParams struct {
+	ResourceID       uuid.UUID
+	EnvironmentID    uuid.UUID
+	DeploymentID     uuid.UUID
+	DesiredReleaseID uuid.UUID
+}
+
+func (q *Queries) UpsertReleaseDesired(ctx context.Context, arg UpsertReleaseDesiredParams) (ReleaseTargetDesiredRelease, error) {
+	row := q.db.QueryRow(ctx, upsertReleaseDesired,
+		arg.ResourceID,
+		arg.EnvironmentID,
+		arg.DeploymentID,
+		arg.DesiredReleaseID,
+	)
+	var i ReleaseTargetDesiredRelease
+	err := row.Scan(
+		&i.ID,
+		&i.ResourceID,
+		&i.EnvironmentID,
+		&i.DeploymentID,
+		&i.DesiredReleaseID,
 	)
 	return i, err
 }

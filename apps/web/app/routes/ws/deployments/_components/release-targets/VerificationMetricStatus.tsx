@@ -1,11 +1,24 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { formatDistanceToNowStrict } from "date-fns";
 
 import { cn } from "~/lib/utils";
 
-type VerificationMetricStatusType =
-  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
-type MetricMeasurement = VerificationMetricStatusType["measurements"][number];
+type MetricMeasurement = {
+  status: "failed" | "inconclusive" | "passed";
+  data: unknown;
+  measuredAt: Date | string;
+  message?: string;
+};
+
+type VerificationMetricStatusType = {
+  name: string;
+  count: number;
+  intervalSeconds: number;
+  successCondition: string;
+  successThreshold: number;
+  failureCondition?: string;
+  failureThreshold: number;
+  measurements: MetricMeasurement[];
+};
 
 type VerificationStatus = "passed" | "failed" | "in_progress";
 

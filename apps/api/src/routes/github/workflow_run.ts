@@ -1,9 +1,9 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
+import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
+import { enqueueDesiredRelease } from "@ctrlplane/db/reconcilers";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -29,36 +29,7 @@ const convertStatus = (
 ): JobStatus =>
   status === "completed" ? JobStatus.Successful : JobStatus.InProgress;
 
-const convertStatusToOapiStatus = (
-  status: JobStatus,
-): WorkspaceEngine["schemas"]["JobStatus"] => {
-  switch (status) {
-    case JobStatus.Successful:
-      return "successful";
-    case JobStatus.Cancelled:
-      return "cancelled";
-    case JobStatus.Skipped:
-      return "skipped";
-    case JobStatus.Pending:
-      return "pending";
-    case JobStatus.InProgress:
-      return "inProgress";
-    case JobStatus.ActionRequired:
-      return "actionRequired";
-    case JobStatus.InvalidJobAgent:
-      return "invalidJobAgent";
-    case JobStatus.InvalidIntegration:
-      return "invalidIntegration";
-    case JobStatus.ExternalRunNotFound:
-      return "externalRunNotFound";
-    case JobStatus.Failure:
-      return "failure";
-  }
-};
-
-const generateOapiEvent = (
-  event: WorkflowRunEvent,
-): WorkspaceEngine["schemas"]["JobUpdateEvent"] | null => {
+export const handleWorkflowRunEvent = async (event: WorkflowRunEvent) => {
   const {
     id,
     status: externalStatus,
@@ -70,77 +41,76 @@ const generateOapiEvent = (
   } = event.workflow_run;
 
   const jobId = extractUuid(name);
-  if (jobId == null) return null;
+  if (jobId == null) return;
 
-  const updatedAt = new Date(updated_at);
   const status =
     conclusion != null
       ? convertConclusion(conclusion)
       : convertStatus(externalStatus);
 
   const startedAt = new Date(run_started_at);
-  const isJobCompleted = exitedStatus.includes(status);
-  const completedAt = isJobCompleted ? updatedAt : null;
-
+  const updatedAt = new Date(updated_at);
+  const isCompleted = exitedStatus.includes(status);
+  const completedAt = isCompleted ? updatedAt : null;
   const externalId = id.toString();
+
+  const [updated] = await db
+    .update(schema.job)
+    .set({
+      externalId,
+      status,
+      startedAt,
+      completedAt,
+      updatedAt,
+    })
+    .where(eq(schema.job.id, jobId))
+    .returning();
+
+  if (updated == null) return;
+
   const Run = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
   const Workflow = `${Run}/workflow`;
-  const links = { Run, Workflow };
-  const linksStr = JSON.stringify(links);
-  const metadata = {
-    [String(ReservedMetadataKey.Links)]: linksStr,
-    run_url: Run,
-  } as Record<string, string>;
+  const links = JSON.stringify({ Run, Workflow });
 
-  return {
-    id: jobId,
-    job: {
-      id: jobId,
-      externalId,
-      createdAt: startedAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
-      completedAt: completedAt?.toISOString() ?? undefined,
-      startedAt: startedAt.toISOString(),
-      workflowJobId: "",
-      status: convertStatusToOapiStatus(status),
-      releaseId: "",
-      jobAgentConfig: {
-        type: "github-app",
-        installationId: event.installation?.id ?? 0,
-        owner: repository.owner.login,
-        repo: repository.name,
-        workflowId: event.workflow_run.workflow_id,
-      },
-      jobAgentId: "",
-      metadata,
-    },
-    fieldsToUpdate: [
-      "externalId",
-      "updatedAt",
-      "completedAt",
-      "startedAt",
-      "status",
-      "metadata",
-    ],
-  };
-};
+  const metadataEntries = [
+    { jobId, key: String(ReservedMetadataKey.Links), value: links },
+    { jobId, key: "run_url", value: Run },
+  ];
 
-const getAllWorkspaceIds = () =>
-  db
-    .select({ id: schema.workspace.id })
-    .from(schema.workspace)
-    .then((rows) => rows.map((row) => row.id));
+  for (const entry of metadataEntries) {
+    await db
+      .insert(schema.jobMetadata)
+      .values(entry)
+      .onConflictDoUpdate({
+        target: [schema.jobMetadata.key, schema.jobMetadata.jobId],
+        set: { value: entry.value },
+      });
+  }
 
-export const handleWorkflowRunEvent = async (event: WorkflowRunEvent) => {
-  const oapiEvent = generateOapiEvent(event);
-  if (oapiEvent == null) return;
-  const workspaceIds = await getAllWorkspaceIds();
+  const releaseTarget = await db
+    .select({
+      deploymentId: schema.release.deploymentId,
+      environmentId: schema.release.environmentId,
+      resourceId: schema.release.resourceId,
+      workspaceId: schema.deployment.workspaceId,
+    })
+    .from(schema.releaseJob)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJob.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.release.deploymentId, schema.deployment.id),
+    )
+    .where(eq(schema.releaseJob.jobId, jobId))
+    .then(takeFirstOrNull);
 
-  for (const workspaceId of workspaceIds)
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.JobUpdated,
-      data: oapiEvent,
-      timestamp: Date.now(),
+  if (releaseTarget?.workspaceId != null)
+    await enqueueDesiredRelease(db, {
+      workspaceId: releaseTarget.workspaceId,
+      deploymentId: releaseTarget.deploymentId,
+      environmentId: releaseTarget.environmentId,
+      resourceId: releaseTarget.resourceId,
     });
 };

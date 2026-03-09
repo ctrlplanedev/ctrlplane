@@ -17,7 +17,7 @@ const useEnvironmentReleaseTargets = () => {
     { refetchInterval: 30_000 },
   );
 
-  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const releaseTargets = releaseTargetsQuery.data ?? [];
   return { releaseTargets, isLoading: releaseTargetsQuery.isLoading };
 };
 

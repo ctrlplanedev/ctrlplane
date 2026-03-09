@@ -419,14 +419,13 @@ export default function ReleaseTargetEvaluationsPage() {
   );
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,
   });
 
   const releaseTarget = useMemo(() => {
-    return releaseTargetsQuery.data?.items.find(
+    return releaseTargetsQuery.data?.find(
       (rt) =>
         rt.releaseTarget.resourceId === parsed?.resourceId &&
         rt.releaseTarget.environmentId === parsed.environmentId,
@@ -556,11 +555,17 @@ export default function ReleaseTargetEvaluationsPage() {
           </div>
         )}
 
-        {rows.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            No policy evaluations found for this release target.
-          </div>
-        )}
+        {rows.length === 0 &&
+          !evaluationsQuery.isLoading &&
+          (releaseTarget == null && !releaseTargetsQuery.isLoading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              This release target does not exist.
+            </div>
+          ) : (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No policy evaluations found for this release target.
+            </div>
+          ))}
 
         {rows.length > 0 && (
           <div className="space-y-6">

@@ -71,15 +71,14 @@ export default function DeploymentDetail() {
   );
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,
   });
 
   const releaseTargets = useMemo(
-    () => releaseTargetsQuery.data?.items ?? [],
-    [releaseTargetsQuery.data?.items],
+    () => releaseTargetsQuery.data ?? [],
+    [releaseTargetsQuery.data],
   );
 
   // Fetch all environments from the system
