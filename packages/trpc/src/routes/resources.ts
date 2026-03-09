@@ -266,7 +266,7 @@ export const resourcesRouter = router({
           entityId: string;
           entityType: string;
           entity: Record<string, unknown>;
-          rule: { id: string; name: string };
+          rule: { id: string; name: string; reference: string };
         }>
       > = {};
 
@@ -278,7 +278,11 @@ export const resourcesRouter = router({
           entityId: row.relatedEntityId,
           entityType: row.relatedEntityType,
           entity: entityMap.get(row.relatedEntityId) ?? {},
-          rule: { id: row.ruleId, name: row.ruleName },
+          rule: {
+            id: row.ruleId,
+            name: row.ruleName,
+            reference: row.ruleReference,
+          },
         });
       }
 

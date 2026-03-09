@@ -218,6 +218,51 @@ export const deploymentsRouter = router({
           desc(schema.job.createdAt),
         );
 
+      const currentVersions = await ctx.db
+        .selectDistinctOn(
+          [
+            schema.release.resourceId,
+            schema.release.environmentId,
+            schema.release.deploymentId,
+          ],
+          {
+            resourceId: schema.release.resourceId,
+            environmentId: schema.release.environmentId,
+            deploymentId: schema.release.deploymentId,
+            version: schema.deploymentVersion,
+          },
+        )
+        .from(schema.release)
+        .innerJoin(
+          schema.releaseJob,
+          eq(schema.release.id, schema.releaseJob.releaseId),
+        )
+        .innerJoin(
+          schema.job,
+          and(
+            eq(schema.releaseJob.jobId, schema.job.id),
+            eq(schema.job.status, "successful"),
+          ),
+        )
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.release.versionId, schema.deploymentVersion.id),
+        )
+        .where(eq(schema.release.deploymentId, input.deploymentId))
+        .orderBy(
+          schema.release.resourceId,
+          schema.release.environmentId,
+          schema.release.deploymentId,
+          desc(schema.job.completedAt),
+        );
+
+      const currentVersionMap = new Map(
+        currentVersions.map((cv) => [
+          `${cv.resourceId}-${cv.environmentId}-${cv.deploymentId}`,
+          cv.version,
+        ]),
+      );
+
       const jobIds = releaseTargets
         .map((rt) => rt.latestJob?.id)
         .filter((id): id is string => id != null);
@@ -304,7 +349,10 @@ export const deploymentsRouter = router({
         environment: rt.environment,
         resource: rt.resource,
         desiredVersion: rt.desiredVersion,
-        currentVersion: rt.desiredVersion,
+        currentVersion:
+          currentVersionMap.get(
+            `${rt.resource.id}-${rt.environment.id}-${rt.deployment.id}`,
+          ) ?? null,
         latestJob:
           rt.latestJob != null
             ? {

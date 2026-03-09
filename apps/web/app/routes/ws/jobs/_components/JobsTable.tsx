@@ -1,4 +1,4 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type { RouterOutputs } from "@ctrlplane/trpc";
 import { ExternalLink } from "lucide-react";
 import prettyMs from "pretty-ms";
 
@@ -16,8 +16,9 @@ import { JobStatusBadge } from "../../_components/JobStatusBadge";
 import { JobActions } from "./JobActions";
 import { VariablesCell } from "./VariablesCell";
 
+type Job = NonNullable<RouterOutputs["jobs"]["list"]>["items"][number];
 type JobsTableProps = {
-  jobs: WorkspaceEngine["schemas"]["Job"][];
+  jobs: Job[];
 };
 
 function JobsTableHeader() {
@@ -38,7 +39,7 @@ function JobsTableHeader() {
   );
 }
 
-function LinksCell({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
+function LinksCell({ job }: { job: Job }) {
   const { metadata } = job;
   const links: Record<string, string> =
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -69,7 +70,7 @@ function LinksCell({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
   );
 }
 
-function JobsTableRow({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
+function JobsTableRow({ job }: { job: Job }) {
   // const { job, resource, environment, deployment, release } = jobWithRelease;
   return (
     <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
@@ -90,7 +91,7 @@ function JobsTableRow({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
       </TableCell>
       <TableCell className="font-mono  font-medium">
         <div className="max-w-72 truncate">
-          {job.dispatchContext?.version?.name ||
+          {job.dispatchContext?.version?.name ??
             job.dispatchContext?.version?.tag}
         </div>
       </TableCell>
