@@ -109,7 +109,7 @@ func (m *mockGetter) GetReleaseTargetsForDeployment(_ context.Context, _ string)
 func (m *mockGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, _, _ string) ([]oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return nil
 }
 func (m *mockGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {

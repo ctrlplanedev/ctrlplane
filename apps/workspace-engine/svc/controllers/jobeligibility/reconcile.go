@@ -3,11 +3,12 @@ package jobeligibility
 import (
 	"context"
 	"fmt"
-	"math"
-	"sort"
 	"time"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/codes"
@@ -26,7 +27,6 @@ type reconciler struct {
 	rt     *ReleaseTarget
 
 	release  *oapi.Release
-	jobs     []*oapi.Job
 	policies []*oapi.Policy
 }
 
@@ -35,19 +35,10 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get desired release: %w", err)
 	}
+	r.release = release
 	if release == nil {
 		return nil
 	}
-	r.release = release
-
-	jobs, err := r.getter.GetJobsForReleaseTarget(ctx, r.rt)
-	if err != nil {
-		return fmt.Errorf("get jobs for release target: %w", err)
-	}
-	sort.Slice(jobs, func(i, j int) bool {
-		return jobs[i].CreatedAt.After(jobs[j].CreatedAt)
-	})
-	r.jobs = jobs
 
 	policies, err := r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
 	if err != nil {
@@ -58,101 +49,88 @@ func (r *reconciler) loadInput(ctx context.Context) error {
 	return nil
 }
 
-// checkEligibility evaluates whether a job should be created for the desired release.
-// Returns (allowed, nextTime, reason).
-func (r *reconciler) checkEligibility(ctx context.Context) (bool, *time.Time, string) {
-	if r.release == nil {
-		return false, nil, "no desired release"
+// buildEvaluators constructs the set of job evaluators to run against the release.
+// Static: concurrency check (always applied).
+// Dynamic: retry evaluators built from policy retry rules.
+func (r *reconciler) buildEvaluators() []evaluator.JobEvaluator {
+	evals := []evaluator.JobEvaluator{
+		releasetargetconcurrency.NewEvaluator(r.getter),
 	}
 
-	// Phase 1: Concurrency check — deny if any job is still in a processing state
-	for _, job := range r.jobs {
-		if isProcessingStatus(job.Status) {
-			return false, nil, fmt.Sprintf("release target has active job %s (status: %s)", job.Id, job.Status)
-		}
-	}
+	retryEvals := r.buildRetryEvaluators()
+	evals = append(evals, retryEvals...)
 
-	// Phase 2: Retry check — extract retry rules from policies, evaluate limits and backoff
-	retryRule := r.extractRetryRule()
-	allowed, nextTime, reason := r.evaluateRetry(retryRule)
-	return allowed, nextTime, reason
+	return evals
 }
 
-func (r *reconciler) extractRetryRule() *oapi.RetryRule {
+func (r *reconciler) buildRetryEvaluators() []evaluator.JobEvaluator {
+	var retryEvals []evaluator.JobEvaluator
+
 	for _, policy := range r.policies {
 		if !policy.Enabled {
 			continue
 		}
 		for _, rule := range policy.Rules {
-			if rule.Retry != nil {
-				return rule.Retry
+			if rule.Retry == nil {
+				continue
+			}
+			eval := retry.NewEvaluator(r.getter, rule.Retry)
+			if eval != nil {
+				retryEvals = append(retryEvals, eval)
 			}
 		}
 	}
-	return nil
+
+	if len(retryEvals) == 0 {
+		eval := retry.NewEvaluator(r.getter, nil)
+		if eval != nil {
+			retryEvals = append(retryEvals, eval)
+		}
+	}
+
+	return retryEvals
 }
 
-// evaluateRetry checks retry limits and backoff for the desired release.
-// When no retry rule is configured, allows one attempt only (maxRetries=0).
-func (r *reconciler) evaluateRetry(rule *oapi.RetryRule) (bool, *time.Time, string) {
-	maxRetries := int32(0)
-	var backoffSeconds *int32
-	var backoffStrategy *oapi.RetryRuleBackoffStrategy
-	var maxBackoffSeconds *int32
-	var retryOnStatuses *[]oapi.JobStatus
-
-	if rule != nil {
-		maxRetries = rule.MaxRetries
-		backoffSeconds = rule.BackoffSeconds
-		backoffStrategy = rule.BackoffStrategy
-		maxBackoffSeconds = rule.MaxBackoffSeconds
-		retryOnStatuses = rule.RetryOnStatuses
+// checkEligibility runs all evaluators and returns the eligibility decision.
+func (r *reconciler) checkEligibility(ctx context.Context) (bool, *time.Time, string) {
+	if r.release == nil {
+		return false, nil, "no desired release"
 	}
 
-	// Build retryable status set; nil means count all terminal statuses
-	retryableStatuses := buildRetryableStatusMap(retryOnStatuses, rule != nil, maxRetries)
+	evals := r.buildEvaluators()
 
-	// Count consecutive attempts for this exact release, newest first
-	attemptCount := 0
-	var mostRecentJob *oapi.Job
-	var mostRecentTime time.Time
+	var earliestNextTime *time.Time
+	hasPending := false
+	hasBlocked := false
+	reason := "eligible"
 
-	for _, job := range r.jobs {
-		if job.ReleaseId != r.release.Id.String() {
+	for _, eval := range evals {
+		result := eval.Evaluate(ctx, r.release)
+
+		if result.ActionRequired {
+			hasPending = true
+			reason = result.Message
+			if result.NextEvaluationTime != nil {
+				if earliestNextTime == nil || result.NextEvaluationTime.Before(*earliestNextTime) {
+					earliestNextTime = result.NextEvaluationTime
+				}
+			}
+		}
+
+		if !result.Allowed && !result.ActionRequired {
+			hasBlocked = true
+			reason = result.Message
 			break
 		}
-		isRetryable := retryableStatuses == nil || retryableStatuses[job.Status]
-		if !isRetryable {
-			break
-		}
-		attemptCount++
-		jobTime := job.CreatedAt
-		if job.CompletedAt != nil {
-			jobTime = *job.CompletedAt
-		}
-		if mostRecentJob == nil || jobTime.After(mostRecentTime) {
-			mostRecentJob = job
-			mostRecentTime = jobTime
-		}
 	}
 
-	if attemptCount > int(maxRetries) {
-		return false, nil, fmt.Sprintf("retry limit exceeded (%d/%d attempts)", attemptCount, maxRetries)
+	if hasPending {
+		return false, earliestNextTime, reason
 	}
-
-	// Backoff check
-	if attemptCount > 0 && backoffSeconds != nil && *backoffSeconds > 0 && mostRecentJob != nil {
-		backoffDuration := calculateBackoff(attemptCount, *backoffSeconds, backoffStrategy, maxBackoffSeconds)
-		nextAllowed := mostRecentTime.Add(backoffDuration)
-		if time.Now().Before(nextAllowed) {
-			return false, &nextAllowed, fmt.Sprintf("waiting for retry backoff (%ds remaining)", int(time.Until(nextAllowed).Seconds()))
-		}
+	if hasBlocked {
+		return false, nil, reason
 	}
-
-	if attemptCount == 0 {
-		return true, nil, "first attempt"
-	}
-	return true, nil, fmt.Sprintf("retry allowed (%d/%d attempts)", attemptCount, maxRetries)
+	return true, nil, reason
 }
 
 func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
@@ -266,10 +244,9 @@ func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Se
 	allowed, nextTime, reason := r.checkEligibility(ctx)
 	if !allowed {
 		if nextTime != nil {
-			// Pending — schedule re-evaluation
+			span.AddEvent("job creation pending: " + reason)
 			return &ReconcileResult{NextReconcileAt: nextTime}, nil
 		}
-		// Denied — nothing to do
 		span.AddEvent("job creation denied: " + reason)
 		return &ReconcileResult{}, nil
 	}
@@ -286,58 +263,4 @@ func recordErr(span trace.Span, msg string, err error) error {
 	span.RecordError(err)
 	span.SetStatus(codes.Error, msg+" failed")
 	return fmt.Errorf("%s: %w", msg, err)
-}
-
-func isProcessingStatus(status oapi.JobStatus) bool {
-	return status == oapi.JobStatusPending ||
-		status == oapi.JobStatusInProgress ||
-		status == oapi.JobStatusActionRequired
-}
-
-func buildRetryableStatusMap(retryOnStatuses *[]oapi.JobStatus, hasPolicyRule bool, maxRetries int32) map[oapi.JobStatus]bool {
-	if !hasPolicyRule {
-		// No policy: count ALL statuses (strict mode, one attempt only)
-		return nil
-	}
-
-	if retryOnStatuses != nil && len(*retryOnStatuses) > 0 {
-		m := make(map[oapi.JobStatus]bool, len(*retryOnStatuses))
-		for _, s := range *retryOnStatuses {
-			m[s] = true
-		}
-		return m
-	}
-
-	// Smart defaults when policy exists but retryOnStatuses is not specified
-	defaults := map[oapi.JobStatus]bool{
-		oapi.JobStatusFailure:            true,
-		oapi.JobStatusInvalidIntegration: true,
-		oapi.JobStatusInvalidJobAgent:    true,
-	}
-	if maxRetries == 0 {
-		defaults[oapi.JobStatusSuccessful] = true
-	}
-	return defaults
-}
-
-func calculateBackoff(attemptCount int, baseBackoffSeconds int32, strategy *oapi.RetryRuleBackoffStrategy, maxBackoffSeconds *int32) time.Duration {
-	s := oapi.RetryRuleBackoffStrategyLinear
-	if strategy != nil {
-		s = *strategy
-	}
-
-	var seconds int32
-	switch s {
-	case oapi.RetryRuleBackoffStrategyExponential:
-		exponent := max(attemptCount-1, 0)
-		multiplier := math.Pow(2, float64(exponent))
-		seconds = int32(float64(baseBackoffSeconds) * multiplier)
-		if maxBackoffSeconds != nil && seconds > *maxBackoffSeconds {
-			seconds = *maxBackoffSeconds
-		}
-	default:
-		seconds = baseBackoffSeconds
-	}
-
-	return time.Duration(seconds) * time.Second
 }
