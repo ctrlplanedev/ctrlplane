@@ -224,3 +224,11 @@ SELECT
 FROM job j
 JOIN release_job rj ON rj.job_id = j.id
 WHERE rj.release_id = $1;
+
+-- name: GetWorkspaceIDByJobID :one
+SELECT d.workspace_id
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+JOIN deployment d ON d.id = r.deployment_id
+WHERE j.id = $1;

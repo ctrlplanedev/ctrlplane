@@ -166,6 +166,22 @@ func (q *Queries) GetLatestCompletedJobForReleaseTarget(ctx context.Context, arg
 	return i, err
 }
 
+const getWorkspaceIDByJobID = `-- name: GetWorkspaceIDByJobID :one
+SELECT d.workspace_id
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+JOIN deployment d ON d.id = r.deployment_id
+WHERE j.id = $1
+`
+
+func (q *Queries) GetWorkspaceIDByJobID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getWorkspaceIDByJobID, id)
+	var workspace_id uuid.UUID
+	err := row.Scan(&workspace_id)
+	return workspace_id, err
+}
+
 const getWorkspaceIDByReleaseID = `-- name: GetWorkspaceIDByReleaseID :one
 SELECT d.workspace_id
 FROM release r
