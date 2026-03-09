@@ -1,11 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { asc, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -47,14 +44,16 @@ export const systemsRouter = router({
         description: z.string().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const system = { ...input, id: uuidv4(), workspaceId: input.workspaceId };
-      await sendGoEvent({
-        workspaceId: input.workspaceId,
-        eventType: Event.SystemCreated,
-        timestamp: Date.now(),
-        data: system,
-      });
+    .mutation(async ({ input, ctx }) => {
+      const [system] = await ctx.db
+        .insert(schema.system)
+        .values({
+          workspaceId: input.workspaceId,
+          name: input.name,
+          description: input.description ?? "",
+        })
+        .returning();
+
       return system;
     }),
 
@@ -65,33 +64,15 @@ export const systemsRouter = router({
         systemId: z.uuid(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { workspaceId, systemId } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { systemId } = input;
 
-      const response = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/systems/{systemId}",
-        {
-          params: {
-            path: {
-              workspaceId,
-              systemId,
-            },
-          },
-        },
-      );
+      const [system] = await ctx.db
+        .delete(schema.system)
+        .where(eq(schema.system.id, systemId))
+        .returning();
 
-      if (!response.data) {
-        throw new Error("System not found");
-      }
-
-      const system = response.data;
-
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.SystemDeleted,
-        timestamp: Date.now(),
-        data: { id: systemId, name: "", workspaceId, ...system },
-      });
+      if (system == null) throw new Error("System not found");
 
       return system;
     }),
