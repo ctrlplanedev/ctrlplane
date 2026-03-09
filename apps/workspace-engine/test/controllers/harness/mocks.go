@@ -277,7 +277,7 @@ func (g *DesiredReleaseGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ co
 	}
 	return results, nil
 }
-func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (g *DesiredReleaseGetter) GetJobsForReleaseTarget(_ context.Context, rt *oapi.ReleaseTarget) map[string]*oapi.Job {
 	if g.JobsByReleaseTarget != nil {
 		key := rt.DeploymentId + ":" + rt.EnvironmentId + ":" + rt.ResourceId
 		return g.JobsByReleaseTarget[key]

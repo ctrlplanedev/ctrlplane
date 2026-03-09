@@ -132,7 +132,7 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 	// Fetch all jobs for this release target once and derive both in-progress
 	// and current release from the same data set, avoiding duplicate
 	// GetJobsForReleaseTarget calls.
-	allJobs := e.getters.GetJobsForReleaseTarget(releaseTarget)
+	allJobs := e.getters.GetJobsForReleaseTarget(ctx, releaseTarget)
 
 	// Check for in-progress deployments first — these take precedence.
 	var latestInProgressJob *oapi.Job

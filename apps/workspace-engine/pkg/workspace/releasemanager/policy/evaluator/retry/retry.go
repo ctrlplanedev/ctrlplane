@@ -76,8 +76,8 @@ func NewEvaluator(getters Getters, rule *oapi.RetryRule) evaluator.JobEvaluator 
 	}
 }
 
-func (e *RetryEvaluator) getJobsForReleaseTargetSortedLatestFirst(releaseTarget *oapi.ReleaseTarget) []*oapi.Job {
-	jobsMap := e.getters.GetJobsForReleaseTarget(releaseTarget)
+func (e *RetryEvaluator) getJobsForReleaseTargetSortedLatestFirst(ctx context.Context, releaseTarget *oapi.ReleaseTarget) []*oapi.Job {
+	jobsMap := e.getters.GetJobsForReleaseTarget(ctx, releaseTarget)
 	jobs := make([]*oapi.Job, 0, len(jobsMap))
 	for _, job := range jobsMap {
 		jobs = append(jobs, job)
@@ -103,7 +103,7 @@ func (e *RetryEvaluator) Evaluate(
 	releaseTarget := release.ReleaseTarget
 
 	// Get all jobs for this release target
-	jobs := e.getJobsForReleaseTargetSortedLatestFirst(&releaseTarget)
+	jobs := e.getJobsForReleaseTargetSortedLatestFirst(ctx, &releaseTarget)
 
 	// Build a map of retryable statuses for efficient lookup
 	retryableStatuses := e.buildRetryableStatusMap()

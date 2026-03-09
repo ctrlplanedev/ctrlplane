@@ -98,7 +98,7 @@ func (m *mockReconcileGetter) GetReleaseTargetsForDeployment(_ context.Context, 
 func (m *mockReconcileGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, _, _ string) ([]oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetJobsForReleaseTarget(_ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockReconcileGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
 	return nil
 }
 func (m *mockReconcileGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {
