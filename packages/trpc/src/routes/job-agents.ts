@@ -41,14 +41,11 @@ const jobAgentConfig = z.discriminatedUnion("type", [
 export const jobAgentsRouter = router({
   list: protectedProcedure
     .input(z.object({ workspaceId: z.uuid() }))
-    .query(async ({ input }) => {
-      const jobAgents = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/job-agents",
-        {
-          params: { path: { workspaceId: input.workspaceId } },
-        },
-      );
-      return jobAgents.data;
+    .query(async ({ input, ctx }) => {
+      const jobAgents = await ctx.db.query.jobAgent.findMany({
+        where: eq(schema.jobAgent.workspaceId, input.workspaceId),
+      });
+      return jobAgents;
     }),
 
   get: protectedProcedure
@@ -87,20 +84,15 @@ export const jobAgentsRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
-    .mutation(async ({ input: { workspaceId, jobAgentId } }) => {
-      const jobAgentResponse = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
-        { params: { path: { workspaceId, jobAgentId } } },
-      );
-      if (jobAgentResponse.error != null)
-        throw new Error(jobAgentResponse.error.error);
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.JobAgentDeleted,
-        timestamp: Date.now(),
-        data: jobAgentResponse.data,
-      });
-      return jobAgentResponse.data;
+    .mutation(async ({ input: { jobAgentId }, ctx }) => {
+      const [jobAgent] = await ctx.db
+        .delete(schema.jobAgent)
+        .where(eq(schema.jobAgent.id, jobAgentId))
+        .returning();
+
+      if (jobAgent == null) throw new Error("Job agent not found");
+
+      return jobAgent;
     }),
 
   deployments: protectedProcedure

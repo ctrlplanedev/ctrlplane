@@ -1,10 +1,12 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
+import { parse } from "cel-js";
 import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { and, asc, desc, eq, inArray } from "@ctrlplane/db";
+import { enqueueDeploymentSelectorEval } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -402,22 +404,29 @@ export const deploymentsRouter = router({
         metadata: z.record(z.string(), z.string()).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { workspaceId: _, ...deploymentData } = input;
-      const deployment = { id: uuidv4(), ...deploymentData };
+    .mutation(async ({ input, ctx }) => {
+      const { workspaceId, systemIds, name, description, metadata } = input;
 
-      await sendGoEvent({
-        workspaceId: input.workspaceId,
-        eventType: Event.DeploymentCreated,
-        timestamp: Date.now(),
-        data: {
-          ...deployment,
+      const [dep] = await ctx.db
+        .insert(schema.deployment)
+        .values({
+          workspaceId,
+          name,
+          description: description ?? "",
+          metadata: metadata ?? {},
           jobAgentConfig: {},
-          metadata: input.metadata ?? {},
-        },
-      });
+          jobAgents: [],
+        })
+        .returning();
 
-      return deployment;
+      await ctx.db.insert(schema.systemDeployment).values(
+        systemIds.map((systemId) => ({
+          systemId,
+          deploymentId: dep!.id,
+        })),
+      );
+
+      return dep;
     }),
 
   update: protectedProcedure
@@ -430,50 +439,34 @@ export const deploymentsRouter = router({
         }),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, deploymentId, data } = input;
-      const validate = await getClientFor(workspaceId).POST(
-        "/v1/validate/resource-selector",
-        {
-          body: { resourceSelector: { cel: data.resourceSelectorCel } },
-        },
-      );
+      const cel = parse(data.resourceSelectorCel);
 
-      if (!validate.data?.valid)
+      if (!cel.isSuccess)
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
-              ? validate.data.errors.join(", ")
-              : "Invalid resource selector",
+          message: cel.errors.join(", "),
         });
 
-      const deployment = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        { params: { path: { workspaceId, deploymentId } } },
-      );
+      const [deployment] = await ctx.db
+        .update(schema.deployment)
+        .set({ resourceSelector: data.resourceSelectorCel })
+        .where(eq(schema.deployment.id, deploymentId))
+        .returning();
 
-      if (!deployment.data)
+      if (deployment == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Deployment not found",
         });
 
-      const resourceSelector = { cel: data.resourceSelectorCel };
-      const updateData: WorkspaceEngine["schemas"]["Deployment"] = {
-        ...deployment.data.deployment,
-        resourceSelector,
-      };
-
-      await sendGoEvent({
+      await enqueueDeploymentSelectorEval(ctx.db, {
         workspaceId,
-        eventType: Event.DeploymentUpdated,
-        timestamp: Date.now(),
-        data: updateData,
+        deploymentId,
       });
 
-      return deployment.data;
+      return deployment;
     }),
 
   updateJobAgent: protectedProcedure

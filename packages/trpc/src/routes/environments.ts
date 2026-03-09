@@ -1,12 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { v4 as uuidv4 } from "uuid";
+import { parse } from "cel-js";
 import { z } from "zod";
 
 import { and, asc, desc, eq, inArray } from "@ctrlplane/db";
+import { enqueueEnvironmentSelectorEval } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -285,57 +284,34 @@ export const environmentRouter = router({
         }),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, environmentId, data } = input;
-      const validate = await getClientFor(workspaceId).POST(
-        "/v1/validate/resource-selector",
-        {
-          body: {
-            resourceSelector: {
-              cel: data.resourceSelectorCel,
-            },
-          },
-        },
-      );
-
-      if (!validate.data?.valid) {
+      const cel = parse(data.resourceSelectorCel);
+      if (!cel.isSuccess) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
-              ? validate.data.errors.join(", ")
-              : "Invalid resource selector",
+          message: cel.errors.join(", "),
         });
       }
 
-      const env = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+      const [env] = await ctx.db
+        .update(schema.environment)
+        .set({ resourceSelector: data.resourceSelectorCel })
+        .where(eq(schema.environment.id, environmentId))
+        .returning();
 
-      if (!env.data) {
+      if (env == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Environment not found",
         });
-      }
 
-      const updateData = {
-        ...env.data,
-        resourceSelector: {
-          cel: data.resourceSelectorCel,
-        },
-      };
-
-      await sendGoEvent({
+      await enqueueEnvironmentSelectorEval(ctx.db, {
         workspaceId,
-        eventType: Event.EnvironmentUpdated,
-        timestamp: Date.now(),
-        data: updateData,
+        environmentId,
       });
 
-      return env.data;
+      return env;
     }),
 
   create: protectedProcedure
@@ -349,50 +325,48 @@ export const environmentRouter = router({
         resourceSelectorCel: z.string().min(1).max(255),
       }),
     )
-    .mutation(async ({ input }) => {
-      const validate = await getClientFor(input.workspaceId).POST(
-        "/v1/validate/resource-selector",
-        {
-          body: {
-            resourceSelector: {
-              cel: input.resourceSelectorCel,
-            },
-          },
-        },
-      );
-
-      if (!validate.data?.valid) {
+    .mutation(async ({ input, ctx }) => {
+      const cel = parse(input.resourceSelectorCel);
+      if (!cel.isSuccess) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
-              ? validate.data.errors.join(", ")
-              : "Invalid resource selector",
+          message: cel.errors.join(", "),
         });
       }
 
-      const { workspaceId, ...environmentData } = input;
-      const environment = {
-        id: uuidv4(),
+      const {
         workspaceId,
-        ...environmentData,
-        description: environmentData.description ?? "",
-        createdAt: new Date().toISOString(),
-        resourceSelector: {
-          cel: environmentData.resourceSelectorCel,
-        },
-        metadata: input.metadata ?? {},
-      };
+        systemIds,
+        name,
+        description,
+        resourceSelectorCel,
+        metadata,
+      } = input;
 
-      await sendGoEvent({
+      const [env] = await ctx.db
+        .insert(schema.environment)
+        .values({
+          workspaceId,
+          name,
+          description: description ?? "",
+          resourceSelector: resourceSelectorCel,
+          metadata: metadata ?? {},
+        })
+        .returning();
+
+      await ctx.db.insert(schema.systemEnvironment).values(
+        systemIds.map((systemId) => ({
+          systemId,
+          environmentId: env!.id,
+        })),
+      );
+
+      await enqueueEnvironmentSelectorEval(ctx.db, {
         workspaceId,
-        eventType: Event.EnvironmentCreated,
-        timestamp: Date.now(),
-        data: environment,
+        environmentId: env!.id,
       });
 
-      return environment;
+      return env;
     }),
 
   delete: protectedProcedure
@@ -402,27 +376,19 @@ export const environmentRouter = router({
         environmentId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { workspaceId, environmentId } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { environmentId } = input;
 
-      const env = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+      const [env] = await ctx.db
+        .delete(schema.environment)
+        .where(eq(schema.environment.id, environmentId))
+        .returning();
 
-      if (!env.data) {
+      if (env == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Environment not found",
         });
-      }
-
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.EnvironmentDeleted,
-        timestamp: Date.now(),
-        data: env.data,
-      });
 
       return { success: true };
     }),

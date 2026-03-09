@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type { Control, UseFormReturn } from "react-hook-form";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,13 +42,13 @@ const systemSchema = z.object({
 
 type CreateSystemDialogProps = {
   children?: React.ReactNode;
-  onSuccess?: (system: WorkspaceEngine["schemas"]["System"]) => void;
+  onSuccess?: (system: { id: string; name: string; workspaceId: string; description?: string | null; metadata?: Record<string, string> }) => void;
 };
 
 const useFormSubmit = (
   form: UseFormReturn<z.infer<typeof systemSchema>>,
   closeDialog: () => void,
-  onSuccess?: (system: WorkspaceEngine["schemas"]["System"]) => void,
+  onSuccess?: CreateSystemDialogProps["onSuccess"],
 ) => {
   const { workspace } = useWorkspace();
   const createSystemMutation = trpc.system.create.useMutation();
@@ -57,7 +56,7 @@ const useFormSubmit = (
   return form.handleSubmit((data) =>
     createSystemMutation
       .mutateAsync({ workspaceId: workspace.id, ...data })
-      .then((system) => onSuccess?.(system))
+      .then((system) => { if (system != null) onSuccess?.(system); })
       .then(() => closeDialog())
       .then(() => form.reset())
       .then(() => toast.success("System created successfully"))

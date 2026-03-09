@@ -92,10 +92,11 @@ export function CreateEnvironmentDialog({
       // Invalidate environments list to refetch
       void utils.environment.list.invalidate();
 
-      onSuccess?.({
-        id: environment.id,
-        name: environment.name,
-      });
+      if (environment != null)
+        onSuccess?.({
+          id: environment.id,
+          name: environment.name,
+        });
     },
     onError: (error) => {
       const message =

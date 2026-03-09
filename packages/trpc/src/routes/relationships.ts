@@ -157,25 +157,12 @@ export const relationshipsRouter = router({
         relationshipRuleId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { workspaceId, relationshipRuleId } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { relationshipRuleId } = input;
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.RelationshipRuleDeleted,
-        timestamp: Date.now(),
-        data: {
-          id: relationshipRuleId,
-          workspaceId,
-          fromType: "deployment",
-          matcher: { cel: "" },
-          metadata: {},
-          name: "",
-          reference: "",
-          relationshipType: "",
-          toType: "deployment",
-        },
-      });
+      await ctx.db
+        .delete(schema.relationshipRule)
+        .where(eq(schema.relationshipRule.id, relationshipRuleId));
 
       return { id: relationshipRuleId };
     }),

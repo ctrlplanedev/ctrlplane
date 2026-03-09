@@ -16,7 +16,7 @@ export const useAllJobAgents = () => {
   const jobAgentsQuery = trpc.jobAgents.list.useQuery({
     workspaceId: workspace.id,
   });
-  return jobAgentsQuery.data?.items ?? [];
+  return jobAgentsQuery.data ?? [];
 };
 
 export const useSelectedJobAgent = <
