@@ -38,24 +38,21 @@ type reconciler struct {
 	vars     map[string]oapi.LiteralValue
 }
 
-func (r *reconciler) loadInput(ctx context.Context) error {
-	scope, err := r.getter.GetReleaseTargetScope(ctx, r.rt)
+func (r *reconciler) loadInput(ctx context.Context) (err error) {
+	r.scope, err = r.getter.GetReleaseTargetScope(ctx, r.rt)
 	if err != nil {
 		return fmt.Errorf("get release target scope: %w", err)
 	}
-	r.scope = scope
 
-	versions, err := r.getter.GetCandidateVersions(ctx, r.rt.DeploymentID)
+	r.versions, err = r.getter.GetCandidateVersions(ctx, r.rt.DeploymentID)
 	if err != nil {
 		return fmt.Errorf("get candidate versions: %w", err)
 	}
-	r.versions = versions
 
-	policies, err := r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
+	r.policies, err = r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
 	if err != nil {
 		return fmt.Errorf("get policies: %w", err)
 	}
-	r.policies = policies
 
 	return nil
 }
