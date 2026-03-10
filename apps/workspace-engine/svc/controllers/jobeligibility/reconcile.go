@@ -150,16 +150,33 @@ func (r *reconciler) createFailureJob(
 	message string,
 ) error {
 	now := time.Now()
+
+	factory := jobs.NewFactoryFromGetters(r.getter)
+	deploymentID, err := uuid.Parse(r.release.ReleaseTarget.DeploymentId)
+	if err != nil {
+		return fmt.Errorf("parse deployment id: %w", err)
+	}
+	deployment, err := r.getter.GetDeployment(ctx, deploymentID)
+	if err != nil {
+		return fmt.Errorf("get deployment: %w", err)
+	}
+
+	dc, err := factory.BuildDispatchContext(ctx, r.release, deployment, nil)
+	if err != nil {
+		return fmt.Errorf("build dispatch context: %w", err)
+	}
+
 	job := &oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      r.release.Id.String(),
-		JobAgentConfig: oapi.JobAgentConfig{},
-		Status:         status,
-		Message:        &message,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		CompletedAt:    &now,
-		Metadata:       make(map[string]string),
+		Id:              uuid.New().String(),
+		ReleaseId:       r.release.Id.String(),
+		JobAgentConfig:  oapi.JobAgentConfig{},
+		Status:          status,
+		Message:         &message,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+		CompletedAt:     &now,
+		Metadata:        make(map[string]string),
+		DispatchContext: dc,
 	}
 	if err := r.setter.CreateJob(ctx, job, r.release); err != nil {
 		return fmt.Errorf("create failure job: %w", err)

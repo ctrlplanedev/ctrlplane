@@ -114,7 +114,10 @@ func (f *Factory) InvalidDeploymentAgentsJob(
 	}
 }
 
-func (f *Factory) buildDispatchContext(
+// BuildDispatchContext builds a dispatch context for a release, fetching
+// environment and resource via the factory's getters. The jobAgent is optional
+// and may be nil for failure jobs where no agent is available.
+func (f *Factory) BuildDispatchContext(
 	ctx context.Context,
 	release *oapi.Release,
 	deployment *oapi.Deployment,
@@ -138,16 +141,20 @@ func (f *Factory) buildDispatchContext(
 		return nil, fmt.Errorf("failed to get resource: %w", err)
 	}
 
-	return &oapi.DispatchContext{
-		Release:        release,
-		Deployment:     deployment,
-		Environment:    environment,
-		Resource:       resource,
-		JobAgent:       *jobAgent,
-		JobAgentConfig: jobAgent.Config,
-		Version:        &release.Version,
-		Variables:      &release.Variables,
-	}, nil
+	dc := &oapi.DispatchContext{
+		Release:     release,
+		Deployment:  deployment,
+		Environment: environment,
+		Resource:    resource,
+		Version:     &release.Version,
+		Variables:   &release.Variables,
+	}
+	if jobAgent != nil {
+		dc.JobAgent = *jobAgent
+		dc.JobAgentConfig = jobAgent.Config
+	}
+
+	return dc, nil
 }
 
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
@@ -180,7 +187,7 @@ func (f *Factory) CreateJobForRelease(
 	}
 	jobId := uuid.New().String()
 
-	dispatchContext, err := f.buildDispatchContext(ctx, release, deployment, jobAgent)
+	dispatchContext, err := f.BuildDispatchContext(ctx, release, deployment, jobAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
 	}
