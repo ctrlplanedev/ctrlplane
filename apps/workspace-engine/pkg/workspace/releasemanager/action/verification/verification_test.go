@@ -5,16 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func newTestStore() *store.Store {
@@ -133,7 +132,10 @@ func TestVerificationAction_Execute_NoMetrics(t *testing.T) {
 	assert.Empty(t, verifications)
 }
 
-func createPolicyWithVerification(metrics []oapi.VerificationMetricSpec, triggerOn *oapi.VerificationRuleTriggerOn) *oapi.Policy {
+func createPolicyWithVerification(
+	metrics []oapi.VerificationMetricSpec,
+	triggerOn *oapi.VerificationRuleTriggerOn,
+) *oapi.Policy {
 	return &oapi.Policy{
 		Id:        uuid.New().String(),
 		Name:      "test-policy",
@@ -211,7 +213,12 @@ func TestVerificationAction_Execute_CreatesVerification(t *testing.T) {
 	assert.Equal(t, "health-check", v.Metrics[0].Name)
 
 	// Verification should be in running status (scheduler started)
-	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be in running status")
+	assert.Equal(
+		t,
+		oapi.JobVerificationStatusRunning,
+		v.Status(),
+		"verification should be in running status",
+	)
 
 	// Verification should be linked to the job
 	assert.Equal(t, job.Id, v.JobId)
@@ -519,7 +526,7 @@ func TestVerificationAction_Execute_TriggerJobFailure(t *testing.T) {
 	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
 
-// Helper function for creating policies with custom rules
+// Helper function for creating policies with custom rules.
 func createPolicyWithRules(rules []oapi.PolicyRule) *oapi.Policy {
 	return &oapi.Policy{
 		Id:        uuid.New().String(),
@@ -861,7 +868,12 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1, "verification should exist")
 	v := verifications[0]
-	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be in running status")
+	assert.Equal(
+		t,
+		oapi.JobVerificationStatusRunning,
+		v.Status(),
+		"verification should be in running status",
+	)
 
 	// Verify metric specifications are correctly transferred
 	require.Len(t, v.Metrics, 1, "should have one metric")
@@ -970,6 +982,11 @@ func TestVerificationAction_Execute_MultipleMetricsAllRunning(t *testing.T) {
 
 	// Each metric should have empty measurements (just started)
 	for _, m := range v.Metrics {
-		assert.Empty(t, m.Measurements, "metric %s should have empty measurements initially", m.Name)
+		assert.Empty(
+			t,
+			m.Measurements,
+			"metric %s should have empty measurements initially",
+			m.Name,
+		)
 	}
 }

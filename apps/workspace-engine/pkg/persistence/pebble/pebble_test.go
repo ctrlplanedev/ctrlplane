@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/persistence"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/persistence"
 )
 
-// Test entity implementation
+// Test entity implementation.
 type testEntity struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -157,7 +156,12 @@ func TestPebbleStore_MultipleNamespaces(t *testing.T) {
 	assert.Len(t, loaded1, 1)
 	entity1 := loaded1[0].Entity.(*testEntity)
 	assert.Equal(t, "e1", entity1.ID, "Workspace 1 entity ID should be preserved")
-	assert.Equal(t, "Workspace 1 Entity", entity1.Name, "Workspace 1 entity name should be preserved")
+	assert.Equal(
+		t,
+		"Workspace 1 Entity",
+		entity1.Name,
+		"Workspace 1 entity name should be preserved",
+	)
 	assert.Equal(t, "workspace-1", loaded1[0].Namespace, "Namespace should match")
 
 	loaded2, err := store.Load(ctx, "workspace-2")
@@ -165,7 +169,12 @@ func TestPebbleStore_MultipleNamespaces(t *testing.T) {
 	assert.Len(t, loaded2, 1)
 	entity2 := loaded2[0].Entity.(*testEntity)
 	assert.Equal(t, "e1", entity2.ID, "Workspace 2 entity ID should be preserved")
-	assert.Equal(t, "Workspace 2 Entity", entity2.Name, "Workspace 2 entity name should be preserved")
+	assert.Equal(
+		t,
+		"Workspace 2 Entity",
+		entity2.Name,
+		"Workspace 2 entity name should be preserved",
+	)
 	assert.Equal(t, "workspace-2", loaded2[0].Namespace, "Namespace should match")
 }
 
@@ -382,7 +391,7 @@ func TestPebbleStore_ConcurrentAccess(t *testing.T) {
 	assert.Equal(t, "Entity", entity.Name, "Entity name should be preserved")
 }
 
-// otherEntity is a second test entity type
+// otherEntity is a second test entity type.
 type otherEntity struct {
 	ID    string `json:"id"`
 	Value int    `json:"value"`

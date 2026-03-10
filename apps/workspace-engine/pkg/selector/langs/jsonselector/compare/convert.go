@@ -2,6 +2,7 @@ package compare
 
 import (
 	"fmt"
+
 	"workspace-engine/pkg/selector/langs/jsonselector/date"
 	"workspace-engine/pkg/selector/langs/jsonselector/metadata"
 	cstring "workspace-engine/pkg/selector/langs/jsonselector/string"

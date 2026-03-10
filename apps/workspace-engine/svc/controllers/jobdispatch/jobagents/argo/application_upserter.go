@@ -17,7 +17,11 @@ import (
 // ApplicationUpserter that calls the ArgoCD API.
 type GoApplicationUpserter struct{}
 
-func (u *GoApplicationUpserter) UpsertApplication(ctx context.Context, serverAddr, apiKey string, app *v1alpha1.Application) error {
+func (u *GoApplicationUpserter) UpsertApplication(
+	ctx context.Context,
+	serverAddr, apiKey string,
+	app *v1alpha1.Application,
+) error {
 	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
 		ServerAddr: serverAddr,
 		AuthToken:  apiKey,
@@ -34,7 +38,11 @@ func (u *GoApplicationUpserter) UpsertApplication(ctx context.Context, serverAdd
 	return upsertWithRetry(ctx, appClient, app)
 }
 
-func upsertWithRetry(ctx context.Context, appClient argocdapplication.ApplicationServiceClient, app *v1alpha1.Application) error {
+func upsertWithRetry(
+	ctx context.Context,
+	appClient argocdapplication.ApplicationServiceClient,
+	app *v1alpha1.Application,
+) error {
 	upsert := true
 	return retry.Do(
 		func() error {

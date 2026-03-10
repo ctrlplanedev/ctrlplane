@@ -3,6 +3,7 @@ package compare
 import (
 	"errors"
 	"testing"
+
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/selector/langs/util"
 )
@@ -257,11 +258,17 @@ func TestComparisonCondition_Matches_InvalidOperator(t *testing.T) {
 	matched, err := c.Matches(entity)
 
 	if err != nil {
-		t.Errorf("ComparisonCondition.Matches() with invalid operator should not error, got error = %v", err)
+		t.Errorf(
+			"ComparisonCondition.Matches() with invalid operator should not error, got error = %v",
+			err,
+		)
 	}
 
 	if matched {
-		t.Errorf("ComparisonCondition.Matches() with invalid operator should return false, got %v", matched)
+		t.Errorf(
+			"ComparisonCondition.Matches() with invalid operator should return false, got %v",
+			matched,
+		)
 	}
 }
 
@@ -377,7 +384,11 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 					return
 				}
 				if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("ConvertFromUnknownCondition() error = %v, want %v", err.Error(), tt.errMsg)
+					t.Errorf(
+						"ConvertFromUnknownCondition() error = %v, want %v",
+						err.Error(),
+						tt.errMsg,
+					)
 				}
 				return
 			}
@@ -388,11 +399,19 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 			}
 
 			if result.Operator != ComparisonConditionOperator(tt.condition.Operator) {
-				t.Errorf("ConvertFromUnknownCondition() operator = %v, want %v", result.Operator, tt.condition.Operator)
+				t.Errorf(
+					"ConvertFromUnknownCondition() operator = %v, want %v",
+					result.Operator,
+					tt.condition.Operator,
+				)
 			}
 
 			if len(result.Conditions) != len(tt.condition.Conditions) {
-				t.Errorf("ConvertFromUnknownCondition() conditions length = %v, want %v", len(result.Conditions), len(tt.condition.Conditions))
+				t.Errorf(
+					"ConvertFromUnknownCondition() conditions length = %v, want %v",
+					len(result.Conditions),
+					len(tt.condition.Conditions),
+				)
 			}
 		})
 	}

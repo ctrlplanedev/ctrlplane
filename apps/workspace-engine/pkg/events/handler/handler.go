@@ -4,22 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/persistence"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/manager"
 )
 
 var tracer = otel.Tracer("events/handler")
 
-// EventType represents the type of event being handled
+// EventType represents the type of event being handled.
 type EventType string
 
 const (
@@ -102,7 +102,7 @@ const (
 	WorkflowRunCreate EventType = "workflow-run.created"
 )
 
-// RawEvent represents the raw event data received from Kafka messages
+// RawEvent represents the raw event data received from Kafka messages.
 type RawEvent struct {
 	EventType   EventType       `json:"eventType"`
 	WorkspaceID string          `json:"workspaceId"`
@@ -110,18 +110,18 @@ type RawEvent struct {
 	Timestamp   int64           `json:"timestamp"`
 }
 
-// Handler defines the interface for processing events
+// Handler defines the interface for processing events.
 type Handler func(ctx context.Context, workspace *workspace.Workspace, event RawEvent) error
 
-// HandlerRegistry maps event types to their corresponding handlers
+// HandlerRegistry maps event types to their corresponding handlers.
 type HandlerRegistry map[EventType]Handler
 
-// EventListener listens for events on the queue and routes them to appropriate handlers
+// EventListener listens for events on the queue and routes them to appropriate handlers.
 type EventListener struct {
 	handlers HandlerRegistry
 }
 
-// NewEventListener creates a new event listener with the provided handlers
+// NewEventListener creates a new event listener with the provided handlers.
 func NewEventListener(handlers HandlerRegistry) *EventListener {
 	el := &EventListener{handlers: handlers}
 	return el
@@ -133,8 +133,11 @@ type OffsetTracker struct {
 	MessageOffset       int64
 }
 
-// ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
-func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Message) (*workspace.Workspace, error) {
+// ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler.
+func (el *EventListener) ListenAndRoute(
+	ctx context.Context,
+	msg *messaging.Message,
+) (*workspace.Workspace, error) {
 	ctx, span := tracer.Start(ctx, "ListenAndRoute",
 		trace.WithAttributes(
 			attribute.Int("kafka.partition", int(msg.Partition)),

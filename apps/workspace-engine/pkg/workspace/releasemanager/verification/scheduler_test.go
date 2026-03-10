@@ -8,21 +8,21 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/store"
 )
 
-// Helper functions
+// Helper functions.
 func ptr[T any](v T) *T {
 	return &v
 }
 
-// TestServer wraps httptest.Server with helper methods for verification tests
+// TestServer wraps httptest.Server with helper methods for verification tests.
 type TestServer struct {
 	*httptest.Server
 	statusCode   int
@@ -54,7 +54,7 @@ func NewTestServer() *TestServer {
 	return ts
 }
 
-// SetResponse configures the server's response for subsequent requests
+// SetResponse configures the server's response for subsequent requests.
 func (ts *TestServer) SetResponse(statusCode int, body any) {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -62,15 +62,18 @@ func (ts *TestServer) SetResponse(statusCode int, body any) {
 	ts.responseBody = body
 }
 
-// RequestCount returns the number of requests received
+// RequestCount returns the number of requests received.
 func (ts *TestServer) RequestCount() int {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 	return ts.requestCount
 }
 
-// createTestHTTPProvider creates an HTTP metric provider pointing to the test server
-func createTestHTTPProvider(serverURL string, method oapi.HTTPMetricProviderMethod) oapi.MetricProvider {
+// createTestHTTPProvider creates an HTTP metric provider pointing to the test server.
+func createTestHTTPProvider(
+	serverURL string,
+	method oapi.HTTPMetricProviderMethod,
+) oapi.MetricProvider {
 	provider := oapi.MetricProvider{}
 	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:    serverURL,
@@ -80,8 +83,12 @@ func createTestHTTPProvider(serverURL string, method oapi.HTTPMetricProviderMeth
 	return provider
 }
 
-// createTestHTTPProviderWithTimeout creates an HTTP metric provider with custom timeout
-func createTestHTTPProviderWithTimeout(serverURL string, method oapi.HTTPMetricProviderMethod, timeout string) oapi.MetricProvider {
+// createTestHTTPProviderWithTimeout creates an HTTP metric provider with custom timeout.
+func createTestHTTPProviderWithTimeout(
+	serverURL string,
+	method oapi.HTTPMetricProviderMethod,
+	timeout string,
+) oapi.MetricProvider {
 	provider := oapi.MetricProvider{}
 	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:     serverURL,
@@ -197,11 +204,31 @@ func createTestJob(s *store.Store, ctx context.Context, releaseId string) *oapi.
 	return job
 }
 
-func createTestVerification(s *store.Store, ctx context.Context, jobId string, metricCount int, intervalSeconds int32) *oapi.JobVerification {
-	return createTestVerificationWithURL(s, ctx, jobId, metricCount, intervalSeconds, "http://localhost/health")
+func createTestVerification(
+	s *store.Store,
+	ctx context.Context,
+	jobId string,
+	metricCount int,
+	intervalSeconds int32,
+) *oapi.JobVerification {
+	return createTestVerificationWithURL(
+		s,
+		ctx,
+		jobId,
+		metricCount,
+		intervalSeconds,
+		"http://localhost/health",
+	)
 }
 
-func createTestVerificationWithURL(s *store.Store, ctx context.Context, jobId string, metricCount int, intervalSeconds int32, url string) *oapi.JobVerification {
+func createTestVerificationWithURL(
+	s *store.Store,
+	ctx context.Context,
+	jobId string,
+	metricCount int,
+	intervalSeconds int32,
+	url string,
+) *oapi.JobVerification {
 	metrics := make([]oapi.VerificationMetricStatus, metricCount)
 	for i := range metricCount {
 		// Create a simple HTTP provider config
@@ -304,14 +331,17 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 
 	// Mark all metrics as complete by adding measurements
 	for i := range verification.Metrics {
-		for j := 0; j < verification.Metrics[i].Count; j++ {
+		for range verification.Metrics[i].Count {
 			msg := "Success"
-			verification.Metrics[i].Measurements = append(verification.Metrics[i].Measurements, oapi.VerificationMeasurement{
-				Message:    &msg,
-				Status:     oapi.Passed,
-				MeasuredAt: time.Now(),
-				Data:       &map[string]any{"statusCode": 200},
-			})
+			verification.Metrics[i].Measurements = append(
+				verification.Metrics[i].Measurements,
+				oapi.VerificationMeasurement{
+					Message:    &msg,
+					Status:     oapi.Passed,
+					MeasuredAt: time.Now(),
+					Data:       &map[string]any{"statusCode": 200},
+				},
+			)
 		}
 	}
 	s.JobVerifications.Upsert(ctx, verification)
@@ -524,7 +554,7 @@ func TestScheduler_VerificationWithNoMetrics(t *testing.T) {
 	assert.Empty(t, cancelFuncs)
 }
 
-// Integration test: verify measurements are actually taken
+// Integration test: verify measurements are actually taken.
 func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -572,7 +602,7 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 	scheduler.StopVerification(verification.Id)
 }
 
-// Test that goroutines stop when metrics are complete
+// Test that goroutines stop when metrics are complete.
 func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -610,7 +640,7 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 	scheduler.StopVerification(verification.Id)
 }
 
-// Test that verification stops early on failure limit
+// Test that verification stops early on failure limit.
 func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -646,13 +676,18 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 	// Should have stopped after exceeding failure limit
 	measurementCount := len(updatedVerification.Metrics[0].Measurements)
 	assert.GreaterOrEqual(t, measurementCount, 3, "should have at least 3 measurements")
-	assert.LessOrEqual(t, measurementCount, 4, "should have stopped near failure limit, not taken all 10")
+	assert.LessOrEqual(
+		t,
+		measurementCount,
+		4,
+		"should have stopped near failure limit, not taken all 10",
+	)
 
 	// Clean up
 	scheduler.StopVerification(verification.Id)
 }
 
-// Test concurrent measurements across multiple metrics
+// Test concurrent measurements across multiple metrics.
 func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -698,7 +733,7 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 	scheduler.StopVerification(verification.Id)
 }
 
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkScheduler_StartVerification(b *testing.B) {
 	ctx := context.Background()
 	s := newTestStore()
@@ -706,14 +741,14 @@ func BenchmarkScheduler_StartVerification(b *testing.B) {
 
 	// Pre-create verifications
 	verificationIDs := make([]string, b.N)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		release := createTestRelease(s, ctx)
 		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		scheduler.StartVerification(ctx, verificationIDs[i])
 	}
 
@@ -730,7 +765,7 @@ func BenchmarkScheduler_StopVerification(b *testing.B) {
 
 	// Pre-create and start verifications
 	verificationIDs := make([]string, b.N)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		release := createTestRelease(s, ctx)
 		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
@@ -738,7 +773,7 @@ func BenchmarkScheduler_StopVerification(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		scheduler.StopVerification(verificationIDs[i])
 	}
 }

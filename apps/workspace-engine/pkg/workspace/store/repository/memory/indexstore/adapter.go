@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/persistence"
-
 	"github.com/hashicorp/go-memdb"
+	"workspace-engine/pkg/persistence"
 )
 
 // MemDBAdapter adapts a go-memdb table to the persistence.Repository interface.
@@ -28,7 +27,7 @@ func NewMemDBAdapter[E any](db *memdb.MemDB, tableName string) *MemDBAdapter[E] 
 	}
 }
 
-// typeAndKey performs type assertion and extracts the entity ID
+// typeAndKey performs type assertion and extracts the entity ID.
 func (a *MemDBAdapter[E]) typeAndKey(entity any) (typed E, key string, err error) {
 	typed, ok := entity.(E)
 	if !ok {

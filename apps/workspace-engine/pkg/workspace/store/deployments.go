@@ -3,13 +3,13 @@ package store
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var deploymentsTracer = otel.Tracer("workspace/store/deployments")
@@ -77,7 +77,10 @@ func (e *Deployments) Items() map[string]*oapi.Deployment {
 	return e.repo.Items()
 }
 
-func (e *Deployments) Resources(ctx context.Context, deploymentId string) ([]*oapi.Resource, error) {
+func (e *Deployments) Resources(
+	ctx context.Context,
+	deploymentId string,
+) ([]*oapi.Resource, error) {
 	deployment, ok := e.Get(deploymentId)
 	if !ok {
 		return nil, fmt.Errorf("deployment %s not found", deploymentId)
@@ -101,7 +104,10 @@ func (e *Deployments) Resources(ctx context.Context, deploymentId string) ([]*oa
 	return resourcesSlice, nil
 }
 
-func (e *Deployments) ForResource(ctx context.Context, resource *oapi.Resource) ([]*oapi.Deployment, error) {
+func (e *Deployments) ForResource(
+	ctx context.Context,
+	resource *oapi.Resource,
+) ([]*oapi.Deployment, error) {
 	deployments := make([]*oapi.Deployment, 0)
 	for _, deployment := range e.Items() {
 		matched, err := selector.Match(ctx, deployment.ResourceSelector, resource)
@@ -115,7 +121,10 @@ func (e *Deployments) ForResource(ctx context.Context, resource *oapi.Resource) 
 	return deployments, nil
 }
 
-func (e *Deployments) ForJobAgent(ctx context.Context, jobAgent *oapi.JobAgent) ([]*oapi.Deployment, error) {
+func (e *Deployments) ForJobAgent(
+	ctx context.Context,
+	jobAgent *oapi.JobAgent,
+) ([]*oapi.Deployment, error) {
 	deployments := make([]*oapi.Deployment, 0)
 	for _, deployment := range e.Items() {
 		if deployment.JobAgentId != nil && *deployment.JobAgentId == jobAgent.Id {

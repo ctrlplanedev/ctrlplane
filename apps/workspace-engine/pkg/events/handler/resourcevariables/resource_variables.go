@@ -114,13 +114,15 @@ func HandleResourceVariablesBulkUpdated(
 		return err
 	}
 
-	hasChanges, err := ws.ResourceVariables().BulkUpdate(ctx, resourceVariablesBulkUpdateEvent.ResourceId, resourceVariablesBulkUpdateEvent.Variables)
+	hasChanges, err := ws.ResourceVariables().
+		BulkUpdate(ctx, resourceVariablesBulkUpdateEvent.ResourceId, resourceVariablesBulkUpdateEvent.Variables)
 	if err != nil {
 		return err
 	}
 
 	if hasChanges {
-		releaseTargets := ws.ReleaseTargets().GetForResource(ctx, resourceVariablesBulkUpdateEvent.ResourceId)
+		releaseTargets := ws.ReleaseTargets().
+			GetForResource(ctx, resourceVariablesBulkUpdateEvent.ResourceId)
 		for _, rt := range releaseTargets {
 			ws.ReleaseManager().DirtyDesiredRelease(rt)
 		}

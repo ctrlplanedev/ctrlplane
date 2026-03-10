@@ -16,7 +16,10 @@ type Dispatcher interface {
 // AgentVerifier resolves verification specs that an agent type declares
 // via the [types.Verifiable] interface. *jobagents.Registry satisfies this.
 type AgentVerifier interface {
-	AgentVerifications(agentType string, config oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error)
+	AgentVerifications(
+		agentType string,
+		config oapi.JobAgentConfig,
+	) ([]oapi.VerificationMetricSpec, error)
 }
 
 // Restorable is optionally implemented by a Dispatcher to re-establish

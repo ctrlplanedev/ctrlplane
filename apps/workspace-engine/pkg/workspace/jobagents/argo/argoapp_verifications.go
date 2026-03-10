@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 )
@@ -18,7 +19,11 @@ type ArgoApplicationVerification struct {
 	job *oapi.Job
 }
 
-func newArgoApplicationVerification(verifications *verification.Manager, job *oapi.Job, appName, serverUrl, apiKey string) *ArgoApplicationVerification {
+func newArgoApplicationVerification(
+	verifications *verification.Manager,
+	job *oapi.Job,
+	appName, serverUrl, apiKey string,
+) *ArgoApplicationVerification {
 	return &ArgoApplicationVerification{
 		verifications: verifications,
 		job:           job,
@@ -48,7 +53,9 @@ func (v *ArgoApplicationVerification) buildAppURL() string {
 	return fmt.Sprintf("%s/api/v1/applications/%s", baseURL, v.appName)
 }
 
-func (v *ArgoApplicationVerification) buildMetricProvider(appURL string) (oapi.MetricProvider, error) {
+func (v *ArgoApplicationVerification) buildMetricProvider(
+	appURL string,
+) (oapi.MetricProvider, error) {
 	method := oapi.GET
 	timeout := "5s"
 	headers := map[string]string{
@@ -65,7 +72,9 @@ func (v *ArgoApplicationVerification) buildMetricProvider(appURL string) (oapi.M
 	return provider, err
 }
 
-func (v *ArgoApplicationVerification) buildMetricSpec(provider oapi.MetricProvider) oapi.VerificationMetricSpec {
+func (v *ArgoApplicationVerification) buildMetricSpec(
+	provider oapi.MetricProvider,
+) oapi.VerificationMetricSpec {
 	successThreshold := 1
 	failureCondition := "result.statusCode != 200 || result.json.status.health.status == 'Degraded' || result.json.status.health.status == 'Missing'"
 	return oapi.VerificationMetricSpec{

@@ -2,10 +2,10 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type SystemGetter interface {
@@ -22,7 +22,10 @@ func NewPostgresSystemGetter(queries *db.Queries) *PostgresSystemGetter {
 	return &PostgresSystemGetter{queries: queries}
 }
 
-func (g *PostgresSystemGetter) GetSystem(ctx context.Context, systemID string) (*oapi.System, error) {
+func (g *PostgresSystemGetter) GetSystem(
+	ctx context.Context,
+	systemID string,
+) (*oapi.System, error) {
 	system, err := g.queries.GetSystemByID(ctx, uuid.MustParse(systemID))
 	if err != nil {
 		return nil, err

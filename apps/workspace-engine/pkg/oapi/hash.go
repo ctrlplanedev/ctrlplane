@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 )
 
-// fnv64a computes FNV-1a hash directly on bytes - extremely fast, no allocations
+// fnv64a computes FNV-1a hash directly on bytes - extremely fast, no allocations.
 func fnv64a(data []byte) uint64 {
 	const (
 		offset64 = 14695981039346656037

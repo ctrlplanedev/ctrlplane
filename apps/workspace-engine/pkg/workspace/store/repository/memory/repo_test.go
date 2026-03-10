@@ -17,18 +17,25 @@ func TestNew_AllFieldsInitialized(t *testing.T) {
 	v := reflect.ValueOf(repo).Elem()
 	typ := v.Type()
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
 		fieldName := typ.Field(i).Name
 
 		// Check if the field is nil
-		if field.Kind() == reflect.Ptr || field.Kind() == reflect.Interface || field.Kind() == reflect.Map || field.Kind() == reflect.Slice {
+		if field.Kind() == reflect.Ptr || field.Kind() == reflect.Interface ||
+			field.Kind() == reflect.Map ||
+			field.Kind() == reflect.Slice {
 			assert.False(t, field.IsNil(), "Field %s is nil, expected to be initialized", fieldName)
 		}
 
 		// For struct types (like ConcurrentMap), check they're not zero value
 		if field.Kind() == reflect.Struct {
-			assert.False(t, field.IsZero(), "Field %s is zero value, expected to be initialized", fieldName)
+			assert.False(
+				t,
+				field.IsZero(),
+				"Field %s is zero value, expected to be initialized",
+				fieldName,
+			)
 		}
 	}
 }
@@ -48,7 +55,7 @@ func TestRepositoryFields_NotNil(t *testing.T) {
 	typ := v.Type()
 
 	// Test each field individually for better error messages
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
 		fieldName := typ.Field(i).Name
 

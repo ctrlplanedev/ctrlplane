@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// setupTestStoreForPassRate creates a minimal test store for pass rate evaluator tests
+// setupTestStoreForPassRate creates a minimal test store for pass rate evaluator tests.
 func setupTestStoreForPassRate() *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -188,8 +188,13 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 	// The actual percentage might vary slightly, so just check it contains the key parts
 	assert.Contains(t, result.Message, "meets required 50.0%")
 	actualPercentage := result.Details["success_percentage"].(float32)
-	assert.GreaterOrEqual(t, actualPercentage, minSuccessPercentage, "success percentage should be >= minimum")
-	assert.Equal(t, minSuccessPercentage, result.Details["minimum_success_percentage"])
+	assert.GreaterOrEqual(
+		t,
+		actualPercentage,
+		minSuccessPercentage,
+		"success percentage should be >= minimum",
+	)
+	assert.InDelta(t, minSuccessPercentage, result.Details["minimum_success_percentage"], 0)
 }
 
 // TestPassRateEvaluator_BelowMinimumRequirement tests that the evaluator denies progression
@@ -306,7 +311,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 	assert.Contains(t, result.Message, "below required 50.0%")
 	actualPercentage := result.Details["success_percentage"].(float32)
 	assert.Less(t, actualPercentage, minSuccessPercentage, "success percentage should be < minimum")
-	assert.Equal(t, minSuccessPercentage, result.Details["minimum_success_percentage"])
+	assert.InDelta(t, minSuccessPercentage, result.Details["minimum_success_percentage"], 0)
 }
 
 // TestPassRateEvaluator_SatisfiedAt_ExactThreshold tests that satisfiedAt is set to the timestamp
@@ -446,7 +451,12 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, satisfiedAtTime, *result.SatisfiedAt, "satisfiedAt should be when the 2nd job completed (when 50% threshold was met)")
+	assert.Equal(
+		t,
+		satisfiedAtTime,
+		*result.SatisfiedAt,
+		"satisfiedAt should be when the 2nd job completed (when 50% threshold was met)",
+	)
 }
 
 // TestPassRateEvaluator_ZeroMinimumPercentage tests the special case where minimumSuccessPercentage is 0,
@@ -518,9 +528,19 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		Version:     version,
 	}
 	result := evalZero.Evaluate(ctx, scope)
-	assert.True(t, result.Allowed, "expected allowed with at least one successful job when minimum is 0. Result: %+v", result)
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed with at least one successful job when minimum is 0. Result: %+v",
+		result,
+	)
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set. Result: %+v", result)
-	assert.Equal(t, completedAt, *result.SatisfiedAt, "satisfiedAt should be the earliest success time")
+	assert.Equal(
+		t,
+		completedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be the earliest success time",
+	)
 	assert.Contains(t, result.Message, "at least one successful job")
 }
 
@@ -627,5 +647,9 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 	result := eval.Evaluate(ctx, scope)
 
 	// Should be allowed because InProgress is treated as a success status
-	assert.True(t, result.Allowed, "expected allowed with InProgress job when InProgress is a success status")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed with InProgress job when InProgress is a success status",
+	)
 }

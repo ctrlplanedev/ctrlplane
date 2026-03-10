@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
@@ -121,8 +122,12 @@ func (tw *TestWorkspace) TraceStore() *spanstore.InMemoryStore {
 }
 
 // PushEvent sends an event through the event listener
-// In persistence mode, it automatically saves and reloads state after processing
-func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventType, data any) *TestWorkspace {
+// In persistence mode, it automatically saves and reloads state after processing.
+func (tw *TestWorkspace) PushEvent(
+	ctx context.Context,
+	eventType handler.EventType,
+	data any,
+) *TestWorkspace {
 	tw.t.Helper()
 
 	dataBytes, err := json.Marshal(data)
@@ -165,7 +170,11 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 
 // PushDeploymentCreateWithLink pushes a DeploymentCreate event followed by a
 // SystemDeploymentLinked event, establishing the system-deployment association.
-func (tw *TestWorkspace) PushDeploymentCreateWithLink(ctx context.Context, systemId string, d *oapi.Deployment) *TestWorkspace {
+func (tw *TestWorkspace) PushDeploymentCreateWithLink(
+	ctx context.Context,
+	systemId string,
+	d *oapi.Deployment,
+) *TestWorkspace {
 	tw.t.Helper()
 	tw.PushEvent(ctx, handler.DeploymentCreate, d)
 	tw.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{
@@ -177,7 +186,11 @@ func (tw *TestWorkspace) PushDeploymentCreateWithLink(ctx context.Context, syste
 
 // PushEnvironmentCreateWithLink pushes an EnvironmentCreate event followed by a
 // SystemEnvironmentLinked event, establishing the system-environment association.
-func (tw *TestWorkspace) PushEnvironmentCreateWithLink(ctx context.Context, systemId string, e *oapi.Environment) *TestWorkspace {
+func (tw *TestWorkspace) PushEnvironmentCreateWithLink(
+	ctx context.Context,
+	systemId string,
+	e *oapi.Environment,
+) *TestWorkspace {
 	tw.t.Helper()
 	tw.PushEvent(ctx, handler.EnvironmentCreate, e)
 	tw.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{
@@ -199,7 +212,11 @@ func (tw *TestWorkspace) PushEnvironmentCreateWithLink(ctx context.Context, syst
 //	}, func(t *testing.T, engine *TestWorkspace) {
 //	    // Your test code here
 //	})
-func RunWithEngines(t *testing.T, engines map[string]*TestWorkspace, testFn func(t *testing.T, engine *TestWorkspace)) {
+func RunWithEngines(
+	t *testing.T,
+	engines map[string]*TestWorkspace,
+	testFn func(t *testing.T, engine *TestWorkspace),
+) {
 	t.Helper()
 
 	for name, engine := range engines {

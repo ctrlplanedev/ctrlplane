@@ -3,12 +3,12 @@ package versions
 import (
 	"context"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/versionmanager")
@@ -36,7 +36,11 @@ func New(store *store.Store) *Manager {
 //
 // When nil, all versions for the deployment are returned — this is the default
 // for full reconciliation and API-driven state computation.
-func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.ReleaseTarget, earliestVersionForEvaluation *oapi.DeploymentVersion) []*oapi.DeploymentVersion {
+func (m *Manager) GetCandidateVersions(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	earliestVersionForEvaluation *oapi.DeploymentVersion,
+) []*oapi.DeploymentVersion {
 	_, span := tracer.Start(ctx, "GetCandidateVersions",
 		trace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),

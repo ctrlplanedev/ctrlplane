@@ -3,17 +3,17 @@ package metrics
 import (
 	"context"
 	"fmt"
+
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/datadog"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/http"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/prometheus"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/sleep"
-
-	"github.com/charmbracelet/log"
 )
 
-// CreateProvider creates a provider from the metric's provider configuration
+// CreateProvider creates a provider from the metric's provider configuration.
 func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) {
 	discriminator, err := providerCfg.Discriminator()
 	if err != nil {
@@ -61,8 +61,12 @@ func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) 
 	}
 }
 
-// Measure takes a measurement using the metric status's configuration and evaluates the success condition
-func Measure(ctx context.Context, metric *oapi.VerificationMetricStatus, providerCtx *provider.ProviderContext) (oapi.VerificationMeasurement, error) {
+// Measure takes a measurement using the metric status's configuration and evaluates the success condition.
+func Measure(
+	ctx context.Context,
+	metric *oapi.VerificationMetricStatus,
+	providerCtx *provider.ProviderContext,
+) (oapi.VerificationMeasurement, error) {
 	p, err := CreateProvider(metric.Provider)
 	if err != nil {
 		return oapi.VerificationMeasurement{}, fmt.Errorf("failed to create provider: %w", err)

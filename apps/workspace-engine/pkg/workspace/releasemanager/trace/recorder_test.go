@@ -7,7 +7,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// Mock persistence store for testing
+// Mock persistence store for testing.
 type mockStore struct {
 	spans []sdktrace.ReadOnlySpan
 	err   error
@@ -165,7 +165,12 @@ func TestReconcileTarget_Complete(t *testing.T) {
 
 func TestReconcileTarget_Persist_WithConfiguredStore(t *testing.T) {
 	store := &mockStore{}
-	rt := NewReconcileTargetWithStore("workspace-1", "api-service-production", TriggerScheduled, store)
+	rt := NewReconcileTargetWithStore(
+		"workspace-1",
+		"api-service-production",
+		TriggerScheduled,
+		store,
+	)
 
 	// Create some spans
 	planning := rt.StartPlanning()

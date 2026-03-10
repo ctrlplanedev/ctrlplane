@@ -5,11 +5,10 @@ import (
 	"testing"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-// TestDBStore_WriteSpans_MissingWorkspaceID verifies that spans without workspace_id are rejected
+// TestDBStore_WriteSpans_MissingWorkspaceID verifies that spans without workspace_id are rejected.
 func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 	// Create a span without workspace_id attribute
 	rt := trace.NewReconcileTarget("", "test-target", trace.TriggerScheduled) // Empty workspace ID
@@ -49,7 +48,7 @@ func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 	}
 }
 
-// TestDBStore_WriteSpans_ValidWorkspaceID verifies validation passes with valid workspace_id
+// TestDBStore_WriteSpans_ValidWorkspaceID verifies validation passes with valid workspace_id.
 func TestDBStore_WriteSpans_ValidWorkspaceID(t *testing.T) {
 	// Create a span with valid workspace_id
 	rt := trace.NewReconcileTarget("workspace-123", "test-target", trace.TriggerScheduled)
@@ -88,7 +87,7 @@ func TestDBStore_WriteSpans_ValidWorkspaceID(t *testing.T) {
 	// but we've verified the spans have the required attribute
 }
 
-// TestDBStore_WriteSpans_EmptySpanList verifies empty span list is handled gracefully
+// TestDBStore_WriteSpans_EmptySpanList verifies empty span list is handled gracefully.
 func TestDBStore_WriteSpans_EmptySpanList(t *testing.T) {
 	store := &DBStore{pool: nil}
 	err := store.WriteSpans(context.Background(), []sdktrace.ReadOnlySpan{})
@@ -97,7 +96,7 @@ func TestDBStore_WriteSpans_EmptySpanList(t *testing.T) {
 	}
 }
 
-// TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID verifies batch fails if any span is invalid
+// TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID verifies batch fails if any span is invalid.
 func TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID(t *testing.T) {
 	// Create spans with and without workspace_id
 	validRT := trace.NewReconcileTarget("workspace-valid", "test-target", trace.TriggerScheduled)
@@ -105,7 +104,11 @@ func TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID(t *testing.T) {
 	validPlanning.End()
 	validRT.Complete(trace.StatusCompleted)
 
-	invalidRT := trace.NewReconcileTarget("", "test-target", trace.TriggerScheduled) // Empty workspace ID
+	invalidRT := trace.NewReconcileTarget(
+		"",
+		"test-target",
+		trace.TriggerScheduled,
+	) // Empty workspace ID
 	invalidPlanning := invalidRT.StartPlanning()
 	invalidPlanning.End()
 	invalidRT.Complete(trace.StatusCompleted)
@@ -134,7 +137,7 @@ func TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID(t *testing.T) {
 	}
 }
 
-// Helper function to check if string contains substring
+// Helper function to check if string contains substring.
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))

@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
@@ -22,17 +23,17 @@ var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, key string) (uint64, 
 }
 
 // testTimeGetterFactory allows tests to inject a custom time getter function
-// If set, this will be used instead of time.Now() in NewGradualRolloutEvaluator
+// If set, this will be used instead of time.Now() in NewGradualRolloutEvaluator.
 var testTimeGetterFactory func() time.Time
 
 // SetTestTimeGetterFactory sets a custom time getter factory for testing purposes
-// This should only be used in tests
+// This should only be used in tests.
 func SetTestTimeGetterFactory(factory func() time.Time) {
 	testTimeGetterFactory = factory
 }
 
 // ClearTestTimeGetterFactory clears the test time getter factory
-// This should be called after tests to restore normal behavior
+// This should be called after tests to restore normal behavior.
 func ClearTestTimeGetterFactory() {
 	testTimeGetterFactory = nil
 }
@@ -91,7 +92,12 @@ func (e *GradualRolloutEvaluator) Complexity() int {
 	return 2
 }
 
-func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Context, rule *oapi.PolicyRule, scope evaluator.EvaluatorScope, allSkips []*oapi.PolicySkip) *time.Time {
+func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(
+	ctx context.Context,
+	rule *oapi.PolicyRule,
+	scope evaluator.EvaluatorScope,
+	allSkips []*oapi.PolicySkip,
+) *time.Time {
 	skips := make([]*oapi.PolicySkip, 0)
 	for _, skip := range allSkips {
 		if skip.RuleId == rule.Id {
@@ -129,7 +135,12 @@ func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Conte
 	return result.SatisfiedAt
 }
 
-func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx context.Context, rule *oapi.PolicyRule, scope evaluator.EvaluatorScope, allSkips []*oapi.PolicySkip) *time.Time {
+func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(
+	ctx context.Context,
+	rule *oapi.PolicyRule,
+	scope evaluator.EvaluatorScope,
+	allSkips []*oapi.PolicySkip,
+) *time.Time {
 	skips := make([]*oapi.PolicySkip, 0)
 	for _, skip := range allSkips {
 		if skip.RuleId == rule.Id {
@@ -167,7 +178,12 @@ func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx
 	return result.SatisfiedAt
 }
 
-func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
+func (e *GradualRolloutEvaluator) getRolloutStartTime(
+	ctx context.Context,
+	environment *oapi.Environment,
+	version *oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
+) (*time.Time, error) {
 	// "start time" is when all conditions pass:
 	// - approval rules (if any)
 	// - environment progression rules (if any)
@@ -193,7 +209,12 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 		Version:     version,
 	}
 
-	allSkips, err := e.getters.GetPolicySkips(ctx, version.Id, environment.Id, releaseTarget.ResourceId)
+	allSkips, err := e.getters.GetPolicySkips(
+		ctx,
+		version.Id,
+		environment.Id,
+		releaseTarget.ResourceId,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -216,9 +237,15 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 
 			if rule.EnvironmentProgression != nil {
 				foundEnvironmentProgressionPolicy = true
-				ruleSatisfiedAt := e.getStartTimeFromEnvironmentProgressionRule(ctx, &rule, scope, allSkips)
+				ruleSatisfiedAt := e.getStartTimeFromEnvironmentProgressionRule(
+					ctx,
+					&rule,
+					scope,
+					allSkips,
+				)
 				if ruleSatisfiedAt != nil {
-					if environmentProgressionSatisfiedAt == nil || ruleSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
+					if environmentProgressionSatisfiedAt == nil ||
+						ruleSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
 						environmentProgressionSatisfiedAt = ruleSatisfiedAt
 					}
 				}
@@ -244,7 +271,9 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 		}
 
 		if foundEnvironmentProgressionPolicy && environmentProgressionSatisfiedAt == nil {
-			return nil, fmt.Errorf("environment progression condition not yet satisfied for rollout start")
+			return nil, fmt.Errorf(
+				"environment progression condition not yet satisfied for rollout start",
+			)
 		}
 
 		if foundApprovalPolicy && foundEnvironmentProgressionPolicy {
@@ -281,7 +310,8 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 			if err != nil {
 				continue
 			}
-			if nextWindowStart != nil && (finalStartTime == nil || nextWindowStart.After(*finalStartTime)) {
+			if nextWindowStart != nil &&
+				(finalStartTime == nil || nextWindowStart.After(*finalStartTime)) {
 				finalStartTime = nextWindowStart
 			}
 		} else {
@@ -310,7 +340,9 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(
 		return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
 
 	case oapi.GradualRolloutRuleRolloutTypeLinearNormalized:
-		return time.Duration(float64(rolloutPosition)/float64(numReleaseTargets)*float64(timeScaleInterval)) * time.Second
+		return time.Duration(
+			float64(rolloutPosition)/float64(numReleaseTargets)*float64(timeScaleInterval),
+		) * time.Second
 
 	default:
 		// Default to linear for backward compatibility
@@ -320,7 +352,10 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(
 
 // Evaluate checks if a gradual rollout has progressed enough to allow deployment to this release target.
 // The memoization wrapper ensures Environment, Version, and ReleaseTarget are present.
-func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+func (e *GradualRolloutEvaluator) Evaluate(
+	ctx context.Context,
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
 	environment := scope.Environment
 	version := scope.Version
 	releaseTarget := scope.ReleaseTarget()
@@ -374,7 +409,10 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	deploymentTime := rolloutStartTime.Add(deploymentOffset)
 
 	if now.Before(deploymentTime) {
-		reason := fmt.Sprintf("Rollout will start at %s for this release target", deploymentTime.Format(time.RFC3339))
+		reason := fmt.Sprintf(
+			"Rollout will start at %s for this release target",
+			deploymentTime.Format(time.RFC3339),
+		)
 		return results.NewPendingResult(results.ActionTypeWait, reason).
 			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 			WithDetail("target_rollout_position", rolloutPosition).

@@ -3,11 +3,11 @@ package environments
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // Repo implements repository.EnvironmentRepo backed by the environment table.
@@ -71,11 +71,18 @@ func (r *Repo) Items() map[string]*oapi.Environment {
 		return make(map[string]*oapi.Environment)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListEnvironmentsByWorkspaceID(r.ctx, db.ListEnvironmentsByWorkspaceIDParams{
-		WorkspaceID: uid,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListEnvironmentsByWorkspaceID(r.ctx, db.ListEnvironmentsByWorkspaceIDParams{
+			WorkspaceID: uid,
+		})
 	if err != nil {
-		log.Warn("Failed to list environments by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list environments by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.Environment)
 	}
 

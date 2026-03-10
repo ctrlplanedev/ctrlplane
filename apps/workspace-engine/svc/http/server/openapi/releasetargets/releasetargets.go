@@ -3,21 +3,25 @@ package releasetargets
 import (
 	"net/http"
 	"sort"
+
+	"github.com/charmbracelet/log"
+	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/oapi"
 	celselector "workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/charmbracelet/log"
-	"github.com/gin-gonic/gin"
 )
 
 type ReleaseTargets struct {
 }
 
-func (s *ReleaseTargets) GetReleaseTargetDesiredRelease(c *gin.Context, workspaceId string, releaseTargetKey string) {
+func (s *ReleaseTargets) GetReleaseTargetDesiredRelease(
+	c *gin.Context,
+	workspaceId string,
+	releaseTargetKey string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -34,7 +38,9 @@ func (s *ReleaseTargets) GetReleaseTargetDesiredRelease(c *gin.Context, workspac
 		return
 	}
 
-	desiredRelease, err := ws.ReleaseManager().Planner().PlanDeployment(c.Request.Context(), releaseTarget)
+	desiredRelease, err := ws.ReleaseManager().
+		Planner().
+		PlanDeployment(c.Request.Context(), releaseTarget)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to plan release target: " + err.Error(),
@@ -110,7 +116,12 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		Deployment:  deployment,
 	}
 	for _, policy := range policies {
-		policyResult := policyManager.EvaluateWithPolicy(c.Request.Context(), policy, scope, policyManager.SummaryPolicyEvaluators)
+		policyResult := policyManager.EvaluateWithPolicy(
+			c.Request.Context(),
+			policy,
+			scope,
+			policyManager.SummaryPolicyEvaluators,
+		)
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
@@ -121,7 +132,11 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 }
 
 // GetPoliciesForReleaseTarget implements oapi.ServerInterface.
-func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string) {
+func (s *ReleaseTargets) GetPoliciesForReleaseTarget(
+	c *gin.Context,
+	workspaceId string,
+	releaseTargetId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -151,7 +166,12 @@ func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId
 	})
 }
 
-func (s *ReleaseTargets) GetJobsForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string, params oapi.GetJobsForReleaseTargetParams) {
+func (s *ReleaseTargets) GetJobsForReleaseTarget(
+	c *gin.Context,
+	workspaceId string,
+	releaseTargetKey string,
+	params oapi.GetJobsForReleaseTargetParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -233,7 +253,11 @@ func (s *ReleaseTargets) GetJobsForReleaseTarget(c *gin.Context, workspaceId str
 	})
 }
 
-func (s *ReleaseTargets) GetReleaseTargetStates(c *gin.Context, workspaceId string, params oapi.GetReleaseTargetStatesParams) {
+func (s *ReleaseTargets) GetReleaseTargetStates(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.GetReleaseTargetStatesParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -254,7 +278,8 @@ func (s *ReleaseTargets) GetReleaseTargetStates(c *gin.Context, workspaceId stri
 
 	filtered := make([]*oapi.ReleaseTarget, 0)
 	for _, rt := range allTargets {
-		if rt != nil && rt.DeploymentId == req.DeploymentId && rt.EnvironmentId == req.EnvironmentId {
+		if rt != nil && rt.DeploymentId == req.DeploymentId &&
+			rt.EnvironmentId == req.EnvironmentId {
 			filtered = append(filtered, rt)
 		}
 	}
@@ -281,7 +306,13 @@ func (s *ReleaseTargets) GetReleaseTargetStates(c *gin.Context, workspaceId stri
 	for _, rt := range page {
 		state, err := ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), rt)
 		if err != nil {
-			log.Warn("Failed to get state for release target", "key", rt.Key(), "error", err.Error())
+			log.Warn(
+				"Failed to get state for release target",
+				"key",
+				rt.Key(),
+				"error",
+				err.Error(),
+			)
 			continue
 		}
 		if state == nil {
@@ -301,7 +332,12 @@ func (s *ReleaseTargets) GetReleaseTargetStates(c *gin.Context, workspaceId stri
 	})
 }
 
-func (s *ReleaseTargets) GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string, params oapi.GetReleaseTargetStateParams) {
+func (s *ReleaseTargets) GetReleaseTargetState(
+	c *gin.Context,
+	workspaceId string,
+	releaseTargetKey string,
+	params oapi.GetReleaseTargetStateParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

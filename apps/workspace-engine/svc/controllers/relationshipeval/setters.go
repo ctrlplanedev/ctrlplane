@@ -18,5 +18,10 @@ type ComputedRelationship struct {
 type Setter interface {
 	// SetComputedRelationships replaces all stored relationships for an entity.
 	// It deletes stale rows and upserts the current set atomically.
-	SetComputedRelationships(ctx context.Context, entityType string, entityID uuid.UUID, relationships []ComputedRelationship) error
+	SetComputedRelationships(
+		ctx context.Context,
+		entityType string,
+		entityID uuid.UUID,
+		relationships []ComputedRelationship,
+	) error
 }

@@ -3,15 +3,15 @@ package versionselector
 import (
 	"context"
 	"fmt"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versionselector")
@@ -56,7 +56,10 @@ func (e *Evaluator) Complexity() int {
 
 // Evaluate evaluates the version selector rule against the given scope.
 // It checks if the version matches the selector criteria for the target release target.
-func (e *Evaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+func (e *Evaluator) Evaluate(
+	ctx context.Context,
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
 	ctx, span := tracer.Start(ctx, "VersionSelectorEvaluator.Evaluate",
 		trace.WithAttributes(
 			attribute.String("version.id", scope.Version.Id),
@@ -84,13 +87,17 @@ func (e *Evaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope
 
 	// Failed to parse selector
 	return results.NewDeniedResult(
-		fmt.Sprintf("Version selector: failed to parse selector: cel error: %v, json error: %v", celErr, jsonErr),
+		fmt.Sprintf(
+			"Version selector: failed to parse selector: cel error: %v, json error: %v",
+			celErr,
+			jsonErr,
+		),
 	).
 		WithDetail("celError", celErr.Error()).
 		WithDetail("jsonError", jsonErr.Error())
 }
 
-// evaluateCEL evaluates a CEL-based selector
+// evaluateCEL evaluates a CEL-based selector.
 func (e *Evaluator) evaluateCEL(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
@@ -195,7 +202,7 @@ func (e *Evaluator) evaluateCEL(
 		WithDetail("version_tag", scope.Version.Tag)
 }
 
-// evaluateJSON evaluates a JSON-based selector
+// evaluateJSON evaluates a JSON-based selector.
 func (e *Evaluator) evaluateJSON(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,

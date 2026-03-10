@@ -3,10 +3,9 @@ package verification
 import (
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func sleepProvider(t *testing.T) oapi.MetricProvider {

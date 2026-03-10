@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"sort"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
-	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var deployableVersionTracer = otel.Tracer("DeployableVersionManager")
@@ -73,7 +73,10 @@ func (m *DeployableVersionManager) getEnvironment(ctx context.Context) (*oapi.En
 	return environment, nil
 }
 
-func (m *DeployableVersionManager) getEvaluators(ctx context.Context, policies []*oapi.Policy) ([]evaluator.Evaluator, error) {
+func (m *DeployableVersionManager) getEvaluators(
+	ctx context.Context,
+	policies []*oapi.Policy,
+) ([]evaluator.Evaluator, error) {
 	_, span := deployableVersionTracer.Start(ctx, "GetEvaluators")
 	defer span.End()
 
@@ -112,7 +115,9 @@ func (m *DeployableVersionManager) getEvaluators(ctx context.Context, policies [
 // (environmentId, resourceId) pair. This replaces calling GetAllForTarget
 // per candidate version, reducing O(N × S) to O(S) where N = candidate
 // versions and S = total policy skips in the store.
-func (m *DeployableVersionManager) precomputeBypasses(ctx context.Context) map[string]map[string]bool {
+func (m *DeployableVersionManager) precomputeBypasses(
+	ctx context.Context,
+) map[string]map[string]bool {
 	_, span := deployableVersionTracer.Start(ctx, "PrecomputeBypasses")
 	defer span.End()
 
@@ -156,7 +161,10 @@ func (m *DeployableVersionManager) precomputeBypasses(ctx context.Context) map[s
 // applyBypasses filters evaluators by removing those whose RuleId is in the
 // skipped set. Returns the original slice unchanged (zero allocation) when
 // no bypasses apply — the common case.
-func (m *DeployableVersionManager) applyBypasses(evaluators []evaluator.Evaluator, skippedRules map[string]bool) []evaluator.Evaluator {
+func (m *DeployableVersionManager) applyBypasses(
+	evaluators []evaluator.Evaluator,
+	skippedRules map[string]bool,
+) []evaluator.Evaluator {
 	if len(skippedRules) == 0 {
 		return evaluators
 	}
@@ -170,7 +178,10 @@ func (m *DeployableVersionManager) applyBypasses(evaluators []evaluator.Evaluato
 	return filtered
 }
 
-func (m *DeployableVersionManager) recordAllowedVersionEvaluationsToPlanning(version *oapi.DeploymentVersion, results []*oapi.RuleEvaluation) {
+func (m *DeployableVersionManager) recordAllowedVersionEvaluationsToPlanning(
+	version *oapi.DeploymentVersion,
+	results []*oapi.RuleEvaluation,
+) {
 	if m.planning == nil {
 		return
 	}
@@ -192,7 +203,10 @@ func (m *DeployableVersionManager) recordAllowedVersionEvaluationsToPlanning(ver
 	}
 }
 
-func (m *DeployableVersionManager) recordFirstVersionEvaluationsToPlanning(version *oapi.DeploymentVersion, results []*oapi.RuleEvaluation) {
+func (m *DeployableVersionManager) recordFirstVersionEvaluationsToPlanning(
+	version *oapi.DeploymentVersion,
+	results []*oapi.RuleEvaluation,
+) {
 	if m.planning == nil || version == nil {
 		return
 	}
@@ -218,7 +232,10 @@ func (m *DeployableVersionManager) recordFirstVersionEvaluationsToPlanning(versi
 	}
 }
 
-func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions []*oapi.DeploymentVersion) *oapi.DeploymentVersion {
+func (m *DeployableVersionManager) Find(
+	ctx context.Context,
+	candidateVersions []*oapi.DeploymentVersion,
+) *oapi.DeploymentVersion {
 	ctx, span := deployableVersionTracer.Start(ctx, "FindDeployableVersion",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", m.releaseTarget.Key()),
@@ -273,7 +290,15 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 	var firstResults []*oapi.RuleEvaluation
 	var firstVersion *oapi.DeploymentVersion
 
-	result := m.evaluateVersions(ctx, candidateVersions, evaluators, bypassesByVersion, scope, &firstResults, &firstVersion)
+	result := m.evaluateVersions(
+		ctx,
+		candidateVersions,
+		evaluators,
+		bypassesByVersion,
+		scope,
+		&firstResults,
+		&firstVersion,
+	)
 	if result != nil {
 		return result
 	}

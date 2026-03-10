@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
 	"workspace-engine/pkg/config"
 )
 
-// tokenSecret should be loaded from config/environment in production
+// tokenSecret should be loaded from config/environment in production.
 var tokenSecret = []byte(config.Global.TraceTokenSecret)
 
-// TraceToken represents an authenticated token for external trace recording
+// TraceToken represents an authenticated token for external trace recording.
 type TraceToken struct {
 	TraceID   string
 	JobID     string
@@ -21,7 +22,7 @@ type TraceToken struct {
 	Signature string
 }
 
-// GenerateTraceToken creates a scoped token for a specific job to record traces
+// GenerateTraceToken creates a scoped token for a specific job to record traces.
 func GenerateTraceToken(traceID, jobID string, duration time.Duration) string {
 	expiresAt := time.Now().Add(duration)
 
@@ -39,12 +40,12 @@ func GenerateTraceToken(traceID, jobID string, duration time.Duration) string {
 	return token
 }
 
-// GenerateDefaultTraceToken creates a token with default 24-hour expiration
+// GenerateDefaultTraceToken creates a token with default 24-hour expiration.
 func GenerateDefaultTraceToken(traceID, jobID string) string {
 	return GenerateTraceToken(traceID, jobID, 24*time.Hour)
 }
 
-// ValidateTraceToken validates a trace token and returns the trace ID and job ID
+// ValidateTraceToken validates a trace token and returns the trace ID and job ID.
 func ValidateTraceToken(tokenStr string) (*TraceToken, error) {
 	// Split token into payload and signature
 	parts := strings.Split(tokenStr, ".")
@@ -100,7 +101,7 @@ func ValidateTraceToken(tokenStr string) (*TraceToken, error) {
 	}, nil
 }
 
-// ParseTraceToken is a convenience function that validates a token and returns just the traceID and jobID
+// ParseTraceToken is a convenience function that validates a token and returns just the traceID and jobID.
 func ParseTraceToken(tokenStr string) (traceID, jobID string, err error) {
 	tt, err := ValidateTraceToken(tokenStr)
 	if err != nil {
@@ -110,7 +111,7 @@ func ParseTraceToken(tokenStr string) (traceID, jobID string, err error) {
 }
 
 // SetTokenSecret allows setting a custom secret for token generation
-// This should be called during application initialization with a secure secret
+// This should be called during application initialization with a secure secret.
 func SetTokenSecret(secret []byte) {
 	tokenSecret = secret
 }

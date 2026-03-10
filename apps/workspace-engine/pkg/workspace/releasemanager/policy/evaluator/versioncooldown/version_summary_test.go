@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 )
 
 func TestNewSummaryEvaluator_NilInputs(t *testing.T) {

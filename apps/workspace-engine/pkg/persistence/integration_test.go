@@ -6,19 +6,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestPersistence_BasicSaveAndLoad tests basic save and load roundtrip
-// using the persistence layer with in-memory store
+// using the persistence layer with in-memory store.
 func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -107,7 +106,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	assert.Equal(t, environment.Name, restoredEnvironment.Name)
 }
 
-// TestPersistence_UpdateAndCompaction tests that updates are properly compacted
+// TestPersistence_UpdateAndCompaction tests that updates are properly compacted.
 func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -177,7 +176,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	assert.Equal(t, "2.0.0", restoredResource.Version)
 }
 
-// TestPersistence_DeleteEntity tests that entity deletion is tracked
+// TestPersistence_DeleteEntity tests that entity deletion is tracked.
 func TestPersistence_DeleteEntity(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -220,7 +219,12 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	require.Empty(t, loadedChanges, "Deleted entities should not be returned by Load()")
 
 	// Verify the deletion is tracked internally (entity count includes deleted entities)
-	assert.Equal(t, 1, persistenceStore.EntityCount(namespace), "Deletion should be tracked for compaction")
+	assert.Equal(
+		t,
+		1,
+		persistenceStore.EntityCount(namespace),
+		"Deletion should be tracked for compaction",
+	)
 
 	// Apply loaded changes to a new store and verify resource doesn't exist
 	testStore := store.New(namespace, statechange.NewChangeSet[any]())
@@ -235,7 +239,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	assert.False(t, ok)
 }
 
-// TestPersistence_MultipleNamespaces tests isolation between namespaces
+// TestPersistence_MultipleNamespaces tests isolation between namespaces.
 func TestPersistence_MultipleNamespaces(t *testing.T) {
 	ctx := context.Background()
 	persistenceStore := memory.NewStore()
@@ -302,7 +306,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 	assert.Equal(t, "system-2", restoredSystem2.Name)
 }
 
-// TestPersistence_AllEntityTypes tests all entity types can be persisted
+// TestPersistence_AllEntityTypes tests all entity types can be persisted.
 func TestPersistence_AllEntityTypes(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -506,7 +510,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 
 // TestPersistence_ComplexWorkspaceWithComputedValues tests persistence of a
 // full workspace including releases, jobs, and verifies computed values are
-// correctly restored
+// correctly restored.
 func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -688,7 +692,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	assert.Equal(t, 3, count, "All 3 jobs should be restored")
 }
 
-// TestPersistence_ConcurrentSaveAndLoad tests thread-safety of persistence operations
+// TestPersistence_ConcurrentSaveAndLoad tests thread-safety of persistence operations.
 func TestPersistence_ConcurrentSaveAndLoad(t *testing.T) {
 	ctx := context.Background()
 	persistenceStore := memory.NewStore()
@@ -766,7 +770,7 @@ func TestUserApprovalRecordKeyIncludesEnvironment(t *testing.T) {
 	assert.Len(t, testStore.Repo().UserApprovalRecords().Items(), 2)
 }
 
-// Helper function to create string pointers
+// Helper function to create string pointers.
 func ptr(s string) *string {
 	return &s
 }

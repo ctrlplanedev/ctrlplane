@@ -5,17 +5,28 @@ import (
 	"fmt"
 	"sort"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
 )
 
-var jobTrackerTracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression/jobtracker")
+var jobTrackerTracer = otel.Tracer(
+	"workspace/releasemanager/policy/evaluator/environmentprogression/jobtracker",
+)
 
-func getReleaseTargets(ctx context.Context, getters Getters, version *oapi.DeploymentVersion, environment *oapi.Environment) []oapi.ReleaseTarget {
-	envTargets, _ := getters.GetReleaseTargetsForDeploymentAndEnvironment(ctx, version.DeploymentId, environment.Id)
+func getReleaseTargets(
+	ctx context.Context,
+	getters Getters,
+	version *oapi.DeploymentVersion,
+	environment *oapi.Environment,
+) []oapi.ReleaseTarget {
+	envTargets, _ := getters.GetReleaseTargetsForDeploymentAndEnvironment(
+		ctx,
+		version.DeploymentId,
+		environment.Id,
+	)
 	return envTargets
 }
 
@@ -38,7 +49,7 @@ type ReleaseTargetJobTracker struct {
 	mostRecentSuccess        time.Time
 }
 
-// NewReleaseTargetJobTracker creates a new tracker for the given environment and version
+// NewReleaseTargetJobTracker creates a new tracker for the given environment and version.
 func NewReleaseTargetJobTracker(
 	ctx context.Context,
 	getters Getters,
@@ -97,20 +108,32 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 
 	// Use indexed lookup through release targets instead of scanning all jobs
 	for _, rt := range t.ReleaseTargets {
-		span.AddEvent("GetJobsForReleaseTarget", trace.WithAttributes(attribute.String("release_target.key", rt.Key())))
+		span.AddEvent(
+			"GetJobsForReleaseTarget",
+			trace.WithAttributes(attribute.String("release_target.key", rt.Key())),
+		)
 		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
 		rtJobs := t.getters.GetJobsForReleaseTarget(ctx, &rt)
 		for _, job := range rtJobs {
 			// Get the release to check version
 			release, err := t.getters.GetReleaseByJobID(ctx, job.Id)
 			if err != nil {
-				span.AddEvent("GetReleaseByJobID", trace.WithAttributes(attribute.String("job.id", job.Id), attribute.String("error", err.Error())))
+				span.AddEvent(
+					"GetReleaseByJobID",
+					trace.WithAttributes(
+						attribute.String("job.id", job.Id),
+						attribute.String("error", err.Error()),
+					),
+				)
 				continue
 			}
 			if release == nil {
 				continue
 			}
-			span.AddEvent("found release", trace.WithAttributes(attribute.String("release", fmt.Sprintf("%+v", release))))
+			span.AddEvent(
+				"found release",
+				trace.WithAttributes(attribute.String("release", fmt.Sprintf("%+v", release))),
+			)
 			// Filter by version ID
 			if release.Version.Id != t.Version.Id {
 				continue
@@ -127,7 +150,8 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 			if t.SuccessStatuses[job.Status] && hasCompletedAt {
 				targetKey := rt.Key()
 				// Store the oldest successful completion time for this release target
-				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {
+				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists ||
+					job.CompletedAt.Before(existingTime) {
 					t.successfulReleaseTargets[targetKey] = *job.CompletedAt
 				}
 				if t.mostRecentSuccess.Before(*job.CompletedAt) {
@@ -148,7 +172,7 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	return t.jobs
 }
 
-// GetSuccessPercentage returns the percentage of release targets that have at least one successful job (0-100)
+// GetSuccessPercentage returns the percentage of release targets that have at least one successful job (0-100).
 func (t *ReleaseTargetJobTracker) GetSuccessPercentage() float32 {
 	_, span := jobTrackerTracer.Start(context.Background(), "GetSuccessPercentage")
 	defer span.End()
@@ -184,10 +208,16 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentage() float32 {
 
 // GetSuccessPercentageSatisfiedAt returns the earliest time at which the minimum success percentage
 // was satisfied. If it has never been satisfied, returns zero time.
-func (t *ReleaseTargetJobTracker) GetSuccessPercentageSatisfiedAt(minimumSuccessPercentage float32) time.Time {
-	_, span := jobTrackerTracer.Start(context.Background(), "GetSuccessPercentageSatisfiedAt", trace.WithAttributes(
-		attribute.Float64("minimum_success_percentage", float64(minimumSuccessPercentage)),
-	))
+func (t *ReleaseTargetJobTracker) GetSuccessPercentageSatisfiedAt(
+	minimumSuccessPercentage float32,
+) time.Time {
+	_, span := jobTrackerTracer.Start(
+		context.Background(),
+		"GetSuccessPercentageSatisfiedAt",
+		trace.WithAttributes(
+			attribute.Float64("minimum_success_percentage", float64(minimumSuccessPercentage)),
+		),
+	)
 	defer span.End()
 
 	if minimumSuccessPercentage <= 0 {
@@ -241,9 +271,13 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentageSatisfiedAt(minimumSuccess
 // MeetsSoakTimeRequirement checks if the latest successful completion across all release targets
 // has soaked for at least the specified duration. Returns true if the soak time requirement is met.
 func (t *ReleaseTargetJobTracker) MeetsSoakTimeRequirement(duration time.Duration) bool {
-	_, span := jobTrackerTracer.Start(context.Background(), "MeetsSoakTimeRequirement", trace.WithAttributes(
-		attribute.String("soak_duration", duration.String()),
-	))
+	_, span := jobTrackerTracer.Start(
+		context.Background(),
+		"MeetsSoakTimeRequirement",
+		trace.WithAttributes(
+			attribute.String("soak_duration", duration.String()),
+		),
+	)
 	defer span.End()
 
 	remaining := t.GetSoakTimeRemaining(duration)
@@ -256,9 +290,13 @@ func (t *ReleaseTargetJobTracker) MeetsSoakTimeRequirement(duration time.Duratio
 }
 
 func (t *ReleaseTargetJobTracker) GetSoakTimeRemaining(duration time.Duration) time.Duration {
-	_, span := jobTrackerTracer.Start(context.Background(), "GetSoakTimeRemaining", trace.WithAttributes(
-		attribute.String("soak_duration", duration.String()),
-	))
+	_, span := jobTrackerTracer.Start(
+		context.Background(),
+		"GetSoakTimeRemaining",
+		trace.WithAttributes(
+			attribute.String("soak_duration", duration.String()),
+		),
+	)
 	defer span.End()
 
 	if duration == 0 {

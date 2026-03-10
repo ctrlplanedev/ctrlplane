@@ -6,42 +6,42 @@ import (
 	"time"
 )
 
-// WorkspaceState represents the current state of a workspace
+// WorkspaceState represents the current state of a workspace.
 type WorkspaceState string
 
 const (
-	// StateUnknown indicates the workspace state is unknown
+	// StateUnknown indicates the workspace state is unknown.
 	StateUnknown WorkspaceState = "unknown"
 
-	// StateInitializing indicates the workspace is being created
+	// StateInitializing indicates the workspace is being created.
 	StateInitializing WorkspaceState = "initializing"
 
-	// StateLoadingFromPersistence indicates loading from persistent store
+	// StateLoadingFromPersistence indicates loading from persistent store.
 	StateLoadingFromPersistence WorkspaceState = "loading_from_persistence"
 
-	// StateLoadingKafkaPartitions indicates Kafka partition assignment in progress
+	// StateLoadingKafkaPartitions indicates Kafka partition assignment in progress.
 	StateLoadingKafkaPartitions WorkspaceState = "loading_kafka_partitions"
 
-	// StateReplayingEvents indicates replaying events from Kafka
+	// StateReplayingEvents indicates replaying events from Kafka.
 	StateReplayingEvents WorkspaceState = "replaying_events"
 
-	// StatePopulatingInitialState indicates populating initial state
+	// StatePopulatingInitialState indicates populating initial state.
 	StatePopulatingInitialState WorkspaceState = "populating_initial_state"
 
-	// StateRestoringFromSnapshot indicates restoring from persistence snapshot
+	// StateRestoringFromSnapshot indicates restoring from persistence snapshot.
 	StateRestoringFromSnapshot WorkspaceState = "restoring_from_snapshot"
 
-	// StateReady indicates the workspace is fully loaded and ready
+	// StateReady indicates the workspace is fully loaded and ready.
 	StateReady WorkspaceState = "ready"
 
-	// StateError indicates the workspace encountered an error
+	// StateError indicates the workspace encountered an error.
 	StateError WorkspaceState = "error"
 
-	// StateUnloading indicates the workspace is being removed from memory
+	// StateUnloading indicates the workspace is being removed from memory.
 	StateUnloading WorkspaceState = "unloading"
 )
 
-// WorkspaceStatus tracks the current status of a workspace
+// WorkspaceStatus tracks the current status of a workspace.
 type WorkspaceStatus struct {
 	WorkspaceID  string            `json:"workspaceId"`
 	State        WorkspaceState    `json:"state"`
@@ -55,7 +55,7 @@ type WorkspaceStatus struct {
 	mu sync.RWMutex
 }
 
-// StateTransition represents a state change
+// StateTransition represents a state change.
 type StateTransition struct {
 	FromState WorkspaceState `json:"fromState"`
 	ToState   WorkspaceState `json:"toState"`
@@ -63,7 +63,7 @@ type StateTransition struct {
 	Message   string         `json:"message,omitempty"`
 }
 
-// NewWorkspaceStatus creates a new workspace status tracker
+// NewWorkspaceStatus creates a new workspace status tracker.
 func NewWorkspaceStatus(workspaceID string) *WorkspaceStatus {
 	now := time.Now()
 	return &WorkspaceStatus{
@@ -76,7 +76,7 @@ func NewWorkspaceStatus(workspaceID string) *WorkspaceStatus {
 	}
 }
 
-// SetState updates the workspace state
+// SetState updates the workspace state.
 func (s *WorkspaceStatus) SetState(state WorkspaceState, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,7 +101,7 @@ func (s *WorkspaceStatus) SetState(state WorkspaceState, message string) {
 	s.LastUpdated = time.Now()
 }
 
-// SetError sets the workspace to error state
+// SetError sets the workspace to error state.
 func (s *WorkspaceStatus) SetError(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -124,7 +124,7 @@ func (s *WorkspaceStatus) SetError(err error) {
 	s.LastUpdated = time.Now()
 }
 
-// UpdateMetadata updates metadata fields
+// UpdateMetadata updates metadata fields.
 func (s *WorkspaceStatus) UpdateMetadata(key string, value any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -133,7 +133,7 @@ func (s *WorkspaceStatus) UpdateMetadata(key string, value any) {
 	s.LastUpdated = time.Now()
 }
 
-// GetSnapshot returns a thread-safe copy of the current status
+// GetSnapshot returns a thread-safe copy of the current status.
 func (s *WorkspaceStatus) GetSnapshot() WorkspaceStatus {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -157,28 +157,28 @@ func (s *WorkspaceStatus) GetSnapshot() WorkspaceStatus {
 	}
 }
 
-// IsReady returns true if the workspace is in ready state
+// IsReady returns true if the workspace is in ready state.
 func (s *WorkspaceStatus) IsReady() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.State == StateReady
 }
 
-// IsError returns true if the workspace is in error state
+// IsError returns true if the workspace is in error state.
 func (s *WorkspaceStatus) IsError() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.State == StateError
 }
 
-// GetState returns the current state
+// GetState returns the current state.
 func (s *WorkspaceStatus) GetState() WorkspaceState {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.State
 }
 
-// TimeInCurrentState returns how long the workspace has been in current state
+// TimeInCurrentState returns how long the workspace has been in current state.
 func (s *WorkspaceStatus) TimeInCurrentState() time.Duration {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

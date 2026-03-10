@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/store"
 )
 
-// Helper function to create a test store with a resource
+// Helper function to create a test store with a resource.
 func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -513,7 +513,12 @@ func TestRetryEvaluator_LinearBackoff_ConstantDelay(t *testing.T) {
 
 		// All attempts should have same backoff time (30s)
 		if !result.Allowed && result.ActionRequired {
-			assert.Equal(t, 30, result.Details["backoff_seconds"], "Linear backoff should be constant")
+			assert.Equal(
+				t,
+				30,
+				result.Details["backoff_seconds"],
+				"Linear backoff should be constant",
+			)
 		}
 	}
 }
@@ -761,7 +766,12 @@ func TestRetryEvaluator_Backoff_NextEvaluationTime(t *testing.T) {
 
 	// Allow 1 second tolerance for test execution time
 	diff := actualNextEval.Sub(expectedNextEval).Abs()
-	assert.LessOrEqual(t, diff, 1*time.Second, "NextEvaluationTime should be approximately 60s from now")
+	assert.LessOrEqual(
+		t,
+		diff,
+		1*time.Second,
+		"NextEvaluationTime should be approximately 60s from now",
+	)
 }
 
 // =============================================================================

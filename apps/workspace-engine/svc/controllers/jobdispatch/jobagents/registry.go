@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
-	"github.com/google/uuid"
 )
 
 type Getter interface {
@@ -47,7 +46,10 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 // AgentVerifications returns verification specs declared by the agent type.
 // If the agent does not implement [types.Verifiable], nil is returned.
-func (r *Registry) AgentVerifications(agentType string, config oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error) {
+func (r *Registry) AgentVerifications(
+	agentType string,
+	config oapi.JobAgentConfig,
+) ([]oapi.VerificationMetricSpec, error) {
 	dispatcher, ok := r.dispatchers[agentType]
 	if !ok {
 		return nil, nil

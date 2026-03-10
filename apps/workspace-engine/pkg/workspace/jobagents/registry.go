@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
@@ -16,8 +17,6 @@ import (
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type Registry struct {
@@ -26,7 +25,11 @@ type Registry struct {
 	queue       reconcile.Queue
 }
 
-func NewRegistry(store *store.Store, verifications *verification.Manager, queue reconcile.Queue) *Registry {
+func NewRegistry(
+	store *store.Store,
+	verifications *verification.Manager,
+	queue reconcile.Queue,
+) *Registry {
 	r := &Registry{}
 	r.dispatchers = make(map[string]types.Dispatchable)
 	r.store = store

@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
@@ -41,7 +40,9 @@ func NewEvaluator(
 	getters Getters,
 	environmentProgressionRule *oapi.PolicyRule,
 ) evaluator.Evaluator {
-	if environmentProgressionRule == nil || environmentProgressionRule.EnvironmentProgression == nil || getters == nil {
+	if environmentProgressionRule == nil ||
+		environmentProgressionRule.EnvironmentProgression == nil ||
+		getters == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&EnvironmentProgressionEvaluator{
@@ -159,7 +160,7 @@ func shareSystem(a, b []string) bool {
 	return false
 }
 
-// findDependencyEnvironments finds all environments matching the selector
+// findDependencyEnvironments finds all environments matching the selector.
 func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	ctx context.Context,
 	environment *oapi.Environment,
@@ -197,7 +198,7 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	return matchedEnvs, nil
 }
 
-// checkDependencyEnvironments checks if version succeeded in the dependency environments
+// checkDependencyEnvironments checks if version succeeded in the dependency environments.
 func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
@@ -265,10 +266,14 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			WithDetail("successful_environments", len(allowedResults))
 
 		for envId, allowedResult := range allowedResults {
-			successResult = successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
+			successResult = successResult.WithDetail(
+				fmt.Sprintf("environment_%s", envId),
+				allowedResult.Details,
+			)
 			// Use the earliest satisfiedAt time from any successful environment
 			if allowedResult.SatisfiedAt != nil {
-				if successResult.SatisfiedAt == nil || allowedResult.SatisfiedAt.Before(*successResult.SatisfiedAt) {
+				if successResult.SatisfiedAt == nil ||
+					allowedResult.SatisfiedAt.Before(*successResult.SatisfiedAt) {
 					successResult = successResult.WithSatisfiedAt(*allowedResult.SatisfiedAt)
 				}
 			}
@@ -308,7 +313,8 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 
 	tracker := NewReleaseTargetJobTracker(ctx, e.getters, environment, version, successStatuses)
 	if len(tracker.ReleaseTargets) == 0 {
-		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").WithSatisfiedAt(version.CreatedAt)
+		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").
+			WithSatisfiedAt(version.CreatedAt)
 	}
 	span.SetAttributes(attribute.Int("job_count", len(tracker.Jobs())))
 	span.SetAttributes(attribute.Int("release_target_count", len(tracker.ReleaseTargets)))
@@ -328,13 +334,21 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 
 	maxAgeAllowed, maxAgeMessage := e.checkMaximumAge(tracker, span)
 
-	result := e.buildResultFromEvaluations(passRateResult, soakTimeResult, maxAgeAllowed, maxAgeMessage)
+	result := e.buildResultFromEvaluations(
+		passRateResult,
+		soakTimeResult,
+		maxAgeAllowed,
+		maxAgeMessage,
+	)
 	result = e.mergeAllDetails(result, tracker, passRateResult, soakTimeResult)
 
 	return result
 }
 
-func (e *EnvironmentProgressionEvaluator) checkMaximumAge(tracker *ReleaseTargetJobTracker, span trace.Span) (bool, string) {
+func (e *EnvironmentProgressionEvaluator) checkMaximumAge(
+	tracker *ReleaseTargetJobTracker,
+	span trace.Span,
+) (bool, string) {
 	if e.rule.MaximumAgeHours == nil || *e.rule.MaximumAgeHours <= 0 {
 		return true, ""
 	}
@@ -347,7 +361,10 @@ func (e *EnvironmentProgressionEvaluator) checkMaximumAge(tracker *ReleaseTarget
 		return true, ""
 	}
 
-	return false, fmt.Sprintf("Most recent successful deployment exceeds maximum age of %d hours", *e.rule.MaximumAgeHours)
+	return false, fmt.Sprintf(
+		"Most recent successful deployment exceeds maximum age of %d hours",
+		*e.rule.MaximumAgeHours,
+	)
 }
 
 func (e *EnvironmentProgressionEvaluator) buildResultFromEvaluations(
@@ -410,7 +427,10 @@ func (e *EnvironmentProgressionEvaluator) mergeAllDetails(
 	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 {
 		result = result.WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours)
 		if !tracker.GetMostRecentSuccess().IsZero() {
-			result = result.WithDetail("most_recent_success", tracker.GetMostRecentSuccess().Format(time.RFC3339))
+			result = result.WithDetail(
+				"most_recent_success",
+				tracker.GetMostRecentSuccess().Format(time.RFC3339),
+			)
 		}
 	}
 

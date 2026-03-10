@@ -10,7 +10,9 @@ func InitProducer(p Producer) {
 
 func Publish(key []byte, value []byte) error {
 	if sharedProducer == nil {
-		return fmt.Errorf("shared kafka producer not initialized — call messaging.InitProducer first")
+		return fmt.Errorf(
+			"shared kafka producer not initialized — call messaging.InitProducer first",
+		)
 	}
 	return sharedProducer.Publish(key, value)
 }

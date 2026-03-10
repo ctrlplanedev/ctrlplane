@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/store/resources"
-
-	"github.com/google/uuid"
 )
 
 type resourcesGetter = resources.GetResources
@@ -22,7 +21,10 @@ func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
 	}
 }
 
-func (g *PostgresGetter) GetEnvironmentInfo(ctx context.Context, environmentID uuid.UUID) (*EnvironmentInfo, error) {
+func (g *PostgresGetter) GetEnvironmentInfo(
+	ctx context.Context,
+	environmentID uuid.UUID,
+) (*EnvironmentInfo, error) {
 	row, err := db.GetQueries(ctx).GetEnvironmentByID(ctx, environmentID)
 	if err != nil {
 		return nil, fmt.Errorf("get environment %s: %w", environmentID, err)

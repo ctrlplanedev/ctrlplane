@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/jobs"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
+	"workspace-engine/pkg/workspace/jobs"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/store"
 )
 
 func agentNames(agents []*oapi.JobAgent) []string {
@@ -41,7 +41,11 @@ func NewExecutor(store *store.Store, jobAgentRegistry *jobagents.Registry) *Exec
 	}
 }
 
-func (e *Executor) updateJobWithFailure(ctx context.Context, job *oapi.Job, err error) (*oapi.Job, error) {
+func (e *Executor) updateJobWithFailure(
+	ctx context.Context,
+	job *oapi.Job,
+	err error,
+) (*oapi.Job, error) {
 	job.Status = oapi.JobStatusFailure
 	message := err.Error()
 	job.Message = &message
@@ -52,7 +56,11 @@ func (e *Executor) updateJobWithFailure(ctx context.Context, job *oapi.Job, err 
 	return job, nil
 }
 
-func (e *Executor) dispatchJobForAgent(ctx context.Context, release *oapi.Release, agent *oapi.JobAgent) (*oapi.Job, error) {
+func (e *Executor) dispatchJobForAgent(
+	ctx context.Context,
+	release *oapi.Release,
+	agent *oapi.JobAgent,
+) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "createJobForAgent",
 		oteltrace.WithAttributes(
 			attribute.String("agent.id", agent.Id),
@@ -88,7 +96,11 @@ func (e *Executor) dispatchJobForAgent(ctx context.Context, release *oapi.Releas
 // ExecuteRelease performs all write operations to deploy a release (WRITES TO STORE).
 // Precondition: Planner has already determined this release NEEDS to be deployed.
 // No additional "should we deploy" checks here - trust the planning phase.
-func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release, recorder *trace.ReconcileTarget) ([]*oapi.Job, error) {
+func (e *Executor) ExecuteRelease(
+	ctx context.Context,
+	releaseToDeploy *oapi.Release,
+	recorder *trace.ReconcileTarget,
+) ([]*oapi.Job, error) {
 	ctx, span := tracer.Start(ctx, "ExecuteRelease",
 		oteltrace.WithAttributes(
 			attribute.String("release.id", releaseToDeploy.Id.String()),
@@ -114,14 +126,22 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 
 	deployment, exists := e.store.Deployments.Get(releaseToDeploy.ReleaseTarget.DeploymentId)
 	if !exists {
-		return nil, fmt.Errorf("deployment %s not found", releaseToDeploy.ReleaseTarget.DeploymentId)
+		return nil, fmt.Errorf(
+			"deployment %s not found",
+			releaseToDeploy.ReleaseTarget.DeploymentId,
+		)
 	}
 
-	agents, err := jobagents.NewDeploymentAgentsSelector(e.store, deployment, releaseToDeploy).SelectAgents()
+	agents, err := jobagents.NewDeploymentAgentsSelector(e.store, deployment, releaseToDeploy).
+		SelectAgents()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get deployment agents")
-		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(releaseToDeploy.Id.String(), deployment.Name, nil)
+		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(
+			releaseToDeploy.Id.String(),
+			deployment.Name,
+			nil,
+		)
 		e.store.Jobs.Upsert(ctx, failedJob)
 		return []*oapi.Job{failedJob}, nil
 	}
@@ -138,7 +158,12 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	}
 
 	if len(agents) == 0 {
-		failedJob := e.jobFactory.NoAgentConfiguredJob(releaseToDeploy.Id.String(), "", deployment.Name, nil)
+		failedJob := e.jobFactory.NoAgentConfiguredJob(
+			releaseToDeploy.Id.String(),
+			"",
+			deployment.Name,
+			nil,
+		)
 		e.store.Jobs.Upsert(ctx, failedJob)
 		return []*oapi.Job{failedJob}, nil
 	}

@@ -7,17 +7,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/store/resources"
 	deployselector "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	envselector "workspace-engine/svc/controllers/environmentresourceselectoreval"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const defaultDBURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -128,13 +127,20 @@ func setupDBFixture(t *testing.T, pool *pgxpool.Pool) *dbFixture {
 
 	rID := uuid.New()
 	f.resourceIDs = append(f.resourceIDs, rID)
-	_, err = pool.Exec(ctx,
+	_, err = pool.Exec(
+		ctx,
 		`INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, metadata, updated_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, NOW())`,
-		rID, "ctrlplane.dev/kubernetes/cluster/v1",
-		"my-cluster", "GoogleKubernetesEngine",
+		rID,
+		"ctrlplane.dev/kubernetes/cluster/v1",
+		"my-cluster",
+		"GoogleKubernetesEngine",
 		"https://container.googleapis.com/v1/projects/my-project/locations/us-central1/clusters/my-cluster",
-		f.providerID, f.workspaceID, richConfig, richMetadata)
+		f.providerID,
+		f.workspaceID,
+		richConfig,
+		richMetadata,
+	)
 	require.NoError(t, err, "create resource with rich config")
 
 	simpleMetadata, _ := json.Marshal(map[string]string{
@@ -143,12 +149,19 @@ func setupDBFixture(t *testing.T, pool *pgxpool.Pool) *dbFixture {
 	})
 	rID2 := uuid.New()
 	f.resourceIDs = append(f.resourceIDs, rID2)
-	_, err = pool.Exec(ctx,
+	_, err = pool.Exec(
+		ctx,
 		`INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, metadata, updated_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, '{}'::jsonb, $8::jsonb, NOW())`,
-		rID2, "v1", "simple-server", "Server",
+		rID2,
+		"v1",
+		"simple-server",
+		"Server",
 		"urn:simple-server",
-		f.providerID, f.workspaceID, simpleMetadata)
+		f.providerID,
+		f.workspaceID,
+		simpleMetadata,
+	)
 	require.NoError(t, err, "create simple resource")
 
 	return f
@@ -165,7 +178,11 @@ func TestPostgresGetter_DeploymentResourceCELEvaluation(t *testing.T) {
 	getter := deployselector.NewPostgresGetter(nil)
 
 	t.Run("GetResources returns CEL-compatible maps", func(t *testing.T) {
-		resources, err := getter.GetResources(ctx, f.workspaceID.String(), resources.GetResourcesOptions{})
+		resources, err := getter.GetResources(
+			ctx,
+			f.workspaceID.String(),
+			resources.GetResourcesOptions{},
+		)
 		require.NoError(t, err)
 
 		celEnv, err := celutil.NewEnvBuilder().
@@ -204,7 +221,11 @@ func TestPostgresGetter_EnvironmentResourceCELEvaluation(t *testing.T) {
 	getter := envselector.NewPostgresGetter(nil)
 
 	t.Run("GetResources returns CEL-compatible maps", func(t *testing.T) {
-		resources, err := getter.GetResources(ctx, f.workspaceID.String(), resources.GetResourcesOptions{})
+		resources, err := getter.GetResources(
+			ctx,
+			f.workspaceID.String(),
+			resources.GetResourcesOptions{},
+		)
 		require.NoError(t, err)
 
 		celEnv, err := celutil.NewEnvBuilder().

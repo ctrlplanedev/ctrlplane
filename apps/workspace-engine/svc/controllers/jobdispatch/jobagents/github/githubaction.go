@@ -4,22 +4,32 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/oapi"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/github")
 
 // WorkflowDispatcher dispatches a GitHub Actions workflow.
 type WorkflowDispatcher interface {
-	DispatchWorkflow(ctx context.Context, cfg oapi.GithubJobAgentConfig, ref string, inputs map[string]any) error
+	DispatchWorkflow(
+		ctx context.Context,
+		cfg oapi.GithubJobAgentConfig,
+		ref string,
+		inputs map[string]any,
+	) error
 }
 
 // Setter persists job status updates.
 type Setter interface {
-	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
+	UpdateJob(
+		ctx context.Context,
+		jobID string,
+		status oapi.JobStatus,
+		message string,
+		metadata map[string]string,
+	) error
 }
 
 type GithubAction struct {
@@ -54,7 +64,12 @@ func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
 		)
 		defer span.End()
 
-		if err := a.workflows.DispatchWorkflow(asyncCtx, cfg, ref, map[string]any{"job_id": job.Id}); err != nil {
+		if err := a.workflows.DispatchWorkflow(
+			asyncCtx,
+			cfg,
+			ref,
+			map[string]any{"job_id": job.Id},
+		); err != nil {
 			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
 			_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusInvalidIntegration, message, nil)
 		}

@@ -2,10 +2,10 @@ package relationships
 
 import (
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func makeResourceEntity(r *oapi.Resource) *oapi.RelatableEntity {
@@ -66,12 +66,27 @@ func TestPropertyValueExtraction_Resource(t *testing.T) {
 		{name: "providerid alias", path: []string{"providerid"}},
 		{name: "metadata as whole", path: []string{"metadata"}},
 		{name: "metadata key", path: []string{"metadata", "region"}},
-		{name: "metadata missing key", path: []string{"metadata", "missing"}, wantErr: true, contains: "not found"},
-		{name: "metadata too deep", path: []string{"metadata", "a", "b"}, wantErr: true, contains: "too deep"},
+		{
+			name:     "metadata missing key",
+			path:     []string{"metadata", "missing"},
+			wantErr:  true,
+			contains: "not found",
+		},
+		{
+			name:     "metadata too deep",
+			path:     []string{"metadata", "a", "b"},
+			wantErr:  true,
+			contains: "too deep",
+		},
 		{name: "config as whole", path: []string{"config"}},
 		{name: "config nested key", path: []string{"config", "namespace"}},
 		{name: "config deeply nested", path: []string{"config", "networking", "vpc_id"}},
-		{name: "config missing key", path: []string{"config", "nonexistent"}, wantErr: true, contains: "not found"},
+		{
+			name:     "config missing key",
+			path:     []string{"config", "nonexistent"},
+			wantErr:  true,
+			contains: "not found",
+		},
 		{name: "empty path", path: []string{}, wantErr: true, contains: "empty"},
 	}
 
@@ -133,8 +148,18 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 		{name: "description", path: []string{"description"}},
 		{name: "job_agent_id", path: []string{"job_agent_id"}},
 		{name: "jobagentid alias", path: []string{"jobagentid"}},
-		{name: "job_agent_config whole", path: []string{"job_agent_config"}, wantErr: true, contains: "unexpected"}, // JobAgentConfig type not handled
-		{name: "jobagentconfig alias", path: []string{"jobagentconfig"}, wantErr: true, contains: "unexpected"},
+		{
+			name:     "job_agent_config whole",
+			path:     []string{"job_agent_config"},
+			wantErr:  true,
+			contains: "unexpected",
+		}, // JobAgentConfig type not handled
+		{
+			name:     "jobagentconfig alias",
+			path:     []string{"jobagentconfig"},
+			wantErr:  true,
+			contains: "unexpected",
+		},
 		{name: "job_agent_config nested", path: []string{"job_agent_config", "repo"}},
 		{name: "job_agent_config deep nested", path: []string{"job_agent_config", "nested", "key"}},
 		{name: "empty path", path: []string{}, wantErr: true, contains: "empty"},

@@ -7,5 +7,9 @@ import (
 )
 
 type Setter interface {
-	SetComputedDeploymentResources(ctx context.Context, deploymentID uuid.UUID, resourceIDs []uuid.UUID) error
+	SetComputedDeploymentResources(
+		ctx context.Context,
+		deploymentID uuid.UUID,
+		resourceIDs []uuid.UUID,
+	) error
 }

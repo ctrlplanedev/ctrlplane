@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/store"
 )
 
 func setupStore() *store.Store {
@@ -98,7 +98,10 @@ func seedSuccessfulRelease(
 	st.Jobs.Upsert(ctx, job)
 }
 
-func setupScopeWithDeployedTarget(t *testing.T, st *store.Store) (context.Context, evaluator.EvaluatorScope) {
+func setupScopeWithDeployedTarget(
+	t *testing.T,
+	st *store.Store,
+) (context.Context, evaluator.EvaluatorScope) {
 	t.Helper()
 
 	ctx, releaseTarget := setupReleaseTarget(t, st)
@@ -1034,7 +1037,11 @@ func TestDeploymentWindowEvaluator_DailyBYHOUR_DetectsInsideWindow(t *testing.T)
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
 	result := eval.Evaluate(ctx, scope)
 
-	assert.True(t, result.Allowed, "expected allowed: we are inside the allow window (BYHOUR started 2h ago, duration 4h)")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed: we are inside the allow window (BYHOUR started 2h ago, duration 4h)",
+	)
 	assert.Contains(t, result.Message, "within allowed deployment window")
 	assert.Equal(t, "allow", result.Details["window_type"])
 }
@@ -1062,7 +1069,11 @@ func TestDeploymentWindowEvaluator_DailyBYHOUR_DenyWindow_DetectsInsideWindow(t 
 	ctx, scope := setupScopeWithDeployedTarget(t, st)
 	result := eval.Evaluate(ctx, scope)
 
-	assert.False(t, result.Allowed, "expected denied: we are inside the deny window (BYHOUR started 1h ago, duration 3h)")
+	assert.False(
+		t,
+		result.Allowed,
+		"expected denied: we are inside the deny window (BYHOUR started 1h ago, duration 3h)",
+	)
 	assert.Contains(t, result.Message, "within deny window")
 	assert.Equal(t, "deny", result.Details["window_type"])
 }

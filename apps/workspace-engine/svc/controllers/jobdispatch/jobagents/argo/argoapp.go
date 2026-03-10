@@ -6,26 +6,36 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo")
 
 // Setter persists job status updates.
 type Setter interface {
-	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
+	UpdateJob(
+		ctx context.Context,
+		jobID string,
+		status oapi.JobStatus,
+		message string,
+		metadata map[string]string,
+	) error
 }
 
 // ApplicationUpserter upserts an ArgoCD Application resource.
 type ApplicationUpserter interface {
-	UpsertApplication(ctx context.Context, serverAddr, apiKey string, app *v1alpha1.Application) error
+	UpsertApplication(
+		ctx context.Context,
+		serverAddr, apiKey string,
+		app *v1alpha1.Application,
+	) error
 }
 
 var (
@@ -50,7 +60,9 @@ func (a *ArgoApplication) Type() string {
 // the agent config. The provider URL uses the serverUrl from config; the
 // specific application path is resolved at measurement time via the
 // provider context.
-func (a *ArgoApplication) Verifications(config oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error) {
+func (a *ArgoApplication) Verifications(
+	config oapi.JobAgentConfig,
+) ([]oapi.VerificationMetricSpec, error) {
 	serverAddr, ok := config["serverUrl"].(string)
 	if !ok || serverAddr == "" {
 		return nil, nil
@@ -132,7 +144,9 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 }
 
 // ParseJobAgentConfig extracts the required ArgoCD fields from an agent config.
-func ParseJobAgentConfig(config oapi.JobAgentConfig) (serverAddr, apiKey, template string, err error) {
+func ParseJobAgentConfig(
+	config oapi.JobAgentConfig,
+) (serverAddr, apiKey, template string, err error) {
 	serverAddr, ok := config["serverUrl"].(string)
 	if !ok {
 		return "", "", "", fmt.Errorf("serverUrl is required")

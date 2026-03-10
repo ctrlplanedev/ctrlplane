@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
@@ -100,13 +101,15 @@ func TestMeasure(t *testing.T) {
 				Timeout: 5 * time.Second,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != http.MethodGet {
-						t.Errorf("expected GET method, got %s", r.Method)
-					}
-					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write([]byte("test response"))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodGet {
+							t.Errorf("expected GET method, got %s", r.Method)
+						}
+						w.WriteHeader(http.StatusOK)
+						_, _ = w.Write([]byte("test response"))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
@@ -125,13 +128,15 @@ func TestMeasure(t *testing.T) {
 				Timeout: 5 * time.Second,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != http.MethodPost {
-						t.Errorf("expected POST method, got %s", r.Method)
-					}
-					w.WriteHeader(http.StatusCreated)
-					_, _ = w.Write([]byte(`{"success":true}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodPost {
+							t.Errorf("expected POST method, got %s", r.Method)
+						}
+						w.WriteHeader(http.StatusCreated)
+						_, _ = w.Write([]byte(`{"success":true}`))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 201,
@@ -153,15 +158,20 @@ func TestMeasure(t *testing.T) {
 				Timeout: 5 * time.Second,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if auth := r.Header.Get("Authorization"); auth != "Bearer token123" {
-						t.Errorf("expected Authorization header 'Bearer token123', got %s", auth)
-					}
-					if ct := r.Header.Get("Content-Type"); ct != "application/json" {
-						t.Errorf("expected Content-Type header 'application/json', got %s", ct)
-					}
-					w.WriteHeader(http.StatusOK)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if auth := r.Header.Get("Authorization"); auth != "Bearer token123" {
+							t.Errorf(
+								"expected Authorization header 'Bearer token123', got %s",
+								auth,
+							)
+						}
+						if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+							t.Errorf("expected Content-Type header 'application/json', got %s", ct)
+						}
+						w.WriteHeader(http.StatusOK)
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
@@ -174,14 +184,16 @@ func TestMeasure(t *testing.T) {
 				Timeout: 5 * time.Second,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]any{
-						"metric": "value",
-						"count":  42,
-					})
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusOK)
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"metric": "value",
+							"count":  42,
+						})
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
@@ -206,10 +218,12 @@ func TestMeasure(t *testing.T) {
 				Timeout: 5 * time.Second,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-					_, _ = w.Write([]byte("not found"))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusNotFound)
+						_, _ = w.Write([]byte("not found"))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 404,
@@ -222,10 +236,12 @@ func TestMeasure(t *testing.T) {
 				Timeout: 5 * time.Second,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = w.Write([]byte("internal error"))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusInternalServerError)
+						_, _ = w.Write([]byte("internal error"))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 500,
@@ -238,10 +254,12 @@ func TestMeasure(t *testing.T) {
 				Timeout: 100 * time.Millisecond,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					time.Sleep(200 * time.Millisecond)
-					w.WriteHeader(http.StatusOK)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						time.Sleep(200 * time.Millisecond)
+						w.WriteHeader(http.StatusOK)
+					}),
+				)
 			},
 			providerCtx: &provider.ProviderContext{},
 			wantError:   true,

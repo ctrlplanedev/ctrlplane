@@ -3,15 +3,19 @@ package jobagents
 import (
 	"net/http"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type JobAgents struct{}
 
-func (s *JobAgents) GetJobAgents(c *gin.Context, workspaceId string, params oapi.GetJobAgentsParams) {
+func (s *JobAgents) GetJobAgents(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.GetJobAgentsParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -68,7 +72,12 @@ func (s *JobAgents) GetJobAgent(c *gin.Context, workspaceId string, jobAgentId s
 	c.JSON(http.StatusOK, jobAgent)
 }
 
-func (s *JobAgents) GetJobsForJobAgent(c *gin.Context, workspaceId string, jobAgentId string, params oapi.GetJobsForJobAgentParams) {
+func (s *JobAgents) GetJobsForJobAgent(
+	c *gin.Context,
+	workspaceId string,
+	jobAgentId string,
+	params oapi.GetJobsForJobAgentParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -107,7 +116,12 @@ func (s *JobAgents) GetJobsForJobAgent(c *gin.Context, workspaceId string, jobAg
 	})
 }
 
-func (s *JobAgents) GetDeploymentsForJobAgent(c *gin.Context, workspaceId string, jobAgentId string, params oapi.GetDeploymentsForJobAgentParams) {
+func (s *JobAgents) GetDeploymentsForJobAgent(
+	c *gin.Context,
+	workspaceId string,
+	jobAgentId string,
+	params oapi.GetDeploymentsForJobAgentParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

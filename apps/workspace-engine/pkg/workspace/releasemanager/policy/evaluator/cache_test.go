@@ -4,13 +4,13 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 )
 
-// MockEvaluator for testing
+// MockEvaluator for testing.
 type MockEvaluator struct {
 	callCount   int
 	mu          sync.Mutex
@@ -60,11 +60,21 @@ func TestMemoizedEvaluator_CachesOnScopeFields(t *testing.T) {
 		memoized := NewMemoized(mock, ScopeEnvironment|ScopeVersion)
 
 		// Call with target1
-		scope1 := EvaluatorScope{Environment: env, Version: version, Resource: res1, Deployment: dep}
+		scope1 := EvaluatorScope{
+			Environment: env,
+			Version:     version,
+			Resource:    res1,
+			Deployment:  dep,
+		}
 		result1 := memoized.Evaluate(ctx, scope1)
 
 		// Call with target2 - should hit cache (target doesn't matter)
-		scope2 := EvaluatorScope{Environment: env, Version: version, Resource: res2, Deployment: dep}
+		scope2 := EvaluatorScope{
+			Environment: env,
+			Version:     version,
+			Resource:    res2,
+			Deployment:  dep,
+		}
 		result2 := memoized.Evaluate(ctx, scope2)
 
 		// Should only evaluate once
@@ -79,11 +89,21 @@ func TestMemoizedEvaluator_CachesOnScopeFields(t *testing.T) {
 		memoized := NewMemoized(mock, ScopeEnvironment|ScopeVersion|ScopeReleaseTarget)
 
 		// Call with target1
-		scope1 := EvaluatorScope{Environment: env, Version: version, Resource: res1, Deployment: dep}
+		scope1 := EvaluatorScope{
+			Environment: env,
+			Version:     version,
+			Resource:    res1,
+			Deployment:  dep,
+		}
 		result1 := memoized.Evaluate(ctx, scope1)
 
 		// Call with target2 - should NOT hit cache (different resource)
-		scope2 := EvaluatorScope{Environment: env, Version: version, Resource: res2, Deployment: dep}
+		scope2 := EvaluatorScope{
+			Environment: env,
+			Version:     version,
+			Resource:    res2,
+			Deployment:  dep,
+		}
 		result2 := memoized.Evaluate(ctx, scope2)
 
 		// Call with target1 again - should hit cache
@@ -114,7 +134,12 @@ func TestMemoizedEvaluator_MissingFields(t *testing.T) {
 
 		result := memoized.Evaluate(ctx, scope)
 
-		assert.Equal(t, 0, mock.GetCallCount(), "should not evaluate when required field is missing")
+		assert.Equal(
+			t,
+			0,
+			mock.GetCallCount(),
+			"should not evaluate when required field is missing",
+		)
 		assert.False(t, result.Allowed, "should deny when required field is missing")
 		assert.NotEmpty(t, result.Message, "should have error message about missing fields")
 	})
@@ -168,9 +193,14 @@ func TestMemoizedEvaluator_BuildCacheKey(t *testing.T) {
 		{
 			name:        "same key for same environment+version",
 			scopeFields: ScopeEnvironment | ScopeVersion,
-			scope:       EvaluatorScope{Environment: env, Version: version, Resource: &oapi.Resource{Id: target.ResourceId}, Deployment: &oapi.Deployment{Id: target.DeploymentId}},
-			scope2:      EvaluatorScope{Environment: env, Version: version},
-			wantSame:    true,
+			scope: EvaluatorScope{
+				Environment: env,
+				Version:     version,
+				Resource:    &oapi.Resource{Id: target.ResourceId},
+				Deployment:  &oapi.Deployment{Id: target.DeploymentId},
+			},
+			scope2:   EvaluatorScope{Environment: env, Version: version},
+			wantSame: true,
 		},
 		{
 			name:        "different key for different version",

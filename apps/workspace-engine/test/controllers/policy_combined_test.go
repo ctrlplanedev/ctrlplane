@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
 )
 
 // ---------------------------------------------------------------------------
@@ -406,13 +405,25 @@ func TestCombinedPolicy_DependencyAndVersionSelector(t *testing.T) {
 	}
 	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
 		resourceID.String(): {
-			{DeploymentId: upstreamDeploymentID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-			{DeploymentId: deploymentID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+			{
+				DeploymentId:  upstreamDeploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  deploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
 		},
 	}
 	completedAt := time.Now().Add(-10 * time.Minute)
 	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
-		upstreamRTKey: {Id: uuid.New().String(), Status: oapi.JobStatusSuccessful, CompletedAt: &completedAt},
+		upstreamRTKey: {
+			Id:          uuid.New().String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
 	}
 
 	p.Run()

@@ -3,14 +3,14 @@ package policies
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Policies struct{}
@@ -94,7 +94,11 @@ func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string
 		if !ok {
 			continue
 		}
-		resolvedReleaseTarget := selector.NewResolvedReleaseTarget(environment, deployment, resource)
+		resolvedReleaseTarget := selector.NewResolvedReleaseTarget(
+			environment,
+			deployment,
+			resource,
+		)
 		if selector.MatchPolicy(c.Request.Context(), policy, resolvedReleaseTarget) {
 			matchingReleaseTargets = append(matchingReleaseTargets, releaseTarget)
 		}
@@ -213,7 +217,12 @@ func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
 	decision.PolicyResults = append(decision.PolicyResults, *globalPolicy)
 
 	for _, policy := range policies {
-		policyResult := policyManager.EvaluateWithPolicy(c.Request.Context(), policy, scope, policyManager.SummaryPolicyEvaluators)
+		policyResult := policyManager.EvaluateWithPolicy(
+			c.Request.Context(),
+			policy,
+			scope,
+			policyManager.SummaryPolicyEvaluators,
+		)
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 

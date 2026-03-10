@@ -42,7 +42,8 @@ func (r *RepositoryRouter) Apply(ctx context.Context, changes Changes) error {
 		key := entityType + ":" + entityID
 
 		// Keep the change with the latest timestamp
-		if existing, exists := latestChanges[key]; !exists || change.Timestamp.After(existing.Timestamp) {
+		if existing, exists := latestChanges[key]; !exists ||
+			change.Timestamp.After(existing.Timestamp) {
 			latestChanges[key] = change
 		}
 	}

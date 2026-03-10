@@ -3,11 +3,11 @@ package workflows
 import (
 	"encoding/json"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 func WorkflowToOapi(row db.Workflow) *oapi.Workflow {
@@ -84,7 +84,9 @@ func WorkflowJobTemplateToOapi(row db.WorkflowJobTemplate) *oapi.WorkflowJobTemp
 	}
 }
 
-func ToWorkflowJobTemplateUpsertParams(e *oapi.WorkflowJobTemplate) (db.UpsertWorkflowJobTemplateParams, error) {
+func ToWorkflowJobTemplateUpsertParams(
+	e *oapi.WorkflowJobTemplate,
+) (db.UpsertWorkflowJobTemplateParams, error) {
 	id, err := uuid.Parse(e.Id)
 	if err != nil {
 		return db.UpsertWorkflowJobTemplateParams{}, fmt.Errorf("parse id: %w", err)

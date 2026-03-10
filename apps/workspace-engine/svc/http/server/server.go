@@ -5,10 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
-	"workspace-engine/svc/http/server/openapi"
-
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -17,19 +13,21 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi"
 )
 
 var tracer = otel.Tracer("server")
 
-// Server implements the OpenAPI ServerInterface for the workspace engine
+// Server implements the OpenAPI ServerInterface for the workspace engine.
 type Server struct{}
 
-// New creates a new Server instance
+// New creates a new Server instance.
 func New() *Server {
 	return &Server{}
 }
 
-// SetupRouter configures and returns a Gin router with all routes and middleware
+// SetupRouter configures and returns a Gin router with all routes and middleware.
 func (s *Server) SetupRouter() *gin.Engine {
 	router := gin.New()
 	gin.SetMode(gin.ReleaseMode)
@@ -48,7 +46,10 @@ func (s *Server) SetupRouter() *gin.Engine {
 		c.File("oapi/openapi.json")
 	})
 	router.GET("/healthz", s.HealthCheck)
-	router.GET("/swagger/*any", ginswagger.WrapHandler(swaggerfiles.Handler, ginswagger.URL("/openapi.json")))
+	router.GET(
+		"/swagger/*any",
+		ginswagger.WrapHandler(swaggerfiles.Handler, ginswagger.URL("/openapi.json")),
+	)
 
 	// Register OpenAPI handlers
 	oapi.RegisterHandlers(router, openapi.New())
@@ -56,7 +57,7 @@ func (s *Server) SetupRouter() *gin.Engine {
 	return router
 }
 
-// HealthCheck returns the server health status
+// HealthCheck returns the server health status.
 func (s *Server) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
@@ -96,7 +97,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 	}
 }
 
-// TracingMiddleware adds OpenTelemetry tracing to requests
+// TracingMiddleware adds OpenTelemetry tracing to requests.
 func TracingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
@@ -131,13 +132,15 @@ func TracingMiddleware() gin.HandlerFunc {
 	}
 }
 
-// CORSMiddleware handles CORS headers
+// CORSMiddleware handles CORS headers.
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
+		c.Writer.Header().
+			Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().
+			Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)

@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 )
 
-// Helper function to create a test store with a resource
+// Helper function to create a test store with a resource.
 func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -116,11 +117,19 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 	}
 
 	if result.Details["release_target_key"] != releaseTarget.Key() {
-		t.Errorf("expected release_target_key=%s, got %v", releaseTarget.Key(), result.Details["release_target_key"])
+		t.Errorf(
+			"expected release_target_key=%s, got %v",
+			releaseTarget.Key(),
+			result.Details["release_target_key"],
+		)
 	}
 
 	if result.Details["job_job-1"] != oapi.JobStatusPending {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusPending, result.Details["job_job-1"])
+		t.Errorf(
+			"expected job_job-1=%s, got %v",
+			oapi.JobStatusPending,
+			result.Details["job_job-1"],
+		)
 	}
 }
 
@@ -174,7 +183,11 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 	}
 
 	if result.Details["job_job-1"] != oapi.JobStatusInProgress {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusInProgress, result.Details["job_job-1"])
+		t.Errorf(
+			"expected job_job-1=%s, got %v",
+			oapi.JobStatusInProgress,
+			result.Details["job_job-1"],
+		)
 	}
 }
 
@@ -228,7 +241,11 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 	}
 
 	if result.Details["job_job-1"] != oapi.JobStatusActionRequired {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusActionRequired, result.Details["job_job-1"])
+		t.Errorf(
+			"expected job_job-1=%s, got %v",
+			oapi.JobStatusActionRequired,
+			result.Details["job_job-1"],
+		)
 	}
 }
 
@@ -302,11 +319,19 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 
 	// Both jobs should be in details
 	if result.Details["job_job-1"] != oapi.JobStatusPending {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusPending, result.Details["job_job-1"])
+		t.Errorf(
+			"expected job_job-1=%s, got %v",
+			oapi.JobStatusPending,
+			result.Details["job_job-1"],
+		)
 	}
 
 	if result.Details["job_job-2"] != oapi.JobStatusInProgress {
-		t.Errorf("expected job_job-2=%s, got %v", oapi.JobStatusInProgress, result.Details["job_job-2"])
+		t.Errorf(
+			"expected job_job-2=%s, got %v",
+			oapi.JobStatusInProgress,
+			result.Details["job_job-2"],
+		)
 	}
 }
 
@@ -608,7 +633,11 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 
 			// Assert: Should ALLOW
 			if !result.Allowed {
-				t.Errorf("expected allowed for terminal status %s, got denied: %s", status, result.Message)
+				t.Errorf(
+					"expected allowed for terminal status %s, got denied: %s",
+					status,
+					result.Message,
+				)
 			}
 
 			if result.Message != "Release target has no active jobs" {

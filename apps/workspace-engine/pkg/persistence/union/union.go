@@ -52,7 +52,8 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 			key := entityType + ":" + entityID
 
 			// Keep the change with the latest timestamp
-			if existing, exists := merged[key]; !exists || change.Timestamp.After(existing.Timestamp) {
+			if existing, exists := merged[key]; !exists ||
+				change.Timestamp.After(existing.Timestamp) {
 				merged[key] = change
 			}
 		}

@@ -12,7 +12,7 @@ import (
 
 var tracer = otel.Tracer("statechange/statechange")
 
-// StateChangeType represents the type of state change
+// StateChangeType represents the type of state change.
 type StateChangeType string
 
 const (
@@ -20,7 +20,7 @@ const (
 	StateChangeDelete StateChangeType = "delete"
 )
 
-// StateChange represents a single state change to an entity
+// StateChange represents a single state change to an entity.
 type StateChange[T any] struct {
 	Type      StateChangeType
 	Entity    T
@@ -35,14 +35,14 @@ type ChangeSet[T any] struct {
 	mutex   sync.Mutex
 }
 
-// NewChangeSet creates a new workspace changeset
+// NewChangeSet creates a new workspace changeset.
 func NewChangeSet[T any]() *ChangeSet[T] {
 	return &ChangeSet[T]{
 		changes: make([]StateChange[T], 0),
 	}
 }
 
-// RecordUpsert records that an entity was upserted
+// RecordUpsert records that an entity was upserted.
 func (cs *ChangeSet[T]) RecordUpsert(entity T) {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
@@ -64,7 +64,7 @@ func (cs *ChangeSet[T]) RecordUpsert(entity T) {
 	})
 }
 
-// RecordDelete records that an entity was deleted
+// RecordDelete records that an entity was deleted.
 func (cs *ChangeSet[T]) RecordDelete(entity T) {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
@@ -76,7 +76,7 @@ func (cs *ChangeSet[T]) RecordDelete(entity T) {
 	})
 }
 
-// Changes returns a copy of all recorded changes
+// Changes returns a copy of all recorded changes.
 func (cs *ChangeSet[T]) Changes() []StateChange[T] {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
@@ -86,7 +86,7 @@ func (cs *ChangeSet[T]) Changes() []StateChange[T] {
 	return result
 }
 
-// Clear removes all recorded changes
+// Clear removes all recorded changes.
 func (cs *ChangeSet[T]) Clear() {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()

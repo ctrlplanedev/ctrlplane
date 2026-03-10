@@ -2,12 +2,12 @@ package desiredrelease
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
-	"github.com/google/uuid"
 )
 
 type postgresGetter = variableresolver.Getter
@@ -21,7 +21,10 @@ type Getter interface {
 
 	// ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
 	GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error)
-	GetCandidateVersions(ctx context.Context, deploymentID uuid.UUID) ([]*oapi.DeploymentVersion, error)
+	GetCandidateVersions(
+		ctx context.Context,
+		deploymentID uuid.UUID,
+	) ([]*oapi.DeploymentVersion, error)
 
 	// GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
 	// HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error)

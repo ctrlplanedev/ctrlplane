@@ -3,6 +3,7 @@ package deployment
 import (
 	"sync"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 )
 
@@ -67,7 +68,9 @@ func (rs *ReconciliationScheduler) Clear(keys []string) {
 }
 
 // GetNextReconciliationTime returns when a specific target needs reconciliation.
-func (rs *ReconciliationScheduler) GetNextReconciliationTime(releaseTarget *oapi.ReleaseTarget) (time.Time, bool) {
+func (rs *ReconciliationScheduler) GetNextReconciliationTime(
+	releaseTarget *oapi.ReleaseTarget,
+) (time.Time, bool) {
 	rs.mu.RLock()
 	defer rs.mu.RUnlock()
 

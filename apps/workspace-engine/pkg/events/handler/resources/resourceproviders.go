@@ -5,12 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/store"
-	"workspace-engine/pkg/workspace/store/diffcheck"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -19,6 +13,12 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
+	"workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/pkg/workspace/store/diffcheck"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var tracer = otel.Tracer("events/handler/resources")
@@ -94,7 +94,9 @@ func HandleResourceProviderSetResources(
 	)
 
 	if payload.BatchId == nil {
-		err := fmt.Errorf("batchId is required - resources must be cached via /cache-batch endpoint")
+		err := fmt.Errorf(
+			"batchId is required - resources must be cached via /cache-batch endpoint",
+		)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing batchId")
 		return err
@@ -239,7 +241,8 @@ func HandleResourceProviderSetResources(
 			resource.CreatedAt = summary.CreatedAt
 			resource.ProviderId = &payload.ProviderId
 
-			if resource.Name != summary.Name || resource.Kind != summary.Kind || resource.Version != summary.Version {
+			if resource.Name != summary.Name || resource.Kind != summary.Kind ||
+				resource.Version != summary.Version {
 				scalarChangedCount++
 				now := time.Now()
 				resource.UpdatedAt = &now
@@ -247,7 +250,10 @@ func HandleResourceProviderSetResources(
 				upsertEntries = append(upsertEntries, upsertEntry{resource: resource, isNew: false})
 			} else {
 				needFullFetch = append(needFullFetch, resource.Identifier)
-				pendingDiffCheck = append(pendingDiffCheck, pendingResource{resource: resource, summary: summary})
+				pendingDiffCheck = append(
+					pendingDiffCheck,
+					pendingResource{resource: resource, summary: summary},
+				)
 			}
 		} else {
 			resource.CreatedAt = time.Now()
@@ -283,7 +289,10 @@ func HandleResourceProviderSetResources(
 			now := time.Now()
 			pending.resource.UpdatedAt = &now
 			resourcesToUpsert = append(resourcesToUpsert, pending.resource)
-			upsertEntries = append(upsertEntries, upsertEntry{resource: pending.resource, isNew: false})
+			upsertEntries = append(
+				upsertEntries,
+				upsertEntry{resource: pending.resource, isNew: false},
+			)
 		}
 	}
 
@@ -314,9 +323,13 @@ func HandleResourceProviderSetResources(
 	}
 
 	// Update in-memory relationship indexes and release targets for changed resources
-	_, postProcessSpan := tracer.Start(ctx, "UpdateRelationshipsAndReleaseTargets", trace.WithAttributes(
-		attribute.Int("changed_count", len(upsertEntries)),
-	))
+	_, postProcessSpan := tracer.Start(
+		ctx,
+		"UpdateRelationshipsAndReleaseTargets",
+		trace.WithAttributes(
+			attribute.Int("changed_count", len(upsertEntries)),
+		),
+	)
 
 	for _, entry := range upsertEntries {
 		if entry.isNew {

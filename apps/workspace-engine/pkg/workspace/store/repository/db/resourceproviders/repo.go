@@ -3,11 +3,11 @@ package resourceproviders
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // Repo implements repository.ResourceProviderRepo backed by the resource_provider table.
@@ -71,7 +71,13 @@ func (r *Repo) Items() map[string]*oapi.ResourceProvider {
 
 	rows, err := db.GetQueries(r.ctx).ListResourceProvidersByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list resource providers by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list resource providers by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.ResourceProvider)
 	}
 

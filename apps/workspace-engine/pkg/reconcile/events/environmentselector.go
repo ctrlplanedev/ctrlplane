@@ -2,9 +2,9 @@ package events
 
 import (
 	"context"
-	"workspace-engine/pkg/reconcile"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/reconcile"
 )
 
 const EnvironmentResourceselectorEvalKind = "environment-resource-selector-eval"
@@ -14,7 +14,11 @@ type EnvironmentResourceselectorEvalParams struct {
 	EnvironmentID string
 }
 
-func EnqueueEnvironmentResourceselectorEval(queue reconcile.Queue, ctx context.Context, params EnvironmentResourceselectorEvalParams) error {
+func EnqueueEnvironmentResourceselectorEval(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params EnvironmentResourceselectorEvalParams,
+) error {
 	return queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: params.WorkspaceID,
 		Kind:        EnvironmentResourceselectorEvalKind,
@@ -23,7 +27,11 @@ func EnqueueEnvironmentResourceselectorEval(queue reconcile.Queue, ctx context.C
 	})
 }
 
-func EnqueueManyEnvironmentResourceselectorEval(queue reconcile.Queue, ctx context.Context, params []EnvironmentResourceselectorEvalParams) error {
+func EnqueueManyEnvironmentResourceselectorEval(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params []EnvironmentResourceselectorEvalParams,
+) error {
 	if len(params) == 0 {
 		return nil
 	}

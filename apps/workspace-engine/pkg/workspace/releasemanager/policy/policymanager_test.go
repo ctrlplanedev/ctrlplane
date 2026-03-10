@@ -3,13 +3,13 @@ package policy
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func setupTestStore(_ *testing.T) *store.Store {
@@ -215,7 +215,11 @@ func TestEvaluatePolicy(t *testing.T) {
 			expectedPassed: false,
 			checkResult: func(t *testing.T, result *oapi.PolicyEvaluation) {
 				assert.Len(t, result.RuleResults, 1)
-				assert.False(t, result.Allowed(), "policy should be denied due to insufficient approvals")
+				assert.False(
+					t,
+					result.Allowed(),
+					"policy should be denied due to insufficient approvals",
+				)
 				assert.Equal(t, "rule-1", result.RuleResults[0].RuleId)
 				assert.False(t, result.RuleResults[0].Allowed)
 			},
@@ -253,7 +257,11 @@ func TestEvaluatePolicy(t *testing.T) {
 			expectedPassed: true,
 			checkResult: func(t *testing.T, result *oapi.PolicyEvaluation) {
 				assert.Len(t, result.RuleResults, 1)
-				assert.True(t, result.Allowed(), "policy should be allowed with sufficient approvals")
+				assert.True(
+					t,
+					result.Allowed(),
+					"policy should be allowed with sufficient approvals",
+				)
 				assert.Equal(t, "rule-2", result.RuleResults[0].RuleId)
 				assert.True(t, result.RuleResults[0].Allowed)
 			},
@@ -322,7 +330,12 @@ func TestEvaluatePolicy(t *testing.T) {
 				testScope = *tt.scope
 			}
 
-			result := testManager.EvaluateWithPolicy(ctx, tt.policy, testScope, testManager.PlannerPolicyEvaluators)
+			result := testManager.EvaluateWithPolicy(
+				ctx,
+				tt.policy,
+				testScope,
+				testManager.PlannerPolicyEvaluators,
+			)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.policy.Id, result.Policy.Id)
@@ -471,7 +484,11 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 			checkType: func(t *testing.T, evals []evaluator.Evaluator) {
 				require.Len(t, evals, 1)
 				// Approval evaluator cares about Environment + Version
-				assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion, evals[0].ScopeFields())
+				assert.Equal(
+					t,
+					evaluator.ScopeEnvironment|evaluator.ScopeVersion,
+					evals[0].ScopeFields(),
+				)
 			},
 		},
 		{
@@ -485,7 +502,11 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 			checkType: func(t *testing.T, evals []evaluator.Evaluator) {
 				require.Len(t, evals, 1)
 				// Environment progression cares about Environment + Version
-				assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion, evals[0].ScopeFields())
+				assert.Equal(
+					t,
+					evaluator.ScopeEnvironment|evaluator.ScopeVersion,
+					evals[0].ScopeFields(),
+				)
 			},
 		},
 		{
@@ -499,8 +520,11 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 			checkType: func(t *testing.T, evals []evaluator.Evaluator) {
 				require.Len(t, evals, 1)
 				// Gradual rollout cares about Environment + Version + ReleaseTarget
-				assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion|evaluator.ScopeReleaseTarget,
-					evals[0].ScopeFields())
+				assert.Equal(
+					t,
+					evaluator.ScopeEnvironment|evaluator.ScopeVersion|evaluator.ScopeReleaseTarget,
+					evals[0].ScopeFields(),
+				)
 			},
 		},
 	}

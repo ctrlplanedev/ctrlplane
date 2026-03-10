@@ -80,7 +80,12 @@ func resolveReference(
 
 	lv, err := relationships.GetPropertyValue(refs[0], rv.Path)
 	if err != nil {
-		return nil, fmt.Errorf("resolve property path %v on reference %q: %w", rv.Path, rv.Reference, err)
+		return nil, fmt.Errorf(
+			"resolve property path %v on reference %q: %w",
+			rv.Path,
+			rv.Reference,
+			err,
+		)
 	}
 	return lv, nil
 }

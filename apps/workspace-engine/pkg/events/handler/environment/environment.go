@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
@@ -11,11 +12,13 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
 )
 
-func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, environment *oapi.Environment) ([]*oapi.ReleaseTarget, error) {
+func makeReleaseTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	environment *oapi.Environment,
+) ([]*oapi.ReleaseTarget, error) {
 	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, systemID := range ws.SystemEnvironments().GetSystemIDsForEnvironment(environment.Id) {
@@ -63,10 +66,14 @@ func HandleEnvironmentCreated(
 
 	ws.Store().RelationshipIndexes.AddEntity(ctx, environment.Id)
 
-	err := events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
-		WorkspaceID:   ws.ID,
-		EnvironmentID: environment.Id,
-	})
+	err := events.EnqueueEnvironmentResourceselectorEval(
+		ws.Queue(),
+		ctx,
+		events.EnvironmentResourceselectorEvalParams{
+			WorkspaceID:   ws.ID,
+			EnvironmentID: environment.Id,
+		},
+	)
 	if err != nil {
 		log.Error("failed to enqueue environment resourceselector eval", "error", err)
 	}
@@ -89,7 +96,10 @@ func HandleEnvironmentCreated(
 	return nil
 }
 
-func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+func getRemovedReleaseTargets(
+	oldReleaseTargets []*oapi.ReleaseTarget,
+	newReleaseTargets []*oapi.ReleaseTarget,
+) []*oapi.ReleaseTarget {
 	removedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, oldReleaseTarget := range oldReleaseTargets {
 		found := false
@@ -106,7 +116,10 @@ func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleas
 	return removedReleaseTargets
 }
 
-func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+func getAddedReleaseTargets(
+	oldReleaseTargets []*oapi.ReleaseTarget,
+	newReleaseTargets []*oapi.ReleaseTarget,
+) []*oapi.ReleaseTarget {
 	addedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, newReleaseTarget := range newReleaseTargets {
 		found := false
@@ -144,10 +157,14 @@ func HandleEnvironmentUpdated(
 
 	ws.Store().RelationshipIndexes.DirtyEntity(ctx, environment.Id)
 
-	err = events.EnqueueEnvironmentResourceselectorEval(ws.Queue(), ctx, events.EnvironmentResourceselectorEvalParams{
-		WorkspaceID:   ws.ID,
-		EnvironmentID: environment.Id,
-	})
+	err = events.EnqueueEnvironmentResourceselectorEval(
+		ws.Queue(),
+		ctx,
+		events.EnvironmentResourceselectorEvalParams{
+			WorkspaceID:   ws.ID,
+			EnvironmentID: environment.Id,
+		},
+	)
 	if err != nil {
 		log.Error("failed to enqueue environment resourceselector eval", "error", err)
 	}

@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/store"
 )
 
 func generateResourceSelector() *oapi.Selector {
@@ -28,7 +28,11 @@ func generateResourceSelector() *oapi.Selector {
 	return selector
 }
 
-func generateEnvironment(ctx context.Context, systemID string, store *store.Store) *oapi.Environment {
+func generateEnvironment(
+	ctx context.Context,
+	systemID string,
+	store *store.Store,
+) *oapi.Environment {
 	environment := &oapi.Environment{
 		Id:               uuid.New().String(),
 		ResourceSelector: generateResourceSelector(),
@@ -62,7 +66,12 @@ func generateResources(ctx context.Context, numResources int, store *store.Store
 	return resources
 }
 
-func generateDeploymentVersion(ctx context.Context, deploymentID string, createdAt time.Time, store *store.Store) *oapi.DeploymentVersion {
+func generateDeploymentVersion(
+	ctx context.Context,
+	deploymentID string,
+	createdAt time.Time,
+	store *store.Store,
+) *oapi.DeploymentVersion {
 	deploymentVersion := &oapi.DeploymentVersion{
 		Id:           uuid.New().String(),
 		DeploymentId: deploymentID,
@@ -73,7 +82,11 @@ func generateDeploymentVersion(ctx context.Context, deploymentID string, created
 	return deploymentVersion
 }
 
-func seedSuccessfulRelease(ctx context.Context, store *store.Store, releaseTarget *oapi.ReleaseTarget) *oapi.Release {
+func seedSuccessfulRelease(
+	ctx context.Context,
+	store *store.Store,
+	releaseTarget *oapi.ReleaseTarget,
+) *oapi.Release {
 	versionCreatedAt := time.Now().Add(-24 * time.Hour)
 	version := &oapi.DeploymentVersion{
 		Id:           uuid.New().String(),
@@ -103,14 +116,20 @@ func seedSuccessfulRelease(ctx context.Context, store *store.Store, releaseTarge
 	return release
 }
 
-func seedSuccessfulReleaseTargets(ctx context.Context, store *store.Store, releaseTargets []*oapi.ReleaseTarget) {
+func seedSuccessfulReleaseTargets(
+	ctx context.Context,
+	store *store.Store,
+	releaseTargets []*oapi.ReleaseTarget,
+) {
 	for _, releaseTarget := range releaseTargets {
 		seedSuccessfulRelease(ctx, store, releaseTarget)
 	}
 }
 
-// Mock hasher that just returns the number of the resource as its hash
-func getHashingFunc(st *store.Store) func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
+// Mock hasher that just returns the number of the resource as its hash.
+func getHashingFunc(
+	st *store.Store,
+) func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
 	return func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
 		resource, ok := st.Resources.Get(releaseTarget.ResourceId)
 		if !ok {
@@ -125,7 +144,10 @@ func getHashingFunc(st *store.Store) func(releaseTarget *oapi.ReleaseTarget, ver
 	}
 }
 
-func createGradualRolloutRule(rolloutType oapi.GradualRolloutRuleRolloutType, timeScaleInterval int32) *oapi.PolicyRule {
+func createGradualRolloutRule(
+	rolloutType oapi.GradualRolloutRuleRolloutType,
+	timeScaleInterval int32,
+) *oapi.PolicyRule {
 	return &oapi.PolicyRule{
 		Id: "gradualRollout",
 		GradualRollout: &oapi.GradualRolloutRule{
@@ -138,7 +160,7 @@ func createGradualRolloutRule(rolloutType oapi.GradualRolloutRuleRolloutType, ti
 // TestGradualRolloutEvaluator_LinearRollout tests that linear rollout uses fixed intervals
 // Position 0: deploys immediately (0 seconds)
 // Position 1: deploys after timeScaleInterval seconds (60 seconds)
-// Position 2: deploys after 2 * timeScaleInterval seconds (120 seconds)
+// Position 2: deploys after 2 * timeScaleInterval seconds (120 seconds).
 func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -202,7 +224,11 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed, "position 1 should deploy after 60 seconds")
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 
 	// Position 2: deploys after 120 seconds (offset = 2 * 60 = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
@@ -214,11 +240,15 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed, "position 2 should deploy after 120 seconds")
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result3.Details["target_rollout_time"],
+	)
 }
 
 // TestGradualRolloutEvaluator_LinearRollout_Pending tests that linear rollout returns pending
-// when the current time hasn't reached the deployment time yet
+// when the current time hasn't reached the deployment time yet.
 func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -300,7 +330,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 }
 
 // TestGradualRolloutEvaluator_LinearNormalizedRollout tests that linear-normalized rollout
-// spaces deployments evenly across all targets, ensuring total rollout time = timeScaleInterval
+// spaces deployments evenly across all targets, ensuring total rollout time = timeScaleInterval.
 func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -364,7 +394,11 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(20*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(20*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 
 	// Position 2: offset = (2/3) * 60 = 40 seconds
 	scope3 := evaluator.EvaluatorScope{
@@ -376,11 +410,15 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed)
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(40*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(40*time.Second).Format(time.RFC3339),
+		result3.Details["target_rollout_time"],
+	)
 }
 
 // TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately tests that zero timeScaleInterval
-// causes all targets to deploy immediately regardless of rollout type
+// causes all targets to deploy immediately regardless of rollout type.
 func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -438,7 +476,7 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 }
 
 // TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement tests that rollout doesn't start
-// until approval requirements are satisfied
+// until approval requirements are satisfied.
 func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -523,7 +561,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 }
 
 // TestGradualRolloutEvaluator_SatisfiedApprovalRequirement tests that rollout starts
-// when approval requirements are satisfied
+// when approval requirements are satisfied.
 func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -628,7 +666,11 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, oneHourLater.Format(time.RFC3339), result2.Details["rollout_start_time"])
-	assert.Equal(t, oneHourLater.Add(60*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		oneHourLater.Add(60*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 
 	// Position 2: deploys after 120 seconds from approval (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
@@ -641,11 +683,15 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result3.Allowed)
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 	assert.Equal(t, oneHourLater.Format(time.RFC3339), result3.Details["rollout_start_time"])
-	assert.Equal(t, oneHourLater.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		oneHourLater.Add(120*time.Second).Format(time.RFC3339),
+		result3.Details["target_rollout_time"],
+	)
 }
 
 // TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediately tests that rollout starts
-// immediately if the approval policy is skipped
+// immediately if the approval policy is skipped.
 func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediately(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -735,7 +781,11 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result2.Details["rollout_start_time"])
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 
 	// Position 2: deploys after 120 seconds from approval (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
@@ -748,12 +798,18 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 	assert.True(t, result3.Allowed)
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result3.Details["rollout_start_time"])
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result3.Details["target_rollout_time"],
+	)
 }
 
 // TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutStartsImmediately tests that rollout starts
-// immediately if the environment progression policy is skipped
-func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutStartsImmediately(t *testing.T) {
+// immediately if the environment progression policy is skipped.
+func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutStartsImmediately(
+	t *testing.T,
+) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -851,7 +907,11 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result2.Details["rollout_start_time"])
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 
 	// Position 2: deploys after 120 seconds from approval (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
@@ -864,11 +924,15 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 	assert.True(t, result3.Allowed)
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result3.Details["rollout_start_time"])
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result3.Details["target_rollout_time"],
+	)
 }
 
 // TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage tests that rollout starts
-// when environment progression with only success percentage is satisfied
+// when environment progression with only success percentage is satisfied.
 func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -991,7 +1055,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 }
 
 // TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime tests that rollout starts
-// when environment progression with only soak time is satisfied
+// when environment progression with only soak time is satisfied.
 func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1103,8 +1167,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 }
 
 // TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentageAndSoakTime tests that rollout starts
-// when environment progression with both success percentage and soak time is satisfied
-func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentageAndSoakTime(t *testing.T) {
+// when environment progression with both success percentage and soak time is satisfied.
+func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentageAndSoakTime(
+	t *testing.T,
+) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -1225,7 +1291,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 }
 
 // TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied tests that rollout doesn't start
-// when environment progression requirements are not satisfied
+// when environment progression requirements are not satisfied.
 func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1322,7 +1388,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 }
 
 // TestGradualRolloutEvaluator_BothPolicies_BothSatisfied tests that rollout starts
-// when both approval and environment progression are satisfied, using the later of the two
+// when both approval and environment progression are satisfied, using the later of the two.
 func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1463,7 +1529,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 }
 
 // TestGradualRolloutEvaluator_BothPolicies_ApprovalLater tests that rollout starts
-// when both policies are satisfied but approval happens later
+// when both policies are satisfied but approval happens later.
 func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1603,7 +1669,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 }
 
 // TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied tests that rollout doesn't start
-// when approval is not satisfied even if environment progression is satisfied
+// when approval is not satisfied even if environment progression is satisfied.
 func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1737,7 +1803,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 }
 
 // TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied tests that rollout doesn't start
-// when environment progression is not satisfied even if approval is satisfied
+// when environment progression is not satisfied even if approval is satisfied.
 func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1857,7 +1923,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 
 // TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed tests the real-world scenario
 // where approval is just satisfied and we check if only position 0 is allowed immediately,
-// while other positions should still be pending
+// while other positions should still be pending.
 func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1955,11 +2021,16 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 
 	// CRITICAL CHECK: Only position 0 should be allowed, all others should be pending
 	assert.Equal(t, 1, allowedCount, "Only position 0 should be allowed immediately after approval")
-	assert.Equal(t, 4, pendingCount, "Positions 1-4 should be pending (waiting for their rollout time)")
+	assert.Equal(
+		t,
+		4,
+		pendingCount,
+		"Positions 1-4 should be pending (waiting for their rollout time)",
+	)
 }
 
 // TestGradualRolloutEvaluator_GradualProgressionOverTime tests that as time advances,
-// more positions become allowed in the correct order
+// more positions become allowed in the correct order.
 func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -1983,7 +2054,10 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60) // 60 seconds between each position
+	rule := createGradualRolloutRule(
+		oapi.GradualRolloutRuleRolloutTypeLinear,
+		60,
+	) // 60 seconds between each position
 	eval := GradualRolloutEvaluator{
 		getters:    NewStoreGetters(st),
 		rule:       rule.GradualRollout,
@@ -2056,7 +2130,7 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 	assert.Equal(t, 5, allowedAtT240, "At T+240s, all 5 positions should be allowed")
 }
 
-// Helper function to count how many targets are allowed at a given time
+// Helper function to count how many targets are allowed at a given time.
 func countAllowedTargets(ctx context.Context, t *testing.T, eval GradualRolloutEvaluator,
 	environment *oapi.Environment, version *oapi.DeploymentVersion,
 	releaseTargets []*oapi.ReleaseTarget) int {
@@ -2078,7 +2152,7 @@ func countAllowedTargets(ctx context.Context, t *testing.T, eval GradualRolloutE
 }
 
 // TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowed tests the scenario
-// where environment progression is just satisfied and only position 0 should deploy immediately
+// where environment progression is just satisfied and only position 0 should deploy immediately.
 func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowed(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -2210,8 +2284,18 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 	}
 
 	// CRITICAL CHECK: Only position 0 should be allowed, all others should be pending
-	assert.Equal(t, 1, allowedCount, "Only position 0 should be allowed immediately after staging completes")
-	assert.Equal(t, 4, pendingCount, "Positions 1-4 should be pending (waiting for their rollout time)")
+	assert.Equal(
+		t,
+		1,
+		allowedCount,
+		"Only position 0 should be allowed immediately after staging completes",
+	)
+	assert.Equal(
+		t,
+		4,
+		pendingCount,
+		"Positions 1-4 should be pending (waiting for their rollout time)",
+	)
 }
 
 // TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending tests that NextEvaluationTime
@@ -2237,7 +2321,10 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60) // 60 seconds between deployments
+	rule := createGradualRolloutRule(
+		oapi.GradualRolloutRuleRolloutTypeLinear,
+		60,
+	) // 60 seconds between deployments
 	eval := GradualRolloutEvaluator{
 		getters:    NewStoreGetters(st),
 		ruleId:     rule.Id,
@@ -2274,7 +2361,11 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	assert.Equal(t, oapi.Wait, *result.ActionType)
 
 	// NextEvaluationTime should be set to the target rollout time
-	require.NotNil(t, result.NextEvaluationTime, "NextEvaluationTime should be set when target is pending")
+	require.NotNil(
+		t,
+		result.NextEvaluationTime,
+		"NextEvaluationTime should be set when target is pending",
+	)
 	expectedRolloutTime := baseTime.Add(60 * time.Second)
 	assert.WithinDuration(t, expectedRolloutTime, *result.NextEvaluationTime, 1*time.Second,
 		"NextEvaluationTime should be the target rollout time")
@@ -2335,7 +2426,11 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed(t *testing.T) {
 		result := eval.Evaluate(ctx, scope)
 
 		assert.True(t, result.Allowed, "position %d should be allowed", i)
-		assert.Nil(t, result.NextEvaluationTime, "NextEvaluationTime should be nil when target is allowed")
+		assert.Nil(
+			t,
+			result.NextEvaluationTime,
+			"NextEvaluationTime should be nil when target is allowed",
+		)
 	}
 }
 
@@ -2426,7 +2521,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 
 // TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets tests that when
 // environment progression passes because there are no release targets in the dependent
-// environment, gradual rollout starts immediately from version.CreatedAt
+// environment, gradual rollout starts immediately from version.CreatedAt.
 func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -2526,7 +2621,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result2.Details["rollout_start_time"])
-	assert.Equal(t, versionCreatedAt.Add(60*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		versionCreatedAt.Add(60*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 
 	// Position 2: deploys after 120 seconds from version.CreatedAt (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
@@ -2539,7 +2638,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 	assert.True(t, result3.Allowed)
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result3.Details["rollout_start_time"])
-	assert.Equal(t, versionCreatedAt.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		versionCreatedAt.Add(120*time.Second).Format(time.RFC3339),
+		result3.Details["target_rollout_time"],
+	)
 }
 
 // TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized tests that NextEvaluationTime
@@ -2565,7 +2668,10 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinearNormalized, 120) // Total 120 seconds for all
+	rule := createGradualRolloutRule(
+		oapi.GradualRolloutRuleRolloutTypeLinearNormalized,
+		120,
+	) // Total 120 seconds for all
 	eval := GradualRolloutEvaluator{
 		getters:    NewStoreGetters(st),
 		ruleId:     rule.Id,
@@ -2774,7 +2880,11 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
-	assert.True(t, result1.Allowed, "position 0 should be allowed (current time is after adjusted rollout start)")
+	assert.True(
+		t,
+		result1.Allowed,
+		"position 0 should be allowed (current time is after adjusted rollout start)",
+	)
 	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
 	// Rollout start time should be adjusted to window open time, not version.CreatedAt
 	assert.Equal(t, nextWindowStart.Format(time.RFC3339), result1.Details["rollout_start_time"],
@@ -2791,10 +2901,16 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 	assert.True(t, result2.Allowed, "position 1 should be allowed")
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	expectedRolloutTime := nextWindowStart.Add(60 * time.Second)
-	assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		expectedRolloutTime.Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 }
 
-func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVersion(t *testing.T) {
+func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVersion(
+	t *testing.T,
+) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -3115,8 +3231,13 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 			"rollout should start from deny window end time for position %d", i)
 
 		// Verify individual target rollout times are spaced correctly
-		assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result.Details["target_rollout_time"],
-			"position %d should have correct rollout time", i)
+		assert.Equal(
+			t,
+			expectedRolloutTime.Format(time.RFC3339),
+			result.Details["target_rollout_time"],
+			"position %d should have correct rollout time",
+			i,
+		)
 	}
 }
 
@@ -3295,7 +3416,12 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 			"rollout should start from window open time for position %d", i)
 
 		// Verify individual target rollout times are spaced correctly
-		assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result.Details["target_rollout_time"],
-			"position %d should have correct rollout time", i)
+		assert.Equal(
+			t,
+			expectedRolloutTime.Format(time.RFC3339),
+			result.Details["target_rollout_time"],
+			"position %d should have correct rollout time",
+			i,
+		)
 	}
 }

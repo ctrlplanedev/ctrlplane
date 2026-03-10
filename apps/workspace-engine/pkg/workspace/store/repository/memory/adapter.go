@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/persistence"
 )
@@ -15,7 +16,7 @@ type TypedStoreAdapter[E any] struct {
 	store *cmap.ConcurrentMap[string, E]
 }
 
-// typeAndKey performs type assertion and extracts the entity ID
+// typeAndKey performs type assertion and extracts the entity ID.
 func (a *TypedStoreAdapter[E]) typeAndKey(entity any) (typed E, key string, err error) {
 	typed, ok := entity.(E)
 	if !ok {

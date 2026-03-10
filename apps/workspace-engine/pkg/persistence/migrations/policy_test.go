@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"workspace-engine/pkg/persistence/migrations"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/persistence/migrations"
 )
 
 func toMap(t *testing.T, jsonStr string) map[string]any {
@@ -79,7 +78,8 @@ func TestPolicySelectorsToSelector_SingleSelector_AllDimensions(t *testing.T) {
 
 	result, err := migrations.PolicySelectorsToSelector("policy", data)
 	require.NoError(t, err)
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		"(deployment.name == 'web') && (environment.name == 'prod') && (resource.kind == 'kubernetes')",
 		result["selector"],
 	)
@@ -174,7 +174,8 @@ func TestPolicySelectorsToSelector_MultipleSelectors_ORed(t *testing.T) {
 
 	result, err := migrations.PolicySelectorsToSelector("policy", data)
 	require.NoError(t, err)
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		"((deployment.name == 'web') && (environment.name == 'prod')) || (resource.kind == 'kubernetes')",
 		result["selector"],
 	)

@@ -3,11 +3,11 @@ package deploymentversions
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // Repo implements repository.DeploymentVersionRepo backed by the
@@ -102,7 +102,13 @@ func (r *Repo) Items() map[string]*oapi.DeploymentVersion {
 	}
 	rows, err := db.GetQueries(r.ctx).ListDeploymentVersionsByWorkspaceID(r.ctx, args)
 	if err != nil {
-		log.Warn("Failed to list deployment versions by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list deployment versions by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.DeploymentVersion)
 	}
 

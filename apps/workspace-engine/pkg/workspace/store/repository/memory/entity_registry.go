@@ -2,6 +2,7 @@ package memory
 
 import (
 	"sync"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/persistence/migrations"
@@ -20,34 +21,85 @@ func initGlobalRegistry() {
 
 		// Register all entity types with their factory functions
 		globalRegistry.Register("resource", func() persistence.Entity { return &oapi.Resource{} })
-		globalRegistry.Register("resource_provider", func() persistence.Entity { return &oapi.ResourceProvider{} })
-		globalRegistry.Register("resource_variable", func() persistence.Entity { return &oapi.ResourceVariable{} })
-		globalRegistry.Register("deployment", func() persistence.Entity { return &oapi.Deployment{} })
-		globalRegistry.Register("deployment_version", func() persistence.Entity { return &oapi.DeploymentVersion{} })
-		globalRegistry.Register("deployment_variable", func() persistence.Entity { return &oapi.DeploymentVariable{} })
-		globalRegistry.Register("deployment_variable_value", func() persistence.Entity { return &oapi.DeploymentVariableValue{} })
-		globalRegistry.Register("environment", func() persistence.Entity { return &oapi.Environment{} })
+		globalRegistry.Register(
+			"resource_provider",
+			func() persistence.Entity { return &oapi.ResourceProvider{} },
+		)
+		globalRegistry.Register(
+			"resource_variable",
+			func() persistence.Entity { return &oapi.ResourceVariable{} },
+		)
+		globalRegistry.Register(
+			"deployment",
+			func() persistence.Entity { return &oapi.Deployment{} },
+		)
+		globalRegistry.Register(
+			"deployment_version",
+			func() persistence.Entity { return &oapi.DeploymentVersion{} },
+		)
+		globalRegistry.Register(
+			"deployment_variable",
+			func() persistence.Entity { return &oapi.DeploymentVariable{} },
+		)
+		globalRegistry.Register(
+			"deployment_variable_value",
+			func() persistence.Entity { return &oapi.DeploymentVariableValue{} },
+		)
+		globalRegistry.Register(
+			"environment",
+			func() persistence.Entity { return &oapi.Environment{} },
+		)
 		globalRegistry.Register("policy", func() persistence.Entity { return &oapi.Policy{} })
 		globalRegistry.RegisterMigration("policy", persistence.Migration{
 			Name:    "selectors_to_selector",
 			Migrate: migrations.PolicySelectorsToSelector,
 		})
 
-		globalRegistry.Register("policy_skip", func() persistence.Entity { return &oapi.PolicySkip{} })
+		globalRegistry.Register(
+			"policy_skip",
+			func() persistence.Entity { return &oapi.PolicySkip{} },
+		)
 		globalRegistry.Register("system", func() persistence.Entity { return &oapi.System{} })
-		globalRegistry.Register("system_deployment_link", func() persistence.Entity { return &oapi.SystemDeploymentLink{} })
-		globalRegistry.Register("system_environment_link", func() persistence.Entity { return &oapi.SystemEnvironmentLink{} })
+		globalRegistry.Register(
+			"system_deployment_link",
+			func() persistence.Entity { return &oapi.SystemDeploymentLink{} },
+		)
+		globalRegistry.Register(
+			"system_environment_link",
+			func() persistence.Entity { return &oapi.SystemEnvironmentLink{} },
+		)
 		globalRegistry.Register("release", func() persistence.Entity { return &oapi.Release{} })
 		globalRegistry.Register("job", func() persistence.Entity { return &oapi.Job{} })
 		globalRegistry.Register("job_agent", func() persistence.Entity { return &oapi.JobAgent{} })
-		globalRegistry.Register("user_approval_record", func() persistence.Entity { return &oapi.UserApprovalRecord{} })
-		globalRegistry.Register("relationship_rule", func() persistence.Entity { return &oapi.RelationshipRule{} })
-		globalRegistry.Register("github_entity", func() persistence.Entity { return &oapi.GithubEntity{} })
-		globalRegistry.Register("job_verification", func() persistence.Entity { return &oapi.JobVerification{} })
+		globalRegistry.Register(
+			"user_approval_record",
+			func() persistence.Entity { return &oapi.UserApprovalRecord{} },
+		)
+		globalRegistry.Register(
+			"relationship_rule",
+			func() persistence.Entity { return &oapi.RelationshipRule{} },
+		)
+		globalRegistry.Register(
+			"github_entity",
+			func() persistence.Entity { return &oapi.GithubEntity{} },
+		)
+		globalRegistry.Register(
+			"job_verification",
+			func() persistence.Entity { return &oapi.JobVerification{} },
+		)
 		globalRegistry.Register("workflow", func() persistence.Entity { return &oapi.Workflow{} })
-		globalRegistry.Register("workflow_job_template", func() persistence.Entity { return &oapi.WorkflowJobTemplate{} })
-		globalRegistry.Register("workflow_run", func() persistence.Entity { return &oapi.WorkflowRun{} })
-		globalRegistry.Register("workflow_job", func() persistence.Entity { return &oapi.WorkflowJob{} })
+		globalRegistry.Register(
+			"workflow_job_template",
+			func() persistence.Entity { return &oapi.WorkflowJobTemplate{} },
+		)
+		globalRegistry.Register(
+			"workflow_run",
+			func() persistence.Entity { return &oapi.WorkflowRun{} },
+		)
+		globalRegistry.Register(
+			"workflow_job",
+			func() persistence.Entity { return &oapi.WorkflowJob{} },
+		)
 	})
 }
 

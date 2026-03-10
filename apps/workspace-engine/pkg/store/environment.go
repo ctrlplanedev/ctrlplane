@@ -3,16 +3,19 @@ package store
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type EnvironmentGetter interface {
 	GetEnvironment(ctx context.Context, environmentID string) (*oapi.Environment, error)
-	GetAllEnvironments(ctx context.Context, workspaceID string) (map[string]*oapi.Environment, error)
+	GetAllEnvironments(
+		ctx context.Context,
+		workspaceID string,
+	) (map[string]*oapi.Environment, error)
 }
 
 var _ EnvironmentGetter = (*PostgresEnvironmentGetter)(nil)
@@ -25,7 +28,10 @@ func NewPostgresEnvironmentGetter(queries *db.Queries) *PostgresEnvironmentGette
 	return &PostgresEnvironmentGetter{queries: queries}
 }
 
-func (g *PostgresEnvironmentGetter) GetEnvironment(ctx context.Context, environmentID string) (*oapi.Environment, error) {
+func (g *PostgresEnvironmentGetter) GetEnvironment(
+	ctx context.Context,
+	environmentID string,
+) (*oapi.Environment, error) {
 	env, err := g.queries.GetEnvironmentByID(ctx, uuid.MustParse(environmentID))
 	if err != nil {
 		return nil, err
@@ -33,10 +39,16 @@ func (g *PostgresEnvironmentGetter) GetEnvironment(ctx context.Context, environm
 	return db.ToOapiEnvironment(env), nil
 }
 
-func (g *PostgresEnvironmentGetter) GetAllEnvironments(ctx context.Context, workspaceID string) (map[string]*oapi.Environment, error) {
-	envs, err := g.queries.ListEnvironmentsByWorkspaceID(ctx, db.ListEnvironmentsByWorkspaceIDParams{
-		WorkspaceID: uuid.MustParse(workspaceID),
-	})
+func (g *PostgresEnvironmentGetter) GetAllEnvironments(
+	ctx context.Context,
+	workspaceID string,
+) (map[string]*oapi.Environment, error) {
+	envs, err := g.queries.ListEnvironmentsByWorkspaceID(
+		ctx,
+		db.ListEnvironmentsByWorkspaceIDParams{
+			WorkspaceID: uuid.MustParse(workspaceID),
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +69,10 @@ func NewStoreEnvironmentGetter(store *legacystore.Store) EnvironmentGetter {
 	return &StoreEnvironmentGetter{store: store}
 }
 
-func (s *StoreEnvironmentGetter) GetEnvironment(ctx context.Context, environmentID string) (*oapi.Environment, error) {
+func (s *StoreEnvironmentGetter) GetEnvironment(
+	ctx context.Context,
+	environmentID string,
+) (*oapi.Environment, error) {
 	env, ok := s.store.Environments.Get(environmentID)
 	if !ok {
 		return nil, fmt.Errorf("environment not found")
@@ -65,7 +80,10 @@ func (s *StoreEnvironmentGetter) GetEnvironment(ctx context.Context, environment
 	return env, nil
 }
 
-func (s *StoreEnvironmentGetter) GetAllEnvironments(ctx context.Context, _ string) (map[string]*oapi.Environment, error) {
+func (s *StoreEnvironmentGetter) GetAllEnvironments(
+	ctx context.Context,
+	_ string,
+) (map[string]*oapi.Environment, error) {
 	envs := s.store.Environments.Items()
 	return envs, nil
 }

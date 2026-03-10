@@ -5,17 +5,21 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/store"
 )
 
-// Helper functions
-func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, completedAt time.Time) (*oapi.Release, *oapi.Job) {
+// Helper functions.
+func createTestReleaseAndJob(
+	s *store.Store,
+	ctx context.Context,
+	tag string,
+	completedAt time.Time,
+) (*oapi.Release, *oapi.Job) {
 	// Create system
 	systemId := uuid.New().String()
 	system := &oapi.System{
@@ -104,7 +108,13 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 	return release, job
 }
 
-func createVerificationWithStatus(s *store.Store, ctx context.Context, jobId string, status oapi.JobVerificationStatus, createdAt time.Time) *oapi.JobVerification {
+func createVerificationWithStatus(
+	s *store.Store,
+	ctx context.Context,
+	jobId string,
+	status oapi.JobVerificationStatus,
+	createdAt time.Time,
+) *oapi.JobVerification {
 	// Create metrics that result in the desired status
 	var metrics []oapi.VerificationMetricStatus
 
@@ -199,7 +209,10 @@ func TestGetCurrentRelease_NoVerification(t *testing.T) {
 	release, _ := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Get current release
-	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
+	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(
+		ctx,
+		&release.ReleaseTarget,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
@@ -220,11 +233,20 @@ func TestGetCurrentRelease_PassedVerification(t *testing.T) {
 	release, job := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Create passed verification
-	verification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusPassed, time.Now())
+	verification := createVerificationWithStatus(
+		s,
+		ctx,
+		job.Id,
+		oapi.JobVerificationStatusPassed,
+		time.Now(),
+	)
 	require.Equal(t, oapi.JobVerificationStatusPassed, verification.Status())
 
 	// Get current release
-	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
+	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(
+		ctx,
+		&release.ReleaseTarget,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, currentRelease)
@@ -262,7 +284,11 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
-	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment"}
+	deployment := &oapi.Deployment{
+		Id:   deploymentId,
+		Name: "test-deployment",
+		Slug: "test-deployment",
+	}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
@@ -304,7 +330,13 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	}
 	s.Jobs.Upsert(ctx, olderJob)
 
-	olderVerification := createVerificationWithStatus(s, ctx, olderJob.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
+	olderVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		olderJob.Id,
+		oapi.JobVerificationStatusPassed,
+		time.Now().Add(-1*time.Hour),
+	)
 	require.Equal(t, oapi.JobVerificationStatusPassed, olderVerification.Status())
 
 	// Create newer release with failed verification
@@ -335,7 +367,13 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	}
 	s.Jobs.Upsert(ctx, newerJob)
 
-	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusFailed, time.Now())
+	newerVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		newerJob.Id,
+		oapi.JobVerificationStatusFailed,
+		time.Now(),
+	)
 	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
 	// Get current release - should return older release
@@ -378,7 +416,11 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
-	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment"}
+	deployment := &oapi.Deployment{
+		Id:   deploymentId,
+		Name: "test-deployment",
+		Slug: "test-deployment",
+	}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
@@ -420,7 +462,13 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	}
 	s.Jobs.Upsert(ctx, olderJob)
 
-	olderVerification := createVerificationWithStatus(s, ctx, olderJob.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
+	olderVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		olderJob.Id,
+		oapi.JobVerificationStatusPassed,
+		time.Now().Add(-1*time.Hour),
+	)
 	require.Equal(t, oapi.JobVerificationStatusPassed, olderVerification.Status())
 
 	// Create newer release with running verification
@@ -451,7 +499,13 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	}
 	s.Jobs.Upsert(ctx, newerJob)
 
-	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusRunning, time.Now())
+	newerVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		newerJob.Id,
+		oapi.JobVerificationStatusRunning,
+		time.Now(),
+	)
 	require.Equal(t, oapi.JobVerificationStatusRunning, newerVerification.Status())
 
 	// Get current release - should return older release
@@ -476,15 +530,30 @@ func TestGetCurrentRelease_MultipleVerifications_UseMostRecent(t *testing.T) {
 	release, job := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Create old passed verification
-	oldVerification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
+	oldVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		job.Id,
+		oapi.JobVerificationStatusPassed,
+		time.Now().Add(-1*time.Hour),
+	)
 	require.Equal(t, oapi.JobVerificationStatusPassed, oldVerification.Status())
 
 	// Create newer failed verification
-	newerVerification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusFailed, time.Now())
+	newerVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		job.Id,
+		oapi.JobVerificationStatusFailed,
+		time.Now(),
+	)
 	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
 	// Get current release - should fail because most recent verification failed
-	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
+	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(
+		ctx,
+		&release.ReleaseTarget,
+	)
 
 	require.Error(t, err)
 	assert.Nil(t, currentRelease)
@@ -521,7 +590,11 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
-	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment"}
+	deployment := &oapi.Deployment{
+		Id:   deploymentId,
+		Name: "test-deployment",
+		Slug: "test-deployment",
+	}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
@@ -591,7 +664,13 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	}
 	s.Jobs.Upsert(ctx, newerJob)
 
-	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusCancelled, time.Now())
+	newerVerification := createVerificationWithStatus(
+		s,
+		ctx,
+		newerJob.Id,
+		oapi.JobVerificationStatusCancelled,
+		time.Now(),
+	)
 	// Cancelled verification will show as failed when exceeding failure limit
 	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
@@ -617,11 +696,20 @@ func TestGetCurrentRelease_NoValidRelease(t *testing.T) {
 	release, job := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Create failed verification
-	verification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusFailed, time.Now())
+	verification := createVerificationWithStatus(
+		s,
+		ctx,
+		job.Id,
+		oapi.JobVerificationStatusFailed,
+		time.Now(),
+	)
 	require.Equal(t, oapi.JobVerificationStatusFailed, verification.Status())
 
 	// Get current release - should return error
-	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
+	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(
+		ctx,
+		&release.ReleaseTarget,
+	)
 
 	require.Error(t, err)
 	assert.Nil(t, currentRelease)

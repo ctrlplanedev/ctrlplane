@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 )
 
-// ProviderContext provides context information for metric providers
+// ProviderContext provides context information for metric providers.
 type ProviderContext struct {
 	Release     *oapi.Release           `json:"release"`
 	Resource    *oapi.Resource          `json:"resource"`
@@ -52,7 +53,7 @@ func (p *ProviderContext) Template(tmpl string) string {
 	return buf.String()
 }
 
-// Provider collects raw measurement data
+// Provider collects raw measurement data.
 type Provider interface {
 	// Measure collects data for evaluation
 	// Returns the measurement time and data map

@@ -31,7 +31,9 @@ func (r *ResourceRepo) GetByIdentifiers(identifiers []string) map[string]*oapi.R
 	return r.mem.GetByIdentifiers(identifiers)
 }
 
-func (r *ResourceRepo) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+func (r *ResourceRepo) GetSummariesByIdentifiers(
+	identifiers []string,
+) map[string]*repository.ResourceSummary {
 	return r.mem.GetSummariesByIdentifiers(identifiers)
 }
 

@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
-
-	"github.com/google/uuid"
 )
 
 // PipelineOption configures the scenario for a TestPipeline.
@@ -156,7 +155,11 @@ func ApprovalRecordUserID(userID string) ApprovalRecordOption {
 // WithApprovalRecord adds a pre-seeded approval record to the scenario.
 // The record's VersionId and EnvironmentId are populated from the scenario
 // at build time unless overridden by opts.
-func WithApprovalRecord(status oapi.ApprovalStatus, versionID, environmentID string, opts ...ApprovalRecordOption) PipelineOption {
+func WithApprovalRecord(
+	status oapi.ApprovalStatus,
+	versionID, environmentID string,
+	opts ...ApprovalRecordOption,
+) PipelineOption {
 	return func(sc *ScenarioState) {
 		rec := &oapi.UserApprovalRecord{
 			Status:        status,
@@ -373,7 +376,11 @@ func WindowTimezone(tz string) DeploymentWindowOption {
 }
 
 // WithDeploymentWindowRule configures a deployment window rule.
-func WithDeploymentWindowRule(rrule string, durationMinutes int32, opts ...DeploymentWindowOption) PolicyRuleOption {
+func WithDeploymentWindowRule(
+	rrule string,
+	durationMinutes int32,
+	opts ...DeploymentWindowOption,
+) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rrule,
@@ -404,7 +411,10 @@ func WithVersionCooldownRule(intervalSeconds int32) PolicyRuleOption {
 
 // WithGradualRolloutRule configures a gradual rollout rule with the given
 // time scale interval (seconds) and rollout type ("linear" or "linear-normalized").
-func WithGradualRolloutRule(timeScaleInterval int32, rolloutType oapi.GradualRolloutRuleRolloutType) PolicyRuleOption {
+func WithGradualRolloutRule(
+	timeScaleInterval int32,
+	rolloutType oapi.GradualRolloutRuleRolloutType,
+) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
 		r.GradualRollout = &oapi.GradualRolloutRule{
 			TimeScaleInterval: timeScaleInterval,
@@ -462,7 +472,10 @@ func EnvProgressionSuccessStatuses(statuses ...oapi.JobStatus) EnvironmentProgre
 // The dependsOnSelector is a CEL expression matching dependency environments.
 // Use EnvironmentProgressionOption funcs to configure success percentage,
 // soak time, max age, and success statuses.
-func WithEnvironmentProgressionRule(dependsOnSelector string, opts ...EnvironmentProgressionOption) PolicyRuleOption {
+func WithEnvironmentProgressionRule(
+	dependsOnSelector string,
+	opts ...EnvironmentProgressionOption,
+) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
 		sel := &oapi.Selector{}
 		_ = sel.FromCelSelector(oapi.CelSelector{Cel: dependsOnSelector})

@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
-// CachedBatch represents a temporarily stored resource batch
+// CachedBatch represents a temporarily stored resource batch.
 type CachedBatch struct {
 	BatchId    string
 	ProviderId string
@@ -21,7 +21,7 @@ type CachedBatch struct {
 }
 
 // ResourceProviderCache manages temporary storage of large resource batches
-// Uses Ristretto for high-performance in-memory caching with automatic eviction
+// Uses Ristretto for high-performance in-memory caching with automatic eviction.
 type ResourceProviderCache struct {
 	cache *ristretto.Cache[string, *CachedBatch]
 	once  sync.Once
@@ -32,7 +32,7 @@ var (
 	globalCacheOnce sync.Once
 )
 
-// initCache initializes the Ristretto cache (called once)
+// initCache initializes the Ristretto cache (called once).
 func (c *ResourceProviderCache) initCache() {
 	c.once.Do(func() {
 		// Configure Ristretto cache
@@ -73,7 +73,7 @@ func (c *ResourceProviderCache) initCache() {
 	})
 }
 
-// GetResourceProviderBatchCache returns the global batch cache instance
+// GetResourceProviderBatchCache returns the global batch cache instance.
 func GetResourceProviderBatchCache() *ResourceProviderCache {
 	globalCacheOnce.Do(func() {
 		globalCache = &ResourceProviderCache{}
@@ -83,8 +83,12 @@ func GetResourceProviderBatchCache() *ResourceProviderCache {
 }
 
 // Store caches a batch of resources with a generated batch ID
-// Returns the batch ID that can be used to retrieve the batch later
-func (c *ResourceProviderCache) Store(ctx context.Context, providerId string, resources []*oapi.Resource) (string, error) {
+// Returns the batch ID that can be used to retrieve the batch later.
+func (c *ResourceProviderCache) Store(
+	ctx context.Context,
+	providerId string,
+	resources []*oapi.Resource,
+) (string, error) {
 	c.initCache()
 
 	batchId := uuid.New().String()
@@ -113,8 +117,11 @@ func (c *ResourceProviderCache) Store(ctx context.Context, providerId string, re
 }
 
 // Retrieve fetches and removes a cached batch
-// This is a one-time operation - the batch is deleted after retrieval
-func (c *ResourceProviderCache) Retrieve(ctx context.Context, batchId string) (*CachedBatch, error) {
+// This is a one-time operation - the batch is deleted after retrieval.
+func (c *ResourceProviderCache) Retrieve(
+	ctx context.Context,
+	batchId string,
+) (*CachedBatch, error) {
 	c.initCache()
 
 	// Get from cache

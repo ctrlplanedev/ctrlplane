@@ -4,11 +4,11 @@ import (
 	"context"
 	"sync"
 	"time"
-	"workspace-engine/pkg/config"
 
 	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/config"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 	once sync.Once
 )
 
-// GetPool returns the singleton database connection pool
+// GetPool returns the singleton database connection pool.
 func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
 		cfg, err := pgxpool.ParseConfig(config.Global.PostgresURL)
@@ -39,7 +39,7 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 	return pool
 }
 
-// GetDB returns a connection from the pool (similar to your TS db export)
+// GetDB returns a connection from the pool (similar to your TS db export).
 func GetDB(ctx context.Context) (*pgxpool.Conn, error) {
 	if pool == nil {
 		GetPool(ctx)
@@ -56,7 +56,7 @@ func GetQueries(ctx context.Context) *Queries {
 	return New(GetPool(ctx))
 }
 
-// Close closes the connection pool (useful for cleanup)
+// Close closes the connection pool (useful for cleanup).
 func Close() {
 	if pool != nil {
 		pool.Close()

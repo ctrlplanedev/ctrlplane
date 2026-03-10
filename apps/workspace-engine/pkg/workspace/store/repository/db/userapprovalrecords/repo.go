@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type Repo struct {
@@ -69,7 +69,9 @@ func (r *Repo) Items() map[string]*oapi.UserApprovalRecord {
 	return make(map[string]*oapi.UserApprovalRecord)
 }
 
-func (r *Repo) GetApprovedByVersionAndEnvironment(versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+func (r *Repo) GetApprovedByVersionAndEnvironment(
+	versionID, environmentID string,
+) ([]*oapi.UserApprovalRecord, error) {
 	vid, err := uuid.Parse(versionID)
 	if err != nil {
 		return nil, fmt.Errorf("parse version_id: %w", err)
@@ -79,10 +81,11 @@ func (r *Repo) GetApprovedByVersionAndEnvironment(versionID, environmentID strin
 		return nil, fmt.Errorf("parse environment_id: %w", err)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListApprovedRecordsByVersionAndEnvironment(r.ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
-		VersionID:     vid,
-		EnvironmentID: eid,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListApprovedRecordsByVersionAndEnvironment(r.ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
+			VersionID:     vid,
+			EnvironmentID: eid,
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list approved records: %w", err)
 	}

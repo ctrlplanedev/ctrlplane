@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-
-	"workspace-engine/pkg/store/resources"
-
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/store/resources"
 )
 
 type resourcesGetter = resources.GetResources
@@ -23,7 +21,10 @@ func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
 	}
 }
 
-func (g *PostgresGetter) GetDeploymentInfo(ctx context.Context, deploymentID uuid.UUID) (*DeploymentInfo, error) {
+func (g *PostgresGetter) GetDeploymentInfo(
+	ctx context.Context,
+	deploymentID uuid.UUID,
+) (*DeploymentInfo, error) {
 	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("get deployment %s: %w", deploymentID, err)
@@ -35,7 +36,10 @@ func (g *PostgresGetter) GetDeploymentInfo(ctx context.Context, deploymentID uui
 	}, nil
 }
 
-func (g *PostgresGetter) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error) {
+func (g *PostgresGetter) GetReleaseTargetsForDeployment(
+	ctx context.Context,
+	deploymentID uuid.UUID,
+) ([]ReleaseTarget, error) {
 	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeployment(ctx, deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("query release targets for deployment %s: %w", deploymentID, err)

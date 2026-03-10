@@ -16,7 +16,7 @@ import (
 
 const DEFAULT_TEST_POSTGRES_URL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
 
-// TestMain runs before all tests and sets up the test database
+// TestMain runs before all tests and sets up the test database.
 func TestMain(m *testing.M) {
 	// Set default POSTGRES_URL if not already set
 	if os.Getenv("POSTGRES_URL") == "" {

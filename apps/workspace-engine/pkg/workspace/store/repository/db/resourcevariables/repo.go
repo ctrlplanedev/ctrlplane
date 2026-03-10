@@ -3,11 +3,11 @@ package resourcevariables
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type Repo struct {
@@ -67,7 +67,13 @@ func (r *Repo) Items() map[string]*oapi.ResourceVariable {
 
 	rows, err := db.GetQueries(r.ctx).ListResourceVariablesByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list resource variables by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list resource variables by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.ResourceVariable)
 	}
 
@@ -79,7 +85,10 @@ func (r *Repo) Items() map[string]*oapi.ResourceVariable {
 	return result
 }
 
-func (r *Repo) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error {
+func (r *Repo) BulkUpdate(
+	toUpsert []*oapi.ResourceVariable,
+	toRemove []*oapi.ResourceVariable,
+) error {
 	tx, err := db.GetPool(r.ctx).Begin(r.ctx)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)

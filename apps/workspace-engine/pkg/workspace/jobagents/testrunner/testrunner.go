@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents/types"
-	"workspace-engine/pkg/workspace/store"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents/types"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("jobagents/testrunner")
@@ -100,7 +99,13 @@ func (t *TestRunner) getFinalStatus(cfg *oapi.TestRunnerJobAgentConfig) oapi.Job
 	return oapi.JobStatusSuccessful
 }
 
-func (t *TestRunner) resolveJobAfterDelay(ctx context.Context, jobID string, delay time.Duration, status oapi.JobStatus, message string) {
+func (t *TestRunner) resolveJobAfterDelay(
+	ctx context.Context,
+	jobID string,
+	delay time.Duration,
+	status oapi.JobStatus,
+	message string,
+) {
 	_, span := tracer.Start(ctx, "TestRunner.resolveJobAfterDelay")
 	defer span.End()
 
@@ -148,7 +153,11 @@ func (t *TestRunner) resolveJobAfterDelay(ctx context.Context, jobID string, del
 	span.SetAttributes(attribute.String("final_status", string(status)))
 }
 
-func (t *TestRunner) sendJobUpdateEvent(job *oapi.Job, status oapi.JobStatus, message string) error {
+func (t *TestRunner) sendJobUpdateEvent(
+	job *oapi.Job,
+	status oapi.JobStatus,
+	message string,
+) error {
 	_, span := tracer.Start(context.Background(), "TestRunner.sendJobUpdateEvent")
 	defer span.End()
 

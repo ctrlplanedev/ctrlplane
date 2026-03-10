@@ -4,10 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/config"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
-	"workspace-engine/svc/controllers/jobverificationmetric"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -15,12 +11,16 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/svc/controllers/jobverificationmetric"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/verification")
 
 // Manager handles post-deployment verification of jobs
-// It uses a scheduler to run verifications from the store
+// It uses a scheduler to run verifications from the store.
 type Manager struct {
 	store     *store.Store
 	scheduler *scheduler
@@ -166,7 +166,7 @@ func (m *Manager) StartVerification(
 	return nil
 }
 
-// StopVerificationsForJob cancels all verifications for a job and stops their goroutines
+// StopVerificationsForJob cancels all verifications for a job and stops their goroutines.
 func (m *Manager) StopVerificationsForJob(ctx context.Context, jobID string) {
 	ctx, span := tracer.Start(ctx, "StopVerificationsForJob",
 		trace.WithAttributes(

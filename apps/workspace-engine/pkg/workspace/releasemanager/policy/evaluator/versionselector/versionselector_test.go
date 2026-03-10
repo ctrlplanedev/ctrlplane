@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 )
 
 func setupTestStore(t *testing.T) (*store.Store, context.Context) {
@@ -41,7 +41,11 @@ func createTestEnvironment(ctx context.Context, s *store.Store, systemID string)
 	return env
 }
 
-func createTestResource(ctx context.Context, s *store.Store, metadata map[string]string) *oapi.Resource {
+func createTestResource(
+	ctx context.Context,
+	s *store.Store,
+	metadata map[string]string,
+) *oapi.Resource {
 	resource := &oapi.Resource{
 		Id:         uuid.New().String(),
 		Identifier: "test-resource-1",
@@ -52,7 +56,13 @@ func createTestResource(ctx context.Context, s *store.Store, metadata map[string
 	return resource
 }
 
-func createTestVersion(ctx context.Context, s *store.Store, deploymentID string, tag string, metadata map[string]string) *oapi.DeploymentVersion {
+func createTestVersion(
+	ctx context.Context,
+	s *store.Store,
+	deploymentID string,
+	tag string,
+	metadata map[string]string,
+) *oapi.DeploymentVersion {
 	version := &oapi.DeploymentVersion{
 		Id:           uuid.New().String(),
 		DeploymentId: deploymentID,
@@ -105,7 +115,11 @@ func TestScopeFields(t *testing.T) {
 	scopeFields := eval.ScopeFields()
 
 	// Should require Version, Environment, and ReleaseTarget
-	assert.Equal(t, evaluator.ScopeVersion|evaluator.ScopeEnvironment|evaluator.ScopeReleaseTarget, scopeFields)
+	assert.Equal(
+		t,
+		evaluator.ScopeVersion|evaluator.ScopeEnvironment|evaluator.ScopeReleaseTarget,
+		scopeFields,
+	)
 }
 
 func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
@@ -245,7 +259,11 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 
 	deployment, systemID := createTestDeployment(ctx, s)
 	environment := createTestEnvironment(ctx, s, systemID)
-	resource := createTestResource(ctx, s, map[string]string{"tier": "production", "region": "us-west"})
+	resource := createTestResource(
+		ctx,
+		s,
+		map[string]string{"tier": "production", "region": "us-west"},
+	)
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
 
 	t.Run("allows version when resource metadata matches", func(t *testing.T) {
@@ -309,7 +327,13 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 	deployment, systemID := createTestDeployment(ctx, s)
 	environment := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s, map[string]string{"canary": "true"})
-	version := createTestVersion(ctx, s, deployment.Id, "v2.5.0-canary", map[string]string{"channel": "beta"})
+	version := createTestVersion(
+		ctx,
+		s,
+		deployment.Id,
+		"v2.5.0-canary",
+		map[string]string{"channel": "beta"},
+	)
 
 	t.Run("allows version when all conditions match", func(t *testing.T) {
 		selector := &oapi.Selector{}

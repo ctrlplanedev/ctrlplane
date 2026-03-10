@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/hashicorp/go-tfe"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
 var _ provider.Provider = (*Provider)(nil)
@@ -98,7 +98,10 @@ func (p *Provider) convertRunToData(run *tfe.Run) map[string]any {
 	}
 }
 
-func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *Provider) Measure(
+	ctx context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 
 	client, err := tfe.NewClient(&tfe.Config{
@@ -117,7 +120,12 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 	duration := time.Since(startTime)
 	runData := p.convertRunToData(run)
 	runData["duration"] = duration.Milliseconds()
-	runData["url"] = fmt.Sprintf("%s/app/terraform-cloud/workspaces/%s/runs/%s", p.config.Address, run.Workspace.Name, run.ID)
+	runData["url"] = fmt.Sprintf(
+		"%s/app/terraform-cloud/workspaces/%s/runs/%s",
+		p.config.Address,
+		run.Workspace.Name,
+		run.ID,
+	)
 
 	return startTime, runData, nil
 }

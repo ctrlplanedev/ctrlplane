@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/store"
 )
 
-// ===== Test Helper Functions =====
+// ===== Test Helper Functions =====.
 func setupStoreWithResourceForEligibility(t *testing.T, resourceID string) *store.Store {
 	cs := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", cs)
@@ -36,7 +36,9 @@ func setupStoreWithResourceForEligibility(t *testing.T, resourceID string) *stor
 	return st
 }
 
-func createReleaseForEligibility(deploymentID, environmentID, resourceID, versionID, versionTag string) *oapi.Release {
+func createReleaseForEligibility(
+	deploymentID, environmentID, resourceID, versionID, versionTag string,
+) *oapi.Release {
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
@@ -59,7 +61,13 @@ func TestShouldCreateJob_NoExistingJobs(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Act
 	result, err := checker.ShouldCreateJob(ctx, release, nil)
@@ -75,7 +83,13 @@ func TestShouldCreateJob_AlreadyDeployed(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a successful job for this release
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -107,7 +121,13 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 	ctx := context.Background()
 
 	// Deploy v1.0.0 successfully
-	releaseV1 := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	releaseV1 := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
 		t.Fatalf("Failed to upsert v1 release: %v", err)
 	}
@@ -122,7 +142,13 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 	})
 
 	// Try to deploy v2.0.0
-	releaseV2 := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-2", "v2.0.0")
+	releaseV2 := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-2",
+		"v2.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
 		t.Fatalf("Failed to upsert v2 release: %v", err)
 	}
@@ -141,7 +167,13 @@ func TestShouldCreateJob_JobInProgress(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create an in-progress job for this release
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -170,7 +202,13 @@ func TestShouldCreateJob_PendingJob(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a pending job for this release
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -199,7 +237,13 @@ func TestShouldCreateJob_FailedJobPreventsRedeploy(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a failed job for this release
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -230,7 +274,13 @@ func TestShouldCreateJob_CancelledJobPreventsRedeploy(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a cancelled job for this release
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -333,7 +383,13 @@ func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
 	ctx := context.Background()
 
 	// Create first release with a pending job
-	release1 := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release1 := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release1); err != nil {
 		t.Fatalf("Failed to upsert release1: %v", err)
 	}
@@ -346,7 +402,13 @@ func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
 	})
 
 	// Try to create job for second release (different version) on same target
-	release2 := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-2", "v2.0.0")
+	release2 := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-2",
+		"v2.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release2); err != nil {
 		t.Fatalf("Failed to upsert release2: %v", err)
 	}
@@ -383,7 +445,13 @@ func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
 	}
 
 	// Create job for first target
-	release1 := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release1 := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release1); err != nil {
 		t.Fatalf("Failed to upsert release1: %v", err)
 	}
@@ -396,7 +464,13 @@ func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
 	})
 
 	// Try to create job for different target (different resource)
-	release2 := createReleaseForEligibility("deployment-1", "env-1", "resource-2", "version-1", "v1.0.0")
+	release2 := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-2",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release2); err != nil {
 		t.Fatalf("Failed to upsert release2: %v", err)
 	}
@@ -475,7 +549,13 @@ func TestShouldCreateJob_SkippedJobPreventsRedeploy(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a skipped job for this release
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -506,7 +586,13 @@ func TestShouldCreateJob_InvalidJobAgentStatusPreventsRedeploy(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a job with InvalidJobAgent status
 	if err := st.Releases.Upsert(ctx, release); err != nil {
@@ -566,7 +652,13 @@ func TestShouldCreateJob_EvaluatorOrdering(t *testing.T) {
 	checker := NewJobEligibilityChecker(st)
 	ctx := context.Background()
 
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 
 	// Create a job that would trigger multiple evaluators
 	// (e.g., same release already exists AND there's a concurrent job)

@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
 )
 
 // ---------------------------------------------------------------------------
@@ -288,7 +287,9 @@ func TestDeploymentDependency_MultipleUpstreams_AllSuccessful_Allowed(t *testing
 			PolicySelector("true"),
 			PolicyEnabled(true),
 			WithPolicyRule(
-				WithDeploymentDependencyRule(`deployment.name == "upstream-1" || deployment.name == "upstream-2"`),
+				WithDeploymentDependencyRule(
+					`deployment.name == "upstream-1" || deployment.name == "upstream-2"`,
+				),
 			),
 		),
 	)
@@ -299,16 +300,36 @@ func TestDeploymentDependency_MultipleUpstreams_AllSuccessful_Allowed(t *testing
 	}
 	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
 		resourceID.String(): {
-			{DeploymentId: upstream1ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-			{DeploymentId: upstream2ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-			{DeploymentId: deploymentID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+			{
+				DeploymentId:  upstream1ID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  upstream2ID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  deploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
 		},
 	}
 
 	completedAt := time.Now().Add(-10 * time.Minute)
 	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
-		upstream1RTKey: {Id: uuid.New().String(), Status: oapi.JobStatusSuccessful, CompletedAt: &completedAt},
-		upstream2RTKey: {Id: uuid.New().String(), Status: oapi.JobStatusSuccessful, CompletedAt: &completedAt},
+		upstream1RTKey: {
+			Id:          uuid.New().String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		upstream2RTKey: {
+			Id:          uuid.New().String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
 	}
 
 	p.Run()
@@ -340,7 +361,9 @@ func TestDeploymentDependency_MultipleUpstreams_OneFails_Blocked(t *testing.T) {
 			PolicySelector("true"),
 			PolicyEnabled(true),
 			WithPolicyRule(
-				WithDeploymentDependencyRule(`deployment.name == "upstream-1" || deployment.name == "upstream-2"`),
+				WithDeploymentDependencyRule(
+					`deployment.name == "upstream-1" || deployment.name == "upstream-2"`,
+				),
 			),
 		),
 	)
@@ -351,16 +374,36 @@ func TestDeploymentDependency_MultipleUpstreams_OneFails_Blocked(t *testing.T) {
 	}
 	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
 		resourceID.String(): {
-			{DeploymentId: upstream1ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-			{DeploymentId: upstream2ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-			{DeploymentId: deploymentID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+			{
+				DeploymentId:  upstream1ID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  upstream2ID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  deploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
 		},
 	}
 
 	completedAt := time.Now().Add(-10 * time.Minute)
 	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
-		upstream1RTKey: {Id: uuid.New().String(), Status: oapi.JobStatusSuccessful, CompletedAt: &completedAt},
-		upstream2RTKey: {Id: uuid.New().String(), Status: oapi.JobStatusFailure, CompletedAt: &completedAt},
+		upstream1RTKey: {
+			Id:          uuid.New().String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		upstream2RTKey: {
+			Id:          uuid.New().String(),
+			Status:      oapi.JobStatusFailure,
+			CompletedAt: &completedAt,
+		},
 	}
 
 	p.Run()
@@ -401,7 +444,11 @@ func TestDeploymentDependency_UpstreamMissingReleaseTarget_Blocked(t *testing.T)
 	// Resource targets don't include the upstream deployment's target.
 	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
 		resourceID.String(): {
-			{DeploymentId: deploymentID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+			{
+				DeploymentId:  deploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
 		},
 	}
 

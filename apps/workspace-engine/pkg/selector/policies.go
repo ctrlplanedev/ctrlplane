@@ -2,12 +2,17 @@ package selector
 
 import (
 	"context"
+
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	celLang "workspace-engine/pkg/selector/langs/cel"
 )
 
-func NewResolvedReleaseTarget(environment *oapi.Environment, deployment *oapi.Deployment, resource *oapi.Resource) *ResolvedReleaseTarget {
+func NewResolvedReleaseTarget(
+	environment *oapi.Environment,
+	deployment *oapi.Deployment,
+	resource *oapi.Resource,
+) *ResolvedReleaseTarget {
 	return &ResolvedReleaseTarget{
 		environment: environment,
 		deployment:  deployment,
@@ -47,7 +52,11 @@ func (b *ResolvedReleaseTarget) CelContext() map[string]any {
 // MatchPolicy evaluates a policy's CEL selector against a resolved release
 // target. An empty selector does not match anything. A "true" selector matches
 // everything.
-func MatchPolicy(_ context.Context, policy *oapi.Policy, releaseTarget *ResolvedReleaseTarget) bool {
+func MatchPolicy(
+	_ context.Context,
+	policy *oapi.Policy,
+	releaseTarget *ResolvedReleaseTarget,
+) bool {
 	if policy.Selector == "" {
 		return false
 	}

@@ -2,9 +2,9 @@ package deploymentresourceselectoreval
 
 import (
 	"context"
-	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/store/resources"
 )
 
 // DeploymentInfo holds the deployment data needed for resource selector evaluation.
@@ -28,5 +28,8 @@ type Getter interface {
 	// GetReleaseTargetsForDeployment returns all valid release targets for the
 	// given deployment by joining computed resource tables through the system
 	// link tables.
-	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error)
+	GetReleaseTargetsForDeployment(
+		ctx context.Context,
+		deploymentID uuid.UUID,
+	) ([]ReleaseTarget, error)
 }

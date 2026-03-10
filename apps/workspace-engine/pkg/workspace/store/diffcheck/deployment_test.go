@@ -3,9 +3,8 @@ package diffcheck
 import (
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestHasDeploymentChanges_NoChanges(t *testing.T) {
@@ -76,7 +75,12 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 	assert.NoError(t, oldSelector.FromCelSelector(oapi.CelSelector{Cel: "system == 'legacy'"}))
 
 	newSelector := &oapi.Selector{}
-	assert.NoError(t, newSelector.FromCelSelector(oapi.CelSelector{Cel: "system == 'modern' && team == 'platform'"}))
+	assert.NoError(
+		t,
+		newSelector.FromCelSelector(
+			oapi.CelSelector{Cel: "system == 'modern' && team == 'platform'"},
+		),
+	)
 
 	old := &oapi.Deployment{
 		Name:        "api-old",
@@ -280,7 +284,11 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 
 	changes := HasDeploymentChanges(old, new)
 	assert.Len(t, changes, 1, "Should detect removed jobAgentConfig key")
-	assert.True(t, changes["jobagentconfig.image"], "Should detect jobAgentConfig.image was removed")
+	assert.True(
+		t,
+		changes["jobagentconfig.image"],
+		"Should detect jobAgentConfig.image was removed",
+	)
 }
 
 func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
@@ -310,7 +318,11 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 
 	changes := HasDeploymentChanges(old, new)
 	assert.Len(t, changes, 1, "Should detect nested config change")
-	assert.True(t, changes["jobagentconfig.database.host"], "Should detect nested path jobagentconfig.database.host")
+	assert.True(
+		t,
+		changes["jobagentconfig.database.host"],
+		"Should detect nested path jobagentconfig.database.host",
+	)
 }
 
 func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
@@ -349,7 +361,9 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	// Check if any selector-related field changed
 	hasResourceSelectorChange := false
 	for key := range changes {
-		if key == "resourceselector" || len(key) > len("resourceselector") && key[:len("resourceselector")] == "resourceselector" {
+		if key == "resourceselector" ||
+			len(key) > len("resourceselector") &&
+				key[:len("resourceselector")] == "resourceselector" {
 			hasResourceSelectorChange = true
 			break
 		}
@@ -388,7 +402,11 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 	assert.True(t, changes["name"], "Should detect name change")
 	assert.True(t, changes["slug"], "Should detect slug change")
 	assert.True(t, changes["description"], "Should detect description change")
-	assert.True(t, changes["jobagentconfig.replicas"], "Should detect jobAgentConfig.replicas change")
+	assert.True(
+		t,
+		changes["jobagentconfig.replicas"],
+		"Should detect jobAgentConfig.replicas change",
+	)
 	assert.True(t, changes["jobagentconfig.image"], "Should detect jobAgentConfig.image change")
 	assert.False(t, changes["id"], "Should ignore id change")
 }

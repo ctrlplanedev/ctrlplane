@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository/memory"
 )
@@ -25,13 +26,18 @@ func (j *JobVerifications) Upsert(ctx context.Context, verification *oapi.JobVer
 	j.store.changeset.RecordUpsert(verification)
 }
 
-func (j *JobVerifications) Update(ctx context.Context, id string, cb func(valueInMap *oapi.JobVerification) *oapi.JobVerification) (*oapi.JobVerification, error) {
+func (j *JobVerifications) Update(
+	ctx context.Context,
+	id string,
+	cb func(valueInMap *oapi.JobVerification) *oapi.JobVerification,
+) (*oapi.JobVerification, error) {
 	verification, ok := j.Get(id)
 	if !ok {
 		return nil, fmt.Errorf("verification not found: %s", id)
 	}
 	newVerification := j.repo.JobVerifications.Upsert(
-		verification.Id, nil,
+		verification.Id,
+		nil,
 		func(exist bool, valueInMap *oapi.JobVerification, newValue *oapi.JobVerification) *oapi.JobVerification {
 			clone := *valueInMap
 			return cb(&clone)
@@ -49,7 +55,7 @@ func (j *JobVerifications) Items() map[string]*oapi.JobVerification {
 	return j.repo.JobVerifications.Items()
 }
 
-// GetByJobId returns ALL verifications for a specific job
+// GetByJobId returns ALL verifications for a specific job.
 func (j *JobVerifications) GetByJobId(jobId string) []*oapi.JobVerification {
 	verifications := make([]*oapi.JobVerification, 0)
 	for _, verification := range j.repo.JobVerifications.Items() {

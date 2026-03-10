@@ -12,12 +12,12 @@ type Animal struct {
 	name string
 }
 
-// SerializableAnimal is like Animal but with an exported field for JSON serialization
+// SerializableAnimal is like Animal but with an exported field for JSON serialization.
 type SerializableAnimal struct {
 	Name string `json:"name"`
 }
 
-// CustomKey is a custom type that implements fmt.Stringer
+// CustomKey is a custom type that implements fmt.Stringer.
 type CustomKey struct {
 	ID int
 }
@@ -488,7 +488,11 @@ func TestFnv32(t *testing.T) {
 		t.Errorf("%s", err.Error())
 	}
 	if fnv32(string(key)) != hasher.Sum32() {
-		t.Errorf("Bundled fnv32 produced %d, expected result from hash/fnv32 is %d", fnv32(string(key)), hasher.Sum32())
+		t.Errorf(
+			"Bundled fnv32 produced %d, expected result from hash/fnv32 is %d",
+			fnv32(string(key)),
+			hasher.Sum32(),
+		)
 	}
 
 }

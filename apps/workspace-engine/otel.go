@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/config"
-
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -16,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"workspace-engine/pkg/config"
 )
 
 func stripScheme(endpoint string) string {

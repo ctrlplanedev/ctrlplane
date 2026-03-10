@@ -3,12 +3,12 @@ package relationshiprules
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type Repo struct {
@@ -32,7 +32,15 @@ func (r *Repo) Get(id string) (*oapi.RelationshipRule, bool) {
 		return nil, false
 	}
 
-	return toOapi(row.ID, row.Name, row.Description, row.WorkspaceID, row.Reference, row.Cel, row.Metadata), true
+	return toOapi(
+		row.ID,
+		row.Name,
+		row.Description,
+		row.WorkspaceID,
+		row.Reference,
+		row.Cel,
+		row.Metadata,
+	), true
 }
 
 func (r *Repo) Set(entity *oapi.RelationshipRule) error {
@@ -66,13 +74,27 @@ func (r *Repo) Items() map[string]*oapi.RelationshipRule {
 
 	rows, err := db.GetQueries(r.ctx).ListRelationshipRulesByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list relationship rules by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list relationship rules by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.RelationshipRule)
 	}
 
 	result := make(map[string]*oapi.RelationshipRule, len(rows))
 	for _, row := range rows {
-		rule := toOapi(row.ID, row.Name, row.Description, row.WorkspaceID, row.Reference, row.Cel, row.Metadata)
+		rule := toOapi(
+			row.ID,
+			row.Name,
+			row.Description,
+			row.WorkspaceID,
+			row.Reference,
+			row.Cel,
+			row.Metadata,
+		)
 		result[rule.Id] = rule
 	}
 	return result
@@ -107,7 +129,10 @@ func toOapi(
 	return rule
 }
 
-func toUpsertParams(entity *oapi.RelationshipRule, workspaceID string) (db.UpsertRelationshipRuleParams, error) {
+func toUpsertParams(
+	entity *oapi.RelationshipRule,
+	workspaceID string,
+) (db.UpsertRelationshipRuleParams, error) {
 	id, err := uuid.Parse(entity.Id)
 	if err != nil {
 		return db.UpsertRelationshipRuleParams{}, fmt.Errorf("parse id: %w", err)
@@ -148,7 +173,7 @@ func toUpsertParams(entity *oapi.RelationshipRule, workspaceID string) (db.Upser
 }
 
 // composeCel builds the flat CEL string from the structured oapi fields.
-// The format is: from.type == "{fromType}" && to.type == "{toType}" && {matcherCel}
+// The format is: from.type == "{fromType}" && to.type == "{toType}" && {matcherCel}.
 func composeCel(entity *oapi.RelationshipRule) (string, error) {
 	celMatcher, err := entity.Matcher.AsCelMatcher()
 	if err != nil {
@@ -163,5 +188,10 @@ func composeCel(entity *oapi.RelationshipRule) (string, error) {
 		return matcherCel, nil
 	}
 
-	return fmt.Sprintf(`from.type == "%s" && to.type == "%s" && %s`, fromType, toType, matcherCel), nil
+	return fmt.Sprintf(
+		`from.type == "%s" && to.type == "%s" && %s`,
+		fromType,
+		toType,
+		matcherCel,
+	), nil
 }

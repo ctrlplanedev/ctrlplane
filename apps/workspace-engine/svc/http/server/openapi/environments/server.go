@@ -8,7 +8,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
-
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/http/server/openapi/utils"
@@ -38,7 +37,13 @@ func (s *Environments) GetEnvironment(c *gin.Context, workspaceId string, enviro
 	for _, sid := range systemIDs {
 		system, ok := ws.Systems().Get(sid)
 		if !ok {
-			log.Warn("System not found for environment", "environmentId", environmentId, "systemId", sid)
+			log.Warn(
+				"System not found for environment",
+				"environmentId",
+				environmentId,
+				"systemId",
+				sid,
+			)
 			continue
 		}
 		systems = append(systems, *system)
@@ -57,7 +62,11 @@ func (s *Environments) GetEnvironment(c *gin.Context, workspaceId string, enviro
 	c.JSON(http.StatusOK, environmentWithSystems)
 }
 
-func (s *Environments) ListEnvironments(c *gin.Context, workspaceId string, params oapi.ListEnvironmentsParams) {
+func (s *Environments) ListEnvironments(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.ListEnvironmentsParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -114,7 +123,12 @@ func (s *Environments) ListEnvironments(c *gin.Context, workspaceId string, para
 	})
 }
 
-func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string, params oapi.GetEnvironmentResourcesParams) {
+func (s *Environments) GetEnvironmentResources(
+	c *gin.Context,
+	workspaceId string,
+	environmentId string,
+	params oapi.GetEnvironmentResourcesParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -176,7 +190,12 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 	})
 }
 
-func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspaceId string, environmentId string, params oapi.GetReleaseTargetsForEnvironmentParams) {
+func (s *Environments) GetReleaseTargetsForEnvironment(
+	c *gin.Context,
+	workspaceId string,
+	environmentId string,
+	params oapi.GetReleaseTargetsForEnvironmentParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -247,22 +266,50 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 				releaseTarget,
 			)
 			if err != nil {
-				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"error getting release target state for key=%s: %w",
+						releaseTarget.Key(),
+						err,
+					),
+				}, nil
 			}
 
 			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
 			if !ok {
-				return result{nil, fmt.Errorf("environment not found: environmentId=%s for release target key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"environment not found: environmentId=%s for release target key=%s",
+						releaseTarget.EnvironmentId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
 			if !ok {
-				return result{nil, fmt.Errorf("resource not found: resourceId=%s for release target key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"resource not found: resourceId=%s for release target key=%s",
+						releaseTarget.ResourceId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
 			if !ok {
-				return result{nil, fmt.Errorf("deployment not found: deploymentId=%s for release target key=%s", releaseTarget.DeploymentId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"deployment not found: deploymentId=%s for release target key=%s",
+						releaseTarget.DeploymentId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			item := &oapi.ReleaseTargetWithState{

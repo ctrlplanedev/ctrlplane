@@ -3,24 +3,24 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/db"
 )
 
 var tracer = otel.Tracer("workspace/kafka/state")
 
 // PartitionForWorkspace computes which partition a workspace ID should be routed to
-// using Murmur2 hash (matching Kafka's default partitioner and kafkajs)
+// using Murmur2 hash (matching Kafka's default partitioner and kafkajs).
 func PartitionForWorkspace(workspaceID string, numPartitions int32) int32 {
 	h := murmur2([]byte(workspaceID))
 	positive := int32(h & 0x7fffffff) // mask sign bit like Kafka
 	return positive % numPartitions
 }
 
-// murmur2 implements the Murmur2 hash algorithm used by Kafka's default partitioner
+// murmur2 implements the Murmur2 hash algorithm used by Kafka's default partitioner.
 func murmur2(data []byte) uint32 {
 	const (
 		seed uint32 = 0x9747b28c
@@ -66,13 +66,19 @@ func murmur2(data []byte) uint32 {
 
 type WorkspaceIDDiscoverer func(ctx context.Context, targetPartition int32, numPartitions int32) ([]string, error)
 
-func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, numPartitions int32) (map[int32][]string, error) {
+func GetAssignedWorkspaceIDs(
+	ctx context.Context,
+	assignedPartitions []int32,
+	numPartitions int32,
+) (map[int32][]string, error) {
 	ctx, span := tracer.Start(ctx, "GetAssignedWorkspaceIDs")
 	defer span.End()
 
 	span.SetAttributes(attribute.Int("assigned.partitions.count", len(assignedPartitions)))
 	span.SetAttributes(attribute.Int("num.partitions", int(numPartitions)))
-	span.SetAttributes(attribute.String("assigned.partitions", fmt.Sprintf("%+v", assignedPartitions)))
+	span.SetAttributes(
+		attribute.String("assigned.partitions", fmt.Sprintf("%+v", assignedPartitions)),
+	)
 
 	workspaceIDs, err := db.GetQueries(ctx).ListWorkspaceIDs(ctx)
 	if err != nil {

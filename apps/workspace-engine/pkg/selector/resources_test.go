@@ -6,11 +6,12 @@ import (
 	"slices"
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 
-// Helper function to convert UnknownCondition to *oapi.Selector
+// Helper function to convert UnknownCondition to *oapi.Selector.
 func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.Selector {
 	t.Helper()
 
@@ -32,8 +33,13 @@ func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *oapi
 	return v
 }
 
-// Helper function to validate filtered results
-func validateFilteredResources(t *testing.T, result map[string]*oapi.Resource, expectedCount int, expectedIDs map[string]bool) {
+// Helper function to validate filtered results.
+func validateFilteredResources(
+	t *testing.T,
+	result map[string]*oapi.Resource,
+	expectedCount int,
+	expectedIDs map[string]bool,
+) {
 	t.Helper()
 
 	if len(result) != expectedCount {
@@ -447,7 +453,11 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			}
 
 			if len(result) != tt.expectedCount {
-				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
+				t.Errorf(
+					"FilterResources() returned %d resources, want %d",
+					len(result),
+					tt.expectedCount,
+				)
 				return
 			}
 
@@ -459,7 +469,10 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			for _, expectedID := range tt.expectedIDs {
 				found := slices.Contains(resultIDs, expectedID)
 				if !found {
-					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
+					t.Errorf(
+						"FilterResources() expected resource ID %s not found in results",
+						expectedID,
+					)
 				}
 			}
 		})
@@ -785,7 +798,11 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 			}
 
 			if len(result) != tt.expectedCount {
-				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
+				t.Errorf(
+					"FilterResources() returned %d resources, want %d",
+					len(result),
+					tt.expectedCount,
+				)
 				return
 			}
 
@@ -797,7 +814,10 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 			for _, expectedID := range tt.expectedIDs {
 				found := slices.Contains(resultIDs, expectedID)
 				if !found {
-					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
+					t.Errorf(
+						"FilterResources() expected resource ID %s not found in results",
+						expectedID,
+					)
 				}
 			}
 		})
@@ -885,7 +905,11 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 			}
 
 			if len(result) != tt.expectedCount {
-				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
+				t.Errorf(
+					"FilterResources() returned %d resources, want %d",
+					len(result),
+					tt.expectedCount,
+				)
 			}
 
 			resultIDs := make([]string, 0, len(result))
@@ -896,7 +920,10 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 			for _, expectedID := range tt.expectedIDs {
 				found := slices.Contains(resultIDs, expectedID)
 				if !found {
-					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
+					t.Errorf(
+						"FilterResources() expected resource ID %s not found in results",
+						expectedID,
+					)
 				}
 			}
 		})
@@ -1010,7 +1037,11 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 			}
 
 			if len(result) != tt.expectedCount {
-				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
+				t.Errorf(
+					"FilterResources() returned %d resources, want %d",
+					len(result),
+					tt.expectedCount,
+				)
 			}
 		})
 	}
@@ -1021,96 +1052,99 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 	oldTime := baseTime.Add(-30 * 24 * time.Hour)
 	recentTime := baseTime.Add(-7 * 24 * time.Hour)
 
-	t.Run("filter production kubernetes services in US regions created recently", func(t *testing.T) {
-		condition := unknown.UnknownCondition{
-			Operator: "and",
-			Conditions: []unknown.UnknownCondition{
-				{
-					Property: "kind",
-					Operator: "contains",
-					Value:    "kubernetes-service",
+	t.Run(
+		"filter production kubernetes services in US regions created recently",
+		func(t *testing.T) {
+			condition := unknown.UnknownCondition{
+				Operator: "and",
+				Conditions: []unknown.UnknownCondition{
+					{
+						Property: "kind",
+						Operator: "contains",
+						Value:    "kubernetes-service",
+					},
+					{
+						Property:    "metadata",
+						Operator:    "equals",
+						Value:       "production",
+						MetadataKey: "env",
+					},
+					{
+						Property:    "metadata",
+						Operator:    "starts-with",
+						Value:       "us-",
+						MetadataKey: "region",
+					},
+					{
+						Property: "CreatedAt",
+						Operator: "after",
+						Value:    recentTime.Format(time.RFC3339),
+					},
 				},
-				{
-					Property:    "metadata",
-					Operator:    "equals",
-					Value:       "production",
-					MetadataKey: "env",
-				},
-				{
-					Property:    "metadata",
-					Operator:    "starts-with",
-					Value:       "us-",
-					MetadataKey: "region",
-				},
-				{
-					Property: "CreatedAt",
-					Operator: "after",
-					Value:    recentTime.Format(time.RFC3339),
-				},
-			},
-		}
-
-		resources := []*oapi.Resource{
-			{
-				Id:        "1",
-				Name:      "payment-service",
-				Kind:      "kubernetes-service",
-				CreatedAt: baseTime,
-				Metadata: map[string]string{
-					"env":    "production",
-					"region": "us-east-1",
-				},
-			},
-			{
-				Id:        "2",
-				Name:      "auth-service",
-				Kind:      "kubernetes-service",
-				CreatedAt: oldTime,
-				Metadata: map[string]string{
-					"env":    "production",
-					"region": "us-west-2",
-				},
-			},
-			{
-				Id:        "3",
-				Name:      "notification-service",
-				Kind:      "kubernetes-service",
-				CreatedAt: baseTime,
-				Metadata: map[string]string{
-					"env":    "staging",
-					"region": "us-east-1",
-				},
-			},
-			{
-				Id:        "4",
-				Name:      "billing-service",
-				Kind:      "kubernetes-service",
-				CreatedAt: baseTime,
-				Metadata: map[string]string{
-					"env":    "production",
-					"region": "eu-west-1",
-				},
-			},
-		}
-
-		ctx := context.Background()
-		selector := conditionToSelector(t, condition)
-		result, err := FilterResources(ctx, selector, resources)
-
-		if err != nil {
-			t.Fatalf("FilterResources() unexpected error: %v", err)
-		}
-
-		if len(result) != 1 {
-			t.Errorf("FilterResources() returned %d resources, want 1", len(result))
-		}
-
-		for _, r := range result {
-			if r.Id != "1" {
-				t.Errorf("FilterResources() returned resource ID %s, want 1", r.Id)
 			}
-		}
-	})
+
+			resources := []*oapi.Resource{
+				{
+					Id:        "1",
+					Name:      "payment-service",
+					Kind:      "kubernetes-service",
+					CreatedAt: baseTime,
+					Metadata: map[string]string{
+						"env":    "production",
+						"region": "us-east-1",
+					},
+				},
+				{
+					Id:        "2",
+					Name:      "auth-service",
+					Kind:      "kubernetes-service",
+					CreatedAt: oldTime,
+					Metadata: map[string]string{
+						"env":    "production",
+						"region": "us-west-2",
+					},
+				},
+				{
+					Id:        "3",
+					Name:      "notification-service",
+					Kind:      "kubernetes-service",
+					CreatedAt: baseTime,
+					Metadata: map[string]string{
+						"env":    "staging",
+						"region": "us-east-1",
+					},
+				},
+				{
+					Id:        "4",
+					Name:      "billing-service",
+					Kind:      "kubernetes-service",
+					CreatedAt: baseTime,
+					Metadata: map[string]string{
+						"env":    "production",
+						"region": "eu-west-1",
+					},
+				},
+			}
+
+			ctx := context.Background()
+			selector := conditionToSelector(t, condition)
+			result, err := FilterResources(ctx, selector, resources)
+
+			if err != nil {
+				t.Fatalf("FilterResources() unexpected error: %v", err)
+			}
+
+			if len(result) != 1 {
+				t.Errorf("FilterResources() returned %d resources, want 1", len(result))
+			}
+
+			for _, r := range result {
+				if r.Id != "1" {
+					t.Errorf("FilterResources() returned resource ID %s, want 1", r.Id)
+				}
+			}
+		},
+	)
 
 	t.Run("filter critical services in any production environment", func(t *testing.T) {
 		condition := unknown.UnknownCondition{

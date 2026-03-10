@@ -6,14 +6,14 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 // ===== Test Helper Functions =====
@@ -57,7 +57,10 @@ func createTestDeployment(_, systemID, id, name string) *oapi.Deployment {
 	}
 }
 
-func createTestDeploymentVersion(id, deploymentID, tag string, status oapi.DeploymentVersionStatus) *oapi.DeploymentVersion {
+func createTestDeploymentVersion(
+	id, deploymentID, tag string,
+	status oapi.DeploymentVersionStatus,
+) *oapi.DeploymentVersion {
 	now := time.Now()
 	return &oapi.DeploymentVersion{
 		Id:             id,
@@ -109,7 +112,7 @@ func createTestReleaseTarget(envID, depID, resID string) *oapi.ReleaseTarget {
 	}
 }
 
-// setupBenchmarkPlanner creates a fully configured planner with the specified number of entities
+// setupBenchmarkPlanner creates a fully configured planner with the specified number of entities.
 func setupBenchmarkPlanner(
 	b *testing.B,
 	workspaceID string,
@@ -247,7 +250,7 @@ func setupBenchmarkPlanner(
 
 // ===== Sequential Benchmarks =====
 
-// BenchmarkPlanDeployment_Sequential tests planning performance with varying dataset sizes
+// BenchmarkPlanDeployment_Sequential tests planning performance with varying dataset sizes.
 func BenchmarkPlanDeployment_Sequential(b *testing.B) {
 	scenarios := []struct {
 		name                     string
@@ -287,7 +290,7 @@ func BenchmarkPlanDeployment_Sequential(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				ctx := context.Background()
 				_, err := planner.PlanDeployment(ctx, releaseTarget)
 				if err != nil {
@@ -300,7 +303,7 @@ func BenchmarkPlanDeployment_Sequential(b *testing.B) {
 
 // ===== Parallel/Concurrent Benchmarks =====
 
-// BenchmarkPlanDeployment_Parallel tests planning under high concurrency
+// BenchmarkPlanDeployment_Parallel tests planning under high concurrency.
 func BenchmarkPlanDeployment_Parallel(b *testing.B) {
 	scenarios := []struct {
 		name                     string
@@ -354,7 +357,7 @@ func BenchmarkPlanDeployment_Parallel(b *testing.B) {
 	}
 }
 
-// BenchmarkPlanDeployment_HighConcurrency tests with explicit high concurrency levels
+// BenchmarkPlanDeployment_HighConcurrency tests with explicit high concurrency levels.
 func BenchmarkPlanDeployment_HighConcurrency(b *testing.B) {
 	workspaceID := uuid.New().String()
 	planner, releaseTargets := setupBenchmarkPlanner(
@@ -381,7 +384,7 @@ func BenchmarkPlanDeployment_HighConcurrency(b *testing.B) {
 			var wg sync.WaitGroup
 			errChan := make(chan error, concurrency)
 
-			for i := 0; i < b.N; i++ {
+			for i := range b.N {
 				// Run operations in batches of 'concurrency'
 				for c := range concurrency {
 					wg.Add(1)
@@ -411,7 +414,7 @@ func BenchmarkPlanDeployment_HighConcurrency(b *testing.B) {
 	}
 }
 
-// BenchmarkPlanDeployment_ManyVersions tests with large numbers of candidate versions
+// BenchmarkPlanDeployment_ManyVersions tests with large numbers of candidate versions.
 func BenchmarkPlanDeployment_ManyVersions(b *testing.B) {
 	versionCounts := []int{10, 50, 100, 500, 1000}
 
@@ -437,7 +440,7 @@ func BenchmarkPlanDeployment_ManyVersions(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				ctx := context.Background()
 				_, err := planner.PlanDeployment(ctx, releaseTarget)
 				if err != nil {
@@ -448,7 +451,7 @@ func BenchmarkPlanDeployment_ManyVersions(b *testing.B) {
 	}
 }
 
-// BenchmarkPlanDeployment_ComplexPolicies tests with many complex policies
+// BenchmarkPlanDeployment_ComplexPolicies tests with many complex policies.
 func BenchmarkPlanDeployment_ComplexPolicies(b *testing.B) {
 	policyCounts := []int{0, 5, 10, 25, 50, 100}
 
@@ -474,7 +477,7 @@ func BenchmarkPlanDeployment_ComplexPolicies(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				ctx := context.Background()
 				_, err := planner.PlanDeployment(ctx, releaseTarget)
 				if err != nil {
@@ -485,7 +488,7 @@ func BenchmarkPlanDeployment_ComplexPolicies(b *testing.B) {
 	}
 }
 
-// BenchmarkPlanDeployment_MultipleTargets tests planning across many different release targets
+// BenchmarkPlanDeployment_MultipleTargets tests planning across many different release targets.
 func BenchmarkPlanDeployment_MultipleTargets(b *testing.B) {
 	workspaceID := uuid.New().String()
 	planner, releaseTargets := setupBenchmarkPlanner(
@@ -517,7 +520,7 @@ func BenchmarkPlanDeployment_MultipleTargets(b *testing.B) {
 	}
 }
 
-// BenchmarkPlanDeployment_Parallel_MultipleTargets combines high concurrency with target variety
+// BenchmarkPlanDeployment_Parallel_MultipleTargets combines high concurrency with target variety.
 func BenchmarkPlanDeployment_Parallel_MultipleTargets(b *testing.B) {
 	workspaceID := uuid.New().String()
 	planner, releaseTargets := setupBenchmarkPlanner(
@@ -554,7 +557,7 @@ func BenchmarkPlanDeployment_Parallel_MultipleTargets(b *testing.B) {
 	})
 }
 
-// BenchmarkPlanDeployment_Stress tests extreme concurrency stress scenario
+// BenchmarkPlanDeployment_Stress tests extreme concurrency stress scenario.
 func BenchmarkPlanDeployment_Stress(b *testing.B) {
 	workspaceID := uuid.New().String()
 	planner, releaseTargets := setupBenchmarkPlanner(
@@ -581,7 +584,7 @@ func BenchmarkPlanDeployment_Stress(b *testing.B) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, concurrency)
 
-	for i := 0; i < b.N*100; i++ { // 100x operations per iteration
+	for i := range b.N * 100 { // 100x operations per iteration
 		wg.Add(1)
 		sem <- struct{}{} // Acquire semaphore
 
@@ -598,7 +601,7 @@ func BenchmarkPlanDeployment_Stress(b *testing.B) {
 	wg.Wait()
 }
 
-// BenchmarkPlanDeployment_Contention tests lock contention with shared resources
+// BenchmarkPlanDeployment_Contention tests lock contention with shared resources.
 func BenchmarkPlanDeployment_Contention(b *testing.B) {
 	workspaceID := uuid.New().String()
 	planner, releaseTargets := setupBenchmarkPlanner(
@@ -644,7 +647,7 @@ func BenchmarkPlanDeployment_Contention(b *testing.B) {
 
 // ===== Benchmarks with Variables and Relationships =====
 
-// setupPlannerWithVariables creates a planner with deployment and resource variables
+// setupPlannerWithVariables creates a planner with deployment and resource variables.
 func setupPlannerWithVariables(
 	b *testing.B,
 	workspaceID string,
@@ -779,7 +782,12 @@ func setupPlannerWithVariables(
 
 		// Create version for this deployment
 		versionID := uuid.New().String()
-		version := createTestDeploymentVersion(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
+		version := createTestDeploymentVersion(
+			versionID,
+			deploymentID,
+			"v1.0.0",
+			oapi.DeploymentVersionStatusReady,
+		)
 		st.DeploymentVersions.Upsert(ctx, versionID, version)
 	}
 
@@ -809,7 +817,7 @@ func setupPlannerWithVariables(
 	return planner, releaseTargets
 }
 
-// BenchmarkPlanDeployment_WithVariables tests planning with variable resolution
+// BenchmarkPlanDeployment_WithVariables tests planning with variable resolution.
 func BenchmarkPlanDeployment_WithVariables(b *testing.B) {
 	scenarios := []struct {
 		name                      string
@@ -846,7 +854,7 @@ func BenchmarkPlanDeployment_WithVariables(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for i := range b.N {
 				ctx := context.Background()
 				release, err := planner.PlanDeployment(ctx, releaseTarget)
 				if err != nil {
@@ -861,7 +869,7 @@ func BenchmarkPlanDeployment_WithVariables(b *testing.B) {
 	}
 }
 
-// BenchmarkPlanDeployment_WithVariables_Parallel tests parallel planning with variables
+// BenchmarkPlanDeployment_WithVariables_Parallel tests parallel planning with variables.
 func BenchmarkPlanDeployment_WithVariables_Parallel(b *testing.B) {
 	workspaceID := uuid.New().String()
 	planner, releaseTargets := setupPlannerWithVariables(

@@ -5,12 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // ---------------------------------------------------------------------------
@@ -260,7 +259,12 @@ func TestToOapiPolicyWithRules_VersionSelectorJSONFormat(t *testing.T) {
 	wsID := uuid.New()
 	ruleID := uuid.New().String()
 
-	jsonMap := map[string]any{"type": "comparison", "operator": "equals", "key": "tag", "value": "v1"}
+	jsonMap := map[string]any{
+		"type":     "comparison",
+		"operator": "equals",
+		"key":      "tag",
+		"value":    "v1",
+	}
 	var selectorJSON oapi.Selector
 	_ = selectorJSON.FromJsonSelector(oapi.JsonSelector{Json: jsonMap})
 	selectorBytes, _ := selectorJSON.MarshalJSON()
@@ -426,7 +430,12 @@ func TestToOapiDeploymentVariableValue_JSONSelector(t *testing.T) {
 	id := uuid.New()
 	dvID := uuid.New()
 
-	jsonMap := map[string]any{"type": "comparison", "operator": "equals", "key": "kind", "value": "Cluster"}
+	jsonMap := map[string]any{
+		"type":     "comparison",
+		"operator": "equals",
+		"key":      "kind",
+		"value":    "Cluster",
+	}
 	var sel oapi.Selector
 	_ = sel.FromJsonSelector(oapi.JsonSelector{Json: jsonMap})
 	selectorBytes, _ := sel.MarshalJSON()

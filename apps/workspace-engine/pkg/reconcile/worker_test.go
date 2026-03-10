@@ -47,7 +47,11 @@ func (f *fakeQueue) ExtendLease(ctx context.Context, params ExtendLeaseParams) e
 	}
 	return nil
 }
-func (f *fakeQueue) AckSuccess(ctx context.Context, params AckSuccessParams) (AckSuccessResult, error) {
+
+func (f *fakeQueue) AckSuccess(
+	ctx context.Context,
+	params AckSuccessParams,
+) (AckSuccessResult, error) {
 	f.ackCalls.Add(1)
 	f.lastClaimMux.Lock()
 	f.lastAck = params
@@ -99,12 +103,36 @@ func TestNodeConfigValidate(t *testing.T) {
 	}{
 		{name: "ok", cfg: base, err: nil},
 		{name: "missing worker id", cfg: NodeConfig{}, err: ErrMissingWorkerID},
-		{name: "invalid batch", cfg: func() NodeConfig { c := base; c.BatchSize = 0; return c }(), err: ErrInvalidBatchSize},
-		{name: "invalid poll", cfg: func() NodeConfig { c := base; c.PollInterval = 0; return c }(), err: ErrInvalidPollInterval},
-		{name: "invalid lease", cfg: func() NodeConfig { c := base; c.LeaseDuration = 0; return c }(), err: ErrInvalidLeaseDuration},
-		{name: "invalid heartbeat zero", cfg: func() NodeConfig { c := base; c.LeaseHeartbeat = 0; return c }(), err: ErrInvalidLeaseHeartbeat},
-		{name: "invalid heartbeat gte lease", cfg: func() NodeConfig { c := base; c.LeaseHeartbeat = c.LeaseDuration; return c }(), err: ErrInvalidLeaseHeartbeat},
-		{name: "invalid concurrency", cfg: func() NodeConfig { c := base; c.MaxConcurrency = 0; return c }(), err: ErrInvalidMaxConcurrency},
+		{
+			name: "invalid batch",
+			cfg:  func() NodeConfig { c := base; c.BatchSize = 0; return c }(),
+			err:  ErrInvalidBatchSize,
+		},
+		{
+			name: "invalid poll",
+			cfg:  func() NodeConfig { c := base; c.PollInterval = 0; return c }(),
+			err:  ErrInvalidPollInterval,
+		},
+		{
+			name: "invalid lease",
+			cfg:  func() NodeConfig { c := base; c.LeaseDuration = 0; return c }(),
+			err:  ErrInvalidLeaseDuration,
+		},
+		{
+			name: "invalid heartbeat zero",
+			cfg:  func() NodeConfig { c := base; c.LeaseHeartbeat = 0; return c }(),
+			err:  ErrInvalidLeaseHeartbeat,
+		},
+		{
+			name: "invalid heartbeat gte lease",
+			cfg:  func() NodeConfig { c := base; c.LeaseHeartbeat = c.LeaseDuration; return c }(),
+			err:  ErrInvalidLeaseHeartbeat,
+		},
+		{
+			name: "invalid concurrency",
+			cfg:  func() NodeConfig { c := base; c.MaxConcurrency = 0; return c }(),
+			err:  ErrInvalidMaxConcurrency,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,7 +152,15 @@ func TestNewWorkerAndIdentity(t *testing.T) {
 	if _, err := NewWorker("workqueue-worker", &fakeQueue{}, nil, cfg); err == nil {
 		t.Fatal("expected nil processor error")
 	}
-	if _, err := NewWorker("workqueue-worker", &fakeQueue{}, fakeProcessor{}, NodeConfig{}); !errors.Is(err, ErrMissingWorkerID) {
+	if _, err := NewWorker(
+		"workqueue-worker",
+		&fakeQueue{},
+		fakeProcessor{},
+		NodeConfig{},
+	); !errors.Is(
+		err,
+		ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected config validation error, got %v", err)
 	}
 
@@ -265,8 +301,13 @@ func TestRunSuccessPathAndHooks(t *testing.T) {
 	}
 
 	if started.Load() == 0 || stopped.Load() == 0 || claimed.Load() == 0 || processed.Load() == 0 {
-		t.Fatalf("expected lifecycle hooks to be called: started=%d stopped=%d claimed=%d processed=%d",
-			started.Load(), stopped.Load(), claimed.Load(), processed.Load())
+		t.Fatalf(
+			"expected lifecycle hooks to be called: started=%d stopped=%d claimed=%d processed=%d",
+			started.Load(),
+			stopped.Load(),
+			claimed.Load(),
+			processed.Load(),
+		)
 	}
 	if q.ackCalls.Load() != 1 {
 		t.Fatalf("expected one ack call, got %d", q.ackCalls.Load())
@@ -326,7 +367,14 @@ func TestProcessClaimedItemBranches(t *testing.T) {
 		var retried atomic.Int64
 		cfg1 := cfg
 		cfg1.Hooks.OnRetried = func(Item, error) { retried.Add(1) }
-		w, _ := NewWorker("workqueue-worker", &fakeQueue{}, fakeProcessor{fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") }}, cfg1)
+		w, _ := NewWorker(
+			"workqueue-worker",
+			&fakeQueue{},
+			fakeProcessor{
+				fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") },
+			},
+			cfg1,
+		)
 		w.processClaimedItem(context.Background(), item)
 		if retried.Load() != 1 {
 			t.Fatalf("expected retried hook once, got %d", retried.Load())
@@ -337,8 +385,17 @@ func TestProcessClaimedItemBranches(t *testing.T) {
 		var dropped atomic.Int64
 		cfg2 := cfg
 		cfg2.Hooks.OnDropped = func(Item, error) { dropped.Add(1) }
-		q := &fakeQueue{retryFn: func(context.Context, RetryParams) error { return errors.New("retry failed") }}
-		w, _ := NewWorker("workqueue-worker", q, fakeProcessor{fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") }}, cfg2)
+		q := &fakeQueue{
+			retryFn: func(context.Context, RetryParams) error { return errors.New("retry failed") },
+		}
+		w, _ := NewWorker(
+			"workqueue-worker",
+			q,
+			fakeProcessor{
+				fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") },
+			},
+			cfg2,
+		)
 		w.processClaimedItem(context.Background(), item)
 		if dropped.Load() != 1 {
 			t.Fatalf("expected dropped hook once, got %d", dropped.Load())

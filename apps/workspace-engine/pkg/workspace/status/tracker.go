@@ -4,20 +4,20 @@ import (
 	"sync"
 )
 
-// Tracker manages status for all workspaces
+// Tracker manages status for all workspaces.
 type Tracker struct {
 	statuses map[string]*WorkspaceStatus
 	mu       sync.RWMutex
 }
 
-// NewTracker creates a new status tracker
+// NewTracker creates a new status tracker.
 func NewTracker() *Tracker {
 	return &Tracker{
 		statuses: make(map[string]*WorkspaceStatus),
 	}
 }
 
-// GetOrCreate gets existing status or creates a new one
+// GetOrCreate gets existing status or creates a new one.
 func (t *Tracker) GetOrCreate(workspaceID string) *WorkspaceStatus {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -31,7 +31,7 @@ func (t *Tracker) GetOrCreate(workspaceID string) *WorkspaceStatus {
 	return status
 }
 
-// Get retrieves the status for a workspace
+// Get retrieves the status for a workspace.
 func (t *Tracker) Get(workspaceID string) (*WorkspaceStatus, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -40,7 +40,7 @@ func (t *Tracker) Get(workspaceID string) (*WorkspaceStatus, bool) {
 	return status, exists
 }
 
-// GetSnapshot returns a snapshot of the status
+// GetSnapshot returns a snapshot of the status.
 func (t *Tracker) GetSnapshot(workspaceID string) (WorkspaceStatus, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -53,7 +53,7 @@ func (t *Tracker) GetSnapshot(workspaceID string) (WorkspaceStatus, bool) {
 	return status.GetSnapshot(), true
 }
 
-// ListAll returns snapshots of all workspace statuses
+// ListAll returns snapshots of all workspace statuses.
 func (t *Tracker) ListAll() []WorkspaceStatus {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -66,7 +66,7 @@ func (t *Tracker) ListAll() []WorkspaceStatus {
 	return snapshots
 }
 
-// Remove removes a workspace status
+// Remove removes a workspace status.
 func (t *Tracker) Remove(workspaceID string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -74,7 +74,7 @@ func (t *Tracker) Remove(workspaceID string) {
 	delete(t.statuses, workspaceID)
 }
 
-// Count returns the number of tracked workspaces
+// Count returns the number of tracked workspaces.
 func (t *Tracker) Count() int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -82,7 +82,7 @@ func (t *Tracker) Count() int {
 	return len(t.statuses)
 }
 
-// CountByState returns the number of workspaces in each state
+// CountByState returns the number of workspaces in each state.
 func (t *Tracker) CountByState() map[WorkspaceState]int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -96,10 +96,10 @@ func (t *Tracker) CountByState() map[WorkspaceState]int {
 	return counts
 }
 
-// Global status tracker instance
+// Global status tracker instance.
 var globalTracker = NewTracker()
 
-// Global returns the global status tracker
+// Global returns the global status tracker.
 func Global() *Tracker {
 	return globalTracker
 }

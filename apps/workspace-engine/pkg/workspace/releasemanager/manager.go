@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
@@ -17,12 +22,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // Manager handles the business logic for release target changes and deployment decisions.
@@ -39,12 +38,17 @@ type Manager struct {
 
 var tracer = otel.Tracer("workspace/releasemanager")
 
-// PersistenceStore interface for storing deployment traces
+// PersistenceStore interface for storing deployment traces.
 type PersistenceStore = trace.PersistenceStore
 
 // New creates a new release manager for a workspace.
 // traceStore must not be nil - panics if not provided.
-func New(store *store.Store, traceStore PersistenceStore, verificationManager *verification.Manager, jobAgentRegistry *jobagents.Registry) *Manager {
+func New(
+	store *store.Store,
+	traceStore PersistenceStore,
+	verificationManager *verification.Manager,
+	jobAgentRegistry *jobagents.Registry,
+) *Manager {
 	if traceStore == nil {
 		panic("traceStore cannot be nil - deployment tracing is mandatory")
 	}
@@ -196,7 +200,11 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	// Now that the index is populated, reconciliation reads desired releases from it.
 	reconcileFn := func(ctx context.Context, state targetState) (targetState, error) {
 		workspaceID := m.store.ID()
-		recorder := trace.NewReconcileTarget(workspaceID, state.entity.Key(), trace.TriggerScheduled)
+		recorder := trace.NewReconcileTarget(
+			workspaceID,
+			state.entity.Key(),
+			trace.TriggerScheduled,
+		)
 		defer func() {
 			recorder.Complete(trace.StatusCompleted)
 			if err := recorder.Persist(m.traceStore); err != nil {
@@ -258,7 +266,11 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 			break
 		}
 
-		err := fmt.Errorf("cannot redeploy: job %s already in progress (status: %s)", jobId, jobStatus)
+		err := fmt.Errorf(
+			"cannot redeploy: job %s already in progress (status: %s)",
+			jobId,
+			jobStatus,
+		)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "job in progress")
 		log.Warn("Redeploy blocked: job already in progress",
@@ -336,7 +348,10 @@ func (m *Manager) reconcileTargetWithRecorder(
 				scheduler := m.planner.Scheduler()
 				scheduler.Schedule(releaseTarget, *eligibilityResult.NextEvaluationTime)
 				span.SetAttributes(
-					attribute.String("next_evaluation_time", eligibilityResult.NextEvaluationTime.Format("2006-01-02T15:04:05Z07:00")),
+					attribute.String(
+						"next_evaluation_time",
+						eligibilityResult.NextEvaluationTime.Format("2006-01-02T15:04:05Z07:00"),
+					),
 				)
 			}
 
@@ -373,7 +388,11 @@ func (m *Manager) reconcileTargetWithRecorder(
 	return nil
 }
 
-func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.ReleaseTarget, opts ...Option) error {
+func (m *Manager) ReconcileTargets(
+	ctx context.Context,
+	releaseTargets []*oapi.ReleaseTarget,
+	opts ...Option,
+) error {
 	// Extract options for logging only
 	options := &options{}
 	for _, opt := range opts {
@@ -431,7 +450,11 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 // Returns early if:
 //   - No desired release (no versions available or blocked by user policies)
 //   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless skipEligibilityCheck is true
-func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) error {
+func (m *Manager) ReconcileTarget(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	opts ...Option,
+) error {
 	// Extract options for logging and trace recorder creation
 	options := &options{}
 	for _, opt := range opts {
@@ -477,7 +500,11 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 }
 
 // GetReleaseTargetState returns the release target state from the pre-computed state index.
-func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
+func (m *Manager) GetReleaseTargetState(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	opts ...Option,
+) (*oapi.ReleaseTargetState, error) {
 	_, span := tracer.Start(ctx, "GetReleaseTargetState",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
@@ -512,7 +539,7 @@ func (m *Manager) RecomputeEntity(ctx context.Context, rt *oapi.ReleaseTarget) {
 	m.stateIndex.RecomputeEntity(ctx, *rt)
 }
 
-// Planner returns the planner instance for API
+// Planner returns the planner instance for API.
 func (m *Manager) Planner() *deployment.Planner {
 	return m.planner
 }

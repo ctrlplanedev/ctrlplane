@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
@@ -12,11 +16,6 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("events/handler/tick")
@@ -53,8 +52,12 @@ var workspaceTickCount = cmap.New[int64]()
 // Processes targets that:
 // 1. Scheduled for reconciliation now (based on NextEvaluationTime from policies)
 // 2. NOT scheduled but checked periodically (every 10 ticks = ~5 minutes as fallback)
-// 3. First boot - all targets (to populate scheduler)
-func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+// 3. First boot - all targets (to populate scheduler).
+func HandleWorkspaceTick(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
 	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
 	defer span.End()
 

@@ -3,13 +3,13 @@ package creators
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 // NewResource creates a test Resource with sensible defaults
-// All fields can be overridden via functional options
+// All fields can be overridden via functional options.
 func NewResource(workspaceID string) *oapi.Resource {
 	// Create with defaults
 	id := uuid.New().String()

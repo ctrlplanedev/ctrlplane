@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var _ Setter = &PostgresSetter{}
@@ -20,22 +19,34 @@ type PostgresSetter struct {
 	Queue reconcile.Queue
 }
 
-func (s *PostgresSetter) RecordMeasurement(ctx context.Context, metricID string, measurement metrics.Measurement) error {
+func (s *PostgresSetter) RecordMeasurement(
+	ctx context.Context,
+	metricID string,
+	measurement metrics.Measurement,
+) error {
 	data, err := json.Marshal(measurement.Data)
 	if err != nil {
 		return fmt.Errorf("marshal measurement data: %w", err)
 	}
 
-	return db.GetQueries(ctx).InsertJobVerificationMetricMeasurement(ctx, db.InsertJobVerificationMetricMeasurementParams{
-		JobVerificationMetricStatusID: uuid.MustParse(metricID),
-		Data:                          data,
-		MeasuredAt:                    pgtype.Timestamptz{Time: measurement.MeasuredAt, Valid: true},
-		Message:                       measurement.Message,
-		Status:                        db.JobVerificationStatus(measurement.Status),
-	})
+	return db.GetQueries(ctx).
+		InsertJobVerificationMetricMeasurement(ctx, db.InsertJobVerificationMetricMeasurementParams{
+			JobVerificationMetricStatusID: uuid.MustParse(metricID),
+			Data:                          data,
+			MeasuredAt: pgtype.Timestamptz{
+				Time:  measurement.MeasuredAt,
+				Valid: true,
+			},
+			Message: measurement.Message,
+			Status:  db.JobVerificationStatus(measurement.Status),
+		})
 }
 
-func (s *PostgresSetter) CompleteMetric(ctx context.Context, metricID string, status metrics.VerificationStatus) error {
+func (s *PostgresSetter) CompleteMetric(
+	ctx context.Context,
+	metricID string,
+	status metrics.VerificationStatus,
+) error {
 	queries := db.GetQueries(ctx)
 	metricUUID := uuid.MustParse(metricID)
 

@@ -5,14 +5,14 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/jobs")
@@ -42,11 +42,21 @@ func NewFactoryFromGetters(getters Getters) *Factory {
 }
 
 // NoAgentConfiguredJob creates a job for a release with no job agent configured.
-func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
+func (f *Factory) NoAgentConfiguredJob(
+	releaseID, jobAgentID, deploymentName string,
+	action *trace.Action,
+) *oapi.Job {
 	message := fmt.Sprintf("No job agent configured for deployment '%s'", deploymentName)
 	if action != nil {
-		action.AddStep("Create InvalidJobAgent job", trace.StepResultPass,
-			fmt.Sprintf("Created InvalidJobAgent job for release %s with job agent %s", releaseID, jobAgentID)).
+		action.AddStep(
+			"Create InvalidJobAgent job",
+			trace.StepResultPass,
+			fmt.Sprintf(
+				"Created InvalidJobAgent job for release %s with job agent %s",
+				releaseID,
+				jobAgentID,
+			),
+		).
 			AddMetadata("release_id", releaseID).
 			AddMetadata("job_agent_id", jobAgentID).
 			AddMetadata("message", message)
@@ -68,11 +78,21 @@ func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName str
 }
 
 // InvalidDeploymentAgentsJob creates a job for a release with invalid deployment agents.
-func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, action *trace.Action) *oapi.Job {
+func (f *Factory) InvalidDeploymentAgentsJob(
+	releaseID, deploymentName string,
+	action *trace.Action,
+) *oapi.Job {
 	message := fmt.Sprintf("Invalid deployment agents for deployment '%s'", deploymentName)
 	if action != nil {
-		action.AddStep("Create InvalidDeploymentAgentsJob job", trace.StepResultPass,
-			fmt.Sprintf("Created InvalidDeploymentAgentsJob job for release %s with deployment %s", releaseID, deploymentName)).
+		action.AddStep(
+			"Create InvalidDeploymentAgentsJob job",
+			trace.StepResultPass,
+			fmt.Sprintf(
+				"Created InvalidDeploymentAgentsJob job for release %s with deployment %s",
+				releaseID,
+				deploymentName,
+			),
+		).
 			AddMetadata("release_id", releaseID).
 			AddMetadata("deployment_name", deploymentName).
 			AddMetadata("message", message)
@@ -93,7 +113,12 @@ func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, a
 	}
 }
 
-func (f *Factory) buildDispatchContext(ctx context.Context, release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.DispatchContext, error) {
+func (f *Factory) buildDispatchContext(
+	ctx context.Context,
+	release *oapi.Release,
+	deployment *oapi.Deployment,
+	jobAgent *oapi.JobAgent,
+) (*oapi.DispatchContext, error) {
 	environmentID, err := uuid.Parse(release.ReleaseTarget.EnvironmentId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse environment id: %w", err)
@@ -149,7 +174,12 @@ func (f *Factory) buildDispatchContext(ctx context.Context, release *oapi.Releas
 
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
 // The job uses the resolved settings already present on the selected job agent.
-func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release, jobAgent *oapi.JobAgent, action *trace.Action) (*oapi.Job, error) {
+func (f *Factory) CreateJobForRelease(
+	ctx context.Context,
+	release *oapi.Release,
+	jobAgent *oapi.JobAgent,
+	action *trace.Action,
+) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "CreateJobForRelease",
 		oteltrace.WithAttributes(
 			attribute.String("deployment.id", release.ReleaseTarget.DeploymentId),
@@ -180,8 +210,15 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	if action != nil {
-		action.AddStep("Validate job agent", trace.StepResultPass,
-			fmt.Sprintf("Job agent '%s' (type: %s) found and validated", jobAgent.Name, jobAgent.Type)).
+		action.AddStep(
+			"Validate job agent",
+			trace.StepResultPass,
+			fmt.Sprintf(
+				"Job agent '%s' (type: %s) found and validated",
+				jobAgent.Name,
+				jobAgent.Type,
+			),
+		).
 			AddMetadata("job_agent_id", jobAgent.Id).
 			AddMetadata("job_agent_name", jobAgent.Name).
 			AddMetadata("job_agent_type", jobAgent.Type)
@@ -195,8 +232,15 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	jobId := uuid.New().String()
 
 	if action != nil {
-		action.AddStep("Create job", trace.StepResultPass,
-			fmt.Sprintf("Job created successfully with ID %s for release %s", jobId, release.Id.String())).
+		action.AddStep(
+			"Create job",
+			trace.StepResultPass,
+			fmt.Sprintf(
+				"Job created successfully with ID %s for release %s",
+				jobId,
+				release.Id.String(),
+			),
+		).
 			AddMetadata("job_id", jobId).
 			AddMetadata("job_status", string(oapi.JobStatusPending)).
 			AddMetadata("job_agent_id", jobAgent.Id).

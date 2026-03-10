@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-// Entity represents an object that can be persisted
+// Entity represents an object that can be persisted.
 type Entity interface {
 	// CompactionKey returns the entity type and unique ID used for topic compaction.
 	// Entities with the same compaction key will be deduplicated, keeping only the latest.
 	CompactionKey() (entityType string, entityID string)
 }
 
-// ChangeType represents the type of change operation
+// ChangeType represents the type of change operation.
 type ChangeType string
 
 const (
@@ -20,7 +20,7 @@ const (
 	ChangeTypeUnset ChangeType = "unset"
 )
 
-// Change represents a single change event
+// Change represents a single change event.
 type Change struct {
 	Namespace  string
 	ChangeType ChangeType

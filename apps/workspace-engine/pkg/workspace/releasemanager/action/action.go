@@ -2,10 +2,11 @@ package action
 
 import (
 	"context"
+
 	"workspace-engine/pkg/oapi"
 )
 
-// ActionTrigger represents when an action should execute
+// ActionTrigger represents when an action should execute.
 type ActionTrigger string
 
 const (
@@ -16,7 +17,7 @@ const (
 	TriggerJobStatusChange ActionTrigger = "job.statuschange"
 )
 
-// ActionContext provides context for action execution
+// ActionContext provides context for action execution.
 type ActionContext struct {
 	Job      *oapi.Job
 	Release  *oapi.Release
@@ -24,7 +25,7 @@ type ActionContext struct {
 }
 
 // PolicyAction executes actions triggered by deployment lifecycle events
-// Examples: verification creation, webhooks, notifications
+// Examples: verification creation, webhooks, notifications.
 type PolicyAction interface {
 	// Name returns the action identifier (e.g., "verification", "webhook")
 	Name() string

@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+
 	"workspace-engine/pkg/reconcile"
 )
 
@@ -12,7 +13,11 @@ type JobDispatchParams struct {
 	JobID       string
 }
 
-func EnqueueJobDispatch(queue reconcile.Queue, ctx context.Context, params JobDispatchParams) error {
+func EnqueueJobDispatch(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params JobDispatchParams,
+) error {
 	return queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: params.WorkspaceID,
 		Kind:        JobDispatchKind,

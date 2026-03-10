@@ -3,12 +3,12 @@ package releases
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	dvmapper "workspace-engine/pkg/workspace/store/repository/db/deploymentversions"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	dvmapper "workspace-engine/pkg/workspace/store/repository/db/deploymentversions"
 )
 
 // Repo implements repository.ReleaseRepo backed by the release and
@@ -81,11 +81,12 @@ func (r *Repo) GetByReleaseTargetKey(key string) ([]*oapi.Release, error) {
 		return nil, fmt.Errorf("parse deployment_id from key: %w", err)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListReleasesByReleaseTarget(r.ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    resourceID,
-		EnvironmentID: environmentID,
-		DeploymentID:  deploymentID,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListReleasesByReleaseTarget(r.ctx, db.ListReleasesByReleaseTargetParams{
+			ResourceID:    resourceID,
+			EnvironmentID: environmentID,
+			DeploymentID:  deploymentID,
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list releases by target: %w", err)
 	}
@@ -156,9 +157,10 @@ func (r *Repo) Items() map[string]*oapi.Release {
 		return make(map[string]*oapi.Release)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListReleasesByWorkspaceID(r.ctx, db.ListReleasesByWorkspaceIDParams{
-		WorkspaceID: uid,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListReleasesByWorkspaceID(r.ctx, db.ListReleasesByWorkspaceIDParams{
+			WorkspaceID: uid,
+		})
 	if err != nil {
 		log.Warn("Failed to list releases by workspace", "workspaceId", r.workspaceID, "error", err)
 		return make(map[string]*oapi.Release)

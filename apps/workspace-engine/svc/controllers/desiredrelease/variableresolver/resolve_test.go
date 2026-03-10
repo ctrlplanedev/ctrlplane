@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships/eval"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
 )
 
 // ---------------------------------------------------------------------------
@@ -21,7 +20,10 @@ type mockResolver struct {
 	related map[string][]*oapi.RelatableEntity
 }
 
-func (m *mockResolver) ResolveRelated(_ context.Context, reference string) ([]*oapi.RelatableEntity, error) {
+func (m *mockResolver) ResolveRelated(
+	_ context.Context,
+	reference string,
+) ([]*oapi.RelatableEntity, error) {
 	return m.related[reference], nil
 }
 
@@ -36,19 +38,36 @@ type mockGetter struct {
 	candidates     map[string][]eval.EntityData
 }
 
-func (m *mockGetter) GetDeploymentVariables(_ context.Context, _ string) ([]oapi.DeploymentVariableWithValues, error) {
+func (m *mockGetter) GetDeploymentVariables(
+	_ context.Context,
+	_ string,
+) ([]oapi.DeploymentVariableWithValues, error) {
 	return m.deploymentVars, nil
 }
-func (m *mockGetter) GetResourceVariables(_ context.Context, _ string) (map[string]oapi.ResourceVariable, error) {
+
+func (m *mockGetter) GetResourceVariables(
+	_ context.Context,
+	_ string,
+) (map[string]oapi.ResourceVariable, error) {
 	return m.resourceVars, nil
 }
 func (m *mockGetter) GetRelationshipRules(_ context.Context, _ uuid.UUID) ([]eval.Rule, error) {
 	return m.rules, nil
 }
-func (m *mockGetter) LoadCandidates(_ context.Context, _ uuid.UUID, entityType string) ([]eval.EntityData, error) {
+
+func (m *mockGetter) LoadCandidates(
+	_ context.Context,
+	_ uuid.UUID,
+	entityType string,
+) ([]eval.EntityData, error) {
 	return m.candidates[entityType], nil
 }
-func (m *mockGetter) GetEntityByID(_ context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+
+func (m *mockGetter) GetEntityByID(
+	_ context.Context,
+	entityID uuid.UUID,
+	entityType string,
+) (*eval.EntityData, error) {
 	for i := range m.candidates[entityType] {
 		if m.candidates[entityType][i].ID == entityID {
 			return &m.candidates[entityType][i], nil
@@ -345,7 +364,13 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "region")
 	s, err := resolved["region"].AsStringValue()
@@ -379,7 +404,13 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "image")
 	s, err := resolved["image"].AsStringValue()
@@ -407,7 +438,13 @@ func TestResolve_DefaultValueFallback(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "replicas")
 	i, err := resolved["replicas"].AsIntegerValue()
@@ -434,7 +471,13 @@ func TestResolve_NoMatchNoDefault_KeyAbsent(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	assert.NotContains(t, resolved, "optional")
 }
@@ -478,7 +521,13 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	s, err := resolved["image"].AsStringValue()
 	require.NoError(t, err)
@@ -525,7 +574,13 @@ func TestResolve_MultipleVariables(t *testing.T) {
 		resourceVars: map[string]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	assert.Len(t, resolved, 3)
 
@@ -546,7 +601,13 @@ func TestResolve_MultipleVariables(t *testing.T) {
 func TestResolve_NoDeploymentVars_EmptyMap(t *testing.T) {
 	scope := newScope()
 
-	resolved, err := Resolve(context.Background(), emptyGetter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		emptyGetter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	assert.Empty(t, resolved)
 }
@@ -601,7 +662,9 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 						"type": "resource", "id": resourceID.String(),
 						"name": "test-resource", "kind": "Server",
 						"version": "v1", "identifier": "test-resource",
-						"config": map[string]any{"cpu": "4"}, "metadata": map[string]any{"region": "us-east-1"},
+						"config": map[string]any{
+							"cpu": "4",
+						}, "metadata": map[string]any{"region": "us-east-1"},
 					},
 				},
 				{
@@ -619,7 +682,13 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "db_host")
 	s, err := resolved["db_host"].AsStringValue()
@@ -668,7 +737,9 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 						"type": "resource", "id": resourceID.String(),
 						"name": "test-resource", "kind": "Server",
 						"version": "v1", "identifier": "test-resource",
-						"config": map[string]any{"cpu": "4"}, "metadata": map[string]any{"region": "us-east-1"},
+						"config": map[string]any{
+							"cpu": "4",
+						}, "metadata": map[string]any{"region": "us-east-1"},
 					},
 				},
 				{
@@ -686,7 +757,13 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "cluster_endpoint")
 	s, err := resolved["cluster_endpoint"].AsStringValue()
@@ -751,7 +828,9 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 						"type": "resource", "id": resourceID.String(),
 						"name": "test-resource", "kind": "Server",
 						"version": "v1", "identifier": "test-resource",
-						"config": map[string]any{"cpu": "4"}, "metadata": map[string]any{"region": "us-east-1"},
+						"config": map[string]any{
+							"cpu": "4",
+						}, "metadata": map[string]any{"region": "us-east-1"},
 					},
 				},
 				{
@@ -769,7 +848,13 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	assert.Len(t, resolved, 2)
 
@@ -812,7 +897,13 @@ func TestResolve_ResourceVarRefFails_FallsToDeploymentValue(t *testing.T) {
 		rules: []eval.Rule{},
 	}
 
-	resolved, err := Resolve(context.Background(), getter, scope, scope.Deployment.Id, scope.Resource.Id)
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
 	require.NoError(t, err)
 	require.Contains(t, resolved, "db_host")
 	s, err := resolved["db_host"].AsStringValue()

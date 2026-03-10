@@ -6,11 +6,10 @@ import (
 	"sort"
 	"testing"
 
-	"workspace-engine/pkg/reconcile"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/reconcile"
 )
 
 // ---------------------------------------------------------------------------
@@ -36,7 +35,13 @@ func (m *mockGetter) GetRulesForWorkspace(_ context.Context, _ uuid.UUID) ([]Rul
 	return m.rules, m.rulesErr
 }
 
-func (m *mockGetter) StreamCandidateEntities(_ context.Context, _ uuid.UUID, entityType string, _ int, batches chan<- []EntityInfo) error {
+func (m *mockGetter) StreamCandidateEntities(
+	_ context.Context,
+	_ uuid.UUID,
+	entityType string,
+	_ int,
+	batches chan<- []EntityInfo,
+) error {
 	defer close(batches)
 	if m.candidatesErr != nil {
 		return m.candidatesErr
@@ -47,7 +52,10 @@ func (m *mockGetter) StreamCandidateEntities(_ context.Context, _ uuid.UUID, ent
 	return nil
 }
 
-func (m *mockGetter) GetExistingRelationships(_ context.Context, _ uuid.UUID) ([]ExistingRelationship, error) {
+func (m *mockGetter) GetExistingRelationships(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]ExistingRelationship, error) {
 	return m.existingRels, m.existingRelErr
 }
 
@@ -66,7 +74,12 @@ type setCall struct {
 	relationships []ComputedRelationship
 }
 
-func (m *mockSetter) SetComputedRelationships(_ context.Context, entityType string, entityID uuid.UUID, relationships []ComputedRelationship) error {
+func (m *mockSetter) SetComputedRelationships(
+	_ context.Context,
+	entityType string,
+	entityID uuid.UUID,
+	relationships []ComputedRelationship,
+) error {
 	m.calls = append(m.calls, setCall{
 		entityType:    entityType,
 		entityID:      entityID,
@@ -81,7 +94,11 @@ func (m *mockSetter) SetComputedRelationships(_ context.Context, entityType stri
 
 func newID() uuid.UUID { return uuid.New() }
 
-func resourceEntity(id, workspaceID uuid.UUID, name, kind string, metadata map[string]any) EntityInfo {
+func resourceEntity(
+	id, workspaceID uuid.UUID,
+	name, kind string,
+	metadata map[string]any,
+) EntityInfo {
 	raw := map[string]any{
 		"type":     "resource",
 		"id":       id.String(),
@@ -97,7 +114,11 @@ func resourceEntity(id, workspaceID uuid.UUID, name, kind string, metadata map[s
 	}
 }
 
-func deploymentEntity(id, workspaceID uuid.UUID, name, slug string, metadata map[string]any) EntityInfo {
+func deploymentEntity(
+	id, workspaceID uuid.UUID,
+	name, slug string,
+	metadata map[string]any,
+) EntityInfo {
 	raw := map[string]any{
 		"type":     "deployment",
 		"id":       id.String(),
@@ -277,7 +298,13 @@ func TestProcess_EntityIsFrom_MatchingCandidates(t *testing.T) {
 	depID2 := newID()
 	depNoMatch := newID()
 
-	entity := resourceEntity(resourceID, wsID, "my-api", "Service", map[string]any{"team": "platform"})
+	entity := resourceEntity(
+		resourceID,
+		wsID,
+		"my-api",
+		"Service",
+		map[string]any{"team": "platform"},
+	)
 
 	celExpr := `from.type == "resource" && to.type == "deployment" && from.metadata.team == to.metadata.team`
 
@@ -286,9 +313,27 @@ func TestProcess_EntityIsFrom_MatchingCandidates(t *testing.T) {
 		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"deployment": {
-				deploymentEntity(depID1, wsID, "deploy-1", "deploy-1", map[string]any{"team": "platform"}),
-				deploymentEntity(depID2, wsID, "deploy-2", "deploy-2", map[string]any{"team": "platform"}),
-				deploymentEntity(depNoMatch, wsID, "deploy-3", "deploy-3", map[string]any{"team": "other"}),
+				deploymentEntity(
+					depID1,
+					wsID,
+					"deploy-1",
+					"deploy-1",
+					map[string]any{"team": "platform"},
+				),
+				deploymentEntity(
+					depID2,
+					wsID,
+					"deploy-2",
+					"deploy-2",
+					map[string]any{"team": "platform"},
+				),
+				deploymentEntity(
+					depNoMatch,
+					wsID,
+					"deploy-3",
+					"deploy-3",
+					map[string]any{"team": "other"},
+				),
 			},
 		},
 	}
@@ -330,7 +375,13 @@ func TestProcess_EntityIsTo_MatchingCandidates(t *testing.T) {
 	resID1 := newID()
 	resID2 := newID()
 
-	entity := deploymentEntity(deploymentID, wsID, "my-deploy", "my-deploy", map[string]any{"app": "web"})
+	entity := deploymentEntity(
+		deploymentID,
+		wsID,
+		"my-deploy",
+		"my-deploy",
+		map[string]any{"app": "web"},
+	)
 
 	celExpr := `from.type == "resource" && to.type == "deployment" && from.metadata.app == to.metadata.app`
 
@@ -433,7 +484,13 @@ func TestProcess_NoMatchingCandidates(t *testing.T) {
 	ruleID := newID()
 	entityID := newID()
 
-	entity := resourceEntity(entityID, wsID, "my-resource", "Service", map[string]any{"team": "alpha"})
+	entity := resourceEntity(
+		entityID,
+		wsID,
+		"my-resource",
+		"Service",
+		map[string]any{"team": "alpha"},
+	)
 
 	celExpr := `from.type == "resource" && to.type == "deployment" && from.metadata.team == to.metadata.team`
 
@@ -496,7 +553,13 @@ func TestProcess_MultipleRules(t *testing.T) {
 	depMatch := newID()
 	envMatch := newID()
 
-	entity := resourceEntity(entityID, wsID, "my-api", "Service", map[string]any{"team": "platform"})
+	entity := resourceEntity(
+		entityID,
+		wsID,
+		"my-api",
+		"Service",
+		map[string]any{"team": "platform"},
+	)
 
 	celA := `from.type == "resource" && to.type == "deployment" && from.metadata.team == to.metadata.team`
 	celB := `from.type == "resource" && to.type == "environment" && from.name == to.name`
@@ -510,7 +573,13 @@ func TestProcess_MultipleRules(t *testing.T) {
 		candidates: map[string][]EntityInfo{
 			"deployment": {
 				deploymentEntity(depMatch, wsID, "dep", "dep", map[string]any{"team": "platform"}),
-				deploymentEntity(newID(), wsID, "dep-no", "dep-no", map[string]any{"team": "other"}),
+				deploymentEntity(
+					newID(),
+					wsID,
+					"dep-no",
+					"dep-no",
+					map[string]any{"team": "other"},
+				),
 			},
 			"environment": {
 				environmentEntity(envMatch, wsID, "my-api", nil),
@@ -984,7 +1053,13 @@ func TestProcess_EnvironmentToResource(t *testing.T) {
 		rules:      []RuleInfo{makeRule(ruleID, celExpr)},
 		candidates: map[string][]EntityInfo{
 			"resource": {
-				resourceEntity(resMatch, wsID, "prod-db", "Database", map[string]any{"tier": "prod"}),
+				resourceEntity(
+					resMatch,
+					wsID,
+					"prod-db",
+					"Database",
+					map[string]any{"tier": "prod"},
+				),
 				resourceEntity(newID(), wsID, "dev-db", "Database", map[string]any{"tier": "dev"}),
 			},
 		},
@@ -1028,7 +1103,10 @@ func TestProcess_LargeCandidateSet(t *testing.T) {
 			meta["match"] = "yes"
 			expectedMatches = append(expectedMatches, id)
 		}
-		candidates = append(candidates, deploymentEntity(id, wsID, fmt.Sprintf("dep-%d", i), fmt.Sprintf("dep-%d", i), meta))
+		candidates = append(
+			candidates,
+			deploymentEntity(id, wsID, fmt.Sprintf("dep-%d", i), fmt.Sprintf("dep-%d", i), meta),
+		)
 	}
 
 	getter := &mockGetter{
@@ -1054,7 +1132,10 @@ func TestProcess_LargeCandidateSet(t *testing.T) {
 		gotIDs[i] = r.ToEntityID
 	}
 	sort.Slice(gotIDs, func(i, j int) bool { return gotIDs[i].String() < gotIDs[j].String() })
-	sort.Slice(expectedMatches, func(i, j int) bool { return expectedMatches[i].String() < expectedMatches[j].String() })
+	sort.Slice(
+		expectedMatches,
+		func(i, j int) bool { return expectedMatches[i].String() < expectedMatches[j].String() },
+	)
 	assert.Equal(t, expectedMatches, gotIDs)
 }
 
@@ -1407,15 +1488,45 @@ func TestProcess_MetadataPropertyEquality_IncomingOutgoing(t *testing.T) {
 	resEUWest := newID()
 
 	deployments := []EntityInfo{
-		deploymentEntity(depUSEast1, wsID, "dep-us-1", "dep-us-1", map[string]any{"region": "us-east"}),
-		deploymentEntity(depUSEast2, wsID, "dep-us-2", "dep-us-2", map[string]any{"region": "us-east"}),
+		deploymentEntity(
+			depUSEast1,
+			wsID,
+			"dep-us-1",
+			"dep-us-1",
+			map[string]any{"region": "us-east"},
+		),
+		deploymentEntity(
+			depUSEast2,
+			wsID,
+			"dep-us-2",
+			"dep-us-2",
+			map[string]any{"region": "us-east"},
+		),
 		deploymentEntity(depEUWest, wsID, "dep-eu", "dep-eu", map[string]any{"region": "eu-west"}),
 	}
 
 	resources := []EntityInfo{
-		resourceEntity(resUSEast1, wsID, "res-us-1", "Service", map[string]any{"region": "us-east"}),
-		resourceEntity(resUSEast2, wsID, "res-us-2", "Service", map[string]any{"region": "us-east"}),
-		resourceEntity(resUSEast3, wsID, "res-us-3", "Service", map[string]any{"region": "us-east"}),
+		resourceEntity(
+			resUSEast1,
+			wsID,
+			"res-us-1",
+			"Service",
+			map[string]any{"region": "us-east"},
+		),
+		resourceEntity(
+			resUSEast2,
+			wsID,
+			"res-us-2",
+			"Service",
+			map[string]any{"region": "us-east"},
+		),
+		resourceEntity(
+			resUSEast3,
+			wsID,
+			"res-us-3",
+			"Service",
+			map[string]any{"region": "us-east"},
+		),
 		resourceEntity(resEUWest, wsID, "res-eu", "Service", map[string]any{"region": "eu-west"}),
 	}
 
@@ -1436,7 +1547,12 @@ func TestProcess_MetadataPropertyEquality_IncomingOutgoing(t *testing.T) {
 		require.Len(t, setter.calls, 1)
 
 		rels := setter.calls[0].relationships
-		assert.Len(t, rels, 2, "resource with region=us-east should connect to 2 deployments with region=us-east")
+		assert.Len(
+			t,
+			rels,
+			2,
+			"resource with region=us-east should connect to 2 deployments with region=us-east",
+		)
 
 		for _, rel := range rels {
 			assert.Equal(t, ruleID, rel.RuleID)
@@ -1447,7 +1563,10 @@ func TestProcess_MetadataPropertyEquality_IncomingOutgoing(t *testing.T) {
 		toIDs := []uuid.UUID{rels[0].ToEntityID, rels[1].ToEntityID}
 		sort.Slice(toIDs, func(i, j int) bool { return toIDs[i].String() < toIDs[j].String() })
 		expected := []uuid.UUID{depUSEast1, depUSEast2}
-		sort.Slice(expected, func(i, j int) bool { return expected[i].String() < expected[j].String() })
+		sort.Slice(
+			expected,
+			func(i, j int) bool { return expected[i].String() < expected[j].String() },
+		)
 		assert.Equal(t, expected, toIDs)
 	})
 
@@ -1468,7 +1587,12 @@ func TestProcess_MetadataPropertyEquality_IncomingOutgoing(t *testing.T) {
 		require.Len(t, setter.calls, 1)
 
 		rels := setter.calls[0].relationships
-		assert.Len(t, rels, 3, "deployment with region=us-east should have 3 incoming edges from resources with region=us-east")
+		assert.Len(
+			t,
+			rels,
+			3,
+			"deployment with region=us-east should have 3 incoming edges from resources with region=us-east",
+		)
 
 		for _, rel := range rels {
 			assert.Equal(t, ruleID, rel.RuleID)
@@ -1480,9 +1604,15 @@ func TestProcess_MetadataPropertyEquality_IncomingOutgoing(t *testing.T) {
 		for i, r := range rels {
 			fromIDs[i] = r.FromEntityID
 		}
-		sort.Slice(fromIDs, func(i, j int) bool { return fromIDs[i].String() < fromIDs[j].String() })
+		sort.Slice(
+			fromIDs,
+			func(i, j int) bool { return fromIDs[i].String() < fromIDs[j].String() },
+		)
 		expected := []uuid.UUID{resUSEast1, resUSEast2, resUSEast3}
-		sort.Slice(expected, func(i, j int) bool { return expected[i].String() < expected[j].String() })
+		sort.Slice(
+			expected,
+			func(i, j int) bool { return expected[i].String() < expected[j].String() },
+		)
 		assert.Equal(t, expected, fromIDs)
 	})
 
@@ -1549,7 +1679,13 @@ func TestProcess_SameTypeMetadataEquality_IncomingOutgoing(t *testing.T) {
 		entity,
 		resourceEntity(peerA, wsID, "peer-a", "Pod", map[string]any{"cluster": "prod-1"}),
 		resourceEntity(peerB, wsID, "peer-b", "Pod", map[string]any{"cluster": "prod-1"}),
-		resourceEntity(differentCluster, wsID, "staging", "Pod", map[string]any{"cluster": "staging"}),
+		resourceEntity(
+			differentCluster,
+			wsID,
+			"staging",
+			"Pod",
+			map[string]any{"cluster": "staging"},
+		),
 	}
 
 	getter := &mockGetter{
@@ -1588,14 +1724,20 @@ func TestProcess_SameTypeMetadataEquality_IncomingOutgoing(t *testing.T) {
 	}
 	sort.Slice(outToIDs, func(i, j int) bool { return outToIDs[i].String() < outToIDs[j].String() })
 	expectedPeers := []uuid.UUID{peerA, peerB}
-	sort.Slice(expectedPeers, func(i, j int) bool { return expectedPeers[i].String() < expectedPeers[j].String() })
+	sort.Slice(
+		expectedPeers,
+		func(i, j int) bool { return expectedPeers[i].String() < expectedPeers[j].String() },
+	)
 	assert.Equal(t, expectedPeers, outToIDs)
 
 	inFromIDs := make([]uuid.UUID, len(incoming))
 	for i, r := range incoming {
 		inFromIDs[i] = r.FromEntityID
 	}
-	sort.Slice(inFromIDs, func(i, j int) bool { return inFromIDs[i].String() < inFromIDs[j].String() })
+	sort.Slice(
+		inFromIDs,
+		func(i, j int) bool { return inFromIDs[i].String() < inFromIDs[j].String() },
+	)
 	assert.Equal(t, expectedPeers, inFromIDs)
 }
 

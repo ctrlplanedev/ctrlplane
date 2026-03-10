@@ -17,7 +17,13 @@ type TestRunner struct {
 }
 
 type Setter interface {
-	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
+	UpdateJob(
+		ctx context.Context,
+		jobID string,
+		status oapi.JobStatus,
+		message string,
+		metadata map[string]string,
+	) error
 }
 
 func New(setter Setter) *TestRunner {
@@ -63,7 +69,13 @@ func (t *TestRunner) getFinalStatus(cfg *oapi.TestRunnerJobAgentConfig) oapi.Job
 	return oapi.JobStatusSuccessful
 }
 
-func (t *TestRunner) resolveJobAfterDelay(ctx context.Context, jobID string, delay time.Duration, status oapi.JobStatus, message string) {
+func (t *TestRunner) resolveJobAfterDelay(
+	ctx context.Context,
+	jobID string,
+	delay time.Duration,
+	status oapi.JobStatus,
+	message string,
+) {
 	// Wait for the configured delay
 	<-t.timeFunc(delay)
 

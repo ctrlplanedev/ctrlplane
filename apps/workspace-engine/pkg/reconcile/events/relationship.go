@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+
 	"workspace-engine/pkg/reconcile"
 )
 
@@ -13,7 +14,11 @@ type RelationshipEvalParams struct {
 	EntityID    string
 }
 
-func EnqueueRelationshipEval(queue reconcile.Queue, ctx context.Context, params RelationshipEvalParams) error {
+func EnqueueRelationshipEval(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params RelationshipEvalParams,
+) error {
 	return queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: params.WorkspaceID,
 		Kind:        RelationshipEvalKind,
@@ -22,7 +27,11 @@ func EnqueueRelationshipEval(queue reconcile.Queue, ctx context.Context, params 
 	})
 }
 
-func EnqueueManyRelationshipEval(queue reconcile.Queue, ctx context.Context, params []RelationshipEvalParams) error {
+func EnqueueManyRelationshipEval(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params []RelationshipEvalParams,
+) error {
 	if len(params) == 0 {
 		return nil
 	}

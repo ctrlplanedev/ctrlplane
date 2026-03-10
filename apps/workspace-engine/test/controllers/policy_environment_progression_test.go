@@ -4,16 +4,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
 )
 
 // setupEnvProgression is a helper that sets up a two-environment scenario
 // where "staging" is the dependency and "production" is the target.
 // Returns (deploymentID, stagingEnvID, prodEnvID, resourceID, stagingRTKey).
-func setupEnvProgression(t *testing.T, versionID string, opts ...PipelineOption) (*TestPipeline, string) {
+func setupEnvProgression(
+	t *testing.T,
+	versionID string,
+	opts ...PipelineOption,
+) (*TestPipeline, string) {
 	t.Helper()
 
 	deploymentID := uuid.New()
@@ -26,7 +29,11 @@ func setupEnvProgression(t *testing.T, versionID string, opts ...PipelineOption)
 		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
 		WithEnvironment(EnvironmentName("production"), EnvironmentID(prodEnvID)),
 		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceID(resourceID)),
-		WithVersion(VersionTag("v1.0.0"), VersionID(versionID), VersionCreatedAt(time.Now().Add(-1*time.Hour))),
+		WithVersion(
+			VersionTag("v1.0.0"),
+			VersionID(versionID),
+			VersionCreatedAt(time.Now().Add(-1*time.Hour)),
+		),
 	}
 	defaultOpts = append(defaultOpts, opts...)
 
@@ -209,8 +216,16 @@ func TestEnvironmentProgression_NoReleaseTargets_Allowed(t *testing.T) {
 	)
 
 	p.ReleaseGetter.Environments = map[string]*oapi.Environment{
-		stagingEnvID.String(): {Id: stagingEnvID.String(), Name: "staging", WorkspaceId: p.WorkspaceID().String()},
-		prodEnvID.String():    {Id: prodEnvID.String(), Name: "production", WorkspaceId: p.WorkspaceID().String()},
+		stagingEnvID.String(): {
+			Id:          stagingEnvID.String(),
+			Name:        "staging",
+			WorkspaceId: p.WorkspaceID().String(),
+		},
+		prodEnvID.String(): {
+			Id:          prodEnvID.String(),
+			Name:        "production",
+			WorkspaceId: p.WorkspaceID().String(),
+		},
 	}
 	p.ReleaseGetter.SystemIDsByEnvironment = map[string][]string{
 		stagingEnvID.String(): {systemID},
@@ -342,8 +357,16 @@ func TestEnvironmentProgression_DifferentSystems_Blocked(t *testing.T) {
 	)
 
 	p.ReleaseGetter.Environments = map[string]*oapi.Environment{
-		stagingEnvID.String(): {Id: stagingEnvID.String(), Name: "staging", WorkspaceId: p.WorkspaceID().String()},
-		prodEnvID.String():    {Id: prodEnvID.String(), Name: "production", WorkspaceId: p.WorkspaceID().String()},
+		stagingEnvID.String(): {
+			Id:          stagingEnvID.String(),
+			Name:        "staging",
+			WorkspaceId: p.WorkspaceID().String(),
+		},
+		prodEnvID.String(): {
+			Id:          prodEnvID.String(),
+			Name:        "production",
+			WorkspaceId: p.WorkspaceID().String(),
+		},
 	}
 	// Different system IDs -> they don't share a system, so staging won't be a dependency.
 	p.ReleaseGetter.SystemIDsByEnvironment = map[string][]string{

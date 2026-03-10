@@ -17,14 +17,14 @@ type Store struct {
 	snapshots map[string]map[string]persistence.Change
 }
 
-// NewStore creates a new in-memory snapshot store
+// NewStore creates a new in-memory snapshot store.
 func NewStore() *Store {
 	return &Store{
 		snapshots: make(map[string]map[string]persistence.Change),
 	}
 }
 
-// Save adds changes to the in-memory store, compacting per entity
+// Save adds changes to the in-memory store, compacting per entity.
 func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 	if len(changes) == 0 {
 		return nil
@@ -59,7 +59,7 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 
 // Load retrieves the compacted snapshot for a namespace
 // Returns only the latest change per entity
-// Filters out entities marked as deleted (ChangeTypeUnset)
+// Filters out entities marked as deleted (ChangeTypeUnset).
 func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -81,26 +81,26 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 	return result, nil
 }
 
-// Close closes the store (no-op for in-memory implementation)
+// Close closes the store (no-op for in-memory implementation).
 func (s *Store) Close() error {
 	return nil
 }
 
-// Clear removes all snapshots (useful for testing)
+// Clear removes all snapshots (useful for testing).
 func (s *Store) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.snapshots = make(map[string]map[string]persistence.Change)
 }
 
-// NamespaceCount returns the number of namespaces in the store
+// NamespaceCount returns the number of namespaces in the store.
 func (s *Store) NamespaceCount() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return len(s.snapshots)
 }
 
-// EntityCount returns the total number of entities (compacted) for a namespace
+// EntityCount returns the total number of entities (compacted) for a namespace.
 func (s *Store) EntityCount(namespace string) int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

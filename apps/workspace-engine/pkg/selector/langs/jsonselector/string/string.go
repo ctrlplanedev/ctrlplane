@@ -3,6 +3,7 @@ package string
 import (
 	"fmt"
 	"strings"
+
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/selector/langs/jsonselector/util"
 )
@@ -49,7 +50,11 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (StringCond
 	}, nil
 }
 
-func CompareStringCondition(operator StringConditionOperator, aValue string, bValue string) (bool, error) {
+func CompareStringCondition(
+	operator StringConditionOperator,
+	aValue string,
+	bValue string,
+) (bool, error) {
 	switch operator {
 	case StringConditionOperatorEquals:
 		return aValue == bValue, nil

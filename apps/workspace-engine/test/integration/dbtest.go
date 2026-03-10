@@ -4,14 +4,14 @@ import (
 	"context"
 	"os"
 	"testing"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 const defaultTestPostgresURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -113,12 +113,27 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			label string
 			sql   string
 		}{
-			{"release variables", "DELETE FROM release_variable WHERE release_id IN (SELECT r.id FROM release r JOIN deployment d ON d.id = r.deployment_id WHERE d.workspace_id = $1)"},
-			{"releases", "DELETE FROM release WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
-			{"user approval records", "DELETE FROM user_approval_record WHERE version_id IN (SELECT id FROM deployment_version WHERE workspace_id = $1)"},
+			{
+				"release variables",
+				"DELETE FROM release_variable WHERE release_id IN (SELECT r.id FROM release r JOIN deployment d ON d.id = r.deployment_id WHERE d.workspace_id = $1)",
+			},
+			{
+				"releases",
+				"DELETE FROM release WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)",
+			},
+			{
+				"user approval records",
+				"DELETE FROM user_approval_record WHERE version_id IN (SELECT id FROM deployment_version WHERE workspace_id = $1)",
+			},
 			{"deployment versions", "DELETE FROM deployment_version WHERE workspace_id = $1"},
-			{"system deployments", "DELETE FROM system_deployment WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
-			{"system environments", "DELETE FROM system_environment WHERE environment_id IN (SELECT id FROM environment WHERE workspace_id = $1)"},
+			{
+				"system deployments",
+				"DELETE FROM system_deployment WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)",
+			},
+			{
+				"system environments",
+				"DELETE FROM system_environment WHERE environment_id IN (SELECT id FROM environment WHERE workspace_id = $1)",
+			},
 			{"deployments", "DELETE FROM deployment WHERE workspace_id = $1"},
 			{"environments", "DELETE FROM environment WHERE workspace_id = $1"},
 			{"systems", "DELETE FROM system WHERE workspace_id = $1"},
@@ -130,7 +145,12 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 
 		for _, q := range cleanupQueries {
 			if _, err := cleanupConn.Exec(cleanupCtx, q.sql, workspaceID); err != nil {
-				t.Logf("Cleanup: failed to delete %s for workspace %s: %v", q.label, workspaceID, err)
+				t.Logf(
+					"Cleanup: failed to delete %s for workspace %s: %v",
+					q.label,
+					workspaceID,
+					err,
+				)
 			}
 		}
 	})

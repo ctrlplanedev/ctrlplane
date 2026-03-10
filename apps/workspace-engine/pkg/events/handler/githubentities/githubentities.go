@@ -3,12 +3,17 @@ package githubentities
 import (
 	"context"
 	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 )
 
-func HandleGithubEntityCreated(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+func HandleGithubEntityCreated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
 	githubEntity := &oapi.GithubEntity{}
 	if err := json.Unmarshal(event.Data, githubEntity); err != nil {
 		return err
@@ -19,7 +24,11 @@ func HandleGithubEntityCreated(ctx context.Context, ws *workspace.Workspace, eve
 	return nil
 }
 
-func HandleGithubEntityUpdated(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+func HandleGithubEntityUpdated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
 	githubEntity := &oapi.GithubEntity{}
 	if err := json.Unmarshal(event.Data, githubEntity); err != nil {
 		return err
@@ -30,7 +39,11 @@ func HandleGithubEntityUpdated(ctx context.Context, ws *workspace.Workspace, eve
 	return nil
 }
 
-func HandleGithubEntityDeleted(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+func HandleGithubEntityDeleted(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
 	githubEntity := &oapi.GithubEntity{}
 	if err := json.Unmarshal(event.Data, githubEntity); err != nil {
 		return err

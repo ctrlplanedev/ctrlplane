@@ -2,24 +2,24 @@ package action
 
 import (
 	"context"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/action")
 
-// Orchestrator manages and executes policy actions
+// Orchestrator manages and executes policy actions.
 type Orchestrator struct {
 	store   *store.Store
 	actions []PolicyAction
 }
 
-// NewOrchestrator creates a new action orchestrator
+// NewOrchestrator creates a new action orchestrator.
 func NewOrchestrator(store *store.Store) *Orchestrator {
 	return &Orchestrator{
 		store:   store,
@@ -27,7 +27,7 @@ func NewOrchestrator(store *store.Store) *Orchestrator {
 	}
 }
 
-// RegisterAction registers a policy action with the orchestrator
+// RegisterAction registers a policy action with the orchestrator.
 func (o *Orchestrator) RegisterAction(action PolicyAction) *Orchestrator {
 	o.actions = append(o.actions, action)
 	log.Debug("Registered policy action", "action", action.Name())
@@ -35,7 +35,7 @@ func (o *Orchestrator) RegisterAction(action PolicyAction) *Orchestrator {
 }
 
 // OnJobStatusChange is called when a job's status changes
-// This should be called BEFORE the job status is persisted to prevent race conditions
+// This should be called BEFORE the job status is persisted to prevent race conditions.
 func (o *Orchestrator) OnJobStatusChange(
 	ctx context.Context,
 	job *oapi.Job,
@@ -67,7 +67,10 @@ func (o *Orchestrator) OnJobStatusChange(
 		return nil // No release found
 	}
 
-	span.SetAttributes(attribute.String("release.id", release.Id.String()), attribute.String("release.content_hash", release.ContentHash()))
+	span.SetAttributes(
+		attribute.String("release.id", release.Id.String()),
+		attribute.String("release.content_hash", release.ContentHash()),
+	)
 
 	policies, err := o.store.ReleaseTargets.GetPolicies(ctx, &release.ReleaseTarget)
 	if err != nil {
@@ -108,7 +111,7 @@ func (o *Orchestrator) OnJobStatusChange(
 	return nil
 }
 
-// determineTrigger determines which trigger to fire based on job status changes
+// determineTrigger determines which trigger to fire based on job status changes.
 func determineTrigger(
 	currentStatus oapi.JobStatus,
 	previousStatus oapi.JobStatus,

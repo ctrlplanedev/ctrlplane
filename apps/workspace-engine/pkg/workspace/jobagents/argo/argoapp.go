@@ -10,12 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/pkg/workspace/jobagents/types"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
-	"workspace-engine/pkg/workspace/store"
 
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
 	argocdapplication "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
@@ -25,6 +19,12 @@ import (
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
+	"workspace-engine/pkg/workspace/jobagents/types"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo")
@@ -68,7 +68,10 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 		ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
 		if err != nil {
-			a.sendJobFailureEvent(job, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
+			a.sendJobFailureEvent(
+				job,
+				fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()),
+			)
 			return
 		}
 		defer ioCloser.Close()
@@ -78,7 +81,13 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 			return
 		}
 
-		verification := newArgoApplicationVerification(a.verifications, job, app.Name, serverAddr, apiKey)
+		verification := newArgoApplicationVerification(
+			a.verifications,
+			job,
+			app.Name,
+			serverAddr,
+			apiKey,
+		)
 		if err := verification.StartVerification(asyncCtx, job); err != nil {
 			a.sendJobFailureEvent(job, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
@@ -90,7 +99,9 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 	return nil
 }
 
-func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (string, string, string, error) {
+func (a *ArgoApplication) parseJobAgentConfig(
+	jobAgentConfig oapi.JobAgentConfig,
+) (string, string, string, error) {
 	serverAddr, ok := jobAgentConfig["serverUrl"].(string)
 	if !ok {
 		return "", "", "", fmt.Errorf("serverUrl is required")
@@ -109,7 +120,9 @@ func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig
 	return serverAddr, apiKey, template, nil
 }
 
-func (a *ArgoApplication) getApplicationClient(serverAddr, apiKey string) (io.Closer, argocdapplication.ApplicationServiceClient, error) {
+func (a *ArgoApplication) getApplicationClient(
+	serverAddr, apiKey string,
+) (io.Closer, argocdapplication.ApplicationServiceClient, error) {
 	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
 		ServerAddr: serverAddr,
 		AuthToken:  apiKey,
@@ -120,7 +133,10 @@ func (a *ArgoApplication) getApplicationClient(serverAddr, apiKey string) (io.Cl
 	return client.NewApplicationClient()
 }
 
-func (a *ArgoApplication) getTemplatedApplication(ctx *oapi.DispatchContext, template string) (*v1alpha1.Application, error) {
+func (a *ArgoApplication) getTemplatedApplication(
+	ctx *oapi.DispatchContext,
+	template string,
+) (*v1alpha1.Application, error) {
 	t, err := templatefuncs.Parse("argoCDAgentConfig", template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
@@ -162,7 +178,11 @@ func getK8sCompatibleName(name string) string {
 	return cleaned
 }
 
-func (a *ArgoApplication) upsertApplicationWithRetry(ctx context.Context, app *v1alpha1.Application, appClient argocdapplication.ApplicationServiceClient) error {
+func (a *ArgoApplication) upsertApplicationWithRetry(
+	ctx context.Context,
+	app *v1alpha1.Application,
+	appClient argocdapplication.ApplicationServiceClient,
+) error {
 	upsert := true
 	err := retry.Do(
 		func() error {
@@ -247,7 +267,11 @@ func (a *ArgoApplication) sendJobFailureEvent(job *oapi.Job, message string) err
 	return nil
 }
 
-func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Application, job *oapi.Job) error {
+func (a *ArgoApplication) sendJobUpdateEvent(
+	serverAddr string,
+	app *v1alpha1.Application,
+	job *oapi.Job,
+) error {
 	workspaceId := a.store.ID()
 
 	appUrl := fmt.Sprintf("%s/applications/%s/%s", serverAddr, app.Namespace, app.Name)

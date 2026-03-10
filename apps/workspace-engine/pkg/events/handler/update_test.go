@@ -202,7 +202,11 @@ func TestMergeFields_AllFields(t *testing.T) {
 	}
 
 	// Update all fields
-	result, err := MergeFields(target, source, []string{"Name", "Description", "Count", "Active", "Tags"})
+	result, err := MergeFields(
+		target,
+		source,
+		[]string{"Name", "Description", "Count", "Active", "Tags"},
+	)
 	if err != nil {
 		t.Fatalf("MergeFields failed: %v", err)
 	}
@@ -396,6 +400,10 @@ func TestBuildFieldMap(t *testing.T) {
 	nameIndex := fieldMap["Name"]
 	jsonNameIndex := fieldMap["name"]
 	if nameIndex != jsonNameIndex {
-		t.Errorf("Expected 'Name' and 'name' to map to same index, got %d and %d", nameIndex, jsonNameIndex)
+		t.Errorf(
+			"Expected 'Name' and 'name' to map to same index, got %d and %d",
+			nameIndex,
+			jsonNameIndex,
+		)
 	}
 }

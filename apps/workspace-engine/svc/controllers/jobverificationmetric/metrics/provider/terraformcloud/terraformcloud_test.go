@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 
 	"github.com/hashicorp/go-tfe"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
 func TestNew(t *testing.T) {
@@ -39,8 +39,10 @@ func TestNewFromJSON(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name:        "valid config with all fields",
-			input:       json.RawMessage(`{"type":"terraformCloudRun","address":"https://app.terraform.io","token":"tfe-token-123","runId":"run-xyz789"}`),
+			name: "valid config with all fields",
+			input: json.RawMessage(
+				`{"type":"terraformCloudRun","address":"https://app.terraform.io","token":"tfe-token-123","runId":"run-xyz789"}`,
+			),
 			wantAddress: "https://app.terraform.io",
 			wantToken:   "tfe-token-123",
 			wantRunId:   "run-xyz789",
@@ -153,11 +155,17 @@ func TestMeasure_Success(t *testing.T) {
 					"id": "run-test123", "type": "runs",
 					"attributes": map[string]any{"status": "applied", "has-changes": true},
 					"relationships": map[string]any{
-						"workspace": map[string]any{"data": map[string]any{"id": "ws-abc", "type": "workspaces"}},
+						"workspace": map[string]any{
+							"data": map[string]any{"id": "ws-abc", "type": "workspaces"},
+						},
 					},
 				},
 				"included": []map[string]any{
-					{"id": "ws-abc", "type": "workspaces", "attributes": map[string]any{"name": "my-workspace"}},
+					{
+						"id":         "ws-abc",
+						"type":       "workspaces",
+						"attributes": map[string]any{"name": "my-workspace"},
+					},
 				},
 			})
 			return
@@ -200,7 +208,13 @@ func TestMeasure_RunNotFound(t *testing.T) {
 }
 
 func TestMeasure_InvalidAddress(t *testing.T) {
-	p := New(&Config{Address: "http://invalid-address-that-does-not-exist.local:99999", Token: "test-token", RunId: "run-123"})
+	p := New(
+		&Config{
+			Address: "http://invalid-address-that-does-not-exist.local:99999",
+			Token:   "test-token",
+			RunId:   "run-123",
+		},
+	)
 	_, _, err := p.Measure(context.Background(), &provider.ProviderContext{})
 	if err == nil {
 		t.Error("expected error for invalid address")

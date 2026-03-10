@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/charmbracelet/log"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/datadog"
 	httpProvider "workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/http"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/prometheus"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/sleep"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/terraformcloud"
-
-	"github.com/charmbracelet/log"
 )
 
 // CreateProvider creates a provider from raw JSONB provider configuration
@@ -42,7 +42,11 @@ func CreateProvider(providerJSON json.RawMessage) (provider.Provider, error) {
 
 // Measure takes a measurement using the metric's provider configuration
 // and evaluates the success/failure conditions.
-func Measure(ctx context.Context, metric *VerificationMetric, providerCtx *provider.ProviderContext) (Measurement, error) {
+func Measure(
+	ctx context.Context,
+	metric *VerificationMetric,
+	providerCtx *provider.ProviderContext,
+) (Measurement, error) {
 	p, err := CreateProvider(metric.Provider)
 	if err != nil {
 		return Measurement{}, fmt.Errorf("failed to create provider: %w", err)

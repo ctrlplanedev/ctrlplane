@@ -2,10 +2,10 @@ package v2
 
 import (
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestRelationshipRule_Match_CEL_True(t *testing.T) {
@@ -83,7 +83,12 @@ func TestRelationshipRule_Match_EnvironmentEntity(t *testing.T) {
 		Matcher: oapi.CelMatcher{Cel: "from.type == 'environment'"},
 	}
 
-	from := map[string]any{"type": "environment", "id": "env-1", "name": "production", "systemIds": []string{"system-1"}}
+	from := map[string]any{
+		"type":      "environment",
+		"id":        "env-1",
+		"name":      "production",
+		"systemIds": []string{"system-1"},
+	}
 	to := map[string]any{"type": "deployment", "id": "d1", "name": "app"}
 
 	matched, err := rule.Match(from, to)

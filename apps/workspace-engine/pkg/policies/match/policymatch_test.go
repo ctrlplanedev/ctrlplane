@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // ---------------------------------------------------------------------------
@@ -35,8 +34,12 @@ func target() *Target {
 			Identifier: "node-1.prod.example.com",
 			Version:    "v1",
 			Config:     map[string]any{"cpu": "8"},
-			Metadata:   map[string]string{"env": "production", "region": "us-east-1", "tier": "critical"},
-			CreatedAt:  time.Now(),
+			Metadata: map[string]string{
+				"env":    "production",
+				"region": "us-east-1",
+				"tier":   "critical",
+			},
+			CreatedAt: time.Now(),
 		},
 		Deployment: &oapi.Deployment{
 			Id:       "dep-1",
@@ -160,9 +163,13 @@ func TestMatch_CrossEntity_ResourceAndDeployment(t *testing.T) {
 }
 
 func TestMatch_CrossEntity_AllThree(t *testing.T) {
-	assert.True(t, Match(context.Background(),
-		policy(`resource.kind == "Node" && deployment.name == "web-server" && environment.name == "production"`),
-		target()))
+	assert.True(t, Match(
+		context.Background(),
+		policy(
+			`resource.kind == "Node" && deployment.name == "web-server" && environment.name == "production"`,
+		),
+		target(),
+	))
 }
 
 func TestMatch_CrossEntity_Mismatch(t *testing.T) {
@@ -430,7 +437,9 @@ func TestFilter_ProductionNodePolicy(t *testing.T) {
 }
 
 func TestFilter_TeamScopedPolicy(t *testing.T) {
-	platformTeam := policy(`deployment.metadata.team == "platform" && environment.metadata.stage == "prod"`)
+	platformTeam := policy(
+		`deployment.metadata.team == "platform" && environment.metadata.stage == "prod"`,
+	)
 	platformTeam.Id = "platform-prod"
 	backendTeam := policy(`deployment.metadata.team == "backend"`)
 	backendTeam.Id = "backend"

@@ -5,60 +5,59 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 	c "workspace-engine/test/integration/creators"
-
-	"github.com/google/uuid"
 )
 
-// WorkspaceOption configures a TestWorkspace
+// WorkspaceOption configures a TestWorkspace.
 type WorkspaceOption func(*TestWorkspace) error
 
-// SystemOption configures a System
+// SystemOption configures a System.
 type SystemOption func(*TestWorkspace, *oapi.System, *eventsBuilder)
 
-// DeploymentOption configures a Deployment
+// DeploymentOption configures a Deployment.
 type DeploymentOption func(*TestWorkspace, *oapi.Deployment, *eventsBuilder)
 
-// DeploymentVersionOption configures a DeploymentVersion
+// DeploymentVersionOption configures a DeploymentVersion.
 type DeploymentVersionOption func(*TestWorkspace, *oapi.DeploymentVersion)
 
-// EnvironmentOption configures an Environment
+// EnvironmentOption configures an Environment.
 type EnvironmentOption func(*TestWorkspace, *oapi.Environment)
 
-// ResourceOption configures a Resource
+// ResourceOption configures a Resource.
 type ResourceOption func(*TestWorkspace, *oapi.Resource, *eventsBuilder)
 
-// JobAgentOption configures a JobAgent
+// JobAgentOption configures a JobAgent.
 type JobAgentOption func(*TestWorkspace, *oapi.JobAgent)
 
-// ReleaseOption configures a Release
+// ReleaseOption configures a Release.
 type ReleaseOption func(*TestWorkspace, *oapi.Release)
 
-// PolicyOption configures a Policy
+// PolicyOption configures a Policy.
 type PolicyOption func(*TestWorkspace, *oapi.Policy, *eventsBuilder)
 
-// PolicyRuleOption configures a PolicyRule
+// PolicyRuleOption configures a PolicyRule.
 type PolicyRuleOption func(*TestWorkspace, *oapi.PolicyRule) error
 
-// RelationshipRuleOption configures a RelationshipRule
+// RelationshipRuleOption configures a RelationshipRule.
 type RelationshipRuleOption func(*TestWorkspace, *oapi.RelationshipRule) error
 
-// PropertyMatcherOption configures a PropertyMatcher
+// PropertyMatcherOption configures a PropertyMatcher.
 type PropertyMatcherOption func(*TestWorkspace, *oapi.PropertyMatcher)
 
-// ResourceVariableOption configures a ResourceVariable
+// ResourceVariableOption configures a ResourceVariable.
 type ResourceVariableOption func(*TestWorkspace, *oapi.ResourceVariable)
 
-// DeploymentVariableOption configures a DeploymentVariable
+// DeploymentVariableOption configures a DeploymentVariable.
 type DeploymentVariableOption func(*TestWorkspace, *oapi.DeploymentVariable, *eventsBuilder)
 
-// DeploymentVariableValueOption configures a DeploymentVariableValue
+// DeploymentVariableValueOption configures a DeploymentVariableValue.
 type DeploymentVariableValueOption func(*TestWorkspace, *oapi.DeploymentVariableValue)
 
-// ResourceProviderOption configures a ResourceProvider
+// ResourceProviderOption configures a ResourceProvider.
 type ResourceProviderOption func(*TestWorkspace, *oapi.ResourceProvider)
 
 type event struct {
@@ -81,7 +80,7 @@ func newEventsBuilder() *eventsBuilder {
 	}
 }
 
-// Global map to track events for resource provider batches
+// Global map to track events for resource provider batches.
 var resourceProviderBatchEvents = make(map[string][]event)
 
 // ===== Workspace Options =====
@@ -237,7 +236,9 @@ func WithDeploymentVariable(key string, options ...DeploymentVariableOption) Dep
 	}
 }
 
-func WithDeploymentVariableValue(options ...DeploymentVariableValueOption) DeploymentVariableOption {
+func WithDeploymentVariableValue(
+	options ...DeploymentVariableValueOption,
+) DeploymentVariableOption {
 	return func(ws *TestWorkspace, dv *oapi.DeploymentVariable, eb *eventsBuilder) {
 		dvv := c.NewDeploymentVariableValue(dv.Id)
 
@@ -689,7 +690,9 @@ func WithResourceProviderResource(options ...ResourceOption) ResourceProviderOpt
 
 		// Store the post-events (like resource variable creates) for this batch
 		// These will be pushed after the Set event in WithResourceProvider
-		resourceProviderBatchEvents[batchId] = append(resourceProviderBatchEvents[batchId], eb.postEvents...)
+		resourceProviderBatchEvents[batchId] = append(
+			resourceProviderBatchEvents[batchId],
+			eb.postEvents...)
 
 		// Note: We don't push the event here because we need to accumulate all resources first.
 		// The event will be pushed after the provider is created in a post-processing step.
@@ -778,7 +781,7 @@ func PolicyRuleID(id string) PolicyRuleOption {
 	}
 }
 
-// WithRuleEnvironmentProgression configures an environment progression rule
+// WithRuleEnvironmentProgression configures an environment progression rule.
 func WithRuleEnvironmentProgression(options ...EnvironmentProgressionRuleOption) PolicyRuleOption {
 	return func(ws *TestWorkspace, r *oapi.PolicyRule) error {
 		rule := &oapi.EnvironmentProgressionRule{}
@@ -794,7 +797,7 @@ func WithRuleEnvironmentProgression(options ...EnvironmentProgressionRuleOption)
 	}
 }
 
-// WithRuleAnyApproval configures an approval rule
+// WithRuleAnyApproval configures an approval rule.
 func WithRuleAnyApproval(minApprovals int32) PolicyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.AnyApproval = &oapi.AnyApprovalRule{
@@ -830,7 +833,11 @@ func WithRuleRetry(maxRetries int32, retryOnStatuses []oapi.JobStatus) PolicyRul
 	}
 }
 
-func WithRuleRetryWithBackoff(maxRetries int32, backoffSeconds int32, strategy oapi.RetryRuleBackoffStrategy) PolicyRuleOption {
+func WithRuleRetryWithBackoff(
+	maxRetries int32,
+	backoffSeconds int32,
+	strategy oapi.RetryRuleBackoffStrategy,
+) PolicyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.Retry = &oapi.RetryRule{
 			MaxRetries:      maxRetries,
@@ -856,7 +863,12 @@ func WithRuleDeploymentWindow(rrule string, durationMinutes int32) PolicyRuleOpt
 }
 
 // WithRuleDeploymentWindowFull configures a deployment window rule with all options.
-func WithRuleDeploymentWindowFull(rrule string, durationMinutes int32, timezone *string, allowWindow *bool) PolicyRuleOption {
+func WithRuleDeploymentWindowFull(
+	rrule string,
+	durationMinutes int32,
+	timezone *string,
+	allowWindow *bool,
+) PolicyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.DeploymentWindow = &oapi.DeploymentWindowRule{
 			Rrule:           rrule,
@@ -871,7 +883,7 @@ func WithRuleDeploymentWindowFull(rrule string, durationMinutes int32, timezone 
 // ===== VersionCooldownRule Options =====
 
 // WithRuleVersionCooldown configures a version cooldown rule that limits how frequently
-// new versions can be deployed based on the time elapsed since the last deployment
+// new versions can be deployed based on the time elapsed since the last deployment.
 func WithRuleVersionCooldown(intervalSeconds int32) PolicyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.VersionCooldown = &oapi.VersionCooldownRule{
@@ -898,7 +910,10 @@ func WithRuleVersionSelector(cel string) PolicyRuleOption {
 
 // WithRuleRollback configures a rollback rule that triggers rollback to the previous
 // release when specified conditions are met.
-func WithRuleRollback(rollBackJobStatuses []oapi.JobStatus, onVerificationFailure bool) PolicyRuleOption {
+func WithRuleRollback(
+	rollBackJobStatuses []oapi.JobStatus,
+	onVerificationFailure bool,
+) PolicyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.Rollback = &oapi.RollbackRule{}
 		if len(rollBackJobStatuses) > 0 {
@@ -962,8 +977,10 @@ func WithRuleDeploymentDependency(options ...DeploymentDependencyRuleOption) Pol
 
 type EnvironmentProgressionRuleOption func(*TestWorkspace, *oapi.EnvironmentProgressionRule) error
 
-// EnvironmentProgressionDependsOnEnvironmentSelector configures a CEL selector for dependency environments (default/simple case)
-func EnvironmentProgressionDependsOnEnvironmentSelector(cel string) EnvironmentProgressionRuleOption {
+// EnvironmentProgressionDependsOnEnvironmentSelector configures a CEL selector for dependency environments (default/simple case).
+func EnvironmentProgressionDependsOnEnvironmentSelector(
+	cel string,
+) EnvironmentProgressionRuleOption {
 	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
 		sel := &oapi.Selector{}
 		if err := sel.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
@@ -974,8 +991,10 @@ func EnvironmentProgressionDependsOnEnvironmentSelector(cel string) EnvironmentP
 	}
 }
 
-// EnvironmentProgressionDependsOnEnvironmentJsonSelector configures a JSON selector for dependency environments
-func EnvironmentProgressionDependsOnEnvironmentJsonSelector(selector map[string]any) EnvironmentProgressionRuleOption {
+// EnvironmentProgressionDependsOnEnvironmentJsonSelector configures a JSON selector for dependency environments.
+func EnvironmentProgressionDependsOnEnvironmentJsonSelector(
+	selector map[string]any,
+) EnvironmentProgressionRuleOption {
 	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
 		sel := &oapi.Selector{}
 		if err := sel.FromJsonSelector(oapi.JsonSelector{Json: selector}); err != nil {
@@ -993,7 +1012,9 @@ func EnvironmentProgressionMinimumSoakTimeMinutes(minutes int32) EnvironmentProg
 	}
 }
 
-func EnvironmentProgressionMinimumSuccessPercentage(percentage float32) EnvironmentProgressionRuleOption {
+func EnvironmentProgressionMinimumSuccessPercentage(
+	percentage float32,
+) EnvironmentProgressionRuleOption {
 	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
 		r.MinimumSuccessPercentage = &percentage
 		return nil
@@ -1007,7 +1028,9 @@ func EnvironmentProgressionMaximumAgeHours(hours int32) EnvironmentProgressionRu
 	}
 }
 
-func EnvironmentProgressionSuccessStatuses(statuses ...oapi.JobStatus) EnvironmentProgressionRuleOption {
+func EnvironmentProgressionSuccessStatuses(
+	statuses ...oapi.JobStatus,
+) EnvironmentProgressionRuleOption {
 	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
 		r.SuccessStatuses = &statuses
 		return nil
@@ -1301,7 +1324,10 @@ func DeploymentVariableValueBoolValue(value bool) DeploymentVariableValueOption 
 	}
 }
 
-func DeploymentVariableValueReferenceValue(reference string, path []string) DeploymentVariableValueOption {
+func DeploymentVariableValueReferenceValue(
+	reference string,
+	path []string,
+) DeploymentVariableValueOption {
 	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
 		dvv.Value = *c.NewValueFromReference(reference, path)
 	}

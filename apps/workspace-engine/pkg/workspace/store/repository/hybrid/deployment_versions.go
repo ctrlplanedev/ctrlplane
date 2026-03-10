@@ -12,7 +12,10 @@ type DeploymentVersionRepo struct {
 	mem    repository.DeploymentVersionRepo
 }
 
-func NewDeploymentVersionRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *DeploymentVersionRepo {
+func NewDeploymentVersionRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *DeploymentVersionRepo {
 	return &DeploymentVersionRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.DeploymentVersions(),
@@ -23,7 +26,9 @@ func (r *DeploymentVersionRepo) Get(id string) (*oapi.DeploymentVersion, bool) {
 	return r.mem.Get(id)
 }
 
-func (r *DeploymentVersionRepo) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
+func (r *DeploymentVersionRepo) GetByDeploymentID(
+	deploymentID string,
+) ([]*oapi.DeploymentVersion, error) {
 	return r.mem.GetByDeploymentID(deploymentID)
 }
 

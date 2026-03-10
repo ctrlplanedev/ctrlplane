@@ -2,13 +2,13 @@ package creators
 
 import (
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 // NewResourceProvider creates a test ResourceProvider with sensible defaults
-// All fields can be overridden via functional options
+// All fields can be overridden via functional options.
 func NewResourceProvider(workspaceID string) *oapi.ResourceProvider {
 	id := uuid.New().String()
 

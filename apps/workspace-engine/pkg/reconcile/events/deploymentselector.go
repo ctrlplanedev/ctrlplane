@@ -2,9 +2,9 @@ package events
 
 import (
 	"context"
-	"workspace-engine/pkg/reconcile"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/reconcile"
 )
 
 const DeploymentResourceselectorEvalKind = "deployment-resource-selector-eval"
@@ -14,7 +14,11 @@ type DeploymentResourceselectorEvalParams struct {
 	DeploymentID string
 }
 
-func EnqueueDeploymentResourceselectorEval(queue reconcile.Queue, ctx context.Context, params DeploymentResourceselectorEvalParams) error {
+func EnqueueDeploymentResourceselectorEval(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params DeploymentResourceselectorEvalParams,
+) error {
 	return queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: params.WorkspaceID,
 		Kind:        DeploymentResourceselectorEvalKind,
@@ -23,7 +27,11 @@ func EnqueueDeploymentResourceselectorEval(queue reconcile.Queue, ctx context.Co
 	})
 }
 
-func EnqueueManyDeploymentResourceselectorEval(queue reconcile.Queue, ctx context.Context, params []DeploymentResourceselectorEvalParams) error {
+func EnqueueManyDeploymentResourceselectorEval(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params []DeploymentResourceselectorEvalParams,
+) error {
 	if len(params) == 0 {
 		return nil
 	}

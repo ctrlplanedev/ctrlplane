@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test entity type
+// Test entity type.
 type TestEntity struct {
 	ID   string
 	Name string

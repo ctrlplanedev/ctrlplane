@@ -3,11 +3,11 @@ package cel
 import (
 	"fmt"
 	"time"
+
+	celgo "github.com/google/cel-go/cel"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/util"
-
-	celgo "github.com/google/cel-go/cel"
 )
 
 var compiledEnv, _ = celutil.NewEnvBuilder().
@@ -135,7 +135,7 @@ func structToMap(v any) (map[string]any, error) {
 	return celutil.EntityToMap(v)
 }
 
-// Specialized converters for known types (zero allocation for known types)
+// Specialized converters for known types (zero allocation for known types).
 func resourceToMap(r *oapi.Resource) map[string]any {
 	m := make(map[string]any, 13)
 	m["id"] = r.Id

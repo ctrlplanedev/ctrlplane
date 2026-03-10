@@ -1,9 +1,8 @@
 package creators
 
 import (
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 func NewJobAgent(workspaceID string) *oapi.JobAgent {

@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 )
 
 var _ Setter = &PostgresSetter{}
@@ -136,7 +135,11 @@ func (s *PostgresSetter) UpdateJob(
 	return nil
 }
 
-func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
+func (s *PostgresSetter) CreateVerifications(
+	ctx context.Context,
+	job *oapi.Job,
+	specs []oapi.VerificationMetricSpec,
+) error {
 	queries := db.GetQueries(ctx)
 
 	jobIDUUID, err := uuid.Parse(job.Id)
@@ -163,17 +166,20 @@ func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job,
 			return fmt.Errorf("marshal provider for metric %q: %w", spec.Name, err)
 		}
 
-		metric, err := queries.InsertJobVerificationMetric(ctx, db.InsertJobVerificationMetricParams{
-			JobID:            jobIDUUID,
-			Name:             spec.Name,
-			Provider:         providerJSON,
-			IntervalSeconds:  spec.IntervalSeconds,
-			Count:            int32(spec.Count),
-			SuccessCondition: spec.SuccessCondition,
-			SuccessThreshold: toPgInt4(spec.SuccessThreshold),
-			FailureCondition: toPgText(spec.FailureCondition),
-			FailureThreshold: toPgInt4(spec.FailureThreshold),
-		})
+		metric, err := queries.InsertJobVerificationMetric(
+			ctx,
+			db.InsertJobVerificationMetricParams{
+				JobID:            jobIDUUID,
+				Name:             spec.Name,
+				Provider:         providerJSON,
+				IntervalSeconds:  spec.IntervalSeconds,
+				Count:            int32(spec.Count),
+				SuccessCondition: spec.SuccessCondition,
+				SuccessThreshold: toPgInt4(spec.SuccessThreshold),
+				FailureCondition: toPgText(spec.FailureCondition),
+				FailureThreshold: toPgInt4(spec.FailureThreshold),
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("insert verification metric %q: %w", spec.Name, err)
 		}

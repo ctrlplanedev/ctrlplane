@@ -7,7 +7,9 @@ import (
 // MergeAndDeduplicate combines two slices of specs and removes duplicates
 // by metric name. The first occurrence of each name wins, so policySpecs
 // take precedence over agentSpecs.
-func MergeAndDeduplicate(policySpecs, agentSpecs []oapi.VerificationMetricSpec) []oapi.VerificationMetricSpec {
+func MergeAndDeduplicate(
+	policySpecs, agentSpecs []oapi.VerificationMetricSpec,
+) []oapi.VerificationMetricSpec {
 	if len(policySpecs) == 0 && len(agentSpecs) == 0 {
 		return nil
 	}

@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestHasResourceChanges_NoChanges(t *testing.T) {
@@ -586,7 +585,11 @@ func TestHasResourceChanges_SlicesInConfig(t *testing.T) {
 
 	changes := HasResourceChanges(old, new)
 	assert.Len(t, changes, 1, "Should detect slice element added")
-	assert.True(t, changes["config.ports.2"], "Should detect config.ports[2] array element added with full path")
+	assert.True(
+		t,
+		changes["config.ports.2"],
+		"Should detect config.ports[2] array element added with full path",
+	)
 }
 
 func TestHasResourceChanges_SlicesUnchanged(t *testing.T) {
@@ -753,7 +756,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 
 		changes := HasResourceChanges(old, new)
 		assert.Len(t, changes, 1, "Should detect nested config change")
-		assert.True(t, changes["config.database.host"], "Should detect config.database.host changed with full nested path")
+		assert.True(
+			t,
+			changes["config.database.host"],
+			"Should detect config.database.host changed with full nested path",
+		)
 	})
 
 	t.Run("multiple_nested_levels", func(t *testing.T) {
@@ -796,7 +803,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 
 		changes := HasResourceChanges(old, new)
 		assert.Len(t, changes, 1, "Should detect deeply nested change")
-		assert.True(t, changes["config.services.database.credentials.password"], "Should detect full nested path config.services.database.credentials.password changed")
+		assert.True(
+			t,
+			changes["config.services.database.credentials.password"],
+			"Should detect full nested path config.services.database.credentials.password changed",
+		)
 	})
 
 	t.Run("deeply_nested_unchanged", func(t *testing.T) {
@@ -838,7 +849,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 		}
 
 		changes := HasResourceChanges(old, new)
-		assert.Empty(t, changes, "Should detect no changes when deeply nested structures are identical")
+		assert.Empty(
+			t,
+			changes,
+			"Should detect no changes when deeply nested structures are identical",
+		)
 	})
 
 	t.Run("arrays_in_config", func(t *testing.T) {
@@ -869,7 +884,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 
 		changes := HasResourceChanges(old, new)
 		assert.Len(t, changes, 1, "Should detect array element added")
-		assert.True(t, changes["config.ports.2"], "Should detect config.ports[2] added with full nested path")
+		assert.True(
+			t,
+			changes["config.ports.2"],
+			"Should detect config.ports[2] added with full nested path",
+		)
 	})
 
 	t.Run("arrays_in_config_element_changed", func(t *testing.T) {
@@ -898,7 +917,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 
 		changes := HasResourceChanges(old, new)
 		assert.Len(t, changes, 1, "Should detect specific array element changed")
-		assert.True(t, changes["config.ports.2"], "Should detect config.ports[2] changed with full nested path")
+		assert.True(
+			t,
+			changes["config.ports.2"],
+			"Should detect config.ports[2] changed with full nested path",
+		)
 	})
 
 	t.Run("mixed_nested_and_flat_changes", func(t *testing.T) {
@@ -936,10 +959,23 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 		}
 
 		changes := HasResourceChanges(old, new)
-		assert.Len(t, changes, 3, "Should detect flat change and each nested change with full paths")
+		assert.Len(
+			t,
+			changes,
+			3,
+			"Should detect flat change and each nested change with full paths",
+		)
 		assert.True(t, changes["config.replicas"], "Should detect config.replicas change")
-		assert.True(t, changes["config.env.LOG_LEVEL"], "Should detect config.env.LOG_LEVEL changed with full path")
-		assert.True(t, changes["config.env.DEBUG"], "Should detect config.env.DEBUG changed with full path")
+		assert.True(
+			t,
+			changes["config.env.LOG_LEVEL"],
+			"Should detect config.env.LOG_LEVEL changed with full path",
+		)
+		assert.True(
+			t,
+			changes["config.env.DEBUG"],
+			"Should detect config.env.DEBUG changed with full path",
+		)
 	})
 
 	t.Run("complex_nested_structures", func(t *testing.T) {
@@ -987,7 +1023,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 		changes := HasResourceChanges(old, new)
 		assert.Len(t, changes, 1, "Should detect change in array of maps")
 		// The diff library reports array element changes with numeric indices
-		assert.True(t, changes["config.volumes.1.mountPath"], "Should detect config.volumes[1].mountPath changed with full nested path")
+		assert.True(
+			t,
+			changes["config.volumes.1.mountPath"],
+			"Should detect config.volumes[1].mountPath changed with full nested path",
+		)
 	})
 
 	t.Run("nested_structure_unchanged", func(t *testing.T) {
@@ -1031,7 +1071,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 		}
 
 		changes := HasResourceChanges(old, new)
-		assert.Empty(t, changes, "Should detect no changes when complex nested structures are identical")
+		assert.Empty(
+			t,
+			changes,
+			"Should detect no changes when complex nested structures are identical",
+		)
 	})
 }
 

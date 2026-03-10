@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type ReleaseGetter interface {
@@ -24,7 +24,10 @@ func NewPostgresReleaseGetter(queries *db.Queries) *PostgresReleaseGetter {
 	return &PostgresReleaseGetter{queries: queries}
 }
 
-func (g *PostgresReleaseGetter) GetRelease(ctx context.Context, releaseID string) (*oapi.Release, error) {
+func (g *PostgresReleaseGetter) GetRelease(
+	ctx context.Context,
+	releaseID string,
+) (*oapi.Release, error) {
 	releaseIDUUID, err := uuid.Parse(releaseID)
 	if err != nil {
 		return nil, fmt.Errorf("parse release id: %w", err)
@@ -44,7 +47,10 @@ func NewStoreReleaseGetter(store *legacystore.Store) *StoreReleaseGetter {
 	return &StoreReleaseGetter{store: store}
 }
 
-func (s *StoreReleaseGetter) GetRelease(ctx context.Context, releaseID string) (*oapi.Release, error) {
+func (s *StoreReleaseGetter) GetRelease(
+	ctx context.Context,
+	releaseID string,
+) (*oapi.Release, error) {
 	release, ok := s.store.Releases.Get(releaseID)
 	if !ok {
 		return nil, fmt.Errorf("release not found")

@@ -3,16 +3,20 @@ package workflows
 import (
 	"net/http"
 	"sort"
+
+	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Workflows struct{}
 
-func (w *Workflows) ListWorkflows(c *gin.Context, workspaceId string, params oapi.ListWorkflowsParams) {
+func (w *Workflows) ListWorkflows(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.ListWorkflowsParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -72,7 +76,10 @@ func (w *Workflows) GetWorkflow(c *gin.Context, workspaceId string, workflowId s
 	c.JSON(http.StatusOK, *workflow)
 }
 
-func getWorkflowJobWithJobs(ws *workspace.Workspace, workflowJob *oapi.WorkflowJob) *oapi.WorkflowJobWithJobs {
+func getWorkflowJobWithJobs(
+	ws *workspace.Workspace,
+	workflowJob *oapi.WorkflowJob,
+) *oapi.WorkflowJobWithJobs {
 	jobs := ws.Jobs().GetByWorkflowJobId(workflowJob.Id)
 	jobsSlice := make([]oapi.Job, 0, len(jobs))
 	for _, job := range jobs {
@@ -91,7 +98,12 @@ func getWorkflowJobWithJobs(ws *workspace.Workspace, workflowJob *oapi.WorkflowJ
 	return workflowJobWithJobs
 }
 
-func (w *Workflows) GetWorkflowRuns(c *gin.Context, workspaceId string, workflowId string, params oapi.GetWorkflowRunsParams) {
+func (w *Workflows) GetWorkflowRuns(
+	c *gin.Context,
+	workspaceId string,
+	workflowId string,
+	params oapi.GetWorkflowRunsParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -112,7 +124,10 @@ func (w *Workflows) GetWorkflowRuns(c *gin.Context, workspaceId string, workflow
 		workflowJobs := ws.WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
 		workflowJobWithJobsSlice := make([]oapi.WorkflowJobWithJobs, 0, len(workflowJobs))
 		for _, workflowJob := range workflowJobs {
-			workflowJobWithJobsSlice = append(workflowJobWithJobsSlice, *getWorkflowJobWithJobs(ws, workflowJob))
+			workflowJobWithJobsSlice = append(
+				workflowJobWithJobsSlice,
+				*getWorkflowJobWithJobs(ws, workflowJob),
+			)
 		}
 		sort.Slice(workflowJobWithJobsSlice, func(i, j int) bool {
 			return workflowJobWithJobsSlice[i].Index < workflowJobWithJobsSlice[j].Index

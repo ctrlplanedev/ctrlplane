@@ -2,13 +2,13 @@ package creators
 
 import (
 	"fmt"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 // NewSystem creates a test System with sensible defaults
-// All fields can be overridden via functional options
+// All fields can be overridden via functional options.
 func NewSystem(workspaceID string) *oapi.System {
 	// Create with defaults
 	id := uuid.New().String()

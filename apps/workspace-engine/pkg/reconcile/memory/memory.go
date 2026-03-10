@@ -8,9 +8,9 @@ import (
 	"slices"
 	"sync"
 	"time"
-	"workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/reconcile"
 )
 
 const defaultPriority int16 = 100
@@ -109,7 +109,11 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 		priority = defaultPriority
 	}
 
-	rawPayload, payloadKey, hasPayload, err := normalizePayload(params.PayloadType, params.PayloadKey, params.Payload)
+	rawPayload, payloadKey, hasPayload, err := normalizePayload(
+		params.PayloadType,
+		params.PayloadKey,
+		params.Payload,
+	)
 	if err != nil {
 		return fmt.Errorf("normalize payload: %w", err)
 	}
@@ -278,7 +282,10 @@ func (q *Queue) ExtendLease(ctx context.Context, params reconcile.ExtendLeasePar
 	return nil
 }
 
-func (q *Queue) AckSuccess(ctx context.Context, params reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
+func (q *Queue) AckSuccess(
+	ctx context.Context,
+	params reconcile.AckSuccessParams,
+) (reconcile.AckSuccessResult, error) {
 	if err := ctx.Err(); err != nil {
 		return reconcile.AckSuccessResult{}, err
 	}
@@ -353,7 +360,10 @@ func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 	return nil
 }
 
-func normalizePayload(payloadType, payloadKey string, payloadData any) ([]byte, string, bool, error) {
+func normalizePayload(
+	payloadType, payloadKey string,
+	payloadData any,
+) ([]byte, string, bool, error) {
 	if payloadData == nil {
 		return nil, "", false, nil
 	}

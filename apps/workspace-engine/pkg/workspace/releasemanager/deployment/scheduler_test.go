@@ -4,10 +4,10 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func newTestReleaseTarget(resourceID, envID, deploymentID string) *oapi.ReleaseTarget {

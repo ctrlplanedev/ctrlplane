@@ -3,6 +3,7 @@ package jobagents
 import (
 	"fmt"
 	"time"
+
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents/configs"
@@ -15,7 +16,11 @@ type DeploymentAgentsSelector struct {
 	release    *oapi.Release
 }
 
-func NewDeploymentAgentsSelector(store *store.Store, deployment *oapi.Deployment, release *oapi.Release) *DeploymentAgentsSelector {
+func NewDeploymentAgentsSelector(
+	store *store.Store,
+	deployment *oapi.Deployment,
+	release *oapi.Release,
+) *DeploymentAgentsSelector {
 	return &DeploymentAgentsSelector{
 		store:      store,
 		deployment: deployment,
@@ -37,7 +42,10 @@ func (s *DeploymentAgentsSelector) getLegacyJobAgent() ([]*oapi.JobAgent, error)
 	return []*oapi.JobAgent{resolvedAgent}, nil
 }
 
-func (s *DeploymentAgentsSelector) withResolvedConfig(jobAgent *oapi.JobAgent, deploymentJobAgentConfig oapi.JobAgentConfig) (*oapi.JobAgent, error) {
+func (s *DeploymentAgentsSelector) withResolvedConfig(
+	jobAgent *oapi.JobAgent,
+	deploymentJobAgentConfig oapi.JobAgentConfig,
+) (*oapi.JobAgent, error) {
 	mergedConfig, err := configs.Merge(
 		jobAgent.Config,
 		s.deployment.JobAgentConfig,
@@ -117,7 +125,11 @@ func (s *DeploymentAgentsSelector) selectFromJobAgents() ([]*oapi.JobAgent, erro
 		if deploymentJobAgent.Selector != "" {
 			program, err := jobAgentIfEnv.Compile(deploymentJobAgent.Selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to compile job agent if expression %q: %w", deploymentJobAgent.Selector, err)
+				return nil, fmt.Errorf(
+					"failed to compile job agent if expression %q: %w",
+					deploymentJobAgent.Selector,
+					err,
+				)
 			}
 			result, err := celutil.EvalBool(program, celCtx)
 			if err != nil {
@@ -133,7 +145,11 @@ func (s *DeploymentAgentsSelector) selectFromJobAgents() ([]*oapi.JobAgent, erro
 		}
 		resolvedAgent, err := s.withResolvedConfig(jobAgent, deploymentJobAgent.Config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve config for job agent %s: %w", deploymentJobAgent.Ref, err)
+			return nil, fmt.Errorf(
+				"failed to resolve config for job agent %s: %w",
+				deploymentJobAgent.Ref,
+				err,
+			)
 		}
 		jobAgents = append(jobAgents, resolvedAgent)
 	}

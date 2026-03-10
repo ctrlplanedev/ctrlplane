@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/hashicorp/go-tfe"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
 func TestNew(t *testing.T) {
@@ -407,7 +407,7 @@ func TestConvertRunToData_AllFieldsPresent(t *testing.T) {
 	}
 }
 
-// TestMeasure_Success tests the Measure function with a mock TFE server
+// TestMeasure_Success tests the Measure function with a mock TFE server.
 func TestMeasure_Success(t *testing.T) {
 	// Create a mock TFE API server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -496,7 +496,7 @@ func TestMeasure_Success(t *testing.T) {
 	}
 }
 
-// TestMeasure_AuthenticationError tests handling of authentication failures
+// TestMeasure_AuthenticationError tests handling of authentication failures.
 func TestMeasure_AuthenticationError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle ping - but return unauthorized to simulate auth failure
@@ -532,7 +532,7 @@ func TestMeasure_AuthenticationError(t *testing.T) {
 	}
 }
 
-// TestMeasure_RunNotFound tests handling of non-existent runs
+// TestMeasure_RunNotFound tests handling of non-existent runs.
 func TestMeasure_RunNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle ping request
@@ -564,7 +564,7 @@ func TestMeasure_RunNotFound(t *testing.T) {
 	}
 }
 
-// TestMeasure_ContextCancellation tests that context cancellation is respected
+// TestMeasure_ContextCancellation tests that context cancellation is respected.
 func TestMeasure_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate slow response
@@ -589,7 +589,7 @@ func TestMeasure_ContextCancellation(t *testing.T) {
 	}
 }
 
-// TestMeasure_InvalidAddress tests handling of invalid server address
+// TestMeasure_InvalidAddress tests handling of invalid server address.
 func TestMeasure_InvalidAddress(t *testing.T) {
 	p := New(&Config{
 		Address: "http://invalid-address-that-does-not-exist.local:99999",
@@ -604,7 +604,7 @@ func TestMeasure_InvalidAddress(t *testing.T) {
 	}
 }
 
-// TestMeasure_URLConstruction tests that the URL is constructed correctly
+// TestMeasure_URLConstruction tests that the URL is constructed correctly.
 func TestMeasure_URLConstruction(t *testing.T) {
 	workspaceName := "production-vpc"
 	runID := "run-abc123xyz"
@@ -663,7 +663,7 @@ func TestMeasure_URLConstruction(t *testing.T) {
 	}
 }
 
-// TestMeasure_DurationTracking tests that duration is tracked correctly
+// TestMeasure_DurationTracking tests that duration is tracked correctly.
 func TestMeasure_DurationTracking(t *testing.T) {
 	delay := 100 * time.Millisecond
 

@@ -5,21 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("events/handler/userapprovalrecords")
 
-func requeueDesiredReleaseEvaluations(ctx context.Context, ws *workspace.Workspace, rt []*oapi.ReleaseTarget) error {
+func requeueDesiredReleaseEvaluations(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	rt []*oapi.ReleaseTarget,
+) error {
 	params := make([]events.DesiredReleaseEvalParams, 0, len(rt))
 	for _, rt := range rt {
 		params = append(params, events.DesiredReleaseEvalParams{
@@ -34,7 +37,12 @@ func requeueDesiredReleaseEvaluations(ctx context.Context, ws *workspace.Workspa
 	}
 	return nil
 }
-func getRelevantTargets(ctx context.Context, ws *workspace.Workspace, userApprovalRecord *oapi.UserApprovalRecord) ([]*oapi.ReleaseTarget, error) {
+
+func getRelevantTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	userApprovalRecord *oapi.UserApprovalRecord,
+) ([]*oapi.ReleaseTarget, error) {
 	ctx, span := tracer.Start(ctx, "getRelevantTargets")
 	defer span.End()
 	span.SetAttributes(

@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"testing"
+
 	cstring "workspace-engine/pkg/selector/langs/jsonselector/string"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
@@ -297,7 +298,11 @@ func TestMetadataCondition_Matches(t *testing.T) {
 			}
 
 			if tt.wantErr && err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
-				t.Errorf("MetadataCondition.Matches() error message = %v, want %v", err.Error(), tt.errMsg)
+				t.Errorf(
+					"MetadataCondition.Matches() error message = %v, want %v",
+					err.Error(),
+					tt.errMsg,
+				)
 			}
 
 			if matched != tt.wantMatch {
@@ -473,13 +478,21 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 
 			if tt.wantErr {
 				if err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("ConvertFromUnknownCondition() error message = %v, want %v", err.Error(), tt.errMsg)
+					t.Errorf(
+						"ConvertFromUnknownCondition() error message = %v, want %v",
+						err.Error(),
+						tt.errMsg,
+					)
 				}
 				return
 			}
 
 			if got.Operator != tt.want.Operator {
-				t.Errorf("ConvertFromUnknownCondition() Operator = %v, want %v", got.Operator, tt.want.Operator)
+				t.Errorf(
+					"ConvertFromUnknownCondition() Operator = %v, want %v",
+					got.Operator,
+					tt.want.Operator,
+				)
 			}
 
 			if got.Key != tt.want.Key {
@@ -487,7 +500,11 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 			}
 
 			if got.Value != tt.want.Value {
-				t.Errorf("ConvertFromUnknownCondition() Value = %v, want %v", got.Value, tt.want.Value)
+				t.Errorf(
+					"ConvertFromUnknownCondition() Value = %v, want %v",
+					got.Value,
+					tt.want.Value,
+				)
 			}
 		})
 	}

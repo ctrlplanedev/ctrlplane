@@ -2,11 +2,11 @@ package deploymentversions
 
 import (
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // ToOapi converts a db.DeploymentVersion row into an oapi.DeploymentVersion.
@@ -46,7 +46,10 @@ func ToOapi(dv db.DeploymentVersion) (*oapi.DeploymentVersion, error) {
 }
 
 // ToUpsertParams converts an oapi.DeploymentVersion into sqlc upsert params.
-func ToUpsertParams(wsId string, v *oapi.DeploymentVersion) (db.UpsertDeploymentVersionParams, error) {
+func ToUpsertParams(
+	wsId string,
+	v *oapi.DeploymentVersion,
+) (db.UpsertDeploymentVersionParams, error) {
 	id, err := uuid.Parse(v.Id)
 	if err != nil {
 		return db.UpsertDeploymentVersionParams{}, fmt.Errorf("parse id: %w", err)

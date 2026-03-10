@@ -4,14 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
 )
 
 type PostgresSetter struct{}
 
-func (s *PostgresSetter) SetComputedRelationships(ctx context.Context, entityType string, entityID uuid.UUID, relationships []ComputedRelationship) error {
+func (s *PostgresSetter) SetComputedRelationships(
+	ctx context.Context,
+	entityType string,
+	entityID uuid.UUID,
+	relationships []ComputedRelationship,
+) error {
 	pool := db.GetPool(ctx)
 	tx, err := pool.Begin(ctx)
 	if err != nil {

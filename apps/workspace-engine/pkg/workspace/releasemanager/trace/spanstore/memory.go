@@ -7,20 +7,20 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// InMemoryStore implements trace.PersistenceStore for testing
+// InMemoryStore implements trace.PersistenceStore for testing.
 type InMemoryStore struct {
 	mu    sync.Mutex
 	spans []sdktrace.ReadOnlySpan
 }
 
-// NewInMemoryStore creates a new in-memory trace store for testing
+// NewInMemoryStore creates a new in-memory trace store for testing.
 func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
 		spans: make([]sdktrace.ReadOnlySpan, 0),
 	}
 }
 
-// WriteSpans stores spans in memory
+// WriteSpans stores spans in memory.
 func (s *InMemoryStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -28,7 +28,7 @@ func (s *InMemoryStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnl
 	return nil
 }
 
-// GetSpans returns all stored spans (for testing)
+// GetSpans returns all stored spans (for testing).
 func (s *InMemoryStore) GetSpans() []sdktrace.ReadOnlySpan {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -37,7 +37,7 @@ func (s *InMemoryStore) GetSpans() []sdktrace.ReadOnlySpan {
 	return result
 }
 
-// Clear removes all stored spans (for testing)
+// Clear removes all stored spans (for testing).
 func (s *InMemoryStore) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()

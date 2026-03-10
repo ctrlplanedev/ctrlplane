@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/store"
 )
 
 // ===== Test Helpers =====
@@ -34,7 +34,11 @@ func makeJobAgent(id, name, agentType string) *oapi.JobAgent {
 	}
 }
 
-func makeDeployment(id, name string, jobAgentId *string, jobAgents *[]oapi.DeploymentJobAgent) *oapi.Deployment {
+func makeDeployment(
+	id, name string,
+	jobAgentId *string,
+	jobAgents *[]oapi.DeploymentJobAgent,
+) *oapi.Deployment {
 	sel := &oapi.Selector{}
 	_ = sel.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	return &oapi.Deployment{
@@ -292,7 +296,9 @@ func TestSelectAgents_CEL_FalseLiteral(t *testing.T) {
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
 	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{}))
 
-	ja := []oapi.DeploymentJobAgent{{Ref: agentID, Selector: "false", Config: oapi.JobAgentConfig{}}}
+	ja := []oapi.DeploymentJobAgent{
+		{Ref: agentID, Selector: "false", Config: oapi.JobAgentConfig{}},
+	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
 
@@ -432,10 +438,17 @@ func TestSelectAgents_CEL_ResourceMetadataMatch(t *testing.T) {
 
 	s.JobAgents.Upsert(ctx, makeJobAgent(agentID, "agent-a", "runner"))
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
-	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{"region": "us-east-1"}))
+	_, _ = s.Resources.Upsert(
+		ctx,
+		makeResource(resID, "res-1", map[string]string{"region": "us-east-1"}),
+	)
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentID, Selector: `resource.metadata.region == "us-east-1"`, Config: oapi.JobAgentConfig{}},
+		{
+			Ref:      agentID,
+			Selector: `resource.metadata.region == "us-east-1"`,
+			Config:   oapi.JobAgentConfig{},
+		},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)
@@ -458,10 +471,17 @@ func TestSelectAgents_CEL_ResourceMetadataNoMatch(t *testing.T) {
 
 	s.JobAgents.Upsert(ctx, makeJobAgent(agentID, "agent-a", "runner"))
 	_ = s.Environments.Upsert(ctx, makeEnvironment(envID, "staging"))
-	_, _ = s.Resources.Upsert(ctx, makeResource(resID, "res-1", map[string]string{"region": "eu-west-1"}))
+	_, _ = s.Resources.Upsert(
+		ctx,
+		makeResource(resID, "res-1", map[string]string{"region": "eu-west-1"}),
+	)
 
 	ja := []oapi.DeploymentJobAgent{
-		{Ref: agentID, Selector: `resource.metadata.region == "us-east-1"`, Config: oapi.JobAgentConfig{}},
+		{
+			Ref:      agentID,
+			Selector: `resource.metadata.region == "us-east-1"`,
+			Config:   oapi.JobAgentConfig{},
+		},
 	}
 	deployment := makeDeployment(uuid.New().String(), "deploy", nil, &ja)
 	release := makeRelease(deployment.Id, envID, resID)

@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 
-// Helper function to create a JSON selector from an unknown condition
+// Helper function to create a JSON selector from an unknown condition.
 func createJsonSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.Selector {
 	t.Helper()
 
@@ -30,7 +31,7 @@ func createJsonSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.
 	return selector
 }
 
-// Helper function to create a CEL selector
+// Helper function to create a CEL selector.
 func createCelSelector(t *testing.T, expression string) *oapi.Selector {
 	t.Helper()
 
@@ -41,7 +42,7 @@ func createCelSelector(t *testing.T, expression string) *oapi.Selector {
 	return selector
 }
 
-// Helper function to create an empty JSON selector
+// Helper function to create an empty JSON selector.
 func createEmptyJsonSelector(t *testing.T) *oapi.Selector {
 	t.Helper()
 
@@ -1244,7 +1245,10 @@ func TestEntityCacheKey(t *testing.T) {
 		r := &oapi.Resource{Id: "r3", UpdatedAt: nil} // CreatedAt is zero
 		key := entityCacheKey(r)
 		if key != "" {
-			t.Errorf("entityCacheKey() for Resource with zero CreatedAt = %q, want empty string", key)
+			t.Errorf(
+				"entityCacheKey() for Resource with zero CreatedAt = %q, want empty string",
+				key,
+			)
 		}
 	})
 

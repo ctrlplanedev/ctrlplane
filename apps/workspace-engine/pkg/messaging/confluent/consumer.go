@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/messaging"
-
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"workspace-engine/pkg/messaging"
 )
 
-// Consumer is a Confluent Kafka implementation of messaging.Consumer
+// Consumer is a Confluent Kafka implementation of messaging.Consumer.
 type Consumer struct {
 	consumer           *kafka.Consumer
 	topic              string
@@ -19,11 +18,16 @@ type Consumer struct {
 	closed             bool
 }
 
-// Ensure Consumer implements messaging.Consumer
+// Ensure Consumer implements messaging.Consumer.
 var _ messaging.Consumer = (*Consumer)(nil)
 
-// NewConsumer creates a new Confluent Kafka consumer
-func NewConsumer(brokers string, groupID string, topic string, config *kafka.ConfigMap) (*Consumer, error) {
+// NewConsumer creates a new Confluent Kafka consumer.
+func NewConsumer(
+	brokers string,
+	groupID string,
+	topic string,
+	config *kafka.ConfigMap,
+) (*Consumer, error) {
 	log.Info("Creating Confluent Kafka consumer", "brokers", brokers, "groupID", groupID)
 
 	// Default configuration
@@ -67,7 +71,7 @@ func NewConsumer(brokers string, groupID string, topic string, config *kafka.Con
 	return consumer, nil
 }
 
-// Subscribe subscribes to a topic
+// Subscribe subscribes to a topic.
 func (c *Consumer) subscribe() error {
 	if c.closed {
 		return fmt.Errorf("consumer is closed")
@@ -97,11 +101,13 @@ func (c *Consumer) subscribe() error {
 	return nil
 }
 
-// waitForPartitionAssignment blocks until Kafka assigns partitions to this consumer
+// waitForPartitionAssignment blocks until Kafka assigns partitions to this consumer.
 func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, error) {
 	startTime := time.Now()
 	log.Info("Waiting for partition assignment from Kafka coordinator...")
-	log.Info("This process involves: 1) Joining consumer group, 2) Coordinator election (if first consumer), 3) Partition rebalance")
+	log.Info(
+		"This process involves: 1) Joining consumer group, 2) Coordinator election (if first consumer), 3) Partition rebalance",
+	)
 
 	// Check current assignment
 	assignment, err := c.consumer.Assignment()
@@ -109,7 +115,13 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 		log.Error("Failed to get assignment", "error", err)
 	} else if len(assignment) > 0 {
 		partitions := extractPartitionNumbers(assignment)
-		log.Info("Partitions already assigned", "partitions", partitions, "duration", time.Since(startTime))
+		log.Info(
+			"Partitions already assigned",
+			"partitions",
+			partitions,
+			"duration",
+			time.Since(startTime),
+		)
 		return partitions, nil
 	}
 
@@ -124,7 +136,9 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 				"duration", time.Since(startTime),
 				"pollCount", pollCount,
 				"error", ctx.Err())
-			log.Error("Partition assignment timeout - possible causes: 1) Kafka broker unreachable, 2) Network issues, 3) Slow coordinator election")
+			log.Error(
+				"Partition assignment timeout - possible causes: 1) Kafka broker unreachable, 2) Network issues, 3) Slow coordinator election",
+			)
 			return nil, fmt.Errorf("timeout waiting for partition assignment: %w", ctx.Err())
 		default:
 			ev := c.consumer.Poll(200)
@@ -171,14 +185,20 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 					return nil, fmt.Errorf("incremental assign failed: %w", err)
 				}
 
-				assignedPartitions = append(assignedPartitions, extractPartitionNumbers(e.Partitions)...)
+				assignedPartitions = append(
+					assignedPartitions,
+					extractPartitionNumbers(e.Partitions)...)
 				log.Info("Partitions assigned successfully",
 					"total_partitions", len(assignedPartitions),
 					"partitions", assignedPartitions,
 					"duration", elapsed.Round(time.Second))
 
 			case kafka.RevokedPartitions:
-				log.Warn("Received RevokedPartitions event", "partitions", extractPartitionNumbers(e.Partitions))
+				log.Warn(
+					"Received RevokedPartitions event",
+					"partitions",
+					extractPartitionNumbers(e.Partitions),
+				)
 				if err := c.consumer.IncrementalUnassign(e.Partitions); err != nil {
 					log.Warn("IncrementalUnassign failed", "error", err)
 				}
@@ -205,7 +225,7 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 	}
 }
 
-// extractPartitionNumbers converts Kafka TopicPartition array to simple partition number array
+// extractPartitionNumbers converts Kafka TopicPartition array to simple partition number array.
 func extractPartitionNumbers(assignment []kafka.TopicPartition) []int32 {
 	partitions := make([]int32, len(assignment))
 	for i, tp := range assignment {
@@ -215,7 +235,7 @@ func extractPartitionNumbers(assignment []kafka.TopicPartition) []int32 {
 }
 
 // ReadMessage reads the next message with a timeout
-// Returns ErrTimeout if no message is available within the timeout duration
+// Returns ErrTimeout if no message is available within the timeout duration.
 func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error) {
 	if c.closed {
 		return nil, fmt.Errorf("consumer is closed")
@@ -242,7 +262,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 	}, nil
 }
 
-// CommitMessage commits the offset for a message
+// CommitMessage commits the offset for a message.
 func (c *Consumer) CommitMessage(msg *messaging.Message) error {
 	if c.closed {
 		return fmt.Errorf("consumer is closed")
@@ -268,7 +288,7 @@ func (c *Consumer) CommitMessage(msg *messaging.Message) error {
 	return nil
 }
 
-// GetCommittedOffset gets the last committed offset for a partition
+// GetCommittedOffset gets the last committed offset for a partition.
 func (c *Consumer) GetCommittedOffset(partition int32) (int64, error) {
 	if c.closed {
 		return 0, fmt.Errorf("consumer is closed")
@@ -295,7 +315,7 @@ func (c *Consumer) GetCommittedOffset(partition int32) (int64, error) {
 	return int64(committed[0].Offset), nil
 }
 
-// SeekToOffset seeks to a specific offset for a partition
+// SeekToOffset seeks to a specific offset for a partition.
 func (c *Consumer) SeekToOffset(partition int32, offset int64) error {
 	if c.closed {
 		return fmt.Errorf("consumer is closed")
@@ -315,7 +335,7 @@ func (c *Consumer) SeekToOffset(partition int32, offset int64) error {
 	return nil
 }
 
-// GetAssignedPartitions returns the partitions assigned to this consumer
+// GetAssignedPartitions returns the partitions assigned to this consumer.
 func (c *Consumer) GetAssignedPartitions() ([]int32, error) {
 	if c.closed {
 		return nil, fmt.Errorf("consumer is closed")
@@ -324,7 +344,7 @@ func (c *Consumer) GetAssignedPartitions() ([]int32, error) {
 	return c.assignedPartitions, nil
 }
 
-// GetPartitionCount returns the total number of partitions for the subscribed topic
+// GetPartitionCount returns the total number of partitions for the subscribed topic.
 func (c *Consumer) GetPartitionCount() (int32, error) {
 	if c.closed {
 		return 0, fmt.Errorf("consumer is closed")
@@ -350,7 +370,7 @@ func (c *Consumer) GetPartitionCount() (int32, error) {
 	return numPartitions, nil
 }
 
-// Close closes the consumer
+// Close closes the consumer.
 func (c *Consumer) Close() error {
 	if c.closed {
 		return nil

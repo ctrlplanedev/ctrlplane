@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"github.com/charmbracelet/log"
 )
 
 func HandleJobUpdated(
@@ -70,7 +69,12 @@ func HandleJobUpdated(
 
 // triggerActionsOnStatusChange notifies the action orchestrator of job status changes.
 // This enables policy actions like verification to run when jobs complete.
-func triggerActionsOnStatusChange(ctx context.Context, ws *workspace.Workspace, job *oapi.Job, previousStatus oapi.JobStatus) {
+func triggerActionsOnStatusChange(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	job *oapi.Job,
+	previousStatus oapi.JobStatus,
+) {
 	// Only trigger if status actually changed
 	if job.Status == previousStatus {
 		return
@@ -80,7 +84,17 @@ func triggerActionsOnStatusChange(ctx context.Context, ws *workspace.Workspace, 
 		ActionOrchestrator().
 		OnJobStatusChange(ctx, job, previousStatus)
 	if err != nil {
-		log.Error("error triggering actions on status change", "job_id", job.Id, "from", previousStatus, "to", job.Status, "error", err.Error())
+		log.Error(
+			"error triggering actions on status change",
+			"job_id",
+			job.Id,
+			"from",
+			previousStatus,
+			"to",
+			job.Status,
+			"error",
+			err.Error(),
+		)
 	}
 
 	if job.Status != oapi.JobStatusSuccessful {

@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-// environmentAlias is used to prevent infinite recursion in UnmarshalJSON
+// environmentAlias is used to prevent infinite recursion in UnmarshalJSON.
 type environmentAlias Environment
 
-// environmentJSON is the intermediate struct for custom unmarshaling
+// environmentJSON is the intermediate struct for custom unmarshaling.
 type environmentJSON struct {
 	environmentAlias
 	CreatedAt json.RawMessage `json:"createdAt"`

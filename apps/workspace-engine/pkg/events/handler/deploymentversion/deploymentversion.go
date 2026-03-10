@@ -4,20 +4,23 @@ import (
 	"context"
 	"encoding/json"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("events/handler/deploymentversion")
 
-func requeueDesiredReleaseEvaluations(ctx context.Context, ws *workspace.Workspace, deploymentId string) error {
+func requeueDesiredReleaseEvaluations(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	deploymentId string,
+) error {
 	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deploymentId)
 	if err != nil {
 		return err

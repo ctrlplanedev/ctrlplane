@@ -2,10 +2,11 @@ package creators
 
 import (
 	"encoding/json"
+
 	"workspace-engine/pkg/oapi"
 )
 
-// NewResourceVariable creates a new ResourceVariable with default values
+// NewResourceVariable creates a new ResourceVariable with default values.
 func NewResourceVariable(resourceID string, key string) *oapi.ResourceVariable {
 	return &oapi.ResourceVariable{
 		ResourceId: resourceID,
@@ -13,7 +14,7 @@ func NewResourceVariable(resourceID string, key string) *oapi.ResourceVariable {
 	}
 }
 
-// NewLiteralValue creates a new LiteralValue from a Go value
+// NewLiteralValue creates a new LiteralValue from a Go value.
 func NewLiteralValue(value any) *oapi.LiteralValue {
 	literalValue := &oapi.LiteralValue{}
 	switch v := value.(type) {
@@ -44,7 +45,7 @@ func NewLiteralValue(value any) *oapi.LiteralValue {
 	return literalValue
 }
 
-// mustMarshalJSON marshals a value to JSON or panics
+// mustMarshalJSON marshals a value to JSON or panics.
 func mustMarshalJSON(v any) []byte {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -53,35 +54,35 @@ func mustMarshalJSON(v any) []byte {
 	return b
 }
 
-// NewValueFromLiteral creates a new Value with a literal data type
+// NewValueFromLiteral creates a new Value with a literal data type.
 func NewValueFromLiteral(literalValue *oapi.LiteralValue) *oapi.Value {
 	value := &oapi.Value{}
 	_ = value.FromLiteralValue(*literalValue)
 	return value
 }
 
-// NewValueFromString creates a new Value with a string literal
+// NewValueFromString creates a new Value with a string literal.
 func NewValueFromString(value string) *oapi.Value {
 	literalValue := &oapi.LiteralValue{}
 	_ = literalValue.FromStringValue(value)
 	return NewValueFromLiteral(literalValue)
 }
 
-// NewValueFromInt creates a new Value with an int64 literal
+// NewValueFromInt creates a new Value with an int64 literal.
 func NewValueFromInt(value int64) *oapi.Value {
 	literalValue := &oapi.LiteralValue{}
 	_ = literalValue.FromIntegerValue(int(value))
 	return NewValueFromLiteral(literalValue)
 }
 
-// NewValueFromBool creates a new Value with a bool literal
+// NewValueFromBool creates a new Value with a bool literal.
 func NewValueFromBool(value bool) *oapi.Value {
 	literalValue := &oapi.LiteralValue{}
 	_ = literalValue.FromBooleanValue(value)
 	return NewValueFromLiteral(literalValue)
 }
 
-// NewValueFromReference creates a new Value with a reference data type
+// NewValueFromReference creates a new Value with a reference data type.
 func NewValueFromReference(reference string, path []string) *oapi.Value {
 	value := &oapi.Value{}
 	_ = value.FromReferenceValue(oapi.ReferenceValue{
@@ -91,7 +92,7 @@ func NewValueFromReference(reference string, path []string) *oapi.Value {
 	return value
 }
 
-// NewValueFromSensitive creates a new Value with a sensitive data type
+// NewValueFromSensitive creates a new Value with a sensitive data type.
 func NewValueFromSensitive(valueHash string) *oapi.Value {
 	value := &oapi.Value{}
 	_ = value.FromSensitiveValue(oapi.SensitiveValue{

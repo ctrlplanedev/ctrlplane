@@ -3,9 +3,9 @@ package events
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/reconcile"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/reconcile"
 )
 
 const JobEligibilityKind = "job-eligibility"
@@ -21,7 +21,11 @@ func (params JobEligibilityParams) ScopeID() string {
 	return fmt.Sprintf("%s:%s:%s", params.DeploymentID, params.EnvironmentID, params.ResourceID)
 }
 
-func EnqueueJobEligibility(queue reconcile.Queue, ctx context.Context, params JobEligibilityParams) error {
+func EnqueueJobEligibility(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params JobEligibilityParams,
+) error {
 	return queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: params.WorkspaceID,
 		Kind:        JobEligibilityKind,
@@ -30,7 +34,11 @@ func EnqueueJobEligibility(queue reconcile.Queue, ctx context.Context, params Jo
 	})
 }
 
-func EnqueueManyJobEligibility(queue reconcile.Queue, ctx context.Context, params []JobEligibilityParams) error {
+func EnqueueManyJobEligibility(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params []JobEligibilityParams,
+) error {
 	if len(params) == 0 {
 		return nil
 	}

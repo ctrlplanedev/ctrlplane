@@ -9,27 +9,37 @@ import (
 	"strconv"
 	"time"
 
-	"workspace-engine/pkg/config"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/oapi"
 )
 
 // GoGitHubWorkflowDispatcher is the production implementation that calls
 // the GitHub API to dispatch workflows.
 type GoGitHubWorkflowDispatcher struct{}
 
-func (d *GoGitHubWorkflowDispatcher) DispatchWorkflow(ctx context.Context, cfg oapi.GithubJobAgentConfig, ref string, inputs map[string]any) error {
+func (d *GoGitHubWorkflowDispatcher) DispatchWorkflow(
+	ctx context.Context,
+	cfg oapi.GithubJobAgentConfig,
+	ref string,
+	inputs map[string]any,
+) error {
 	client, err := createGithubClient(&cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create github client: %w", err)
 	}
 
-	if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
-		Ref:    ref,
-		Inputs: inputs,
-	}); err != nil {
+	if _, err := client.Actions.CreateWorkflowDispatchEventByID(
+		ctx,
+		cfg.Owner,
+		cfg.Repo,
+		cfg.WorkflowId,
+		github.CreateWorkflowDispatchEventRequest{
+			Ref:    ref,
+			Inputs: inputs,
+		},
+	); err != nil {
 		return err
 	}
 
@@ -41,7 +51,9 @@ func createGithubClient(cfg *oapi.GithubJobAgentConfig) (*github.Client, error) 
 	privateKey := config.Global.GithubBotPrivateKey
 
 	if appIDStr == "" || privateKey == "" {
-		return nil, fmt.Errorf("GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY")
+		return nil, fmt.Errorf(
+			"GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY",
+		)
 	}
 
 	appID, err := strconv.ParseInt(appIDStr, 10, 64)
@@ -105,7 +117,11 @@ func getInstallationToken(jwtToken string, installationID int) (string, error) {
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get installation token: %s - %s", resp.Status, string(body))
+		return "", fmt.Errorf(
+			"failed to get installation token: %s - %s",
+			resp.Status,
+			string(body),
+		)
 	}
 
 	var result struct {

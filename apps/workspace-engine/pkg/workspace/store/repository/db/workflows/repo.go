@@ -3,11 +3,11 @@ package workflows
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type WorkflowRepo struct {
@@ -65,7 +65,13 @@ func (r *WorkflowRepo) Items() map[string]*oapi.Workflow {
 
 	rows, err := db.GetQueries(r.ctx).ListWorkflowsByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list workflows by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list workflows by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.Workflow)
 	}
 
@@ -132,7 +138,13 @@ func (r *WorkflowJobTemplateRepo) Items() map[string]*oapi.WorkflowJobTemplate {
 
 	rows, err := db.GetQueries(r.ctx).ListWorkflowJobTemplatesByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list workflow job templates by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list workflow job templates by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.WorkflowJobTemplate)
 	}
 
@@ -199,7 +211,13 @@ func (r *WorkflowRunRepo) Items() map[string]*oapi.WorkflowRun {
 
 	rows, err := db.GetQueries(r.ctx).ListWorkflowRunsByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list workflow runs by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list workflow runs by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.WorkflowRun)
 	}
 
@@ -284,7 +302,13 @@ func (r *WorkflowJobRepo) Items() map[string]*oapi.WorkflowJob {
 
 	rows, err := db.GetQueries(r.ctx).ListWorkflowJobsByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list workflow jobs by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list workflow jobs by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.WorkflowJob)
 	}
 

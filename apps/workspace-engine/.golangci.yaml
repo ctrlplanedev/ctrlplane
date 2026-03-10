@@ -11,7 +11,7 @@ linters:
     - godot
     # - gosec
     # - interfacebloat
-    # - intrange
+    - intrange
     # - iotamixing
     # - maintidx
     - modernize
@@ -31,6 +31,8 @@ linters:
 formatters:
   enable:
     - gofmt
+    - golines
+    - gci
   settings:
     gofmt:
       rewrite-rules:

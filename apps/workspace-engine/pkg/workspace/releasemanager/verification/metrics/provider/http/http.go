@@ -8,15 +8,15 @@ import (
 	"io"
 	"net/http"
 	"time"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
-// Ensure Provider implements provider.Provider
+// Ensure Provider implements provider.Provider.
 var _ provider.Provider = (*Provider)(nil)
 
-// Config contains HTTP metric configuration
+// Config contains HTTP metric configuration.
 type Config struct {
 	URL     string
 	Method  string
@@ -25,12 +25,12 @@ type Config struct {
 	Timeout time.Duration
 }
 
-// Provider executes HTTP-based metrics
+// Provider executes HTTP-based metrics.
 type Provider struct {
 	config *Config
 }
 
-// New creates a new HTTP metric provider
+// New creates a new HTTP metric provider.
 func New(config *Config) (*Provider, error) {
 	// Set defaults
 	if config.Method == "" {
@@ -45,7 +45,7 @@ func New(config *Config) (*Provider, error) {
 	}, nil
 }
 
-// NewFromOAPI creates a new HTTP provider from oapi.HTTPMetricProvider
+// NewFromOAPI creates a new HTTP provider from oapi.HTTPMetricProvider.
 func NewFromOAPI(oapiProvider any) (*Provider, error) {
 	// Cast to the OAPI type - we use interface{} to avoid import cycles
 	type httpProvider struct {
@@ -101,13 +101,13 @@ func (p *Provider) Type() string {
 	return "http"
 }
 
-// Config returns the provider's configuration
+// Config returns the provider's configuration.
 func (p *Provider) Config() *Config {
 	return p.config
 }
 
 // ConfigAsMetric returns the provider's configuration as metrics.HTTPConfig
-// This allows the provider to implement metrics.HTTPConfigProvider without import cycles
+// This allows the provider to implement metrics.HTTPConfigProvider without import cycles.
 func (p *Provider) ConfigAsMetric() any {
 	return struct {
 		URL     string
@@ -124,7 +124,10 @@ func (p *Provider) ConfigAsMetric() any {
 	}
 }
 
-func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *Provider) Measure(
+	ctx context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 
 	resolved := Resolve(p.config, providerCtx)
@@ -183,7 +186,7 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 	return startTime, data, nil
 }
 
-// Resolve resolves Go templates in the config
+// Resolve resolves Go templates in the config.
 func Resolve(config *Config, providerCtx *provider.ProviderContext) *Config {
 	resolved := &Config{
 		URL:     providerCtx.Template(config.URL),

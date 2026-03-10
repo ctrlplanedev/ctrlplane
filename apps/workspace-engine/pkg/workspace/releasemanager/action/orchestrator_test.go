@@ -5,17 +5,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// Mock action for testing
+// Mock action for testing.
 type mockAction struct {
 	name          string
 	shouldExecute bool // Internal flag to simulate fail-fast behavior
@@ -29,7 +28,11 @@ func (m *mockAction) Name() string {
 	return m.name
 }
 
-func (m *mockAction) Execute(ctx context.Context, trigger action.ActionTrigger, actx action.ActionContext) error {
+func (m *mockAction) Execute(
+	ctx context.Context,
+	trigger action.ActionTrigger,
+	actx action.ActionContext,
+) error {
 	// Simulate fail-fast behavior - return nil if action shouldn't execute
 	if !m.shouldExecute {
 		return nil

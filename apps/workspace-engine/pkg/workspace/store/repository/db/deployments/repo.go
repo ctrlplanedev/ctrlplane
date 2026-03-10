@@ -3,11 +3,11 @@ package deployments
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // Repo implements repository.DeploymentRepo backed by the deployment table.
@@ -71,11 +71,18 @@ func (r *Repo) Items() map[string]*oapi.Deployment {
 		return make(map[string]*oapi.Deployment)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListDeploymentsByWorkspaceID(r.ctx, db.ListDeploymentsByWorkspaceIDParams{
-		WorkspaceID: uid,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListDeploymentsByWorkspaceID(r.ctx, db.ListDeploymentsByWorkspaceIDParams{
+			WorkspaceID: uid,
+		})
 	if err != nil {
-		log.Warn("Failed to list deployments by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list deployments by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.Deployment)
 	}
 

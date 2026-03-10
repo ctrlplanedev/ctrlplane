@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"runtime"
 	"time"
-	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
-
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/reconcile/postgres"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
+	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/svc"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/desiredrelease")
@@ -65,7 +63,9 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	}
 
 	if result.NextReconcileAt != nil {
-		span.SetAttributes(attribute.String("next_reconcile_at", result.NextReconcileAt.Format(time.RFC3339)))
+		span.SetAttributes(
+			attribute.String("next_reconcile_at", result.NextReconcileAt.Format(time.RFC3339)),
+		)
 		return reconcile.Result{RequeueAfter: time.Until(*result.NextReconcileAt)}, nil
 	}
 

@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	v2 "workspace-engine/pkg/workspace/relationships/v2"
-
-	"github.com/charmbracelet/log"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var relationshipIndexesTracer = otel.Tracer("workspace/store/relationship_indexes")
@@ -26,7 +25,10 @@ type entityStoreAdapter struct {
 	store *Store
 }
 
-func (a *entityStoreAdapter) GetEntity(_ context.Context, entityID string) (*oapi.RelatableEntity, error) {
+func (a *entityStoreAdapter) GetEntity(
+	_ context.Context,
+	entityID string,
+) (*oapi.RelatableEntity, error) {
 	if r, ok := a.store.Resources.Get(entityID); ok {
 		return relationships.NewResourceEntity(r), nil
 	}
@@ -43,7 +45,10 @@ func (a *entityStoreAdapter) GetEntity(_ context.Context, entityID string) (*oap
 // fields, avoiding the JSON marshal/unmarshal round-trip used by GetEntity +
 // RelatableEntity. This is the hot-path method used during relationship
 // index recomputation.
-func (a *entityStoreAdapter) GetEntityMap(_ context.Context, entityID string) (map[string]any, error) {
+func (a *entityStoreAdapter) GetEntityMap(
+	_ context.Context,
+	entityID string,
+) (map[string]any, error) {
 	if r, ok := a.store.Resources.Get(entityID); ok {
 		return resourceToMap(r), nil
 	}
@@ -401,7 +406,10 @@ func (ri *RelationshipIndexes) recomputeLocked(ctx context.Context) int {
 // For each rule index:
 //   - Children (entity is "from", child is "to") produce Direction=From entries
 //   - Parents (parent is "from", entity is "to") produce Direction=To entries
-func (ri *RelationshipIndexes) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {
+func (ri *RelationshipIndexes) GetRelatedEntities(
+	ctx context.Context,
+	entity *oapi.RelatableEntity,
+) (map[string][]*oapi.EntityRelation, error) {
 	ri.ensureRecomputed(ctx)
 
 	ctx, span := relationshipIndexesTracer.Start(ctx, "RelationshipIndexes.GetRelatedEntities")

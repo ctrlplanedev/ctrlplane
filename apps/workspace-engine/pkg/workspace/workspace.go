@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/memory"
@@ -41,7 +42,12 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	ws.jobAgentRegistry = jobagents.NewRegistry(ws.store, ws.verificationManager, ws.reconcileQueue)
 
 	// Create release manager with trace store (will panic if nil)
-	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager, ws.jobAgentRegistry)
+	ws.releasemanager = releasemanager.New(
+		s,
+		ws.traceStore,
+		ws.verificationManager,
+		ws.jobAgentRegistry,
+	)
 	ws.workflowManager = workflowmanager.NewWorkflowManager(s, ws.jobAgentRegistry)
 
 	reconcileFn := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
@@ -49,7 +55,11 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 			ws.releasemanager.DirtyDesiredRelease(rt)
 		}
 		ws.releasemanager.RecomputeState(ctx)
-		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
+		return ws.releasemanager.ReconcileTargets(
+			ctx,
+			targets,
+			releasemanager.WithTrigger(trace.TriggerJobSuccess),
+		)
 	}
 
 	ws.actionOrchestrator = action.

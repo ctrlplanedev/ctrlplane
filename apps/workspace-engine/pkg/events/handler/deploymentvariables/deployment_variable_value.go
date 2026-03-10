@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -11,13 +12,22 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-func getReleaseTargets(ctx context.Context, ws *workspace.Workspace, deploymentVariableValue *oapi.DeploymentVariableValue) ([]*oapi.ReleaseTarget, error) {
-	deploymentVariable, ok := ws.DeploymentVariables().Get(deploymentVariableValue.DeploymentVariableId)
+func getReleaseTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	deploymentVariableValue *oapi.DeploymentVariableValue,
+) ([]*oapi.ReleaseTarget, error) {
+	deploymentVariable, ok := ws.DeploymentVariables().
+		Get(deploymentVariableValue.DeploymentVariableId)
 	if !ok {
-		return nil, fmt.Errorf("deployment variable %s not found", deploymentVariableValue.DeploymentVariableId)
+		return nil, fmt.Errorf(
+			"deployment variable %s not found",
+			deploymentVariableValue.DeploymentVariableId,
+		)
 	}
 
-	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deploymentVariable.DeploymentId)
+	releaseTargets, err := ws.ReleaseTargets().
+		GetForDeployment(ctx, deploymentVariable.DeploymentId)
 	if err != nil {
 		return nil, err
 	}

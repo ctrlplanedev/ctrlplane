@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 // ===== Benchmark Helper Functions =====
@@ -58,7 +58,7 @@ func createBenchReleaseTarget(envID, depID, resID string) *oapi.ReleaseTarget {
 	}
 }
 
-// setupVariableBenchmark creates a variable manager with test data
+// setupVariableBenchmark creates a variable manager with test data.
 func setupVariableBenchmark(
 	b *testing.B,
 	numDeploymentVariables int,
@@ -145,9 +145,11 @@ func setupVariableBenchmark(
 			deploymentVarValue := &oapi.DeploymentVariableValue{
 				Id:                   valueID,
 				DeploymentVariableId: varID,
-				Priority:             int64(numDeploymentVariableValues - j), // Higher priority for earlier values
-				Value:                *value,
-				ResourceSelector:     selector,
+				Priority: int64(
+					numDeploymentVariableValues - j,
+				), // Higher priority for earlier values
+				Value:            *value,
+				ResourceSelector: selector,
 			}
 			st.DeploymentVariableValues.Upsert(ctx, valueID, deploymentVarValue)
 		}
@@ -265,15 +267,20 @@ func setupVariableBenchmark(
 
 	manager := New(st)
 
-	b.Logf("Created %d deployment variables, %d resource variables, %d variable values per deployment var, relationships=%v",
-		numDeploymentVariables, numResourceVariables, numDeploymentVariableValues, useRelationships)
+	b.Logf(
+		"Created %d deployment variables, %d resource variables, %d variable values per deployment var, relationships=%v",
+		numDeploymentVariables,
+		numResourceVariables,
+		numDeploymentVariableValues,
+		useRelationships,
+	)
 
 	return manager, releaseTarget, st
 }
 
 // ===== Benchmarks =====
 
-// BenchmarkEvaluate_10Variables_NoOverrides benchmarks basic variable evaluation
+// BenchmarkEvaluate_10Variables_NoOverrides benchmarks basic variable evaluation.
 func BenchmarkEvaluate_10Variables_NoOverrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 10, 0, 1, false)
 	ctx := context.Background()
@@ -294,7 +301,7 @@ func BenchmarkEvaluate_10Variables_NoOverrides(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_50Variables_NoOverrides benchmarks with more variables
+// BenchmarkEvaluate_50Variables_NoOverrides benchmarks with more variables.
 func BenchmarkEvaluate_50Variables_NoOverrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 1, false)
 	ctx := context.Background()
@@ -315,7 +322,7 @@ func BenchmarkEvaluate_50Variables_NoOverrides(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_100Variables_NoOverrides benchmarks with many variables
+// BenchmarkEvaluate_100Variables_NoOverrides benchmarks with many variables.
 func BenchmarkEvaluate_100Variables_NoOverrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 100, 0, 1, false)
 	ctx := context.Background()
@@ -336,7 +343,7 @@ func BenchmarkEvaluate_100Variables_NoOverrides(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_50Variables_25Overrides tests resource variable overrides
+// BenchmarkEvaluate_50Variables_25Overrides tests resource variable overrides.
 func BenchmarkEvaluate_50Variables_25Overrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 25, 1, false)
 	ctx := context.Background()
@@ -357,7 +364,7 @@ func BenchmarkEvaluate_50Variables_25Overrides(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_50Variables_50Overrides tests all variables overridden
+// BenchmarkEvaluate_50Variables_50Overrides tests all variables overridden.
 func BenchmarkEvaluate_50Variables_50Overrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 50, 1, false)
 	ctx := context.Background()
@@ -378,7 +385,7 @@ func BenchmarkEvaluate_50Variables_50Overrides(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_50Variables_5Values tests multiple deployment variable values
+// BenchmarkEvaluate_50Variables_5Values tests multiple deployment variable values.
 func BenchmarkEvaluate_50Variables_5Values(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 5, false)
 	ctx := context.Background()
@@ -399,7 +406,7 @@ func BenchmarkEvaluate_50Variables_5Values(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_50Variables_10Values tests many deployment variable values with selector matching
+// BenchmarkEvaluate_50Variables_10Values tests many deployment variable values with selector matching.
 func BenchmarkEvaluate_50Variables_10Values(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 10, false)
 	ctx := context.Background()
@@ -420,7 +427,7 @@ func BenchmarkEvaluate_50Variables_10Values(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_WithRelationships tests variable resolution with relationship references
+// BenchmarkEvaluate_WithRelationships tests variable resolution with relationship references.
 func BenchmarkEvaluate_WithRelationships(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 1, true)
 	ctx := context.Background()
@@ -441,7 +448,7 @@ func BenchmarkEvaluate_WithRelationships(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_ComplexScenario tests a realistic complex scenario
+// BenchmarkEvaluate_ComplexScenario tests a realistic complex scenario.
 func BenchmarkEvaluate_ComplexScenario(b *testing.B) {
 	// 100 variables, 30% overridden, 5 values per variable, with relationships
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 100, 30, 5, true)
@@ -463,7 +470,7 @@ func BenchmarkEvaluate_ComplexScenario(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_VaryingVariableCount benchmarks with different variable counts
+// BenchmarkEvaluate_VaryingVariableCount benchmarks with different variable counts.
 func BenchmarkEvaluate_VaryingVariableCount(b *testing.B) {
 	variableCounts := []int{10, 25, 50, 100, 200}
 
@@ -475,7 +482,7 @@ func BenchmarkEvaluate_VaryingVariableCount(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 				if !exists {
 					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -491,7 +498,7 @@ func BenchmarkEvaluate_VaryingVariableCount(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_VaryingOverrideRatio benchmarks with different override ratios
+// BenchmarkEvaluate_VaryingOverrideRatio benchmarks with different override ratios.
 func BenchmarkEvaluate_VaryingOverrideRatio(b *testing.B) {
 	numVars := 50
 	overrideRatios := []float64{0.0, 0.25, 0.5, 0.75, 1.0}
@@ -505,7 +512,7 @@ func BenchmarkEvaluate_VaryingOverrideRatio(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 				if !exists {
 					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -521,7 +528,7 @@ func BenchmarkEvaluate_VaryingOverrideRatio(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_VaryingValueCount benchmarks with different deployment variable value counts
+// BenchmarkEvaluate_VaryingValueCount benchmarks with different deployment variable value counts.
 func BenchmarkEvaluate_VaryingValueCount(b *testing.B) {
 	valueCounts := []int{1, 3, 5, 10, 20}
 
@@ -533,7 +540,7 @@ func BenchmarkEvaluate_VaryingValueCount(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 				if !exists {
 					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -549,8 +556,11 @@ func BenchmarkEvaluate_VaryingValueCount(b *testing.B) {
 	}
 }
 
-// setupLargeRelationshipBenchmark creates a benchmark with many resources and relationship rules
-func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, *oapi.ReleaseTarget, *store.Store) {
+// setupLargeRelationshipBenchmark creates a benchmark with many resources and relationship rules.
+func setupLargeRelationshipBenchmark(
+	b *testing.B,
+	numResources int,
+) (*Manager, *oapi.ReleaseTarget, *store.Store) {
 	b.Helper()
 	ctx := context.Background()
 	workspaceID := "bench-workspace-" + uuid.New().String()
@@ -583,7 +593,10 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 		dbResource.Kind = "database"
 		dbResource.Metadata["host"] = fmt.Sprintf("db-%d.example.com", i)
 		dbResource.Metadata["port"] = "5432"
-		dbResource.Metadata["connection_string"] = fmt.Sprintf("postgresql://db-%d.example.com:5432", i)
+		dbResource.Metadata["connection_string"] = fmt.Sprintf(
+			"postgresql://db-%d.example.com:5432",
+			i,
+		)
 		if _, err := st.Resources.Upsert(ctx, dbResource); err != nil {
 			b.Fatalf("Failed to create database resource: %v", err)
 		}
@@ -773,13 +786,18 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 
 	manager := New(st)
 
-	b.Logf("Created %d total resources (%d services, %d databases, %d VPCs), 2 relationship rules, 10 reference variables",
-		numResources, numServices, numDatabases, numVPCs)
+	b.Logf(
+		"Created %d total resources (%d services, %d databases, %d VPCs), 2 relationship rules, 10 reference variables",
+		numResources,
+		numServices,
+		numDatabases,
+		numVPCs,
+	)
 
 	return manager, releaseTarget, st
 }
 
-// BenchmarkEvaluate_10ReferenceVariables_2Rules_1000Resources benchmarks relationship resolution at scale
+// BenchmarkEvaluate_10ReferenceVariables_2Rules_1000Resources benchmarks relationship resolution at scale.
 func BenchmarkEvaluate_10ReferenceVariables_2Rules_1000Resources(b *testing.B) {
 	manager, releaseTarget, _ := setupLargeRelationshipBenchmark(b, 1000)
 	ctx := context.Background()
@@ -800,7 +818,7 @@ func BenchmarkEvaluate_10ReferenceVariables_2Rules_1000Resources(b *testing.B) {
 	}
 }
 
-// BenchmarkEvaluate_10ReferenceVariables_2Rules_VaryingResourceCount tests relationship resolution with varying resource counts
+// BenchmarkEvaluate_10ReferenceVariables_2Rules_VaryingResourceCount tests relationship resolution with varying resource counts.
 func BenchmarkEvaluate_10ReferenceVariables_2Rules_VaryingResourceCount(b *testing.B) {
 	resourceCounts := []int{100, 500, 1000, 2000, 5000}
 
@@ -829,7 +847,7 @@ func BenchmarkEvaluate_10ReferenceVariables_2Rules_VaryingResourceCount(b *testi
 }
 
 // BenchmarkEvaluate_NxM_AmplifiedScaling demonstrates the N×M scaling problem
-// This benchmark should take ~1 second to show the catastrophic scaling issue
+// This benchmark should take ~1 second to show the catastrophic scaling issue.
 func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	ctx := context.Background()
 	workspaceID := "bench-workspace-" + uuid.New().String()
@@ -883,7 +901,10 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		resource.Kind = "database"
 		resource.Metadata["host"] = fmt.Sprintf("db-%d.example.com", i)
 		resource.Metadata["port"] = "5432"
-		resource.Metadata["connection_string"] = fmt.Sprintf("postgresql://db-%d.example.com:5432/mydb", i)
+		resource.Metadata["connection_string"] = fmt.Sprintf(
+			"postgresql://db-%d.example.com:5432/mydb",
+			i,
+		)
 		resource.Metadata["read_replica_host"] = fmt.Sprintf("db-%d-replica.example.com", i)
 		if _, err := st.Resources.Upsert(ctx, resource); err != nil {
 			b.Fatalf("Failed to create database resource: %v", err)
@@ -1118,7 +1139,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	if numTargets > len(serviceIDs) {
 		numTargets = len(serviceIDs)
 	}
-	for i := 0; i < numTargets; i++ {
+	for i := range numTargets {
 		releaseTarget := createBenchReleaseTarget(environmentID, deploymentID, serviceIDs[i])
 		releaseTargets = append(releaseTargets, releaseTarget)
 	}
@@ -1130,7 +1151,10 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		numResources, numServices, numDatabases, numCaches, numQueues)
 	b.Logf("  Release Targets: %d", len(releaseTargets))
 	b.Logf("  Reference Variables per Target: %d", numReferenceVariables)
-	b.Logf("  Total Variable Evaluations per Iteration: %d", len(releaseTargets)*numReferenceVariables)
+	b.Logf(
+		"  Total Variable Evaluations per Iteration: %d",
+		len(releaseTargets)*numReferenceVariables,
+	)
 	b.Logf("  Expected GetRelatedEntities calls: %d", len(releaseTargets)*numReferenceVariables)
 
 	b.ReportAllocs()
@@ -1158,7 +1182,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 }
 
 // BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario simulates the real production performance issue
-// where many release targets need to be evaluated, each one recomputing relationships from scratch
+// where many release targets need to be evaluated, each one recomputing relationships from scratch.
 func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 	scenarios := []struct {
 		numResources      int
@@ -1173,232 +1197,267 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 	}
 
 	for _, scenario := range scenarios {
-		b.Run(fmt.Sprintf("Resources_%d_Targets_%d", scenario.numResources, scenario.numReleaseTargets), func(b *testing.B) {
-			ctx := context.Background()
-			workspaceID := "bench-workspace-" + uuid.New().String()
-			cs := statechange.NewChangeSet[any]()
-			st := store.New(workspaceID, cs)
+		b.Run(
+			fmt.Sprintf(
+				"Resources_%d_Targets_%d",
+				scenario.numResources,
+				scenario.numReleaseTargets,
+			),
+			func(b *testing.B) {
+				ctx := context.Background()
+				workspaceID := "bench-workspace-" + uuid.New().String()
+				cs := statechange.NewChangeSet[any]()
+				st := store.New(workspaceID, cs)
 
-			systemID := uuid.New().String()
-			environmentID := uuid.New().String()
-			deploymentID := uuid.New().String()
+				systemID := uuid.New().String()
+				environmentID := uuid.New().String()
+				deploymentID := uuid.New().String()
 
-			// Create deployment
-			deployment := createBenchDeployment(systemID, deploymentID, "main-deployment")
-			if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-				b.Fatalf("Failed to create deployment: %v", err)
-			}
-
-			// Create resources with different types for relationships
-			numServices := int(float64(scenario.numResources) * 0.8)
-			numDatabases := int(float64(scenario.numResources) * 0.1)
-			numVPCs := scenario.numResources - numServices - numDatabases
-
-			serviceIDs := make([]string, 0, numServices)
-
-			// Create service resources (80%)
-			for i := range numServices {
-				resourceID := uuid.New().String()
-				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("service-%d", i))
-				resource.Kind = "service"
-				resource.Metadata["service_type"] = "web"
-				resource.Metadata["db_id"] = fmt.Sprintf("db-%d", i%numDatabases)
-				resource.Metadata["vpc_id"] = fmt.Sprintf("vpc-%d", i%numVPCs)
-				if _, err := st.Resources.Upsert(ctx, resource); err != nil {
-					b.Fatalf("Failed to create service resource: %v", err)
+				// Create deployment
+				deployment := createBenchDeployment(systemID, deploymentID, "main-deployment")
+				if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+					b.Fatalf("Failed to create deployment: %v", err)
 				}
-				serviceIDs = append(serviceIDs, resourceID)
-			}
 
-			// Create database resources (10%)
-			for i := range numDatabases {
-				resourceID := uuid.New().String()
-				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("database-%d", i))
-				resource.Kind = "database"
-				resource.Metadata["host"] = fmt.Sprintf("db-%d.example.com", i)
-				resource.Metadata["port"] = "5432"
-				resource.Metadata["connection_string"] = fmt.Sprintf("postgresql://db-%d.example.com:5432/mydb", i)
-				if _, err := st.Resources.Upsert(ctx, resource); err != nil {
-					b.Fatalf("Failed to create database resource: %v", err)
-				}
-			}
+				// Create resources with different types for relationships
+				numServices := int(float64(scenario.numResources) * 0.8)
+				numDatabases := int(float64(scenario.numResources) * 0.1)
+				numVPCs := scenario.numResources - numServices - numDatabases
 
-			// Create VPC resources (10%)
-			for i := range numVPCs {
-				resourceID := uuid.New().String()
-				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("vpc-%d", i))
-				resource.Kind = "vpc"
-				resource.Metadata["vpc_id"] = fmt.Sprintf("vpc-%d", i)
-				resource.Metadata["cidr"] = fmt.Sprintf("10.%d.0.0/16", i)
-				resource.Metadata["region"] = "us-west-1"
-				if _, err := st.Resources.Upsert(ctx, resource); err != nil {
-					b.Fatalf("Failed to create VPC resource: %v", err)
-				}
-			}
+				serviceIDs := make([]string, 0, numServices)
 
-			// Create relationship rules - service -> database
-			dbRelRuleID := uuid.New().String()
-			dbFromSelector := &oapi.Selector{}
-			_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
-				Json: map[string]any{
-					"type":     "kind",
-					"operator": "equals",
-					"value":    "service",
-				},
-			})
-			dbToSelector := &oapi.Selector{}
-			_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
-				Json: map[string]any{
-					"type":     "kind",
-					"operator": "equals",
-					"value":    "database",
-				},
-			})
-			dbMatcher := oapi.RelationshipRule_Matcher{}
-			_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
-				Properties: []oapi.PropertyMatcher{
-					{
-						FromProperty: []string{"metadata", "db_id"},
-						ToProperty:   []string{"id"},
-						Operator:     oapi.Equals,
-					},
-				},
-			})
-			dbRelRule := &oapi.RelationshipRule{
-				Id:               dbRelRuleID,
-				WorkspaceId:      workspaceID,
-				Name:             "service-to-database",
-				Reference:        "database",
-				FromType:         "resource",
-				ToType:           "resource",
-				RelationshipType: "depends-on",
-				FromSelector:     dbFromSelector,
-				ToSelector:       dbToSelector,
-				Matcher:          dbMatcher,
-				Metadata:         map[string]string{},
-			}
-			_ = st.Relationships.Upsert(ctx, dbRelRule)
-
-			// Create relationship rules - service -> vpc
-			vpcRelRuleID := uuid.New().String()
-			vpcFromSelector := &oapi.Selector{}
-			_ = vpcFromSelector.FromJsonSelector(oapi.JsonSelector{
-				Json: map[string]any{
-					"type":     "kind",
-					"operator": "equals",
-					"value":    "service",
-				},
-			})
-			vpcToSelector := &oapi.Selector{}
-			_ = vpcToSelector.FromJsonSelector(oapi.JsonSelector{
-				Json: map[string]any{
-					"type":     "kind",
-					"operator": "equals",
-					"value":    "vpc",
-				},
-			})
-			vpcMatcher := oapi.RelationshipRule_Matcher{}
-			_ = vpcMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
-				Properties: []oapi.PropertyMatcher{
-					{
-						FromProperty: []string{"metadata", "vpc_id"},
-						ToProperty:   []string{"metadata", "vpc_id"},
-						Operator:     oapi.Equals,
-					},
-				},
-			})
-			vpcRelRule := &oapi.RelationshipRule{
-				Id:               vpcRelRuleID,
-				WorkspaceId:      workspaceID,
-				Name:             "service-to-vpc",
-				Reference:        "vpc",
-				FromType:         "resource",
-				ToType:           "resource",
-				RelationshipType: "depends-on",
-				FromSelector:     vpcFromSelector,
-				ToSelector:       vpcToSelector,
-				Matcher:          vpcMatcher,
-				Metadata:         map[string]string{},
-			}
-			_ = st.Relationships.Upsert(ctx, vpcRelRule)
-
-			// Create 10 deployment variables that use references
-			referenceConfigs := []struct {
-				key       string
-				reference string
-				path      []string
-			}{
-				{"db_host", "database", []string{"metadata", "host"}},
-				{"db_port", "database", []string{"metadata", "port"}},
-				{"db_connection_string", "database", []string{"metadata", "connection_string"}},
-				{"db_name", "database", []string{"name"}},
-				{"db_id", "database", []string{"id"}},
-				{"vpc_id", "vpc", []string{"metadata", "vpc_id"}},
-				{"vpc_cidr", "vpc", []string{"metadata", "cidr"}},
-				{"vpc_name", "vpc", []string{"name"}},
-				{"vpc_region", "vpc", []string{"metadata", "region"}},
-				{"vpc_resource_id", "vpc", []string{"id"}},
-			}
-
-			for _, refConfig := range referenceConfigs {
-				varID := uuid.New().String()
-				refValue := &oapi.ReferenceValue{
-					Reference: refConfig.reference,
-					Path:      refConfig.path,
-				}
-				value := &oapi.Value{}
-				_ = value.FromReferenceValue(*refValue)
-
-				deploymentVar := &oapi.DeploymentVariable{
-					Id:           varID,
-					Key:          refConfig.key,
-					DeploymentId: deploymentID,
-				}
-				st.DeploymentVariables.Upsert(ctx, varID, deploymentVar)
-
-				// Add deployment variable value with reference
-				valueID := uuid.New().String()
-				deploymentVarValue := &oapi.DeploymentVariableValue{
-					Id:                   valueID,
-					DeploymentVariableId: varID,
-					Priority:             1,
-					Value:                *value,
-				}
-				st.DeploymentVariableValues.Upsert(ctx, valueID, deploymentVarValue)
-			}
-
-			// Create multiple release targets (one per service)
-			releaseTargets := make([]*oapi.ReleaseTarget, 0, scenario.numReleaseTargets)
-			numTargets := min(scenario.numReleaseTargets, len(serviceIDs))
-			for i := range numTargets {
-				releaseTarget := createBenchReleaseTarget(environmentID, deploymentID, serviceIDs[i])
-				releaseTargets = append(releaseTargets, releaseTarget)
-			}
-
-			manager := New(st)
-
-			b.Logf("Created %d total resources (%d services, %d databases, %d VPCs), 2 relationship rules, 10 reference variables, %d release targets",
-				scenario.numResources, numServices, numDatabases, numVPCs, len(releaseTargets))
-
-			b.ResetTimer()
-			b.ReportAllocs()
-
-			// This is the key difference - evaluate MANY release targets per iteration
-			// This simulates what happens in production
-			for b.Loop() {
-				for _, releaseTarget := range releaseTargets {
-					resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
-					if !exists {
-						b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+				// Create service resources (80%)
+				for i := range numServices {
+					resourceID := uuid.New().String()
+					resource := createBenchResource(
+						workspaceID,
+						resourceID,
+						fmt.Sprintf("service-%d", i),
+					)
+					resource.Kind = "service"
+					resource.Metadata["service_type"] = "web"
+					resource.Metadata["db_id"] = fmt.Sprintf("db-%d", i%numDatabases)
+					resource.Metadata["vpc_id"] = fmt.Sprintf("vpc-%d", i%numVPCs)
+					if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+						b.Fatalf("Failed to create service resource: %v", err)
 					}
-					entity := relationships.NewResourceEntity(resource)
-					relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
-					_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
-					if err != nil {
-						b.Fatalf("Evaluate failed: %v", err)
+					serviceIDs = append(serviceIDs, resourceID)
+				}
+
+				// Create database resources (10%)
+				for i := range numDatabases {
+					resourceID := uuid.New().String()
+					resource := createBenchResource(
+						workspaceID,
+						resourceID,
+						fmt.Sprintf("database-%d", i),
+					)
+					resource.Kind = "database"
+					resource.Metadata["host"] = fmt.Sprintf("db-%d.example.com", i)
+					resource.Metadata["port"] = "5432"
+					resource.Metadata["connection_string"] = fmt.Sprintf(
+						"postgresql://db-%d.example.com:5432/mydb",
+						i,
+					)
+					if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+						b.Fatalf("Failed to create database resource: %v", err)
 					}
 				}
-			}
-		})
+
+				// Create VPC resources (10%)
+				for i := range numVPCs {
+					resourceID := uuid.New().String()
+					resource := createBenchResource(
+						workspaceID,
+						resourceID,
+						fmt.Sprintf("vpc-%d", i),
+					)
+					resource.Kind = "vpc"
+					resource.Metadata["vpc_id"] = fmt.Sprintf("vpc-%d", i)
+					resource.Metadata["cidr"] = fmt.Sprintf("10.%d.0.0/16", i)
+					resource.Metadata["region"] = "us-west-1"
+					if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+						b.Fatalf("Failed to create VPC resource: %v", err)
+					}
+				}
+
+				// Create relationship rules - service -> database
+				dbRelRuleID := uuid.New().String()
+				dbFromSelector := &oapi.Selector{}
+				_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
+					Json: map[string]any{
+						"type":     "kind",
+						"operator": "equals",
+						"value":    "service",
+					},
+				})
+				dbToSelector := &oapi.Selector{}
+				_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
+					Json: map[string]any{
+						"type":     "kind",
+						"operator": "equals",
+						"value":    "database",
+					},
+				})
+				dbMatcher := oapi.RelationshipRule_Matcher{}
+				_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+					Properties: []oapi.PropertyMatcher{
+						{
+							FromProperty: []string{"metadata", "db_id"},
+							ToProperty:   []string{"id"},
+							Operator:     oapi.Equals,
+						},
+					},
+				})
+				dbRelRule := &oapi.RelationshipRule{
+					Id:               dbRelRuleID,
+					WorkspaceId:      workspaceID,
+					Name:             "service-to-database",
+					Reference:        "database",
+					FromType:         "resource",
+					ToType:           "resource",
+					RelationshipType: "depends-on",
+					FromSelector:     dbFromSelector,
+					ToSelector:       dbToSelector,
+					Matcher:          dbMatcher,
+					Metadata:         map[string]string{},
+				}
+				_ = st.Relationships.Upsert(ctx, dbRelRule)
+
+				// Create relationship rules - service -> vpc
+				vpcRelRuleID := uuid.New().String()
+				vpcFromSelector := &oapi.Selector{}
+				_ = vpcFromSelector.FromJsonSelector(oapi.JsonSelector{
+					Json: map[string]any{
+						"type":     "kind",
+						"operator": "equals",
+						"value":    "service",
+					},
+				})
+				vpcToSelector := &oapi.Selector{}
+				_ = vpcToSelector.FromJsonSelector(oapi.JsonSelector{
+					Json: map[string]any{
+						"type":     "kind",
+						"operator": "equals",
+						"value":    "vpc",
+					},
+				})
+				vpcMatcher := oapi.RelationshipRule_Matcher{}
+				_ = vpcMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+					Properties: []oapi.PropertyMatcher{
+						{
+							FromProperty: []string{"metadata", "vpc_id"},
+							ToProperty:   []string{"metadata", "vpc_id"},
+							Operator:     oapi.Equals,
+						},
+					},
+				})
+				vpcRelRule := &oapi.RelationshipRule{
+					Id:               vpcRelRuleID,
+					WorkspaceId:      workspaceID,
+					Name:             "service-to-vpc",
+					Reference:        "vpc",
+					FromType:         "resource",
+					ToType:           "resource",
+					RelationshipType: "depends-on",
+					FromSelector:     vpcFromSelector,
+					ToSelector:       vpcToSelector,
+					Matcher:          vpcMatcher,
+					Metadata:         map[string]string{},
+				}
+				_ = st.Relationships.Upsert(ctx, vpcRelRule)
+
+				// Create 10 deployment variables that use references
+				referenceConfigs := []struct {
+					key       string
+					reference string
+					path      []string
+				}{
+					{"db_host", "database", []string{"metadata", "host"}},
+					{"db_port", "database", []string{"metadata", "port"}},
+					{"db_connection_string", "database", []string{"metadata", "connection_string"}},
+					{"db_name", "database", []string{"name"}},
+					{"db_id", "database", []string{"id"}},
+					{"vpc_id", "vpc", []string{"metadata", "vpc_id"}},
+					{"vpc_cidr", "vpc", []string{"metadata", "cidr"}},
+					{"vpc_name", "vpc", []string{"name"}},
+					{"vpc_region", "vpc", []string{"metadata", "region"}},
+					{"vpc_resource_id", "vpc", []string{"id"}},
+				}
+
+				for _, refConfig := range referenceConfigs {
+					varID := uuid.New().String()
+					refValue := &oapi.ReferenceValue{
+						Reference: refConfig.reference,
+						Path:      refConfig.path,
+					}
+					value := &oapi.Value{}
+					_ = value.FromReferenceValue(*refValue)
+
+					deploymentVar := &oapi.DeploymentVariable{
+						Id:           varID,
+						Key:          refConfig.key,
+						DeploymentId: deploymentID,
+					}
+					st.DeploymentVariables.Upsert(ctx, varID, deploymentVar)
+
+					// Add deployment variable value with reference
+					valueID := uuid.New().String()
+					deploymentVarValue := &oapi.DeploymentVariableValue{
+						Id:                   valueID,
+						DeploymentVariableId: varID,
+						Priority:             1,
+						Value:                *value,
+					}
+					st.DeploymentVariableValues.Upsert(ctx, valueID, deploymentVarValue)
+				}
+
+				// Create multiple release targets (one per service)
+				releaseTargets := make([]*oapi.ReleaseTarget, 0, scenario.numReleaseTargets)
+				numTargets := min(scenario.numReleaseTargets, len(serviceIDs))
+				for i := range numTargets {
+					releaseTarget := createBenchReleaseTarget(
+						environmentID,
+						deploymentID,
+						serviceIDs[i],
+					)
+					releaseTargets = append(releaseTargets, releaseTarget)
+				}
+
+				manager := New(st)
+
+				b.Logf(
+					"Created %d total resources (%d services, %d databases, %d VPCs), 2 relationship rules, 10 reference variables, %d release targets",
+					scenario.numResources,
+					numServices,
+					numDatabases,
+					numVPCs,
+					len(releaseTargets),
+				)
+
+				b.ResetTimer()
+				b.ReportAllocs()
+
+				// This is the key difference - evaluate MANY release targets per iteration
+				// This simulates what happens in production
+				for b.Loop() {
+					for _, releaseTarget := range releaseTargets {
+						resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+						if !exists {
+							b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+						}
+						entity := relationships.NewResourceEntity(resource)
+						relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(
+							ctx,
+							entity,
+						)
+						_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
+						if err != nil {
+							b.Fatalf("Evaluate failed: %v", err)
+						}
+					}
+				}
+			},
+		)
 	}
 }

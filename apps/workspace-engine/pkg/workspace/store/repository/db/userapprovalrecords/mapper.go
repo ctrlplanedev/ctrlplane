@@ -3,11 +3,11 @@ package userapprovalrecords
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 func ToOapi(row db.UserApprovalRecord) *oapi.UserApprovalRecord {
@@ -49,7 +49,11 @@ func ToUpsertParams(e *oapi.UserApprovalRecord) (db.UpsertUserApprovalRecordPara
 	if e.CreatedAt != "" {
 		t, err := time.Parse(time.RFC3339, e.CreatedAt)
 		if err != nil {
-			return db.UpsertUserApprovalRecordParams{}, fmt.Errorf("parse created_at %q: %w", e.CreatedAt, err)
+			return db.UpsertUserApprovalRecordParams{}, fmt.Errorf(
+				"parse created_at %q: %w",
+				e.CreatedAt,
+				err,
+			)
 		}
 		createdAt = pgtype.Timestamptz{Time: t, Valid: true}
 	}

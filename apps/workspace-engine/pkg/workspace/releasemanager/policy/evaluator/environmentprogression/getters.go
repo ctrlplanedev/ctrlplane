@@ -3,23 +3,26 @@ package environmentprogression
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	"workspace-engine/pkg/store/releasetargets"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
-var gettersTracer = otel.Tracer("workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression/getters")
+var gettersTracer = otel.Tracer(
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression/getters",
+)
 
 type environmentGetter = store.EnvironmentGetter
 type deploymentGetter = store.DeploymentGetter
 type resourceGetter = store.ResourceGetter
 type releaseGetter = store.ReleaseGetter
+
 type releaseTargetForDeploymentAndEnvironmentGetter = releasetargets.GetReleaseTargetsForDeploymentAndEnvironment
 
 type Getters interface {
@@ -31,8 +34,14 @@ type Getters interface {
 	releaseTargetForDeploymentAndEnvironmentGetter
 
 	GetSystemIDsForEnvironment(environmentID string) []string
-	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
-	GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
+	GetReleaseTargetsForDeployment(
+		ctx context.Context,
+		deploymentID string,
+	) ([]*oapi.ReleaseTarget, error)
+	GetJobsForReleaseTarget(
+		ctx context.Context,
+		releaseTarget *oapi.ReleaseTarget,
+	) map[string]*oapi.Job
 	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
 	GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error)
 }
@@ -66,7 +75,10 @@ func (s *StoreGetters) GetSystemIDsForEnvironment(environmentID string) []string
 	return s.store.SystemEnvironments.GetSystemIDsForEnvironment(environmentID)
 }
 
-func (s *StoreGetters) GetReleaseTargetsForDeploymentAndEnvironment(ctx context.Context, deploymentID, environmentID string) ([]oapi.ReleaseTarget, error) {
+func (s *StoreGetters) GetReleaseTargetsForDeploymentAndEnvironment(
+	ctx context.Context,
+	deploymentID, environmentID string,
+) ([]oapi.ReleaseTarget, error) {
 	envTargets, err := s.store.ReleaseTargets.GetForEnvironment(ctx, environmentID)
 	if err != nil {
 		return nil, err
@@ -80,19 +92,31 @@ func (s *StoreGetters) GetReleaseTargetsForDeploymentAndEnvironment(ctx context.
 	return rts, nil
 }
 
-func (s *StoreGetters) GetReleaseTargetsForEnvironment(ctx context.Context, environmentID string) ([]*oapi.ReleaseTarget, error) {
+func (s *StoreGetters) GetReleaseTargetsForEnvironment(
+	ctx context.Context,
+	environmentID string,
+) ([]*oapi.ReleaseTarget, error) {
 	return s.store.ReleaseTargets.GetForEnvironment(ctx, environmentID)
 }
 
-func (s *StoreGetters) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error) {
+func (s *StoreGetters) GetReleaseTargetsForDeployment(
+	ctx context.Context,
+	deploymentID string,
+) ([]*oapi.ReleaseTarget, error) {
 	return s.store.ReleaseTargets.GetForDeployment(ctx, deploymentID)
 }
 
-func (s *StoreGetters) GetJobsForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (s *StoreGetters) GetJobsForReleaseTarget(
+	_ context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 }
 
-func (s *StoreGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
+func (s *StoreGetters) GetAllPolicies(
+	ctx context.Context,
+	workspaceID string,
+) (map[string]*oapi.Policy, error) {
 	pol := s.store.Policies.Items()
 	return pol, nil
 }
@@ -149,7 +173,10 @@ func (p *PostgresGetters) GetSystemIDsForEnvironment(environmentID string) []str
 	return result
 }
 
-func (p *PostgresGetters) GetReleaseTargetsForEnvironment(ctx context.Context, environmentID string) ([]*oapi.ReleaseTarget, error) {
+func (p *PostgresGetters) GetReleaseTargetsForEnvironment(
+	ctx context.Context,
+	environmentID string,
+) ([]*oapi.ReleaseTarget, error) {
 	envUUID := uuid.MustParse(environmentID)
 	systemIDs, err := p.queries.GetSystemIDsForEnvironment(ctx, envUUID)
 	if err != nil {
@@ -189,7 +216,10 @@ func (p *PostgresGetters) GetReleaseTargetsForEnvironment(ctx context.Context, e
 	return targets, nil
 }
 
-func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error) {
+func (p *PostgresGetters) GetReleaseTargetsForDeployment(
+	ctx context.Context,
+	deploymentID string,
+) ([]*oapi.ReleaseTarget, error) {
 	rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, uuid.MustParse(deploymentID))
 	if err != nil {
 		return nil, err
@@ -205,12 +235,17 @@ func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, de
 	return targets, nil
 }
 
-func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (p *PostgresGetters) GetJobsForReleaseTarget(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	ctx, span := gettersTracer.Start(ctx, "GetJobsForReleaseTarget")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("release_target.deployment_id", releaseTarget.DeploymentId))
-	span.SetAttributes(attribute.String("release_target.environment_id", releaseTarget.EnvironmentId))
+	span.SetAttributes(
+		attribute.String("release_target.environment_id", releaseTarget.EnvironmentId),
+	)
 	span.SetAttributes(attribute.String("release_target.resource_id", releaseTarget.ResourceId))
 
 	rows, err := p.queries.ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
@@ -230,7 +265,10 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTa
 	return jobs
 }
 
-func (p *PostgresGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
+func (p *PostgresGetters) GetAllPolicies(
+	ctx context.Context,
+	workspaceID string,
+) (map[string]*oapi.Policy, error) {
 	rows, err := p.queries.ListPoliciesByWorkspaceID(ctx, db.ListPoliciesByWorkspaceIDParams{
 		WorkspaceID: uuid.MustParse(workspaceID),
 	})
@@ -245,7 +283,10 @@ func (p *PostgresGetters) GetAllPolicies(ctx context.Context, workspaceID string
 	return result, nil
 }
 
-func (p *PostgresGetters) GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error) {
+func (p *PostgresGetters) GetReleaseByJobID(
+	ctx context.Context,
+	jobID string,
+) (*oapi.Release, error) {
 	row, err := p.queries.GetReleaseByJobID(ctx, uuid.MustParse(jobID))
 	if err != nil {
 		return nil, err

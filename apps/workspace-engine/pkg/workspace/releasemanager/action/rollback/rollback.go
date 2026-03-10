@@ -4,15 +4,15 @@ import (
 	"context"
 	"slices"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
+	"workspace-engine/pkg/workspace/releasemanager/action"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("RollbackAction")
@@ -57,7 +57,10 @@ func (r *RollbackAction) Execute(
 
 	span.SetAttributes(attribute.Bool("rollback_applicable", true))
 
-	currentRelease, lastSuccessfulJob, err := r.store.ReleaseTargets.GetCurrentRelease(ctx, &actx.Release.ReleaseTarget)
+	currentRelease, lastSuccessfulJob, err := r.store.ReleaseTargets.GetCurrentRelease(
+		ctx,
+		&actx.Release.ReleaseTarget,
+	)
 	if err != nil {
 		span.AddEvent("No previous release to roll back to")
 		span.SetStatus(codes.Ok, "no previous release available")

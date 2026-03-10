@@ -5,12 +5,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/memory"
 	pgqueue "workspace-engine/pkg/reconcile/postgres"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const defaultTestPostgresURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -79,7 +78,11 @@ func newPostgresQueues(t *testing.T, pool *pgxpool.Pool, workspaceID string) que
 		ctx := context.Background()
 		cleanupSQL := `DELETE FROM reconcile_work_scope WHERE workspace_id = $1`
 		if _, err := pool.Exec(ctx, cleanupSQL, workspaceID); err != nil {
-			t.Logf("Cleanup: failed to delete reconcile work items for workspace %s: %v", workspaceID, err)
+			t.Logf(
+				"Cleanup: failed to delete reconcile work items for workspace %s: %v",
+				workspaceID,
+				err,
+			)
 		}
 	})
 

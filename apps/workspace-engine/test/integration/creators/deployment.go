@@ -2,13 +2,13 @@ package creators
 
 import (
 	"fmt"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 // NewDeployment creates a test Deployment with sensible defaults
-// All fields can be overridden via functional options
+// All fields can be overridden via functional options.
 func NewDeployment(systemID string) *oapi.Deployment {
 	// Create with defaults
 	id := uuid.New().String()

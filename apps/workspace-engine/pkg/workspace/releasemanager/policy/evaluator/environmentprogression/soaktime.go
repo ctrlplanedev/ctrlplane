@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -72,7 +73,9 @@ func (e *SoakTimeEvaluator) Evaluate(
 }
 
 // EvaluateWithTracker evaluates soak time using a pre-built tracker to avoid duplicate data fetching.
-func (e *SoakTimeEvaluator) EvaluateWithTracker(tracker *ReleaseTargetJobTracker) *oapi.RuleEvaluation {
+func (e *SoakTimeEvaluator) EvaluateWithTracker(
+	tracker *ReleaseTargetJobTracker,
+) *oapi.RuleEvaluation {
 	// Check if there are successful jobs
 	mostRecentSuccess := tracker.GetMostRecentSuccess()
 	if mostRecentSuccess.IsZero() {
@@ -86,7 +89,11 @@ func (e *SoakTimeEvaluator) EvaluateWithTracker(tracker *ReleaseTargetJobTracker
 		// Calculate when soak time will be complete
 		nextEvalTime := mostRecentSuccess.Add(soakDuration)
 
-		message := fmt.Sprintf("Soak time required: %d minutes. Time remaining: %s", e.soakMinutes, soakTimeRemaining.Round(time.Minute))
+		message := fmt.Sprintf(
+			"Soak time required: %d minutes. Time remaining: %s",
+			e.soakMinutes,
+			soakTimeRemaining.Round(time.Minute),
+		)
 		return results.NewPendingResult(results.ActionTypeWait, message).
 			WithDetail("soak_time_remaining_minutes", int(soakTimeRemaining.Minutes())).
 			WithDetail("soak_minutes", e.soakMinutes).

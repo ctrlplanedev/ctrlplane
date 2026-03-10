@@ -3,13 +3,13 @@ package deployableversions
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // setupStore creates a test store.
@@ -380,7 +380,7 @@ func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
 }
 
 // TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets tests that a paused
-// version is allowed on targets where it has releases, but denied on others
+// version is allowed on targets where it has releases, but denied on others.
 func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -432,7 +432,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 	assert.False(t, result2.Allowed, "paused version without release should be denied on target2")
 }
 
-// TestDeployableVersionStatusEvaluator_StatusTransitions tests various status transitions
+// TestDeployableVersionStatusEvaluator_StatusTransitions tests various status transitions.
 func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -502,7 +502,7 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 }
 
 // TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases tests that paused
-// versions work correctly when there are multiple releases in the system
+// versions work correctly when there are multiple releases in the system.
 func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -561,7 +561,11 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 		Deployment:  &oapi.Deployment{Id: target2.DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
-	assert.False(t, result2.Allowed, "paused version should be denied on target without its release")
+	assert.False(
+		t,
+		result2.Allowed,
+		"paused version should be denied on target without its release",
+	)
 
 	// Ready version on target2 - allowed
 	scope3 := evaluator.EvaluatorScope{
@@ -575,7 +579,7 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 }
 
 // TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments tests
-// paused versions across multiple environments
+// paused versions across multiple environments.
 func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -628,7 +632,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 }
 
 // TestDeployableVersionStatusEvaluator_EmptyStoreHandling tests that paused versions
-// work correctly when the store has no releases
+// work correctly when the store has no releases.
 func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -657,11 +661,16 @@ func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
 
 	// Should be denied (no releases exist)
 	assert.False(t, result.Allowed, "paused version should be denied when no releases exist")
-	assert.Contains(t, result.Message, "no active release", "message should indicate no active release")
+	assert.Contains(
+		t,
+		result.Message,
+		"no active release",
+		"message should indicate no active release",
+	)
 }
 
 // TestDeployableVersionStatusEvaluator_WrongVersionRelease tests that a paused version
-// is denied even when releases exist for other versions
+// is denied even when releases exist for other versions.
 func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -700,12 +709,21 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 	result := eval.Evaluate(ctx, scope)
 
 	// Should be denied (no release for THIS version)
-	assert.False(t, result.Allowed, "paused version should be denied when release exists for different version")
-	assert.Contains(t, result.Message, "no active release", "message should indicate no active release for this version")
+	assert.False(
+		t,
+		result.Allowed,
+		"paused version should be denied when release exists for different version",
+	)
+	assert.Contains(
+		t,
+		result.Message,
+		"no active release",
+		"message should indicate no active release for this version",
+	)
 }
 
 // TestDeployableVersionStatusEvaluator_PausedVersionCaching tests that caching
-// works correctly for paused versions with different targets
+// works correctly for paused versions with different targets.
 func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -767,11 +785,16 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 	// Different results for different targets
 	assert.True(t, result1a.Allowed, "target1 should be allowed (has release)")
 	assert.False(t, result2.Allowed, "target2 should be denied (no release)")
-	assert.NotEqual(t, result1a.Message, result2.Message, "different targets should have different results")
+	assert.NotEqual(
+		t,
+		result1a.Message,
+		result2.Message,
+		"different targets should have different results",
+	)
 }
 
 // TestDeployableVersionStatusEvaluator_AllStatusesComprehensive tests all possible
-// version statuses with and without releases
+// version statuses with and without releases.
 func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T) {
 	st := setupStore()
 	ctx := context.Background()
@@ -833,8 +856,22 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 			}
 
 			// Verify all results have proper details
-			assert.Contains(t, result.Details, "version_id", "result should contain version_id for status %s (iteration %d)", tc.status, i)
-			assert.Contains(t, result.Details, "version_status", "result should contain version_status for status %s (iteration %d)", tc.status, i)
+			assert.Contains(
+				t,
+				result.Details,
+				"version_id",
+				"result should contain version_id for status %s (iteration %d)",
+				tc.status,
+				i,
+			)
+			assert.Contains(
+				t,
+				result.Details,
+				"version_status",
+				"result should contain version_status for status %s (iteration %d)",
+				tc.status,
+				i,
+			)
 		})
 	}
 }

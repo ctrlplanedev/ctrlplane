@@ -4,19 +4,19 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// setupTestManager creates a test manager with a test store
+// setupTestManager creates a test manager with a test store.
 func setupTestManager(t *testing.T) (*Manager, *store.Store) {
 	t.Helper()
 	cs := statechange.NewChangeSet[any]()
@@ -28,7 +28,7 @@ func setupTestManager(t *testing.T) (*Manager, *store.Store) {
 	return manager, testStore
 }
 
-// createTestReleaseTarget creates a release target with the given IDs
+// createTestReleaseTarget creates a release target with the given IDs.
 func createTestReleaseTarget(deploymentID, environmentID, resourceID string) *oapi.ReleaseTarget {
 	return &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
@@ -37,7 +37,7 @@ func createTestReleaseTarget(deploymentID, environmentID, resourceID string) *oa
 	}
 }
 
-// createTestJob creates a job for a release target
+// createTestJob creates a job for a release target.
 func createTestJob(releaseID string, status oapi.JobStatus) *oapi.Job {
 	return &oapi.Job{
 		Id:        uuid.New().String(),
@@ -48,7 +48,7 @@ func createTestJob(releaseID string, status oapi.JobStatus) *oapi.Job {
 	}
 }
 
-// TestProcessChanges_UpsertOnly tests that upserting a release target reconciles it
+// TestProcessChanges_UpsertOnly tests that upserting a release target reconciles it.
 func TestProcessChanges_UpsertOnly(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
@@ -78,7 +78,7 @@ func TestProcessChanges_UpsertOnly(t *testing.T) {
 	assert.Contains(t, releaseTargets, target.Key())
 }
 
-// TestProcessChanges_DeleteOnly tests that deleting a release target cancels pending jobs
+// TestProcessChanges_DeleteOnly tests that deleting a release target cancels pending jobs.
 func TestProcessChanges_DeleteOnly(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
@@ -124,7 +124,7 @@ func TestProcessChanges_DeleteOnly(t *testing.T) {
 	assert.Equal(t, oapi.JobStatusCancelled, updatedJob.Status)
 }
 
-// TestProcessChanges_UpsertThenDelete tests deduplication when a target is created then deleted
+// TestProcessChanges_UpsertThenDelete tests deduplication when a target is created then deleted.
 func TestProcessChanges_UpsertThenDelete(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
@@ -148,10 +148,15 @@ func TestProcessChanges_UpsertThenDelete(t *testing.T) {
 	// Verify the target was NOT added to the store (delete won)
 	releaseTargets, err := testStore.ReleaseTargets.Items()
 	require.NoError(t, err)
-	assert.NotContains(t, releaseTargets, target.Key(), "Target should not exist - delete should win over upsert")
+	assert.NotContains(
+		t,
+		releaseTargets,
+		target.Key(),
+		"Target should not exist - delete should win over upsert",
+	)
 }
 
-// TestProcessChanges_DeleteThenUpsert tests that upsert after delete is processed
+// TestProcessChanges_DeleteThenUpsert tests that upsert after delete is processed.
 func TestProcessChanges_DeleteThenUpsert(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
@@ -178,7 +183,7 @@ func TestProcessChanges_DeleteThenUpsert(t *testing.T) {
 	assert.NotContains(t, releaseTargets, target.Key(), "Delete should win - it's recorded last")
 }
 
-// TestProcessChanges_MultipleUpsertsForSameTarget tests that only the last upsert is processed
+// TestProcessChanges_MultipleUpsertsForSameTarget tests that only the last upsert is processed.
 func TestProcessChanges_MultipleUpsertsForSameTarget(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
@@ -210,14 +215,22 @@ func TestProcessChanges_MultipleUpsertsForSameTarget(t *testing.T) {
 	assert.Contains(t, releaseTargets, target.Key())
 }
 
-// TestProcessChanges_DifferentTargets tests that different targets are processed independently
+// TestProcessChanges_DifferentTargets tests that different targets are processed independently.
 func TestProcessChanges_DifferentTargets(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
 
 	// Create different targets
-	target1 := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String())
-	target2 := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String())
+	target1 := createTestReleaseTarget(
+		uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String(),
+	)
+	target2 := createTestReleaseTarget(
+		uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String(),
+	)
 
 	// Upsert both targets into the store first
 	err := testStore.ReleaseTargets.Upsert(ctx, target1)
@@ -241,7 +254,7 @@ func TestProcessChanges_DifferentTargets(t *testing.T) {
 	assert.Contains(t, releaseTargets, target2.Key())
 }
 
-// TestProcessChanges_OnlyPendingJobsCancelled tests that only processing-state jobs are cancelled
+// TestProcessChanges_OnlyPendingJobsCancelled tests that only processing-state jobs are cancelled.
 func TestProcessChanges_OnlyPendingJobsCancelled(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
@@ -286,27 +299,59 @@ func TestProcessChanges_OnlyPendingJobsCancelled(t *testing.T) {
 
 	// Verify only processing-state jobs were cancelled
 	updatedPending, _ := testStore.Jobs.Get(pendingJob.Id)
-	assert.Equal(t, oapi.JobStatusCancelled, updatedPending.Status, "Pending job should be cancelled")
+	assert.Equal(
+		t,
+		oapi.JobStatusCancelled,
+		updatedPending.Status,
+		"Pending job should be cancelled",
+	)
 
 	updatedInProgress, _ := testStore.Jobs.Get(inProgressJob.Id)
-	assert.Equal(t, oapi.JobStatusCancelled, updatedInProgress.Status, "InProgress job should be cancelled")
+	assert.Equal(
+		t,
+		oapi.JobStatusCancelled,
+		updatedInProgress.Status,
+		"InProgress job should be cancelled",
+	)
 
 	updatedSuccessful, _ := testStore.Jobs.Get(successfulJob.Id)
-	assert.Equal(t, oapi.JobStatusSuccessful, updatedSuccessful.Status, "Successful job should NOT be cancelled")
+	assert.Equal(
+		t,
+		oapi.JobStatusSuccessful,
+		updatedSuccessful.Status,
+		"Successful job should NOT be cancelled",
+	)
 
 	updatedFailed, _ := testStore.Jobs.Get(failedJob.Id)
-	assert.Equal(t, oapi.JobStatusFailure, updatedFailed.Status, "Failed job should NOT be cancelled")
+	assert.Equal(
+		t,
+		oapi.JobStatusFailure,
+		updatedFailed.Status,
+		"Failed job should NOT be cancelled",
+	)
 }
 
-// TestProcessChanges_MixedOperations tests a realistic scenario with mixed operations
+// TestProcessChanges_MixedOperations tests a realistic scenario with mixed operations.
 func TestProcessChanges_MixedOperations(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
 
 	// Create three different targets with different operations
-	target1 := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String()) // upsert only
-	target2 := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String()) // delete only
-	target3 := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String()) // upsert then delete
+	target1 := createTestReleaseTarget(
+		uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String(),
+	) // upsert only
+	target2 := createTestReleaseTarget(
+		uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String(),
+	) // delete only
+	target3 := createTestReleaseTarget(
+		uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String(),
+	) // upsert then delete
 
 	// Upsert target1 into store
 	err := testStore.ReleaseTargets.Upsert(ctx, target1)
@@ -352,7 +397,7 @@ func TestProcessChanges_MixedOperations(t *testing.T) {
 	assert.NotContains(t, releaseTargets, target3.Key())
 }
 
-// TestProcessChanges_EmptyChangeset tests handling of empty changesets
+// TestProcessChanges_EmptyChangeset tests handling of empty changesets.
 func TestProcessChanges_EmptyChangeset(t *testing.T) {
 	manager, _ := setupTestManager(t)
 	ctx := context.Background()
@@ -365,7 +410,7 @@ func TestProcessChanges_EmptyChangeset(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// TestProcessChanges_NonReleaseTargetChanges tests that non-ReleaseTarget changes are ignored
+// TestProcessChanges_NonReleaseTargetChanges tests that non-ReleaseTarget changes are ignored.
 func TestProcessChanges_NonReleaseTargetChanges(t *testing.T) {
 	manager, _ := setupTestManager(t)
 	ctx := context.Background()

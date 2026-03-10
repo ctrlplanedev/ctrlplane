@@ -3,12 +3,12 @@ package creators
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
-// NewRelationshipRule creates a new RelationshipRule with default values
+// NewRelationshipRule creates a new RelationshipRule with default values.
 func NewRelationshipRule(workspaceID string) *oapi.RelationshipRule {
 	return &oapi.RelationshipRule{
 		Id:               uuid.New().String(),
@@ -22,7 +22,7 @@ func NewRelationshipRule(workspaceID string) *oapi.RelationshipRule {
 	}
 }
 
-// NewPropertyMatcher creates a new PropertyMatcher
+// NewPropertyMatcher creates a new PropertyMatcher.
 func NewPropertyMatcher(fromProperty []string, toProperty []string) *oapi.PropertyMatcher {
 	return &oapi.PropertyMatcher{
 		FromProperty: fromProperty,

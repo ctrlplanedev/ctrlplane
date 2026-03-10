@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
-
-	"github.com/google/uuid"
 )
 
 type PostgresSetter struct {
@@ -24,12 +23,18 @@ var _ Setter = (*PostgresSetter)(nil)
 
 func NewPostgresSetter(queue reconcile.Queue) *PostgresSetter {
 	return &PostgresSetter{
-		upsertRuleEvaluationsSetter: policies.NewPostgresUpsertRuleEvaluations(policyeval.RuleTypes()),
-		Queue:                       queue,
+		upsertRuleEvaluationsSetter: policies.NewPostgresUpsertRuleEvaluations(
+			policyeval.RuleTypes(),
+		),
+		Queue: queue,
 	}
 }
 
-func (s *PostgresSetter) SetDesiredRelease(ctx context.Context, rt *ReleaseTarget, release *oapi.Release) error {
+func (s *PostgresSetter) SetDesiredRelease(
+	ctx context.Context,
+	rt *ReleaseTarget,
+	release *oapi.Release,
+) error {
 	q := db.GetQueries(ctx)
 
 	if release == nil {
@@ -84,7 +89,11 @@ func (s *PostgresSetter) SetDesiredRelease(ctx context.Context, rt *ReleaseTarge
 	return nil
 }
 
-func (s *PostgresSetter) EnqueueJobEligibility(ctx context.Context, workspaceID string, rt *ReleaseTarget) error {
+func (s *PostgresSetter) EnqueueJobEligibility(
+	ctx context.Context,
+	workspaceID string,
+	rt *ReleaseTarget,
+) error {
 	return events.EnqueueJobEligibility(s.Queue, ctx, events.JobEligibilityParams{
 		WorkspaceID:   workspaceID,
 		ResourceID:    rt.ResourceID.String(),

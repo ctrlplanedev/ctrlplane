@@ -3,12 +3,12 @@ package verification
 import (
 	"context"
 	"fmt"
+
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/charmbracelet/log"
 )
 
 // MeasurementExecutor handles taking measurements for verification metrics.
@@ -18,7 +18,7 @@ type MeasurementExecutor struct {
 	store *store.Store
 }
 
-// NewMeasurementExecutor creates a new measurement executor
+// NewMeasurementExecutor creates a new measurement executor.
 func NewMeasurementExecutor(store *store.Store) *MeasurementExecutor {
 	return &MeasurementExecutor{store: store}
 }
@@ -38,7 +38,10 @@ func (e *MeasurementExecutor) Execute(
 	// Build provider context from the release
 	providerCtx, err := e.BuildProviderContext(releaseID)
 	if err != nil {
-		return oapi.VerificationMeasurement{}, fmt.Errorf("failed to build provider context: %w", err)
+		return oapi.VerificationMeasurement{}, fmt.Errorf(
+			"failed to build provider context: %w",
+			err,
+		)
 	}
 
 	// Take measurement using the Measure function
@@ -47,7 +50,9 @@ func (e *MeasurementExecutor) Execute(
 
 // BuildProviderContext creates the context needed for metric providers.
 // It gathers release, resource, environment, deployment, and variables from the store.
-func (e *MeasurementExecutor) BuildProviderContext(releaseID string) (*provider.ProviderContext, error) {
+func (e *MeasurementExecutor) BuildProviderContext(
+	releaseID string,
+) (*provider.ProviderContext, error) {
 	release, ok := e.store.Releases.Get(releaseID)
 	if !ok {
 		return nil, fmt.Errorf("release not found: %s", releaseID)

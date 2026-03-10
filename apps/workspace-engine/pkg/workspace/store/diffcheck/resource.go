@@ -3,15 +3,15 @@ package diffcheck
 import (
 	"slices"
 	"strings"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
+	"workspace-engine/pkg/oapi"
 )
 
 // HasResourceChanges detects changes between two resources using structural diffing
 // Returns a map where keys are field paths (e.g., "name", "config.replicas", "config.database.host", "metadata.env")
 // and values are always true (indicating the field changed)
-// Supports deeply nested paths for complex config/metadata structures
+// Supports deeply nested paths for complex config/metadata structures.
 func HasResourceChanges(old, new *oapi.Resource) map[string]bool {
 	if old == nil || new == nil {
 		return map[string]bool{"all": true}
@@ -44,7 +44,7 @@ func HasResourceChanges(old, new *oapi.Resource) map[string]bool {
 	return changed
 }
 
-// isIgnoredField checks if a field should be ignored when comparing resources
+// isIgnoredField checks if a field should be ignored when comparing resources.
 func isIgnoredField(fieldPath string) bool {
 	// Ignore timestamp and system-managed fields
 	ignoredFields := []string{
@@ -85,7 +85,7 @@ func convertPathToFieldName(path []string) string {
 	return result.String()
 }
 
-// hasResourceChangesBasic is a fallback implementation without external dependencies
+// hasResourceChangesBasic is a fallback implementation without external dependencies.
 func hasResourceChangesBasic(old, new *oapi.Resource) map[string]bool {
 	changed := make(map[string]bool)
 
@@ -129,7 +129,7 @@ func hasResourceChangesBasic(old, new *oapi.Resource) map[string]bool {
 	return changed
 }
 
-// deepEqual performs basic deep equality comparison
+// deepEqual performs basic deep equality comparison.
 func deepEqual(a, b any) bool {
 	if a == nil && b == nil {
 		return true

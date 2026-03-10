@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/jobdispatch/verification"
-
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/jobdispatch/verification"
 )
 
 type ReconcileResult struct {
@@ -35,7 +34,11 @@ func getRelease(ctx context.Context, getter Getter, job *oapi.Job) (*oapi.Releas
 	return release, nil
 }
 
-func getDeployment(ctx context.Context, getter Getter, release *oapi.Release) (*oapi.Deployment, error) {
+func getDeployment(
+	ctx context.Context,
+	getter Getter,
+	release *oapi.Release,
+) (*oapi.Deployment, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.getDeployment")
 	defer span.End()
 
@@ -47,7 +50,11 @@ func getDeployment(ctx context.Context, getter Getter, release *oapi.Release) (*
 	return deployment, nil
 }
 
-func getJobAgents(ctx context.Context, getter Getter, release *oapi.Release) ([]oapi.JobAgent, error) {
+func getJobAgents(
+	ctx context.Context,
+	getter Getter,
+	release *oapi.Release,
+) ([]oapi.JobAgent, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.getJobAgents")
 	defer span.End()
 
@@ -71,7 +78,12 @@ func getJobAgents(ctx context.Context, getter Getter, release *oapi.Release) ([]
 	return jobAgents, nil
 }
 
-func getAgentSpecs(ctx context.Context, verifier AgentVerifier, getter Getter, release *oapi.Release) ([]oapi.VerificationMetricSpec, error) {
+func getAgentSpecs(
+	ctx context.Context,
+	verifier AgentVerifier,
+	getter Getter,
+	release *oapi.Release,
+) ([]oapi.VerificationMetricSpec, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.getAgentSpecs")
 	defer span.End()
 
@@ -88,7 +100,11 @@ func getAgentSpecs(ctx context.Context, verifier AgentVerifier, getter Getter, r
 	for _, agent := range agents {
 		agentSpecs, err := verifier.AgentVerifications(agent.Type, agent.Config)
 		if err != nil {
-			return nil, recordErr(span, fmt.Sprintf("get agent verifications for agent %s", agent.Id), err)
+			return nil, recordErr(
+				span,
+				fmt.Sprintf("get agent verifications for agent %s", agent.Id),
+				err,
+			)
 		}
 		specs = append(specs, agentSpecs...)
 	}
@@ -96,7 +112,14 @@ func getAgentSpecs(ctx context.Context, verifier AgentVerifier, getter Getter, r
 }
 
 // Reconcile dispatches a job and enqueues verifications for the job.
-func Reconcile(ctx context.Context, getter Getter, setter Setter, verifier AgentVerifier, dispatcher Dispatcher, job *oapi.Job) (*ReconcileResult, error) {
+func Reconcile(
+	ctx context.Context,
+	getter Getter,
+	setter Setter,
+	verifier AgentVerifier,
+	dispatcher Dispatcher,
+	job *oapi.Job,
+) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.Reconcile")
 	defer span.End()
 

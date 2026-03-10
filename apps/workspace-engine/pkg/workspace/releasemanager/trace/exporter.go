@@ -8,7 +8,7 @@ import (
 )
 
 // inMemoryExporter collects spans in memory for later persistence
-// Implements SpanProcessor interface for synchronous span collection
+// Implements SpanProcessor interface for synchronous span collection.
 type inMemoryExporter struct {
 	mu    sync.Mutex
 	spans []sdktrace.ReadOnlySpan
@@ -20,10 +20,10 @@ func newInMemoryExporter() *inMemoryExporter {
 	}
 }
 
-// OnStart is called when a span starts (no-op)
+// OnStart is called when a span starts (no-op).
 func (e *inMemoryExporter) OnStart(parent context.Context, s sdktrace.ReadWriteSpan) {}
 
-// OnEnd is called when a span ends - collect it
+// OnEnd is called when a span ends - collect it.
 func (e *inMemoryExporter) OnEnd(s sdktrace.ReadOnlySpan) {
 	if s == nil {
 		return
@@ -33,17 +33,17 @@ func (e *inMemoryExporter) OnEnd(s sdktrace.ReadOnlySpan) {
 	e.spans = append(e.spans, s)
 }
 
-// Shutdown stops the exporter
+// Shutdown stops the exporter.
 func (e *inMemoryExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// ForceFlush is a no-op for in-memory collection
+// ForceFlush is a no-op for in-memory collection.
 func (e *inMemoryExporter) ForceFlush(ctx context.Context) error {
 	return nil
 }
 
-// getSpans returns all collected spans
+// getSpans returns all collected spans.
 func (e *inMemoryExporter) getSpans() []sdktrace.ReadOnlySpan {
 	e.mu.Lock()
 	defer e.mu.Unlock()

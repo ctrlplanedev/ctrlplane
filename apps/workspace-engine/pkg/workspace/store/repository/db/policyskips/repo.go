@@ -3,11 +3,11 @@ package policyskips
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type Repo struct {
@@ -26,9 +26,12 @@ func (r *Repo) Get(id string) (*oapi.PolicySkip, bool) {
 	}
 
 	pool := db.GetPool(r.ctx)
-	row := pool.QueryRow(r.ctx,
+	row := pool.QueryRow(
+		r.ctx,
 		`SELECT id, created_at, created_by, environment_id, expires_at, reason, resource_id, rule_id, version_id
-		 FROM policy_skip WHERE id = $1`, uid)
+		 FROM policy_skip WHERE id = $1`,
+		uid,
+	)
 
 	var ps db.PolicySkip
 	if err := row.Scan(
@@ -42,13 +45,16 @@ func (r *Repo) Get(id string) (*oapi.PolicySkip, bool) {
 }
 
 func (r *Repo) Set(entity *oapi.PolicySkip) error {
-	id, createdAt, createdBy, environmentID, expiresAt, reason, resourceID, ruleID, versionID, err := ToUpsertArgs(entity)
+	id, createdAt, createdBy, environmentID, expiresAt, reason, resourceID, ruleID, versionID, err := ToUpsertArgs(
+		entity,
+	)
 	if err != nil {
 		return fmt.Errorf("convert to upsert args: %w", err)
 	}
 
 	pool := db.GetPool(r.ctx)
-	_, err = pool.Exec(r.ctx,
+	_, err = pool.Exec(
+		r.ctx,
 		`INSERT INTO policy_skip (id, created_at, created_by, environment_id, expires_at, reason, resource_id, rule_id, version_id)
 		 VALUES ($1, $2, $3,
 		   CASE WHEN $4 = '00000000-0000-0000-0000-000000000000'::uuid THEN NULL ELSE $4 END,
@@ -63,7 +69,15 @@ func (r *Repo) Set(entity *oapi.PolicySkip) error {
 		   resource_id = EXCLUDED.resource_id,
 		   rule_id = EXCLUDED.rule_id,
 		   version_id = EXCLUDED.version_id`,
-		id, createdAt, createdBy, environmentID, expiresAt, reason, resourceID, ruleID, versionID,
+		id,
+		createdAt,
+		createdBy,
+		environmentID,
+		expiresAt,
+		reason,
+		resourceID,
+		ruleID,
+		versionID,
 	)
 	if err != nil {
 		return fmt.Errorf("upsert policy skip: %w", err)

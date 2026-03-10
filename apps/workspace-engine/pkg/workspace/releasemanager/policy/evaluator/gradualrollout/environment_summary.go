@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -20,7 +21,11 @@ func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) eva
 	if rule == nil || rule.GradualRollout == nil || store == nil {
 		return nil
 	}
-	return &GradualRolloutEnvironmentSummaryEvaluator{getters: NewStoreGetters(store), ruleId: rule.Id, rule: rule.GradualRollout}
+	return &GradualRolloutEnvironmentSummaryEvaluator{
+		getters: NewStoreGetters(store),
+		ruleId:  rule.Id,
+		rule:    rule.GradualRollout,
+	}
 }
 
 func (e *GradualRolloutEnvironmentSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -40,7 +45,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Complexity() int {
 	return 2
 }
 
-// formatDuration converts a duration to a human-readable string
+// formatDuration converts a duration to a human-readable string.
 func formatDuration(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%d seconds", int(d.Seconds()))
@@ -66,7 +71,7 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%d days", days)
 }
 
-// pluralize returns "s" if count is not 1, empty string otherwise
+// pluralize returns "s" if count is not 1, empty string otherwise.
 func pluralize(count int) string {
 	if count == 1 {
 		return ""
@@ -74,7 +79,10 @@ func pluralize(count int) string {
 	return "s"
 }
 
-func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(
+	ctx context.Context,
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
 	environment := scope.Environment
 	version := scope.Version
 
@@ -110,7 +118,10 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 			Resource:    resource,
 			Deployment:  deployment,
 		}
-		evaluation := NewEvaluator(e.getters, &oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
+		evaluation := NewEvaluator(
+			e.getters,
+			&oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule},
+		).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 		var targetTime *time.Time
@@ -180,13 +191,15 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	}
 
 	if deployedTargets == totalTargets {
-		return result.Allow().WithMessage(fmt.Sprintf("Rollout complete — All %d target%s successfully deployed",
-			totalTargets, pluralize(totalTargets)))
+		return result.Allow().
+			WithMessage(fmt.Sprintf("Rollout complete — All %d target%s successfully deployed",
+				totalTargets, pluralize(totalTargets)))
 	}
 
 	if deniedTargets == totalTargets {
-		return result.Deny().WithMessage(fmt.Sprintf("Rollout blocked — All %d target%s denied deployment",
-			deniedTargets, pluralize(deniedTargets)))
+		return result.Deny().
+			WithMessage(fmt.Sprintf("Rollout blocked — All %d target%s denied deployment",
+				deniedTargets, pluralize(deniedTargets)))
 	}
 
 	if pendingTargets == totalTargets && nextDeploymentTime == nil {
@@ -200,11 +213,20 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 		if nextDeploymentTime.After(now) {
 			duration := nextDeploymentTime.Sub(now)
 			timeUntil := formatDuration(duration)
-			progressMsg = fmt.Sprintf("Rollout in progress — %d/%d deployed, %d pending • Next deployment in %s",
-				deployedTargets, totalTargets, pendingTargets, timeUntil)
+			progressMsg = fmt.Sprintf(
+				"Rollout in progress — %d/%d deployed, %d pending • Next deployment in %s",
+				deployedTargets,
+				totalTargets,
+				pendingTargets,
+				timeUntil,
+			)
 		} else {
-			progressMsg = fmt.Sprintf("Rollout in progress — %d/%d deployed, %d pending • Next deployment ready now",
-				deployedTargets, totalTargets, pendingTargets)
+			progressMsg = fmt.Sprintf(
+				"Rollout in progress — %d/%d deployed, %d pending • Next deployment ready now",
+				deployedTargets,
+				totalTargets,
+				pendingTargets,
+			)
 		}
 
 		if estimatedCompletionTime != nil && estimatedCompletionTime.After(now) {
@@ -223,11 +245,13 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	}
 
 	if deniedTargets > 0 {
-		return result.Deny().WithMessage(fmt.Sprintf("Rollout partially blocked — %d deployed, %d denied of %d total",
-			deployedTargets, deniedTargets, totalTargets))
+		return result.Deny().
+			WithMessage(fmt.Sprintf("Rollout partially blocked — %d deployed, %d denied of %d total",
+				deployedTargets, deniedTargets, totalTargets))
 	}
 
 	// Fallback for unexpected states
-	return result.WithActionRequired(oapi.Wait).WithMessage(fmt.Sprintf("Rollout status: %d/%d deployed",
-		deployedTargets, totalTargets))
+	return result.WithActionRequired(oapi.Wait).
+		WithMessage(fmt.Sprintf("Rollout status: %d/%d deployed",
+			deployedTargets, totalTargets))
 }

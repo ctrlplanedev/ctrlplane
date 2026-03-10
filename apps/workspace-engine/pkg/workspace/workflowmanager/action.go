@@ -2,6 +2,7 @@ package workflowmanager
 
 import (
 	"context"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -22,6 +23,10 @@ func (w *WorkflowManagerAction) Name() string {
 	return "workflowmanager"
 }
 
-func (w *WorkflowManagerAction) Execute(ctx context.Context, trigger ActionTrigger, job *oapi.Job) error {
+func (w *WorkflowManagerAction) Execute(
+	ctx context.Context,
+	trigger ActionTrigger,
+	job *oapi.Job,
+) error {
 	return nil
 }

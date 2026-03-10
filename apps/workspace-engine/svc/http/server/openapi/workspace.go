@@ -2,10 +2,10 @@ package openapi
 
 import (
 	"net/http"
-	"workspace-engine/pkg/workspace/manager"
-	"workspace-engine/pkg/workspace/status"
 
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/workspace/manager"
+	"workspace-engine/pkg/workspace/status"
 )
 
 // ListWorkspaceIds implements oapi.ServerInterface.
@@ -16,7 +16,7 @@ func (s *Server) ListWorkspaceIds(c *gin.Context) {
 	})
 }
 
-// GetEngineStatus returns the current status of a workspace
+// GetEngineStatus returns the current status of a workspace.
 func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 	statusSnapshot, exists := manager.StatusTracker().GetSnapshot(workspaceId)
 
@@ -81,7 +81,7 @@ func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 	c.JSON(statusCode, response)
 }
 
-// ListWorkspaceStatuses returns status for all workspaces
+// ListWorkspaceStatuses returns status for all workspaces.
 func (s *Server) ListWorkspaceStatuses(c *gin.Context) {
 	statuses := manager.StatusTracker().ListAll()
 

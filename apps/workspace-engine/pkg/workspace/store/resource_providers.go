@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var resourceProvidersTracer = otel.Tracer("workspace/store/resource_providers")
@@ -39,7 +39,11 @@ func (r *ResourceProviders) Items() map[string]*oapi.ResourceProvider {
 	return r.repo.Items()
 }
 
-func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvider *oapi.ResourceProvider) {
+func (r *ResourceProviders) Upsert(
+	ctx context.Context,
+	id string,
+	resourceProvider *oapi.ResourceProvider,
+) {
 	_, span := resourceProvidersTracer.Start(ctx, "UpsertResourceProvider")
 	defer span.End()
 

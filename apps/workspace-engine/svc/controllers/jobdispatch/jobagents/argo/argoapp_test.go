@@ -7,11 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // --- mocks ---
@@ -38,7 +37,10 @@ func (m *mockSetter) UpdateJob(
 ) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.calls = append(m.calls, setterCall{JobId: jobId, Status: status, Message: message, Metadata: metadata})
+	m.calls = append(
+		m.calls,
+		setterCall{JobId: jobId, Status: status, Message: message, Metadata: metadata},
+	)
 	return m.err
 }
 
@@ -54,7 +56,11 @@ type mockUpserter struct {
 	err error
 }
 
-func (m *mockUpserter) UpsertApplication(_ context.Context, _, _ string, _ *v1alpha1.Application) error {
+func (m *mockUpserter) UpsertApplication(
+	_ context.Context,
+	_, _ string,
+	_ *v1alpha1.Application,
+) error {
 	return m.err
 }
 
@@ -216,10 +222,18 @@ func TestBuildArgoLinks(t *testing.T) {
 	app.Namespace = "argocd"
 
 	links := BuildArgoLinks("argocd.example.com", app)
-	assert.Contains(t, links["ctrlplane/links"], "https://argocd.example.com/applications/argocd/my-app")
+	assert.Contains(
+		t,
+		links["ctrlplane/links"],
+		"https://argocd.example.com/applications/argocd/my-app",
+	)
 
 	linksHTTPS := BuildArgoLinks("https://argocd.example.com", app)
-	assert.Contains(t, linksHTTPS["ctrlplane/links"], "https://argocd.example.com/applications/argocd/my-app")
+	assert.Contains(
+		t,
+		linksHTTPS["ctrlplane/links"],
+		"https://argocd.example.com/applications/argocd/my-app",
+	)
 }
 
 func TestVerifications_ValidConfig(t *testing.T) {

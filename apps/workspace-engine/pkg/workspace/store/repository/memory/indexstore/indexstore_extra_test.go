@@ -2,10 +2,10 @@ package indexstore
 
 import (
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func createJobStore(t *testing.T) *Store[*oapi.Job] {
@@ -56,7 +56,7 @@ func TestStore_ForEach(t *testing.T) {
 		ids = append(ids, j.Id)
 		return true
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, ids, 3)
 
 	// Early termination
@@ -65,7 +65,7 @@ func TestStore_ForEach(t *testing.T) {
 		earlyIds = append(earlyIds, j.Id)
 		return len(earlyIds) < 2 // stop after 2
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, earlyIds, 2)
 }
 
@@ -74,7 +74,7 @@ func TestStore_Count(t *testing.T) {
 
 	// Empty
 	count, err := store.Count()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 
 	// After inserting
@@ -83,7 +83,7 @@ func TestStore_Count(t *testing.T) {
 		require.NoError(t, err)
 	}
 	count, err = store.Count()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, count)
 }
 

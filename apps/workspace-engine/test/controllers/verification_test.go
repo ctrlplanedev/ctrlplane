@@ -5,14 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/svc/controllers/jobverificationmetric"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -202,7 +201,11 @@ func TestVerification_IntervalNotElapsed_Defers(t *testing.T) {
 	result, err := jobverificationmetric.Reconcile(t.Context(), getter, setter, m.ID)
 	require.NoError(t, err)
 
-	assert.Empty(t, setter.RecordedMeasurements, "should not take a measurement — interval not elapsed")
+	assert.Empty(
+		t,
+		setter.RecordedMeasurements,
+		"should not take a measurement — interval not elapsed",
+	)
 	require.NotNil(t, result.RequeueAfter, "should requeue with remaining time")
 	assert.Greater(t, *result.RequeueAfter, time.Duration(0))
 }

@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 
 	"github.com/charmbracelet/log"
 	"github.com/prometheus/common/model"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
 var _ provider.Provider = (*PrometheusProvider)(nil)
@@ -97,7 +97,10 @@ func NewFromJSON(data json.RawMessage) (*PrometheusProvider, error) {
 
 func (p *PrometheusProvider) Type() string { return "prometheus" }
 
-func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *PrometheusProvider) Measure(
+	ctx context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 
 	resolvedProvider := resolveProviderTemplates(p.config, providerCtx)
@@ -119,7 +122,13 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 	resp, err := client.Do(req)
 	duration := time.Since(startTime)
 	if err != nil {
-		log.Error("Prometheus metric request failed", "address", resolvedProvider.Address, "error", err)
+		log.Error(
+			"Prometheus metric request failed",
+			"address",
+			resolvedProvider.Address,
+			"error",
+			err,
+		)
 		return time.Time{}, nil, fmt.Errorf("prometheus request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -169,7 +178,10 @@ func resolveHeaders(headers []Header, providerCtx *provider.ProviderContext) []H
 	return resolved
 }
 
-func resolveAuthentication(auth *Authentication, providerCtx *provider.ProviderContext) *Authentication {
+func resolveAuthentication(
+	auth *Authentication,
+	providerCtx *provider.ProviderContext,
+) *Authentication {
 	if auth == nil {
 		return nil
 	}
@@ -220,7 +232,11 @@ func buildQueryURL(config *Config, now time.Time) (string, error) {
 		if config.RangeQuery.Start != nil && *config.RangeQuery.Start != "" {
 			d, err := parsePrometheusDuration(*config.RangeQuery.Start)
 			if err != nil {
-				return "", fmt.Errorf("invalid start duration %q: %w", *config.RangeQuery.Start, err)
+				return "", fmt.Errorf(
+					"invalid start duration %q: %w",
+					*config.RangeQuery.Start,
+					err,
+				)
 			}
 			start = now.Add(-d)
 		}
@@ -275,7 +291,12 @@ func fetchOAuth2Token(ctx context.Context, oauth2 *OAuth2, client *http.Client) 
 		data.Set("scope", strings.Join(oauth2.Scopes, " "))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, oauth2.TokenUrl, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		oauth2.TokenUrl,
+		strings.NewReader(data.Encode()),
+	)
 	if err != nil {
 		return "", fmt.Errorf("failed to create token request: %w", err)
 	}
@@ -326,7 +347,11 @@ func buildHTTPClient(config *Config) *http.Client {
 	return client
 }
 
-func buildResultData(statusCode int, respBody []byte, duration time.Duration) (map[string]any, error) {
+func buildResultData(
+	statusCode int,
+	respBody []byte,
+	duration time.Duration,
+) (map[string]any, error) {
 	var rawJSON any
 	if err := json.Unmarshal(respBody, &rawJSON); err != nil {
 		return nil, fmt.Errorf("failed to parse Prometheus response: %w", err)

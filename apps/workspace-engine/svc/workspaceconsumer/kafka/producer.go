@@ -1,10 +1,9 @@
 package kafka
 
 import (
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
-
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 func NewProducer(brokers string) (messaging.Producer, error) {

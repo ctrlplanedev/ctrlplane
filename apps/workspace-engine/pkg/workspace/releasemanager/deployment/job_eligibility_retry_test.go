@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
-// TestRetryPolicy_MultipleRules tests how multiple rules in a policy interact
+// TestRetryPolicy_MultipleRules tests how multiple rules in a policy interact.
 func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	st := setupStoreWithResourceForEligibility(t, "resource-1")
 	ctx := context.Background()
@@ -67,7 +67,13 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	st.Policies.Upsert(ctx, policy)
 
 	checker := NewJobEligibilityChecker(st)
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release); err != nil {
 		t.Fatalf("Failed to upsert release: %v", err)
 	}
@@ -91,7 +97,11 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	// Second attempt should be allowed (1 failure <= 3 max retries)
 	result, err = checker.ShouldCreateJob(ctx, release, nil)
 	require.NoError(t, err)
-	assert.True(t, result.IsAllowed(), "Second attempt should be allowed (retry policy from rule-2)")
+	assert.True(
+		t,
+		result.IsAllowed(),
+		"Second attempt should be allowed (retry policy from rule-2)",
+	)
 	assert.Contains(t, result.Reason, "eligible")
 
 	// Add 3 more failed jobs (total 4 jobs = exceeds maxRetries of 3)
@@ -114,7 +124,7 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 }
 
 // TestRetryPolicy_MultiplePolicies_MostRestrictiveWins tests that when multiple
-// policies apply to the same release, the most restrictive retry limit wins
+// policies apply to the same release, the most restrictive retry limit wins.
 func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 	st := setupStoreWithResourceForEligibility(t, "resource-1")
 	ctx := context.Background()
@@ -182,7 +192,13 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 	st.Policies.Upsert(ctx, policy2)
 
 	checker := NewJobEligibilityChecker(st)
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release); err != nil {
 		t.Fatalf("Failed to upsert release: %v", err)
 	}
@@ -226,7 +242,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 }
 
 // TestRetryPolicy_AllRulesNoRetry_UsesDefault tests that when a policy exists
-// but none of its rules define retry, the default (no retries) is used
+// but none of its rules define retry, the default (no retries) is used.
 func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 	st := setupStoreWithResourceForEligibility(t, "resource-1")
 	ctx := context.Background()
@@ -280,7 +296,13 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 	st.Policies.Upsert(ctx, policy)
 
 	checker := NewJobEligibilityChecker(st)
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release); err != nil {
 		t.Fatalf("Failed to upsert release: %v", err)
 	}
@@ -308,7 +330,7 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 }
 
 // TestRetryPolicy_DisabledPolicy_NotApplied tests that disabled policies
-// are not considered for retry evaluation
+// are not considered for retry evaluation.
 func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 	st := setupStoreWithResourceForEligibility(t, "resource-1")
 	ctx := context.Background()
@@ -352,7 +374,13 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 	st.Policies.Upsert(ctx, policy)
 
 	checker := NewJobEligibilityChecker(st)
-	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
+	release := createReleaseForEligibility(
+		"deployment-1",
+		"env-1",
+		"resource-1",
+		"version-1",
+		"v1.0.0",
+	)
 	if err := st.Releases.Upsert(ctx, release); err != nil {
 		t.Fatalf("Failed to upsert release: %v", err)
 	}
@@ -376,6 +404,10 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 	// so it falls back to default (no retries)
 	result, err = checker.ShouldCreateJob(ctx, release, nil)
 	require.NoError(t, err)
-	assert.False(t, result.IsAllowed(), "Second attempt should be denied (policy disabled, uses default)")
+	assert.False(
+		t,
+		result.IsAllowed(),
+		"Second attempt should be denied (policy disabled, uses default)",
+	)
 	assert.Contains(t, result.Reason, "Retry limit exceeded")
 }

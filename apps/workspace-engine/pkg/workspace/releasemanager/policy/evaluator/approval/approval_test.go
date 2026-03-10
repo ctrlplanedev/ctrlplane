@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // setupStore creates a test store with approval records and a test environment.
@@ -255,7 +255,12 @@ func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
 
 	// Assert
 	require.NotNil(t, result.Details, "expected Details to be initialized")
-	assert.Contains(t, result.Details, "min_approvals", "expected Details to contain 'min_approvals'")
+	assert.Contains(
+		t,
+		result.Details,
+		"min_approvals",
+		"expected Details to contain 'min_approvals'",
+	)
 	assert.Contains(t, result.Details, "approvers", "expected Details to contain 'approvers'")
 	assert.NotEmpty(t, result.Message, "expected Message to be set")
 
@@ -269,7 +274,11 @@ func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 	// Setup: More approvals than required
 	versionId := "version-1"
 	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3", "user-4", "user-5"})
+	st := setupStore(
+		versionId,
+		environmentId,
+		[]string{"user-1", "user-2", "user-3", "user-4", "user-5"},
+	)
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
 	eval := NewEvaluatorFromStore(st, rule)
@@ -355,7 +364,12 @@ func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, secondApprovalTime, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd approval (the one that satisfied the requirement)")
+	assert.Equal(
+		t,
+		secondApprovalTime,
+		*result.SatisfiedAt,
+		"satisfiedAt should be the timestamp of the 2nd approval (the one that satisfied the requirement)",
+	)
 }
 
 func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
@@ -377,12 +391,20 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 
 	firstApprovalTime := baseTime.Add(5 * time.Minute)
-	secondApprovalTime := baseTime.Add(10 * time.Minute) // This should be the satisfiedAt (2nd approval)
+	secondApprovalTime := baseTime.Add(
+		10 * time.Minute,
+	) // This should be the satisfiedAt (2nd approval)
 	thirdApprovalTime := baseTime.Add(15 * time.Minute)
 	fourthApprovalTime := baseTime.Add(20 * time.Minute)
 	fifthApprovalTime := baseTime.Add(25 * time.Minute)
 
-	approvalTimes := []time.Time{firstApprovalTime, secondApprovalTime, thirdApprovalTime, fourthApprovalTime, fifthApprovalTime}
+	approvalTimes := []time.Time{
+		firstApprovalTime,
+		secondApprovalTime,
+		thirdApprovalTime,
+		fourthApprovalTime,
+		fifthApprovalTime,
+	}
 	for i, approvalTime := range approvalTimes {
 		st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
 			VersionId:     versionId,
@@ -409,7 +431,12 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, secondApprovalTime, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd approval, not the 5th")
+	assert.Equal(
+		t,
+		secondApprovalTime,
+		*result.SatisfiedAt,
+		"satisfiedAt should be the timestamp of the 2nd approval, not the 5th",
+	)
 }
 
 func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
@@ -462,7 +489,12 @@ func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, firstApprovalTime, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 1st approval")
+	assert.Equal(
+		t,
+		firstApprovalTime,
+		*result.SatisfiedAt,
+		"satisfiedAt should be the timestamp of the 1st approval",
+	)
 }
 
 func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
@@ -544,7 +576,12 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, versionCreatedAt, *result.SatisfiedAt, "satisfiedAt should be version.CreatedAt when no approvals required")
+	assert.Equal(
+		t,
+		versionCreatedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be version.CreatedAt when no approvals required",
+	)
 }
 
 func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
@@ -581,7 +618,9 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 		EnvironmentId: environmentId,
 		UserId:        "user-2",
 		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     baseTime.Add(5 * time.Minute).Format(time.RFC3339), // This is the 2nd approval by creation time
+		CreatedAt: baseTime.Add(5 * time.Minute).
+			Format(time.RFC3339),
+		// This is the 2nd approval by creation time
 	})
 
 	// Third approval (created middle)
@@ -594,7 +633,9 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	})
 
 	// Need 2 approvals, so the 2nd approval by creation time should be the satisfying one
-	expectedSatisfiedAt := baseTime.Add(10 * time.Minute) // This is the 2nd approval chronologically
+	expectedSatisfiedAt := baseTime.Add(
+		10 * time.Minute,
+	) // This is the 2nd approval chronologically
 
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
 	eval := NewEvaluatorFromStore(st, rule)
@@ -612,7 +653,12 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be based on creation time order, not insertion order")
+	assert.Equal(
+		t,
+		expectedSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be based on creation time order, not insertion order",
+	)
 }
 
 // TestAnyApprovalEvaluator_AlreadyDeployed tests that if a version has already been deployed
@@ -681,12 +727,21 @@ func TestAnyApprovalEvaluator_OlderVersionAllowed(t *testing.T) {
 	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should be allowed because version was already deployed to this environment
-	assert.True(t, result.Allowed, "expected allowed because version already deployed to this environment")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed because version already deployed to this environment",
+	)
 	assert.Contains(t, result.Message, "Version was created before the policy was created.")
 	assert.Equal(t, versionId, result.Details["version_id"])
 	assert.Equal(t, environmentId, result.Details["environment_id"])
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, versionCreatedAt, *result.SatisfiedAt, "satisfiedAt should be version creation time")
+	assert.Equal(
+		t,
+		versionCreatedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be version creation time",
+	)
 }
 
 func TestAnyApprovalEvaluator_EmptyRuleCreatedAt(t *testing.T) {
@@ -733,7 +788,7 @@ func TestParseTimestamp_EmptyString(t *testing.T) {
 func TestParseTimestamp_RFC3339(t *testing.T) {
 	input := "2025-11-04T01:39:37Z"
 	result, err := parseTimestamp(input)
-	assert.NoError(t, err, "RFC3339 format should parse successfully")
+	require.NoError(t, err, "RFC3339 format should parse successfully")
 	assert.Equal(t, 2025, result.Year())
 	assert.Equal(t, time.November, result.Month())
 	assert.Equal(t, 4, result.Day())
@@ -745,7 +800,7 @@ func TestParseTimestamp_RFC3339(t *testing.T) {
 func TestParseTimestamp_RFC3339WithOffset(t *testing.T) {
 	input := "2025-11-04T01:39:37+05:30"
 	result, err := parseTimestamp(input)
-	assert.NoError(t, err, "RFC3339 with timezone offset should parse successfully")
+	require.NoError(t, err, "RFC3339 with timezone offset should parse successfully")
 	assert.Equal(t, 2025, result.Year())
 	assert.Equal(t, time.November, result.Month())
 	assert.Equal(t, 4, result.Day())
@@ -754,7 +809,7 @@ func TestParseTimestamp_RFC3339WithOffset(t *testing.T) {
 func TestParseTimestamp_RFC3339Nano(t *testing.T) {
 	input := "2025-11-04T01:39:37.123456789Z"
 	result, err := parseTimestamp(input)
-	assert.NoError(t, err, "RFC3339Nano format should parse successfully")
+	require.NoError(t, err, "RFC3339Nano format should parse successfully")
 	assert.Equal(t, 2025, result.Year())
 	assert.Equal(t, 123456789, result.Nanosecond())
 }
@@ -775,7 +830,11 @@ func TestParseTimestamp_WithoutTimezone_Microseconds(t *testing.T) {
 func TestParseTimestamp_WithoutTimezone_NoFractionalSeconds(t *testing.T) {
 	input := "2025-11-04T01:39:37"
 	result, err := parseTimestamp(input)
-	assert.NoError(t, err, "timestamp without timezone (no fractional seconds) should parse successfully")
+	assert.NoError(
+		t,
+		err,
+		"timestamp without timezone (no fractional seconds) should parse successfully",
+	)
 	assert.Equal(t, 2025, result.Year())
 	assert.Equal(t, time.November, result.Month())
 	assert.Equal(t, 4, result.Day())

@@ -3,15 +3,15 @@ package creators
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 var deploymentVersionCounter = 0
 
 // NewDeploymentVersion creates a test DeploymentVersion with sensible defaults
-// All fields can be overridden via functional options
+// All fields can be overridden via functional options.
 func NewDeploymentVersion() *oapi.DeploymentVersion {
 	// Create with defaults
 	id := uuid.New().String()

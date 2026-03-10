@@ -7,12 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/reconcile"
-	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/reconcile"
+	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 )
 
 const defaultPriority int16 = 100
@@ -21,7 +21,7 @@ var _ reconcile.Queue = (*Queue)(nil)
 
 // Queue implements reconcile.Queue using a two-table PostgreSQL model:
 // - reconcile_work_scope: leasing and scheduling per logical scope key
-// - reconcile_work_payload: payload variants attached to a scope
+// - reconcile_work_payload: payload variants attached to a scope.
 type Queue struct {
 	queries    *sqldb.Queries
 	claimKinds []string
@@ -75,7 +75,11 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 		return fmt.Errorf("parse workspace_id as uuid: %w", err)
 	}
 
-	payload, payloadKey, hasPayload, err := normalizePayload(params.PayloadType, params.PayloadKey, params.Payload)
+	payload, payloadKey, hasPayload, err := normalizePayload(
+		params.PayloadType,
+		params.PayloadKey,
+		params.Payload,
+	)
 	if err != nil {
 		return fmt.Errorf("normalize payload: %w", err)
 	}
@@ -251,12 +255,15 @@ func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reco
 			items = append(items, item)
 		}
 	} else {
-		rows, err := q.queries.ClaimReconcileWorkItemsByKinds(ctx, sqldb.ClaimReconcileWorkItemsByKindsParams{
-			ClaimedBy:    pgtype.Text{String: params.WorkerID, Valid: true},
-			LeaseSeconds: int32(params.LeaseDuration.Seconds()),
-			Kinds:        q.claimKinds,
-			BatchSize:    int64(params.BatchSize),
-		})
+		rows, err := q.queries.ClaimReconcileWorkItemsByKinds(
+			ctx,
+			sqldb.ClaimReconcileWorkItemsByKindsParams{
+				ClaimedBy:    pgtype.Text{String: params.WorkerID, Valid: true},
+				LeaseSeconds: int32(params.LeaseDuration.Seconds()),
+				Kinds:        q.claimKinds,
+				BatchSize:    int64(params.BatchSize),
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("claim work items: %w", err)
 		}
@@ -294,11 +301,14 @@ func (q *Queue) ExtendLease(ctx context.Context, params reconcile.ExtendLeasePar
 		return reconcile.ErrInvalidLeaseDuration
 	}
 
-	rowsAffected, err := q.queries.ExtendReconcileWorkItemLease(ctx, sqldb.ExtendReconcileWorkItemLeaseParams{
-		LeaseSeconds: int32(params.LeaseDuration.Seconds()),
-		ID:           params.ItemID,
-		ClaimedBy:    pgtype.Text{String: params.WorkerID, Valid: true},
-	})
+	rowsAffected, err := q.queries.ExtendReconcileWorkItemLease(
+		ctx,
+		sqldb.ExtendReconcileWorkItemLeaseParams{
+			LeaseSeconds: int32(params.LeaseDuration.Seconds()),
+			ID:           params.ItemID,
+			ClaimedBy:    pgtype.Text{String: params.WorkerID, Valid: true},
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("extend lease: %w", err)
 	}
@@ -403,16 +413,22 @@ func decodeClaimedPayloads(rawPayloads []byte) ([]reconcile.Payload, error) {
 	return payloads, nil
 }
 
-func (q *Queue) AckSuccess(ctx context.Context, params reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
+func (q *Queue) AckSuccess(
+	ctx context.Context,
+	params reconcile.AckSuccessParams,
+) (reconcile.AckSuccessResult, error) {
 	if params.WorkerID == "" {
 		return reconcile.AckSuccessResult{}, reconcile.ErrMissingWorkerID
 	}
 
-	result, err := q.queries.DeleteClaimedReconcileWorkItemIfUnchanged(ctx, sqldb.DeleteClaimedReconcileWorkItemIfUnchangedParams{
-		ID:        params.ItemID,
-		ClaimedBy: pgtype.Text{String: params.WorkerID, Valid: true},
-		UpdatedAt: pgtype.Timestamptz{Time: params.ClaimedUpdatedAt, Valid: true},
-	})
+	result, err := q.queries.DeleteClaimedReconcileWorkItemIfUnchanged(
+		ctx,
+		sqldb.DeleteClaimedReconcileWorkItemIfUnchangedParams{
+			ID:        params.ItemID,
+			ClaimedBy: pgtype.Text{String: params.WorkerID, Valid: true},
+			UpdatedAt: pgtype.Timestamptz{Time: params.ClaimedUpdatedAt, Valid: true},
+		},
+	)
 	if err != nil {
 		return reconcile.AckSuccessResult{}, fmt.Errorf("ack success delete claimed item: %w", err)
 	}

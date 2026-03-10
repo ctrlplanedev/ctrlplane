@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
@@ -16,8 +17,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
-
-	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace/desiredrelease/policyeval")
@@ -50,7 +49,12 @@ func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []e
 // CollectEvaluators builds and sorts the full evaluator set for the given
 // policies. Evaluators are sorted by Complexity (cheapest first) so that
 // fast-failing checks run before expensive ones.
-func CollectEvaluators(ctx context.Context, getter Getter, rt *oapi.ReleaseTarget, policies []*oapi.Policy) []evaluator.Evaluator {
+func CollectEvaluators(
+	ctx context.Context,
+	getter Getter,
+	rt *oapi.ReleaseTarget,
+	policies []*oapi.Policy,
+) []evaluator.Evaluator {
 	evals := []evaluator.Evaluator{}
 
 	for _, p := range policies {
@@ -187,7 +191,12 @@ func (e RuleEvaluations) Allowed() bool {
 
 // evaluateVersion runs every evaluator against the scope and short-circuits
 // on the first denial. Evaluators whose RuleId appears in skips are bypassed.
-func evaluateVersion(ctx context.Context, evals []evaluator.Evaluator, scope evaluator.EvaluatorScope, skips []*oapi.PolicySkip) (RuleEvaluations, error) {
+func evaluateVersion(
+	ctx context.Context,
+	evals []evaluator.Evaluator,
+	scope evaluator.EvaluatorScope,
+	skips []*oapi.PolicySkip,
+) (RuleEvaluations, error) {
 	skipped := buildSkipSet(skips)
 	evaluations := RuleEvaluations{}
 	for _, eval := range evals {

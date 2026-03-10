@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -68,7 +67,14 @@ func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 	oapiRT := r.rt.ToOAPI()
 	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
 
-	result, err := policyeval.FindDeployableVersion(ctx, r.getter, oapiRT, r.versions, evals, *r.scope)
+	result, err := policyeval.FindDeployableVersion(
+		ctx,
+		r.getter,
+		oapiRT,
+		r.versions,
+		evals,
+		*r.scope,
+	)
 	if err != nil {
 		log.Error("find deployable version", "error", err)
 		return nil
@@ -83,7 +89,11 @@ func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 	return result.NextTime
 }
 
-func (r *reconciler) upsertEvaluations(ctx context.Context, rt *oapi.ReleaseTarget, evals []policyeval.VersionedEvaluation) error {
+func (r *reconciler) upsertEvaluations(
+	ctx context.Context,
+	rt *oapi.ReleaseTarget,
+	evals []policyeval.VersionedEvaluation,
+) error {
 	if len(evals) == 0 {
 		return nil
 	}
@@ -134,7 +144,13 @@ func (r *reconciler) persistRelease(ctx context.Context) (*oapi.Release, error) 
 // Reconcile computes the desired release for a release target and persists it.
 // All data access goes through the getter/setter interfaces so the function is
 // fully testable with mocks.
-func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Setter, rt *ReleaseTarget) (*ReconcileResult, error) {
+func Reconcile(
+	ctx context.Context,
+	workspaceID string,
+	getter Getter,
+	setter Setter,
+	rt *ReleaseTarget,
+) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
 	defer span.End()
 

@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
 )
 
-// setupTestStoreForJobTracker creates a minimal test store
+// setupTestStoreForJobTracker creates a minimal test store.
 func setupTestStoreForJobTracker() *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -103,7 +103,11 @@ func TestNewReleaseTargetJobTracker(t *testing.T) {
 	assert.Equal(t, "env-1", tracker.Environment.Id)
 	assert.Equal(t, "version-1", tracker.Version.Id)
 	assert.NotNil(t, tracker.SuccessStatuses, "expected non-nil success statuses")
-	assert.True(t, tracker.SuccessStatuses[oapi.JobStatusSuccessful], "expected Successful status to be in success statuses")
+	assert.True(
+		t,
+		tracker.SuccessStatuses[oapi.JobStatusSuccessful],
+		"expected Successful status to be in success statuses",
+	)
 
 	// Test with custom success statuses
 	customStatuses := map[oapi.JobStatus]bool{
@@ -112,8 +116,16 @@ func TestNewReleaseTargetJobTracker(t *testing.T) {
 	}
 	tracker2 := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, customStatuses)
 
-	assert.True(t, tracker2.SuccessStatuses[oapi.JobStatusSuccessful], "expected Successful status in custom success statuses")
-	assert.True(t, tracker2.SuccessStatuses[oapi.JobStatusInProgress], "expected InProgress status in custom success statuses")
+	assert.True(
+		t,
+		tracker2.SuccessStatuses[oapi.JobStatusSuccessful],
+		"expected Successful status in custom success statuses",
+	)
+	assert.True(
+		t,
+		tracker2.SuccessStatuses[oapi.JobStatusInProgress],
+		"expected InProgress status in custom success statuses",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentage_NoTargets(t *testing.T) {
@@ -126,7 +138,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_NoTargets(t *testing.T) {
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 
 	percentage := tracker.GetSuccessPercentage()
-	assert.Equal(t, float32(0.0), percentage, "expected 0%% success with no targets")
+	assert.InDelta(t, float32(0.0), percentage, 0, "expected 0%% success with no targets")
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T) {
@@ -286,7 +298,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 
 	// 2 out of 2 targets successful = 100%
 	percentage := tracker.GetSuccessPercentage()
-	assert.Equal(t, float32(100.0), percentage, "expected 100%% success")
+	assert.InDelta(t, float32(100.0), percentage, 0, "expected 100%% success")
 }
 
 func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_NoJobs(t *testing.T) {
@@ -307,8 +319,11 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_NoJobs(t *testing.T) {
 	// GetSoakTimeRemaining will calculate time.Since(zero time) which is very large
 	// So duration - large_time_since will be very negative, making it <= 0, returning true
 	// This seems like a bug in the implementation, but let's test actual behavior
-	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
-		"with no successful jobs, mostRecentSuccess is zero, time.Since is very large, so soak time appears met")
+	assert.True(
+		t,
+		tracker.MeetsSoakTimeRequirement(10*time.Minute),
+		"with no successful jobs, mostRecentSuccess is zero, time.Since is very large, so soak time appears met",
+	)
 }
 
 func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing.T) {
@@ -490,7 +505,12 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 
 	// Test with 3 minute soak time (should be negative/0 - already met)
 	remaining = tracker.GetSoakTimeRemaining(3 * time.Minute)
-	assert.LessOrEqual(t, remaining, time.Duration(0), "expected non-positive remaining time for met soak time")
+	assert.LessOrEqual(
+		t,
+		remaining,
+		time.Duration(0),
+		"expected non-positive remaining time for met soak time",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
@@ -503,7 +523,11 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 
 	// With no successful jobs, should be zero time
-	assert.True(t, tracker.GetMostRecentSuccess().IsZero(), "expected zero time with no successful jobs")
+	assert.True(
+		t,
+		tracker.GetMostRecentSuccess().IsZero(),
+		"expected zero time with no successful jobs",
+	)
 
 	// Create release target
 	rt1 := &oapi.ReleaseTarget{
@@ -556,7 +580,11 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_NoSuccesses(t *testing.T) {
 	tracker := NewReleaseTargetJobTracker(ctx, NewStoreGetters(st), env, version, nil)
 
 	// With no successful jobs, should return false
-	assert.False(t, tracker.IsWithinMaxAge(10*time.Minute), "expected false with no successful jobs")
+	assert.False(
+		t,
+		tracker.IsWithinMaxAge(10*time.Minute),
+		"expected false with no successful jobs",
+	)
 }
 
 func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
@@ -833,7 +861,13 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 
 	// Success percentage should still be 100% (1 target with successful job)
 	percentage := tracker.GetSuccessPercentage()
-	assert.Equal(t, float32(100.0), percentage, "expected 100%% success (1 target with successful jobs)")
+	assert.InDelta(
+		t,
+		float32(100.0),
+		percentage,
+		0,
+		"expected 100%% success (1 target with successful jobs)",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testing.T) {
@@ -938,20 +972,35 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	// Should return the timestamp of the 2nd success (completedAt2)
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
 	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 50%% requirement")
-	assert.Equal(t, completedAt2, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd successful job")
+	assert.Equal(
+		t,
+		completedAt2,
+		satisfiedAt,
+		"expected satisfiedAt to be the timestamp of the 2nd successful job",
+	)
 
 	// Test 100% requirement: need 3 successes (ceil(3 * 1.0) = 3)
 	// Should return the timestamp of the 3rd success (completedAt3)
 	satisfiedAt100 := tracker.GetSuccessPercentageSatisfiedAt(100.0)
 	assert.False(t, satisfiedAt100.IsZero(), "expected non-zero satisfiedAt for 100%% requirement")
-	assert.Equal(t, completedAt3, satisfiedAt100, "expected satisfiedAt to be the timestamp of the 3rd successful job")
+	assert.Equal(
+		t,
+		completedAt3,
+		satisfiedAt100,
+		"expected satisfiedAt to be the timestamp of the 3rd successful job",
+	)
 
 	// Test 67% requirement: need 2 successes (ceil(3 * 0.67) = 3, wait no ceil(3 * 0.67) = ceil(2.01) = 3)
 	// Actually, let me recalculate: 3 * 0.67 = 2.01, ceil(2.01) = 3
 	// So need 3 successes, should return completedAt3
 	satisfiedAt67 := tracker.GetSuccessPercentageSatisfiedAt(67.0)
 	assert.False(t, satisfiedAt67.IsZero(), "expected non-zero satisfiedAt for 67%% requirement")
-	assert.Equal(t, completedAt3, satisfiedAt67, "expected satisfiedAt to be the timestamp of the 3rd successful job for 67%% requirement")
+	assert.Equal(
+		t,
+		completedAt3,
+		satisfiedAt67,
+		"expected satisfiedAt to be the timestamp of the 3rd successful job for 67%% requirement",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSuccesses(t *testing.T) {
@@ -1019,7 +1068,11 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 	// Test 100% requirement: need 3 successes
 	// Only have 1 success, so should return zero time
 	satisfiedAt100 := tracker.GetSuccessPercentageSatisfiedAt(100.0)
-	assert.True(t, satisfiedAt100.IsZero(), "expected zero satisfiedAt for 100%% requirement when not met")
+	assert.True(
+		t,
+		satisfiedAt100.IsZero(),
+		"expected zero satisfiedAt for 100%% requirement when not met",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTargets(t *testing.T) {
@@ -1064,7 +1117,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJob
 	assert.True(t, satisfiedAt.IsZero(), "expected zero satisfiedAt with no successful jobs")
 }
 
-func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPercentage(t *testing.T) {
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPercentage(
+	t *testing.T,
+) {
 	st := setupTestStoreForJobTracker()
 	ctx := context.Background()
 
@@ -1134,15 +1189,35 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	// Need 2 successes (ceil(2 * 1.0) = 2)
 	// Should return the timestamp of the 2nd success (completedAt2)
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(0.0)
-	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 0%% requirement (defaults to 100%%)")
-	assert.Equal(t, completedAt2, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement")
+	assert.False(
+		t,
+		satisfiedAt.IsZero(),
+		"expected non-zero satisfiedAt for 0%% requirement (defaults to 100%%)",
+	)
+	assert.Equal(
+		t,
+		completedAt2,
+		satisfiedAt,
+		"expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement",
+	)
 
 	satisfiedAtNeg := tracker.GetSuccessPercentageSatisfiedAt(-10.0)
-	assert.False(t, satisfiedAtNeg.IsZero(), "expected non-zero satisfiedAt for negative requirement (defaults to 100%%)")
-	assert.Equal(t, completedAt2, satisfiedAtNeg, "expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement")
+	assert.False(
+		t,
+		satisfiedAtNeg.IsZero(),
+		"expected non-zero satisfiedAt for negative requirement (defaults to 100%%)",
+	)
+	assert.Equal(
+		t,
+		completedAt2,
+		satisfiedAtNeg,
+		"expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement",
+	)
 }
 
-func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompletions(t *testing.T) {
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompletions(
+	t *testing.T,
+) {
 	st := setupTestStoreForJobTracker()
 	ctx := context.Background()
 
@@ -1245,5 +1320,10 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	// The 2nd success (index 1) is completedAt1 (10:10)
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
 	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 50%% requirement")
-	assert.Equal(t, completedAt1, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd success chronologically (completedAt1)")
+	assert.Equal(
+		t,
+		completedAt1,
+		satisfiedAt,
+		"expected satisfiedAt to be the timestamp of the 2nd success chronologically (completedAt1)",
+	)
 }

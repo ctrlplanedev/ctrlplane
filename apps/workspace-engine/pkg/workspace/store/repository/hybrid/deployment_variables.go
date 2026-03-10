@@ -12,7 +12,10 @@ type DeploymentVariableRepo struct {
 	mem    repository.DeploymentVariableRepo
 }
 
-func NewDeploymentVariableRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *DeploymentVariableRepo {
+func NewDeploymentVariableRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *DeploymentVariableRepo {
 	return &DeploymentVariableRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.DeploymentVariables(),
@@ -23,7 +26,9 @@ func (r *DeploymentVariableRepo) Get(id string) (*oapi.DeploymentVariable, bool)
 	return r.mem.Get(id)
 }
 
-func (r *DeploymentVariableRepo) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVariable, error) {
+func (r *DeploymentVariableRepo) GetByDeploymentID(
+	deploymentID string,
+) ([]*oapi.DeploymentVariable, error) {
 	return r.mem.GetByDeploymentID(deploymentID)
 }
 
@@ -50,7 +55,10 @@ type DeploymentVariableValueRepo struct {
 	mem    repository.DeploymentVariableValueRepo
 }
 
-func NewDeploymentVariableValueRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *DeploymentVariableValueRepo {
+func NewDeploymentVariableValueRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *DeploymentVariableValueRepo {
 	return &DeploymentVariableValueRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.DeploymentVariableValues(),
@@ -61,7 +69,9 @@ func (r *DeploymentVariableValueRepo) Get(id string) (*oapi.DeploymentVariableVa
 	return r.mem.Get(id)
 }
 
-func (r *DeploymentVariableValueRepo) GetByVariableID(variableID string) ([]*oapi.DeploymentVariableValue, error) {
+func (r *DeploymentVariableValueRepo) GetByVariableID(
+	variableID string,
+) ([]*oapi.DeploymentVariableValue, error) {
 	return r.mem.GetByVariableID(variableID)
 }
 

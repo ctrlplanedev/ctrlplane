@@ -3,9 +3,9 @@ package events
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/reconcile"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/reconcile"
 )
 
 const DesiredReleaseKind = "desired-release"
@@ -21,7 +21,11 @@ func (params DesiredReleaseEvalParams) ScopeID() string {
 	return fmt.Sprintf("%s:%s:%s", params.DeploymentID, params.EnvironmentID, params.ResourceID)
 }
 
-func EnqueueDesiredRelease(queue reconcile.Queue, ctx context.Context, params DesiredReleaseEvalParams) error {
+func EnqueueDesiredRelease(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params DesiredReleaseEvalParams,
+) error {
 	return queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: params.WorkspaceID,
 		Kind:        DesiredReleaseKind,
@@ -30,7 +34,11 @@ func EnqueueDesiredRelease(queue reconcile.Queue, ctx context.Context, params De
 	})
 }
 
-func EnqueueManyDesiredRelease(queue reconcile.Queue, ctx context.Context, params []DesiredReleaseEvalParams) error {
+func EnqueueManyDesiredRelease(
+	queue reconcile.Queue,
+	ctx context.Context,
+	params []DesiredReleaseEvalParams,
+) error {
 	if len(params) == 0 {
 		return nil
 	}

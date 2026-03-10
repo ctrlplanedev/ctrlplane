@@ -6,11 +6,11 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestNewMeasurementRecorder(t *testing.T) {
@@ -272,7 +272,11 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			err := recorder.UpdateMessage(ctx, verification.Id, "Message update "+string(rune('0'+idx)))
+			err := recorder.UpdateMessage(
+				ctx,
+				verification.Id,
+				"Message update "+string(rune('0'+idx)),
+			)
 			assert.NoError(t, err)
 		}(i)
 	}

@@ -2,10 +2,10 @@ package resourcevariables
 
 import (
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 func ToOapi(row db.ResourceVariable) *oapi.ResourceVariable {

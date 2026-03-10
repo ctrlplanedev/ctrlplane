@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
 )
 
 type PostgresGetter struct{}
 
-func (g *PostgresGetter) GetEntityInfo(ctx context.Context, entityType string, entityID uuid.UUID) (*EntityInfo, error) {
+func (g *PostgresGetter) GetEntityInfo(
+	ctx context.Context,
+	entityType string,
+	entityID uuid.UUID,
+) (*EntityInfo, error) {
 	q := db.GetQueries(ctx)
 
 	switch entityType {
@@ -56,7 +59,10 @@ func (g *PostgresGetter) GetEntityInfo(ctx context.Context, entityType string, e
 	}
 }
 
-func (g *PostgresGetter) GetRulesForWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]RuleInfo, error) {
+func (g *PostgresGetter) GetRulesForWorkspace(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]RuleInfo, error) {
 	q := db.GetQueries(ctx)
 
 	rows, err := q.GetRelationshipRulesForWorkspace(ctx, workspaceID)
@@ -75,7 +81,13 @@ func (g *PostgresGetter) GetRulesForWorkspace(ctx context.Context, workspaceID u
 	return rules, nil
 }
 
-func (g *PostgresGetter) StreamCandidateEntities(ctx context.Context, workspaceID uuid.UUID, entityType string, batchSize int, batches chan<- []EntityInfo) error {
+func (g *PostgresGetter) StreamCandidateEntities(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	entityType string,
+	batchSize int,
+	batches chan<- []EntityInfo,
+) error {
 	defer close(batches)
 	q := db.GetQueries(ctx)
 
@@ -85,43 +97,64 @@ func (g *PostgresGetter) StreamCandidateEntities(ctx context.Context, workspaceI
 		if err != nil {
 			return fmt.Errorf("list resources for workspace %s: %w", workspaceID, err)
 		}
-		return sendBatches(ctx, batches, batchSize, rows, func(r db.ListActiveResourcesByWorkspaceRow) EntityInfo {
-			return EntityInfo{
-				ID: r.ID, WorkspaceID: r.WorkspaceID, EntityType: "resource",
-				Raw: resourceListRowToMap(r),
-			}
-		})
+		return sendBatches(
+			ctx,
+			batches,
+			batchSize,
+			rows,
+			func(r db.ListActiveResourcesByWorkspaceRow) EntityInfo {
+				return EntityInfo{
+					ID: r.ID, WorkspaceID: r.WorkspaceID, EntityType: "resource",
+					Raw: resourceListRowToMap(r),
+				}
+			},
+		)
 
 	case "deployment":
 		rows, err := q.ListDeploymentsByWorkspace(ctx, workspaceID)
 		if err != nil {
 			return fmt.Errorf("list deployments for workspace %s: %w", workspaceID, err)
 		}
-		return sendBatches(ctx, batches, batchSize, rows, func(r db.ListDeploymentsByWorkspaceRow) EntityInfo {
-			return EntityInfo{
-				ID: r.ID, WorkspaceID: r.WorkspaceID, EntityType: "deployment",
-				Raw: deploymentListRowToMap(r),
-			}
-		})
+		return sendBatches(
+			ctx,
+			batches,
+			batchSize,
+			rows,
+			func(r db.ListDeploymentsByWorkspaceRow) EntityInfo {
+				return EntityInfo{
+					ID: r.ID, WorkspaceID: r.WorkspaceID, EntityType: "deployment",
+					Raw: deploymentListRowToMap(r),
+				}
+			},
+		)
 
 	case "environment":
 		rows, err := q.ListEnvironmentsByWorkspace(ctx, workspaceID)
 		if err != nil {
 			return fmt.Errorf("list environments for workspace %s: %w", workspaceID, err)
 		}
-		return sendBatches(ctx, batches, batchSize, rows, func(r db.ListEnvironmentsByWorkspaceRow) EntityInfo {
-			return EntityInfo{
-				ID: r.ID, WorkspaceID: r.WorkspaceID, EntityType: "environment",
-				Raw: environmentListRowToMap(r),
-			}
-		})
+		return sendBatches(
+			ctx,
+			batches,
+			batchSize,
+			rows,
+			func(r db.ListEnvironmentsByWorkspaceRow) EntityInfo {
+				return EntityInfo{
+					ID: r.ID, WorkspaceID: r.WorkspaceID, EntityType: "environment",
+					Raw: environmentListRowToMap(r),
+				}
+			},
+		)
 
 	default:
 		return fmt.Errorf("unknown entity type: %s", entityType)
 	}
 }
 
-func (g *PostgresGetter) GetExistingRelationships(ctx context.Context, entityID uuid.UUID) ([]ExistingRelationship, error) {
+func (g *PostgresGetter) GetExistingRelationships(
+	ctx context.Context,
+	entityID uuid.UUID,
+) ([]ExistingRelationship, error) {
 	q := db.GetQueries(ctx)
 
 	rows, err := q.GetExistingRelationshipsForEntity(ctx, entityID)
@@ -142,7 +175,13 @@ func (g *PostgresGetter) GetExistingRelationships(ctx context.Context, entityID 
 
 // sendBatches is a generic helper that partitions a slice of rows into
 // fixed-size batches of EntityInfo and sends them on the channel.
-func sendBatches[T any](ctx context.Context, batches chan<- []EntityInfo, batchSize int, rows []T, convert func(T) EntityInfo) error {
+func sendBatches[T any](
+	ctx context.Context,
+	batches chan<- []EntityInfo,
+	batchSize int,
+	rows []T,
+	convert func(T) EntityInfo,
+) error {
 	batch := make([]EntityInfo, 0, batchSize)
 	for _, row := range rows {
 		batch = append(batch, convert(row))

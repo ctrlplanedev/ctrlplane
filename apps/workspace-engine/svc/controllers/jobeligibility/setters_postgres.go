@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var _ Setter = (*PostgresSetter)(nil)
@@ -19,7 +18,11 @@ type PostgresSetter struct {
 	Queue reconcile.Queue
 }
 
-func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *oapi.Release) error {
+func (s *PostgresSetter) CreateJob(
+	ctx context.Context,
+	job *oapi.Job,
+	release *oapi.Release,
+) error {
 	jobID, err := uuid.Parse(job.Id)
 	if err != nil {
 		return fmt.Errorf("parse job id: %w", err)
@@ -85,7 +88,11 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 	return nil
 }
 
-func (s *PostgresSetter) EnqueueJobDispatch(ctx context.Context, workspaceID string, jobID string) error {
+func (s *PostgresSetter) EnqueueJobDispatch(
+	ctx context.Context,
+	workspaceID string,
+	jobID string,
+) error {
 	return s.Queue.Enqueue(ctx, reconcile.EnqueueParams{
 		WorkspaceID: workspaceID,
 		Kind:        "job-dispatch",

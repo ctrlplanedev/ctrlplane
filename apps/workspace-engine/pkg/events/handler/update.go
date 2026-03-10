@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// mergeFields creates a new entity by copying target and updating specified fields from source
+// mergeFields creates a new entity by copying target and updating specified fields from source.
 func MergeFields[T any](target, source *T, fieldsToUpdate []string) (*T, error) {
 	result := new(T)
 
@@ -37,11 +37,11 @@ func MergeFields[T any](target, source *T, fieldsToUpdate []string) (*T, error) 
 }
 
 // buildFieldMap creates a map of field names to their indices
-// Includes both the struct field name and JSON tag name
+// Includes both the struct field name and JSON tag name.
 func buildFieldMap(t reflect.Type) map[string]int {
 	fieldMap := make(map[string]int)
 
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		field := t.Field(i)
 
 		// Add struct field name

@@ -3,12 +3,12 @@ package store
 import (
 	"context"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var workflowJobsTracer = otel.Tracer("workspace/store/workflow_jobs")

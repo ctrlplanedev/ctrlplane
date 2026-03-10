@@ -12,7 +12,10 @@ type ResourceProviderRepo struct {
 	mem    repository.ResourceProviderRepo
 }
 
-func NewResourceProviderRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *ResourceProviderRepo {
+func NewResourceProviderRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *ResourceProviderRepo {
 	return &ResourceProviderRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.ResourceProviders(),

@@ -2,16 +2,20 @@ package deploymentvariables
 
 import (
 	"net/http"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type DeploymentVariables struct {
 }
 
-func (s *DeploymentVariables) GetDeploymentVariable(c *gin.Context, workspaceId string, variableId string) {
+func (s *DeploymentVariables) GetDeploymentVariable(
+	c *gin.Context,
+	workspaceId string,
+	variableId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -42,7 +46,11 @@ func (s *DeploymentVariables) GetDeploymentVariable(c *gin.Context, workspaceId 
 	})
 }
 
-func (s *DeploymentVariables) GetDeploymentVariableValue(c *gin.Context, workspaceId string, valueId string) {
+func (s *DeploymentVariables) GetDeploymentVariableValue(
+	c *gin.Context,
+	workspaceId string,
+	valueId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

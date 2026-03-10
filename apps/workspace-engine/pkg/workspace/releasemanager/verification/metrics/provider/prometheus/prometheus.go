@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/charmbracelet/log"
 	"github.com/prometheus/common/model"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
 var _ provider.Provider = (*PrometheusProvider)(nil)
@@ -79,7 +79,10 @@ func (p *PrometheusProvider) Type() string {
 	return "prometheus"
 }
 
-func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *PrometheusProvider) Measure(
+	ctx context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 
 	resolvedProvider := resolveProviderTemplates(p.config, providerCtx)
@@ -101,7 +104,13 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 	resp, err := client.Do(req)
 	duration := time.Since(startTime)
 	if err != nil {
-		log.Error("Prometheus metric request failed", "address", resolvedProvider.Address, "error", err)
+		log.Error(
+			"Prometheus metric request failed",
+			"address",
+			resolvedProvider.Address,
+			"error",
+			err,
+		)
 		return time.Time{}, nil, fmt.Errorf("prometheus request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -125,7 +134,10 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 	return startTime, data, nil
 }
 
-func resolveProviderTemplates(config *oapi.PrometheusMetricProvider, providerCtx *provider.ProviderContext) *oapi.PrometheusMetricProvider {
+func resolveProviderTemplates(
+	config *oapi.PrometheusMetricProvider,
+	providerCtx *provider.ProviderContext,
+) *oapi.PrometheusMetricProvider {
 	resolved := &oapi.PrometheusMetricProvider{
 		Address:    providerCtx.Template(config.Address),
 		Query:      providerCtx.Template(config.Query),
@@ -141,7 +153,10 @@ func resolveProviderTemplates(config *oapi.PrometheusMetricProvider, providerCtx
 	return resolved
 }
 
-func resolveHeaders(headers *[]prometheusHeader, providerCtx *provider.ProviderContext) *[]prometheusHeader {
+func resolveHeaders(
+	headers *[]prometheusHeader,
+	providerCtx *provider.ProviderContext,
+) *[]prometheusHeader {
 	if headers == nil {
 		return nil
 	}
@@ -153,7 +168,10 @@ func resolveHeaders(headers *[]prometheusHeader, providerCtx *provider.ProviderC
 	return &resolved
 }
 
-func resolveAuthentication(auth *prometheusAuth, providerCtx *provider.ProviderContext) *prometheusAuth {
+func resolveAuthentication(
+	auth *prometheusAuth,
+	providerCtx *provider.ProviderContext,
+) *prometheusAuth {
 	if auth == nil {
 		return nil
 	}
@@ -204,7 +222,11 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 		if config.RangeQuery.Start != nil && *config.RangeQuery.Start != "" {
 			d, err := parsePrometheusDuration(*config.RangeQuery.Start)
 			if err != nil {
-				return "", fmt.Errorf("invalid start duration %q: %w", *config.RangeQuery.Start, err)
+				return "", fmt.Errorf(
+					"invalid start duration %q: %w",
+					*config.RangeQuery.Start,
+					err,
+				)
 			}
 			start = now.Add(-d)
 		}
@@ -218,7 +240,11 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 	return address + "/api/v1/query?" + params.Encode(), nil
 }
 
-func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider, client *http.Client) error {
+func setHeaders(
+	req *http.Request,
+	config *oapi.PrometheusMetricProvider,
+	client *http.Client,
+) error {
 	if err := setAuthHeader(req, config.Authentication, client); err != nil {
 		return err
 	}
@@ -253,7 +279,11 @@ func setAuthHeader(req *http.Request, auth *prometheusAuth, client *http.Client)
 	return nil
 }
 
-func fetchOAuth2Token(ctx context.Context, oauth2 *prometheusOAuth2, client *http.Client) (string, error) {
+func fetchOAuth2Token(
+	ctx context.Context,
+	oauth2 *prometheusOAuth2,
+	client *http.Client,
+) (string, error) {
 	data := url.Values{
 		"grant_type":    {"client_credentials"},
 		"client_id":     {oauth2.ClientId},
@@ -263,7 +293,12 @@ func fetchOAuth2Token(ctx context.Context, oauth2 *prometheusOAuth2, client *htt
 		data.Set("scope", strings.Join(*oauth2.Scopes, " "))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, oauth2.TokenUrl, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		oauth2.TokenUrl,
+		strings.NewReader(data.Encode()),
+	)
 	if err != nil {
 		return "", fmt.Errorf("failed to create token request: %w", err)
 	}
@@ -314,7 +349,11 @@ func buildHTTPClient(config *oapi.PrometheusMetricProvider) *http.Client {
 	return client
 }
 
-func buildResultData(statusCode int, respBody []byte, duration time.Duration) (map[string]any, error) {
+func buildResultData(
+	statusCode int,
+	respBody []byte,
+	duration time.Duration,
+) (map[string]any, error) {
 	var rawJSON any
 	if err := json.Unmarshal(respBody, &rawJSON); err != nil {
 		return nil, fmt.Errorf("failed to parse Prometheus response: %w", err)

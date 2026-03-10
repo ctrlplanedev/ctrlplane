@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/jobdispatch"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -173,7 +172,12 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 	}
 	releaseSetter.JobDispatchGetter = jobDispatchGetter
 	jobDispatchSetter := &JobDispatchSetter{}
-	jobDispatchCtrl := jobdispatch.NewController(jobDispatchGetter, jobDispatchSetter, &noopDispatcher{}, nil)
+	jobDispatchCtrl := jobdispatch.NewController(
+		jobDispatchGetter,
+		jobDispatchSetter,
+		&noopDispatcher{},
+		nil,
+	)
 
 	return &TestPipeline{
 		t:                 t,
@@ -293,7 +297,7 @@ func (p *TestPipeline) Run(opts ...RunOption) {
 		p.seeded = true
 	}
 
-	for round := 0; round < cfg.maxRounds; round++ {
+	for range cfg.maxRounds {
 		n := p.RunRound()
 		if n == 0 {
 			return
@@ -367,7 +371,7 @@ func (p *TestPipeline) ForceProcessRequeues(opts ...RunOption) {
 	}
 	p.requeues = nil
 
-	for round := 0; round < cfg.maxRounds; round++ {
+	for range cfg.maxRounds {
 		n := p.RunRound()
 		if n == 0 {
 			return

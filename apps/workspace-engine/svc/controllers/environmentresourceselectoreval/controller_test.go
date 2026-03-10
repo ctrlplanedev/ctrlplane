@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
+	"workspace-engine/pkg/store/resources"
 )
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,11 @@ func (m *mockGetter) GetEnvironmentInfo(_ context.Context, _ uuid.UUID) (*Enviro
 	return m.environment, m.envErr
 }
 
-func (m *mockGetter) GetResources(_ context.Context, _ string, _ resources.GetResourcesOptions) ([]*oapi.Resource, error) {
+func (m *mockGetter) GetResources(
+	_ context.Context,
+	_ string,
+	_ resources.GetResourcesOptions,
+) ([]*oapi.Resource, error) {
 	return m.resources, m.listErr
 }
 
@@ -42,7 +46,11 @@ type mockSetter struct {
 	err error
 }
 
-func (m *mockSetter) SetComputedEnvironmentResources(_ context.Context, environmentID uuid.UUID, resourceIDs []uuid.UUID) error {
+func (m *mockSetter) SetComputedEnvironmentResources(
+	_ context.Context,
+	environmentID uuid.UUID,
+	resourceIDs []uuid.UUID,
+) error {
 	m.calledWith.environmentID = environmentID
 	m.calledWith.resourceIDs = resourceIDs
 	return m.err

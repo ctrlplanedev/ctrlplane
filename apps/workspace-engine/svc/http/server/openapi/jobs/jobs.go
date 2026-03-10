@@ -3,10 +3,10 @@ package jobs
 import (
 	"net/http"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type Jobs struct{}
@@ -89,7 +89,10 @@ func (s *Jobs) GetJobWithRelease(c *gin.Context, workspaceId string, jobId strin
 	})
 }
 
-func (s *Jobs) getFilteredJobs(allJobs []*oapi.Job, params oapi.GetJobsParams) ([]*oapi.Job, error) {
+func (s *Jobs) getFilteredJobs(
+	allJobs []*oapi.Job,
+	params oapi.GetJobsParams,
+) ([]*oapi.Job, error) {
 	filteredJobs := make([]*oapi.Job, 0)
 
 	for _, job := range allJobs {
@@ -100,7 +103,8 @@ func (s *Jobs) getFilteredJobs(allJobs []*oapi.Job, params oapi.GetJobsParams) (
 			continue
 		}
 
-		if params.EnvironmentId != nil && job.DispatchContext.Environment.Id != *params.EnvironmentId {
+		if params.EnvironmentId != nil &&
+			job.DispatchContext.Environment.Id != *params.EnvironmentId {
 			continue
 		}
 
@@ -144,7 +148,8 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 		limit = *params.Limit
 	}
 
-	hasFilterParams := params.ResourceId != nil || params.EnvironmentId != nil || params.DeploymentId != nil
+	hasFilterParams := params.ResourceId != nil || params.EnvironmentId != nil ||
+		params.DeploymentId != nil
 	if hasFilterParams {
 		filteredJobs, err := s.getFilteredJobs(items, params)
 		if err != nil {

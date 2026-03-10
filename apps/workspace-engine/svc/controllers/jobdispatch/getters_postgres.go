@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
-
-	"github.com/google/uuid"
 )
 
 var _ Getter = &PostgresGetter{}
@@ -27,7 +26,10 @@ func (p *PostgresGetter) GetJob(ctx context.Context, jobID uuid.UUID) (*oapi.Job
 	return db.ToOapiJobFromGetJobByIDRow(row), nil
 }
 
-func (p *PostgresGetter) GetRelease(ctx context.Context, releaseID uuid.UUID) (*oapi.Release, error) {
+func (p *PostgresGetter) GetRelease(
+	ctx context.Context,
+	releaseID uuid.UUID,
+) (*oapi.Release, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetReleaseByID(ctx, releaseID)
 	if err != nil {
@@ -44,7 +46,10 @@ func (p *PostgresGetter) GetRelease(ctx context.Context, releaseID uuid.UUID) (*
 	return release, nil
 }
 
-func (p *PostgresGetter) GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error) {
+func (p *PostgresGetter) GetDeployment(
+	ctx context.Context,
+	deploymentID uuid.UUID,
+) (*oapi.Deployment, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetDeploymentByID(ctx, deploymentID)
 	if err != nil {
@@ -53,7 +58,10 @@ func (p *PostgresGetter) GetDeployment(ctx context.Context, deploymentID uuid.UU
 	return db.ToOapiDeployment(row), nil
 }
 
-func (p *PostgresGetter) GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error) {
+func (p *PostgresGetter) GetJobAgent(
+	ctx context.Context,
+	jobAgentID uuid.UUID,
+) (*oapi.JobAgent, error) {
 	queries := db.GetQueries(ctx)
 	row, err := queries.GetJobAgentByID(ctx, jobAgentID)
 	if err != nil {
@@ -62,7 +70,10 @@ func (p *PostgresGetter) GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) 
 	return db.ToOapiJobAgent(row), nil
 }
 
-func (p *PostgresGetter) GetVerificationPolicies(ctx context.Context, rt *ReleaseTarget) ([]oapi.VerificationMetricSpec, error) {
+func (p *PostgresGetter) GetVerificationPolicies(
+	ctx context.Context,
+	rt *ReleaseTarget,
+) ([]oapi.VerificationMetricSpec, error) {
 	queries := db.GetQueries(ctx)
 
 	resourceRow, err := queries.GetResourceByID(ctx, rt.ResourceID)

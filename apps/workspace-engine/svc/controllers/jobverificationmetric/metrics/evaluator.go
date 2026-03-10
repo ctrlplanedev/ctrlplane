@@ -2,17 +2,17 @@ package metrics
 
 import (
 	"fmt"
-	"workspace-engine/pkg/celutil"
 
 	"github.com/google/cel-go/cel"
+	"workspace-engine/pkg/celutil"
 )
 
-// Evaluator evaluates success conditions using CEL
+// Evaluator evaluates success conditions using CEL.
 type Evaluator struct {
 	program cel.Program
 }
 
-// NewEvaluator creates a new CEL evaluator for a success condition
+// NewEvaluator creates a new CEL evaluator for a success condition.
 func NewEvaluator(successCondition string) (*Evaluator, error) {
 	if successCondition == "" {
 		return nil, fmt.Errorf("success condition cannot be empty")
@@ -38,7 +38,7 @@ func NewEvaluator(successCondition string) (*Evaluator, error) {
 	return &Evaluator{program: program}, nil
 }
 
-// Evaluate evaluates the success condition against measurement data
+// Evaluate evaluates the success condition against measurement data.
 func (e *Evaluator) Evaluate(result map[string]any) (bool, error) {
 	return celutil.EvalBool(e.program, map[string]any{
 		"result": result,

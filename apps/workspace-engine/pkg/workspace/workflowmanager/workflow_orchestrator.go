@@ -2,6 +2,7 @@ package workflowmanager
 
 import (
 	"context"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -29,7 +30,9 @@ func NewWorkflowActionOrchestrator(store *store.Store) *WorkflowActionOrchestrat
 	}
 }
 
-func (w *WorkflowActionOrchestrator) RegisterAction(action WorkflowAction) *WorkflowActionOrchestrator {
+func (w *WorkflowActionOrchestrator) RegisterAction(
+	action WorkflowAction,
+) *WorkflowActionOrchestrator {
 	w.actions = append(w.actions, action)
 	return w
 }

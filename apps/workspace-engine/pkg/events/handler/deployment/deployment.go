@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
@@ -12,11 +13,13 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
 )
 
-func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
+func makeReleaseTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	deployment *oapi.Deployment,
+) ([]*oapi.ReleaseTarget, error) {
 	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, systemID := range ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id) {
@@ -65,10 +68,14 @@ func HandleDeploymentCreated(
 
 	ws.Store().RelationshipIndexes.AddEntity(ctx, deployment.Id)
 
-	err := events.EnqueueDeploymentResourceselectorEval(ws.Queue(), ctx, events.DeploymentResourceselectorEvalParams{
-		WorkspaceID:  ws.ID,
-		DeploymentID: deployment.Id,
-	})
+	err := events.EnqueueDeploymentResourceselectorEval(
+		ws.Queue(),
+		ctx,
+		events.DeploymentResourceselectorEvalParams{
+			WorkspaceID:  ws.ID,
+			DeploymentID: deployment.Id,
+		},
+	)
 	if err != nil {
 		log.Error("failed to enqueue deployment resourceselector eval", "error", err)
 	}
@@ -101,7 +108,10 @@ func HandleDeploymentCreated(
 	return nil
 }
 
-func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+func getRemovedReleaseTargets(
+	oldReleaseTargets []*oapi.ReleaseTarget,
+	newReleaseTargets []*oapi.ReleaseTarget,
+) []*oapi.ReleaseTarget {
 	removedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, oldReleaseTarget := range oldReleaseTargets {
 		found := false
@@ -118,7 +128,10 @@ func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleas
 	return removedReleaseTargets
 }
 
-func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+func getAddedReleaseTargets(
+	oldReleaseTargets []*oapi.ReleaseTarget,
+	newReleaseTargets []*oapi.ReleaseTarget,
+) []*oapi.ReleaseTarget {
 	addedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, newReleaseTarget := range newReleaseTargets {
 		found := false
@@ -135,7 +148,11 @@ func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseT
 	return addedReleaseTargets
 }
 
-func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets []*oapi.ReleaseTarget) error {
+func upsertTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	releaseTargets []*oapi.ReleaseTarget,
+) error {
 	for _, releaseTarget := range releaseTargets {
 		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		if err != nil {
@@ -145,7 +162,13 @@ func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets 
 	return nil
 }
 
-func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget, skipEligibilityCheck bool) error {
+func reconcileTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	deployment *oapi.Deployment,
+	releaseTargets []*oapi.ReleaseTarget,
+	skipEligibilityCheck bool,
+) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
 		for _, rt := range releaseTargets {
 			ws.ReleaseManager().DirtyDesiredRelease(rt)
@@ -173,7 +196,10 @@ func getOldDeployment(ws *workspace.Workspace, deploymentID string) (oapi.Deploy
 	return *oldDeployment, nil
 }
 
-func isJobAgentConfigurationChanged(oldDeployment *oapi.Deployment, newDeployment *oapi.Deployment) bool {
+func isJobAgentConfigurationChanged(
+	oldDeployment *oapi.Deployment,
+	newDeployment *oapi.Deployment,
+) bool {
 	oldAgentId := ""
 	if oldDeployment.JobAgentId != nil {
 		oldAgentId = *oldDeployment.JobAgentId
@@ -218,10 +244,14 @@ func HandleDeploymentUpdated(
 
 	ws.Store().RelationshipIndexes.DirtyEntity(ctx, deployment.Id)
 
-	err = events.EnqueueDeploymentResourceselectorEval(ws.Queue(), ctx, events.DeploymentResourceselectorEvalParams{
-		WorkspaceID:  ws.ID,
-		DeploymentID: deployment.Id,
-	})
+	err = events.EnqueueDeploymentResourceselectorEval(
+		ws.Queue(),
+		ctx,
+		events.DeploymentResourceselectorEvalParams{
+			WorkspaceID:  ws.ID,
+			DeploymentID: deployment.Id,
+		},
+	)
 	if err != nil {
 		log.Error("failed to enqueue deployment resourceselector eval", "error", err)
 	}

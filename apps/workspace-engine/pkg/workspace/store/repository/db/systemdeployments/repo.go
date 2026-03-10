@@ -2,10 +2,10 @@ package systemdeployments
 
 import (
 	"context"
-	"workspace-engine/pkg/db"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
 )
 
 // Repo implements repository.SystemDeploymentRepo backed by the
@@ -27,7 +27,13 @@ func (r *Repo) GetSystemIDsForDeployment(deploymentID string) []string {
 
 	systemIDs, err := db.GetQueries(r.ctx).GetSystemIDsForDeployment(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to get system IDs for deployment", "deploymentId", deploymentID, "error", err)
+		log.Warn(
+			"Failed to get system IDs for deployment",
+			"deploymentId",
+			deploymentID,
+			"error",
+			err,
+		)
 		return nil
 	}
 

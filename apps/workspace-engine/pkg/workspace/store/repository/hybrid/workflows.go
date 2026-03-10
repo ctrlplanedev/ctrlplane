@@ -46,7 +46,10 @@ type WorkflowJobTemplateRepo struct {
 	mem    repository.WorkflowJobTemplateRepo
 }
 
-func NewWorkflowJobTemplateRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *WorkflowJobTemplateRepo {
+func NewWorkflowJobTemplateRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *WorkflowJobTemplateRepo {
 	return &WorkflowJobTemplateRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.WorkflowJobTemplates(),

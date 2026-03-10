@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/store/resources")
@@ -25,14 +25,22 @@ type GetResourcesOptions struct {
 }
 
 type GetResources interface {
-	GetResources(ctx context.Context, workspaceID string, options GetResourcesOptions) ([]*oapi.Resource, error)
+	GetResources(
+		ctx context.Context,
+		workspaceID string,
+		options GetResourcesOptions,
+	) ([]*oapi.Resource, error)
 }
 
 var _ GetResources = (*PostgresGetResources)(nil)
 
 type PostgresGetResources struct{}
 
-func (p *PostgresGetResources) GetResources(ctx context.Context, workspaceID string, options GetResourcesOptions) ([]*oapi.Resource, error) {
+func (p *PostgresGetResources) GetResources(
+	ctx context.Context,
+	workspaceID string,
+	options GetResourcesOptions,
+) ([]*oapi.Resource, error) {
 	ctx, span := tracer.Start(ctx, "Store.GetResources")
 	defer span.End()
 	wsID := uuid.MustParse(workspaceID)

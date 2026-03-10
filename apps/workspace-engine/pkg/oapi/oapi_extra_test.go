@@ -25,7 +25,12 @@ func TestRelease_UUID(t *testing.T) {
 	u1 := release.UUID()
 	u2 := release.UUID()
 	assert.Equal(t, u1, u2, "UUID should be deterministic")
-	assert.NotEqual(t, "00000000-0000-0000-0000-000000000000", u1.String(), "UUID should not be nil UUID")
+	assert.NotEqual(
+		t,
+		"00000000-0000-0000-0000-000000000000",
+		u1.String(),
+		"UUID should not be nil UUID",
+	)
 }
 
 func TestVerificationMetricSpec_GetInterval(t *testing.T) {

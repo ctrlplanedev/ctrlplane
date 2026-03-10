@@ -9,13 +9,13 @@ import (
 	"net/http"
 	"reflect"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
-// Ensure Provider implements provider.Provider
+// Ensure Provider implements provider.Provider.
 var _ provider.Provider = (*Provider)(nil)
 
 type datadogResponseV2 struct {
@@ -32,7 +32,7 @@ type datadogResponseV2 struct {
 
 var unixNow = func() int64 { return time.Now().Unix() }
 
-// Config contains Datadog metric provider configuration
+// Config contains Datadog metric provider configuration.
 type Config struct {
 	Query           string
 	IntervalSeconds int64
@@ -44,12 +44,12 @@ type Config struct {
 	Site            string
 }
 
-// Provider executes Datadog metrics queries
+// Provider executes Datadog metrics queries.
 type Provider struct {
 	config *oapi.DatadogMetricProvider
 }
 
-// New creates a new Datadog metric provider
+// New creates a new Datadog metric provider.
 func New(config *oapi.DatadogMetricProvider) (*Provider, error) {
 	if config.ApiKey == "" {
 		return nil, fmt.Errorf("apiKey is required")
@@ -77,7 +77,7 @@ func New(config *oapi.DatadogMetricProvider) (*Provider, error) {
 	return &Provider{config: config}, nil
 }
 
-// NewFromOAPI creates a new Datadog provider from oapi.DatadogMetricProvider
+// NewFromOAPI creates a new Datadog provider from oapi.DatadogMetricProvider.
 func NewFromOAPI(config oapi.DatadogMetricProvider) (*Provider, error) {
 	return New(&config)
 }
@@ -86,8 +86,11 @@ func (p *Provider) Type() string {
 	return "datadog"
 }
 
-// Measure queries the Datadog Metrics API and returns the result
-func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+// Measure queries the Datadog Metrics API and returns the result.
+func (p *Provider) Measure(
+	ctx context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 
 	// Resolve templates in config
@@ -216,8 +219,11 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 	return startTime, data, nil
 }
 
-// Resolve resolves Go templates in the config
-func Resolve(config *oapi.DatadogMetricProvider, providerCtx *provider.ProviderContext) *oapi.DatadogMetricProvider {
+// Resolve resolves Go templates in the config.
+func Resolve(
+	config *oapi.DatadogMetricProvider,
+	providerCtx *provider.ProviderContext,
+) *oapi.DatadogMetricProvider {
 	resolved := &oapi.DatadogMetricProvider{
 		ApiKey:     providerCtx.Template(config.ApiKey),
 		AppKey:     providerCtx.Template(config.AppKey),

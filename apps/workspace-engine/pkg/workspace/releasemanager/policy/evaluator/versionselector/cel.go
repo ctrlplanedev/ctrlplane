@@ -2,9 +2,9 @@ package versionselector
 
 import (
 	"time"
-	"workspace-engine/pkg/celutil"
 
 	"github.com/google/cel-go/cel"
+	"workspace-engine/pkg/celutil"
 )
 
 var compiledEnv, _ = celutil.NewEnvBuilder().

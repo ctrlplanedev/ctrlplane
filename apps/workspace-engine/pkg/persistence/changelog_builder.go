@@ -2,13 +2,13 @@ package persistence
 
 import "time"
 
-// ChangesBuilder builds a changes collection fluently
+// ChangesBuilder builds a changes collection fluently.
 type ChangesBuilder struct {
 	namespace string
 	changes   Changes
 }
 
-// NewChangesBuilder creates a new changes builder
+// NewChangesBuilder creates a new changes builder.
 func NewChangesBuilder(namespace string) *ChangesBuilder {
 	return &ChangesBuilder{
 		namespace: namespace,
@@ -25,7 +25,7 @@ func WithTimestamp(timestamp time.Time) ChangeOptions {
 	}
 }
 
-// Set adds a set change (creates or updates an entity)
+// Set adds a set change (creates or updates an entity).
 func (b *ChangesBuilder) Set(entity Entity, options ...ChangeOptions) *ChangesBuilder {
 	change := &Change{
 		Namespace:  b.namespace,
@@ -40,7 +40,7 @@ func (b *ChangesBuilder) Set(entity Entity, options ...ChangeOptions) *ChangesBu
 	return b
 }
 
-// Unset adds an unset change (deletes an entity)
+// Unset adds an unset change (deletes an entity).
 func (b *ChangesBuilder) Unset(entity Entity, options ...ChangeOptions) *ChangesBuilder {
 	change := &Change{
 		Namespace:  b.namespace,
@@ -55,7 +55,7 @@ func (b *ChangesBuilder) Unset(entity Entity, options ...ChangeOptions) *Changes
 	return b
 }
 
-// Build returns the built changes
+// Build returns the built changes.
 func (b *ChangesBuilder) Build() Changes {
 	return b.changes
 }

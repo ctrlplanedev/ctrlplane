@@ -8,14 +8,14 @@ import (
 type EligibilityDecision string
 
 const (
-	// EligibilityAllowed indicates the job should be created immediately
+	// EligibilityAllowed indicates the job should be created immediately.
 	EligibilityAllowed EligibilityDecision = "allowed"
 
 	// EligibilityDenied indicates the job should not be created (retry limit exceeded, etc.)
 	EligibilityDenied EligibilityDecision = "denied"
 
 	// EligibilityPending indicates the job creation is delayed (e.g., waiting for backoff)
-	// The system should schedule re-evaluation at NextEvaluationTime
+	// The system should schedule re-evaluation at NextEvaluationTime.
 	EligibilityPending EligibilityDecision = "pending"
 )
 

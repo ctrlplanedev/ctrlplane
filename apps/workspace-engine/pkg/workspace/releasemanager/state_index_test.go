@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // seedStoreWithReleaseTarget puts a release target and its supporting entities

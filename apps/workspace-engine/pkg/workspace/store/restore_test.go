@@ -5,15 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func ptr[T any](v T) *T {
@@ -143,7 +142,12 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 
 	// Verify the environment correctly filtered resources based on the selector
 	assert.Contains(t, envResources, resourceId, "Production resource should be in environment")
-	assert.NotContains(t, envResources, devResourceId, "Development resource should not be in environment")
+	assert.NotContains(
+		t,
+		envResources,
+		devResourceId,
+		"Development resource should not be in environment",
+	)
 	assert.Len(t, envResources, 1, "Should have exactly 1 matching resource")
 
 	// Verify deployment materialized views are also initialized
@@ -152,12 +156,22 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 	require.NotNil(t, deploymentResources, "Deployment resources should not be nil")
 
 	// Verify the deployment correctly filtered resources based on the selector
-	assert.Contains(t, deploymentResources, resourceId, "Production resource should be in deployment")
-	assert.NotContains(t, deploymentResources, devResourceId, "Development resource should not be in deployment")
+	assert.Contains(
+		t,
+		deploymentResources,
+		resourceId,
+		"Production resource should be in deployment",
+	)
+	assert.NotContains(
+		t,
+		deploymentResources,
+		devResourceId,
+		"Development resource should not be in deployment",
+	)
 	assert.Len(t, deploymentResources, 1, "Should have exactly 1 matching resource")
 }
 
-// TestStore_Restore_EmptyEnvironments tests that restoration works even with no environments
+// TestStore_Restore_EmptyEnvironments tests that restoration works even with no environments.
 func TestStore_Restore_EmptyEnvironments(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -192,7 +206,7 @@ func TestStore_Restore_EmptyEnvironments(t *testing.T) {
 	assert.Equal(t, system.Name, restoredSystem.Name)
 }
 
-// TestStore_Restore_MultipleEnvironments tests restoration with multiple environments
+// TestStore_Restore_MultipleEnvironments tests restoration with multiple environments.
 func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -249,7 +263,9 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Name: "production",
 	}
 	prodSelector := &oapi.Selector{}
-	_ = prodSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"})
+	_ = prodSelector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"},
+	)
 	prodEnv.ResourceSelector = prodSelector
 
 	stagingEnvId := uuid.New().String()
@@ -258,7 +274,9 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Name: "staging",
 	}
 	stagingSelector := &oapi.Selector{}
-	_ = stagingSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'staging'"})
+	_ = stagingSelector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['env'] == 'staging'"},
+	)
 	stagingEnv.ResourceSelector = stagingSelector
 
 	devEnvId := uuid.New().String()
@@ -267,7 +285,9 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Name: "development",
 	}
 	devSelector := &oapi.Selector{}
-	_ = devSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'development'"})
+	_ = devSelector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['env'] == 'development'"},
+	)
 	devEnv.ResourceSelector = devSelector
 
 	// Save all entities
@@ -368,7 +388,9 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Description: ptr("Production environment"),
 	}
 	env1Selector := &oapi.Selector{}
-	_ = env1Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"})
+	_ = env1Selector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"},
+	)
 	env1.ResourceSelector = env1Selector
 
 	env2Id := uuid.New().String()
@@ -378,7 +400,9 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Description: ptr("Production frontend environment"),
 	}
 	env2Selector := &oapi.Selector{}
-	_ = env2Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"})
+	_ = env2Selector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"},
+	)
 	env2.ResourceSelector = env2Selector
 
 	// Create deployments with selectors
@@ -390,7 +414,9 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Description: ptr("API deployment"),
 	}
 	deploy1Selector := &oapi.Selector{}
-	_ = deploy1Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['tier'] == 'backend'"})
+	_ = deploy1Selector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['tier'] == 'backend'"},
+	)
 	deploy1.ResourceSelector = deploy1Selector
 
 	deploy2Id := uuid.New().String()
@@ -401,7 +427,9 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Description: ptr("Frontend deployment"),
 	}
 	deploy2Selector := &oapi.Selector{}
-	_ = deploy2Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"})
+	_ = deploy2Selector.FromCelSelector(
+		oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"},
+	)
 	deploy2.ResourceSelector = deploy2Selector
 
 	// Create deployment versions
@@ -560,7 +588,7 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 	assert.Len(t, envResources, 1, "Should have exactly 1 matching resource")
 }
 
-// TestStore_Restore_ResourceProviders tests restoration of resource providers and their resources
+// TestStore_Restore_ResourceProviders tests restoration of resource providers and their resources.
 func TestStore_Restore_ResourceProviders(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -653,7 +681,7 @@ func TestStore_Restore_ResourceProviders(t *testing.T) {
 	assert.Equal(t, provider2Id, *restoredResource2.ProviderId)
 }
 
-// TestStore_Restore_RelationshipRules tests restoration of relationship rules
+// TestStore_Restore_RelationshipRules tests restoration of relationship rules.
 func TestStore_Restore_RelationshipRules(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -723,7 +751,7 @@ func TestStore_Restore_RelationshipRules(t *testing.T) {
 	assert.Equal(t, oapi.RelatableEntityTypeDeployment, restoredRule2.FromType)
 }
 
-// TestStore_Restore_JobsAndJobAgents tests restoration of jobs and job agents
+// TestStore_Restore_JobsAndJobAgents tests restoration of jobs and job agents.
 func TestStore_Restore_JobsAndJobAgents(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -804,7 +832,7 @@ func TestStore_Restore_JobsAndJobAgents(t *testing.T) {
 	assert.Equal(t, agent2Id, restoredJob2.JobAgentId)
 }
 
-// TestStore_Restore_NilSelectors tests restoration of environments and deployments with nil selectors
+// TestStore_Restore_NilSelectors tests restoration of environments and deployments with nil selectors.
 func TestStore_Restore_NilSelectors(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -870,7 +898,7 @@ func TestStore_Restore_NilSelectors(t *testing.T) {
 	assert.NotNil(t, deployResources, "Should handle nil selector gracefully")
 }
 
-// TestStore_Restore_ProgressCallback tests that the progress callback is called during restoration
+// TestStore_Restore_ProgressCallback tests that the progress callback is called during restoration.
 func TestStore_Restore_ProgressCallback(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()
@@ -924,7 +952,7 @@ func TestStore_Restore_ProgressCallback(t *testing.T) {
 	t.Logf("Callback invoked: %v, messages: %v", callbackInvoked, statusMessages)
 }
 
-// TestStore_Restore_LargeDataset tests restoration performance with many entities
+// TestStore_Restore_LargeDataset tests restoration performance with many entities.
 func TestStore_Restore_LargeDataset(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping large dataset test in short mode")
@@ -983,7 +1011,7 @@ func TestStore_Restore_LargeDataset(t *testing.T) {
 	assert.Len(t, allResources, numResources, "All resources should be restored")
 }
 
-// TestStore_Restore_EmptyChanges tests restoration with empty change set
+// TestStore_Restore_EmptyChanges tests restoration with empty change set.
 func TestStore_Restore_EmptyChanges(t *testing.T) {
 	ctx := context.Background()
 
@@ -997,7 +1025,7 @@ func TestStore_Restore_EmptyChanges(t *testing.T) {
 	assert.Empty(t, testStore.Environments.Items())
 }
 
-// TestStore_Restore_DuplicateIDs tests that restoration handles duplicate IDs correctly
+// TestStore_Restore_DuplicateIDs tests that restoration handles duplicate IDs correctly.
 func TestStore_Restore_DuplicateIDs(t *testing.T) {
 	ctx := context.Background()
 	namespace := "workspace-" + uuid.New().String()

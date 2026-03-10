@@ -7,12 +7,12 @@ import (
 	"os"
 	"testing"
 	"time"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/reconcile"
 )
 
 const defaultTestPostgresURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -290,8 +290,18 @@ func TestQueue_EnqueueMany_ClaimableByFilteredQueue(t *testing.T) {
 	ctx := context.Background()
 
 	err := all.EnqueueMany(ctx, []reconcile.EnqueueParams{
-		{WorkspaceID: workspaceID, Kind: "target-kind", ScopeType: "env", ScopeID: uuid.NewString()},
-		{WorkspaceID: workspaceID, Kind: "target-kind", ScopeType: "env", ScopeID: uuid.NewString()},
+		{
+			WorkspaceID: workspaceID,
+			Kind:        "target-kind",
+			ScopeType:   "env",
+			ScopeID:     uuid.NewString(),
+		},
+		{
+			WorkspaceID: workspaceID,
+			Kind:        "target-kind",
+			ScopeType:   "env",
+			ScopeID:     uuid.NewString(),
+		},
 		{WorkspaceID: workspaceID, Kind: "other-kind", ScopeType: "env", ScopeID: uuid.NewString()},
 	})
 	if err != nil {
@@ -651,7 +661,10 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 		t.Fatalf("worker-b claim while leased failed: %v", err)
 	}
 	if len(claimedByB) != 0 {
-		t.Fatalf("expected worker-b to get no scope while worker-a lease active, got %+v", claimedByB)
+		t.Fatalf(
+			"expected worker-b to get no scope while worker-a lease active, got %+v",
+			claimedByB,
+		)
 	}
 
 	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
@@ -675,13 +688,22 @@ func TestQueue_EnqueuePayloadWhileClaimed_NotVisibleToOtherWorkers(t *testing.T)
 		t.Fatalf("worker-b claim after release failed: %v", err)
 	}
 	if len(claimedAfterRelease) != 1 {
-		t.Fatalf("expected worker-b to claim the scope after release, got %d", len(claimedAfterRelease))
+		t.Fatalf(
+			"expected worker-b to claim the scope after release, got %d",
+			len(claimedAfterRelease),
+		)
 	}
 	if len(claimedAfterRelease[0].Payloads) != 1 {
-		t.Fatalf("expected only newly enqueued payload to remain, got %d", len(claimedAfterRelease[0].Payloads))
+		t.Fatalf(
+			"expected only newly enqueued payload to remain, got %d",
+			len(claimedAfterRelease[0].Payloads),
+		)
 	}
 	if claimedAfterRelease[0].Payloads[0].Key != "payload-b" {
-		t.Fatalf("expected remaining payload key payload-b, got %s", claimedAfterRelease[0].Payloads[0].Key)
+		t.Fatalf(
+			"expected remaining payload key payload-b, got %s",
+			claimedAfterRelease[0].Payloads[0].Key,
+		)
 	}
 }
 
@@ -787,7 +809,10 @@ func TestQueue_FilteredByKind_WithAggregatedPayloads(t *testing.T) {
 		t.Fatalf("expected filtered kind only, got %s", filteredClaim[0].Kind)
 	}
 	if len(filteredClaim[0].Payloads) != 2 {
-		t.Fatalf("expected filtered scope to aggregate 2 payloads, got %d", len(filteredClaim[0].Payloads))
+		t.Fatalf(
+			"expected filtered scope to aggregate 2 payloads, got %d",
+			len(filteredClaim[0].Payloads),
+		)
 	}
 
 	otherClaim, err := all.Claim(ctx, reconcile.ClaimParams{
@@ -919,7 +944,10 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 		t.Fatalf("expected worker-a to claim target scope %s, got %s", scopeID, claimedA[0].ScopeID)
 	}
 	if len(claimedA[0].Payloads) != 2 {
-		t.Fatalf("expected worker-a to get both payloads for scope, got %d", len(claimedA[0].Payloads))
+		t.Fatalf(
+			"expected worker-a to get both payloads for scope, got %d",
+			len(claimedA[0].Payloads),
+		)
 	}
 
 	// New payloads can be added while claimed, but must not be claimable until release.
@@ -995,7 +1023,11 @@ func TestQueue_SingleFlightPerScope_AckProcessedRows_ContinueWithNewPayloads(t *
 		}
 		foundScope = true
 		if len(item.Payloads) != 1 {
-			t.Fatalf("expected only new payload to remain for scope %s, got %d", scopeID, len(item.Payloads))
+			t.Fatalf(
+				"expected only new payload to remain for scope %s, got %d",
+				scopeID,
+				len(item.Payloads),
+			)
 		}
 		if item.Payloads[0].Key != "payload-c" {
 			t.Fatalf("expected remaining payload key payload-c, got %s", item.Payloads[0].Key)
@@ -1011,13 +1043,28 @@ func TestQueue_ValidationAndOwnershipErrors(t *testing.T) {
 	queue := New(pool)
 	ctx := context.Background()
 
-	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{}); !errors.Is(err, reconcile.ErrMissingWorkspaceID) {
+	if err := queue.Enqueue(
+		ctx,
+		reconcile.EnqueueParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkspaceID,
+	) {
 		t.Fatalf("expected ErrMissingWorkspaceID, got %v", err)
 	}
-	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{WorkspaceID: uuid.NewString()}); !errors.Is(err, reconcile.ErrMissingKind) {
+	if err := queue.Enqueue(
+		ctx,
+		reconcile.EnqueueParams{WorkspaceID: uuid.NewString()},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingKind,
+	) {
 		t.Fatalf("expected ErrMissingKind, got %v", err)
 	}
-	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{WorkspaceID: "bad-uuid", Kind: "k"}); err == nil {
+	if err := queue.Enqueue(
+		ctx,
+		reconcile.EnqueueParams{WorkspaceID: "bad-uuid", Kind: "k"},
+	); err == nil {
 		t.Fatal("expected parse workspace_id error")
 	}
 	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{
@@ -1028,24 +1075,60 @@ func TestQueue_ValidationAndOwnershipErrors(t *testing.T) {
 		t.Fatal("expected payload normalization error")
 	}
 
-	if _, err := queue.Claim(ctx, reconcile.ClaimParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if _, err := queue.Claim(
+		ctx,
+		reconcile.ClaimParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if _, err := queue.Claim(ctx, reconcile.ClaimParams{WorkerID: "w"}); !errors.Is(err, reconcile.ErrInvalidBatchSize) {
+	if _, err := queue.Claim(
+		ctx,
+		reconcile.ClaimParams{WorkerID: "w"},
+	); !errors.Is(
+		err,
+		reconcile.ErrInvalidBatchSize,
+	) {
 		t.Fatalf("expected ErrInvalidBatchSize, got %v", err)
 	}
-	if _, err := queue.Claim(ctx, reconcile.ClaimParams{WorkerID: "w", BatchSize: 1}); !errors.Is(err, reconcile.ErrInvalidLeaseDuration) {
+	if _, err := queue.Claim(
+		ctx,
+		reconcile.ClaimParams{WorkerID: "w", BatchSize: 1},
+	); !errors.Is(
+		err,
+		reconcile.ErrInvalidLeaseDuration,
+	) {
 		t.Fatalf("expected ErrInvalidLeaseDuration, got %v", err)
 	}
 
-	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if err := queue.ExtendLease(
+		ctx,
+		reconcile.ExtendLeaseParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{WorkerID: "w"}); !errors.Is(err, reconcile.ErrInvalidLeaseDuration) {
+	if err := queue.ExtendLease(
+		ctx,
+		reconcile.ExtendLeaseParams{WorkerID: "w"},
+	); !errors.Is(
+		err,
+		reconcile.ErrInvalidLeaseDuration,
+	) {
 		t.Fatalf("expected ErrInvalidLeaseDuration, got %v", err)
 	}
 
-	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if _, err := queue.AckSuccess(
+		ctx,
+		reconcile.AckSuccessParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
 	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
@@ -1056,10 +1139,22 @@ func TestQueue_ValidationAndOwnershipErrors(t *testing.T) {
 		t.Fatalf("expected ErrClaimNotOwned for unknown ack item, got %v", err)
 	}
 
-	if err := queue.Retry(ctx, reconcile.RetryParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if err := queue.Retry(
+		ctx,
+		reconcile.RetryParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.Retry(ctx, reconcile.RetryParams{WorkerID: "w"}); !errors.Is(err, reconcile.ErrInvalidRetryBackoff) {
+	if err := queue.Retry(
+		ctx,
+		reconcile.RetryParams{WorkerID: "w"},
+	); !errors.Is(
+		err,
+		reconcile.ErrInvalidRetryBackoff,
+	) {
 		t.Fatalf("expected ErrInvalidRetryBackoff, got %v", err)
 	}
 	if err := queue.Retry(ctx, reconcile.RetryParams{
@@ -1147,7 +1242,11 @@ func TestQueue_Helpers(t *testing.T) {
 		t.Fatalf("normalize payload failed: %v", err)
 	}
 	if key == "" || len(payload) == 0 || !hasPayload {
-		t.Fatalf("expected normalized payload and generated key, got payload=%s key=%q", payload, key)
+		t.Fatalf(
+			"expected normalized payload and generated key, got payload=%s key=%q",
+			payload,
+			key,
+		)
 	}
 
 	if _, _, _, err := normalizePayload("t", "", json.RawMessage("{bad")); err == nil {
@@ -1311,7 +1410,11 @@ func TestQueue_ExtendLeaseSuccess(t *testing.T) {
 }
 
 func TestNormalizePayload_PreservesProvidedKey(t *testing.T) {
-	payload, key, hasPayload, err := normalizePayload("selector_eval", "fixed-key", json.RawMessage(`{"x":1}`))
+	payload, key, hasPayload, err := normalizePayload(
+		"selector_eval",
+		"fixed-key",
+		json.RawMessage(`{"x":1}`),
+	)
 	if err != nil {
 		t.Fatalf("normalize payload with provided key failed: %v", err)
 	}
@@ -1447,6 +1550,9 @@ func TestQueue_Retry_NoPayloadScope_ReappearsAfterBackoff(t *testing.T) {
 		t.Fatalf("expected no-payload scope to reappear after backoff, got %d", len(afterBackoff))
 	}
 	if len(afterBackoff[0].Payloads) != 0 {
-		t.Fatalf("expected zero payloads after retry on no-payload scope, got %d", len(afterBackoff[0].Payloads))
+		t.Fatalf(
+			"expected zero payloads after retry on no-payload scope, got %d",
+			len(afterBackoff[0].Payloads),
+		)
 	}
 }

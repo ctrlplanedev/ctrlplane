@@ -3,10 +3,10 @@ package systems
 import (
 	"encoding/json"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // ToOapi converts a db.System into an oapi.System.

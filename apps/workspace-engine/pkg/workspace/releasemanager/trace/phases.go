@@ -6,18 +6,17 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
 	"workspace-engine/pkg/workspace/releasemanager/trace/token"
 )
 
-// PlanningPhase represents the planning phase
+// PlanningPhase represents the planning phase.
 type PlanningPhase struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
 	span     trace.Span
 }
 
-// StartEvaluation starts a new policy evaluation
+// StartEvaluation starts a new policy evaluation.
 func (p *PlanningPhase) StartEvaluation(name string) *Evaluation {
 	// Get depth BEFORE locking to avoid deadlock
 	depth := p.recorder.getDepth(p.ctx) + 1
@@ -53,19 +52,19 @@ func (p *PlanningPhase) StartEvaluation(name string) *Evaluation {
 	}
 }
 
-// MakeDecision makes the final planning decision
+// MakeDecision makes the final planning decision.
 func (p *PlanningPhase) MakeDecision(message string, decision Decision) {
 	p.recorder.recordDecision(p.ctx, message, decision)
 }
 
-// End completes the planning phase
+// End completes the planning phase.
 func (p *PlanningPhase) End() {
 	p.span.SetAttributes(attribute.String(attrStatus, string(StatusCompleted)))
 	p.span.SetStatus(codes.Ok, string(StatusCompleted))
 	p.span.End()
 }
 
-// Evaluation represents a policy evaluation
+// Evaluation represents a policy evaluation.
 type Evaluation struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
@@ -77,14 +76,14 @@ func (e *Evaluation) SetAttributes(attributes ...attribute.KeyValue) *Evaluation
 	return e
 }
 
-// AddMetadata adds metadata to the evaluation
+// AddMetadata adds metadata to the evaluation.
 func (e *Evaluation) AddMetadata(key string, value any) *Evaluation {
 	attrs := metadataToAttributes(key, value)
 	e.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return e
 }
 
-// SetResult sets the evaluation result
+// SetResult sets the evaluation result.
 func (e *Evaluation) SetResult(result EvaluationResult, message string) *Evaluation {
 	status := evalResultToStatus(result)
 	e.span.SetAttributes(
@@ -98,19 +97,19 @@ func (e *Evaluation) SetResult(result EvaluationResult, message string) *Evaluat
 	return e
 }
 
-// End completes the evaluation
+// End completes the evaluation.
 func (e *Evaluation) End() {
 	e.span.End()
 }
 
-// EligibilityPhase represents the eligibility phase
+// EligibilityPhase represents the eligibility phase.
 type EligibilityPhase struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
 	span     trace.Span
 }
 
-// StartCheck starts a new eligibility check
+// StartCheck starts a new eligibility check.
 func (e *EligibilityPhase) StartCheck(name string) *Check {
 	// Get depth BEFORE locking to avoid deadlock
 	depth := e.recorder.getDepth(e.ctx) + 1
@@ -146,33 +145,33 @@ func (e *EligibilityPhase) StartCheck(name string) *Check {
 	}
 }
 
-// MakeDecision makes the final eligibility decision
+// MakeDecision makes the final eligibility decision.
 func (e *EligibilityPhase) MakeDecision(message string, decision Decision) {
 	e.recorder.recordDecision(e.ctx, message, decision)
 }
 
-// End completes the eligibility phase
+// End completes the eligibility phase.
 func (e *EligibilityPhase) End() {
 	e.span.SetAttributes(attribute.String(attrStatus, string(StatusCompleted)))
 	e.span.SetStatus(codes.Ok, string(StatusCompleted))
 	e.span.End()
 }
 
-// Check represents an eligibility check
+// Check represents an eligibility check.
 type Check struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
 	span     trace.Span
 }
 
-// AddMetadata adds metadata to the check
+// AddMetadata adds metadata to the check.
 func (c *Check) AddMetadata(key string, value any) *Check {
 	attrs := metadataToAttributes(key, value)
 	c.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return c
 }
 
-// SetResult sets the check result
+// SetResult sets the check result.
 func (c *Check) SetResult(result CheckResult, message string) *Check {
 	status := checkResultToStatus(result)
 	c.span.SetAttributes(
@@ -185,19 +184,19 @@ func (c *Check) SetResult(result CheckResult, message string) *Check {
 	return c
 }
 
-// End completes the check
+// End completes the check.
 func (c *Check) End() {
 	c.span.End()
 }
 
-// ExecutionPhase represents the execution phase
+// ExecutionPhase represents the execution phase.
 type ExecutionPhase struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
 	span     trace.Span
 }
 
-// StartAction starts an action under the execution phase
+// StartAction starts an action under the execution phase.
 func (e *ExecutionPhase) StartAction(name string) *Action {
 	// Get depth BEFORE locking to avoid deadlock
 	depth := e.recorder.getDepth(e.ctx) + 1
@@ -233,7 +232,7 @@ func (e *ExecutionPhase) StartAction(name string) *Action {
 	}
 }
 
-// TriggerJob triggers a deployment job
+// TriggerJob triggers a deployment job.
 func (e *ExecutionPhase) TriggerJob(jobType string, config map[string]string) *Job {
 	// Get depth BEFORE locking to avoid deadlock
 	depth := e.recorder.getDepth(e.ctx) + 1
@@ -276,14 +275,14 @@ func (e *ExecutionPhase) TriggerJob(jobType string, config map[string]string) *J
 	}
 }
 
-// End completes the execution phase
+// End completes the execution phase.
 func (e *ExecutionPhase) End() {
 	e.span.SetAttributes(attribute.String(attrStatus, string(StatusCompleted)))
 	e.span.SetStatus(codes.Ok, string(StatusCompleted))
 	e.span.End()
 }
 
-// Job represents a triggered deployment job
+// Job represents a triggered deployment job.
 type Job struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
@@ -291,14 +290,14 @@ type Job struct {
 	jobType  string
 }
 
-// AddMetadata adds metadata to the job
+// AddMetadata adds metadata to the job.
 func (j *Job) AddMetadata(key string, value any) *Job {
 	attrs := metadataToAttributes(key, value)
 	j.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return j
 }
 
-// Token generates a trace token for external systems
+// Token generates a trace token for external systems.
 func (j *Job) Token() string {
 	traceID := j.recorder.rootTraceID
 	jobID := j.jobType // Use job type as identifier
@@ -307,29 +306,34 @@ func (j *Job) Token() string {
 	return token.GenerateDefaultTraceToken(traceID, jobID)
 }
 
-// End completes the job
+// End completes the job.
 func (j *Job) End() {
 	j.span.SetAttributes(attribute.String(attrStatus, string(StatusCompleted)))
 	j.span.SetStatus(codes.Ok, string(StatusCompleted))
 	j.span.End()
 }
 
-// Action represents a general-purpose action
+// Action represents a general-purpose action.
 type Action struct {
 	recorder *ReconcileTarget
 	ctx      context.Context
 	span     trace.Span
 }
 
-// AddMetadata adds metadata to the action
+// AddMetadata adds metadata to the action.
 func (a *Action) AddMetadata(key string, value any) *Action {
 	attrs := metadataToAttributes(key, value)
 	a.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return a
 }
 
-// AddStep adds a step to the action (completes immediately)
-func (a *Action) AddStep(name string, result StepResult, message string, attributes ...attribute.KeyValue) *Action {
+// AddStep adds a step to the action (completes immediately).
+func (a *Action) AddStep(
+	name string,
+	result StepResult,
+	message string,
+	attributes ...attribute.KeyValue,
+) *Action {
 	// Get depth BEFORE locking to avoid deadlock
 	depth := a.recorder.getDepth(a.ctx) + 1
 
@@ -364,7 +368,7 @@ func (a *Action) AddStep(name string, result StepResult, message string, attribu
 	return a
 }
 
-// End completes the action
+// End completes the action.
 func (a *Action) End() {
 	a.span.SetAttributes(attribute.String(attrStatus, string(StatusCompleted)))
 	a.span.SetStatus(codes.Ok, string(StatusCompleted))

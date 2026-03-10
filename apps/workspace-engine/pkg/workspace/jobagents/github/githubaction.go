@@ -8,16 +8,15 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents/types"
-	"workspace-engine/pkg/workspace/store"
-
-	"workspace-engine/pkg/config"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents/types"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/github")
@@ -61,10 +60,16 @@ func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
 		)
 		defer span.End()
 
-		if _, err := client.Actions.CreateWorkflowDispatchEventByID(asyncCtx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
-			Ref:    ref,
-			Inputs: map[string]any{"job_id": job.Id},
-		}); err != nil {
+		if _, err := client.Actions.CreateWorkflowDispatchEventByID(
+			asyncCtx,
+			cfg.Owner,
+			cfg.Repo,
+			cfg.WorkflowId,
+			github.CreateWorkflowDispatchEventRequest{
+				Ref:    ref,
+				Inputs: map[string]any{"job_id": job.Id},
+			},
+		); err != nil {
 			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
 			job.Status = oapi.JobStatusInvalidIntegration
 			job.UpdatedAt = time.Now()
@@ -76,7 +81,9 @@ func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
 	return nil
 }
 
-func (a *GithubAction) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (oapi.GithubJobAgentConfig, error) {
+func (a *GithubAction) parseJobAgentConfig(
+	jobAgentConfig oapi.JobAgentConfig,
+) (oapi.GithubJobAgentConfig, error) {
 	installationId := toInt(jobAgentConfig["installationId"])
 	if installationId == 0 {
 		return oapi.GithubJobAgentConfig{}, fmt.Errorf("installationId is required")
@@ -116,7 +123,9 @@ func (a *GithubAction) createGithubClient(cfg *oapi.GithubJobAgentConfig) (*gith
 	privateKey := config.Global.GithubBotPrivateKey
 
 	if appIDStr == "" || privateKey == "" {
-		return nil, fmt.Errorf("GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY")
+		return nil, fmt.Errorf(
+			"GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY",
+		)
 	}
 
 	appID, err := strconv.ParseInt(appIDStr, 10, 64)
@@ -180,7 +189,11 @@ func (a *GithubAction) getInstallationToken(jwtToken string, installationID int)
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get installation token: %s - %s", resp.Status, string(body))
+		return "", fmt.Errorf(
+			"failed to get installation token: %s - %s",
+			resp.Status,
+			string(body),
+		)
 	}
 
 	var result struct {

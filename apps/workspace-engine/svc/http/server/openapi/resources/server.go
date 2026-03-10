@@ -6,24 +6,28 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"workspace-engine/pkg/concurrency"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/store/resources"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/concurrency"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/resources"
+	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type Resources struct{}
 
 var resourceTracer = otel.Tracer("server/openapi/resources")
 
-func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string) {
+func (r *Resources) GetResourceByIdentifier(
+	c *gin.Context,
+	workspaceId string,
+	resourceIdentifier string,
+) {
 	// URL decode the identifier (in case it contains special characters like slashes)
 	decodedIdentifier, err := url.PathUnescape(resourceIdentifier)
 	if err != nil {
@@ -56,7 +60,11 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 	})
 }
 
-func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oapi.QueryResourcesParams) {
+func (r *Resources) QueryResources(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.QueryResourcesParams,
+) {
 	// Parse request body
 	var body oapi.QueryResourcesJSONBody
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -78,9 +86,13 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		}
 		cel = sel.Cel
 	}
-	resources, err := resourcesGetter.GetResources(c.Request.Context(), workspaceId, resources.GetResourcesOptions{
-		CEL: cel,
-	})
+	resources, err := resourcesGetter.GetResources(
+		c.Request.Context(),
+		workspaceId,
+		resources.GetResourcesOptions{
+			CEL: cel,
+		},
+	)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -122,7 +134,11 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 	})
 }
 
-func (r *Resources) GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string) {
+func (r *Resources) GetRelationshipsForResource(
+	c *gin.Context,
+	workspaceId string,
+	resourceIdentifier string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -140,7 +156,8 @@ func (r *Resources) GetRelationshipsForResource(c *gin.Context, workspaceId stri
 	}
 
 	relatableEntity := relationships.NewResourceEntity(resource)
-	relatedEntities, err := ws.RelationshipRules().GetRelatedEntities(c.Request.Context(), relatableEntity)
+	relatedEntities, err := ws.RelationshipRules().
+		GetRelatedEntities(c.Request.Context(), relatableEntity)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get relationships: " + err.Error(),
@@ -151,7 +168,11 @@ func (r *Resources) GetRelationshipsForResource(c *gin.Context, workspaceId stri
 	c.JSON(http.StatusOK, relatedEntities)
 }
 
-func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, resourceIdentifier string) {
+func (r *Resources) GetVariablesForResource(
+	c *gin.Context,
+	workspaceId string,
+	resourceIdentifier string,
+) {
 	_, span := resourceTracer.Start(c.Request.Context(), "GetVariablesForResource")
 	defer span.End()
 
@@ -207,7 +228,12 @@ func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, 
 	c.JSON(http.StatusOK, variables)
 }
 
-func (r *Resources) GetDeploymentsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params oapi.GetDeploymentsForResourceParams) {
+func (r *Resources) GetDeploymentsForResource(
+	c *gin.Context,
+	workspaceId string,
+	resourceIdentifier string,
+	params oapi.GetDeploymentsForResourceParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -266,7 +292,12 @@ func (r *Resources) GetDeploymentsForResource(c *gin.Context, workspaceId string
 	})
 }
 
-func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params oapi.GetReleaseTargetsForResourceParams) {
+func (r *Resources) GetReleaseTargetsForResource(
+	c *gin.Context,
+	workspaceId string,
+	resourceIdentifier string,
+	params oapi.GetReleaseTargetsForResourceParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -344,22 +375,50 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 				releaseTarget,
 			)
 			if err != nil {
-				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"error getting release target state for key=%s: %w",
+						releaseTarget.Key(),
+						err,
+					),
+				}, nil
 			}
 
 			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
 			if !ok {
-				return result{nil, fmt.Errorf("environment not found: environmentId=%s for release target key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"environment not found: environmentId=%s for release target key=%s",
+						releaseTarget.EnvironmentId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			res, ok := ws.Resources().Get(releaseTarget.ResourceId)
 			if !ok {
-				return result{nil, fmt.Errorf("resource not found: resourceId=%s for release target key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"resource not found: resourceId=%s for release target key=%s",
+						releaseTarget.ResourceId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
 			if !ok {
-				return result{nil, fmt.Errorf("deployment not found: deploymentId=%s for release target key=%s", releaseTarget.DeploymentId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"deployment not found: deploymentId=%s for release target key=%s",
+						releaseTarget.DeploymentId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			item := &oapi.ReleaseTargetWithState{
@@ -407,7 +466,12 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 	})
 }
 
-func (r *Resources) GetReleaseTargetForResourceInDeployment(c *gin.Context, workspaceId string, resourceIdentifier string, deploymentId string) {
+func (r *Resources) GetReleaseTargetForResourceInDeployment(
+	c *gin.Context,
+	workspaceId string,
+	resourceIdentifier string,
+	deploymentId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

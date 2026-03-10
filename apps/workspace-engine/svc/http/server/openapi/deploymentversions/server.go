@@ -4,16 +4,20 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+
+	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 type DeploymentVersions struct{}
 
-func (s *DeploymentVersions) GetDeploymentVersion(c *gin.Context, workspaceId string, deploymentVersionId string) {
+func (s *DeploymentVersions) GetDeploymentVersion(
+	c *gin.Context,
+	workspaceId string,
+	deploymentVersionId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -49,7 +53,10 @@ func getSystemsEnvironments(ws *workspace.Workspace, systemIds []string) []*oapi
 	return environments
 }
 
-func getEnvironmentReleaseTargets(releaseTargets []*oapi.ReleaseTarget, environmentId string) []*oapi.ReleaseTarget {
+func getEnvironmentReleaseTargets(
+	releaseTargets []*oapi.ReleaseTarget,
+	environmentId string,
+) []*oapi.ReleaseTarget {
 	environmentReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, releaseTarget := range releaseTargets {
 		if releaseTarget.EnvironmentId == environmentId {
@@ -59,7 +66,11 @@ func getEnvironmentReleaseTargets(releaseTargets []*oapi.ReleaseTarget, environm
 	return environmentReleaseTargets
 }
 
-func getDeploymentReleaseTargets(c *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
+func getDeploymentReleaseTargets(
+	c *gin.Context,
+	ws *workspace.Workspace,
+	deploymentId string,
+) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
 	allReleaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
@@ -73,7 +84,11 @@ func getDeploymentReleaseTargets(c *gin.Context, ws *workspace.Workspace, deploy
 	return releaseTargets, nil
 }
 
-func getReleaseTargetJobs(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTarget, versionId string) ([]*oapi.Job, error) {
+func getReleaseTargetJobs(
+	ws *workspace.Workspace,
+	releaseTarget *oapi.ReleaseTarget,
+	versionId string,
+) ([]*oapi.Job, error) {
 	jobsMap := ws.Jobs().GetJobsForReleaseTarget(releaseTarget)
 	jobs := make([]*oapi.Job, 0)
 	for _, job := range jobsMap {
@@ -107,7 +122,11 @@ type environmentWithTargets struct {
 	ReleaseTargets []*fullReleaseTarget `json:"releaseTargets"`
 }
 
-func getFullReleaseTarget(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTarget, versionId string) (*fullReleaseTarget, error) {
+func getFullReleaseTarget(
+	ws *workspace.Workspace,
+	releaseTarget *oapi.ReleaseTarget,
+	versionId string,
+) (*fullReleaseTarget, error) {
 	jobs, err := getReleaseTargetJobs(ws, releaseTarget, versionId)
 	if err != nil {
 		return nil, err
@@ -123,7 +142,11 @@ func getFullReleaseTarget(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTa
 	}, nil
 }
 
-func (s *DeploymentVersions) GetDeploymentVersionJobsList(c *gin.Context, workspaceId string, versionId string) {
+func (s *DeploymentVersions) GetDeploymentVersionJobsList(
+	c *gin.Context,
+	workspaceId string,
+	versionId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

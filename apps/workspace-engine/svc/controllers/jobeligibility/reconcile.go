@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -135,7 +134,11 @@ func (r *reconciler) checkEligibility(ctx context.Context) (bool, *time.Time, st
 	return true, nil, reason
 }
 
-func (r *reconciler) createFailureJob(ctx context.Context, status oapi.JobStatus, message string) error {
+func (r *reconciler) createFailureJob(
+	ctx context.Context,
+	status oapi.JobStatus,
+	message string,
+) error {
 	now := time.Now()
 	job := &oapi.Job{
 		Id:             uuid.New().String(),
@@ -179,13 +182,23 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 		jobAgent, err := r.getter.GetJobAgent(ctx, agentID)
 		if err != nil {
 			msg := fmt.Sprintf("Job agent '%s' not found", agentRef.Ref)
-			if createErr := r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg); createErr != nil {
-				return fmt.Errorf("create failure job for agent %s: %w (original: %w)", agentRef.Ref, createErr, err)
+			if createErr := r.createFailureJob(
+				ctx,
+				oapi.JobStatusInvalidJobAgent,
+				msg,
+			); createErr != nil {
+				return fmt.Errorf(
+					"create failure job for agent %s: %w (original: %w)",
+					agentRef.Ref,
+					createErr,
+					err,
+				)
 			}
 			continue
 		}
 
-		job, err := jobs.NewFactoryFromGetters(r.getter).CreateJobForRelease(ctx, r.release, jobAgent, nil)
+		job, err := jobs.NewFactoryFromGetters(r.getter).
+			CreateJobForRelease(ctx, r.release, jobAgent, nil)
 		if err != nil {
 			return fmt.Errorf("build job: %w", err)
 		}
@@ -204,7 +217,13 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 
 // Reconcile determines job eligibility for a release target and, if eligible,
 // builds a job and enqueues it for dispatch.
-func Reconcile(ctx context.Context, workspaceID string, getter Getter, setter Setter, rt *ReleaseTarget) (*ReconcileResult, error) {
+func Reconcile(
+	ctx context.Context,
+	workspaceID string,
+	getter Getter,
+	setter Setter,
+	rt *ReleaseTarget,
+) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobeligibility.Reconcile")
 	defer span.End()
 

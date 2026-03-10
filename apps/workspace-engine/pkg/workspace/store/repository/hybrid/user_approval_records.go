@@ -12,7 +12,10 @@ type UserApprovalRecordRepo struct {
 	mem    repository.UserApprovalRecordRepo
 }
 
-func NewUserApprovalRecordRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *UserApprovalRecordRepo {
+func NewUserApprovalRecordRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *UserApprovalRecordRepo {
 	return &UserApprovalRecordRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.UserApprovalRecords(),
@@ -23,7 +26,9 @@ func (r *UserApprovalRecordRepo) Get(key string) (*oapi.UserApprovalRecord, bool
 	return r.mem.Get(key)
 }
 
-func (r *UserApprovalRecordRepo) GetApprovedByVersionAndEnvironment(versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+func (r *UserApprovalRecordRepo) GetApprovedByVersionAndEnvironment(
+	versionID, environmentID string,
+) ([]*oapi.UserApprovalRecord, error) {
 	return r.mem.GetApprovedByVersionAndEnvironment(versionID, environmentID)
 }
 

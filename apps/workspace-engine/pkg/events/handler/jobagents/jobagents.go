@@ -2,14 +2,13 @@ package jobagents
 
 import (
 	"context"
+	"encoding/json"
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"encoding/json"
 )
 
 func HandleJobAgentCreated(
@@ -27,7 +26,11 @@ func HandleJobAgentCreated(
 	return nil
 }
 
-func getAffectedReleaseTargets(ctx context.Context, ws *workspace.Workspace, jobAgent *oapi.JobAgent) ([]*oapi.ReleaseTarget, error) {
+func getAffectedReleaseTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	jobAgent *oapi.JobAgent,
+) ([]*oapi.ReleaseTarget, error) {
 	allDeployments, err := ws.Deployments().ForJobAgent(ctx, jobAgent)
 	if err != nil {
 		return nil, err

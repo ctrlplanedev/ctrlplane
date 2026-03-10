@@ -3,12 +3,12 @@ package resources
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 func timestamptzToTimePtr(ts pgtype.Timestamptz) *time.Time {

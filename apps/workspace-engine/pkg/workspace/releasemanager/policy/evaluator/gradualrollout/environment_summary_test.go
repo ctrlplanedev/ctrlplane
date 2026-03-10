@@ -3,16 +3,16 @@ package gradualrollout
 import (
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 )
 
-// TestFormatDuration tests the formatDuration helper function
+// TestFormatDuration tests the formatDuration helper function.
 func TestFormatDuration(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -40,7 +40,7 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
-// TestPluralize tests the pluralize helper function
+// TestPluralize tests the pluralize helper function.
 func TestPluralize(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -62,7 +62,7 @@ func TestPluralize(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_NoReleaseTargets tests the summary
-// evaluator when there are no release targets
+// evaluator when there are no release targets.
 func TestGradualRolloutEnvironmentSummaryEvaluator_NoReleaseTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -90,7 +90,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NoReleaseTargets(t *testing.T
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed tests the summary
-// when all targets are successfully deployed
+// when all targets are successfully deployed.
 func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -143,7 +143,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied tests the summary
-// when all targets are denied
+// when all targets are denied.
 func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -213,7 +213,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout tests the summary
-// when rollout is in progress
+// when rollout is in progress.
 func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -274,7 +274,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) 
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady tests the summary
-// when the next deployment is ready now
+// when the next deployment is ready now.
 func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -329,7 +329,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testin
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails tests that timing
-// details are properly calculated and included
+// details are properly calculated and included.
 func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -373,14 +373,22 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.
 
 	// Check timing details
 	assert.Equal(t, baseTime.Format(time.RFC3339), result.Details["rollout_start_time"])
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result.Details["next_deployment_time"])
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result.Details["estimated_completion_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result.Details["next_deployment_time"],
+	)
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result.Details["estimated_completion_time"],
+	)
 
 	_ = resources // suppress unused warning
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked tests when some
-// targets are deployed and rollout is complete
+// targets are deployed and rollout is complete.
 func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -441,7 +449,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_Messages tests that the messages
-// array contains all individual target evaluations
+// array contains all individual target evaluations.
 func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -497,7 +505,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_ScopeFields tests that the evaluator
-// declares the correct scope fields
+// declares the correct scope fields.
 func TestGradualRolloutEnvironmentSummaryEvaluator_ScopeFields(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -513,7 +521,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ScopeFields(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_NilInputs tests that the evaluator
-// handles nil inputs gracefully
+// handles nil inputs gracefully.
 func TestGradualRolloutEnvironmentSummaryEvaluator_NilInputs(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -529,7 +537,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NilInputs(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized tests the summary
-// evaluator with linear-normalized rollout type
+// evaluator with linear-normalized rollout type.
 func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -585,7 +593,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy tests the summary
-// when an approval policy affects the rollout start time
+// when an approval policy affects the rollout start time.
 func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -664,7 +672,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing
 	_ = resources // suppress unused warning
 }
 
-// TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget tests with a single target
+// TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget tests with a single target.
 func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
@@ -715,7 +723,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 }
 
 // TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval tests that
-// when timeScaleInterval is 0, all targets deploy immediately
+// when timeScaleInterval is 0, all targets deploy immediately.
 func TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()

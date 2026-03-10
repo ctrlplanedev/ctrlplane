@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
@@ -38,7 +39,10 @@ func NewFromJSON(data json.RawMessage) (*Provider, error) {
 
 func (p *Provider) Type() string { return "sleep" }
 
-func (p *Provider) Measure(_ context.Context, _ *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *Provider) Measure(
+	_ context.Context,
+	_ *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	time.Sleep(p.duration)
 	return time.Now(), map[string]any{"ok": true}, nil
 }

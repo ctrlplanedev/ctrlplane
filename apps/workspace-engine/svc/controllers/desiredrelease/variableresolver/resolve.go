@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/eval"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("desiredrelease/variableresolver")
@@ -91,13 +90,27 @@ func Resolve(
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
 
-		if lv := resolveFromResource(ctx, resolver, resourceID, key, resourceVars, entity); lv != nil {
+		if lv := resolveFromResource(
+			ctx,
+			resolver,
+			resourceID,
+			key,
+			resourceVars,
+			entity,
+		); lv != nil {
 			resolved[key] = *lv
 			fromResource++
 			continue
 		}
 
-		if lv := resolveFromValues(ctx, resolver, resourceID, dv.Values, scope.Resource, entity); lv != nil {
+		if lv := resolveFromValues(
+			ctx,
+			resolver,
+			resourceID,
+			dv.Values,
+			scope.Resource,
+			entity,
+		); lv != nil {
 			resolved[key] = *lv
 			fromValue++
 			continue
@@ -127,7 +140,12 @@ type realtimeResolver struct {
 	rules       []eval.Rule
 }
 
-func newRealtimeResolver(getter Getter, resource *oapi.Resource, workspaceID uuid.UUID, rules []eval.Rule) *realtimeResolver {
+func newRealtimeResolver(
+	getter Getter,
+	resource *oapi.Resource,
+	workspaceID uuid.UUID,
+	rules []eval.Rule,
+) *realtimeResolver {
 	return &realtimeResolver{
 		getter:      getter,
 		resource:    resource,
@@ -136,11 +154,18 @@ func newRealtimeResolver(getter Getter, resource *oapi.Resource, workspaceID uui
 	}
 }
 
-func (r *realtimeResolver) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
+func (r *realtimeResolver) LoadCandidates(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	entityType string,
+) ([]eval.EntityData, error) {
 	return r.getter.LoadCandidates(ctx, workspaceID, entityType)
 }
 
-func (r *realtimeResolver) ResolveRelated(ctx context.Context, reference string) ([]*oapi.RelatableEntity, error) {
+func (r *realtimeResolver) ResolveRelated(
+	ctx context.Context,
+	reference string,
+) ([]*oapi.RelatableEntity, error) {
 	resID, err := uuid.Parse(r.resource.Id)
 	if err != nil {
 		return nil, fmt.Errorf("parse resource id: %w", err)

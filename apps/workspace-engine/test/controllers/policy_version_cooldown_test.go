@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
 )
 
 // ---------------------------------------------------------------------------
@@ -49,11 +48,16 @@ func TestVersionCooldown_SameVersion_Redeploy_Allowed(t *testing.T) {
 
 	rtKey := deploymentID.String() + ":" + environmentID.String() + ":" + resourceID.String()
 
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
 		WithEnvironment(EnvironmentName("production"), EnvironmentID(environmentID)),
 		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceID(resourceID)),
-		WithVersion(VersionTag("v1.0.0"), VersionID(versionID), VersionCreatedAt(time.Now().Add(-10*time.Minute))),
+		WithVersion(
+			VersionTag("v1.0.0"),
+			VersionID(versionID),
+			VersionCreatedAt(time.Now().Add(-10*time.Minute)),
+		),
 		WithPolicy(
 			PolicySelector("true"),
 			PolicyEnabled(true),

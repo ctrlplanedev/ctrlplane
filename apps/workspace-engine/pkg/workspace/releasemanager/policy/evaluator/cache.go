@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 )
@@ -59,7 +60,10 @@ func (m *MemoizedEvaluator) Complexity() int {
 // Evaluate returns the cached result if the relevant scope fields match,
 // otherwise evaluates and caches the result.
 // If the scope doesn't have the required fields, returns a denial without calling the evaluator.
-func (m *MemoizedEvaluator) Evaluate(ctx context.Context, scope EvaluatorScope) *oapi.RuleEvaluation {
+func (m *MemoizedEvaluator) Evaluate(
+	ctx context.Context,
+	scope EvaluatorScope,
+) *oapi.RuleEvaluation {
 	// Validate that the scope has all required fields
 	if !scope.HasFields(m.scopeFields) {
 		return m.buildMissingFieldsResult(scope)

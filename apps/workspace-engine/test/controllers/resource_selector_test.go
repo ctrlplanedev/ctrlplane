@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-	. "workspace-engine/test/controllers/harness"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	. "workspace-engine/test/controllers/harness"
 )
 
 // These tests mirror the resource-selector scenarios from
@@ -346,14 +345,23 @@ func TestSelector_CloudMetadata_MatchesBothClouds(t *testing.T) {
 
 func TestSelector_Isolation_TwoDeploymentsDifferentSelectors(t *testing.T) {
 	// Pipeline 1: filtered deployment — only dev resources
-	p1 := NewTestPipeline(t,
+	p1 := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentName("deployment-has-filter"),
 			DeploymentSelector(`resource.metadata["env"] == "dev"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("r1"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "dev"})),
-		WithResource(ResourceName("r2"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "qa"})),
+		WithResource(
+			ResourceName("r1"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
+		WithResource(
+			ResourceName("r2"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "qa"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -362,14 +370,23 @@ func TestSelector_Isolation_TwoDeploymentsDifferentSelectors(t *testing.T) {
 	assert.Len(t, p1.ComputedResources(), 1, "filtered deployment should match 1 resource")
 
 	// Pipeline 2: unfiltered deployment — all resources
-	p2 := NewTestPipeline(t,
+	p2 := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentName("deployment-has-no-filter"),
 			DeploymentSelector("true"),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("r1"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "dev"})),
-		WithResource(ResourceName("r2"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "qa"})),
+		WithResource(
+			ResourceName("r1"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
+		WithResource(
+			ResourceName("r2"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "qa"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -484,16 +501,37 @@ func TestSelector_StepByStep_SelectorThenRelease(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSelector_ManyResources_SelectiveMatch(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector(`resource.metadata["tier"] == "web"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("web-1"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "web"})),
-		WithResource(ResourceName("web-2"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "web"})),
-		WithResource(ResourceName("api-1"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "api"})),
-		WithResource(ResourceName("api-2"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "api"})),
-		WithResource(ResourceName("worker-1"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "worker"})),
+		WithResource(
+			ResourceName("web-1"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "web"}),
+		),
+		WithResource(
+			ResourceName("web-2"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "web"}),
+		),
+		WithResource(
+			ResourceName("api-1"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "api"}),
+		),
+		WithResource(
+			ResourceName("api-2"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "api"}),
+		),
+		WithResource(
+			ResourceName("worker-1"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "worker"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -582,14 +620,27 @@ func TestSelector_MutateAndRerun_SelectorChangedOnMock(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSelector_Dynamic_NarrowToWiden(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector(`resource.metadata["env"] == "dev"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("dev-srv"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "dev"})),
-		WithResource(ResourceName("qa-srv"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "qa"})),
-		WithResource(ResourceName("prod-srv"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "prod"})),
+		WithResource(
+			ResourceName("dev-srv"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
+		WithResource(
+			ResourceName("qa-srv"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "qa"}),
+		),
+		WithResource(
+			ResourceName("prod-srv"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "prod"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -601,18 +652,36 @@ func TestSelector_Dynamic_NarrowToWiden(t *testing.T) {
 	p.EnqueueSelectorEval()
 	p.Run()
 
-	assert.Len(t, p.ComputedResources(), 3, "round 2: all resources should match after widening to true")
+	assert.Len(
+		t,
+		p.ComputedResources(),
+		3,
+		"round 2: all resources should match after widening to true",
+	)
 }
 
 func TestSelector_Dynamic_WidenToNarrow(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector("true"),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("web"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "web"})),
-		WithResource(ResourceName("api"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "api"})),
-		WithResource(ResourceName("worker"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"tier": "worker"})),
+		WithResource(
+			ResourceName("web"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "web"}),
+		),
+		WithResource(
+			ResourceName("api"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "api"}),
+		),
+		WithResource(
+			ResourceName("worker"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"tier": "worker"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -628,14 +697,27 @@ func TestSelector_Dynamic_WidenToNarrow(t *testing.T) {
 }
 
 func TestSelector_Dynamic_SwitchMetadataKey(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector(`resource.metadata["cloud"] == "gcp"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("gcp-1"), ResourceKind("Server"), ResourceMetadata(map[string]any{"cloud": "gcp", "region": "us-central1"})),
-		WithResource(ResourceName("aws-1"), ResourceKind("Server"), ResourceMetadata(map[string]any{"cloud": "aws", "region": "us-east-1"})),
-		WithResource(ResourceName("gcp-2"), ResourceKind("Server"), ResourceMetadata(map[string]any{"cloud": "gcp", "region": "eu-west1"})),
+		WithResource(
+			ResourceName("gcp-1"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"cloud": "gcp", "region": "us-central1"}),
+		),
+		WithResource(
+			ResourceName("aws-1"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"cloud": "aws", "region": "us-east-1"}),
+		),
+		WithResource(
+			ResourceName("gcp-2"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"cloud": "gcp", "region": "eu-west1"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -651,14 +733,27 @@ func TestSelector_Dynamic_SwitchMetadataKey(t *testing.T) {
 }
 
 func TestSelector_Dynamic_KindToMetadata(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector(`resource.kind == "Node"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("node-dev"), ResourceKind("Node"), ResourceMetadata(map[string]any{"env": "dev"})),
-		WithResource(ResourceName("node-prod"), ResourceKind("Node"), ResourceMetadata(map[string]any{"env": "prod"})),
-		WithResource(ResourceName("pod-dev"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"env": "dev"})),
+		WithResource(
+			ResourceName("node-dev"),
+			ResourceKind("Node"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
+		WithResource(
+			ResourceName("node-prod"),
+			ResourceKind("Node"),
+			ResourceMetadata(map[string]any{"env": "prod"}),
+		),
+		WithResource(
+			ResourceName("pod-dev"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -674,14 +769,27 @@ func TestSelector_Dynamic_KindToMetadata(t *testing.T) {
 }
 
 func TestSelector_Dynamic_CompoundToSimple(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector(`resource.kind == "Server" && resource.metadata["env"] == "prod"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("prod-server"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "prod"})),
-		WithResource(ResourceName("dev-server"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "dev"})),
-		WithResource(ResourceName("prod-pod"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"env": "prod"})),
+		WithResource(
+			ResourceName("prod-server"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "prod"}),
+		),
+		WithResource(
+			ResourceName("dev-server"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
+		WithResource(
+			ResourceName("prod-pod"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"env": "prod"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -693,18 +801,36 @@ func TestSelector_Dynamic_CompoundToSimple(t *testing.T) {
 	p.EnqueueSelectorEval()
 	p.Run()
 
-	assert.Len(t, p.ComputedResources(), 2, "round 2: both Servers match after dropping env condition")
+	assert.Len(
+		t,
+		p.ComputedResources(),
+		2,
+		"round 2: both Servers match after dropping env condition",
+	)
 }
 
 func TestSelector_Dynamic_MultipleIterations(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector("true"),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("a"), ResourceKind("Node"), ResourceMetadata(map[string]any{"env": "dev"})),
-		WithResource(ResourceName("b"), ResourceKind("Pod"), ResourceMetadata(map[string]any{"env": "prod"})),
-		WithResource(ResourceName("c"), ResourceKind("Node"), ResourceMetadata(map[string]any{"env": "prod"})),
+		WithResource(
+			ResourceName("a"),
+			ResourceKind("Node"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
+		WithResource(
+			ResourceName("b"),
+			ResourceKind("Pod"),
+			ResourceMetadata(map[string]any{"env": "prod"}),
+		),
+		WithResource(
+			ResourceName("c"),
+			ResourceKind("Node"),
+			ResourceMetadata(map[string]any{"env": "prod"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -754,12 +880,17 @@ func TestSelector_Dynamic_FilterMatchesNothing_ThenMatches(t *testing.T) {
 }
 
 func TestSelector_Dynamic_ResourcesChangeAlongsideFilter(t *testing.T) {
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(
 			DeploymentSelector(`resource.metadata["env"] == "dev"`),
 		),
 		WithEnvironment(EnvironmentName("production")),
-		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceMetadata(map[string]any{"env": "dev"})),
+		WithResource(
+			ResourceName("srv-1"),
+			ResourceKind("Server"),
+			ResourceMetadata(map[string]any{"env": "dev"}),
+		),
 		WithVersion(VersionTag("v1.0.0")),
 	)
 
@@ -781,7 +912,12 @@ func TestSelector_Dynamic_ResourcesChangeAlongsideFilter(t *testing.T) {
 	p.EnqueueSelectorEval()
 	p.Run()
 
-	assert.Len(t, p.ComputedResources(), 1, "round 2: only new staging resource matches updated filter")
+	assert.Len(
+		t,
+		p.ComputedResources(),
+		1,
+		"round 2: only new staging resource matches updated filter",
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -819,7 +955,9 @@ func TestSelector_EmptyMetadata_DoesNotMatch(t *testing.T) {
 func TestSelector_MultipleMetadataKeys(t *testing.T) {
 	p := NewTestPipeline(t,
 		WithDeployment(
-			DeploymentSelector(`resource.metadata["env"] == "prod" && resource.metadata["region"] == "us-east-1"`),
+			DeploymentSelector(
+				`resource.metadata["env"] == "prod" && resource.metadata["region"] == "us-east-1"`,
+			),
 		),
 		WithEnvironment(EnvironmentName("production")),
 		WithResource(

@@ -2,12 +2,12 @@ package utils
 
 import (
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/manager"
 )
 
 func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, error) {

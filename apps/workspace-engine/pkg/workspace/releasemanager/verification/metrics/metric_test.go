@@ -3,14 +3,17 @@ package metrics
 import (
 	"context"
 	"testing"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
-func createSleepMetricStatus(successCondition string, failureCondition *string) oapi.VerificationMetricStatus {
+func createSleepMetricStatus(
+	successCondition string,
+	failureCondition *string,
+) oapi.VerificationMetricStatus {
 	sleepProvider := oapi.SleepMetricProvider{
 		Type:            oapi.Sleep,
 		DurationSeconds: 0,
@@ -152,6 +155,6 @@ func TestMeasure_InvalidProvider(t *testing.T) {
 
 	_, err := Measure(ctx, &metric, &provider.ProviderContext{})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create provider")
 }

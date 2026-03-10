@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // mockSetter records calls to UpdateJob so tests can assert on them.
@@ -323,7 +322,13 @@ func TestResolveJobAfterDelay_WaitsForTimer(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		tr.resolveJobAfterDelay(context.Background(), "job-1", 5*time.Second, oapi.JobStatusSuccessful, "")
+		tr.resolveJobAfterDelay(
+			context.Background(),
+			"job-1",
+			5*time.Second,
+			oapi.JobStatusSuccessful,
+			"",
+		)
 		close(done)
 	}()
 
@@ -342,7 +347,13 @@ func TestResolveJobAfterDelay_MessageFormat_WithCustomMessage(t *testing.T) {
 	setter := &mockSetter{}
 	tr := &TestRunner{timeFunc: instantTimer, setter: setter}
 
-	tr.resolveJobAfterDelay(context.Background(), "job-1", 5*time.Second, oapi.JobStatusSuccessful, "hello")
+	tr.resolveJobAfterDelay(
+		context.Background(),
+		"job-1",
+		5*time.Second,
+		oapi.JobStatusSuccessful,
+		"hello",
+	)
 
 	calls := setter.getCalls()
 	require.Len(t, calls, 1)
@@ -353,7 +364,13 @@ func TestResolveJobAfterDelay_MessageFormat_NoCustomMessage(t *testing.T) {
 	setter := &mockSetter{}
 	tr := &TestRunner{timeFunc: instantTimer, setter: setter}
 
-	tr.resolveJobAfterDelay(context.Background(), "job-1", 10*time.Second, oapi.JobStatusFailure, "")
+	tr.resolveJobAfterDelay(
+		context.Background(),
+		"job-1",
+		10*time.Second,
+		oapi.JobStatusFailure,
+		"",
+	)
 
 	calls := setter.getCalls()
 	require.Len(t, calls, 1)

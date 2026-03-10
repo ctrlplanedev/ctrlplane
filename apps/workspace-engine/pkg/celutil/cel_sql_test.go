@@ -181,7 +181,11 @@ func TestExtractResourceFilter(t *testing.T) {
 			expr:           `(resource.version == 'ctrlplane.dev/kubernetes/cluster/v1') && (resource.metadata['kubernetes/status'] == 'running')`,
 			startParam:     2,
 			expectedClause: "version = $2 AND metadata->>$3 = $4",
-			expectedArgs:   []any{"ctrlplane.dev/kubernetes/cluster/v1", "kubernetes/status", "running"},
+			expectedArgs: []any{
+				"ctrlplane.dev/kubernetes/cluster/v1",
+				"kubernetes/status",
+				"running",
+			},
 		},
 		{
 			name:           "or expression not extractable",
@@ -202,7 +206,14 @@ func TestExtractResourceFilter(t *testing.T) {
 			expr:           `(((((resource.version == 'ctrlplane.dev/kubernetes/cluster/v1') && (resource.metadata['kubernetes/status'] == 'running')) && (resource.kind == 'AmazonElasticKubernetesService')) && ('tags/env' in resource.metadata)) && (resource.metadata['tags/env'].startsWith('managed-install'))) && ('tags/fqdn' in resource.metadata)`,
 			startParam:     2,
 			expectedClause: "version = $2 AND metadata->>$3 = $4 AND kind = $5 AND metadata->>$6 LIKE $7",
-			expectedArgs:   []any{"ctrlplane.dev/kubernetes/cluster/v1", "kubernetes/status", "running", "AmazonElasticKubernetesService", "tags/env", "managed-install%"},
+			expectedArgs: []any{
+				"ctrlplane.dev/kubernetes/cluster/v1",
+				"kubernetes/status",
+				"running",
+				"AmazonElasticKubernetesService",
+				"tags/env",
+				"managed-install%",
+			},
 		},
 	}
 

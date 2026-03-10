@@ -4,15 +4,15 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-// Measurements is a collection of verification measurements with analysis methods
+// Measurements is a collection of verification measurements with analysis methods.
 type Measurements []oapi.VerificationMeasurement
 
-// NewMeasurements creates a new measurements collection
+// NewMeasurements creates a new measurements collection.
 func NewMeasurements(measurements []oapi.VerificationMeasurement) Measurements {
 	return measurements
 }
 
-// FailedCount returns the number of failed measurements (excludes inconclusive)
+// FailedCount returns the number of failed measurements (excludes inconclusive).
 func (m Measurements) FailedCount() int {
 	count := 0
 	for _, measurement := range m {
@@ -37,7 +37,7 @@ func (m Measurements) ConsecutiveSuccessCount() int {
 	return count
 }
 
-// Phase computes the current phase based on measurements
+// Phase computes the current phase based on measurements.
 func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.JobVerificationStatus {
 	if len(m) == 0 {
 		return oapi.JobVerificationStatusRunning
@@ -64,7 +64,7 @@ func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.JobVerif
 	return oapi.JobVerificationStatusRunning
 }
 
-// ShouldContinue checks if more measurements are needed
+// ShouldContinue checks if more measurements are needed.
 func (m Measurements) ShouldContinue(metric *oapi.VerificationMetricStatus) bool {
 	failureLimit := metric.GetFailureLimit()
 	failedCount := m.FailedCount()
@@ -77,7 +77,8 @@ func (m Measurements) ShouldContinue(metric *oapi.VerificationMetricStatus) bool
 		return false
 	}
 
-	isSuccessThresholdMet := successThreshold != nil && m.ConsecutiveSuccessCount() >= *successThreshold
+	isSuccessThresholdMet := successThreshold != nil &&
+		m.ConsecutiveSuccessCount() >= *successThreshold
 	if isSuccessThresholdMet {
 		return false
 	}

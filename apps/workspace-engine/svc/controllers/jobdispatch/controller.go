@@ -8,7 +8,10 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
-
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -16,11 +19,6 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
-
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/jobdispatch")
@@ -59,8 +57,18 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if updateErr := c.setter.UpdateJob(ctx, job.Id, oapi.JobStatusFailure, err.Error(), nil); updateErr != nil {
-			return reconcile.Result{}, fmt.Errorf("update job to failure: %w (original: %w)", updateErr, err)
+		if updateErr := c.setter.UpdateJob(
+			ctx,
+			job.Id,
+			oapi.JobStatusFailure,
+			err.Error(),
+			nil,
+		); updateErr != nil {
+			return reconcile.Result{}, fmt.Errorf(
+				"update job to failure: %w (original: %w)",
+				updateErr,
+				err,
+			)
 		}
 		return reconcile.Result{}, fmt.Errorf("reconcile job dispatch: %w", err)
 	}
@@ -74,7 +82,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 // NewController creates a Controller with the given dependencies.
 // Use this constructor in tests to inject mock implementations.
-func NewController(getter Getter, setter Setter, dispatcher Dispatcher, verifier AgentVerifier) *Controller {
+func NewController(
+	getter Getter,
+	setter Setter,
+	dispatcher Dispatcher,
+	verifier AgentVerifier,
+) *Controller {
 	return &Controller{getter: getter, setter: setter, dispatcher: dispatcher, verifier: verifier}
 }
 
@@ -89,9 +102,13 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	enqueueQueue := postgres.New(pgxPool)
 
 	dispatcher := jobagents.NewRegistry(&PostgresGetter{})
-	dispatcher.Register(argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{Queue: enqueueQueue}))
+	dispatcher.Register(
+		argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{Queue: enqueueQueue}),
+	)
 	dispatcher.Register(testrunner.New(&PostgresSetter{Queue: enqueueQueue}))
-	dispatcher.Register(github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{Queue: enqueueQueue}))
+	dispatcher.Register(
+		github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{Queue: enqueueQueue}),
+	)
 
 	log.Debug(
 		"Creating job dispatch reconcile worker",

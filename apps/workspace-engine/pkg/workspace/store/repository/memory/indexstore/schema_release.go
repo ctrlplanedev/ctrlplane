@@ -2,9 +2,9 @@ package indexstore
 
 import (
 	"fmt"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/hashicorp/go-memdb"
+	"workspace-engine/pkg/oapi"
 )
 
 var ReleaseSchema = &memdb.TableSchema{

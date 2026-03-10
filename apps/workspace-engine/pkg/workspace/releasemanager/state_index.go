@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reactiveindex/computeindex"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel"
 )
 
 var stateIndexTracer = otel.Tracer("StateIndex")
@@ -46,7 +45,10 @@ func NewStateIndex(s *store.Store, planner *deployment.Planner) *StateIndex {
 
 // computeDesiredRelease is the ComputeFunc for the desiredRelease index.
 // It resolves the release target by key and runs the deployment planner.
-func (si *StateIndex) computeDesiredRelease(ctx context.Context, key string) (*oapi.Release, error) {
+func (si *StateIndex) computeDesiredRelease(
+	ctx context.Context,
+	key string,
+) (*oapi.Release, error) {
 	ctx, span := stateIndexTracer.Start(ctx, "StateIndex.computeDesiredRelease")
 	defer span.End()
 
@@ -65,7 +67,10 @@ func (si *StateIndex) computeDesiredRelease(ctx context.Context, key string) (*o
 
 // computeCurrentRelease is the ComputeFunc for the currentRelease index.
 // It resolves the release target by key and fetches the current release from the store.
-func (si *StateIndex) computeCurrentRelease(ctx context.Context, key string) (*oapi.Release, error) {
+func (si *StateIndex) computeCurrentRelease(
+	ctx context.Context,
+	key string,
+) (*oapi.Release, error) {
 	ctx, span := stateIndexTracer.Start(ctx, "StateIndex.computeCurrentRelease")
 	defer span.End()
 
@@ -85,7 +90,10 @@ func (si *StateIndex) computeCurrentRelease(ctx context.Context, key string) (*o
 
 // computeLatestJob is the ComputeFunc for the latestJob index.
 // It resolves the release target by key, fetches the latest job, and attaches verifications.
-func (si *StateIndex) computeLatestJob(ctx context.Context, key string) (*oapi.JobWithVerifications, error) {
+func (si *StateIndex) computeLatestJob(
+	ctx context.Context,
+	key string,
+) (*oapi.JobWithVerifications, error) {
 	ctx, span := stateIndexTracer.Start(ctx, "StateIndex.computeLatestJob")
 	defer span.End()
 

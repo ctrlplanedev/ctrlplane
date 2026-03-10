@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/svc"
 )
 
 const (
@@ -156,7 +156,12 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 }
 
-func (w *Worker) startItems(ctx context.Context, items []Item, sem chan struct{}, doneCh chan struct{}) {
+func (w *Worker) startItems(
+	ctx context.Context,
+	items []Item,
+	sem chan struct{},
+	doneCh chan struct{},
+) {
 	for _, item := range items {
 		if w.cfg.Hooks.OnClaimed != nil {
 			w.cfg.Hooks.OnClaimed(item)
@@ -198,7 +203,17 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 	leaseWG.Wait()
 
 	if processErr != nil {
-		log.Error("Error processing item", "item", item.ID, "scopeType", item.ScopeType, "scopeID", item.ScopeID, "error", processErr)
+		log.Error(
+			"Error processing item",
+			"item",
+			item.ID,
+			"scopeType",
+			item.ScopeType,
+			"scopeID",
+			item.ScopeID,
+			"error",
+			processErr,
+		)
 		retryErr := w.queue.Retry(ctx, RetryParams{
 			ItemID:       item.ID,
 			WorkerID:     w.cfg.WorkerID,

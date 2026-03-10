@@ -3,6 +3,7 @@ package metadata
 import (
 	"fmt"
 	"reflect"
+
 	cstring "workspace-engine/pkg/selector/langs/jsonselector/string"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/selector/langs/jsonselector/util"
@@ -55,7 +56,10 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (MetadataCo
 
 	normalizedProperty := condition.GetNormalizedProperty()
 	if normalizedProperty != "Metadata" {
-		return MetadataCondition{}, fmt.Errorf("property must be 'metadata', got '%s'", condition.Property)
+		return MetadataCondition{}, fmt.Errorf(
+			"property must be 'metadata', got '%s'",
+			condition.Property,
+		)
 	}
 
 	if condition.MetadataKey == "" {

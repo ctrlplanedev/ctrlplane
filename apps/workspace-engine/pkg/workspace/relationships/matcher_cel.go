@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/cel-go/cel"
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/oapi"
 )
 
 var compiledEnv, _ = celutil.NewEnvBuilder().
@@ -29,7 +29,7 @@ func NewCelMatcher(cm *oapi.CelMatcher) (*CelMatcher, error) {
 	return &CelMatcher{program: program}, nil
 }
 
-// CelMatcher evaluates CEL matching between two entities
+// CelMatcher evaluates CEL matching between two entities.
 type CelMatcher struct {
 	program cel.Program
 }

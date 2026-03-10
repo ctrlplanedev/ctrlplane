@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// setupTestStoreForSoakTime creates a minimal test store for soak time evaluator tests
+// setupTestStoreForSoakTime creates a minimal test store for soak time evaluator tests.
 func setupTestStoreForSoakTime() *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -122,7 +122,12 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 	assert.Contains(t, result.Message, "Soak time requirement met")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
-	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
+	assert.Equal(
+		t,
+		expectedSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be mostRecentSuccess + soakDuration",
+	)
 }
 
 // TestSoakTimeEvaluator_SoakTimeNotMet tests that the evaluator returns a pending result when
@@ -309,7 +314,12 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
 	assert.True(t, result.Allowed, "expected allowed when soak time is satisfied")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
+	assert.Equal(
+		t,
+		expectedSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be mostRecentSuccess + soakDuration",
+	)
 }
 
 // TestSoakTimeEvaluator_MultipleJobs_UseMostRecent tests that the evaluator uses the most recent
@@ -388,12 +398,25 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 
 	// Should use the most recent success, which is in the past, so soak time should be met
 	// (time.Since(mostRecentSuccess) will be very large, so soakTimeRemaining will be negative)
-	assert.True(t, result.Allowed, "expected allowed when mostRecentSuccess is in the past (soak time met)")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed when mostRecentSuccess is in the past (soak time met)",
+	)
 	assert.False(t, result.ActionRequired, "expected no action required")
-	assert.NotNil(t, result.Details["most_recent_success"], "should include most recent success in details")
+	assert.NotNil(
+		t,
+		result.Details["most_recent_success"],
+		"should include most recent success in details",
+	)
 	require.NotNil(t, result.SatisfiedAt, "satisfiedAt should be set when requirement is met")
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
-	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
+	assert.Equal(
+		t,
+		expectedSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be mostRecentSuccess + soakDuration",
+	)
 }
 
 // TestSoakTimeEvaluator_ZeroOrNegativeSoakMinutes tests that NewSoakTimeEvaluator returns nil
@@ -470,7 +493,11 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 	result := eval.Evaluate(ctx, scope)
 
 	// Should be allowed because InProgress is treated as a success status
-	assert.True(t, result.Allowed, "expected allowed with InProgress job when InProgress is a success status")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed with InProgress job when InProgress is a success status",
+	)
 	assert.Contains(t, result.Message, "Soak time requirement met")
 }
 
@@ -532,10 +559,19 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 
 	// At exactly the threshold, soak time should be met (soakTimeRemaining should be <= 0)
 	// Due to timing precision, this might be slightly positive, so we'll check it's close
-	assert.True(t, result.Allowed, "expected allowed when most recent success is at or past the soak time threshold")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed when most recent success is at or past the soak time threshold",
+	)
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
-	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
+	assert.Equal(
+		t,
+		expectedSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be mostRecentSuccess + soakDuration",
+	)
 }
 
 // TestSoakTimeEvaluator_NextEvaluationTime_WhenPending tests that NextEvaluationTime is properly set
@@ -599,7 +635,11 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	assert.True(t, result.ActionRequired, "expected action required")
 
 	// NextEvaluationTime should be set to when soak time will be satisfied
-	require.NotNil(t, result.NextEvaluationTime, "NextEvaluationTime should be set when soak time is pending")
+	require.NotNil(
+		t,
+		result.NextEvaluationTime,
+		"NextEvaluationTime should be set when soak time is pending",
+	)
 	expectedNextEvalTime := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
 	assert.WithinDuration(t, expectedNextEvalTime, *result.NextEvaluationTime, 1*time.Second,
 		"NextEvaluationTime should be when soak time will be satisfied")
@@ -666,7 +706,11 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 	assert.False(t, result.ActionRequired, "expected no action required")
 
 	// NextEvaluationTime should be nil because policy is satisfied
-	assert.Nil(t, result.NextEvaluationTime, "NextEvaluationTime should be nil when soak time is already satisfied")
+	assert.Nil(
+		t,
+		result.NextEvaluationTime,
+		"NextEvaluationTime should be nil when soak time is already satisfied",
+	)
 }
 
 // TestSoakTimeEvaluator_NextEvaluationTime_NoJobs tests that NextEvaluationTime is nil
@@ -701,5 +745,9 @@ func TestSoakTimeEvaluator_NextEvaluationTime_NoJobs(t *testing.T) {
 	assert.False(t, result.ActionRequired, "expected denied, not pending")
 
 	// NextEvaluationTime should be nil because we can't evaluate without a successful job
-	assert.Nil(t, result.NextEvaluationTime, "NextEvaluationTime should be nil when no successful jobs exist")
+	assert.Nil(
+		t,
+		result.NextEvaluationTime,
+		"NextEvaluationTime should be nil when no successful jobs exist",
+	)
 }

@@ -3,11 +3,11 @@ package jobagents
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 // Repo implements repository.JobAgentRepo backed by the job_agent table.
@@ -67,7 +67,13 @@ func (r *Repo) Items() map[string]*oapi.JobAgent {
 
 	rows, err := db.GetQueries(r.ctx).ListJobAgentsByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list job agents by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list job agents by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.JobAgent)
 	}
 

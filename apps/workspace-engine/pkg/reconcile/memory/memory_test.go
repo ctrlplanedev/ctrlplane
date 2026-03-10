@@ -6,9 +6,9 @@ import (
 	"errors"
 	"testing"
 	"time"
-	reconcile "workspace-engine/pkg/reconcile"
 
 	"github.com/google/uuid"
+	reconcile "workspace-engine/pkg/reconcile"
 )
 
 func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
@@ -229,23 +229,56 @@ func TestQueue_ValidationErrors(t *testing.T) {
 	queue := New()
 	ctx := context.Background()
 
-	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{}); !errors.Is(err, reconcile.ErrMissingWorkspaceID) {
+	if err := queue.Enqueue(
+		ctx,
+		reconcile.EnqueueParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkspaceID,
+	) {
 		t.Fatalf("expected ErrMissingWorkspaceID, got %v", err)
 	}
-	if err := queue.Enqueue(ctx, reconcile.EnqueueParams{WorkspaceID: "bad", Kind: "k"}); err == nil {
+	if err := queue.Enqueue(
+		ctx,
+		reconcile.EnqueueParams{WorkspaceID: "bad", Kind: "k"},
+	); err == nil {
 		t.Fatal("expected workspace uuid parse error")
 	}
 
-	if _, err := queue.Claim(ctx, reconcile.ClaimParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if _, err := queue.Claim(
+		ctx,
+		reconcile.ClaimParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if err := queue.ExtendLease(
+		ctx,
+		reconcile.ExtendLeaseParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if _, err := queue.AckSuccess(
+		ctx,
+		reconcile.AckSuccessParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
-	if err := queue.Retry(ctx, reconcile.RetryParams{}); !errors.Is(err, reconcile.ErrMissingWorkerID) {
+	if err := queue.Retry(
+		ctx,
+		reconcile.RetryParams{},
+	); !errors.Is(
+		err,
+		reconcile.ErrMissingWorkerID,
+	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
 }

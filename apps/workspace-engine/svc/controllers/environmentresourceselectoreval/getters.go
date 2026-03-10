@@ -2,9 +2,9 @@ package environmentresourceselectoreval
 
 import (
 	"context"
-	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/store/resources"
 )
 
 // EnvironmentInfo holds the environment data needed for resource selector evaluation.

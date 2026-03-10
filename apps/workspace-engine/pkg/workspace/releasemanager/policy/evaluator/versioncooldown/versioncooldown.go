@@ -6,13 +6,13 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versioncooldown")
@@ -121,14 +121,20 @@ func formatDuration(d time.Duration) string {
 //
 // The result is cached because it depends only on the release target state, not
 // the candidate version — so it is identical across all candidate evaluations.
-func (e *VersionCooldownEvaluator) resolveReferenceVersion(ctx context.Context, releaseTarget *oapi.ReleaseTarget) *referenceResult {
+func (e *VersionCooldownEvaluator) resolveReferenceVersion(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) *referenceResult {
 	e.refOnce.Do(func() {
 		e.refResult = e.doResolveReferenceVersion(ctx, releaseTarget)
 	})
 	return e.refResult
 }
 
-func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context, releaseTarget *oapi.ReleaseTarget) *referenceResult {
+func (e *VersionCooldownEvaluator) doResolveReferenceVersion(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) *referenceResult {
 	// Fetch all jobs for this release target once and derive both in-progress
 	// and current release from the same data set, avoiding duplicate
 	// GetJobsForReleaseTarget calls.
@@ -252,10 +258,12 @@ func (e *VersionCooldownEvaluator) Evaluate(
 	// Cooldown not yet passed — deny and tell the planner when to retry.
 	timeRemaining := minElapsedTime.Sub(now)
 	return results.NewDeniedResult(
-		fmt.Sprintf("Version cooldown: %s remaining until deployment allowed (need %s since %s version)",
+		fmt.Sprintf(
+			"Version cooldown: %s remaining until deployment allowed (need %s since %s version)",
 			formatDuration(timeRemaining),
 			formatDuration(interval),
-			referenceSource),
+			referenceSource,
+		),
 	).
 		WithDetail("reason", "cooldown_failed").
 		WithDetail("reference_version_id", referenceVersion.Id).

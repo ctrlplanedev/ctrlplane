@@ -40,9 +40,18 @@ type Getter interface {
 
 	// StreamCandidateEntities sends batches of entities matching the given type
 	// for a workspace. The caller creates the channel and controls its buffer size.
-	StreamCandidateEntities(ctx context.Context, workspaceID uuid.UUID, entityType string, batchSize int, batches chan<- []EntityInfo) error
+	StreamCandidateEntities(
+		ctx context.Context,
+		workspaceID uuid.UUID,
+		entityType string,
+		batchSize int,
+		batches chan<- []EntityInfo,
+	) error
 
 	// GetExistingRelationships returns all currently stored relationships
 	// where the given entity is either the "from" or "to" side.
-	GetExistingRelationships(ctx context.Context, entityID uuid.UUID) ([]ExistingRelationship, error)
+	GetExistingRelationships(
+		ctx context.Context,
+		entityID uuid.UUID,
+	) ([]ExistingRelationship, error)
 }

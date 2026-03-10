@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/variablemanager")
@@ -31,7 +31,11 @@ type DeploymentVariableWithValues struct {
 	Values             map[string]*oapi.DeploymentVariableValue
 }
 
-func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarget, relatedEntities map[string][]*oapi.EntityRelation) (map[string]*oapi.LiteralValue, error) {
+func (m *Manager) Evaluate(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	relatedEntities map[string][]*oapi.EntityRelation,
+) (map[string]*oapi.LiteralValue, error) {
 	ctx, span := tracer.Start(ctx, "VariableManager.Evaluate")
 	defer span.End()
 
@@ -83,14 +87,26 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		// 2. Deployment variable values (sorted by priority, filtered by resource selector)
 		// 3. Deployment variable default value
 
-		resolved := m.tryResolveResourceVariable(ctx, key, resourceVariables, entity, relatedEntities)
+		resolved := m.tryResolveResourceVariable(
+			ctx,
+			key,
+			resourceVariables,
+			entity,
+			relatedEntities,
+		)
 		if resolved != nil {
 			resolvedVariables[key] = resolved
 			resolvedFromResource++
 			continue
 		}
 
-		resolved = m.tryResolveDeploymentVariableValue(ctx, deploymentVar, resource, entity, relatedEntities)
+		resolved = m.tryResolveDeploymentVariableValue(
+			ctx,
+			deploymentVar,
+			resource,
+			entity,
+			relatedEntities,
+		)
 		if resolved != nil {
 			resolvedVariables[key] = resolved
 			resolvedFromValue++
@@ -124,7 +140,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	return resolvedVariables, nil
 }
 
-// tryResolveResourceVariable attempts to resolve a variable from resource variables
+// tryResolveResourceVariable attempts to resolve a variable from resource variables.
 func (m *Manager) tryResolveResourceVariable(
 	ctx context.Context,
 	key string,
@@ -157,7 +173,7 @@ func (m *Manager) tryResolveResourceVariable(
 	return result
 }
 
-// tryResolveDeploymentVariableValue attempts to resolve a variable from deployment variable values
+// tryResolveDeploymentVariableValue attempts to resolve a variable from deployment variable values.
 func (m *Manager) tryResolveDeploymentVariableValue(
 	ctx context.Context,
 	deploymentVar *oapi.DeploymentVariable,

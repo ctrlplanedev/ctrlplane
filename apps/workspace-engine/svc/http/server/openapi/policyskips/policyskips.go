@@ -2,12 +2,12 @@ package policyskips
 
 import (
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 type PolicySkips struct{}
@@ -17,7 +17,7 @@ func New() *PolicySkips {
 }
 
 // ListPolicySkips returns all policy skips for a workspace
-// GET /v1/workspaces/{workspaceId}/skips
+// GET /v1/workspaces/{workspaceId}/skips.
 func (p *PolicySkips) ListPolicySkips(c *gin.Context, workspaceId string) {
 	ws, err := getWorkspaceForRequest(c, workspaceId)
 	if err != nil {
@@ -38,7 +38,7 @@ func (p *PolicySkips) ListPolicySkips(c *gin.Context, workspaceId string) {
 }
 
 // GetPolicySkip returns a specific policy skip by ID
-// GET /v1/workspaces/{workspaceId}/skips/{skipId}
+// GET /v1/workspaces/{workspaceId}/skips/{skipId}.
 func (p *PolicySkips) GetPolicySkip(c *gin.Context, workspaceId string, bypassId string) {
 	ws, err := getWorkspaceForRequest(c, workspaceId)
 	if err != nil {
@@ -59,7 +59,7 @@ func (p *PolicySkips) GetPolicySkip(c *gin.Context, workspaceId string, bypassId
 	c.JSON(http.StatusOK, bypass)
 }
 
-// getWorkspaceForRequest retrieves a workspace, with fallback for test environments
+// getWorkspaceForRequest retrieves a workspace, with fallback for test environments.
 func getWorkspaceForRequest(c *gin.Context, workspaceId string) (*workspace.Workspace, error) {
 	// Try utils.GetWorkspace first (production path with DB check)
 	ws, err := utils.GetWorkspace(c, workspaceId)
@@ -75,7 +75,12 @@ func getWorkspaceForRequest(c *gin.Context, workspaceId string) (*workspace.Work
 	return nil, err
 }
 
-func (p *PolicySkips) GetPolicySkipsForEnvironmentAndVersion(c *gin.Context, workspaceId string, environmentId string, deploymentVersionId string) {
+func (p *PolicySkips) GetPolicySkipsForEnvironmentAndVersion(
+	c *gin.Context,
+	workspaceId string,
+	environmentId string,
+	deploymentVersionId string,
+) {
 	ws, err := getWorkspaceForRequest(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

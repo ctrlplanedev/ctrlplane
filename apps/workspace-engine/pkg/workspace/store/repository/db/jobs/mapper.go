@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type jobRow struct {

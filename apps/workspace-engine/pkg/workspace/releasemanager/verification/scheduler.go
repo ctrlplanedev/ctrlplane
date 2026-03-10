@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/charmbracelet/log"
 )
 
 // scheduler manages goroutines for running verification measurements.
@@ -27,7 +27,7 @@ type scheduler struct {
 	completionHookFired map[string]bool                 // tracks if completion hook was already fired
 }
 
-// newScheduler creates a new verification scheduler
+// newScheduler creates a new verification scheduler.
 func newScheduler(store *store.Store, hooks VerificationHooks) *scheduler {
 	return &scheduler{
 		store:               store,
@@ -80,7 +80,7 @@ func (s *scheduler) StartVerification(ctx context.Context, verificationID string
 		"metric_count", len(cancelFuncs))
 }
 
-// StopVerification stops all goroutines for a verification
+// StopVerification stops all goroutines for a verification.
 func (s *scheduler) StopVerification(verificationID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -130,7 +130,11 @@ func (s *scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 }
 
 // runMeasurementCycle executes one measurement and handles all related side effects.
-func (s *scheduler) runMeasurementCycle(ctx context.Context, verificationID string, metricIndex int) {
+func (s *scheduler) runMeasurementCycle(
+	ctx context.Context,
+	verificationID string,
+	metricIndex int,
+) {
 	// Fetch verification once to get metric and jobID
 	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
@@ -165,7 +169,12 @@ func (s *scheduler) runMeasurementCycle(ctx context.Context, verificationID stri
 			return
 		}
 	} else {
-		verification, err = s.recorder.RecordMeasurement(ctx, verificationID, metricIndex, measurement)
+		verification, err = s.recorder.RecordMeasurement(
+			ctx,
+			verificationID,
+			metricIndex,
+			measurement,
+		)
 		if err != nil {
 			log.Error("Failed to record measurement", "error", err)
 			return
@@ -186,7 +195,12 @@ func (s *scheduler) handlePostMeasurement(
 	lastIdx := len(verification.Metrics[metricIndex].Measurements) - 1
 	if lastIdx >= 0 {
 		lastMeasurement := &verification.Metrics[metricIndex].Measurements[lastIdx]
-		if err := s.hooks.OnMeasurementTaken(ctx, verification, metricIndex, lastMeasurement); err != nil {
+		if err := s.hooks.OnMeasurementTaken(
+			ctx,
+			verification,
+			metricIndex,
+			lastMeasurement,
+		); err != nil {
 			log.Error("Measurement taken hook failed",
 				"verification_id", verification.Id,
 				"metric_index", metricIndex,
@@ -234,7 +248,11 @@ func (s *scheduler) handlePostMeasurement(
 }
 
 // shouldStopMetric checks if a metric loop should stop and fires the metric complete hook.
-func (s *scheduler) shouldStopMetric(ctx context.Context, verificationID string, metricIndex int) bool {
+func (s *scheduler) shouldStopMetric(
+	ctx context.Context,
+	verificationID string,
+	metricIndex int,
+) bool {
 	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
 		log.Warn("Verification not found in store, stopping",
@@ -282,7 +300,10 @@ func (s *scheduler) isCompleted(v *oapi.JobVerification) bool {
 
 const defaultMetricInterval = 30 * time.Second
 
-func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (time.Duration, error) {
+func (s *scheduler) getMetricInterval(
+	verificationID string,
+	metricIndex int,
+) (time.Duration, error) {
 	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
 		return 0, fmt.Errorf("verification not found: %s", verificationID)
@@ -305,7 +326,10 @@ func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (t
 	return interval, nil
 }
 
-func (s *scheduler) buildSummaryMessage(v *oapi.JobVerification, status oapi.JobVerificationStatus) string {
+func (s *scheduler) buildSummaryMessage(
+	v *oapi.JobVerification,
+	status oapi.JobVerificationStatus,
+) string {
 	totalMeasurements := 0
 	passedMeasurements := 0
 	failedMeasurements := 0
@@ -325,6 +349,13 @@ func (s *scheduler) buildSummaryMessage(v *oapi.JobVerification, status oapi.Job
 		}
 	}
 
-	return fmt.Sprintf("Verification %s: %d passed, %d failed, %d inconclusive (%d total) across %d metrics",
-		status, passedMeasurements, failedMeasurements, inconclusiveMeasurements, totalMeasurements, len(v.Metrics))
+	return fmt.Sprintf(
+		"Verification %s: %d passed, %d failed, %d inconclusive (%d total) across %d metrics",
+		status,
+		passedMeasurements,
+		failedMeasurements,
+		inconclusiveMeasurements,
+		totalMeasurements,
+		len(v.Metrics),
+	)
 }

@@ -57,7 +57,12 @@ func TestGenerateDefaultTraceToken(t *testing.T) {
 	expectedExpiry := time.Now().Add(24 * time.Hour)
 	diff := validated.ExpiresAt.Sub(expectedExpiry)
 	if diff < -1*time.Second || diff > 1*time.Second {
-		t.Errorf("expected expiry around %v, got %v (diff: %v)", expectedExpiry, validated.ExpiresAt, diff)
+		t.Errorf(
+			"expected expiry around %v, got %v (diff: %v)",
+			expectedExpiry,
+			validated.ExpiresAt,
+			diff,
+		)
 	}
 }
 

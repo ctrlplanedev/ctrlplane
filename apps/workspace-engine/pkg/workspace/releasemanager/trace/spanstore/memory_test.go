@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
@@ -210,7 +209,11 @@ func TestInMemoryStore_ConcurrentWrites(t *testing.T) {
 	// We expect at least numGoroutines * 2 spans (root + planning per goroutine)
 	expectedMin := numGoroutines * 2
 	if len(allSpans) < expectedMin {
-		t.Errorf("expected at least %d spans from concurrent writes, got %d", expectedMin, len(allSpans))
+		t.Errorf(
+			"expected at least %d spans from concurrent writes, got %d",
+			expectedMin,
+			len(allSpans),
+		)
 	}
 }
 
@@ -294,7 +297,11 @@ func TestInMemoryStore_ConcurrentReadWrite(t *testing.T) {
 	// Final verification - all writes should be present
 	finalSpans := store.GetSpans()
 	if len(finalSpans) < numWriters {
-		t.Errorf("expected at least %d spans after concurrent read/write, got %d", numWriters, len(finalSpans))
+		t.Errorf(
+			"expected at least %d spans after concurrent read/write, got %d",
+			numWriters,
+			len(finalSpans),
+		)
 	}
 }
 

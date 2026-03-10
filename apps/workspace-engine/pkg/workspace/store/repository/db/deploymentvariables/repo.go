@@ -3,11 +3,11 @@ package deploymentvariables
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type VariableRepo struct {
@@ -65,7 +65,13 @@ func (r *VariableRepo) Items() map[string]*oapi.DeploymentVariable {
 
 	rows, err := db.GetQueries(r.ctx).ListDeploymentVariablesByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list deployment variables by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list deployment variables by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.DeploymentVariable)
 	}
 
@@ -150,7 +156,13 @@ func (r *ValueRepo) Items() map[string]*oapi.DeploymentVariableValue {
 
 	rows, err := db.GetQueries(r.ctx).ListDeploymentVariableValuesByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list deployment variable values by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list deployment variable values by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.DeploymentVariableValue)
 	}
 

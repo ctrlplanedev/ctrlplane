@@ -6,13 +6,17 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
 	"workspace-engine/pkg/oapi"
 )
 
 // GetPropertyValue extracts a property value from an entity using a property path
 // The property path is a slice of strings representing nested property access
-// Examples: ["id"], ["metadata", "region"], ["config", "networking", "vpc_id"]
-func GetPropertyValue(entity *oapi.RelatableEntity, propertyPath []string) (*oapi.LiteralValue, error) {
+// Examples: ["id"], ["metadata", "region"], ["config", "networking", "vpc_id"].
+func GetPropertyValue(
+	entity *oapi.RelatableEntity,
+	propertyPath []string,
+) (*oapi.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -31,8 +35,11 @@ func GetPropertyValue(entity *oapi.RelatableEntity, propertyPath []string) (*oap
 	}
 }
 
-// getResourceProperty gets a property from a Resource entity
-func getResourceProperty(resource *oapi.Resource, propertyPath []string) (*oapi.LiteralValue, error) {
+// getResourceProperty gets a property from a Resource entity.
+func getResourceProperty(
+	resource *oapi.Resource,
+	propertyPath []string,
+) (*oapi.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -80,8 +87,11 @@ func getResourceProperty(resource *oapi.Resource, propertyPath []string) (*oapi.
 	}
 }
 
-// getDeploymentProperty gets a property from a Deployment entity
-func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (*oapi.LiteralValue, error) {
+// getDeploymentProperty gets a property from a Deployment entity.
+func getDeploymentProperty(
+	deployment *oapi.Deployment,
+	propertyPath []string,
+) (*oapi.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -128,8 +138,11 @@ func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (
 	}
 }
 
-// getEnvironmentProperty gets a property from an Environment entity
-func getEnvironmentProperty(environment *oapi.Environment, propertyPath []string) (*oapi.LiteralValue, error) {
+// getEnvironmentProperty gets a property from an Environment entity.
+func getEnvironmentProperty(
+	environment *oapi.Environment,
+	propertyPath []string,
+) (*oapi.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -150,7 +163,7 @@ func getEnvironmentProperty(environment *oapi.Environment, propertyPath []string
 	}
 }
 
-// getMapValue extracts a value from a map using a property path
+// getMapValue extracts a value from a map using a property path.
 func getMapValue(m map[string]any, propertyPath []string) (any, error) {
 	if m == nil {
 		return nil, fmt.Errorf("map is nil")
@@ -210,7 +223,7 @@ func extractValueAsString(vv *oapi.LiteralValue) string {
 	return "unknown"
 }
 
-// getPropertyReflection uses reflection to get a property value (fallback method)
+// getPropertyReflection uses reflection to get a property value (fallback method).
 func getPropertyReflection(entity any, propertyPath []string) (*oapi.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return convertValue(entity)
@@ -246,7 +259,7 @@ func getPropertyReflection(entity any, propertyPath []string) (*oapi.LiteralValu
 	return getPropertyReflection(field.Interface(), propertyPath[1:])
 }
 
-// convertValue converts a Go value to an oapi.LiteralValue
+// convertValue converts a Go value to an oapi.LiteralValue.
 func convertValue(val any) (*oapi.LiteralValue, error) {
 	switch v := val.(type) {
 	case *oapi.LiteralValue:

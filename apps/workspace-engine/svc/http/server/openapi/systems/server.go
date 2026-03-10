@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"slices"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type Systems struct{}
@@ -102,7 +102,12 @@ func (s *Systems) ListSystems(c *gin.Context, workspaceId string, params oapi.Li
 	})
 }
 
-func (s *Systems) GetDeploymentSystemLink(c *gin.Context, workspaceId string, systemId string, deploymentId string) {
+func (s *Systems) GetDeploymentSystemLink(
+	c *gin.Context,
+	workspaceId string,
+	systemId string,
+	deploymentId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -124,7 +129,12 @@ func (s *Systems) GetDeploymentSystemLink(c *gin.Context, workspaceId string, sy
 	})
 }
 
-func (s *Systems) GetEnvironmentSystemLink(c *gin.Context, workspaceId string, systemId string, environmentId string) {
+func (s *Systems) GetEnvironmentSystemLink(
+	c *gin.Context,
+	workspaceId string,
+	systemId string,
+	environmentId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -133,7 +143,10 @@ func (s *Systems) GetEnvironmentSystemLink(c *gin.Context, workspaceId string, s
 		return
 	}
 
-	if !slices.Contains(ws.SystemEnvironments().GetEnvironmentIDsForSystem(systemId), environmentId) {
+	if !slices.Contains(
+		ws.SystemEnvironments().GetEnvironmentIDsForSystem(systemId),
+		environmentId,
+	) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Environment system link not found",
 		})

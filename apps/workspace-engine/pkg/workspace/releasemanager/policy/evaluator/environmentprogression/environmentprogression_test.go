@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// setupTestStore creates a test store with environments, jobs, and releases
+// setupTestStore creates a test store with environments, jobs, and releases.
 func setupTestStore() *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", sc)
@@ -530,7 +530,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, completedAt2, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd successful job (when 50% requirement was met)")
+	assert.Equal(
+		t,
+		completedAt2,
+		*result.SatisfiedAt,
+		"satisfiedAt should be the timestamp of the 2nd successful job (when 50% requirement was met)",
+	)
 }
 
 // TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly tests that the satisfiedAt timestamp is correctly
@@ -571,8 +576,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	// Create a successful job that completed 40 minutes ago
 	// With 30 minute soak time requirement, it should be satisfied
 	soakMinutes := int32(30)
-	mostRecentSuccess := time.Now().Add(-40 * time.Minute)                                 // 40 minutes ago
-	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute) // mostRecentSuccess + soakDuration
+	mostRecentSuccess := time.Now().
+		Add(-40 * time.Minute)
+		// 40 minutes ago
+	expectedSatisfiedAt := mostRecentSuccess.Add(
+		time.Duration(soakMinutes) * time.Minute,
+	) // mostRecentSuccess + soakDuration
 
 	completedAt := mostRecentSuccess
 	job := &oapi.Job{
@@ -613,7 +622,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed (soak time satisfied)")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
+	assert.Equal(
+		t,
+		expectedSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be mostRecentSuccess + soakDuration",
+	)
 }
 
 // TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime tests that when both pass rate and
@@ -744,7 +758,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	// Assert
 	assert.True(t, result.Allowed, "expected allowed (both requirements satisfied)")
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(t, soakTimeSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be the later of pass rate and soak time satisfaction times")
+	assert.Equal(
+		t,
+		soakTimeSatisfiedAt,
+		*result.SatisfiedAt,
+		"satisfiedAt should be the later of pass rate and soak time satisfaction times",
+	)
 }
 
 // TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime tests the scenario where the pass rate
@@ -838,7 +857,9 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 
 	// Job 1 completes early (most recent success for soak time)
 	// Use relative time so soak time calculation works correctly
-	mostRecentSuccess := time.Now().Add(-30 * time.Minute) // 30 minutes ago, satisfies 15-minute soak time
+	mostRecentSuccess := time.Now().
+		Add(-30 * time.Minute)
+		// 30 minutes ago, satisfies 15-minute soak time
 	completedAt1 := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
@@ -869,7 +890,9 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	// Job 3 completes third (pass rate 100% - meets 67% requirement)
 	// Need 3 successes for 67% requirement (ceil(3 * 0.67) = 3), so pass rate satisfied at: when 3rd job completes
 	// Make job3 complete at least 15 minutes ago so soak time requirement is satisfied
-	passRateSatisfiedAt := time.Now().Add(-20 * time.Minute) // Completes last, satisfying 67% requirement AND soak time (20 > 15)
+	passRateSatisfiedAt := time.Now().
+		Add(-20 * time.Minute)
+		// Completes last, satisfying 67% requirement AND soak time (20 > 15)
 	completedAt3 := passRateSatisfiedAt
 	job3 := &oapi.Job{
 		Id:             "job-3",
@@ -923,7 +946,13 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	// The actual result should be approximately: (now - 20 min) + 15 min = now - 5 min
 	// Use InDelta with a large tolerance to account for timing differences between job creation and evaluation
 	expectedSatisfiedAt := time.Now().Add(-5 * time.Minute)
-	assert.InDelta(t, expectedSatisfiedAt.Unix(), result.SatisfiedAt.Unix(), 150, "satisfiedAt should be approximately 5 minutes ago (within 2.5 minutes)")
+	assert.InDelta(
+		t,
+		expectedSatisfiedAt.Unix(),
+		result.SatisfiedAt.Unix(),
+		150,
+		"satisfiedAt should be approximately 5 minutes ago (within 2.5 minutes)",
+	)
 }
 
 // TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied tests that when the environment progression
@@ -1000,7 +1029,11 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 
 	// Assert
 	assert.False(t, result.Allowed, "expected not allowed (soak time not satisfied)")
-	assert.Nil(t, result.SatisfiedAt, "satisfiedAt should be nil when requirements are not satisfied")
+	assert.Nil(
+		t,
+		result.SatisfiedAt,
+		"satisfiedAt should be nil when requirements are not satisfied",
+	)
 }
 
 // TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed tests that when there are no release targets, the evaluator allows the environment progression.

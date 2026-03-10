@@ -4,10 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"workspace-engine/pkg/concurrency"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/persistence"
-	"workspace-engine/pkg/workspace/store/repository/memory"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -15,6 +11,10 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/concurrency"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 var tracer = otel.Tracer("persistence/store")
@@ -35,7 +35,11 @@ func NewStore(ctx context.Context) (*Store, error) {
 	return &Store{conn: conn}, nil
 }
 
-func (s *Store) upsertChangelogEntries(ctx context.Context, queries *db.Queries, changes []persistence.Change) error {
+func (s *Store) upsertChangelogEntries(
+	ctx context.Context,
+	queries *db.Queries,
+	changes []persistence.Change,
+) error {
 	ctx, span := tracer.Start(ctx, "upsertChangelogEntries")
 	defer span.End()
 
@@ -84,7 +88,11 @@ func (s *Store) upsertChangelogEntries(ctx context.Context, queries *db.Queries,
 	return nil
 }
 
-func (s *Store) deleteChangelogEntries(ctx context.Context, queries *db.Queries, changes []persistence.Change) error {
+func (s *Store) deleteChangelogEntries(
+	ctx context.Context,
+	queries *db.Queries,
+	changes []persistence.Change,
+) error {
 	ctx, span := tracer.Start(ctx, "deleteChangelogEntries")
 	defer span.End()
 

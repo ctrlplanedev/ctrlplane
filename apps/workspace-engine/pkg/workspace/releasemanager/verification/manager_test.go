@@ -5,12 +5,12 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 )
 
 // Note: Test helpers (NewTestServer, createTestHTTPProvider, etc.) are defined in scheduler_test.go
@@ -317,25 +317,31 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 
 	// verification1 is running (no measurements)
 	// verification2 is completed (all measurements passed)
-	for i := 0; i < verification2.Metrics[0].Count; i++ {
+	for range verification2.Metrics[0].Count {
 		msg := "Success"
-		verification2.Metrics[0].Measurements = append(verification2.Metrics[0].Measurements, oapi.VerificationMeasurement{
-			Message:    &msg,
-			Status:     oapi.Passed,
-			MeasuredAt: time.Now(),
-			Data:       &map[string]any{"statusCode": 200},
-		})
+		verification2.Metrics[0].Measurements = append(
+			verification2.Metrics[0].Measurements,
+			oapi.VerificationMeasurement{
+				Message:    &msg,
+				Status:     oapi.Passed,
+				MeasuredAt: time.Now(),
+				Data:       &map[string]any{"statusCode": 200},
+			},
+		)
 	}
 	s.JobVerifications.Upsert(ctx, verification2)
 
 	// verification3 has some measurements but not complete
 	msg := "Success"
-	verification3.Metrics[0].Measurements = append(verification3.Metrics[0].Measurements, oapi.VerificationMeasurement{
-		Message:    &msg,
-		Status:     oapi.Passed,
-		MeasuredAt: time.Now(),
-		Data:       &map[string]any{"statusCode": 200},
-	})
+	verification3.Metrics[0].Measurements = append(
+		verification3.Metrics[0].Measurements,
+		oapi.VerificationMeasurement{
+			Message:    &msg,
+			Status:     oapi.Passed,
+			MeasuredAt: time.Now(),
+			Data:       &map[string]any{"statusCode": 200},
+		},
+	)
 	s.JobVerifications.Upsert(ctx, verification3)
 
 	// Restore should restart verification1 and verification3, but not verification2
@@ -373,12 +379,15 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 	// Make verification failed by exceeding failure limit
 	for i := 0; i <= *verification.Metrics[0].FailureThreshold; i++ {
 		msg := "Failed"
-		verification.Metrics[0].Measurements = append(verification.Metrics[0].Measurements, oapi.VerificationMeasurement{
-			Message:    &msg,
-			Status:     oapi.Failed,
-			MeasuredAt: time.Now(),
-			Data:       &map[string]any{"statusCode": 500},
-		})
+		verification.Metrics[0].Measurements = append(
+			verification.Metrics[0].Measurements,
+			oapi.VerificationMeasurement{
+				Message:    &msg,
+				Status:     oapi.Failed,
+				MeasuredAt: time.Now(),
+				Data:       &map[string]any{"statusCode": 500},
+			},
+		)
 	}
 	s.JobVerifications.Upsert(ctx, verification)
 
@@ -413,26 +422,32 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 	runningVerification := createTestVerification(s, ctx, runningJob.Id, 1, 3600)
 
 	passedVerification := createTestVerification(s, ctx, passedJob.Id, 1, 3600)
-	for i := 0; i < passedVerification.Metrics[0].Count; i++ {
+	for range passedVerification.Metrics[0].Count {
 		msg := "Success"
-		passedVerification.Metrics[0].Measurements = append(passedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
-			Message:    &msg,
-			Status:     oapi.Passed,
-			MeasuredAt: time.Now(),
-			Data:       &map[string]any{"statusCode": 200},
-		})
+		passedVerification.Metrics[0].Measurements = append(
+			passedVerification.Metrics[0].Measurements,
+			oapi.VerificationMeasurement{
+				Message:    &msg,
+				Status:     oapi.Passed,
+				MeasuredAt: time.Now(),
+				Data:       &map[string]any{"statusCode": 200},
+			},
+		)
 	}
 	s.JobVerifications.Upsert(ctx, passedVerification)
 
 	failedVerification := createTestVerification(s, ctx, failedJob.Id, 1, 3600)
 	for i := 0; i <= *failedVerification.Metrics[0].FailureThreshold; i++ {
 		msg := "Failed"
-		failedVerification.Metrics[0].Measurements = append(failedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
-			Message:    &msg,
-			Status:     oapi.Failed,
-			MeasuredAt: time.Now(),
-			Data:       &map[string]any{"statusCode": 500},
-		})
+		failedVerification.Metrics[0].Measurements = append(
+			failedVerification.Metrics[0].Measurements,
+			oapi.VerificationMeasurement{
+				Message:    &msg,
+				Status:     oapi.Failed,
+				MeasuredAt: time.Now(),
+				Data:       &map[string]any{"statusCode": 500},
+			},
+		)
 	}
 	s.JobVerifications.Upsert(ctx, failedVerification)
 
@@ -622,7 +637,7 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	assert.False(t, running)
 }
 
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkManager_StartVerification(b *testing.B) {
 	ctx := context.Background()
 	s := newTestStore()
@@ -644,13 +659,13 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 
 	// Pre-create jobs
 	jobs := make([]*oapi.Job, b.N)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		release := createTestRelease(s, ctx)
 		jobs[i] = createTestJob(s, ctx, release.Id.String())
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		_ = manager.StartVerification(ctx, jobs[i], metrics)
 	}
 
@@ -684,14 +699,14 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 
 	// Pre-create and start verifications
 	jobs := make([]*oapi.Job, b.N)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		release := createTestRelease(s, ctx)
 		jobs[i] = createTestJob(s, ctx, release.Id.String())
 		_ = manager.StartVerification(ctx, jobs[i], metrics)
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		manager.StopVerificationsForJob(ctx, jobs[i].Id)
 	}
 }
@@ -701,7 +716,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 
 	// Pre-create verifications
 	stores := make([]*store.Store, b.N)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		s := newTestStore()
 		// Create 10 running verifications per store
 		for range 10 {
@@ -713,7 +728,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		manager := NewManager(stores[i])
 		_ = manager.Restore(ctx)
 
@@ -724,7 +739,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 	}
 }
 
-// Mock hooks for testing
+// Mock hooks for testing.
 type mockHooks struct {
 	mu sync.Mutex
 
@@ -763,14 +778,22 @@ func newMockHooks() *mockHooks {
 	}
 }
 
-func (m *mockHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
+func (m *mockHooks) OnVerificationStarted(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.verificationStartedCalls = append(m.verificationStartedCalls, verification.Id)
 	return m.errorOnVerificationStarted
 }
 
-func (m *mockHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+func (m *mockHooks) OnMeasurementTaken(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+	metricIndex int,
+	measurement *oapi.VerificationMeasurement,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.measurementTakenCalls = append(m.measurementTakenCalls, measurementCall{
@@ -781,7 +804,11 @@ func (m *mockHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.J
 	return m.errorOnMeasurementTaken
 }
 
-func (m *mockHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error {
+func (m *mockHooks) OnMetricComplete(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+	metricIndex int,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.metricCompleteCalls = append(m.metricCompleteCalls, metricCall{
@@ -791,14 +818,20 @@ func (m *mockHooks) OnMetricComplete(ctx context.Context, verification *oapi.Job
 	return m.errorOnMetricComplete
 }
 
-func (m *mockHooks) OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) error {
+func (m *mockHooks) OnVerificationComplete(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.verificationCompleteCalls = append(m.verificationCompleteCalls, verification.Id)
 	return m.errorOnVerificationComplete
 }
 
-func (m *mockHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error {
+func (m *mockHooks) OnVerificationStopped(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.verificationStoppedCalls = append(m.verificationStoppedCalls, verification.Id)

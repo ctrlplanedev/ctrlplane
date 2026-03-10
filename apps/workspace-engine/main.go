@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/messaging"
@@ -18,9 +20,6 @@ import (
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
 	"workspace-engine/svc/workspaceconsumer/kafka"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
 )
 
 var (

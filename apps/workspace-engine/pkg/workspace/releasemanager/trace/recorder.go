@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"sync"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/trace/token"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/trace/token"
 )
 
-// ReconcileTarget is the main entry point for trace recording
+// ReconcileTarget is the main entry point for trace recording.
 type ReconcileTarget struct {
 	workspaceID      string
 	releaseTargetKey string
@@ -40,20 +39,32 @@ type ReconcileTarget struct {
 	depthMap     map[string]int
 }
 
-// NewReconcileTarget creates a new trace recorder for reconciliation
-func NewReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerReason) *ReconcileTarget {
+// NewReconcileTarget creates a new trace recorder for reconciliation.
+func NewReconcileTarget(
+	workspaceID, releaseTargetKey string,
+	trigger TriggerReason,
+) *ReconcileTarget {
 	return newReconcileTarget(workspaceID, releaseTargetKey, trigger, nil)
 }
 
-// NewReconcileTargetWithStore creates a new trace recorder with pre-configured store
-func NewReconcileTargetWithStore(workspaceID, releaseTargetKey string, trigger TriggerReason, store PersistenceStore) *ReconcileTarget {
+// NewReconcileTargetWithStore creates a new trace recorder with pre-configured store.
+func NewReconcileTargetWithStore(
+	workspaceID, releaseTargetKey string,
+	trigger TriggerReason,
+	store PersistenceStore,
+) *ReconcileTarget {
 	return newReconcileTarget(workspaceID, releaseTargetKey, trigger, store)
 }
 
 // NewReconcileTargetFromJob creates a continuation trace linked to a job's original trace.
 // It uses the job's trace token to establish the parent relationship, enabling
 // post-job activities like verification to be traced as continuations.
-func NewReconcileTargetFromJob(workspaceID string, job *oapi.Job, trigger TriggerReason, store PersistenceStore) (*ReconcileTarget, error) {
+func NewReconcileTargetFromJob(
+	workspaceID string,
+	job *oapi.Job,
+	trigger TriggerReason,
+	store PersistenceStore,
+) (*ReconcileTarget, error) {
 	if job.TraceToken == nil || *job.TraceToken == "" {
 		return nil, fmt.Errorf("job %s has no trace token", job.Id)
 	}
@@ -77,7 +88,11 @@ func NewReconcileTargetFromJob(workspaceID string, job *oapi.Job, trigger Trigge
 	return rt, nil
 }
 
-func newReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerReason, store PersistenceStore) *ReconcileTarget {
+func newReconcileTarget(
+	workspaceID, releaseTargetKey string,
+	trigger TriggerReason,
+	store PersistenceStore,
+) *ReconcileTarget {
 	exporter := newInMemoryExporter()
 
 	tp := sdktrace.NewTracerProvider(
@@ -126,7 +141,7 @@ func newReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerRea
 	return rt
 }
 
-// buildOptions creates common attribute options from recorder state
+// buildOptions creates common attribute options from recorder state.
 func (r *ReconcileTarget) buildOptions() []AttributeOption {
 	var opts []AttributeOption
 	if r.releaseID != nil {
@@ -138,7 +153,7 @@ func (r *ReconcileTarget) buildOptions() []AttributeOption {
 	return opts
 }
 
-// StartPlanning starts the planning phase
+// StartPlanning starts the planning phase.
 func (r *ReconcileTarget) StartPlanning() *PlanningPhase {
 	r.mu.Lock()
 	r.nodeSequence++
@@ -172,7 +187,7 @@ func (r *ReconcileTarget) StartPlanning() *PlanningPhase {
 	}
 }
 
-// StartEligibility starts the eligibility phase
+// StartEligibility starts the eligibility phase.
 func (r *ReconcileTarget) StartEligibility() *EligibilityPhase {
 	r.mu.Lock()
 	r.nodeSequence++
@@ -206,7 +221,7 @@ func (r *ReconcileTarget) StartEligibility() *EligibilityPhase {
 	}
 }
 
-// StartExecution starts the execution phase
+// StartExecution starts the execution phase.
 func (r *ReconcileTarget) StartExecution() *ExecutionPhase {
 	r.mu.Lock()
 	r.nodeSequence++
@@ -240,7 +255,7 @@ func (r *ReconcileTarget) StartExecution() *ExecutionPhase {
 	}
 }
 
-// StartAction starts a general-purpose action
+// StartAction starts a general-purpose action.
 func (r *ReconcileTarget) StartAction(name string) *Action {
 	r.mu.Lock()
 	r.nodeSequence++
@@ -274,7 +289,7 @@ func (r *ReconcileTarget) StartAction(name string) *Action {
 	}
 }
 
-// Complete marks the entire reconciliation as complete
+// Complete marks the entire reconciliation as complete.
 func (r *ReconcileTarget) Complete(status Status) {
 	r.rootSpan.SetAttributes(attribute.String(attrStatus, string(status)))
 
@@ -293,7 +308,7 @@ func (r *ReconcileTarget) Complete(status Status) {
 	// SimpleSpanProcessor exports spans synchronously, no flush needed
 }
 
-// Persist writes all spans to the persistence store
+// Persist writes all spans to the persistence store.
 func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 	var targetStore PersistenceStore
 
@@ -313,13 +328,13 @@ func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 
 // Helper methods
 
-// RootTraceID returns the root trace ID for this reconciliation
+// RootTraceID returns the root trace ID for this reconciliation.
 func (r *ReconcileTarget) RootTraceID() string {
 	return r.rootTraceID
 }
 
 // SetJobID sets the job ID for this reconciliation
-// This should be called after a job is created to associate all subsequent spans with the job
+// This should be called after a job is created to associate all subsequent spans with the job.
 func (r *ReconcileTarget) SetJobID(jobID string) {
 	r.jobID = &jobID
 	// Update the root span with the job ID

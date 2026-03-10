@@ -2,9 +2,9 @@ package results
 
 import (
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestNewPolicyEvaluation(t *testing.T) {
@@ -401,7 +401,11 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		// Note: Summary field is optional and may not be generated automatically
 		// If Summary is populated, verify it contains expected information
 		if policy.Summary != nil {
-			assert.Equal(t, "Pending: security team approval required, ops team approval required", *policy.Summary)
+			assert.Equal(
+				t,
+				"Pending: security team approval required, ops team approval required",
+				*policy.Summary,
+			)
 		}
 	})
 }

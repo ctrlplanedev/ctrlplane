@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
-// Helper function to create a test store with a resource
+// Helper function to create a test store with a resource.
 func setupStoreWithResource(resourceID string, metadata map[string]string) *store.Store {
 	cs := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", cs)
@@ -36,7 +36,7 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 	return st
 }
 
-// Helper function to create a test store with a deployment
+// Helper function to create a test store with a deployment.
 func setupStoreWithDeployment(deploymentID string) *store.Store {
 	cs := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", cs)
@@ -55,8 +55,12 @@ func setupStoreWithDeployment(deploymentID string) *store.Store {
 	return st
 }
 
-// Helper function to add a deployment variable to a store
-func addDeploymentVariable(st *store.Store, deploymentID, key string, defaultValue *oapi.LiteralValue) string {
+// Helper function to add a deployment variable to a store.
+func addDeploymentVariable(
+	st *store.Store,
+	deploymentID, key string,
+	defaultValue *oapi.LiteralValue,
+) string {
 	ctx := context.Background()
 	varID := uuid.New().String()
 
@@ -71,8 +75,14 @@ func addDeploymentVariable(st *store.Store, deploymentID, key string, defaultVal
 	return varID
 }
 
-// Helper function to add a deployment variable value to a store
-func addDeploymentVariableValue(st *store.Store, deploymentVariableID string, priority int64, selector *oapi.Selector, value *oapi.Value) {
+// Helper function to add a deployment variable value to a store.
+func addDeploymentVariableValue(
+	st *store.Store,
+	deploymentVariableID string,
+	priority int64,
+	selector *oapi.Selector,
+	value *oapi.Value,
+) {
 	ctx := context.Background()
 	valueID := uuid.New().String()
 
@@ -87,7 +97,7 @@ func addDeploymentVariableValue(st *store.Store, deploymentVariableID string, pr
 	st.DeploymentVariableValues.Upsert(ctx, valueID, dvv)
 }
 
-// Helper function to add a resource variable to a store
+// Helper function to add a resource variable to a store.
 func addResourceVariable(st *store.Store, resourceID, key string, value *oapi.Value) {
 	ctx := context.Background()
 
@@ -100,7 +110,7 @@ func addResourceVariable(st *store.Store, resourceID, key string, value *oapi.Va
 	st.ResourceVariables.Upsert(ctx, rv)
 }
 
-// Helper function to create a CEL selector
+// Helper function to create a CEL selector.
 func mustCreateSelector(celExpression string) *oapi.Selector {
 	selector := &oapi.Selector{}
 	if err := selector.FromCelSelector(oapi.CelSelector{Cel: celExpression}); err != nil {
@@ -109,7 +119,7 @@ func mustCreateSelector(celExpression string) *oapi.Selector {
 	return selector
 }
 
-// Helper function to create a literal value from a Go value
+// Helper function to create a literal value from a Go value.
 func mustCreateLiteralValue(value any) *oapi.LiteralValue {
 	lv := &oapi.LiteralValue{}
 	switch v := value.(type) {
@@ -154,7 +164,7 @@ func mustCreateLiteralValue(value any) *oapi.LiteralValue {
 	return lv
 }
 
-// Helper function to create a Value with a literal
+// Helper function to create a Value with a literal.
 func mustCreateValueFromLiteral(value any) *oapi.Value {
 	v := &oapi.Value{}
 	lv := mustCreateLiteralValue(value)
@@ -165,7 +175,7 @@ func mustCreateValueFromLiteral(value any) *oapi.Value {
 }
 
 // TestVariableManager_OnlyDeploymentKeysReturned tests that only variables
-// defined in the deployment are returned, even if resource has more variables
+// defined in the deployment are returned, even if resource has more variables.
 func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -232,7 +242,7 @@ func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
 }
 
 // TestVariableManager_ResourceVariableTakesPrecedence tests that resource
-// variables take precedence over deployment variables
+// variables take precedence over deployment variables.
 func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -295,7 +305,7 @@ func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 }
 
 // TestVariableManager_DeploymentVariablePriority tests that when multiple
-// deployment variable values match, the one with highest priority wins
+// deployment variable values match, the one with highest priority wins.
 func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -358,7 +368,7 @@ func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
 }
 
 // TestVariableManager_FallbackToDefault tests that when no deployment variable
-// values match, the default value is used
+// values match, the default value is used.
 func TestVariableManager_FallbackToDefault(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -420,7 +430,7 @@ func TestVariableManager_FallbackToDefault(t *testing.T) {
 }
 
 // TestVariableManager_NoDefaultNotIncluded tests that when no values match
-// and there's no default, the variable is not included in the result
+// and there's no default, the variable is not included in the result.
 func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -472,7 +482,7 @@ func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 }
 
 // TestVariableManager_SelectorFiltering tests that deployment variable values
-// are correctly filtered by resource selectors
+// are correctly filtered by resource selectors.
 func TestVariableManager_SelectorFiltering(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -495,11 +505,23 @@ func TestVariableManager_SelectorFiltering(t *testing.T) {
 
 	// East coast value
 	eastSelector := mustCreateSelector("resource.metadata.region == 'us-east-1'")
-	addDeploymentVariableValue(st, varID, 10, eastSelector, mustCreateValueFromLiteral("east.example.com"))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		eastSelector,
+		mustCreateValueFromLiteral("east.example.com"),
+	)
 
 	// West coast value
 	westSelector := mustCreateSelector("resource.metadata.region == 'us-west-1'")
-	addDeploymentVariableValue(st, varID, 10, westSelector, mustCreateValueFromLiteral("west.example.com"))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		westSelector,
+		mustCreateValueFromLiteral("west.example.com"),
+	)
 
 	// Evaluate (resource has region=us-east-1)
 	mgr := New(st)
@@ -537,7 +559,7 @@ func TestVariableManager_SelectorFiltering(t *testing.T) {
 }
 
 // TestVariableManager_NoSelectorMatches tests that when all selectors fail
-// to match, it falls back to default or excludes the variable
+// to match, it falls back to default or excludes the variable.
 func TestVariableManager_NoSelectorMatches(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -561,10 +583,22 @@ func TestVariableManager_NoSelectorMatches(t *testing.T) {
 
 	// Only US selectors
 	eastSelector := mustCreateSelector("resource.metadata.region == 'us-east-1'")
-	addDeploymentVariableValue(st, varID, 10, eastSelector, mustCreateValueFromLiteral("east.example.com"))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		eastSelector,
+		mustCreateValueFromLiteral("east.example.com"),
+	)
 
 	westSelector := mustCreateSelector("resource.metadata.region == 'us-west-1'")
-	addDeploymentVariableValue(st, varID, 10, westSelector, mustCreateValueFromLiteral("west.example.com"))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		westSelector,
+		mustCreateValueFromLiteral("west.example.com"),
+	)
 
 	// Evaluate (resource has region=eu-central-1, no selector matches)
 	mgr := New(st)
@@ -602,7 +636,7 @@ func TestVariableManager_NoSelectorMatches(t *testing.T) {
 }
 
 // TestVariableManager_ResourceNotFound tests that an error is returned
-// when the resource doesn't exist
+// when the resource doesn't exist.
 func TestVariableManager_ResourceNotFound(t *testing.T) {
 	deploymentID := uuid.New().String()
 	nonExistentResourceID := uuid.New().String()
@@ -626,7 +660,7 @@ func TestVariableManager_ResourceNotFound(t *testing.T) {
 }
 
 // TestVariableManager_EmptyDeploymentVariables tests that evaluating
-// a deployment with no variables returns an empty map
+// a deployment with no variables returns an empty map.
 func TestVariableManager_EmptyDeploymentVariables(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -672,7 +706,7 @@ func TestVariableManager_EmptyDeploymentVariables(t *testing.T) {
 }
 
 // TestVariableManager_ComplexVariableTypes tests resolving complex
-// object and array values
+// object and array values.
 func TestVariableManager_ComplexVariableTypes(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -748,7 +782,7 @@ func TestVariableManager_ComplexVariableTypes(t *testing.T) {
 }
 
 // TestVariableManager_MixedPriorities tests a scenario with mixed
-// resolution priorities (resource vars, deployment values, defaults)
+// resolution priorities (resource vars, deployment values, defaults).
 func TestVariableManager_MixedPriorities(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -769,21 +803,45 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 	// var1: resolved from resource variable
 	addResourceVariable(st, resourceID, "var1", mustCreateValueFromLiteral("from-resource"))
 	varID1 := addDeploymentVariable(st, deploymentID, "var1", mustCreateLiteralValue("default1"))
-	addDeploymentVariableValue(st, varID1, 10, mustCreateSelector("true"), mustCreateValueFromLiteral("from-deployment"))
+	addDeploymentVariableValue(
+		st,
+		varID1,
+		10,
+		mustCreateSelector("true"),
+		mustCreateValueFromLiteral("from-deployment"),
+	)
 
 	// var2: resolved from deployment variable value (no resource var)
 	varID2 := addDeploymentVariable(st, deploymentID, "var2", mustCreateLiteralValue("default2"))
 	premiumSelector := mustCreateSelector("resource.metadata.tier == 'premium'")
-	addDeploymentVariableValue(st, varID2, 10, premiumSelector, mustCreateValueFromLiteral("from-deployment-value"))
+	addDeploymentVariableValue(
+		st,
+		varID2,
+		10,
+		premiumSelector,
+		mustCreateValueFromLiteral("from-deployment-value"),
+	)
 
 	// var3: resolved from default (selector doesn't match)
 	varID3 := addDeploymentVariable(st, deploymentID, "var3", mustCreateLiteralValue("default3"))
 	basicSelector := mustCreateSelector("resource.metadata.tier == 'basic'")
-	addDeploymentVariableValue(st, varID3, 10, basicSelector, mustCreateValueFromLiteral("from-deployment-value-basic"))
+	addDeploymentVariableValue(
+		st,
+		varID3,
+		10,
+		basicSelector,
+		mustCreateValueFromLiteral("from-deployment-value-basic"),
+	)
 
 	// var4: not included (no match, no default)
 	varID4 := addDeploymentVariable(st, deploymentID, "var4", nil)
-	addDeploymentVariableValue(st, varID4, 10, basicSelector, mustCreateValueFromLiteral("basic-only"))
+	addDeploymentVariableValue(
+		st,
+		varID4,
+		10,
+		basicSelector,
+		mustCreateValueFromLiteral("basic-only"),
+	)
 
 	// Evaluate
 	mgr := New(st)
@@ -842,7 +900,7 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 }
 
 // TestVariableManager_MultipleResources tests that different resources
-// get different variable values based on their metadata
+// get different variable values based on their metadata.
 func TestVariableManager_MultipleResources(t *testing.T) {
 	resource1ID := uuid.New().String()
 	resource2ID := uuid.New().String()

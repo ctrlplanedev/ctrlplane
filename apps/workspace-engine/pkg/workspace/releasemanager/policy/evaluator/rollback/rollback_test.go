@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/store"
 )
 
 func setupTestStore(t *testing.T) (*store.Store, context.Context) {
@@ -78,7 +78,14 @@ func setupEntities(t *testing.T, s *store.Store, ctx context.Context) testEntiti
 	}
 }
 
-func createJob(t *testing.T, s *store.Store, ctx context.Context, e testEntities, status oapi.JobStatus, createdAt time.Time) *oapi.Job {
+func createJob(
+	t *testing.T,
+	s *store.Store,
+	ctx context.Context,
+	e testEntities,
+	status oapi.JobStatus,
+	createdAt time.Time,
+) *oapi.Job {
 	t.Helper()
 
 	// Create release to link job to release target

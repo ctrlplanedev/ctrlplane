@@ -3,26 +3,33 @@ package memory
 import (
 	"fmt"
 	"sync"
+
+	"github.com/hashicorp/go-memdb"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/workspace/store/repository"
 	"workspace-engine/pkg/workspace/store/repository/memory/indexstore"
-
-	"github.com/hashicorp/go-memdb"
 )
 
 var _ repository.Repo = &InMemory{}
 
 // createTypedStore creates an in-memory store and registers it with the persistence router.
 // Returns the store for direct type-safe access while enabling generic persistence updates.
-func createTypedStore[E any](router *persistence.RepositoryRouter, entityType string) cmap.ConcurrentMap[string, E] {
+func createTypedStore[E any](
+	router *persistence.RepositoryRouter,
+	entityType string,
+) cmap.ConcurrentMap[string, E] {
 	store := cmap.New[E]()
 	router.Register(entityType, &TypedStoreAdapter[E]{store: &store})
 	return store
 }
 
-func createMemDBStore[E persistence.Entity](router *persistence.RepositoryRouter, entityType string, db *memdb.MemDB) *indexstore.Store[E] {
+func createMemDBStore[E persistence.Entity](
+	router *persistence.RepositoryRouter,
+	entityType string,
+	db *memdb.MemDB,
+) *indexstore.Store[E] {
 	adapter := indexstore.NewMemDBAdapter[E](db, entityType)
 	router.Register(entityType, adapter)
 	fn := func(entity E) string {
@@ -47,33 +54,67 @@ func New(wsId string) *InMemory {
 		router: router,
 		db:     memdb,
 
-		JobVerifications:         createTypedStore[*oapi.JobVerification](router, "job_verification"),
-		resources:                createTypedStore[*oapi.Resource](router, "resource"),
-		resourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
-		resourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
-		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
-		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
-		deploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
-		deploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
-		environments:             createTypedStore[*oapi.Environment](router, "environment"),
-		policies:                 createTypedStore[*oapi.Policy](router, "policy"),
-		policySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
-		systems:                  createTypedStore[*oapi.System](router, "system"),
-		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
-		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
-		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
-		userApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
-		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
-		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
-		workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
-		workflowJobTemplates:     createTypedStore[*oapi.WorkflowJobTemplate](router, "workflow_job_template"),
-		workflowRuns:             createTypedStore[*oapi.WorkflowRun](router, "workflow_run"),
-		workflowJobs:             createTypedStore[*oapi.WorkflowJob](router, "workflow_job"),
+		JobVerifications: createTypedStore[*oapi.JobVerification](
+			router,
+			"job_verification",
+		),
+		resources: createTypedStore[*oapi.Resource](router, "resource"),
+		resourceProviders: createTypedStore[*oapi.ResourceProvider](
+			router,
+			"resource_provider",
+		),
+		resourceVariables: createTypedStore[*oapi.ResourceVariable](
+			router,
+			"resource_variable",
+		),
+		deployments: createTypedStore[*oapi.Deployment](router, "deployment"),
+		deploymentVersions: createMemDBStore[*oapi.DeploymentVersion](
+			router,
+			"deployment_version",
+			memdb,
+		),
+		deploymentVariables: createTypedStore[*oapi.DeploymentVariable](
+			router,
+			"deployment_variable",
+		),
+		deploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](
+			router,
+			"deployment_variable_value",
+		),
+		environments: createTypedStore[*oapi.Environment](router, "environment"),
+		policies:     createTypedStore[*oapi.Policy](router, "policy"),
+		policySkips:  createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
+		systems:      createTypedStore[*oapi.System](router, "system"),
+		releases:     createMemDBStore[*oapi.Release](router, "release", memdb),
+		Jobs:         createMemDBStore[*oapi.Job](router, "job", memdb),
+		jobAgents:    createTypedStore[*oapi.JobAgent](router, "job_agent"),
+		userApprovalRecords: createTypedStore[*oapi.UserApprovalRecord](
+			router,
+			"user_approval_record",
+		),
+		RelationshipRules: createTypedStore[*oapi.RelationshipRule](
+			router,
+			"relationship_rule",
+		),
+		GithubEntities: createTypedStore[*oapi.GithubEntity](router, "github_entity"),
+		workflows:      createTypedStore[*oapi.Workflow](router, "workflow"),
+		workflowJobTemplates: createTypedStore[*oapi.WorkflowJobTemplate](
+			router,
+			"workflow_job_template",
+		),
+		workflowRuns: createTypedStore[*oapi.WorkflowRun](router, "workflow_run"),
+		workflowJobs: createTypedStore[*oapi.WorkflowJob](router, "workflow_job"),
 
-		systemDeploymentLinks:      &linkStore{},
-		systemEnvironmentLinks:     &linkStore{},
-		systemDeploymentLinkStore:  createTypedStore[*oapi.SystemDeploymentLink](router, "system_deployment_link"),
-		systemEnvironmentLinkStore: createTypedStore[*oapi.SystemEnvironmentLink](router, "system_environment_link"),
+		systemDeploymentLinks:  &linkStore{},
+		systemEnvironmentLinks: &linkStore{},
+		systemDeploymentLinkStore: createTypedStore[*oapi.SystemDeploymentLink](
+			router,
+			"system_deployment_link",
+		),
+		systemEnvironmentLinkStore: createTypedStore[*oapi.SystemEnvironmentLink](
+			router,
+			"system_environment_link",
+		),
 	}
 }
 
@@ -124,7 +165,9 @@ type deploymentVersionRepoAdapter struct {
 	*indexstore.Store[*oapi.DeploymentVersion]
 }
 
-func (a *deploymentVersionRepoAdapter) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
+func (a *deploymentVersionRepoAdapter) GetByDeploymentID(
+	deploymentID string,
+) ([]*oapi.DeploymentVersion, error) {
 	return a.GetBy("deployment_id", deploymentID)
 }
 
@@ -225,7 +268,9 @@ func (a *resourceRepoAdapter) GetByIdentifiers(identifiers []string) map[string]
 	return result
 }
 
-func (a *resourceRepoAdapter) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+func (a *resourceRepoAdapter) GetSummariesByIdentifiers(
+	identifiers []string,
+) map[string]*repository.ResourceSummary {
 	wanted := make(map[string]struct{}, len(identifiers))
 	for _, id := range identifiers {
 		wanted[id] = struct{}{}
@@ -468,11 +513,14 @@ func (a *userApprovalRecordRepoAdapter) Items() map[string]*oapi.UserApprovalRec
 	return a.store.Items()
 }
 
-func (a *userApprovalRecordRepoAdapter) GetApprovedByVersionAndEnvironment(versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+func (a *userApprovalRecordRepoAdapter) GetApprovedByVersionAndEnvironment(
+	versionID, environmentID string,
+) ([]*oapi.UserApprovalRecord, error) {
 	var records []*oapi.UserApprovalRecord
 	for item := range a.store.IterBuffered() {
 		r := item.Val
-		if r.VersionId == versionID && r.EnvironmentId == environmentID && r.Status == oapi.ApprovalStatusApproved {
+		if r.VersionId == versionID && r.EnvironmentId == environmentID &&
+			r.Status == oapi.ApprovalStatusApproved {
 			records = append(records, r)
 		}
 	}
@@ -506,7 +554,10 @@ func (a *resourceVariableRepoAdapter) Items() map[string]*oapi.ResourceVariable 
 	return a.store.Items()
 }
 
-func (a *resourceVariableRepoAdapter) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error {
+func (a *resourceVariableRepoAdapter) BulkUpdate(
+	toUpsert []*oapi.ResourceVariable,
+	toRemove []*oapi.ResourceVariable,
+) error {
 	for _, rv := range toRemove {
 		a.store.Remove(rv.ID())
 	}
@@ -516,7 +567,9 @@ func (a *resourceVariableRepoAdapter) BulkUpdate(toUpsert []*oapi.ResourceVariab
 	return nil
 }
 
-func (a *resourceVariableRepoAdapter) GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error) {
+func (a *resourceVariableRepoAdapter) GetByResourceID(
+	resourceID string,
+) ([]*oapi.ResourceVariable, error) {
 	var result []*oapi.ResourceVariable
 	for item := range a.store.IterBuffered() {
 		if item.Val.ResourceId == resourceID {
@@ -553,7 +606,9 @@ func (a *deploymentVariableRepoAdapter) Items() map[string]*oapi.DeploymentVaria
 	return a.store.Items()
 }
 
-func (a *deploymentVariableRepoAdapter) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVariable, error) {
+func (a *deploymentVariableRepoAdapter) GetByDeploymentID(
+	deploymentID string,
+) ([]*oapi.DeploymentVariable, error) {
 	var result []*oapi.DeploymentVariable
 	for item := range a.store.IterBuffered() {
 		if item.Val.DeploymentId == deploymentID {
@@ -589,7 +644,9 @@ func (a *deploymentVariableValueRepoAdapter) Items() map[string]*oapi.Deployment
 	return a.store.Items()
 }
 
-func (a *deploymentVariableValueRepoAdapter) GetByVariableID(variableID string) ([]*oapi.DeploymentVariableValue, error) {
+func (a *deploymentVariableValueRepoAdapter) GetByVariableID(
+	variableID string,
+) ([]*oapi.DeploymentVariableValue, error) {
 	var result []*oapi.DeploymentVariableValue
 	for item := range a.store.IterBuffered() {
 		if item.Val.DeploymentVariableId == variableID {
@@ -669,7 +726,9 @@ func (a *workflowJobRepoAdapter) Items() map[string]*oapi.WorkflowJob {
 	return a.store.Items()
 }
 
-func (a *workflowJobRepoAdapter) GetByWorkflowRunID(workflowRunID string) ([]*oapi.WorkflowJob, error) {
+func (a *workflowJobRepoAdapter) GetByWorkflowRunID(
+	workflowRunID string,
+) ([]*oapi.WorkflowJob, error) {
 	var result []*oapi.WorkflowJob
 	for item := range a.store.IterBuffered() {
 		if item.Val.WorkflowRunId == workflowRunID {

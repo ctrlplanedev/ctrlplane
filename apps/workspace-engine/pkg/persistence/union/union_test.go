@@ -5,15 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/persistence/union"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// Mock entity for testing
+// Mock entity for testing.
 type mockEntity struct {
 	id   string
 	name string

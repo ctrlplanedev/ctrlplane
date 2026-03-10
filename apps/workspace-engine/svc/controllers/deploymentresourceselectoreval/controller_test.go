@@ -5,13 +5,13 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/store/resources"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/store/resources"
 )
 
 // ---------------------------------------------------------------------------
@@ -31,11 +31,18 @@ func (m *mockGetter) GetDeploymentInfo(_ context.Context, _ uuid.UUID) (*Deploym
 	return m.deployment, m.deployErr
 }
 
-func (m *mockGetter) GetResources(_ context.Context, _ string, _ resources.GetResourcesOptions) ([]*oapi.Resource, error) {
+func (m *mockGetter) GetResources(
+	_ context.Context,
+	_ string,
+	_ resources.GetResourcesOptions,
+) ([]*oapi.Resource, error) {
 	return m.resources, m.listErr
 }
 
-func (m *mockGetter) GetReleaseTargetsForDeployment(_ context.Context, _ uuid.UUID) ([]ReleaseTarget, error) {
+func (m *mockGetter) GetReleaseTargetsForDeployment(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]ReleaseTarget, error) {
 	return m.releaseTargets, m.releaseErr
 }
 
@@ -47,7 +54,11 @@ type mockSetter struct {
 	err error
 }
 
-func (m *mockSetter) SetComputedDeploymentResources(_ context.Context, deploymentID uuid.UUID, resourceIDs []uuid.UUID) error {
+func (m *mockSetter) SetComputedDeploymentResources(
+	_ context.Context,
+	deploymentID uuid.UUID,
+	resourceIDs []uuid.UUID,
+) error {
 	m.calledWith.deploymentID = deploymentID
 	m.calledWith.resourceIDs = resourceIDs
 	return m.err
@@ -80,7 +91,11 @@ func (m *mockQueue) Claim(context.Context, reconcile.ClaimParams) ([]reconcile.I
 	return nil, nil
 }
 func (m *mockQueue) ExtendLease(context.Context, reconcile.ExtendLeaseParams) error { return nil }
-func (m *mockQueue) AckSuccess(context.Context, reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
+
+func (m *mockQueue) AckSuccess(
+	context.Context,
+	reconcile.AckSuccessParams,
+) (reconcile.AckSuccessResult, error) {
 	return reconcile.AckSuccessResult{}, nil
 }
 func (m *mockQueue) Retry(context.Context, reconcile.RetryParams) error { return nil }

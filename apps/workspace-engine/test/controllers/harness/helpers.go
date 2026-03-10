@@ -29,7 +29,11 @@ type DrainResult struct {
 //   - On success with RequeueAfter > 0: record the requeue, re-enqueue
 //     with NotBefore, then ack.
 //   - On success without requeue: ack.
-func DrainQueue(ctx context.Context, queue reconcile.Queue, processor reconcile.Processor) (DrainResult, error) {
+func DrainQueue(
+	ctx context.Context,
+	queue reconcile.Queue,
+	processor reconcile.Processor,
+) (DrainResult, error) {
 	var res DrainResult
 	for {
 		items, err := queue.Claim(ctx, reconcile.ClaimParams{

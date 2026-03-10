@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // mockStore implements the Store interface for testing.

@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
@@ -200,7 +199,9 @@ func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 	// Check if any selector-related field changed
 	hasResourceSelectorChange := false
 	for key := range changes {
-		if key == "resourceselector" || len(key) > len("resourceselector") && key[:len("resourceselector")] == "resourceselector" {
+		if key == "resourceselector" ||
+			len(key) > len("resourceselector") &&
+				key[:len("resourceselector")] == "resourceselector" {
 			hasResourceSelectorChange = true
 			break
 		}
@@ -247,8 +248,17 @@ func TestHasEnvironmentChanges_MultipleChanges(t *testing.T) {
 	new := &oapi.Environment{
 		Name:        "production",
 		Description: &newDesc,
-		Id:          "env-123",                                   // Same ID (should be ignored)
-		CreatedAt:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), // Different CreatedAt (should be ignored)
+		Id:          "env-123", // Same ID (should be ignored)
+		CreatedAt: time.Date(
+			2024,
+			1,
+			1,
+			0,
+			0,
+			0,
+			0,
+			time.UTC,
+		), // Different CreatedAt (should be ignored)
 	}
 
 	changes := HasEnvironmentChanges(old, new)

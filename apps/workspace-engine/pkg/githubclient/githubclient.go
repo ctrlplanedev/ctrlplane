@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"workspace-engine/pkg/config"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/oapi"
 )
 
 func generateJWT(appID int64, privateKey []byte) (string, error) {
@@ -24,8 +24,10 @@ func generateJWT(appID int64, privateKey []byte) (string, error) {
 	// Create the JWT claims (issued at time and expiration)
 	now := time.Now()
 	claims := jwt.RegisteredClaims{
-		IssuedAt:  jwt.NewNumericDate(now.Add(-60 * time.Second)), // 60 seconds in the past to allow for clock drift
-		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),  // Max 10 minutes
+		IssuedAt: jwt.NewNumericDate(
+			now.Add(-60 * time.Second),
+		), // 60 seconds in the past to allow for clock drift
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)), // Max 10 minutes
 		Issuer:    strconv.FormatInt(appID, 10),
 	}
 
@@ -40,7 +42,7 @@ func generateJWT(appID int64, privateKey []byte) (string, error) {
 }
 
 // getInstallationToken exchanges JWT for an installation access token
-// This matches what Node.js octokit.auth() does
+// This matches what Node.js octokit.auth() does.
 func getInstallationToken(jwtToken string, installationID int) (string, error) {
 	url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
 
@@ -62,7 +64,11 @@ func getInstallationToken(jwtToken string, installationID int) (string, error) {
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get installation token: %s - %s", resp.Status, string(body))
+		return "", fmt.Errorf(
+			"failed to get installation token: %s - %s",
+			resp.Status,
+			string(body),
+		)
 	}
 
 	var result struct {
@@ -80,7 +86,9 @@ func CreateGithubClient(ghEntity *oapi.GithubEntity) (*github.Client, error) {
 	privateKey := config.Global.GithubBotPrivateKey
 
 	if appIDStr == "" || privateKey == "" {
-		return nil, fmt.Errorf("GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY")
+		return nil, fmt.Errorf(
+			"GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY",
+		)
 	}
 
 	appID, err := strconv.ParseInt(appIDStr, 10, 64)

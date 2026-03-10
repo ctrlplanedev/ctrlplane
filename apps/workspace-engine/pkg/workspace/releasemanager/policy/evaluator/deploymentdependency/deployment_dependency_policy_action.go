@@ -3,12 +3,12 @@ package deploymentdependency
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/action"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var actionTracer = otel.Tracer("DeploymentDependencyAction")
@@ -20,7 +20,10 @@ type DeploymentDependencyAction struct {
 	reconcileFn ReconcileFn
 }
 
-func NewDeploymentDependencyAction(store *store.Store, reconcileFn ReconcileFn) *DeploymentDependencyAction {
+func NewDeploymentDependencyAction(
+	store *store.Store,
+	reconcileFn ReconcileFn,
+) *DeploymentDependencyAction {
 	return &DeploymentDependencyAction{
 		store:       store,
 		reconcileFn: reconcileFn,
@@ -31,7 +34,11 @@ func (d *DeploymentDependencyAction) Name() string {
 	return "deploymentdependency"
 }
 
-func (d *DeploymentDependencyAction) Execute(ctx context.Context, trigger action.ActionTrigger, context action.ActionContext) error {
+func (d *DeploymentDependencyAction) Execute(
+	ctx context.Context,
+	trigger action.ActionTrigger,
+	context action.ActionContext,
+) error {
 	ctx, span := actionTracer.Start(ctx, "DeploymentDependencyAction.Execute")
 	defer span.End()
 

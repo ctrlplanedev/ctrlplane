@@ -396,7 +396,11 @@ func TestProcessInChunks_ConcurrencyActuallyLimited(t *testing.T) {
 	}
 
 	if maxConcurrentObserved > int32(maxAllowed) {
-		t.Errorf("concurrency limit violated: max concurrent was %d, limit was %d", maxConcurrentObserved, maxAllowed)
+		t.Errorf(
+			"concurrency limit violated: max concurrent was %d, limit was %d",
+			maxConcurrentObserved,
+			maxAllowed,
+		)
 	}
 
 	if maxConcurrentObserved < 1 {

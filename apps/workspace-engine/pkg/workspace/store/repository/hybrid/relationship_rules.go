@@ -12,7 +12,10 @@ type RelationshipRuleRepo struct {
 	mem    repository.RelationshipRuleRepo
 }
 
-func NewRelationshipRuleRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *RelationshipRuleRepo {
+func NewRelationshipRuleRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *RelationshipRuleRepo {
 	return &RelationshipRuleRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.RelationshipRulesRepo(),

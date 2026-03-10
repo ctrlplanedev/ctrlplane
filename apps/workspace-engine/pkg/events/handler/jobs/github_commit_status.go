@@ -3,11 +3,11 @@ package jobs
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/go-github/v66/github"
 	"workspace-engine/pkg/githubclient"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"github.com/google/go-github/v66/github"
 )
 
 func getGithubClient(ws *workspace.Workspace, owner string) (*github.Client, error) {
@@ -31,7 +31,7 @@ func getGithubClient(ws *workspace.Workspace, owner string) (*github.Client, err
 	return client, nil
 }
 
-// Can be one of: error, failure, pending, success
+// Can be one of: error, failure, pending, success.
 func getGithubStatus(status oapi.JobStatus) string {
 	switch status {
 	case oapi.JobStatusActionRequired:
@@ -114,9 +114,11 @@ func MaybeAddCommitStatusFromJob(ws *workspace.Workspace, job *oapi.Job) error {
 	}
 
 	_, _, err = client.Repositories.CreateStatus(ctx, owner, repo, sha, &github.RepoStatus{
-		State:       github.String(getGithubStatus(job.Status)),
-		TargetURL:   github.String(targetURL),
-		Context:     github.String(fmt.Sprintf("%s | %s | %s", deployment.Name, environment.Name, resource.Name)),
+		State:     github.String(getGithubStatus(job.Status)),
+		TargetURL: github.String(targetURL),
+		Context: github.String(
+			fmt.Sprintf("%s | %s | %s", deployment.Name, environment.Name, resource.Name),
+		),
 		Description: github.String(string(job.Status)),
 	})
 	return err

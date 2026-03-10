@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/celutil"
-
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/celutil"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/workspace/relationships/eval")
@@ -24,7 +23,11 @@ var celEnv, _ = celutil.NewEnvBuilder().
 // CandidateLoader abstracts how candidate entities are loaded.
 // Streaming-based and direct-query implementations can coexist.
 type CandidateLoader interface {
-	LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]EntityData, error)
+	LoadCandidates(
+		ctx context.Context,
+		workspaceID uuid.UUID,
+		entityType string,
+	) ([]EntityData, error)
 }
 
 // celMap returns the CEL evaluation map for an entity, ensuring "type" and
@@ -130,7 +133,12 @@ func EvaluateRules(
 	for _, entityType := range knownEntityTypes {
 		candidates, err := loader.LoadCandidates(ctx, entity.WorkspaceID, entityType)
 		if err != nil {
-			return nil, fmt.Errorf("load candidates for entity %s (type %s): %w", entity.ID, entityType, err)
+			return nil, fmt.Errorf(
+				"load candidates for entity %s (type %s): %w",
+				entity.ID,
+				entityType,
+				err,
+			)
 		}
 		allCandidates = append(allCandidates, candidates...)
 	}

@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"context"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
-
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var resourceVariablesTracer = otel.Tracer("workspace/store/resource_variables")
@@ -60,7 +59,11 @@ func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key s
 	r.store.changeset.RecordDelete(resourceVariable)
 }
 
-func (r *ResourceVariables) BulkUpdate(ctx context.Context, resourceId string, variables map[string]any) (bool, error) {
+func (r *ResourceVariables) BulkUpdate(
+	ctx context.Context,
+	resourceId string,
+	variables map[string]any,
+) (bool, error) {
 	currentVars, err := r.repo.GetByResourceID(resourceId)
 	if err != nil {
 		return false, err

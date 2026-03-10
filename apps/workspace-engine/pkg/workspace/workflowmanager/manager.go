@@ -2,6 +2,7 @@ package workflowmanager
 
 import (
 	"context"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/jobs"
@@ -76,7 +77,11 @@ func NewWorkflowManager(store *store.Store, jobAgentRegistry *jobagents.Registry
 // 	return result, nil
 // }
 
-func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inputs map[string]any) (*oapi.WorkflowRun, error) {
+func (m *Manager) CreateWorkflowRun(
+	ctx context.Context,
+	workflowId string,
+	inputs map[string]any,
+) (*oapi.WorkflowRun, error) {
 	return nil, nil
 	// workflow, ok := m.store.Workflows.Get(workflowId)
 	// if !ok {

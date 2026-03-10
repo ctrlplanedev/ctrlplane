@@ -22,7 +22,7 @@ func GetProperty(entity any, fieldName string) (reflect.Value, error) {
 	if !field.IsValid() {
 		// If not found, look for field with matching json tag
 		t := v.Type()
-		for i := 0; i < t.NumField(); i++ {
+		for i := range t.NumField() {
 			f := t.Field(i)
 			if tag := f.Tag.Get("json"); tag != "" {
 				// JSON tags may have options like "fieldname,omitempty"

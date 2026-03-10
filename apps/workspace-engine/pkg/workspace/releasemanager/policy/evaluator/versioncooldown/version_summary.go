@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -28,7 +29,11 @@ func NewSummaryEvaluator(getters Getters, wsId string, rule *oapi.PolicyRule) ev
 	if rule == nil || rule.VersionCooldown == nil || getters == nil {
 		return nil
 	}
-	return &VersionCooldownVersionSummaryEvaluator{getters: getters, ruleId: rule.Id, rule: rule.VersionCooldown}
+	return &VersionCooldownVersionSummaryEvaluator{
+		getters: getters,
+		ruleId:  rule.Id,
+		rule:    rule.VersionCooldown,
+	}
 }
 
 func (e *VersionCooldownVersionSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -48,7 +53,7 @@ func (e *VersionCooldownVersionSummaryEvaluator) Complexity() int {
 	return 2
 }
 
-// pluralize returns "s" if count is not 1, empty string otherwise
+// pluralize returns "s" if count is not 1, empty string otherwise.
 func pluralize(count int) string {
 	if count == 1 {
 		return ""
@@ -56,7 +61,10 @@ func pluralize(count int) string {
 	return "s"
 }
 
-func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(
+	ctx context.Context,
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
 	version := scope.Version
 
 	allReleaseTargets, err := e.getters.GetAllReleaseTargets(ctx, e.wsId)
@@ -88,7 +96,10 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 			Resource:    resource,
 			Deployment:  deployment,
 		}
-		evaluation := NewEvaluator(e.getters, &oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
+		evaluation := NewEvaluator(
+			e.getters,
+			&oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule},
+		).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 
@@ -98,7 +109,8 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 			deniedTargets++
 			// Track the earliest next deployment time from denied evaluations
 			if evaluation.NextEvaluationTime != nil {
-				if nextDeploymentTime == nil || evaluation.NextEvaluationTime.Before(*nextDeploymentTime) {
+				if nextDeploymentTime == nil ||
+					evaluation.NextEvaluationTime.Before(*nextDeploymentTime) {
 					nextDeploymentTime = evaluation.NextEvaluationTime
 				}
 			}
@@ -124,8 +136,9 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	}
 
 	if allowedTargets == totalTargets {
-		return result.Allow().WithMessage(fmt.Sprintf("Version cooldown passed — All %d target%s allowed",
-			totalTargets, pluralize(totalTargets)))
+		return result.Allow().
+			WithMessage(fmt.Sprintf("Version cooldown passed — All %d target%s allowed",
+				totalTargets, pluralize(totalTargets)))
 	}
 
 	if deniedTargets == totalTargets {
@@ -134,7 +147,10 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 		if nextDeploymentTime != nil {
 			timeRemaining := time.Until(*nextDeploymentTime)
 			if timeRemaining > 0 {
-				msg += fmt.Sprintf(" • Next deployment possible in %s", formatDuration(timeRemaining))
+				msg += fmt.Sprintf(
+					" • Next deployment possible in %s",
+					formatDuration(timeRemaining),
+				)
 			} else {
 				msg += " • Next deployment possible now"
 			}

@@ -3,14 +3,14 @@ package gradualrollout
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type approvalGetters = approval.Getters
@@ -20,10 +20,19 @@ type Getters interface {
 	approvalGetters
 	environmentProgressionGetters
 
-	GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error)
-	GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error)
+	GetPoliciesForReleaseTarget(
+		ctx context.Context,
+		releaseTarget *oapi.ReleaseTarget,
+	) ([]*oapi.Policy, error)
+	GetPolicySkips(
+		ctx context.Context,
+		versionID, environmentID, resourceID string,
+	) ([]*oapi.PolicySkip, error)
 	HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error)
-	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
+	GetReleaseTargetsForDeployment(
+		ctx context.Context,
+		deploymentID string,
+	) ([]*oapi.ReleaseTarget, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -49,16 +58,25 @@ func NewStoreGetters(store *store.Store) *StoreGetters {
 	}
 }
 
-func (s *StoreGetters) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+func (s *StoreGetters) GetPoliciesForReleaseTarget(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) ([]*oapi.Policy, error) {
 	return s.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 }
 
-func (s *StoreGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+func (s *StoreGetters) GetPolicySkips(
+	ctx context.Context,
+	versionID, environmentID, resourceID string,
+) ([]*oapi.PolicySkip, error) {
 	ps := s.store.PolicySkips.GetAllForTarget(versionID, environmentID, resourceID)
 	return ps, nil
 }
 
-func (s *StoreGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
+func (s *StoreGetters) HasCurrentRelease(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) (bool, error) {
 	_, _, err := s.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
 	if err != nil {
 		return false, nil
@@ -66,7 +84,10 @@ func (s *StoreGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oap
 	return true, nil
 }
 
-func (s *StoreGetters) GetReleaseTargetsForDeployment(_ context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error) {
+func (s *StoreGetters) GetReleaseTargetsForDeployment(
+	_ context.Context,
+	deploymentID string,
+) ([]*oapi.ReleaseTarget, error) {
 	items, err := s.store.ReleaseTargets.Items()
 	if err != nil {
 		return nil, err
@@ -106,7 +127,10 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 	}
 }
 
-func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+func (p *PostgresGetters) GetPolicySkips(
+	ctx context.Context,
+	versionID, environmentID, resourceID string,
+) ([]*oapi.PolicySkip, error) {
 	versionIDUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		return nil, fmt.Errorf("parse version id: %w", err)
@@ -134,7 +158,10 @@ func (p *PostgresGetters) GetPolicySkips(ctx context.Context, versionID, environ
 	return ps, nil
 }
 
-func (p *PostgresGetters) HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error) {
+func (p *PostgresGetters) HasCurrentRelease(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) (bool, error) {
 	resourceIDUUID, err := uuid.Parse(releaseTarget.ResourceId)
 	if err != nil {
 		return false, fmt.Errorf("parse resource id: %w", err)
@@ -147,18 +174,24 @@ func (p *PostgresGetters) HasCurrentRelease(ctx context.Context, releaseTarget *
 	if err != nil {
 		return false, fmt.Errorf("parse deployment id: %w", err)
 	}
-	releases, err := p.queries.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    resourceIDUUID,
-		EnvironmentID: environmentIDUUID,
-		DeploymentID:  deploymentIDUUID,
-	})
+	releases, err := p.queries.ListReleasesByReleaseTarget(
+		ctx,
+		db.ListReleasesByReleaseTargetParams{
+			ResourceID:    resourceIDUUID,
+			EnvironmentID: environmentIDUUID,
+			DeploymentID:  deploymentIDUUID,
+		},
+	)
 	if err != nil {
 		return false, err
 	}
 	return len(releases) > 0, nil
 }
 
-func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error) {
+func (p *PostgresGetters) GetReleaseTargetsForDeployment(
+	ctx context.Context,
+	deploymentID string,
+) ([]*oapi.ReleaseTarget, error) {
 	deploymentUUID, err := uuid.Parse(deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("parse deployment id: %w", err)

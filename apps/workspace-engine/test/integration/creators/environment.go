@@ -3,9 +3,9 @@ package creators
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 func NewCelSelector(cel string) *oapi.Selector {
@@ -15,7 +15,7 @@ func NewCelSelector(cel string) *oapi.Selector {
 }
 
 // NewEnvironment creates a test Environment with sensible defaults
-// All fields can be overridden via functional options
+// All fields can be overridden via functional options.
 func NewEnvironment(systemID string) *oapi.Environment {
 	// Create with defaults
 	id := uuid.New().String()

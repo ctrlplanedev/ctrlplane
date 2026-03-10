@@ -4,12 +4,12 @@ import (
 	"context"
 	"sort"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var userApprovalRecordsTracer = otel.Tracer("workspace/store/user_approval_records")
@@ -30,7 +30,10 @@ func (u *UserApprovalRecords) SetRepo(repo repository.UserApprovalRecordRepo) {
 	u.repo = repo
 }
 
-func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
+func (u *UserApprovalRecords) Upsert(
+	ctx context.Context,
+	userApprovalRecord *oapi.UserApprovalRecord,
+) {
 	_, span := userApprovalRecordsTracer.Start(ctx, "UpsertUserApprovalRecord")
 	defer span.End()
 
@@ -43,7 +46,9 @@ func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oa
 	u.store.changeset.RecordUpsert(userApprovalRecord)
 }
 
-func (u *UserApprovalRecords) Get(versionId, userId, environmentId string) (*oapi.UserApprovalRecord, bool) {
+func (u *UserApprovalRecords) Get(
+	versionId, userId, environmentId string,
+) (*oapi.UserApprovalRecord, bool) {
 	return u.repo.Get(versionId + userId + environmentId)
 }
 
@@ -63,7 +68,15 @@ func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []string {
 	records, err := u.repo.GetApprovedByVersionAndEnvironment(versionId, environmentId)
 	if err != nil {
-		log.Warn("Failed to get approvers", "version_id", versionId, "environment_id", environmentId, "error", err)
+		log.Warn(
+			"Failed to get approvers",
+			"version_id",
+			versionId,
+			"environment_id",
+			environmentId,
+			"error",
+			err,
+		)
 		return nil
 	}
 	approvers := make([]string, len(records))
@@ -73,10 +86,20 @@ func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []st
 	return approvers
 }
 
-func (u *UserApprovalRecords) GetApprovalRecords(versionId, environmentId string) []*oapi.UserApprovalRecord {
+func (u *UserApprovalRecords) GetApprovalRecords(
+	versionId, environmentId string,
+) []*oapi.UserApprovalRecord {
 	records, err := u.repo.GetApprovedByVersionAndEnvironment(versionId, environmentId)
 	if err != nil {
-		log.Warn("Failed to get approval records", "version_id", versionId, "environment_id", environmentId, "error", err)
+		log.Warn(
+			"Failed to get approval records",
+			"version_id",
+			versionId,
+			"environment_id",
+			environmentId,
+			"error",
+			err,
+		)
 		return nil
 	}
 	sort.Slice(records, func(i, j int) bool {

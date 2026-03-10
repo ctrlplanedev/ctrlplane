@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-// GetAllTraces retrieves all traces from the trace store
+// GetAllTraces retrieves all traces from the trace store.
 func GetAllTraces(tw *TestWorkspace) []sdktrace.ReadOnlySpan {
 	return tw.TraceStore().GetSpans()
 }
 
-// ClearTraces clears all traces from the store (useful between tests)
+// ClearTraces clears all traces from the store (useful between tests).
 func ClearTraces(tw *TestWorkspace) {
 	tw.TraceStore().Clear()
 }
 
-// FindSpanByName locates a specific span by name in a trace
+// FindSpanByName locates a specific span by name in a trace.
 func FindSpanByName(spans []sdktrace.ReadOnlySpan, name string) (sdktrace.ReadOnlySpan, bool) {
 	for _, span := range spans {
 		if span.Name() == name {
@@ -30,7 +30,7 @@ func FindSpanByName(spans []sdktrace.ReadOnlySpan, name string) (sdktrace.ReadOn
 	return nil, false
 }
 
-// FindRootReconciliationSpan finds the root Reconciliation span (which may have a trigger suffix)
+// FindRootReconciliationSpan finds the root Reconciliation span (which may have a trigger suffix).
 func FindRootReconciliationSpan(spans []sdktrace.ReadOnlySpan) (sdktrace.ReadOnlySpan, bool) {
 	for _, span := range spans {
 		if strings.HasPrefix(span.Name(), "Reconciliation") {
@@ -44,7 +44,7 @@ func FindRootReconciliationSpan(spans []sdktrace.ReadOnlySpan) (sdktrace.ReadOnl
 	return nil, false
 }
 
-// FindSpansByPhase finds all spans for a specific phase
+// FindSpansByPhase finds all spans for a specific phase.
 func FindSpansByPhase(spans []sdktrace.ReadOnlySpan, phase trace.Phase) []sdktrace.ReadOnlySpan {
 	var result []sdktrace.ReadOnlySpan
 	for _, span := range spans {
@@ -58,8 +58,12 @@ func FindSpansByPhase(spans []sdktrace.ReadOnlySpan, phase trace.Phase) []sdktra
 	return result
 }
 
-// VerifyTraceStructure validates the trace hierarchy
-func VerifyTraceStructure(t *testing.T, spans []sdktrace.ReadOnlySpan, expectedPhases []trace.Phase) {
+// VerifyTraceStructure validates the trace hierarchy.
+func VerifyTraceStructure(
+	t *testing.T,
+	spans []sdktrace.ReadOnlySpan,
+	expectedPhases []trace.Phase,
+) {
 	t.Helper()
 
 	if len(spans) == 0 {
@@ -89,7 +93,7 @@ func VerifyTraceStructure(t *testing.T, spans []sdktrace.ReadOnlySpan, expectedP
 	}
 }
 
-// AssertSpanAttributes verifies specific attributes on a span
+// AssertSpanAttributes verifies specific attributes on a span.
 func AssertSpanAttributes(t *testing.T, span sdktrace.ReadOnlySpan, expectedAttrs map[string]any) {
 	t.Helper()
 
@@ -125,7 +129,7 @@ func AssertSpanAttributes(t *testing.T, span sdktrace.ReadOnlySpan, expectedAttr
 	}
 }
 
-// VerifyTraceTimeline checks that span timestamps are logically ordered
+// VerifyTraceTimeline checks that span timestamps are logically ordered.
 func VerifyTraceTimeline(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 
@@ -140,11 +144,19 @@ func VerifyTraceTimeline(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 			for _, potentialParent := range spans {
 				if potentialParent.SpanContext().SpanID() == parentSpanID {
 					if span.StartTime().Before(potentialParent.StartTime()) {
-						t.Errorf("span %s starts before its parent %s", span.Name(), potentialParent.Name())
+						t.Errorf(
+							"span %s starts before its parent %s",
+							span.Name(),
+							potentialParent.Name(),
+						)
 					}
 					if !potentialParent.EndTime().IsZero() && !span.EndTime().IsZero() {
 						if span.EndTime().After(potentialParent.EndTime()) {
-							t.Errorf("span %s ends after its parent %s", span.Name(), potentialParent.Name())
+							t.Errorf(
+								"span %s ends after its parent %s",
+								span.Name(),
+								potentialParent.Name(),
+							)
 						}
 					}
 					break
@@ -154,7 +166,7 @@ func VerifyTraceTimeline(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	}
 }
 
-// ExtractTraceMetadata extracts metadata from span events
+// ExtractTraceMetadata extracts metadata from span events.
 func ExtractTraceMetadata(span sdktrace.ReadOnlySpan) map[string]any {
 	metadata := make(map[string]any)
 
@@ -177,7 +189,7 @@ func ExtractTraceMetadata(span sdktrace.ReadOnlySpan) map[string]any {
 	return metadata
 }
 
-// GetSpanAttribute retrieves a specific attribute value from a span
+// GetSpanAttribute retrieves a specific attribute value from a span.
 func GetSpanAttribute(span sdktrace.ReadOnlySpan, key string) (attribute.Value, bool) {
 	for _, attr := range span.Attributes() {
 		if string(attr.Key) == key {
@@ -187,7 +199,7 @@ func GetSpanAttribute(span sdktrace.ReadOnlySpan, key string) (attribute.Value, 
 	return attribute.Value{}, false
 }
 
-// VerifySpanDepth checks that spans have correct depth values
+// VerifySpanDepth checks that spans have correct depth values.
 func VerifySpanDepth(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 
@@ -214,12 +226,21 @@ func VerifySpanDepth(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 			parentSpanID := span.Parent().SpanID()
 			for _, potentialParent := range spans {
 				if potentialParent.SpanContext().SpanID() == parentSpanID {
-					parentDepth, hasParentDepth := GetSpanAttribute(potentialParent, "ctrlplane.depth")
+					parentDepth, hasParentDepth := GetSpanAttribute(
+						potentialParent,
+						"ctrlplane.depth",
+					)
 					if hasParentDepth {
 						expectedDepth := int(parentDepth.AsInt64()) + 1
 						if depth != expectedDepth {
-							t.Errorf("span %s has depth %d but parent %s has depth %d (expected %d)",
-								span.Name(), depth, potentialParent.Name(), int(parentDepth.AsInt64()), expectedDepth)
+							t.Errorf(
+								"span %s has depth %d but parent %s has depth %d (expected %d)",
+								span.Name(),
+								depth,
+								potentialParent.Name(),
+								int(parentDepth.AsInt64()),
+								expectedDepth,
+							)
 						}
 					}
 					break
@@ -229,7 +250,7 @@ func VerifySpanDepth(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	}
 }
 
-// VerifySequenceNumbers checks that sequence numbers are unique and range from 0 to N-1
+// VerifySequenceNumbers checks that sequence numbers are unique and range from 0 to N-1.
 func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 
@@ -268,7 +289,7 @@ func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	}
 }
 
-// DumpTrace prints all spans for debugging
+// DumpTrace prints all spans for debugging.
 func DumpTrace(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 	t.Logf("=== Trace Dump (%d spans) ===", len(spans))
@@ -292,7 +313,7 @@ func DumpTrace(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	}
 }
 
-// CountSpansByType counts spans of a specific node type
+// CountSpansByType counts spans of a specific node type.
 func CountSpansByType(spans []sdktrace.ReadOnlySpan, nodeType trace.NodeType) int {
 	count := 0
 	for _, span := range spans {
@@ -304,8 +325,12 @@ func CountSpansByType(spans []sdktrace.ReadOnlySpan, nodeType trace.NodeType) in
 	return count
 }
 
-// AssertSpanExists verifies a span with specific name exists
-func AssertSpanExists(t *testing.T, spans []sdktrace.ReadOnlySpan, name string) sdktrace.ReadOnlySpan {
+// AssertSpanExists verifies a span with specific name exists.
+func AssertSpanExists(
+	t *testing.T,
+	spans []sdktrace.ReadOnlySpan,
+	name string,
+) sdktrace.ReadOnlySpan {
 	t.Helper()
 
 	span, found := FindSpanByName(spans, name)
@@ -315,8 +340,11 @@ func AssertSpanExists(t *testing.T, spans []sdktrace.ReadOnlySpan, name string) 
 	return span
 }
 
-// AssertRootReconciliationSpan verifies the root Reconciliation span exists
-func AssertRootReconciliationSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) sdktrace.ReadOnlySpan {
+// AssertRootReconciliationSpan verifies the root Reconciliation span exists.
+func AssertRootReconciliationSpan(
+	t *testing.T,
+	spans []sdktrace.ReadOnlySpan,
+) sdktrace.ReadOnlySpan {
 	t.Helper()
 
 	span, found := FindRootReconciliationSpan(spans)
@@ -326,7 +354,7 @@ func AssertRootReconciliationSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) s
 	return span
 }
 
-// AssertSpanCount verifies the total number of spans
+// AssertSpanCount verifies the total number of spans.
 func AssertSpanCount(t *testing.T, spans []sdktrace.ReadOnlySpan, expected int) {
 	t.Helper()
 
@@ -336,8 +364,12 @@ func AssertSpanCount(t *testing.T, spans []sdktrace.ReadOnlySpan, expected int) 
 	}
 }
 
-// AssertPhaseExists verifies a phase span exists
-func AssertPhaseExists(t *testing.T, spans []sdktrace.ReadOnlySpan, phase trace.Phase) sdktrace.ReadOnlySpan {
+// AssertPhaseExists verifies a phase span exists.
+func AssertPhaseExists(
+	t *testing.T,
+	spans []sdktrace.ReadOnlySpan,
+	phase trace.Phase,
+) sdktrace.ReadOnlySpan {
 	t.Helper()
 
 	phaseSpans := FindSpansByPhase(spans, phase)
@@ -348,7 +380,7 @@ func AssertPhaseExists(t *testing.T, spans []sdktrace.ReadOnlySpan, phase trace.
 	return phaseSpans[0]
 }
 
-// VerifyNoTrace ensures no trace was created (for blocked/skipped deployments)
+// VerifyNoTrace ensures no trace was created (for blocked/skipped deployments).
 func VerifyNoTrace(t *testing.T, spans []sdktrace.ReadOnlySpan, phaseName string) {
 	t.Helper()
 
@@ -359,8 +391,12 @@ func VerifyNoTrace(t *testing.T, spans []sdktrace.ReadOnlySpan, phaseName string
 	}
 }
 
-// GetSpanByPhaseAndType finds a span matching both phase and node type
-func GetSpanByPhaseAndType(spans []sdktrace.ReadOnlySpan, phase trace.Phase, nodeType trace.NodeType) (sdktrace.ReadOnlySpan, error) {
+// GetSpanByPhaseAndType finds a span matching both phase and node type.
+func GetSpanByPhaseAndType(
+	spans []sdktrace.ReadOnlySpan,
+	phase trace.Phase,
+	nodeType trace.NodeType,
+) (sdktrace.ReadOnlySpan, error) {
 	for _, span := range spans {
 		phaseAttr, hasPhase := GetSpanAttribute(span, "ctrlplane.phase")
 		typeAttr, hasType := GetSpanAttribute(span, "ctrlplane.node_type")

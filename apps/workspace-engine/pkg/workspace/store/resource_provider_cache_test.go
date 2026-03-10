@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestResourceProviderCache_StoreAndRetrieve(t *testing.T) {
@@ -376,7 +376,7 @@ func BenchmarkResourceProviderCache_Retrieve(b *testing.B) {
 
 	// Store multiple batches for retrieval benchmark
 	batchIds := make([]string, b.N)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		batchId, err := cache.Store(ctx, providerId, resources)
 		if err != nil {
 			b.Fatal(err)
@@ -385,7 +385,7 @@ func BenchmarkResourceProviderCache_Retrieve(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		_, err := cache.Retrieve(ctx, batchIds[i])
 		if err != nil {
 			b.Fatal(err)

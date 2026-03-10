@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type policiesGetter = policyeval.Getter
@@ -41,7 +40,10 @@ func (g *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTar
 	})
 }
 
-func (g *PostgresGetter) GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error) {
+func (g *PostgresGetter) GetReleaseTargetScope(
+	ctx context.Context,
+	rt *ReleaseTarget,
+) (*evaluator.EvaluatorScope, error) {
 	q := db.GetQueries(ctx)
 
 	depRow, err := q.GetDeploymentByID(ctx, rt.DeploymentID)
@@ -66,11 +68,15 @@ func (g *PostgresGetter) GetReleaseTargetScope(ctx context.Context, rt *ReleaseT
 	}, nil
 }
 
-func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID uuid.UUID) ([]*oapi.DeploymentVersion, error) {
-	rows, err := db.GetQueries(ctx).ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
-		DeploymentID: deploymentID,
-		Limit:        pgtype.Int4{Int32: 5000, Valid: true},
-	})
+func (g *PostgresGetter) GetCandidateVersions(
+	ctx context.Context,
+	deploymentID uuid.UUID,
+) ([]*oapi.DeploymentVersion, error) {
+	rows, err := db.GetQueries(ctx).
+		ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
+			DeploymentID: deploymentID,
+			Limit:        pgtype.Int4{Int32: 5000, Valid: true},
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
 	}
@@ -82,7 +88,10 @@ func (g *PostgresGetter) GetCandidateVersions(ctx context.Context, deploymentID 
 	return versions, nil
 }
 
-func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error) {
+func (g *PostgresGetter) GetApprovalRecords(
+	ctx context.Context,
+	versionID, environmentID string,
+) ([]*oapi.UserApprovalRecord, error) {
 	versionIDUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		return nil, fmt.Errorf("parse version id: %w", err)
@@ -91,21 +100,28 @@ func (g *PostgresGetter) GetApprovalRecords(ctx context.Context, versionID, envi
 	if err != nil {
 		return nil, fmt.Errorf("parse environment id: %w", err)
 	}
-	approvalRecords, err := db.GetQueries(ctx).ListApprovedRecordsByVersionAndEnvironment(ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
-		VersionID:     versionIDUUID,
-		EnvironmentID: environmentIDUUID,
-	})
+	approvalRecords, err := db.GetQueries(ctx).
+		ListApprovedRecordsByVersionAndEnvironment(ctx, db.ListApprovedRecordsByVersionAndEnvironmentParams{
+			VersionID:     versionIDUUID,
+			EnvironmentID: environmentIDUUID,
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list approval records for workspace %s: %w", versionID, err)
 	}
 	approvalRecordsOAPI := make([]*oapi.UserApprovalRecord, 0, len(approvalRecords))
 	for _, approvalRecord := range approvalRecords {
-		approvalRecordsOAPI = append(approvalRecordsOAPI, db.ToOapiUserApprovalRecord(approvalRecord))
+		approvalRecordsOAPI = append(
+			approvalRecordsOAPI,
+			db.ToOapiUserApprovalRecord(approvalRecord),
+		)
 	}
 	return approvalRecordsOAPI, nil
 }
 
-func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environmentID, resourceID string) ([]*oapi.PolicySkip, error) {
+func (g *PostgresGetter) GetPolicySkips(
+	ctx context.Context,
+	versionID, environmentID, resourceID string,
+) ([]*oapi.PolicySkip, error) {
 	versionIDUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		return nil, fmt.Errorf("parse version id: %w", err)
@@ -118,11 +134,12 @@ func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environm
 	if err != nil {
 		return nil, fmt.Errorf("parse resource id: %w", err)
 	}
-	policySkips, err := db.GetQueries(ctx).ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
-		VersionID:     versionIDUUID,
-		EnvironmentID: environmentIDUUID,
-		ResourceID:    resourceIDUUID,
-	})
+	policySkips, err := db.GetQueries(ctx).
+		ListPolicySkipsForTarget(ctx, db.ListPolicySkipsForTargetParams{
+			VersionID:     versionIDUUID,
+			EnvironmentID: environmentIDUUID,
+			ResourceID:    resourceIDUUID,
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list policy skips for version %s: %w", versionID, err)
 	}
@@ -133,7 +150,10 @@ func (g *PostgresGetter) GetPolicySkips(ctx context.Context, versionID, environm
 	return result, nil
 }
 
-func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarget) (*oapi.Release, error) {
+func (g *PostgresGetter) GetCurrentRelease(
+	ctx context.Context,
+	rt *ReleaseTarget,
+) (*oapi.Release, error) {
 	q := db.GetQueries(ctx)
 
 	releases, err := q.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
@@ -172,7 +192,10 @@ func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt *ReleaseTarge
 	}, nil
 }
 
-func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentID string) ([]oapi.DeploymentVariableWithValues, error) {
+func (g *PostgresGetter) GetDeploymentVariables(
+	ctx context.Context,
+	deploymentID string,
+) ([]oapi.DeploymentVariableWithValues, error) {
 	q := db.GetQueries(ctx)
 
 	deploymentIDUUID, err := uuid.Parse(deploymentID)
@@ -204,7 +227,10 @@ func (g *PostgresGetter) GetDeploymentVariables(ctx context.Context, deploymentI
 	return result, nil
 }
 
-func (g *PostgresGetter) GetResourceVariables(ctx context.Context, resourceID string) (map[string]oapi.ResourceVariable, error) {
+func (g *PostgresGetter) GetResourceVariables(
+	ctx context.Context,
+	resourceID string,
+) (map[string]oapi.ResourceVariable, error) {
 	resourceIDUUID, err := uuid.Parse(resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("parse resource id: %w", err)
@@ -221,9 +247,14 @@ func (g *PostgresGetter) GetResourceVariables(ctx context.Context, resourceID st
 	return result, nil
 }
 
-var celTypePattern = regexp.MustCompile(`^from\.type\s*==\s*"([^"]+)"\s*&&\s*to\.type\s*==\s*"([^"]+)"`)
+var celTypePattern = regexp.MustCompile(
+	`^from\.type\s*==\s*"([^"]+)"\s*&&\s*to\.type\s*==\s*"([^"]+)"`,
+)
 
-func (g *PostgresGetter) GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error) {
+func (g *PostgresGetter) GetRelationshipRules(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]eval.Rule, error) {
 	q := db.GetQueries(ctx)
 
 	rows, err := q.GetRelationshipRulesForWorkspace(ctx, workspaceID)
@@ -235,7 +266,10 @@ func (g *PostgresGetter) GetRelationshipRules(ctx context.Context, workspaceID u
 	for _, row := range rows {
 		m := celTypePattern.FindStringSubmatch(row.Cel)
 		if m == nil {
-			return nil, fmt.Errorf("CEL expression does not start with expected type guards: %q", row.Cel)
+			return nil, fmt.Errorf(
+				"CEL expression does not start with expected type guards: %q",
+				row.Cel,
+			)
 		}
 		rules = append(rules, eval.Rule{
 			ID:        row.ID,
@@ -246,7 +280,11 @@ func (g *PostgresGetter) GetRelationshipRules(ctx context.Context, workspaceID u
 	return rules, nil
 }
 
-func (g *PostgresGetter) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
+func (g *PostgresGetter) LoadCandidates(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	entityType string,
+) ([]eval.EntityData, error) {
 	pool := db.GetPool(ctx)
 
 	var query string
@@ -267,7 +305,12 @@ func (g *PostgresGetter) LoadCandidates(ctx context.Context, workspaceID uuid.UU
 
 	rows, err := pool.Query(ctx, query, workspaceID)
 	if err != nil {
-		return nil, fmt.Errorf("query %s entities for workspace %s: %w", entityType, workspaceID, err)
+		return nil, fmt.Errorf(
+			"query %s entities for workspace %s: %w",
+			entityType,
+			workspaceID,
+			err,
+		)
 	}
 	defer rows.Close()
 
@@ -342,7 +385,11 @@ FROM environment
 WHERE id = $1
 `
 
-func (g *PostgresGetter) GetEntityByID(ctx context.Context, entityID uuid.UUID, entityType string) (*eval.EntityData, error) {
+func (g *PostgresGetter) GetEntityByID(
+	ctx context.Context,
+	entityID uuid.UUID,
+	entityType string,
+) (*eval.EntityData, error) {
 	pool := db.GetPool(ctx)
 
 	var query string

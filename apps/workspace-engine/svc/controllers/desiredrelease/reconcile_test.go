@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -30,51 +29,111 @@ type mockReconcileGetter struct {
 	rtExists bool
 }
 
-func (m *mockReconcileGetter) ReleaseTargetExists(_ context.Context, _ *ReleaseTarget) (bool, error) {
+func (m *mockReconcileGetter) ReleaseTargetExists(
+	_ context.Context,
+	_ *ReleaseTarget,
+) (bool, error) {
 	return m.rtExists, nil
 }
-func (m *mockReconcileGetter) GetReleaseTargetScope(_ context.Context, _ *ReleaseTarget) (*evaluator.EvaluatorScope, error) {
+
+func (m *mockReconcileGetter) GetReleaseTargetScope(
+	_ context.Context,
+	_ *ReleaseTarget,
+) (*evaluator.EvaluatorScope, error) {
 	return m.scope, nil
 }
-func (m *mockReconcileGetter) GetCandidateVersions(_ context.Context, _ uuid.UUID) ([]*oapi.DeploymentVersion, error) {
+
+func (m *mockReconcileGetter) GetCandidateVersions(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]*oapi.DeploymentVersion, error) {
 	return m.versions, nil
 }
-func (m *mockReconcileGetter) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+
+func (m *mockReconcileGetter) GetPoliciesForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) ([]*oapi.Policy, error) {
 	return m.policyList, nil
 }
-func (m *mockReconcileGetter) GetPolicySkips(_ context.Context, _, _, _ string) ([]*oapi.PolicySkip, error) {
+
+func (m *mockReconcileGetter) GetPolicySkips(
+	_ context.Context,
+	_, _, _ string,
+) ([]*oapi.PolicySkip, error) {
 	return m.policySkips, nil
 }
-func (m *mockReconcileGetter) GetDeploymentVariables(_ context.Context, _ string) ([]oapi.DeploymentVariableWithValues, error) {
+
+func (m *mockReconcileGetter) GetDeploymentVariables(
+	_ context.Context,
+	_ string,
+) ([]oapi.DeploymentVariableWithValues, error) {
 	return m.deployVars, nil
 }
-func (m *mockReconcileGetter) GetResourceVariables(_ context.Context, _ string) (map[string]oapi.ResourceVariable, error) {
+
+func (m *mockReconcileGetter) GetResourceVariables(
+	_ context.Context,
+	_ string,
+) (map[string]oapi.ResourceVariable, error) {
 	return m.resourceVar, nil
 }
-func (m *mockReconcileGetter) GetRelationshipRules(_ context.Context, _ uuid.UUID) ([]eval.Rule, error) {
-	return nil, nil
-}
-func (m *mockReconcileGetter) LoadCandidates(_ context.Context, _ uuid.UUID, _ string) ([]eval.EntityData, error) {
-	return nil, nil
-}
-func (m *mockReconcileGetter) GetEntityByID(_ context.Context, _ uuid.UUID, _ string) (*eval.EntityData, error) {
+
+func (m *mockReconcileGetter) GetRelationshipRules(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]eval.Rule, error) {
 	return nil, nil
 }
 
-// policyeval.Getter methods
-func (m *mockReconcileGetter) GetApprovalRecords(_ context.Context, _, _ string) ([]*oapi.UserApprovalRecord, error) {
+func (m *mockReconcileGetter) LoadCandidates(
+	_ context.Context,
+	_ uuid.UUID,
+	_ string,
+) ([]eval.EntityData, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget) (bool, error) {
+
+func (m *mockReconcileGetter) GetEntityByID(
+	_ context.Context,
+	_ uuid.UUID,
+	_ string,
+) (*eval.EntityData, error) {
+	return nil, nil
+}
+
+// policyeval.Getter methods.
+func (m *mockReconcileGetter) GetApprovalRecords(
+	_ context.Context,
+	_, _ string,
+) ([]*oapi.UserApprovalRecord, error) {
+	return nil, nil
+}
+
+func (m *mockReconcileGetter) HasCurrentRelease(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (bool, error) {
 	return false, nil
 }
-func (m *mockReconcileGetter) GetEnvironment(_ context.Context, _ string) (*oapi.Environment, error) {
+
+func (m *mockReconcileGetter) GetEnvironment(
+	_ context.Context,
+	_ string,
+) (*oapi.Environment, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+
+func (m *mockReconcileGetter) GetAllEnvironments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Environment, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+
+func (m *mockReconcileGetter) GetAllDeployments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	return nil, nil
 }
 func (m *mockReconcileGetter) GetDeployment(_ context.Context, _ string) (*oapi.Deployment, error) {
@@ -89,34 +148,69 @@ func (m *mockReconcileGetter) GetRelease(_ context.Context, _ string) (*oapi.Rel
 func (m *mockReconcileGetter) GetSystemIDsForEnvironment(_ string) []string {
 	return nil
 }
-func (m *mockReconcileGetter) GetReleaseTargetsForEnvironment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+
+func (m *mockReconcileGetter) GetReleaseTargetsForEnvironment(
+	_ context.Context,
+	_ string,
+) ([]*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetReleaseTargetsForDeployment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+
+func (m *mockReconcileGetter) GetReleaseTargetsForDeployment(
+	_ context.Context,
+	_ string,
+) ([]*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, _, _ string) ([]oapi.ReleaseTarget, error) {
+
+func (m *mockReconcileGetter) GetReleaseTargetsForDeploymentAndEnvironment(
+	_ context.Context,
+	_, _ string,
+) ([]oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+
+func (m *mockReconcileGetter) GetJobsForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	return nil
 }
-func (m *mockReconcileGetter) GetAllPolicies(_ context.Context, _ string) (map[string]*oapi.Policy, error) {
+
+func (m *mockReconcileGetter) GetAllPolicies(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Policy, error) {
 	return nil, nil
 }
 func (m *mockReconcileGetter) GetJobVerificationStatus(_ string) oapi.JobVerificationStatus {
 	return ""
 }
-func (m *mockReconcileGetter) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+
+func (m *mockReconcileGetter) GetAllReleaseTargets(
+	_ context.Context,
+	_ string,
+) ([]*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
-func (m *mockReconcileGetter) GetReleaseTargetsForResource(_ context.Context, _ string) []*oapi.ReleaseTarget {
+
+func (m *mockReconcileGetter) GetReleaseTargetsForResource(
+	_ context.Context,
+	_ string,
+) []*oapi.ReleaseTarget {
 	return nil
 }
-func (m *mockReconcileGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget) *oapi.Job {
+
+func (m *mockReconcileGetter) GetLatestCompletedJobForReleaseTarget(
+	_ *oapi.ReleaseTarget,
+) *oapi.Job {
 	return nil
 }
-func (m *mockReconcileGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {
+
+func (m *mockReconcileGetter) GetReleaseByJobID(
+	_ context.Context,
+	_ string,
+) (*oapi.Release, error) {
 	return nil, nil
 }
 
@@ -131,19 +225,30 @@ type mockReconcileSetter struct {
 	evaluations []policies.RuleEvaluationParams
 }
 
-func (s *mockReconcileSetter) SetDesiredRelease(_ context.Context, _ *ReleaseTarget, r *oapi.Release) error {
+func (s *mockReconcileSetter) SetDesiredRelease(
+	_ context.Context,
+	_ *ReleaseTarget,
+	r *oapi.Release,
+) error {
 	if r != nil {
 		s.releases = append(s.releases, r)
 	}
 	return nil
 }
 
-func (s *mockReconcileSetter) UpsertRuleEvaluations(_ context.Context, evals []policies.RuleEvaluationParams) error {
+func (s *mockReconcileSetter) UpsertRuleEvaluations(
+	_ context.Context,
+	evals []policies.RuleEvaluationParams,
+) error {
 	s.evaluations = append(s.evaluations, evals...)
 	return nil
 }
 
-func (s *mockReconcileSetter) EnqueueJobEligibility(_ context.Context, _ string, _ *ReleaseTarget) error {
+func (s *mockReconcileSetter) EnqueueJobEligibility(
+	_ context.Context,
+	_ string,
+	_ *ReleaseTarget,
+) error {
 	return nil
 }
 
@@ -244,8 +349,16 @@ func TestReconcile_PolicyDeniesAllVersions(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
-	assert.Empty(t, setter.releases, "no release should be persisted when policies deny all versions")
-	assert.NotEmpty(t, setter.evaluations, "evaluations should be upserted even when no version passes")
+	assert.Empty(
+		t,
+		setter.releases,
+		"no release should be persisted when policies deny all versions",
+	)
+	assert.NotEmpty(
+		t,
+		setter.evaluations,
+		"evaluations should be upserted even when no version passes",
+	)
 
 	for _, e := range setter.evaluations {
 		assert.Equal(t, rt.EnvironmentID.String(), e.EnvironmentID)
@@ -275,7 +388,12 @@ func TestReconcile_SelectsFirstPassingVersion(t *testing.T) {
 	assert.NotNil(t, result)
 
 	require.Len(t, setter.releases, 1)
-	assert.Equal(t, v1, setter.releases[0].Version.Id, "should select the first (newest) passing version")
+	assert.Equal(
+		t,
+		v1,
+		setter.releases[0].Version.Id,
+		"should select the first (newest) passing version",
+	)
 }
 
 func TestReconcile_EvaluationsContainCorrectVersionIDs(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -16,7 +17,7 @@ type MeasurementRecorder struct {
 	mu    sync.Mutex
 }
 
-// NewMeasurementRecorder creates a new measurement recorder
+// NewMeasurementRecorder creates a new measurement recorder.
 func NewMeasurementRecorder(store *store.Store) *MeasurementRecorder {
 	return &MeasurementRecorder{store: store}
 }
@@ -82,10 +83,14 @@ func (r *MeasurementRecorder) UpdateMessage(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	_, err := r.store.JobVerifications.Update(ctx, verificationID, func(v *oapi.JobVerification) *oapi.JobVerification {
-		v.Message = &message
-		return v
-	})
+	_, err := r.store.JobVerifications.Update(
+		ctx,
+		verificationID,
+		func(v *oapi.JobVerification) *oapi.JobVerification {
+			v.Message = &message
+			return v
+		},
+	)
 	return err
 }
 

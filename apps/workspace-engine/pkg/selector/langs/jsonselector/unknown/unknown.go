@@ -2,9 +2,9 @@ package unknown
 
 import (
 	"fmt"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/goccy/go-json"
+	"workspace-engine/pkg/oapi"
 )
 
 var propertyAliases = map[string]string{
@@ -64,7 +64,7 @@ func ParseFromMap(selectorMap map[string]any) (UnknownCondition, error) {
 	return condition, nil
 }
 
-// SelectorToUnknownCondition converts a protobuf Selector to an UnknownCondition
+// SelectorToUnknownCondition converts a protobuf Selector to an UnknownCondition.
 func SelectorToUnknownCondition(selector *oapi.Selector) (UnknownCondition, error) {
 	if selector == nil {
 		return UnknownCondition{}, fmt.Errorf("selector is nil")

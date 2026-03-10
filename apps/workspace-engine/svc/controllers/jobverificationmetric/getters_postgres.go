@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
-
-	"github.com/google/uuid"
 )
 
 var _ Getter = &PostgresGetter{}
@@ -26,8 +25,12 @@ type rawMeasurement struct {
 	Status     string         `json:"status"`
 }
 
-func (p *PostgresGetter) GetVerificationMetric(ctx context.Context, metricID string) (*metrics.VerificationMetric, error) {
-	row, err := db.GetQueries(ctx).GetVerificationMetricWithMeasurements(ctx, uuid.MustParse(metricID))
+func (p *PostgresGetter) GetVerificationMetric(
+	ctx context.Context,
+	metricID string,
+) (*metrics.VerificationMetric, error) {
+	row, err := db.GetQueries(ctx).
+		GetVerificationMetricWithMeasurements(ctx, uuid.MustParse(metricID))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +66,10 @@ func (p *PostgresGetter) GetVerificationMetric(ctx context.Context, metricID str
 	}, nil
 }
 
-func (p *PostgresGetter) GetProviderContext(ctx context.Context, metricID string) (*provider.ProviderContext, error) {
+func (p *PostgresGetter) GetProviderContext(
+	ctx context.Context,
+	metricID string,
+) (*provider.ProviderContext, error) {
 	raw, err := db.GetQueries(ctx).GetJobDispatchContext(ctx, uuid.MustParse(metricID))
 	if err != nil {
 		return nil, fmt.Errorf("get job dispatch context: %w", err)

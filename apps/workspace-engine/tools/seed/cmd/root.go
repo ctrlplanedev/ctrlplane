@@ -61,13 +61,17 @@ func loadEnvFile(cmd *cobra.Command, args []string) {
 
 	// Validate required fields
 	if workspaceID == "" {
-		log.Fatal("workspace-id is required (set via --workspace-id flag or WORKSPACE_ID environment variable)")
+		log.Fatal(
+			"workspace-id is required (set via --workspace-id flag or WORKSPACE_ID environment variable)",
+		)
 	}
 }
 
 func init() {
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&bootstrapServer, "bootstrap-server", "localhost:9092", "Kafka bootstrap server")
+	rootCmd.PersistentFlags().
+		StringVar(&bootstrapServer, "bootstrap-server", "localhost:9092", "Kafka bootstrap server")
 	rootCmd.PersistentFlags().StringVar(&workspaceID, "workspace-id", "", "Workspace ID (required)")
-	rootCmd.PersistentFlags().StringVar(&envFile, "env-file", "", "Path to .env file (default: .env in current directory)")
+	rootCmd.PersistentFlags().
+		StringVar(&envFile, "env-file", "", "Path to .env file (default: .env in current directory)")
 }

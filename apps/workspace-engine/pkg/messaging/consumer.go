@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-// ErrTimeout is returned when ReadMessage times out waiting for a message
+// ErrTimeout is returned when ReadMessage times out waiting for a message.
 var ErrTimeout = errors.New("timeout waiting for message")
 
-// IsTimeout checks if an error is a timeout error
+// IsTimeout checks if an error is a timeout error.
 func IsTimeout(err error) bool {
 	return errors.Is(err, ErrTimeout)
 }
 
-// Message represents a consumed message, abstracted from any specific messaging library
+// Message represents a consumed message, abstracted from any specific messaging library.
 type Message struct {
 	// Key is the message partition key (typically workspace ID)
 	Key []byte
@@ -37,7 +37,7 @@ func (m *Message) KeyAsString() string {
 }
 
 // Consumer defines the interface for consuming messages
-// This interface is library-agnostic and can be implemented by Kafka, in-memory, or other message systems
+// This interface is library-agnostic and can be implemented by Kafka, in-memory, or other message systems.
 type Consumer interface {
 	// ReadMessage reads the next message with a timeout
 	// Returns ErrTimeout if no message is available within the timeout duration

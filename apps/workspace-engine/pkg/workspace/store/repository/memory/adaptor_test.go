@@ -3,13 +3,13 @@ package memory
 import (
 	"context"
 	"testing"
-	"workspace-engine/pkg/cmap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/cmap"
 )
 
-// mockEntity implements persistence.Entity interface for testing
+// mockEntity implements persistence.Entity interface for testing.
 type mockEntity struct {
 	id   string
 	name string

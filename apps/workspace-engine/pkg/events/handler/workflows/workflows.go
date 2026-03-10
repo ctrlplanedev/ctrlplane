@@ -3,6 +3,7 @@ package workflows
 import (
 	"context"
 	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -57,7 +58,8 @@ func HandleWorkflowRunCreated(
 		return err
 	}
 
-	if _, err := ws.WorkflowManager().CreateWorkflowRun(ctx, workflowRun.WorkflowId, workflowRun.Inputs); err != nil {
+	if _, err := ws.WorkflowManager().
+		CreateWorkflowRun(ctx, workflowRun.WorkflowId, workflowRun.Inputs); err != nil {
 		return err
 	}
 	return nil

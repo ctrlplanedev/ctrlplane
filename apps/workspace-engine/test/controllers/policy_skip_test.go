@@ -4,11 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	. "workspace-engine/test/controllers/harness"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
+	. "workspace-engine/test/controllers/harness"
 )
 
 // ---------------------------------------------------------------------------
@@ -174,11 +173,16 @@ func TestPolicySkip_SkipsOneRule_SecondRuleStillBlocks(t *testing.T) {
 	versionSelectorRuleID := uuid.New().String()
 	versionID := uuid.New().String()
 
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(DeploymentSelector("true")),
 		WithEnvironment(EnvironmentName("production")),
 		WithResource(ResourceName("srv"), ResourceKind("Server")),
-		WithVersion(VersionTag("v1.0.0"), VersionID(versionID), VersionMetadata(map[string]string{"release": "canary"})),
+		WithVersion(
+			VersionTag("v1.0.0"),
+			VersionID(versionID),
+			VersionMetadata(map[string]string{"release": "canary"}),
+		),
 		WithPolicy(
 			PolicySelector("true"),
 			PolicyEnabled(true),
@@ -209,11 +213,16 @@ func TestPolicySkip_SkipsBothRules_ReleaseCreated(t *testing.T) {
 	versionSelectorRuleID := uuid.New().String()
 	versionID := uuid.New().String()
 
-	p := NewTestPipeline(t,
+	p := NewTestPipeline(
+		t,
 		WithDeployment(DeploymentSelector("true")),
 		WithEnvironment(EnvironmentName("production")),
 		WithResource(ResourceName("srv"), ResourceKind("Server")),
-		WithVersion(VersionTag("v1.0.0"), VersionID(versionID), VersionMetadata(map[string]string{"release": "canary"})),
+		WithVersion(
+			VersionTag("v1.0.0"),
+			VersionID(versionID),
+			VersionMetadata(map[string]string{"release": "canary"}),
+		),
 		WithPolicy(
 			PolicySelector("true"),
 			PolicyEnabled(true),
@@ -227,7 +236,11 @@ func TestPolicySkip_SkipsBothRules_ReleaseCreated(t *testing.T) {
 			),
 		),
 		WithPolicySkip(approvalRuleID, versionID, PolicySkipReason("bypass approval")),
-		WithPolicySkip(versionSelectorRuleID, versionID, PolicySkipReason("bypass version selector")),
+		WithPolicySkip(
+			versionSelectorRuleID,
+			versionID,
+			PolicySkipReason("bypass version selector"),
+		),
 	)
 
 	p.Run()

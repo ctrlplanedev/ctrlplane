@@ -2,11 +2,11 @@ package policyskips
 
 import (
 	"time"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 func ToOapi(row db.PolicySkip) *oapi.PolicySkip {

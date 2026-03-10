@@ -61,7 +61,11 @@ type mockLoader struct {
 	err        error
 }
 
-func (m *mockLoader) LoadCandidates(_ context.Context, _ uuid.UUID, entityType string) ([]EntityData, error) {
+func (m *mockLoader) LoadCandidates(
+	_ context.Context,
+	_ uuid.UUID,
+	entityType string,
+) ([]EntityData, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -141,7 +145,12 @@ func TestEvaluateRule_EntityIsBothFromAndTo(t *testing.T) {
 		ID: ruleID, Reference: "peer", Cel: `from.type == "resource" && to.type == "resource" && from.name == to.name`,
 	}
 
-	matches, err := EvaluateRule(context.Background(), &entity, &rule, []EntityData{candidate1, candidate2})
+	matches, err := EvaluateRule(
+		context.Background(),
+		&entity,
+		&rule,
+		[]EntityData{candidate1, candidate2},
+	)
 	require.NoError(t, err)
 
 	// entity is both from and to; candidate1 matches in both directions.
@@ -150,7 +159,12 @@ func TestEvaluateRule_EntityIsBothFromAndTo(t *testing.T) {
 	require.Len(t, matches, 2)
 
 	sortMatches(matches)
-	ids := []uuid.UUID{matches[0].FromEntityID, matches[0].ToEntityID, matches[1].FromEntityID, matches[1].ToEntityID}
+	ids := []uuid.UUID{
+		matches[0].FromEntityID,
+		matches[0].ToEntityID,
+		matches[1].FromEntityID,
+		matches[1].ToEntityID,
+	}
 	assert.Contains(t, ids, entityID)
 	assert.Contains(t, ids, c1)
 }

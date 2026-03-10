@@ -7,15 +7,15 @@ import (
 	"maps"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
-// createTestResource creates a test resource with the given ID and workspace
+// createTestResource creates a test resource with the given ID and workspace.
 func createTestResource(workspaceID, resourceID, identifier, name string) *oapi.Resource {
 	now := time.Now()
 	return &oapi.Resource{
@@ -34,7 +34,7 @@ func createTestResource(workspaceID, resourceID, identifier, name string) *oapi.
 	}
 }
 
-// createTestEnvironment creates a test environment with the given ID and system
+// createTestEnvironment creates a test environment with the given ID and system.
 func createTestEnvironment(systemID, environmentID, name string) *oapi.Environment {
 	selector := &oapi.Selector{}
 	// Create a selector that matches all resources (name starts with empty string)
@@ -72,7 +72,7 @@ func customJobAgentConfig(m map[string]any) oapi.JobAgentConfig {
 	return cfg
 }
 
-// createTestDeployment creates a test deployment with the given ID and system
+// createTestDeployment creates a test deployment with the given ID and system.
 func createTestDeployment(systemID, deploymentID, name string) *oapi.Deployment {
 	selector := &oapi.Selector{}
 	// Create a selector that matches all resources
@@ -90,7 +90,7 @@ func createTestDeployment(systemID, deploymentID, name string) *oapi.Deployment 
 	}
 }
 
-// createTestSystem creates a test system with the given workspace and system ID
+// createTestSystem creates a test system with the given workspace and system ID.
 func createTestSystem(workspaceID string, systemID, name string) *oapi.System {
 	return &oapi.System{
 		Id:          systemID,
@@ -99,7 +99,7 @@ func createTestSystem(workspaceID string, systemID, name string) *oapi.System {
 	}
 }
 
-// createTestResourceProvider creates a test resource provider
+// createTestResourceProvider creates a test resource provider.
 func createTestResourceProvider(workspaceID, providerID, name string) *oapi.ResourceProvider {
 	workspaceUUID, _ := uuid.Parse(workspaceID)
 	return &oapi.ResourceProvider{
@@ -112,8 +112,11 @@ func createTestResourceProvider(workspaceID, providerID, name string) *oapi.Reso
 }
 
 // setupBenchmarkWorkspace creates a workspace with the specified number of environments and deployments
-// This simulates a realistic scenario where many environments/deployments need to be recomputed
-func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) (*workspace.Workspace, string) {
+// This simulates a realistic scenario where many environments/deployments need to be recomputed.
+func setupBenchmarkWorkspace(
+	b *testing.B,
+	numEnvironments, numDeployments int,
+) (*workspace.Workspace, string) {
 	workspaceID := uuid.New().String()
 	ctx := context.Background()
 
@@ -198,7 +201,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 }
 
 // BenchmarkHandleResourceProviderSetResources benchmarks the handler with varying numbers of resources
-// and a realistic number of environments/deployments that need recomputation
+// and a realistic number of environments/deployments that need recomputation.
 func BenchmarkHandleResourceProviderSetResources(b *testing.B) {
 	// Test with different resource counts
 	resourceCounts := []int{10, 50, 100, 500, 1000}
@@ -275,126 +278,132 @@ func BenchmarkHandleResourceProviderSetResources(b *testing.B) {
 	}
 }
 
-// BenchmarkHandleResourceProviderSetResources_ScaleEnvironments benchmarks with varying numbers of environments
+// BenchmarkHandleResourceProviderSetResources_ScaleEnvironments benchmarks with varying numbers of environments.
 func BenchmarkHandleResourceProviderSetResources_ScaleEnvironments(b *testing.B) {
 	environmentCounts := []int{5, 25, 50, 100}
 	resourceCount := 100
 
 	for _, envCount := range environmentCounts {
-		b.Run(fmt.Sprintf("resources_%d_envs_%d_deps_10", resourceCount, envCount), func(b *testing.B) {
-			// Setup workspace with varying environments and fixed deployments
-			ws, providerID := setupBenchmarkWorkspace(b, envCount, 10)
+		b.Run(
+			fmt.Sprintf("resources_%d_envs_%d_deps_10", resourceCount, envCount),
+			func(b *testing.B) {
+				// Setup workspace with varying environments and fixed deployments
+				ws, providerID := setupBenchmarkWorkspace(b, envCount, 10)
 
-			// Create resources
-			resources := make([]*oapi.Resource, resourceCount)
-			for i := range resourceCount {
-				resourceID := uuid.New().String()
-				identifier := fmt.Sprintf("resource-%d", i)
-				name := fmt.Sprintf("Resource %d", i)
-				res := createTestResource(ws.ID, resourceID, identifier, name)
-				resources[i] = res
-			}
-
-			// Get cache for storing resources
-			ctx := context.Background()
-			cache := store.GetResourceProviderBatchCache()
-
-			// Reset timer to exclude setup time
-			b.ResetTimer()
-
-			// Run benchmark
-			for i := 0; i < b.N; i++ {
-				// Cache the resources
-				batchId, err := cache.Store(ctx, providerID, resources)
-				if err != nil {
-					b.Fatalf("Failed to cache resources: %v", err)
+				// Create resources
+				resources := make([]*oapi.Resource, resourceCount)
+				for i := range resourceCount {
+					resourceID := uuid.New().String()
+					identifier := fmt.Sprintf("resource-%d", i)
+					name := fmt.Sprintf("Resource %d", i)
+					res := createTestResource(ws.ID, resourceID, identifier, name)
+					resources[i] = res
 				}
 
-				// Create event payload with batchId reference
-				payload := map[string]any{
-					"providerId": providerID,
-					"batchId":    batchId,
-				}
-				payloadBytes, err := json.Marshal(payload)
-				if err != nil {
-					b.Fatalf("Failed to marshal payload: %v", err)
-				}
+				// Get cache for storing resources
+				ctx := context.Background()
+				cache := store.GetResourceProviderBatchCache()
 
-				event := handler.RawEvent{
-					EventType: handler.ResourceProviderSetResources,
-					Data:      payloadBytes,
-				}
+				// Reset timer to exclude setup time
+				b.ResetTimer()
 
-				err = HandleResourceProviderSetResources(ctx, ws, event)
-				if err != nil {
-					b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
+				// Run benchmark
+				for range b.N {
+					// Cache the resources
+					batchId, err := cache.Store(ctx, providerID, resources)
+					if err != nil {
+						b.Fatalf("Failed to cache resources: %v", err)
+					}
+
+					// Create event payload with batchId reference
+					payload := map[string]any{
+						"providerId": providerID,
+						"batchId":    batchId,
+					}
+					payloadBytes, err := json.Marshal(payload)
+					if err != nil {
+						b.Fatalf("Failed to marshal payload: %v", err)
+					}
+
+					event := handler.RawEvent{
+						EventType: handler.ResourceProviderSetResources,
+						Data:      payloadBytes,
+					}
+
+					err = HandleResourceProviderSetResources(ctx, ws, event)
+					if err != nil {
+						b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
+					}
 				}
-			}
-		})
+			},
+		)
 	}
 }
 
-// BenchmarkHandleResourceProviderSetResources_ScaleDeployments benchmarks with varying numbers of deployments
+// BenchmarkHandleResourceProviderSetResources_ScaleDeployments benchmarks with varying numbers of deployments.
 func BenchmarkHandleResourceProviderSetResources_ScaleDeployments(b *testing.B) {
 	deploymentCounts := []int{5, 25, 50, 100}
 	resourceCount := 100
 
 	for _, depCount := range deploymentCounts {
-		b.Run(fmt.Sprintf("resources_%d_envs_10_deps_%d", resourceCount, depCount), func(b *testing.B) {
-			// Setup workspace with fixed environments and varying deployments
-			ws, providerID := setupBenchmarkWorkspace(b, 10, depCount)
+		b.Run(
+			fmt.Sprintf("resources_%d_envs_10_deps_%d", resourceCount, depCount),
+			func(b *testing.B) {
+				// Setup workspace with fixed environments and varying deployments
+				ws, providerID := setupBenchmarkWorkspace(b, 10, depCount)
 
-			// Create resources
-			resources := make([]*oapi.Resource, resourceCount)
-			for i := range resourceCount {
-				resourceID := uuid.New().String()
-				identifier := fmt.Sprintf("resource-%d", i)
-				name := fmt.Sprintf("Resource %d", i)
-				res := createTestResource(ws.ID, resourceID, identifier, name)
-				resources[i] = res
-			}
-
-			// Get cache for storing resources
-			ctx := context.Background()
-			cache := store.GetResourceProviderBatchCache()
-
-			// Reset timer to exclude setup time
-			b.ResetTimer()
-
-			// Run benchmark
-			for i := 0; i < b.N; i++ {
-				// Cache the resources
-				batchId, err := cache.Store(ctx, providerID, resources)
-				if err != nil {
-					b.Fatalf("Failed to cache resources: %v", err)
+				// Create resources
+				resources := make([]*oapi.Resource, resourceCount)
+				for i := range resourceCount {
+					resourceID := uuid.New().String()
+					identifier := fmt.Sprintf("resource-%d", i)
+					name := fmt.Sprintf("Resource %d", i)
+					res := createTestResource(ws.ID, resourceID, identifier, name)
+					resources[i] = res
 				}
 
-				// Create event payload with batchId reference
-				payload := map[string]any{
-					"providerId": providerID,
-					"batchId":    batchId,
-				}
-				payloadBytes, err := json.Marshal(payload)
-				if err != nil {
-					b.Fatalf("Failed to marshal payload: %v", err)
-				}
+				// Get cache for storing resources
+				ctx := context.Background()
+				cache := store.GetResourceProviderBatchCache()
 
-				event := handler.RawEvent{
-					EventType: handler.ResourceProviderSetResources,
-					Data:      payloadBytes,
-				}
+				// Reset timer to exclude setup time
+				b.ResetTimer()
 
-				err = HandleResourceProviderSetResources(ctx, ws, event)
-				if err != nil {
-					b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
+				// Run benchmark
+				for range b.N {
+					// Cache the resources
+					batchId, err := cache.Store(ctx, providerID, resources)
+					if err != nil {
+						b.Fatalf("Failed to cache resources: %v", err)
+					}
+
+					// Create event payload with batchId reference
+					payload := map[string]any{
+						"providerId": providerID,
+						"batchId":    batchId,
+					}
+					payloadBytes, err := json.Marshal(payload)
+					if err != nil {
+						b.Fatalf("Failed to marshal payload: %v", err)
+					}
+
+					event := handler.RawEvent{
+						EventType: handler.ResourceProviderSetResources,
+						Data:      payloadBytes,
+					}
+
+					err = HandleResourceProviderSetResources(ctx, ws, event)
+					if err != nil {
+						b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
+					}
 				}
-			}
-		})
+			},
+		)
 	}
 }
 
 // BenchmarkHandleResourceProviderSetResources_HighLoad benchmarks under high load conditions
-// This simulates a realistic production scenario with many environments, deployments, and resources
+// This simulates a realistic production scenario with many environments, deployments, and resources.
 func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 	// Setup workspace with many environments and deployments
 	ws, providerID := setupBenchmarkWorkspace(b, 50, 50)
@@ -457,7 +466,7 @@ func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 	}
 }
 
-// BenchmarkHandleResourceProviderSetResources_MemoryAllocation benchmarks memory allocations
+// BenchmarkHandleResourceProviderSetResources_MemoryAllocation benchmarks memory allocations.
 func BenchmarkHandleResourceProviderSetResources_MemoryAllocation(b *testing.B) {
 	// Setup workspace with moderate number of environments and deployments
 	ws, providerID := setupBenchmarkWorkspace(b, 20, 20)
@@ -514,7 +523,7 @@ func BenchmarkHandleResourceProviderSetResources_MemoryAllocation(b *testing.B) 
 }
 
 // BenchmarkHandleResourceProviderSetResources_Update benchmarks updating existing resources
-// This tests the scenario where resources already exist and are being updated
+// This tests the scenario where resources already exist and are being updated.
 func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 	// Setup workspace
 	ws, providerID := setupBenchmarkWorkspace(b, 10, 10)

@@ -3,10 +3,10 @@ package policy
 import (
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 )
 
 func TestPolicyEvaluation_GetPendingActions(t *testing.T) {

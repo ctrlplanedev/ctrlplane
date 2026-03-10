@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ===== Test Helper Functions =====
@@ -77,7 +77,9 @@ func createTestResourceForExecutor(id, name, workspaceID string) *oapi.Resource 
 	}
 }
 
-func createTestRelease(deploymentID, environmentID, resourceID, versionID, versionTag string) *oapi.Release {
+func createTestRelease(
+	deploymentID, environmentID, resourceID, versionID, versionTag string,
+) *oapi.Release {
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
@@ -307,7 +309,11 @@ func TestExecuteRelease_SkipsDispatchForInvalidJobAgent(t *testing.T) {
 	})
 
 	// Create deployment with non-existent job agent
-	deployment := createTestDeploymentForExecutor(deploymentID, "test-deployment", nonExistentJobAgentID)
+	deployment := createTestDeploymentForExecutor(
+		deploymentID,
+		"test-deployment",
+		nonExistentJobAgentID,
+	)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
 	testStore.SystemDeployments.Link(systemID, deploymentID)
 

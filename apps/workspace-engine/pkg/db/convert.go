@@ -3,10 +3,9 @@ package db
 import (
 	"encoding/json"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 // celToSelector converts a raw selector string (as stored in the DB) into an

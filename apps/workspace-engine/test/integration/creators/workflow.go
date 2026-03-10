@@ -2,9 +2,9 @@ package creators
 
 import (
 	"fmt"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 func NewWorkflow(workspaceID string) *oapi.Workflow {

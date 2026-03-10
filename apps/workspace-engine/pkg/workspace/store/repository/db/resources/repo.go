@@ -3,12 +3,12 @@ package resources
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 // Repo implements repository.ResourceRepo backed by the resource table.
@@ -39,14 +39,21 @@ func (r *Repo) Get(id string) (*oapi.Resource, bool) {
 func (r *Repo) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
 	wsUID, err := uuid.Parse(r.workspaceID)
 	if err != nil {
-		log.Warn("Failed to parse workspace id for GetByIdentifier", "id", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to parse workspace id for GetByIdentifier",
+			"id",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return nil, false
 	}
 
-	row, err := db.GetQueries(r.ctx).GetResourceByIdentifier(r.ctx, db.GetResourceByIdentifierParams{
-		WorkspaceID: wsUID,
-		Identifier:  identifier,
-	})
+	row, err := db.GetQueries(r.ctx).
+		GetResourceByIdentifier(r.ctx, db.GetResourceByIdentifierParams{
+			WorkspaceID: wsUID,
+			Identifier:  identifier,
+		})
 	if err != nil {
 		return nil, false
 	}
@@ -128,7 +135,13 @@ func (r *Repo) Items() map[string]*oapi.Resource {
 
 	rows, err := db.GetQueries(r.ctx).ListResourcesByWorkspaceID(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to list resources by workspace", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list resources by workspace",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.Resource)
 	}
 
@@ -143,16 +156,29 @@ func (r *Repo) Items() map[string]*oapi.Resource {
 func (r *Repo) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource {
 	uid, err := uuid.Parse(r.workspaceID)
 	if err != nil {
-		log.Warn("Failed to parse workspace id for GetByIdentifiers()", "id", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to parse workspace id for GetByIdentifiers()",
+			"id",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.Resource)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListResourcesByIdentifiers(r.ctx, db.ListResourcesByIdentifiersParams{
-		WorkspaceID: uid,
-		Column2:     identifiers,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListResourcesByIdentifiers(r.ctx, db.ListResourcesByIdentifiersParams{
+			WorkspaceID: uid,
+			Column2:     identifiers,
+		})
 	if err != nil {
-		log.Warn("Failed to list resources by identifiers", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list resources by identifiers",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*oapi.Resource)
 	}
 
@@ -164,19 +190,34 @@ func (r *Repo) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource 
 	return result
 }
 
-func (r *Repo) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+func (r *Repo) GetSummariesByIdentifiers(
+	identifiers []string,
+) map[string]*repository.ResourceSummary {
 	uid, err := uuid.Parse(r.workspaceID)
 	if err != nil {
-		log.Warn("Failed to parse workspace id for GetSummariesByIdentifiers()", "id", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to parse workspace id for GetSummariesByIdentifiers()",
+			"id",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*repository.ResourceSummary)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListResourceSummariesByIdentifiers(r.ctx, db.ListResourceSummariesByIdentifiersParams{
-		WorkspaceID: uid,
-		Column2:     identifiers,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListResourceSummariesByIdentifiers(r.ctx, db.ListResourceSummariesByIdentifiersParams{
+			WorkspaceID: uid,
+			Column2:     identifiers,
+		})
 	if err != nil {
-		log.Warn("Failed to list resource summaries by identifiers", "workspaceId", r.workspaceID, "error", err)
+		log.Warn(
+			"Failed to list resource summaries by identifiers",
+			"workspaceId",
+			r.workspaceID,
+			"error",
+			err,
+		)
 		return make(map[string]*repository.ResourceSummary)
 	}
 
@@ -191,7 +232,13 @@ func (r *Repo) GetSummariesByIdentifiers(identifiers []string) map[string]*repos
 func (r *Repo) ListByProviderID(providerID string) []*oapi.Resource {
 	uid, err := uuid.Parse(providerID)
 	if err != nil {
-		log.Warn("Failed to parse provider id for ListByProviderID()", "id", providerID, "error", err)
+		log.Warn(
+			"Failed to parse provider id for ListByProviderID()",
+			"id",
+			providerID,
+			"error",
+			err,
+		)
 		return nil
 	}
 

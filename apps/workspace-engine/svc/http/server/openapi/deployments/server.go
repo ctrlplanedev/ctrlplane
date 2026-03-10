@@ -8,22 +8,27 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"workspace-engine/pkg/concurrency"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/concurrency"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 var deploymentTracer = otel.Tracer("workspace-engine/deployments")
 
-func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, deploymentId string, resourceName *string) ([]*oapi.ReleaseTarget, error) {
+func getReleaseTargetsForDeployment(
+	_ *gin.Context,
+	ws *workspace.Workspace,
+	deploymentId string,
+	resourceName *string,
+) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		return nil, err
@@ -101,7 +106,13 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 	for _, sid := range systemIDs {
 		system, ok := ws.Systems().Get(sid)
 		if !ok {
-			log.Warn("System not found for deployment", "deploymentId", deployment.Id, "systemId", sid)
+			log.Warn(
+				"System not found for deployment",
+				"deploymentId",
+				deployment.Id,
+				"systemId",
+				sid,
+			)
 			continue
 		}
 		systems = append(systems, *system)
@@ -116,7 +127,12 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 	c.JSON(http.StatusOK, deploymentWithVariables)
 }
 
-func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetDeploymentResourcesParams) {
+func (s *Deployments) GetDeploymentResources(
+	c *gin.Context,
+	workspaceId string,
+	deploymentId string,
+	params oapi.GetDeploymentResourcesParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -179,7 +195,11 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 	})
 }
 
-func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params oapi.ListDeploymentsParams) {
+func (s *Deployments) ListDeployments(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.ListDeploymentsParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -239,7 +259,13 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 		for _, sid := range systemIDs {
 			system, ok := ws.Systems().Get(sid)
 			if !ok {
-				log.Warn("System not found for deployment", "deploymentId", deployment.Id, "systemId", sid)
+				log.Warn(
+					"System not found for deployment",
+					"deploymentId",
+					deployment.Id,
+					"systemId",
+					sid,
+				)
 				continue
 			}
 			systems = append(systems, *system)
@@ -259,7 +285,12 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 	})
 }
 
-func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetReleaseTargetsForDeploymentParams) {
+func (s *Deployments) GetReleaseTargetsForDeployment(
+	c *gin.Context,
+	workspaceId string,
+	deploymentId string,
+	params oapi.GetReleaseTargetsForDeploymentParams,
+) {
 	ctx := c.Request.Context()
 	ctx, span := deploymentTracer.Start(ctx, "GetReleaseTargetsForDeployment")
 	span.SetAttributes(
@@ -354,17 +385,34 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 				releaseTarget,
 			)
 			if err != nil {
-				return result{nil, fmt.Errorf("error getting state for key=%s: %w", releaseTarget.Key(), err)}, nil
+				return result{
+					nil,
+					fmt.Errorf("error getting state for key=%s: %w", releaseTarget.Key(), err),
+				}, nil
 			}
 
 			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
 			if !ok {
-				return result{nil, fmt.Errorf("environment not found: environmentId=%s for key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"environment not found: environmentId=%s for key=%s",
+						releaseTarget.EnvironmentId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
 			if !ok {
-				return result{nil, fmt.Errorf("resource not found: resourceId=%s for key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
+				return result{
+					nil,
+					fmt.Errorf(
+						"resource not found: resourceId=%s for key=%s",
+						releaseTarget.ResourceId,
+						releaseTarget.Key(),
+					),
+				}, nil
 			}
 
 			item := &oapi.ReleaseTargetSummary{}
@@ -455,7 +503,12 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	jsonSpan.End()
 }
 
-func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetVersionsForDeploymentParams) {
+func (s *Deployments) GetVersionsForDeployment(
+	c *gin.Context,
+	workspaceId string,
+	deploymentId string,
+	params oapi.GetVersionsForDeploymentParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -499,7 +552,11 @@ func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId strin
 	})
 }
 
-func (s *Deployments) GetPoliciesForDeployment(c *gin.Context, workspaceId string, deploymentId string) {
+func (s *Deployments) GetPoliciesForDeployment(
+	c *gin.Context,
+	workspaceId string,
+	deploymentId string,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

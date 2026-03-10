@@ -123,7 +123,11 @@ func BenchmarkSelector_Hash(b *testing.B) {
 			"type": "Resource",
 			"conditions": []any{
 				map[string]any{"key": "metadata.name", "operator": "equals", "value": "test"},
-				map[string]any{"key": "metadata.namespace", "operator": "equals", "value": "default"},
+				map[string]any{
+					"key":      "metadata.namespace",
+					"operator": "equals",
+					"value":    "default",
+				},
 			},
 		},
 	})
@@ -135,7 +139,9 @@ func BenchmarkSelector_Hash(b *testing.B) {
 }
 
 func BenchmarkFnv64a(b *testing.B) {
-	data := []byte(`{"type":"Resource","conditions":[{"key":"metadata.name","operator":"equals","value":"test"}]}`)
+	data := []byte(
+		`{"type":"Resource","conditions":[{"key":"metadata.name","operator":"equals","value":"test"}]}`,
+	)
 
 	b.ReportAllocs()
 	for b.Loop() {

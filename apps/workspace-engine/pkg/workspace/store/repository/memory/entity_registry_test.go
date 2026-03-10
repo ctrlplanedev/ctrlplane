@@ -3,10 +3,10 @@ package memory
 import (
 	"encoding/json"
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestGlobalRegistry_PolicyMigration_OldFormat(t *testing.T) {

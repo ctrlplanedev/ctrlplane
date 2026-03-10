@@ -9,9 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"workspace-engine/pkg/persistence"
-
 	"github.com/cockroachdb/pebble"
+	"workspace-engine/pkg/persistence"
 )
 
 // Store is a Pebble-based implementation of persistence.Store
@@ -22,7 +21,7 @@ type Store struct {
 	mu       sync.RWMutex
 }
 
-// storedChange is the on-disk representation of a persistence.Change
+// storedChange is the on-disk representation of a persistence.Change.
 type storedChange struct {
 	Namespace  string          `json:"namespace"`
 	ChangeType string          `json:"changeType"`
@@ -32,7 +31,7 @@ type storedChange struct {
 	Timestamp  time.Time       `json:"timestamp"`
 }
 
-// NewStore creates a new Pebble-based persistence store
+// NewStore creates a new Pebble-based persistence store.
 func NewStore(dbPath string, registry *persistence.JSONEntityRegistry) (*Store, error) {
 	db, err := pebble.Open(dbPath, &pebble.Options{
 		// Enable automatic compaction
@@ -52,7 +51,7 @@ func NewStore(dbPath string, registry *persistence.JSONEntityRegistry) (*Store, 
 
 // Save persists changes to the Pebble database
 // Each entity is stored with a key: namespace:entityType:entityID
-// This naturally supports compaction - newer values overwrite older ones
+// This naturally supports compaction - newer values overwrite older ones.
 func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 	if len(changes) == 0 {
 		return nil
@@ -113,7 +112,7 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 }
 
 // Load retrieves the current state for a namespace
-// Scans all keys with the namespace prefix and returns the changes
+// Scans all keys with the namespace prefix and returns the changes.
 func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -163,7 +162,7 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 	return result, nil
 }
 
-// Close closes the Pebble database
+// Close closes the Pebble database.
 func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -176,7 +175,7 @@ func (s *Store) Close() error {
 	return nil
 }
 
-// ListNamespaces returns all unique namespaces in the store
+// ListNamespaces returns all unique namespaces in the store.
 func (s *Store) ListNamespaces() ([]string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -214,7 +213,7 @@ func (s *Store) ListNamespaces() ([]string, error) {
 	return result, nil
 }
 
-// DeleteNamespace removes all data for a namespace
+// DeleteNamespace removes all data for a namespace.
 func (s *Store) DeleteNamespace(namespace string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -225,12 +224,12 @@ func (s *Store) DeleteNamespace(namespace string) error {
 	return s.db.DeleteRange(prefix, prefixUpperBound(prefix), pebble.Sync)
 }
 
-// makeKey creates a composite key for storage
+// makeKey creates a composite key for storage.
 func makeKey(namespace, entityType, entityID string) string {
 	return fmt.Sprintf("%s:%s:%s", namespace, entityType, entityID)
 }
 
-// prefixUpperBound returns the upper bound for a prefix scan
+// prefixUpperBound returns the upper bound for a prefix scan.
 func prefixUpperBound(prefix []byte) []byte {
 	end := make([]byte, len(prefix))
 	copy(end, prefix)

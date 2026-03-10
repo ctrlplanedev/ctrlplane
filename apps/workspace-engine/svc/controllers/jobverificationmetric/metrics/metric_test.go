@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
 func createSleepMetric(successCondition string, failureCondition *string) *VerificationMetric {
@@ -130,6 +130,6 @@ func TestMeasure_InvalidProvider(t *testing.T) {
 	}
 
 	_, err := Measure(ctx, metric, &provider.ProviderContext{})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create provider")
 }

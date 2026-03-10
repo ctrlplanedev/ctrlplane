@@ -12,7 +12,10 @@ type ResourceVariableRepo struct {
 	mem    repository.ResourceVariableRepo
 }
 
-func NewResourceVariableRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *ResourceVariableRepo {
+func NewResourceVariableRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *ResourceVariableRepo {
 	return &ResourceVariableRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.ResourceVariables(),
@@ -23,7 +26,9 @@ func (r *ResourceVariableRepo) Get(key string) (*oapi.ResourceVariable, bool) {
 	return r.mem.Get(key)
 }
 
-func (r *ResourceVariableRepo) GetByResourceID(resourceID string) ([]*oapi.ResourceVariable, error) {
+func (r *ResourceVariableRepo) GetByResourceID(
+	resourceID string,
+) ([]*oapi.ResourceVariable, error) {
 	return r.mem.GetByResourceID(resourceID)
 }
 
@@ -45,7 +50,10 @@ func (r *ResourceVariableRepo) Items() map[string]*oapi.ResourceVariable {
 	return r.mem.Items()
 }
 
-func (r *ResourceVariableRepo) BulkUpdate(toUpsert []*oapi.ResourceVariable, toRemove []*oapi.ResourceVariable) error {
+func (r *ResourceVariableRepo) BulkUpdate(
+	toUpsert []*oapi.ResourceVariable,
+	toRemove []*oapi.ResourceVariable,
+) error {
 	if err := r.mem.BulkUpdate(toUpsert, toRemove); err != nil {
 		return err
 	}

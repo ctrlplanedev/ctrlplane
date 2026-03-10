@@ -15,7 +15,7 @@ import (
 var (
 	randomSeed int64
 
-	// Resource kinds to randomly choose from
+	// Resource kinds to randomly choose from.
 	resourceKinds = []string{
 		"KubernetesCluster",
 		"KubernetesNamespace",
@@ -36,7 +36,7 @@ var (
 		"CloudSQLDatabase",
 	}
 
-	// Regions to randomly choose from
+	// Regions to randomly choose from.
 	regions = []string{
 		"us-east-1", "us-east-2", "us-west-1", "us-west-2",
 		"eu-west-1", "eu-west-2", "eu-central-1", "eu-north-1",
@@ -44,16 +44,26 @@ var (
 		"ca-central-1", "sa-east-1",
 	}
 
-	// Environments to randomly choose from
+	// Environments to randomly choose from.
 	environments = []string{"production", "staging", "development", "qa", "uat"}
 
-	// Teams to randomly choose from
+	// Teams to randomly choose from.
 	teams = []string{"platform", "backend", "frontend", "data", "ml", "security", "devops"}
 
-	// Name prefixes
-	namePrefixes = []string{"web", "api", "worker", "db", "cache", "queue", "storage", "compute", "analytics"}
+	// Name prefixes.
+	namePrefixes = []string{
+		"web",
+		"api",
+		"worker",
+		"db",
+		"cache",
+		"queue",
+		"storage",
+		"compute",
+		"analytics",
+	}
 
-	// Name suffixes
+	// Name suffixes.
 	nameSuffixes = []string{"service", "cluster", "instance", "pod", "deployment", "app", "server"}
 )
 
@@ -94,7 +104,8 @@ func init() {
 	rootCmd.AddCommand(randomCmd)
 	randomCmd.AddCommand(randomResourcesCmd)
 
-	randomCmd.PersistentFlags().Int64Var(&randomSeed, "seed", 0, "Random seed for reproducible generation (0 for current time)")
+	randomCmd.PersistentFlags().
+		Int64Var(&randomSeed, "seed", 0, "Random seed for reproducible generation (0 for current time)")
 }
 
 func randomElement(slice []string) string {
@@ -133,9 +144,11 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		Kind:        kind,
 		Version:     "ctrlplane.dev/v1",
 		Identifier:  identifier,
-		CreatedAt:   time.Now().Add(-time.Duration(randomInt(0, 30)) * 24 * time.Hour).Format(time.RFC3339),
-		Config:      make(map[string]any),
-		Metadata:    make(map[string]string),
+		CreatedAt: time.Now().
+			Add(-time.Duration(randomInt(0, 30)) * 24 * time.Hour).
+			Format(time.RFC3339),
+		Config:   make(map[string]any),
+		Metadata: make(map[string]string),
 	}
 
 	// Add common metadata
@@ -151,7 +164,9 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		resource.Config["nodeCount"] = randomInt(1, 20)
 		resource.Config["version"] = fmt.Sprintf("1.%d.%d", randomInt(25, 29), randomInt(0, 5))
 		resource.Config["autoscaling"] = randomBool()
-		resource.Metadata["cluster-type"] = randomElement([]string{"production", "development", "testing"})
+		resource.Metadata["cluster-type"] = randomElement(
+			[]string{"production", "development", "testing"},
+		)
 
 	case "KubernetesPod", "KubernetesDeployment":
 		resource.Config["replicas"] = randomInt(1, 10)
@@ -161,17 +176,33 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		resource.Metadata["app"] = namePrefix
 
 	case "EC2Instance", "AzureVirtualMachine", "GCEInstance":
-		instanceTypes := []string{"t3.micro", "t3.small", "t3.medium", "t3.large", "m5.large", "m5.xlarge"}
+		instanceTypes := []string{
+			"t3.micro",
+			"t3.small",
+			"t3.medium",
+			"t3.large",
+			"m5.large",
+			"m5.xlarge",
+		}
 		resource.Config["instanceType"] = randomElement(instanceTypes)
 		resource.Config["vcpus"] = randomInt(1, 16)
 		resource.Config["memoryGb"] = randomInt(1, 64)
-		resource.Config["publicIP"] = fmt.Sprintf("52.%d.%d.%d", randomInt(0, 255), randomInt(0, 255), randomInt(0, 255))
-		resource.Metadata["os"] = randomElement([]string{"ubuntu-22.04", "amazon-linux-2", "rhel-8", "windows-server-2022"})
+		resource.Config["publicIP"] = fmt.Sprintf(
+			"52.%d.%d.%d",
+			randomInt(0, 255),
+			randomInt(0, 255),
+			randomInt(0, 255),
+		)
+		resource.Metadata["os"] = randomElement(
+			[]string{"ubuntu-22.04", "amazon-linux-2", "rhel-8", "windows-server-2022"},
+		)
 
 	case "RDSDatabase", "CloudSQLDatabase":
 		resource.Config["engine"] = randomElement([]string{"postgres", "mysql", "mariadb"})
 		resource.Config["version"] = fmt.Sprintf("%d.%d", randomInt(10, 15), randomInt(0, 5))
-		resource.Config["instanceClass"] = randomElement([]string{"db.t3.micro", "db.t3.small", "db.m5.large"})
+		resource.Config["instanceClass"] = randomElement(
+			[]string{"db.t3.micro", "db.t3.small", "db.m5.large"},
+		)
 		resource.Config["allocatedStorageGb"] = randomInt(20, 1000)
 		resource.Config["multiAZ"] = randomBool()
 		resource.Metadata["backup-retention-days"] = fmt.Sprintf("%d", randomInt(7, 30))
@@ -184,11 +215,15 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		resource.Metadata["lifecycle-policy"] = randomElement([]string{"enabled", "disabled"})
 
 	case "LambdaFunction":
-		resource.Config["runtime"] = randomElement([]string{"nodejs18.x", "python3.11", "go1.x", "java17"})
+		resource.Config["runtime"] = randomElement(
+			[]string{"nodejs18.x", "python3.11", "go1.x", "java17"},
+		)
 		resource.Config["memoryMb"] = randomIntFromSlice([]int{128, 256, 512, 1024, 2048, 3008})
 		resource.Config["timeoutSeconds"] = randomInt(3, 900)
 		resource.Config["invocations24h"] = randomInt(0, 100000)
-		resource.Metadata["trigger"] = randomElement([]string{"api-gateway", "s3", "dynamodb", "sqs", "eventbridge"})
+		resource.Metadata["trigger"] = randomElement(
+			[]string{"api-gateway", "s3", "dynamodb", "sqs", "eventbridge"},
+		)
 	}
 
 	// Add random labels
@@ -224,7 +259,7 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 	baseTimestamp := time.Now().Add(-time.Hour).Unix() * 1000
 
 	// Generate and publish events
-	for i := 0; i < count; i++ {
+	for i := range count {
 		resource := generateRandomResource(workspaceID, i)
 
 		resourceJSON, err := json.Marshal(resource)
@@ -260,7 +295,7 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 	// Wait for all messages to be delivered
 	successCount := 0
 	failCount := 0
-	for i := 0; i < count; i++ {
+	for range count {
 		e := <-deliveryChan
 		m := e.(*kafka.Message)
 		if m.TopicPartition.Error != nil {

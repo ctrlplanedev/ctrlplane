@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
-// TestNewPropertyMatcher tests the PropertyMatcher constructor
+// TestNewPropertyMatcher tests the PropertyMatcher constructor.
 func TestNewPropertyMatcher(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -60,7 +61,7 @@ func TestNewPropertyMatcher(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_Equals tests the equals operator
+// TestPropertyMatcher_Evaluate_Equals tests the equals operator.
 func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -156,7 +157,7 @@ func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_NotEquals tests the not_equals operator
+// TestPropertyMatcher_Evaluate_NotEquals tests the not_equals operator.
 func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -232,7 +233,7 @@ func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_Contains tests the contains operator
+// TestPropertyMatcher_Evaluate_Contains tests the contains operator.
 func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -310,7 +311,7 @@ func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_StartsWith tests the starts_with operator
+// TestPropertyMatcher_Evaluate_StartsWith tests the starts_with operator.
 func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -388,7 +389,7 @@ func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_EndsWith tests the ends_with operator
+// TestPropertyMatcher_Evaluate_EndsWith tests the ends_with operator.
 func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -466,7 +467,7 @@ func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_EdgeCases tests edge cases and error conditions
+// TestPropertyMatcher_Evaluate_EdgeCases tests edge cases and error conditions.
 func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -574,7 +575,7 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_DifferentEntityTypes tests matching across different entity types
+// TestPropertyMatcher_Evaluate_DifferentEntityTypes tests matching across different entity types.
 func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -648,7 +649,7 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_NestedConfig tests matching on nested config properties
+// TestPropertyMatcher_Evaluate_NestedConfig tests matching on nested config properties.
 func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 
 	tests := []struct {
@@ -753,7 +754,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 	}
 }
 
-// TestPropertyMatcher_Evaluate_CaseInsensitivity tests case insensitivity of operators
+// TestPropertyMatcher_Evaluate_CaseInsensitivity tests case insensitivity of operators.
 func TestPropertyMatcher_Evaluate_CaseInsensitivity(t *testing.T) {
 	resource1 := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -794,7 +795,7 @@ func TestPropertyMatcher_Evaluate_CaseInsensitivity(t *testing.T) {
 	}
 }
 
-// TestGetPropertyValue_Resource tests GetPropertyValue with Resource entities
+// TestGetPropertyValue_Resource tests GetPropertyValue with Resource entities.
 func TestGetPropertyValue_Resource(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -968,7 +969,7 @@ func TestGetPropertyValue_Resource(t *testing.T) {
 	}
 }
 
-// TestGetPropertyValue_Deployment tests GetPropertyValue with Deployment entities
+// TestGetPropertyValue_Deployment tests GetPropertyValue with Deployment entities.
 func TestGetPropertyValue_Deployment(t *testing.T) {
 	description := "Test deployment"
 	jobAgentId := "agent-123"
@@ -1101,7 +1102,7 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 	}
 }
 
-// TestGetPropertyValue_Environment tests GetPropertyValue with Environment entities
+// TestGetPropertyValue_Environment tests GetPropertyValue with Environment entities.
 func TestGetPropertyValue_Environment(t *testing.T) {
 	description := "Test environment"
 
@@ -1187,7 +1188,7 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 	}
 }
 
-// TestGetPropertyValue_TypeVariants tests different value types
+// TestGetPropertyValue_TypeVariants tests different value types.
 func TestGetPropertyValue_TypeVariants(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -1273,7 +1274,7 @@ func TestGetPropertyValue_TypeVariants(t *testing.T) {
 	}
 }
 
-// TestMatches_PropertyMatcher tests the top-level Matches function with property matchers
+// TestMatches_PropertyMatcher tests the top-level Matches function with property matchers.
 func TestMatches_PropertyMatcher(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1307,7 +1308,7 @@ func TestMatches_PropertyMatcher(t *testing.T) {
 	assert.True(t, result, "Should match when regions are equal")
 }
 
-// TestMatches_PropertyMatcher_NoMatch tests Matches with non-matching properties
+// TestMatches_PropertyMatcher_NoMatch tests Matches with non-matching properties.
 func TestMatches_PropertyMatcher_NoMatch(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1340,7 +1341,7 @@ func TestMatches_PropertyMatcher_NoMatch(t *testing.T) {
 	assert.False(t, result, "Should not match when regions differ")
 }
 
-// TestMatches_CelMatcher tests the Matches function with a CEL matcher
+// TestMatches_CelMatcher tests the Matches function with a CEL matcher.
 func TestMatches_CelMatcher(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1364,7 +1365,7 @@ func TestMatches_CelMatcher(t *testing.T) {
 	assert.True(t, result, "Should match when names are equal via CEL")
 }
 
-// TestMatches_CelMatcher_NoMatch tests Matches with non-matching CEL
+// TestMatches_CelMatcher_NoMatch tests Matches with non-matching CEL.
 func TestMatches_CelMatcher_NoMatch(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1388,7 +1389,7 @@ func TestMatches_CelMatcher_NoMatch(t *testing.T) {
 	assert.False(t, result, "Should not match when names differ via CEL")
 }
 
-// TestMatches_NoMatcher tests Matches with empty/invalid matcher
+// TestMatches_NoMatcher tests Matches with empty/invalid matcher.
 func TestMatches_NoMatcher(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1414,7 +1415,7 @@ func TestMatches_NoMatcher(t *testing.T) {
 	assert.True(t, result, "Empty matcher should match (selectors only)")
 }
 
-// TestMatchesWithCache_PropertyMatcher tests MatchesWithCache with property matchers
+// TestMatchesWithCache_PropertyMatcher tests MatchesWithCache with property matchers.
 func TestMatchesWithCache_PropertyMatcher(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1453,7 +1454,7 @@ func TestMatchesWithCache_PropertyMatcher(t *testing.T) {
 	assert.True(t, result)
 }
 
-// TestMatchesWithCache_CelMatcher tests MatchesWithCache with CEL matchers and cache
+// TestMatchesWithCache_CelMatcher tests MatchesWithCache with CEL matchers and cache.
 func TestMatchesWithCache_CelMatcher(t *testing.T) {
 	from := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
@@ -1490,7 +1491,7 @@ func TestMatchesWithCache_CelMatcher(t *testing.T) {
 	assert.True(t, result)
 }
 
-// TestBuildEntityMapCache tests building an entity map cache
+// TestBuildEntityMapCache tests building an entity map cache.
 func TestBuildEntityMapCache(t *testing.T) {
 	entities := []*oapi.RelatableEntity{
 		NewResourceEntity(&oapi.Resource{
@@ -1520,7 +1521,7 @@ func TestBuildEntityMapCache(t *testing.T) {
 	assert.Equal(t, "server-1", resourceMap["name"])
 }
 
-// TestEntityToMap tests the deprecated EntityToMap function
+// TestEntityToMap tests the deprecated EntityToMap function.
 func TestEntityToMap(t *testing.T) {
 	resource := &oapi.Resource{
 		Id:          "resource-1",
@@ -1529,7 +1530,7 @@ func TestEntityToMap(t *testing.T) {
 	}
 
 	m, err := EntityToMap(resource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Equal(t, "server-1", m["name"])
 
@@ -1539,7 +1540,7 @@ func TestEntityToMap(t *testing.T) {
 		Name: "deploy-1",
 	}
 	m, err = EntityToMap(deployment)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Equal(t, "deploy-1", m["name"])
 
@@ -1549,12 +1550,12 @@ func TestEntityToMap(t *testing.T) {
 		Name: "production",
 	}
 	m, err = EntityToMap(env)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Equal(t, "production", m["name"])
 }
 
-// TestGetPropertyValue_EdgeCases tests edge cases and error conditions
+// TestGetPropertyValue_EdgeCases tests edge cases and error conditions.
 func TestGetPropertyValue_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -1635,7 +1636,11 @@ func TestGetPropertyValue_EdgeCases(t *testing.T) {
 			}
 			if tt.wantErr && tt.errContains != "" && err != nil {
 				if !strings.Contains(err.Error(), tt.errContains) {
-					t.Errorf("GetPropertyValue() error = %v, should contain %v", err, tt.errContains)
+					t.Errorf(
+						"GetPropertyValue() error = %v, should contain %v",
+						err,
+						tt.errContains,
+					)
 				}
 			}
 			if !tt.wantErr && got == nil {

@@ -71,7 +71,7 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 	}
 
 	// Wait for all messages to be delivered
-	for i := 0; i < len(dataJSON); i++ {
+	for range dataJSON {
 		e := <-deliveryChan
 		m := e.(*kafka.Message)
 		if m.TopicPartition.Error != nil {
@@ -81,5 +81,10 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	log.Infof("Successfully seeded workspace [%s] with %d events from file [%s]", workspaceID, len(dataJSON), filePath)
+	log.Infof(
+		"Successfully seeded workspace [%s] with %d events from file [%s]",
+		workspaceID,
+		len(dataJSON),
+		filePath,
+	)
 }

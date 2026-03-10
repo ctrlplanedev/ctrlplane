@@ -3,15 +3,15 @@ package store
 import (
 	"context"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/diffcheck"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func NewResources(store *Store) *Resources {
@@ -136,7 +136,9 @@ func (r *Resources) GetByIdentifiers(identifiers []string) map[string]*oapi.Reso
 
 // GetSummariesByIdentifiers returns lightweight summaries (no JSONB columns)
 // for resources matching the given identifiers, keyed by identifier.
-func (r *Resources) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+func (r *Resources) GetSummariesByIdentifiers(
+	identifiers []string,
+) map[string]*repository.ResourceSummary {
 	return r.repo.GetSummariesByIdentifiers(identifiers)
 }
 
@@ -171,11 +173,17 @@ func (r *Resources) ForSelector(ctx context.Context, sel *oapi.Selector) map[str
 	return resources
 }
 
-func (r *Resources) ForEnvironment(ctx context.Context, environment *oapi.Environment) map[string]*oapi.Resource {
+func (r *Resources) ForEnvironment(
+	ctx context.Context,
+	environment *oapi.Environment,
+) map[string]*oapi.Resource {
 	return r.ForSelector(ctx, environment.ResourceSelector)
 }
 
-func (r *Resources) ForDeployment(ctx context.Context, deployment *oapi.Deployment) map[string]*oapi.Resource {
+func (r *Resources) ForDeployment(
+	ctx context.Context,
+	deployment *oapi.Deployment,
+) map[string]*oapi.Resource {
 	return r.ForSelector(ctx, deployment.ResourceSelector)
 }
 

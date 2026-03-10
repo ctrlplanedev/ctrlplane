@@ -3,26 +3,32 @@ package policies
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/policies/match"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/policies/match"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/store/policies")
 
 type GetPoliciesForReleaseTarget interface {
-	GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error)
+	GetPoliciesForReleaseTarget(
+		ctx context.Context,
+		releaseTarget *oapi.ReleaseTarget,
+	) ([]*oapi.Policy, error)
 }
 
 var _ GetPoliciesForReleaseTarget = (*PostgresGetPoliciesForReleaseTarget)(nil)
 
 type PostgresGetPoliciesForReleaseTarget struct{}
 
-func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) ([]*oapi.Policy, error) {
 	ctx, span := tracer.Start(ctx, "Store.GetPoliciesForReleaseTarget")
 	defer span.End()
 
@@ -53,7 +59,8 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(ctx co
 		return nil, fmt.Errorf("get resource by id: %w", err)
 	}
 
-	allPolicies, err := db.GetQueries(ctx).ListPoliciesWithRulesByWorkspaceID(ctx, environment.WorkspaceID)
+	allPolicies, err := db.GetQueries(ctx).
+		ListPoliciesWithRulesByWorkspaceID(ctx, environment.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("get policies for release target: %w", err)
 	}
@@ -79,7 +86,17 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(ctx co
 		policyIDs = append(policyIDs, policyID)
 	}
 
-	log.Info("setting policies for release target", "policy_ids", len(policyIDs), "environment_id", environmentID, "deployment_id", deploymentID, "resource_id", resourceID)
+	log.Info(
+		"setting policies for release target",
+		"policy_ids",
+		len(policyIDs),
+		"environment_id",
+		environmentID,
+		"deployment_id",
+		deploymentID,
+		"resource_id",
+		resourceID,
+	)
 	db.GetQueries(ctx).SetPoliciesForReleaseTarget(ctx, db.SetPoliciesForReleaseTargetParams{
 		PolicyIds:     policyIDs,
 		EnvironmentID: environmentID,

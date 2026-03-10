@@ -4,21 +4,24 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("events/handler/policies")
 
-func getAffectedTargets(ctx context.Context, ws *workspace.Workspace, policyID string) []*oapi.ReleaseTarget {
+func getAffectedTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	policyID string,
+) []*oapi.ReleaseTarget {
 	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		return nil
@@ -46,7 +49,11 @@ func getAffectedTargets(ctx context.Context, ws *workspace.Workspace, policyID s
 	return affectedTargets
 }
 
-func enqueueAffectedTargets(ctx context.Context, ws *workspace.Workspace, targets map[string]*oapi.ReleaseTarget) {
+func enqueueAffectedTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	targets map[string]*oapi.ReleaseTarget,
+) {
 	params := make([]events.DesiredReleaseEvalParams, len(targets))
 	for _, rt := range targets {
 		params = append(params, events.DesiredReleaseEvalParams{

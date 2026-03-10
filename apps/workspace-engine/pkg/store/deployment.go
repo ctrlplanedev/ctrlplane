@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type DeploymentGetter interface {
@@ -25,7 +25,10 @@ func NewPostgresDeploymentGetter(queries *db.Queries) *PostgresDeploymentGetter 
 	return &PostgresDeploymentGetter{queries: queries}
 }
 
-func (g *PostgresDeploymentGetter) GetDeployment(ctx context.Context, deploymentID string) (*oapi.Deployment, error) {
+func (g *PostgresDeploymentGetter) GetDeployment(
+	ctx context.Context,
+	deploymentID string,
+) (*oapi.Deployment, error) {
 	deployment, err := g.queries.GetDeploymentByID(ctx, uuid.MustParse(deploymentID))
 	if err != nil {
 		return nil, err
@@ -33,14 +36,20 @@ func (g *PostgresDeploymentGetter) GetDeployment(ctx context.Context, deployment
 	return db.ToOapiDeployment(deployment), nil
 }
 
-func (g *PostgresDeploymentGetter) GetAllDeployments(ctx context.Context, workspaceID string) (map[string]*oapi.Deployment, error) {
+func (g *PostgresDeploymentGetter) GetAllDeployments(
+	ctx context.Context,
+	workspaceID string,
+) (map[string]*oapi.Deployment, error) {
 	id, err := uuid.Parse(workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
-	deployments, err := g.queries.ListDeploymentsByWorkspaceID(ctx, db.ListDeploymentsByWorkspaceIDParams{
-		WorkspaceID: id,
-	})
+	deployments, err := g.queries.ListDeploymentsByWorkspaceID(
+		ctx,
+		db.ListDeploymentsByWorkspaceIDParams{
+			WorkspaceID: id,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +70,10 @@ func NewStoreDeploymentGetter(store *legacystore.Store) *StoreDeploymentGetter {
 	return &StoreDeploymentGetter{store: store}
 }
 
-func (s *StoreDeploymentGetter) GetDeployment(ctx context.Context, deploymentID string) (*oapi.Deployment, error) {
+func (s *StoreDeploymentGetter) GetDeployment(
+	ctx context.Context,
+	deploymentID string,
+) (*oapi.Deployment, error) {
 	deployment, ok := s.store.Deployments.Get(deploymentID)
 	if !ok {
 		return nil, fmt.Errorf("deployment not found")
@@ -69,7 +81,10 @@ func (s *StoreDeploymentGetter) GetDeployment(ctx context.Context, deploymentID 
 	return deployment, nil
 }
 
-func (s *StoreDeploymentGetter) GetAllDeployments(ctx context.Context, _ string) (map[string]*oapi.Deployment, error) {
+func (s *StoreDeploymentGetter) GetAllDeployments(
+	ctx context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	deployments := s.store.Deployments.Items()
 	return deployments, nil
 }

@@ -5,21 +5,19 @@ import (
 	"fmt"
 	"runtime"
 	"time"
-	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
-
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/pkg/store/resources"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
+	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/resources"
+	"workspace-engine/svc"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/environmentresourceselectoreval")
@@ -54,9 +52,13 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	resources, err := c.getter.GetResources(ctx, environment.WorkspaceID.String(), resources.GetResourcesOptions{
-		CEL: environment.ResourceSelector,
-	})
+	resources, err := c.getter.GetResources(
+		ctx,
+		environment.WorkspaceID.String(),
+		resources.GetResourcesOptions{
+			CEL: environment.ResourceSelector,
+		},
+	)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("eval selectors: %w", err)
 	}

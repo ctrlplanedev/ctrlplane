@@ -3,16 +3,18 @@ package deploymentwindow
 import (
 	"context"
 	"time"
+
+	"github.com/teambition/rrule-go"
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/teambition/rrule-go"
-	"go.opentelemetry.io/otel"
 )
 
-var summaryTracer = otel.Tracer("workspace/releasemanager/policy/evaluator/deploymentwindow/summary")
+var summaryTracer = otel.Tracer(
+	"workspace/releasemanager/policy/evaluator/deploymentwindow/summary",
+)
 
 var _ evaluator.Evaluator = &DeploymentWindowSummaryEvaluator{}
 
@@ -26,7 +28,10 @@ type DeploymentWindowSummaryEvaluator struct {
 }
 
 // NewSummaryEvaluatorFromStore creates a new DeploymentWindowSummaryEvaluator from a store and policy rule.
-func NewSummaryEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
+func NewSummaryEvaluatorFromStore(
+	store *store.Store,
+	policyRule *oapi.PolicyRule,
+) evaluator.Evaluator {
 	if store == nil {
 		return nil
 	}

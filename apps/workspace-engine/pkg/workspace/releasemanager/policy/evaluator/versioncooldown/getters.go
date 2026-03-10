@@ -3,14 +3,14 @@ package versioncooldown
 import (
 	"context"
 	"log/slog"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
 )
 
 type environmentGetter = store.EnvironmentGetter
@@ -24,7 +24,10 @@ type Getters interface {
 	releaseGetter
 	resourceGetter
 
-	GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
+	GetJobsForReleaseTarget(
+		ctx context.Context,
+		releaseTarget *oapi.ReleaseTarget,
+	) map[string]*oapi.Job
 	GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus
 	GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error)
 }
@@ -50,7 +53,10 @@ type storeGetters struct {
 	store *legacystore.Store
 }
 
-func (s *storeGetters) GetJobsForReleaseTarget(_ context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (s *storeGetters) GetJobsForReleaseTarget(
+	_ context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 }
 
@@ -58,7 +64,10 @@ func (s *storeGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificati
 	return s.store.JobVerifications.GetJobVerificationStatus(jobID)
 }
 
-func (s *storeGetters) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+func (s *storeGetters) GetAllReleaseTargets(
+	_ context.Context,
+	_ string,
+) ([]*oapi.ReleaseTarget, error) {
 	items, err := s.store.ReleaseTargets.Items()
 	if err != nil {
 		return nil, err
@@ -94,23 +103,44 @@ type PostgresGetters struct {
 	queries *db.Queries
 }
 
-func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (p *PostgresGetters) GetJobsForReleaseTarget(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	if releaseTarget == nil {
 		return nil
 	}
 	deploymentIDUUID, err := uuid.Parse(releaseTarget.DeploymentId)
 	if err != nil {
-		log.Error("failed to parse deployment id", "deploymentID", releaseTarget.DeploymentId, "error", err)
+		log.Error(
+			"failed to parse deployment id",
+			"deploymentID",
+			releaseTarget.DeploymentId,
+			"error",
+			err,
+		)
 		return nil
 	}
 	environmentIDUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
 	if err != nil {
-		log.Error("failed to parse environment id", "environmentID", releaseTarget.EnvironmentId, "error", err)
+		log.Error(
+			"failed to parse environment id",
+			"environmentID",
+			releaseTarget.EnvironmentId,
+			"error",
+			err,
+		)
 		return nil
 	}
 	resourceIDUUID, err := uuid.Parse(releaseTarget.ResourceId)
 	if err != nil {
-		log.Error("failed to parse resource id", "resourceID", releaseTarget.ResourceId, "error", err)
+		log.Error(
+			"failed to parse resource id",
+			"resourceID",
+			releaseTarget.ResourceId,
+			"error",
+			err,
+		)
 		return nil
 	}
 	rows, err := p.queries.ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
@@ -119,7 +149,13 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTa
 		ResourceID:    resourceIDUUID,
 	})
 	if err != nil {
-		log.Error("failed to get jobs for release target", "releaseTarget", releaseTarget.Key(), "error", err)
+		log.Error(
+			"failed to get jobs for release target",
+			"releaseTarget",
+			releaseTarget.Key(),
+			"error",
+			err,
+		)
 		return nil
 	}
 	jobs := make(map[string]*oapi.Job, len(rows))
@@ -130,7 +166,10 @@ func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTa
 	return jobs
 }
 
-func (p *PostgresGetters) GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error) {
+func (p *PostgresGetters) GetAllReleaseTargets(
+	ctx context.Context,
+	workspaceID string,
+) ([]*oapi.ReleaseTarget, error) {
 	rows, err := p.queries.GetReleaseTargetsForWorkspace(ctx, uuid.MustParse(workspaceID))
 	if err != nil {
 		return nil, err
@@ -147,7 +186,10 @@ func (p *PostgresGetters) GetAllReleaseTargets(ctx context.Context, workspaceID 
 }
 
 func (p *PostgresGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
-	status, err := p.queries.GetAggregateJobVerificationStatus(context.Background(), uuid.MustParse(jobID))
+	status, err := p.queries.GetAggregateJobVerificationStatus(
+		context.Background(),
+		uuid.MustParse(jobID),
+	)
 	if err != nil {
 		slog.Error("failed to get job verification status", "jobID", jobID, "error", err)
 		return ""

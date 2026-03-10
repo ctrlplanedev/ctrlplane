@@ -3,15 +3,15 @@ package rollback
 import (
 	"context"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
+	"workspace-engine/pkg/workspace/store"
 )
 
 var hookTracer = otel.Tracer("RollbackHooks")
@@ -30,19 +30,34 @@ func NewRollbackHooks(store *store.Store, jobAgentRegistry *jobagents.Registry) 
 	}
 }
 
-func (h *RollbackHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
+func (h *RollbackHooks) OnVerificationStarted(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	return nil
 }
 
-func (h *RollbackHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+func (h *RollbackHooks) OnMeasurementTaken(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+	metricIndex int,
+	measurement *oapi.VerificationMeasurement,
+) error {
 	return nil
 }
 
-func (h *RollbackHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error {
+func (h *RollbackHooks) OnMetricComplete(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+	metricIndex int,
+) error {
 	return nil
 }
 
-func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verificationResult *oapi.JobVerification) error {
+func (h *RollbackHooks) OnVerificationComplete(
+	ctx context.Context,
+	verificationResult *oapi.JobVerification,
+) error {
 	ctx, span := hookTracer.Start(ctx, "RollbackHooks.OnVerificationComplete")
 	defer span.End()
 
@@ -92,7 +107,10 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 
 	span.SetAttributes(attribute.Bool("rollback_applicable", true))
 
-	currentRelease, lastSuccessfulJob, err := h.store.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
+	currentRelease, lastSuccessfulJob, err := h.store.ReleaseTargets.GetCurrentRelease(
+		ctx,
+		&release.ReleaseTarget,
+	)
 	if err != nil {
 		span.AddEvent("No previous release to roll back to")
 		span.SetStatus(codes.Ok, "no previous release available")
@@ -136,7 +154,10 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 	return nil
 }
 
-func (h *RollbackHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error {
+func (h *RollbackHooks) OnVerificationStopped(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	return nil
 }
 

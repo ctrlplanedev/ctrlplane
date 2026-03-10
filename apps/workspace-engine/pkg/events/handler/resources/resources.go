@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
-
-	"github.com/charmbracelet/log"
 )
 
 func dispatchResourceSelectorEval(ctx context.Context, ws *workspace.Workspace) {
@@ -23,7 +22,11 @@ func dispatchResourceSelectorEval(ctx context.Context, ws *workspace.Workspace) 
 			EnvironmentID: env.Id,
 		})
 	}
-	if err := events.EnqueueManyEnvironmentResourceselectorEval(ws.Queue(), ctx, envParams); err != nil {
+	if err := events.EnqueueManyEnvironmentResourceselectorEval(
+		ws.Queue(),
+		ctx,
+		envParams,
+	); err != nil {
 		log.Error("failed to enqueue environment resourceselector evals", "error", err)
 	}
 
@@ -35,7 +38,11 @@ func dispatchResourceSelectorEval(ctx context.Context, ws *workspace.Workspace) 
 			DeploymentID: dep.Id,
 		})
 	}
-	if err := events.EnqueueManyDeploymentResourceselectorEval(ws.Queue(), ctx, depParams); err != nil {
+	if err := events.EnqueueManyDeploymentResourceselectorEval(
+		ws.Queue(),
+		ctx,
+		depParams,
+	); err != nil {
 		log.Error("failed to enqueue deployment resourceselector evals", "error", err)
 	}
 }
@@ -53,7 +60,11 @@ func shareSystem(envSystemIDs, depSystemIDs []string) bool {
 	return false
 }
 
-func computeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resource *oapi.Resource) ([]*oapi.ReleaseTarget, error) {
+func computeReleaseTargets(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	resource *oapi.Resource,
+) ([]*oapi.ReleaseTarget, error) {
 	environments, err := ws.Environments().ForResource(ctx, resource)
 	if err != nil {
 		return nil, err
@@ -114,7 +125,10 @@ func HandleResourceCreated(
 	return nil
 }
 
-func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+func getRemovedReleaseTargets(
+	oldReleaseTargets []*oapi.ReleaseTarget,
+	newReleaseTargets []*oapi.ReleaseTarget,
+) []*oapi.ReleaseTarget {
 	removedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, oldReleaseTarget := range oldReleaseTargets {
 		found := false

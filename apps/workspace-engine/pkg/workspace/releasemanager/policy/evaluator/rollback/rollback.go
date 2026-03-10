@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 	"sort"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -20,7 +21,9 @@ func NewEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator
 	if rule == nil || rule.Rollback == nil || store == nil {
 		return nil
 	}
-	return evaluator.WithMemoization(&RollbackEvaluator{store: store, ruleId: rule.Id, rule: rule.Rollback})
+	return evaluator.WithMemoization(
+		&RollbackEvaluator{store: store, ruleId: rule.Id, rule: rule.Rollback},
+	)
 }
 
 func (e *RollbackEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -39,7 +42,9 @@ func (e *RollbackEvaluator) Complexity() int {
 	return 4
 }
 
-func (e *RollbackEvaluator) getLatestJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
+func (e *RollbackEvaluator) getLatestJobForReleaseTarget(
+	releaseTarget *oapi.ReleaseTarget,
+) *oapi.Job {
 	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 	jobsSlice := make([]*oapi.Job, 0, len(jobs))
 	for _, job := range jobs {
@@ -54,7 +59,10 @@ func (e *RollbackEvaluator) getLatestJobForReleaseTarget(releaseTarget *oapi.Rel
 	return jobsSlice[0]
 }
 
-func (e *RollbackEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+func (e *RollbackEvaluator) Evaluate(
+	ctx context.Context,
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
 	releaseTarget := scope.ReleaseTarget()
 	latestJob := e.getLatestJobForReleaseTarget(releaseTarget)
 	if latestJob == nil {
@@ -68,7 +76,8 @@ func (e *RollbackEvaluator) Evaluate(ctx context.Context, scope evaluator.Evalua
 	}
 
 	if e.rule.OnVerificationFailure == nil || !*e.rule.OnVerificationFailure {
-		return results.NewAllowedResult("Job status is not in rollback statuses and on verification failure is not enabled").WithDetail("job", latestJob)
+		return results.NewAllowedResult("Job status is not in rollback statuses and on verification failure is not enabled").
+			WithDetail("job", latestJob)
 	}
 
 	verifications := e.store.JobVerifications.GetByJobId(latestJob.Id)

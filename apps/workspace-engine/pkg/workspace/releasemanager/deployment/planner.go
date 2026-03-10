@@ -5,6 +5,11 @@ package deployment
 import (
 	"context"
 	"fmt"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
@@ -12,11 +17,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/deployment")
@@ -78,7 +78,11 @@ func WithVersionAndNewer(version *oapi.DeploymentVersion) planDeploymentOptions 
 //
 // Design Pattern: Three-Phase Deployment (PLANNING Phase)
 // This function only READS state and determines the desired release. No writes occur here.
-func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.ReleaseTarget, options ...planDeploymentOptions) (*oapi.Release, error) {
+func (p *Planner) PlanDeployment(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	options ...planDeploymentOptions,
+) (*oapi.Release, error) {
 	ctx, span := tracer.Start(ctx, "PlanDeployment",
 		oteltrace.WithAttributes(
 			attribute.String("release-target.key", releaseTarget.Key()),
@@ -103,7 +107,11 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 
 	// Step 1: Get candidate versions (sorted newest to oldest)
 	span.AddEvent("Step 1: Getting candidate versions")
-	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget, cfg.earliestVersionForEvaluation)
+	candidateVersions := p.versionManager.GetCandidateVersions(
+		ctx,
+		releaseTarget,
+		cfg.earliestVersionForEvaluation,
+	)
 	span.SetAttributes(attribute.Int("candidate_versions.count", len(candidateVersions)))
 
 	if len(candidateVersions) == 0 {
@@ -121,7 +129,13 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 
 	// Step 2: Find first version that passes user-defined policies
 	span.AddEvent("Step 2: Finding deployable version")
-	deployableVersion := NewDeployableVersionManager(p.store, p.policyManager, p.scheduler, releaseTarget, planning).Find(ctx, candidateVersions)
+	deployableVersion := NewDeployableVersionManager(
+		p.store,
+		p.policyManager,
+		p.scheduler,
+		releaseTarget,
+		planning,
+	).Find(ctx, candidateVersions)
 	if deployableVersion == nil {
 		span.AddEvent("No deployable version found (blocked by policies)")
 		span.SetAttributes(
@@ -137,7 +151,10 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	span.SetAttributes(
 		attribute.String("deployable_version.id", deployableVersion.Id),
 		attribute.String("deployable_version.tag", deployableVersion.Tag),
-		attribute.String("deployable_version.created_at", deployableVersion.CreatedAt.Format("2006-01-02T15:04:05Z")),
+		attribute.String(
+			"deployable_version.created_at",
+			deployableVersion.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		),
 	)
 
 	// Get resource relationships (cheap - reads from materialized indexes)
@@ -163,7 +180,11 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 
 	// Step 3: Resolve variables for this deployment
 	span.AddEvent("Step 3: Evaluating variables")
-	resolvedVariables, err := p.variableManager.Evaluate(ctx, releaseTarget, resourceRelatedEntities)
+	resolvedVariables, err := p.variableManager.Evaluate(
+		ctx,
+		releaseTarget,
+		resourceRelatedEntities,
+	)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "variable evaluation failed")

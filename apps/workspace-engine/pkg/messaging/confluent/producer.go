@@ -3,23 +3,22 @@ package confluent
 import (
 	"fmt"
 
-	"workspace-engine/pkg/messaging"
-
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"workspace-engine/pkg/messaging"
 )
 
-// Producer is a Confluent Kafka implementation of messaging.Producer
+// Producer is a Confluent Kafka implementation of messaging.Producer.
 type Producer struct {
 	producer *kafka.Producer
 	topic    string
 	closed   bool
 }
 
-// Ensure Producer implements messaging.Producer
+// Ensure Producer implements messaging.Producer.
 var _ messaging.Producer = (*Producer)(nil)
 
-// NewProducer creates a new Confluent Kafka producer
+// NewProducer creates a new Confluent Kafka producer.
 func NewProducer(brokers string, topic string, config *kafka.ConfigMap) (*Producer, error) {
 	log.Info("Creating Confluent Kafka producer", "brokers", brokers, "topic", topic)
 
@@ -66,7 +65,7 @@ func NewProducer(brokers string, topic string, config *kafka.ConfigMap) (*Produc
 	}, nil
 }
 
-// Publish publishes a message to the topic
+// Publish publishes a message to the topic.
 func (p *Producer) Publish(key []byte, value []byte) error {
 	return p.PublishToPartition(key, value, kafka.PartitionAny)
 }
@@ -94,14 +93,14 @@ func (p *Producer) PublishToPartition(key []byte, value []byte, partition int32)
 }
 
 // Flush waits for all pending messages to be delivered
-// Returns the number of messages still pending after timeout
+// Returns the number of messages still pending after timeout.
 func (p *Producer) Flush(timeoutMs int) int {
 	remaining := p.producer.Flush(timeoutMs)
 	log.Debug("Producer flushed", "remaining", remaining)
 	return remaining
 }
 
-// Close closes the producer and releases resources
+// Close closes the producer and releases resources.
 func (p *Producer) Close() error {
 	if p.closed {
 		return nil

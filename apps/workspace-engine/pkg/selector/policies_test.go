@@ -3,10 +3,10 @@ package selector_test
 import (
 	"context"
 	"testing"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
 
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 )
 
 func TestMatchPolicy_EmptySelector(t *testing.T) {

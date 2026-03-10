@@ -2,6 +2,7 @@ package compare
 
 import (
 	"testing"
+
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 

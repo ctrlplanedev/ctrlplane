@@ -3,11 +3,10 @@ package jobeligibility
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
-
-	"github.com/google/uuid"
 )
 
 type concurrencyGetter = releasetargetconcurrency.Getters

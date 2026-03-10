@@ -6,20 +6,18 @@ import (
 	"runtime"
 	"strings"
 	"time"
-	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
-
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/pkg/workspace/relationships/eval"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
+	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/workspace/relationships/eval"
+	"workspace-engine/svc"
 )
 
 // FormatScopeID encodes an entity type and ID into the scope ID format "type:uuid".
@@ -31,7 +29,10 @@ func FormatScopeID(entityType string, entityID string) string {
 func ParseScopeID(scopeID string) (entityType string, entityID uuid.UUID, err error) {
 	parts := strings.SplitN(scopeID, ":", 2)
 	if len(parts) != 2 {
-		return "", uuid.Nil, fmt.Errorf("invalid scope id format, expected type:uuid, got %q", scopeID)
+		return "", uuid.Nil, fmt.Errorf(
+			"invalid scope id format, expected type:uuid, got %q",
+			scopeID,
+		)
 	}
 	entityType = parts[0]
 	entityID, err = uuid.Parse(parts[1])
@@ -104,7 +105,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	span.SetAttributes(attribute.Int("relationships.computed", len(allRelationships)))
 
-	if err := c.setter.SetComputedRelationships(ctx, entity.EntityType, entityID, allRelationships); err != nil {
+	if err := c.setter.SetComputedRelationships(
+		ctx,
+		entity.EntityType,
+		entityID,
+		allRelationships,
+	); err != nil {
 		return reconcile.Result{}, fmt.Errorf("set computed relationships: %w", err)
 	}
 
@@ -119,7 +125,11 @@ type streamingCandidateLoader struct {
 	getter Getter
 }
 
-func (l *streamingCandidateLoader) LoadCandidates(ctx context.Context, workspaceID uuid.UUID, entityType string) ([]eval.EntityData, error) {
+func (l *streamingCandidateLoader) LoadCandidates(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	entityType string,
+) ([]eval.EntityData, error) {
 	batches := make(chan []EntityInfo, runtime.GOMAXPROCS(0))
 	errCh := make(chan error, 1)
 

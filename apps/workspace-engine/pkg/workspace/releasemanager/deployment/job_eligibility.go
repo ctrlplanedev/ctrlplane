@@ -3,6 +3,10 @@ package deployment
 import (
 	"context"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
@@ -11,10 +15,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var jobEligibilityTracer = otel.Tracer("workspace/releasemanager/deployment/jobeligibility")
@@ -142,7 +142,8 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 
 					// Track the earliest NextEvaluationTime from all pending rules
 					if ruleResult.NextEvaluationTime != nil {
-						if earliestNextTime == nil || ruleResult.NextEvaluationTime.Before(*earliestNextTime) {
+						if earliestNextTime == nil ||
+							ruleResult.NextEvaluationTime.Before(*earliestNextTime) {
 							earliestNextTime = ruleResult.NextEvaluationTime
 						}
 					}
@@ -186,7 +187,12 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	)
 
 	if result.NextEvaluationTime != nil {
-		span.SetAttributes(attribute.String("next_evaluation_time", result.NextEvaluationTime.Format(time.RFC3339)))
+		span.SetAttributes(
+			attribute.String(
+				"next_evaluation_time",
+				result.NextEvaluationTime.Format(time.RFC3339),
+			),
+		)
 	}
 
 	switch {

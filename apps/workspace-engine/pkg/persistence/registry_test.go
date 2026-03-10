@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/persistence"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/persistence"
 )
 
 // testEntity is a minimal entity used for registry tests.

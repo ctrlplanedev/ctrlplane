@@ -3,11 +3,11 @@ package deploymentvariables
 import (
 	"encoding/json"
 	"fmt"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 func VariableToOapi(row db.DeploymentVariable) *oapi.DeploymentVariable {
@@ -100,7 +100,9 @@ func ValueToOapi(row db.DeploymentVariableValue) *oapi.DeploymentVariableValue {
 	}
 }
 
-func ToValueUpsertParams(e *oapi.DeploymentVariableValue) (db.UpsertDeploymentVariableValueParams, error) {
+func ToValueUpsertParams(
+	e *oapi.DeploymentVariableValue,
+) (db.UpsertDeploymentVariableValueParams, error) {
 	id, err := uuid.Parse(e.Id)
 	if err != nil {
 		return db.UpsertDeploymentVariableValueParams{}, fmt.Errorf("parse id: %w", err)
@@ -108,7 +110,10 @@ func ToValueUpsertParams(e *oapi.DeploymentVariableValue) (db.UpsertDeploymentVa
 
 	dvid, err := uuid.Parse(e.DeploymentVariableId)
 	if err != nil {
-		return db.UpsertDeploymentVariableValueParams{}, fmt.Errorf("parse deployment_variable_id: %w", err)
+		return db.UpsertDeploymentVariableValueParams{}, fmt.Errorf(
+			"parse deployment_variable_id: %w",
+			err,
+		)
 	}
 
 	var resourceSelector pgtype.Text

@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 var policyRepoTracer = otel.Tracer("workspace/store/repository/db/policies")
@@ -65,7 +65,10 @@ func (r *Repo) Get(id string) (*oapi.Policy, bool) {
 func (r *Repo) Set(entity *oapi.Policy) error {
 	_, span := policyRepoTracer.Start(r.ctx, "PolicyRepo.Set")
 	defer span.End()
-	span.SetAttributes(attribute.String("policy_id", entity.Id), attribute.Int("rule_count", len(entity.Rules)))
+	span.SetAttributes(
+		attribute.String("policy_id", entity.Id),
+		attribute.Int("rule_count", len(entity.Rules)),
+	)
 	params, err := ToPolicyUpsertParams(entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
@@ -124,9 +127,10 @@ func (r *Repo) Items() map[string]*oapi.Policy {
 		return make(map[string]*oapi.Policy)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListPoliciesByWorkspaceID(r.ctx, db.ListPoliciesByWorkspaceIDParams{
-		WorkspaceID: uid,
-	})
+	rows, err := db.GetQueries(r.ctx).
+		ListPoliciesByWorkspaceID(r.ctx, db.ListPoliciesByWorkspaceIDParams{
+			WorkspaceID: uid,
+		})
 	if err != nil {
 		log.Warn("Failed to list policies by workspace", "workspaceId", r.workspaceID, "error", err)
 		return make(map[string]*oapi.Policy)
@@ -233,7 +237,11 @@ func (r *Repo) deleteAllRulesWithQueries(q *db.Queries, policyID uuid.UUID) erro
 	return nil
 }
 
-func (r *Repo) insertRulesWithQueries(q *db.Queries, policyID uuid.UUID, rules []oapi.PolicyRule) error {
+func (r *Repo) insertRulesWithQueries(
+	q *db.Queries,
+	policyID uuid.UUID,
+	rules []oapi.PolicyRule,
+) error {
 
 	for _, rule := range rules {
 		ruleID, err := uuid.Parse(rule.Id)
@@ -254,12 +262,15 @@ func (r *Repo) insertRulesWithQueries(q *db.Queries, policyID uuid.UUID, rules [
 		}
 
 		if rule.DeploymentDependency != nil {
-			if err := q.UpsertDeploymentDependencyRule(r.ctx, db.UpsertDeploymentDependencyRuleParams{
-				ID:        ruleID,
-				PolicyID:  policyID,
-				DependsOn: rule.DeploymentDependency.DependsOn,
-				CreatedAt: createdAt,
-			}); err != nil {
+			if err := q.UpsertDeploymentDependencyRule(
+				r.ctx,
+				db.UpsertDeploymentDependencyRuleParams{
+					ID:        ruleID,
+					PolicyID:  policyID,
+					DependsOn: rule.DeploymentDependency.DependsOn,
+					CreatedAt: createdAt,
+				},
+			); err != nil {
 				return fmt.Errorf("upsert deployment_dependency rule: %w", err)
 			}
 		}
@@ -286,16 +297,19 @@ func (r *Repo) insertRulesWithQueries(q *db.Queries, policyID uuid.UUID, rules [
 					successStatuses = append(successStatuses, string(s))
 				}
 			}
-			if err := q.UpsertEnvironmentProgressionRule(r.ctx, db.UpsertEnvironmentProgressionRuleParams{
-				ID:                           ruleID,
-				PolicyID:                     policyID,
-				DependsOnEnvironmentSelector: selectorToString(ep.DependsOnEnvironmentSelector),
-				MaximumAgeHours:              optInt32ToPgint4(ep.MaximumAgeHours),
-				MinimumSoakTimeMinutes:       optInt32ToPgint4(ep.MinimumSockTimeMinutes),
-				MinimumSuccessPercentage:     optFloat32ToPgfloat4(ep.MinimumSuccessPercentage),
-				SuccessStatuses:              successStatuses,
-				CreatedAt:                    createdAt,
-			}); err != nil {
+			if err := q.UpsertEnvironmentProgressionRule(
+				r.ctx,
+				db.UpsertEnvironmentProgressionRuleParams{
+					ID:                           ruleID,
+					PolicyID:                     policyID,
+					DependsOnEnvironmentSelector: selectorToString(ep.DependsOnEnvironmentSelector),
+					MaximumAgeHours:              optInt32ToPgint4(ep.MaximumAgeHours),
+					MinimumSoakTimeMinutes:       optInt32ToPgint4(ep.MinimumSockTimeMinutes),
+					MinimumSuccessPercentage:     optFloat32ToPgfloat4(ep.MinimumSuccessPercentage),
+					SuccessStatuses:              successStatuses,
+					CreatedAt:                    createdAt,
+				},
+			); err != nil {
 				return fmt.Errorf("upsert environment_progression rule: %w", err)
 			}
 		}

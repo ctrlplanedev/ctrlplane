@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
@@ -36,7 +37,10 @@ func (r *Relations) GetRelatableEntities(ctx context.Context) []*oapi.RelatableE
 	return entities
 }
 
-func (r *Relations) Upsert(ctx context.Context, entityRelation *relationships.EntityRelation) error {
+func (r *Relations) Upsert(
+	ctx context.Context,
+	entityRelation *relationships.EntityRelation,
+) error {
 	r.relatedEntities.Set(entityRelation.Key(), entityRelation)
 	r.store.changeset.RecordUpsert(entityRelation)
 	return nil
@@ -59,7 +63,7 @@ func (r *Relations) Items() map[string]*relationships.EntityRelation {
 	return r.relatedEntities.Items()
 }
 
-// GetForEntity returns all relations where the entity is either the "from" or "to" entity
+// GetForEntity returns all relations where the entity is either the "from" or "to" entity.
 func (r *Relations) ForEntity(entity *oapi.RelatableEntity) []*relationships.EntityRelation {
 	entityID := entity.GetID()
 	entityType := entity.GetType()

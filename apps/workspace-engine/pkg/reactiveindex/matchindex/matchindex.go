@@ -415,7 +415,11 @@ const (
 // allocating pair/evalResult structs, reducing per-batch allocation from
 // ~300 MB to ~2 MB at 20K entities. Parallelism is achieved via a simple
 // WaitGroup-based worker pool partitioned by row ranges.
-func (idx *MatchIndex) evaluateCross(ctx context.Context, rows, cols []string, selectorIsRow bool) int {
+func (idx *MatchIndex) evaluateCross(
+	ctx context.Context,
+	rows, cols []string,
+	selectorIsRow bool,
+) int {
 	if len(rows) == 0 || len(cols) == 0 {
 		return 0
 	}

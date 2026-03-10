@@ -7,15 +7,15 @@ import (
 	"os"
 	"testing"
 	"time"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/persistence"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/persistence"
 )
 
-// Mock entity types for testing
+// Mock entity types for testing.
 type mockResource struct {
 	ID       string         `json:"id"`
 	Name     string         `json:"name"`
@@ -109,7 +109,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// setupTestWithWorkspace creates a workspace and returns its ID along with a DB connection
+// setupTestWithWorkspace creates a workspace and returns its ID along with a DB connection.
 func setupTestWithWorkspace(t *testing.T) (context.Context, string, *pgxpool.Conn) {
 	t.Helper()
 	ctx := context.Background()
@@ -164,14 +164,18 @@ func setupTestWithWorkspace(t *testing.T) (context.Context, string, *pgxpool.Con
 	return ctx, workspaceID, testDB
 }
 
-// createTestStore creates a Store instance for testing
+// createTestStore creates a Store instance for testing.
 func createTestStore(t *testing.T, conn *pgxpool.Conn) *Store {
 	t.Helper()
 	return &Store{conn: conn}
 }
 
-// Helper to create a change
-func makeChange(namespace string, changeType persistence.ChangeType, entity persistence.Entity) persistence.Change {
+// Helper to create a change.
+func makeChange(
+	namespace string,
+	changeType persistence.ChangeType,
+	entity persistence.Entity,
+) persistence.Change {
 	return persistence.Change{
 		Namespace:  namespace,
 		ChangeType: changeType,
@@ -180,16 +184,24 @@ func makeChange(namespace string, changeType persistence.ChangeType, entity pers
 	}
 }
 
-// Helper to verify changelog entry exists in DB
-func verifyChangelogEntry(t *testing.T, ctx context.Context, conn *pgxpool.Conn, workspaceID, entityType, entityID string) map[string]any {
+// Helper to verify changelog entry exists in DB.
+func verifyChangelogEntry(
+	t *testing.T,
+	ctx context.Context,
+	conn *pgxpool.Conn,
+	workspaceID, entityType, entityID string,
+) map[string]any {
 	t.Helper()
 
 	var entityData []byte
 	var createdAt time.Time
 
-	err := conn.QueryRow(ctx,
+	err := conn.QueryRow(
+		ctx,
 		"SELECT entity_data, created_at FROM changelog_entry WHERE workspace_id = $1 AND entity_type = $2 AND entity_id = $3",
-		workspaceID, entityType, entityID,
+		workspaceID,
+		entityType,
+		entityID,
 	).Scan(&entityData, &createdAt)
 
 	if err != nil {
@@ -204,14 +216,22 @@ func verifyChangelogEntry(t *testing.T, ctx context.Context, conn *pgxpool.Conn,
 	return data
 }
 
-// Helper to verify changelog entry does not exist in DB
-func verifyChangelogEntryNotExists(t *testing.T, ctx context.Context, conn *pgxpool.Conn, workspaceID, entityType, entityID string) {
+// Helper to verify changelog entry does not exist in DB.
+func verifyChangelogEntryNotExists(
+	t *testing.T,
+	ctx context.Context,
+	conn *pgxpool.Conn,
+	workspaceID, entityType, entityID string,
+) {
 	t.Helper()
 
 	var count int
-	err := conn.QueryRow(ctx,
+	err := conn.QueryRow(
+		ctx,
 		"SELECT COUNT(*) FROM changelog_entry WHERE workspace_id = $1 AND entity_type = $2 AND entity_id = $3",
-		workspaceID, entityType, entityID,
+		workspaceID,
+		entityType,
+		entityID,
 	).Scan(&count)
 
 	if err != nil {
@@ -370,9 +390,12 @@ func TestStore_Save_Upsert_UpdateExisting(t *testing.T) {
 
 	// Verify only one entry exists (not duplicated)
 	var count int
-	err = conn.QueryRow(ctx,
+	err = conn.QueryRow(
+		ctx,
 		"SELECT COUNT(*) FROM changelog_entry WHERE workspace_id = $1 AND entity_type = $2 AND entity_id = $3",
-		workspaceID, "mock_resource", resourceID,
+		workspaceID,
+		"mock_resource",
+		resourceID,
 	).Scan(&count)
 	if err != nil {
 		t.Fatalf("Failed to count entries: %v", err)
@@ -581,7 +604,11 @@ func TestStore_Save_TransactionRollback(t *testing.T) {
 
 	changes := persistence.Changes{
 		makeChange(workspaceID, persistence.ChangeTypeSet, validResource),
-		makeChange("00000000-0000-0000-0000-000000000000", persistence.ChangeTypeSet, invalidWorkspaceResource),
+		makeChange(
+			"00000000-0000-0000-0000-000000000000",
+			persistence.ChangeTypeSet,
+			invalidWorkspaceResource,
+		),
 	}
 
 	// Save should fail due to FK constraint
@@ -933,7 +960,11 @@ func TestStore_SaveAndLoad_DeletedEntity(t *testing.T) {
 
 	// Verify we got the correct entity
 	if loadedResource.Identifier != resource1.Identifier {
-		t.Errorf("Expected resource1 Identifier %s, got %s", resource1.Identifier, loadedResource.Identifier)
+		t.Errorf(
+			"Expected resource1 Identifier %s, got %s",
+			resource1.Identifier,
+			loadedResource.Identifier,
+		)
 	}
 	if loadedResource.Name != "keep-me" {
 		t.Errorf("Expected name 'keep-me', got %s", loadedResource.Name)
@@ -1359,7 +1390,11 @@ func TestStore_SaveAndLoad_OAPIGithubEntity(t *testing.T) {
 		t.Errorf("Expected Slug %s, got %s", githubEntity.Slug, loadedEntity.Slug)
 	}
 	if loadedEntity.InstallationId != githubEntity.InstallationId {
-		t.Errorf("Expected InstallationId %d, got %d", githubEntity.InstallationId, loadedEntity.InstallationId)
+		t.Errorf(
+			"Expected InstallationId %d, got %d",
+			githubEntity.InstallationId,
+			loadedEntity.InstallationId,
+		)
 	}
 }
 
@@ -1497,7 +1532,12 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 
 	for entityType, expected := range expectedCounts {
 		if entityCounts[entityType] != expected {
-			t.Errorf("Expected %d %s entities, got %d", expected, entityType, entityCounts[entityType])
+			t.Errorf(
+				"Expected %d %s entities, got %d",
+				expected,
+				entityType,
+				entityCounts[entityType],
+			)
 		}
 	}
 }

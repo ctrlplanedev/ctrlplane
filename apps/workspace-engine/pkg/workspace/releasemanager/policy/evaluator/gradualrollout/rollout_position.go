@@ -3,6 +3,7 @@ package gradualrollout
 import (
 	"errors"
 	"sort"
+
 	"workspace-engine/pkg/oapi"
 )
 
@@ -13,7 +14,7 @@ type targetWithHash struct {
 	hash   uint64
 }
 
-// rolloutPositionBuilder builds and computes rollout positions through a fluent API
+// rolloutPositionBuilder builds and computes rollout positions through a fluent API.
 type rolloutPositionBuilder struct {
 	targets           []*oapi.ReleaseTarget
 	hashingFn         hashingFunc
@@ -22,12 +23,15 @@ type rolloutPositionBuilder struct {
 	err               error
 }
 
-// newRolloutPositionBuilder creates a new builder for computing rollout positions
-func newRolloutPositionBuilder(releaseTargets []*oapi.ReleaseTarget, hashingFn hashingFunc) *rolloutPositionBuilder {
+// newRolloutPositionBuilder creates a new builder for computing rollout positions.
+func newRolloutPositionBuilder(
+	releaseTargets []*oapi.ReleaseTarget,
+	hashingFn hashingFunc,
+) *rolloutPositionBuilder {
 	return &rolloutPositionBuilder{targets: releaseTargets, hashingFn: hashingFn}
 }
 
-// computeHashes computes deterministic hashes for each target using the version ID
+// computeHashes computes deterministic hashes for each target using the version ID.
 func (b *rolloutPositionBuilder) computeHashes(
 	key string,
 ) *rolloutPositionBuilder {
@@ -52,7 +56,7 @@ func (b *rolloutPositionBuilder) computeHashes(
 	return b
 }
 
-// sortByHash sorts targets by their hash values in ascending order
+// sortByHash sorts targets by their hash values in ascending order.
 func (b *rolloutPositionBuilder) sortByHash() *rolloutPositionBuilder {
 	sort.Slice(b.targetsWithHashes, func(i, j int) bool {
 		return b.targetsWithHashes[i].hash < b.targetsWithHashes[j].hash
@@ -60,13 +64,15 @@ func (b *rolloutPositionBuilder) sortByHash() *rolloutPositionBuilder {
 	return b
 }
 
-// findPosition finds the zero-based position of the target in the sorted list
-func (b *rolloutPositionBuilder) findPosition(releaseTarget *oapi.ReleaseTarget) *rolloutPositionBuilder {
+// findPosition finds the zero-based position of the target in the sorted list.
+func (b *rolloutPositionBuilder) findPosition(
+	releaseTarget *oapi.ReleaseTarget,
+) *rolloutPositionBuilder {
 	b.releaseTarget = releaseTarget
 	return b
 }
 
-// build returns the final position and error
+// build returns the final position and error.
 func (b *rolloutPositionBuilder) build() (int32, error) {
 	if b.err != nil {
 		return 0, b.err

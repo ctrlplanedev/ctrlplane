@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/teambition/rrule-go"
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/teambition/rrule-go"
-	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/deploymentwindow")

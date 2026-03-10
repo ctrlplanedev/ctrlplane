@@ -3,13 +3,13 @@ package store
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var environmentsTracer = otel.Tracer("workspace/store/environments")
@@ -63,7 +63,10 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 	e.store.changeset.RecordDelete(env)
 }
 
-func (e *Environments) Resources(ctx context.Context, environmentId string) ([]*oapi.Resource, error) {
+func (e *Environments) Resources(
+	ctx context.Context,
+	environmentId string,
+) ([]*oapi.Resource, error) {
 	environment, ok := e.Get(environmentId)
 	if !ok {
 		return nil, fmt.Errorf("environment %s not found", environmentId)
@@ -87,7 +90,10 @@ func (e *Environments) Resources(ctx context.Context, environmentId string) ([]*
 	return resourcesSlice, nil
 }
 
-func (e *Environments) ForResource(ctx context.Context, resource *oapi.Resource) ([]*oapi.Environment, error) {
+func (e *Environments) ForResource(
+	ctx context.Context,
+	resource *oapi.Resource,
+) ([]*oapi.Environment, error) {
 	environments := make([]*oapi.Environment, 0)
 	for _, environment := range e.Items() {
 		matched, err := selector.Match(ctx, environment.ResourceSelector, resource)

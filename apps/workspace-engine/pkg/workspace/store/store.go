@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
@@ -9,8 +11,6 @@ import (
 	dbrepo "workspace-engine/pkg/workspace/store/repository/db"
 	hybridrepo "workspace-engine/pkg/workspace/store/repository/hybrid"
 	"workspace-engine/pkg/workspace/store/repository/memory"
-
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // StoreOption configures optional Store behavior.
@@ -272,7 +272,9 @@ func WithDBDeploymentVariableValues(ctx context.Context) StoreOption {
 func WithHybridDeploymentVariableValues(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
-		s.DeploymentVariableValues.SetRepo(hybridrepo.NewDeploymentVariableValueRepo(dbRepo, s.repo))
+		s.DeploymentVariableValues.SetRepo(
+			hybridrepo.NewDeploymentVariableValueRepo(dbRepo, s.repo),
+		)
 	}
 }
 
@@ -446,7 +448,11 @@ func (s *Store) Repo() *memory.InMemory {
 	return s.repo
 }
 
-func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setStatus func(status string)) error {
+func (s *Store) Restore(
+	ctx context.Context,
+	changes persistence.Changes,
+	setStatus func(status string),
+) error {
 	ctx, span := tracer.Start(ctx, "Store.Restore")
 	defer span.End()
 

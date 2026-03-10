@@ -7,5 +7,9 @@ import (
 )
 
 type Setter interface {
-	SetComputedEnvironmentResources(ctx context.Context, environmentID uuid.UUID, resourceIDs []uuid.UUID) error
+	SetComputedEnvironmentResources(
+		ctx context.Context,
+		environmentID uuid.UUID,
+		resourceIDs []uuid.UUID,
+	) error
 }

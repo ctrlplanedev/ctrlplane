@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-// CompactionKey implements the persistence.Entity interface for PolicyBypass
+// CompactionKey implements the persistence.Entity interface for PolicyBypass.
 func (ps *PolicySkip) CompactionKey() (string, string) {
 	return "policy_skip", ps.Id
 }
 
 // Key generates a lookup key for the skip based on version, environment, and resource
-// This is used for efficient lookups in the in-memory store
+// This is used for efficient lookups in the in-memory store.
 func (ps *PolicySkip) Key() string {
 	// Build key based on specificity: version + environment + resource
 	if ps.ResourceId != nil {
@@ -32,7 +32,7 @@ func (ps *PolicySkip) Key() string {
 	return fmt.Sprintf("%s-*-*", ps.VersionId)
 }
 
-// IsExpired checks if the skip has expired
+// IsExpired checks if the skip has expired.
 func (ps *PolicySkip) IsExpired() bool {
 	if ps.ExpiresAt == nil {
 		return false

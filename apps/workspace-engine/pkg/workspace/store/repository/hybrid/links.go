@@ -11,7 +11,10 @@ type SystemDeploymentRepo struct {
 	mem    repository.SystemDeploymentRepo
 }
 
-func NewSystemDeploymentRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *SystemDeploymentRepo {
+func NewSystemDeploymentRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *SystemDeploymentRepo {
 	return &SystemDeploymentRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.SystemDeployments(),
@@ -45,7 +48,10 @@ type SystemEnvironmentRepo struct {
 	mem    repository.SystemEnvironmentRepo
 }
 
-func NewSystemEnvironmentRepo(dbRepo *db.DBRepo, inMemoryRepo *memory.InMemory) *SystemEnvironmentRepo {
+func NewSystemEnvironmentRepo(
+	dbRepo *db.DBRepo,
+	inMemoryRepo *memory.InMemory,
+) *SystemEnvironmentRepo {
 	return &SystemEnvironmentRepo{
 		dbRepo: dbRepo,
 		mem:    inMemoryRepo.SystemEnvironments(),

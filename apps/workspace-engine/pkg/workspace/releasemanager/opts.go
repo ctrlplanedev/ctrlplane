@@ -4,7 +4,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-// options is a unified options struct for all releasemanager methods
+// options is a unified options struct for all releasemanager methods.
 type options struct {
 	skipEligibilityCheck bool
 	trigger              trace.TriggerReason

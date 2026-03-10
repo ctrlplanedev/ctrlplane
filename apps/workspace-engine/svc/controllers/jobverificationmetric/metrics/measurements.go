@@ -46,7 +46,8 @@ func (m Measurements) Phase(metric *VerificationMetric) VerificationStatus {
 		return VerificationFailed
 	}
 
-	if metric.SuccessThreshold != nil && m.ConsecutiveSuccessCount() >= int(*metric.SuccessThreshold) {
+	if metric.SuccessThreshold != nil &&
+		m.ConsecutiveSuccessCount() >= int(*metric.SuccessThreshold) {
 		return VerificationPassed
 	}
 
@@ -83,7 +84,8 @@ func (m Measurements) ShouldContinue(metric *VerificationMetric) bool {
 		return false
 	}
 
-	if metric.SuccessThreshold != nil && m.ConsecutiveSuccessCount() >= int(*metric.SuccessThreshold) {
+	if metric.SuccessThreshold != nil &&
+		m.ConsecutiveSuccessCount() >= int(*metric.SuccessThreshold) {
 		return false
 	}
 

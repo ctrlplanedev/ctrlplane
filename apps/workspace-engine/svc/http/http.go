@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/config"
 	"workspace-engine/svc"
 	"workspace-engine/svc/http/server"
-
-	"github.com/charmbracelet/log"
 )
 
 var _ svc.Service = (*Service)(nil)

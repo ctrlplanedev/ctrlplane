@@ -7,14 +7,12 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/postgres"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/postgres"
 )
 
 const (

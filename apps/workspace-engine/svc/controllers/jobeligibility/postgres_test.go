@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/reconcile"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/reconcile"
 )
 
 // ---------------------------------------------------------------------------
@@ -48,7 +47,10 @@ func (q *mockQueue) ExtendLease(_ context.Context, _ reconcile.ExtendLeaseParams
 	return nil
 }
 
-func (q *mockQueue) AckSuccess(_ context.Context, _ reconcile.AckSuccessParams) (reconcile.AckSuccessResult, error) {
+func (q *mockQueue) AckSuccess(
+	_ context.Context,
+	_ reconcile.AckSuccessParams,
+) (reconcile.AckSuccessResult, error) {
 	return reconcile.AckSuccessResult{}, nil
 }
 

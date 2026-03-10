@@ -2,9 +2,9 @@ package main
 
 import (
 	"os"
-	"workspace-engine/tools/seed/cmd"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/tools/seed/cmd"
 )
 
 func main() {

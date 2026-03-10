@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type UpsertRuleEvaluations interface {
@@ -42,7 +41,10 @@ type scopeKey struct {
 	ResourceID    uuid.UUID
 }
 
-func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(ctx context.Context, evaluations []RuleEvaluationParams) error {
+func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(
+	ctx context.Context,
+	evaluations []RuleEvaluationParams,
+) error {
 	ctx, span := tracer.Start(ctx, "Store.UpsertRuleEvaluations")
 	defer span.End()
 
@@ -123,7 +125,10 @@ func toDBParams(e RuleEvaluationParams) (db.BatchUpsertPolicyRuleEvaluationParam
 	}
 	environmentID, err := uuid.Parse(e.EnvironmentID)
 	if err != nil {
-		return db.BatchUpsertPolicyRuleEvaluationParams{}, fmt.Errorf("parse environment id: %w", err)
+		return db.BatchUpsertPolicyRuleEvaluationParams{}, fmt.Errorf(
+			"parse environment id: %w",
+			err,
+		)
 	}
 	versionID, err := uuid.Parse(e.VersionID)
 	if err != nil {

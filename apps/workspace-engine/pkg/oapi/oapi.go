@@ -80,11 +80,17 @@ func (x *UserApprovalRecord) Key() string {
 }
 
 func (j *Job) IsInProcessingState() bool {
-	return j.Status == JobStatusInProgress || j.Status == JobStatusActionRequired || j.Status == JobStatusPending
+	return j.Status == JobStatusInProgress || j.Status == JobStatusActionRequired ||
+		j.Status == JobStatusPending
 }
 
 func (j *Job) IsInTerminalState() bool {
-	return j.Status == JobStatusCancelled || j.Status == JobStatusSkipped || j.Status == JobStatusSuccessful || j.Status == JobStatusFailure || j.Status == JobStatusInvalidJobAgent || j.Status == JobStatusInvalidIntegration || j.Status == JobStatusExternalRunNotFound
+	return j.Status == JobStatusCancelled || j.Status == JobStatusSkipped ||
+		j.Status == JobStatusSuccessful ||
+		j.Status == JobStatusFailure ||
+		j.Status == JobStatusInvalidJobAgent ||
+		j.Status == JobStatusInvalidIntegration ||
+		j.Status == JobStatusExternalRunNotFound
 }
 
 func (v *Value) GetType() (string, error) {
@@ -110,13 +116,13 @@ func (v *Value) GetType() (string, error) {
 	return "", fmt.Errorf("unable to determine value type")
 }
 
-// GetInterval parses and returns the interval duration from the metric spec
+// GetInterval parses and returns the interval duration from the metric spec.
 func (vms *VerificationMetricSpec) GetInterval() time.Duration {
 	return time.Duration(vms.IntervalSeconds) * time.Second
 
 }
 
-// GetFailureLimit returns the failure limit, defaulting to 0 if not set
+// GetFailureLimit returns the failure limit, defaulting to 0 if not set.
 func (vms *VerificationMetricSpec) GetFailureLimit() int {
 	if vms.FailureThreshold == nil {
 		return 0
@@ -124,12 +130,12 @@ func (vms *VerificationMetricSpec) GetFailureLimit() int {
 	return *vms.FailureThreshold
 }
 
-// GetInterval parses and returns the interval duration from the metric status
+// GetInterval parses and returns the interval duration from the metric status.
 func (vms *VerificationMetricStatus) GetInterval() time.Duration {
 	return time.Duration(vms.IntervalSeconds) * time.Second
 }
 
-// GetFailureLimit returns the failure limit, defaulting to 0 if not set
+// GetFailureLimit returns the failure limit, defaulting to 0 if not set.
 func (vms *VerificationMetricStatus) GetFailureLimit() int {
 	if vms.FailureThreshold == nil {
 		return 0
@@ -137,7 +143,7 @@ func (vms *VerificationMetricStatus) GetFailureLimit() int {
 	return *vms.FailureThreshold
 }
 
-// Status computes the overall verification status from its metrics
+// Status computes the overall verification status from its metrics.
 func (jv *JobVerification) Status() JobVerificationStatus {
 	if len(jv.Metrics) == 0 {
 		return JobVerificationStatusRunning
@@ -182,7 +188,7 @@ func (jv *JobVerification) Status() JobVerificationStatus {
 	return JobVerificationStatusPassed
 }
 
-// StartedAt returns the earliest measurement time across all metrics
+// StartedAt returns the earliest measurement time across all metrics.
 func (jv *JobVerification) StartedAt() *time.Time {
 	var earliest *time.Time
 
@@ -198,7 +204,7 @@ func (jv *JobVerification) StartedAt() *time.Time {
 	return earliest
 }
 
-// CompletedAt returns the latest measurement time if all metrics are complete, nil otherwise
+// CompletedAt returns the latest measurement time if all metrics are complete, nil otherwise.
 func (jv *JobVerification) CompletedAt() *time.Time {
 	if jv.Status() == JobVerificationStatusRunning {
 		return nil
@@ -218,7 +224,7 @@ func (jv *JobVerification) CompletedAt() *time.Time {
 	return latest
 }
 
-// NewLiteralValue creates a new LiteralValue from a Go value
+// NewLiteralValue creates a new LiteralValue from a Go value.
 func NewLiteralValue(value any) *LiteralValue {
 	literalValue := &LiteralValue{}
 	switch v := value.(type) {
@@ -245,7 +251,7 @@ func NewLiteralValue(value any) *LiteralValue {
 	return literalValue
 }
 
-// NewValueFromLiteral creates a new Value with a literal data type
+// NewValueFromLiteral creates a new Value with a literal data type.
 func NewValueFromLiteral(literalValue *LiteralValue) *Value {
 	value := &Value{}
 	_ = value.FromLiteralValue(*literalValue)

@@ -10,21 +10,20 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-// DBStore implements trace.PersistenceStore for PostgreSQL
+// DBStore implements trace.PersistenceStore for PostgreSQL.
 type DBStore struct {
 	pool *pgxpool.Pool
 }
 
-// NewDBStore creates a new database persistence store
+// NewDBStore creates a new database persistence store.
 func NewDBStore(pool *pgxpool.Pool) *DBStore {
 	return &DBStore{pool: pool}
 }
 
-// WriteSpans persists spans to the deployment_trace_span table
+// WriteSpans persists spans to the deployment_trace_span table.
 func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error {
 	if len(spans) == 0 {
 		return nil
@@ -200,7 +199,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 	return nil
 }
 
-// attributeValueToInterface converts OTel attribute value to Go interface{}
+// attributeValueToInterface converts OTel attribute value to Go interface{}.
 func attributeValueToInterface(value attribute.Value) any {
 	switch value.Type() {
 	case attribute.BOOL:
@@ -224,7 +223,7 @@ func attributeValueToInterface(value attribute.Value) any {
 	}
 }
 
-// nullableTime converts zero time to nil for database NULL
+// nullableTime converts zero time to nil for database NULL.
 func nullableTime(t time.Time) any {
 	if t.IsZero() {
 		return nil
@@ -232,7 +231,7 @@ func nullableTime(t time.Time) any {
 	return t
 }
 
-// validateSpan checks that a span has all required attributes for database insertion
+// validateSpan checks that a span has all required attributes for database insertion.
 func validateSpan(span sdktrace.ReadOnlySpan) error {
 	traceID := span.SpanContext().TraceID().String()
 	spanID := span.SpanContext().SpanID().String()

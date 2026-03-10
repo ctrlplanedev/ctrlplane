@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
-
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
 )
 
 type ReconcileResult struct {
@@ -20,7 +19,12 @@ type ReconcileResult struct {
 // Reconcile processes a single verification metric: takes a measurement,
 // records the result, and determines whether to requeue for another
 // measurement or mark the metric as complete.
-func Reconcile(ctx context.Context, getter Getter, setter Setter, metricID string) (*ReconcileResult, error) {
+func Reconcile(
+	ctx context.Context,
+	getter Getter,
+	setter Setter,
+	metricID string,
+) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "verification.Reconcile")
 	defer span.End()
 

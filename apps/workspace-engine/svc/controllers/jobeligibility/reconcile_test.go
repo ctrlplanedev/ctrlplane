@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 )
 
 // ---------------------------------------------------------------------------
@@ -52,7 +51,10 @@ func (m *mockGetter) GetDesiredRelease(_ context.Context, _ *ReleaseTarget) (*oa
 	return m.release, m.releaseErr
 }
 
-func (m *mockGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetter) GetJobsForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	result := make(map[string]*oapi.Job, len(m.jobs))
 	for _, j := range m.jobs {
 		result[j.Id] = j
@@ -60,7 +62,10 @@ func (m *mockGetter) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseT
 	return result
 }
 
-func (m *mockGetter) GetJobsInProcessingStateForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetter) GetJobsInProcessingStateForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	result := make(map[string]*oapi.Job, len(m.processingJobs))
 	for _, j := range m.processingJobs {
 		result[j.Id] = j
@@ -68,7 +73,10 @@ func (m *mockGetter) GetJobsInProcessingStateForReleaseTarget(_ context.Context,
 	return result
 }
 
-func (m *mockGetter) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+func (m *mockGetter) GetPoliciesForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) ([]*oapi.Policy, error) {
 	return m.policies, m.policiesErr
 }
 
@@ -164,7 +172,11 @@ func testRelease(rt *ReleaseTarget) *oapi.Release {
 	}
 }
 
-func testJobForRelease(release *oapi.Release, status oapi.JobStatus, createdAt time.Time) *oapi.Job {
+func testJobForRelease(
+	release *oapi.Release,
+	status oapi.JobStatus,
+	createdAt time.Time,
+) *oapi.Job {
 	return &oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      release.Id.String(),
@@ -177,7 +189,11 @@ func testJobForRelease(release *oapi.Release, status oapi.JobStatus, createdAt t
 	}
 }
 
-func testJobWithCompletion(release *oapi.Release, status oapi.JobStatus, createdAt, completedAt time.Time) *oapi.Job {
+func testJobWithCompletion(
+	release *oapi.Release,
+	status oapi.JobStatus,
+	createdAt, completedAt time.Time,
+) *oapi.Job {
 	job := testJobForRelease(release, status, createdAt)
 	job.CompletedAt = &completedAt
 	return job
@@ -230,14 +246,25 @@ func setupHappyPath(rt *ReleaseTarget, release *oapi.Release) (*mockGetter, *moc
 	agent := testAgent()
 	deployment := testDeployment(rt, agent.Id)
 	getter := &mockGetter{
-		rtExists:    true,
-		release:     release,
-		jobs:        []*oapi.Job{},
-		policies:    []*oapi.Policy{},
-		deployment:  deployment,
-		jobAgents:   map[string]*oapi.JobAgent{agent.Id: agent},
-		environment: &oapi.Environment{Id: rt.EnvironmentID.String(), Name: "test-env", Metadata: map[string]string{}},
-		resource:    &oapi.Resource{Id: rt.ResourceID.String(), Name: "test-resource", Identifier: "test", Kind: "test", Metadata: map[string]string{}, Config: map[string]any{}},
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents:  map[string]*oapi.JobAgent{agent.Id: agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
 	}
 	setter := &mockSetter{}
 	return getter, setter
@@ -379,16 +406,23 @@ func TestProcess_RequeueOnBackoff(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	completedAt := time.Now().Add(-10 * time.Second)
-	failedJob := testJobWithCompletion(release, oapi.JobStatusFailure, completedAt.Add(-time.Second), completedAt)
+	failedJob := testJobWithCompletion(
+		release,
+		oapi.JobStatusFailure,
+		completedAt.Add(-time.Second),
+		completedAt,
+	)
 
 	agent := testAgent()
 	deployment := testDeployment(rt, agent.Id)
 
 	getter := &mockGetter{
-		rtExists:   true,
-		release:    release,
-		jobs:       []*oapi.Job{failedJob},
-		policies:   []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 3, BackoffSeconds: int32Ptr(120)})},
+		rtExists: true,
+		release:  release,
+		jobs:     []*oapi.Job{failedJob},
+		policies: []*oapi.Policy{
+			testPolicy(true, &oapi.RetryRule{MaxRetries: 3, BackoffSeconds: int32Ptr(120)}),
+		},
 		deployment: deployment,
 		jobAgents:  map[string]*oapi.JobAgent{agent.Id: agent},
 	}
@@ -436,7 +470,11 @@ func TestReconcile_GetDesiredReleaseFails(t *testing.T) {
 func TestReconcile_GetPoliciesFails(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
-	getter := &mockGetter{release: release, jobs: []*oapi.Job{}, policiesErr: fmt.Errorf("policies error")}
+	getter := &mockGetter{
+		release:     release,
+		jobs:        []*oapi.Job{},
+		policiesErr: fmt.Errorf("policies error"),
+	}
 	setter := &mockSetter{}
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
@@ -491,11 +529,22 @@ func TestReconcile_ActiveJobBlocks(t *testing.T) {
 			getter.jobs = []*oapi.Job{activeJob}
 			getter.processingJobs = []*oapi.Job{activeJob}
 
-			result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+			result, err := Reconcile(
+				context.Background(),
+				rt.WorkspaceID.String(),
+				getter,
+				setter,
+				rt,
+			)
 			require.NoError(t, err)
 			assert.NotNil(t, result)
 			assert.Nil(t, result.NextReconcileAt)
-			assert.Empty(t, setter.createdJobs, "should not create a job when there is an active %s job", status)
+			assert.Empty(
+				t,
+				setter.createdJobs,
+				"should not create a job when there is an active %s job",
+				status,
+			)
 		})
 	}
 }
@@ -522,10 +571,21 @@ func TestReconcile_TerminalStatusDoesNotBlock(t *testing.T) {
 			terminalJob := testJobForRelease(release, status, time.Now().Add(-time.Minute))
 			getter.jobs = []*oapi.Job{terminalJob}
 
-			result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+			result, err := Reconcile(
+				context.Background(),
+				rt.WorkspaceID.String(),
+				getter,
+				setter,
+				rt,
+			)
 			require.NoError(t, err)
 			assert.NotNil(t, result)
-			assert.NotEmpty(t, setter.createdJobs, "terminal status %s should not block job creation", status)
+			assert.NotEmpty(
+				t,
+				setter.createdJobs,
+				"terminal status %s should not block job creation",
+				status,
+			)
 		})
 	}
 }
@@ -585,10 +645,21 @@ func TestReconcile_NoPolicyOneCompletedJob_Denied(t *testing.T) {
 			getter.jobs = []*oapi.Job{completedJob}
 			getter.policies = []*oapi.Policy{}
 
-			result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+			result, err := Reconcile(
+				context.Background(),
+				rt.WorkspaceID.String(),
+				getter,
+				setter,
+				rt,
+			)
 			require.NoError(t, err)
 			assert.NotNil(t, result)
-			assert.Empty(t, setter.createdJobs, "with no policy, a second attempt after %s should be denied", status)
+			assert.Empty(
+				t,
+				setter.createdJobs,
+				"with no policy, a second attempt after %s should be denied",
+				status,
+			)
 		})
 	}
 }
@@ -618,13 +689,22 @@ func TestReconcile_PolicyMaxRetries3_AtLimit_Allowed(t *testing.T) {
 
 	jobs := make([]*oapi.Job, 3)
 	for i := range 3 {
-		jobs[i] = testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Duration(3-i)*time.Minute))
+		jobs[i] = testJobForRelease(
+			release,
+			oapi.JobStatusFailure,
+			time.Now().Add(-time.Duration(3-i)*time.Minute),
+		)
 	}
 	getter.jobs = jobs
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "at exactly maxRetries attempts, one more should be allowed")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"at exactly maxRetries attempts, one more should be allowed",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -636,7 +716,11 @@ func TestReconcile_PolicyMaxRetries3_Exceeded_Denied(t *testing.T) {
 
 	jobs := make([]*oapi.Job, 4)
 	for i := range 4 {
-		jobs[i] = testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Duration(4-i)*time.Minute))
+		jobs[i] = testJobForRelease(
+			release,
+			oapi.JobStatusFailure,
+			time.Now().Add(-time.Duration(4-i)*time.Minute),
+		)
 	}
 	getter.jobs = jobs
 
@@ -679,13 +763,22 @@ func TestReconcile_ExplicitRetryOnStatuses_OnlyCountsThose(t *testing.T) {
 	// cancelled job first (newest), then a failed job
 	// The cancelled job is not in retryOnStatuses, so counting breaks immediately
 	// With maxRetries=0, if cancelled were incorrectly counted the test would fail
-	cancelledJob := testJobForRelease(release, oapi.JobStatusCancelled, time.Now().Add(-30*time.Second))
+	cancelledJob := testJobForRelease(
+		release,
+		oapi.JobStatusCancelled,
+		time.Now().Add(-30*time.Second),
+	)
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{cancelledJob, failedJob}
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "cancelled job should break the retry chain, so attempt count = 0 -> allowed")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"cancelled job should break the retry chain, so attempt count = 0 -> allowed",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -699,12 +792,21 @@ func TestReconcile_DefaultRetryOnStatuses_MaxRetriesGT0(t *testing.T) {
 	// breaking the chain before the failure behind it.
 	// With maxRetries=1, if successful were incorrectly counted: count=2 > 1 -> denied.
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-2*time.Minute))
-	successfulJob := testJobForRelease(release, oapi.JobStatusSuccessful, time.Now().Add(-time.Minute))
+	successfulJob := testJobForRelease(
+		release,
+		oapi.JobStatusSuccessful,
+		time.Now().Add(-time.Minute),
+	)
 	getter.jobs = []*oapi.Job{successfulJob, failedJob}
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "successful job should not count toward retry limit when maxRetries > 0")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"successful job should not count toward retry limit when maxRetries > 0",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -714,12 +816,20 @@ func TestReconcile_DefaultRetryOnStatuses_MaxRetries0_SuccessfulCounts(t *testin
 	getter, setter := setupHappyPath(rt, release)
 	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 0})}
 
-	successfulJob := testJobForRelease(release, oapi.JobStatusSuccessful, time.Now().Add(-time.Minute))
+	successfulJob := testJobForRelease(
+		release,
+		oapi.JobStatusSuccessful,
+		time.Now().Add(-time.Minute),
+	)
 	getter.jobs = []*oapi.Job{successfulJob}
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	assert.Empty(t, setter.createdJobs, "successful job should count when maxRetries=0 (smart default)")
+	assert.Empty(
+		t,
+		setter.createdJobs,
+		"successful job should count when maxRetries=0 (smart default)",
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -741,7 +851,12 @@ func TestReconcile_DifferentReleaseBreaksRetryChain(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "jobs from a different release should not count; this is a first attempt for the current release")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"jobs from a different release should not count; this is a first attempt for the current release",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -769,7 +884,11 @@ func TestReconcile_LinearBackoff_WithinWindow_Denied(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "should not create job during backoff window")
 	require.NotNil(t, result.NextReconcileAt, "should schedule requeue")
-	assert.True(t, result.NextReconcileAt.After(time.Now()), "next reconcile should be in the future")
+	assert.True(
+		t,
+		result.NextReconcileAt.After(time.Now()),
+		"next reconcile should be in the future",
+	)
 }
 
 func TestReconcile_LinearBackoff_PastWindow_Allowed(t *testing.T) {
@@ -813,8 +932,18 @@ func TestReconcile_ExponentialBackoff_SecondAttempt(t *testing.T) {
 
 	// 2 failed jobs: attempt 2 backoff = 10 * 2^1 = 20s
 	now := time.Now()
-	job1 := testJobWithCompletion(release, oapi.JobStatusFailure, now.Add(-25*time.Second), now.Add(-24*time.Second))
-	job2 := testJobWithCompletion(release, oapi.JobStatusFailure, now.Add(-5*time.Second), now.Add(-4*time.Second))
+	job1 := testJobWithCompletion(
+		release,
+		oapi.JobStatusFailure,
+		now.Add(-25*time.Second),
+		now.Add(-24*time.Second),
+	)
+	job2 := testJobWithCompletion(
+		release,
+		oapi.JobStatusFailure,
+		now.Add(-5*time.Second),
+		now.Add(-4*time.Second),
+	)
 	getter.jobs = []*oapi.Job{job2, job1} // newest first
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
@@ -853,7 +982,11 @@ func TestReconcile_ExponentialBackoff_WithMaxCap(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	assert.Empty(t, setter.createdJobs, "should still be in backoff (capped at 25s, only 20s elapsed)")
+	assert.Empty(
+		t,
+		setter.createdJobs,
+		"should still be in backoff (capped at 25s, only 20s elapsed)",
+	)
 	require.NotNil(t, result.NextReconcileAt)
 }
 
@@ -876,7 +1009,11 @@ func TestReconcile_DisabledPolicyIgnored(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	assert.Empty(t, setter.createdJobs, "disabled policy should be ignored, so no retry rule -> strict mode denies")
+	assert.Empty(
+		t,
+		setter.createdJobs,
+		"disabled policy should be ignored, so no retry rule -> strict mode denies",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -897,7 +1034,11 @@ func TestReconcile_FirstEnabledPolicyRetryRuleWins(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	assert.Empty(t, setter.createdJobs, "first enabled policy's retry rule should win (maxRetries=0)")
+	assert.Empty(
+		t,
+		setter.createdJobs,
+		"first enabled policy's retry rule should win (maxRetries=0)",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -918,7 +1059,12 @@ func TestReconcile_DisabledPolicySkipped_EnabledUsed(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "disabled policy should be skipped; enabled policy allows retry")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"disabled policy should be skipped; enabled policy allows retry",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -1037,14 +1183,25 @@ func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {
 	deployment := testDeployment(rt, agent1.Id, agent2.Id)
 
 	getter := &mockGetter{
-		rtExists:    true,
-		release:     release,
-		jobs:        []*oapi.Job{},
-		policies:    []*oapi.Policy{},
-		deployment:  deployment,
-		jobAgents:   map[string]*oapi.JobAgent{agent1.Id: agent1, agent2.Id: agent2},
-		environment: &oapi.Environment{Id: rt.EnvironmentID.String(), Name: "test-env", Metadata: map[string]string{}},
-		resource:    &oapi.Resource{Id: rt.ResourceID.String(), Name: "test-resource", Identifier: "test", Kind: "test", Metadata: map[string]string{}, Config: map[string]any{}},
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents:  map[string]*oapi.JobAgent{agent1.Id: agent1, agent2.Id: agent2},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
 	}
 	setter := &mockSetter{}
 
@@ -1054,8 +1211,18 @@ func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {
 	require.Len(t, setter.createdJobs, 2, "should create one job per agent")
 	require.Len(t, setter.enqueueCalls, 2, "should enqueue one dispatch per job")
 
-	assert.NotEqual(t, setter.createdJobs[0].Id, setter.createdJobs[1].Id, "jobs should have unique IDs")
-	assert.NotEqual(t, setter.createdJobs[0].JobAgentId, setter.createdJobs[1].JobAgentId, "jobs should have different agent IDs")
+	assert.NotEqual(
+		t,
+		setter.createdJobs[0].Id,
+		setter.createdJobs[1].Id,
+		"jobs should have unique IDs",
+	)
+	assert.NotEqual(
+		t,
+		setter.createdJobs[0].JobAgentId,
+		setter.createdJobs[1].JobAgentId,
+		"jobs should have different agent IDs",
+	)
 }
 
 func TestReconcile_GetDeploymentFails_Error(t *testing.T) {
@@ -1147,7 +1314,12 @@ func TestReconcile_JobsSortedByCreatedAt(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "both jobs are retryable, attempt count=2, maxRetries=5, should allow")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"both jobs are retryable, attempt count=2, maxRetries=5, should allow",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 
@@ -1234,7 +1406,12 @@ func TestReconcile_MixedJobStatuses_ConsecutiveCounting(t *testing.T) {
 
 	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1, "only 2 consecutive failures counted, maxRetries=2 allows one more")
+	require.Len(
+		t,
+		setter.createdJobs,
+		1,
+		"only 2 consecutive failures counted, maxRetries=2 allows one more",
+	)
 	assert.Nil(t, result.NextReconcileAt)
 }
 

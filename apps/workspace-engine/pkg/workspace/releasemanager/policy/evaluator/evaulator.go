@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"context"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
 )
@@ -134,7 +135,7 @@ type Evaluator interface {
 	Complexity() int
 }
 
-// Rule type constants for policy bypass matching
+// Rule type constants for policy bypass matching.
 const (
 	RuleTypeApproval               = "approval"
 	RuleTypeEnvironmentProgression = "environmentProgression"

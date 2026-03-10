@@ -2,15 +2,15 @@ package manager
 
 import (
 	"context"
+
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/status"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace/manager")
@@ -60,7 +60,10 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		ws = workspace.New(ctx, id, globalManager.workspaceCreateOptions...)
 
 		// Load from persistence
-		workspaceStatus.SetState(status.StateLoadingFromPersistence, "Loading workspace from persistent store")
+		workspaceStatus.SetState(
+			status.StateLoadingFromPersistence,
+			"Loading workspace from persistent store",
+		)
 		changes, err := globalManager.persistentStore.Load(ctx, id)
 		if err != nil {
 			span.RecordError(err)
@@ -72,7 +75,10 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		workspaceStatus.UpdateMetadata("changes_loaded", len(changes))
 
 		// Restore from snapshot
-		workspaceStatus.SetState(status.StateRestoringFromSnapshot, "Restoring workspace from snapshot")
+		workspaceStatus.SetState(
+			status.StateRestoringFromSnapshot,
+			"Restoring workspace from snapshot",
+		)
 		setStatusMessage := func(msg string) {
 			workspaceStatus.SetState(status.StateRestoringFromSnapshot, msg)
 		}

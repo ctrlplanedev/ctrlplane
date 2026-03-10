@@ -65,7 +65,8 @@ func TestPlanningPhase_MultipleEvaluations(t *testing.T) {
 	evalCount := 0
 	for _, span := range store.spans {
 		for _, attr := range span.Attributes() {
-			if string(attr.Key) == "ctrlplane.node_type" && attr.Value.AsString() == string(NodeTypeEvaluation) {
+			if string(attr.Key) == "ctrlplane.node_type" &&
+				attr.Value.AsString() == string(NodeTypeEvaluation) {
 				evalCount++
 				break
 			}
@@ -188,7 +189,10 @@ func TestPlanningPhase_MakeDecisionApproved(t *testing.T) {
 			foundDecision = true
 			// Verify status is OK
 			if span.Status().Code.String() != "Ok" {
-				t.Errorf("approved decision should have Ok status, got %s", span.Status().Code.String())
+				t.Errorf(
+					"approved decision should have Ok status, got %s",
+					span.Status().Code.String(),
+				)
 			}
 		}
 	}
@@ -220,7 +224,10 @@ func TestPlanningPhase_MakeDecisionRejected(t *testing.T) {
 			foundDecision = true
 			// Verify status is Error
 			if span.Status().Code.String() != "Error" {
-				t.Errorf("rejected decision should have Error status, got %s", span.Status().Code.String())
+				t.Errorf(
+					"rejected decision should have Error status, got %s",
+					span.Status().Code.String(),
+				)
 			}
 		}
 	}
@@ -281,7 +288,8 @@ func TestEligibilityPhase_MultipleChecks(t *testing.T) {
 	checkCount := 0
 	for _, span := range store.spans {
 		for _, attr := range span.Attributes() {
-			if string(attr.Key) == "ctrlplane.node_type" && attr.Value.AsString() == string(NodeTypeCheck) {
+			if string(attr.Key) == "ctrlplane.node_type" &&
+				attr.Value.AsString() == string(NodeTypeCheck) {
 				checkCount++
 				break
 			}
@@ -620,7 +628,10 @@ func TestAction_AddStepFail(t *testing.T) {
 	for _, span := range store.spans {
 		if span.Name() == "Check pods" {
 			if span.Status().Code.String() != "Error" {
-				t.Errorf("failed step should have Error status, got %s", span.Status().Code.String())
+				t.Errorf(
+					"failed step should have Error status, got %s",
+					span.Status().Code.String(),
+				)
 			}
 		}
 	}
@@ -650,7 +661,8 @@ func TestAction_MultipleSteps(t *testing.T) {
 	for _, span := range store.spans {
 		// Check if it's a step by looking at node_type
 		for _, attr := range span.Attributes() {
-			if string(attr.Key) == "ctrlplane.phase" && attr.Value.AsString() == string(PhaseAction) {
+			if string(attr.Key) == "ctrlplane.phase" &&
+				attr.Value.AsString() == string(PhaseAction) {
 				// Count spans that are children of the action
 				if span.Name() != "Rollback" {
 					stepCount++

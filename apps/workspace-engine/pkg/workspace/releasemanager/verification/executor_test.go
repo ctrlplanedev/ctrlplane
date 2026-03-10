@@ -6,11 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestNewMeasurementExecutor(t *testing.T) {
@@ -190,7 +190,7 @@ func TestExecutor_BuildProviderContext_WithVariables(t *testing.T) {
 	assert.Contains(t, providerCtx.Variables, "version")
 }
 
-// Helper function to create an HTTP metric status
+// Helper function to create an HTTP metric status.
 func createHTTPMetricStatus(url string) oapi.VerificationMetricStatus {
 	method := oapi.GET
 	timeout := "5s"

@@ -3,12 +3,12 @@ package deploymentdependency
 import (
 	"context"
 	"log/slog"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type deploymentGetter = store.DeploymentGetter
@@ -30,11 +30,16 @@ func NewStoreGetters(ls *legacystore.Store) *StoreGetters {
 	return &StoreGetters{store: ls, deploymentGetter: store.NewStoreDeploymentGetter(ls)}
 }
 
-func (s *StoreGetters) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {
+func (s *StoreGetters) GetReleaseTargetsForResource(
+	ctx context.Context,
+	resourceID string,
+) []*oapi.ReleaseTarget {
 	return s.store.ReleaseTargets.GetForResource(ctx, resourceID)
 }
 
-func (s *StoreGetters) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
+func (s *StoreGetters) GetLatestCompletedJobForReleaseTarget(
+	releaseTarget *oapi.ReleaseTarget,
+) *oapi.Job {
 	return s.store.Jobs.GetLatestCompletedJobForReleaseTarget(releaseTarget)
 }
 
@@ -46,13 +51,25 @@ type PostgresGetters struct {
 }
 
 func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
-	return &PostgresGetters{queries: queries, deploymentGetter: store.NewPostgresDeploymentGetter(queries)}
+	return &PostgresGetters{
+		queries:          queries,
+		deploymentGetter: store.NewPostgresDeploymentGetter(queries),
+	}
 }
 
-func (p *PostgresGetters) GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget {
+func (p *PostgresGetters) GetReleaseTargetsForResource(
+	ctx context.Context,
+	resourceID string,
+) []*oapi.ReleaseTarget {
 	rows, err := p.queries.GetReleaseTargetsForResource(ctx, uuid.MustParse(resourceID))
 	if err != nil {
-		slog.Error("failed to get release targets for resource", "resourceID", resourceID, "error", err)
+		slog.Error(
+			"failed to get release targets for resource",
+			"resourceID",
+			resourceID,
+			"error",
+			err,
+		)
 		return nil
 	}
 	targets := make([]*oapi.ReleaseTarget, len(rows))
@@ -66,17 +83,28 @@ func (p *PostgresGetters) GetReleaseTargetsForResource(ctx context.Context, reso
 	return targets
 }
 
-func (p *PostgresGetters) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
+func (p *PostgresGetters) GetLatestCompletedJobForReleaseTarget(
+	releaseTarget *oapi.ReleaseTarget,
+) *oapi.Job {
 	if releaseTarget == nil {
 		return nil
 	}
-	row, err := p.queries.GetLatestCompletedJobForReleaseTarget(context.Background(), db.GetLatestCompletedJobForReleaseTargetParams{
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
-	})
+	row, err := p.queries.GetLatestCompletedJobForReleaseTarget(
+		context.Background(),
+		db.GetLatestCompletedJobForReleaseTargetParams{
+			DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+			EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
+			ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
+		},
+	)
 	if err != nil {
-		slog.Error("failed to get latest completed job for release target", "releaseTarget", releaseTarget.Key(), "error", err)
+		slog.Error(
+			"failed to get latest completed job for release target",
+			"releaseTarget",
+			releaseTarget.Key(),
+			"error",
+			err,
+		)
 		return nil
 	}
 	return db.ToOapiJobFromLatestCompleted(row)

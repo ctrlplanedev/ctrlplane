@@ -6,13 +6,13 @@ import (
 	"sort"
 	"testing"
 	"time"
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/reactiveindex/matchindex"
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/reactiveindex/matchindex"
 )
 
 // testUUID generates a deterministic UUID from a namespace and index so tests
@@ -93,7 +93,9 @@ func TestCel_MetadataLabelMatching(t *testing.T) {
 
 	idx.AddSelector(`resource.metadata["env"] == "production"`)
 	idx.AddSelector(`resource.kind == "Deployment"`)
-	idx.AddSelector(`resource.metadata["team"] == "platform" && resource.metadata["env"] == "staging"`)
+	idx.AddSelector(
+		`resource.metadata["team"] == "platform" && resource.metadata["env"] == "staging"`,
+	)
 
 	idx.AddEntity(res1)
 	idx.AddEntity(res2)
@@ -111,7 +113,9 @@ func TestCel_MetadataLabelMatching(t *testing.T) {
 	assert.Equal(t, sortedStrings([]string{res1, res2}), deployMatches)
 
 	// staging + platform team
-	stagingPlatform := idx.GetMatches(`resource.metadata["team"] == "platform" && resource.metadata["env"] == "staging"`)
+	stagingPlatform := idx.GetMatches(
+		`resource.metadata["team"] == "platform" && resource.metadata["env"] == "staging"`,
+	)
 	assert.Equal(t, []string{res2}, stagingPlatform)
 }
 
@@ -280,7 +284,9 @@ func TestCel_RawEnvCompile(t *testing.T) {
 		BuildCached(1 * time.Hour)
 	require.NoError(t, err)
 
-	program, err := env.Compile(`resource.name.startsWith("api") && resource.metadata["env"] == "production"`)
+	program, err := env.Compile(
+		`resource.name.startsWith("api") && resource.metadata["env"] == "production"`,
+	)
 	require.NoError(t, err)
 
 	result, err := celutil.EvalBool(program, map[string]any{
@@ -389,7 +395,9 @@ func TestCel_MultiVariableEnvironment(t *testing.T) {
 	idx.AddEntity(rt2)
 	idx.Recompute(context.Background())
 
-	prodDeploy := idx.GetMatches(`environment.name == "production" && resource.kind == "Deployment"`)
+	prodDeploy := idx.GetMatches(
+		`environment.name == "production" && resource.kind == "Deployment"`,
+	)
 	assert.Equal(t, []string{rt1}, prodDeploy)
 
 	allDeploy := sortedStrings(idx.GetMatches(`deployment.name.endsWith("-deploy")`))

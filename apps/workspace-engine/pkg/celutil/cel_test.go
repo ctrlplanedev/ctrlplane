@@ -71,7 +71,7 @@ func TestEvalBool(t *testing.T) {
 			cel.Variable("x", cel.StringType),
 		)
 		_, err := EvalBool(prg, map[string]any{"x": "hello"})
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boolean")
 	})
 

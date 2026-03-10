@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-// EntityFactory is a function that creates a new instance of an entity
+// EntityFactory is a function that creates a new instance of an entity.
 type EntityFactory func() Entity
 
 // MigrationFunc is a function that migrates data from one version to another.
@@ -29,7 +29,7 @@ type JSONEntityRegistry struct {
 	migrations map[string][]Migration
 }
 
-// NewJSONEntityRegistry creates a new JSON entity registry
+// NewJSONEntityRegistry creates a new JSON entity registry.
 func NewJSONEntityRegistry() *JSONEntityRegistry {
 	return &JSONEntityRegistry{
 		factories:  make(map[string]EntityFactory),
@@ -37,7 +37,7 @@ func NewJSONEntityRegistry() *JSONEntityRegistry {
 	}
 }
 
-// Register registers an entity type with its factory function
+// Register registers an entity type with its factory function.
 func (r *JSONEntityRegistry) Register(entityType string, factory EntityFactory) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -55,7 +55,10 @@ func (r *JSONEntityRegistry) RegisterMigration(entityType string, m Migration) {
 // MigrateRaw applies all registered migrations for entityType to the raw JSON
 // data. It returns the (possibly transformed) JSON. If no migrations are
 // registered the data is returned unchanged.
-func (r *JSONEntityRegistry) MigrateRaw(entityType string, data json.RawMessage) (json.RawMessage, error) {
+func (r *JSONEntityRegistry) MigrateRaw(
+	entityType string,
+	data json.RawMessage,
+) (json.RawMessage, error) {
 	r.mu.RLock()
 	migrations := append([]Migration(nil), r.migrations[entityType]...)
 	r.mu.RUnlock()
@@ -108,7 +111,7 @@ func (r *JSONEntityRegistry) Unmarshal(entityType string, data json.RawMessage) 
 	return entity, nil
 }
 
-// IsRegistered checks if an entity type is registered
+// IsRegistered checks if an entity type is registered.
 func (r *JSONEntityRegistry) IsRegistered(entityType string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

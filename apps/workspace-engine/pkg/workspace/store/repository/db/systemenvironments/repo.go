@@ -2,10 +2,10 @@ package systemenvironments
 
 import (
 	"context"
-	"workspace-engine/pkg/db"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
 )
 
 // Repo implements repository.SystemEnvironmentRepo backed by the
@@ -27,7 +27,13 @@ func (r *Repo) GetSystemIDsForEnvironment(environmentID string) []string {
 
 	systemIDs, err := db.GetQueries(r.ctx).GetSystemIDsForEnvironment(r.ctx, uid)
 	if err != nil {
-		log.Warn("Failed to get system IDs for environment", "environmentId", environmentID, "error", err)
+		log.Warn(
+			"Failed to get system IDs for environment",
+			"environmentId",
+			environmentID,
+			"error",
+			err,
+		)
 		return nil
 	}
 

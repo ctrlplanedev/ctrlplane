@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -76,7 +77,10 @@ func NewEvaluator(getters Getters, rule *oapi.RetryRule) evaluator.JobEvaluator 
 	}
 }
 
-func (e *RetryEvaluator) getJobsForReleaseTargetSortedLatestFirst(ctx context.Context, releaseTarget *oapi.ReleaseTarget) []*oapi.Job {
+func (e *RetryEvaluator) getJobsForReleaseTargetSortedLatestFirst(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) []*oapi.Job {
 	jobsMap := e.getters.GetJobsForReleaseTarget(ctx, releaseTarget)
 	jobs := make([]*oapi.Job, 0, len(jobsMap))
 	for _, job := range jobsMap {
@@ -159,7 +163,8 @@ func (e *RetryEvaluator) Evaluate(
 	}
 
 	// Check backoff period if we have previous attempts
-	if attemptCount > 0 && e.rule.BackoffSeconds != nil && *e.rule.BackoffSeconds > 0 && mostRecentJob != nil {
+	if attemptCount > 0 && e.rule.BackoffSeconds != nil && *e.rule.BackoffSeconds > 0 &&
+		mostRecentJob != nil {
 		backoffResult := e.evaluateBackoff(mostRecentJob, attemptCount, release, matchingJobIds)
 		if backoffResult != nil {
 			return backoffResult
@@ -268,8 +273,11 @@ func (e *RetryEvaluator) evaluateBackoff(
 
 // calculateBackoffDuration calculates the backoff duration based on the strategy.
 // For linear: constant backoffSeconds
-// For exponential: backoffSeconds * 2^(attemptCount-1), capped by maxBackoffSeconds
-func (e *RetryEvaluator) calculateBackoffDuration(attemptCount int, baseBackoffSeconds int32) time.Duration {
+// For exponential: backoffSeconds * 2^(attemptCount-1), capped by maxBackoffSeconds.
+func (e *RetryEvaluator) calculateBackoffDuration(
+	attemptCount int,
+	baseBackoffSeconds int32,
+) time.Duration {
 	strategy := oapi.RetryRuleBackoffStrategyLinear
 	if e.rule.BackoffStrategy != nil {
 		strategy = *e.rule.BackoffStrategy

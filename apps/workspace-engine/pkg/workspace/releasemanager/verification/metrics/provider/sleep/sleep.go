@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
@@ -22,7 +23,10 @@ func (p *Provider) Type() string {
 	return "sleep"
 }
 
-func (p *Provider) Measure(_ context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *Provider) Measure(
+	_ context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	time.Sleep(p.duration)
 	return time.Now(), map[string]any{"ok": true}, nil
 }

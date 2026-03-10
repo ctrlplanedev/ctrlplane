@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository/memory"
@@ -49,11 +50,19 @@ func (v *Variables) ResolveValue(
 
 		refEntities := entities[rv.Reference]
 		if len(refEntities) == 0 {
-			return nil, fmt.Errorf("reference not found: %v for entity: %v-%v", rv.Reference, entity.GetType(), entity.GetID())
+			return nil, fmt.Errorf(
+				"reference not found: %v for entity: %v-%v",
+				rv.Reference,
+				entity.GetType(),
+				entity.GetID(),
+			)
 		}
 
 		computeEntityRelationship := refEntities[0]
-		literalValue, err := relationships.GetPropertyValue(&computeEntityRelationship.Entity, rv.Path)
+		literalValue, err := relationships.GetPropertyValue(
+			&computeEntityRelationship.Entity,
+			rv.Path,
+		)
 		if err != nil {
 			return nil, err
 		}

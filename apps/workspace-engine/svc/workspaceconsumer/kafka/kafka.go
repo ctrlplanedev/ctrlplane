@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 	"workspace-engine/pkg/workspace/manager"
-
-	"github.com/charmbracelet/log"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-// Configuration variables loaded from environment
+// Configuration variables loaded from environment.
 var (
 	Topic   = config.Global.KafkaTopic
 	GroupID = config.Global.KafkaGroupID
@@ -48,7 +47,9 @@ func NewConsumer(brokers string, topic string) (messaging.Consumer, error) {
 func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 	// Subscribe to topic
 	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID, "brokers", Brokers)
-	log.Info("Waiting for Kafka partition assignment - this may take 30-120 seconds on first startup")
+	log.Info(
+		"Waiting for Kafka partition assignment - this may take 30-120 seconds on first startup",
+	)
 
 	log.Info("Successfully subscribed to topic", "topic", Topic)
 
@@ -65,7 +66,11 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 
 	log.Info("Partition assignment complete", "assigned", assignedPartitions)
 
-	partitionWorkspaceMap, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+	partitionWorkspaceMap, err := wskafka.GetAssignedWorkspaceIDs(
+		ctx,
+		assignedPartitions,
+		numPartitions,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
 	}
@@ -115,7 +120,9 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 
 		if msg == nil {
 			log.Error("No message read, continuing")
-			log.Error("This should not happen, topic is subscribed and we are waiting for a message")
+			log.Error(
+				"This should not happen, topic is subscribed and we are waiting for a message",
+			)
 		}
 
 		ws, err := handler.ListenAndRoute(ctx, msg)

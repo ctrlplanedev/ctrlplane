@@ -2,37 +2,37 @@ package verification
 
 import (
 	"context"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/action"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/action/verification")
 
-// VerificationAction creates verifications based on policy rules
+// VerificationAction creates verifications based on policy rules.
 type VerificationAction struct {
 	verificationManager *verification.Manager
 }
 
-// NewVerificationAction creates a new verification action
+// NewVerificationAction creates a new verification action.
 func NewVerificationAction(manager *verification.Manager) *VerificationAction {
 	return &VerificationAction{
 		verificationManager: manager,
 	}
 }
 
-// Name returns the action identifier
+// Name returns the action identifier.
 func (v *VerificationAction) Name() string {
 	return "verification"
 }
 
 // Execute creates a verification for the release
-// Fails fast by returning nil if no metrics match the trigger
+// Fails fast by returning nil if no metrics match the trigger.
 func (v *VerificationAction) Execute(
 	ctx context.Context,
 	trigger action.ActionTrigger,
@@ -81,7 +81,7 @@ func (v *VerificationAction) Execute(
 	return nil
 }
 
-// extractVerificationMetrics extracts and deduplicates verification metrics from policies
+// extractVerificationMetrics extracts and deduplicates verification metrics from policies.
 func (v *VerificationAction) extractVerificationMetrics(
 	trigger action.ActionTrigger,
 	policies []*oapi.Policy,
@@ -118,12 +118,12 @@ func (v *VerificationAction) extractVerificationMetrics(
 	return allMetrics
 }
 
-// getVerificationRule extracts the verification rule from a policy rule
+// getVerificationRule extracts the verification rule from a policy rule.
 func (v *VerificationAction) getVerificationRule(rule *oapi.PolicyRule) *oapi.VerificationRule {
 	return rule.Verification
 }
 
-// getTriggerFromRule determines the trigger for a verification rule
+// getTriggerFromRule determines the trigger for a verification rule.
 func (v *VerificationAction) getTriggerFromRule(rule *oapi.VerificationRule) action.ActionTrigger {
 	if rule.TriggerOn == nil {
 		return action.TriggerJobSuccess // Default

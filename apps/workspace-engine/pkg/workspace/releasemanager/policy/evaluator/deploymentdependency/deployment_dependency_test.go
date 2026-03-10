@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 )
 
 func generateMatchAllSelector() *oapi.Selector {
@@ -22,7 +22,11 @@ func generateMatchAllSelector() *oapi.Selector {
 	return selector
 }
 
-func generateEnvironment(ctx context.Context, systemID string, store *store.Store) *oapi.Environment {
+func generateEnvironment(
+	ctx context.Context,
+	systemID string,
+	store *store.Store,
+) *oapi.Environment {
 	environment := &oapi.Environment{
 		Id:               uuid.New().String(),
 		ResourceSelector: generateMatchAllSelector(),
@@ -50,7 +54,13 @@ func generateResource(ctx context.Context, store *store.Store) *oapi.Resource {
 	return resource
 }
 
-func generateReleaseTarget(ctx context.Context, resource *oapi.Resource, environment *oapi.Environment, deployment *oapi.Deployment, store *store.Store) *oapi.ReleaseTarget {
+func generateReleaseTarget(
+	ctx context.Context,
+	resource *oapi.Resource,
+	environment *oapi.Environment,
+	deployment *oapi.Deployment,
+	store *store.Store,
+) *oapi.ReleaseTarget {
 	releaseTarget := &oapi.ReleaseTarget{
 		ResourceId:    resource.Id,
 		EnvironmentId: environment.Id,
@@ -69,7 +79,12 @@ func generateDependencyRule(cel string) *oapi.PolicyRule {
 	}
 }
 
-func generateReleaseAndJob(ctx context.Context, releaseTarget *oapi.ReleaseTarget, jobStatus oapi.JobStatus, st *store.Store) *oapi.Job {
+func generateReleaseAndJob(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	jobStatus oapi.JobStatus,
+	st *store.Store,
+) *oapi.Job {
 	now := time.Now()
 	release := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
@@ -200,7 +215,11 @@ func TestDeploymentDependencyEvaluator_MixedSatisfactionsFails(t *testing.T) {
 		Resource:    &oapi.Resource{Id: releaseTarget3.ResourceId},
 		Deployment:  &oapi.Deployment{Id: releaseTarget3.DeploymentId},
 	})
-	assert.False(t, result.Allowed, "expected denied when some upstream release targets are not successful")
+	assert.False(
+		t,
+		result.Allowed,
+		"expected denied when some upstream release targets are not successful",
+	)
 }
 
 func TestDeploymentDependencyEvaluator_FailedJobsFails(t *testing.T) {
@@ -240,7 +259,11 @@ func TestDeploymentDependencyEvaluator_FailedJobsFails(t *testing.T) {
 		Resource:    &oapi.Resource{Id: releaseTarget3.ResourceId},
 		Deployment:  &oapi.Deployment{Id: releaseTarget3.DeploymentId},
 	})
-	assert.False(t, result.Allowed, "expected denied when some upstream release targets are not successful")
+	assert.False(
+		t,
+		result.Allowed,
+		"expected denied when some upstream release targets are not successful",
+	)
 }
 
 func TestDeploymentDependencyEvaluator_FailsIfLatestJobIsNotSuccessful(t *testing.T) {
@@ -282,7 +305,9 @@ func TestDeploymentDependencyEvaluator_FailsIfLatestJobIsNotSuccessful(t *testin
 	assert.False(t, result.Allowed, "expected denied when latest job is not successful")
 }
 
-func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJobsAreSuccessful(t *testing.T) {
+func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJobsAreSuccessful(
+	t *testing.T,
+) {
 	ctx := context.Background()
 
 	sc := statechange.NewChangeSet[any]()
@@ -318,7 +343,11 @@ func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJob
 		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
 		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
 	})
-	assert.True(t, result.Allowed, "expected allowed when latest job is progressing and other jobs are successful")
+	assert.True(
+		t,
+		result.Allowed,
+		"expected allowed when latest job is progressing and other jobs are successful",
+	)
 }
 
 func TestDeploymentDependencyEvaluator_NoMatchingDeploymentsFails(t *testing.T) {
@@ -381,5 +410,9 @@ func TestDeploymentDependencyEvaluator_NotEnoughUpstreamReleaseTargetsFails(t *t
 		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
 		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
 	})
-	assert.False(t, result.Allowed, "expected denied when not enough upstream release targets are found")
+	assert.False(
+		t,
+		result.Allowed,
+		"expected denied when not enough upstream release targets are found",
+	)
 }

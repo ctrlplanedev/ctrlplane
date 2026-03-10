@@ -9,7 +9,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// Phase represents the high-level phase of execution
+// Phase represents the high-level phase of execution.
 type Phase string
 
 const (
@@ -21,7 +21,7 @@ const (
 	PhaseExternal       Phase = "external"
 )
 
-// NodeType represents the type of trace node
+// NodeType represents the type of trace node.
 type NodeType string
 
 const (
@@ -32,7 +32,7 @@ const (
 	NodeTypeAction     NodeType = "action"
 )
 
-// EvaluationResult represents results for policy evaluations
+// EvaluationResult represents results for policy evaluations.
 type EvaluationResult string
 
 const (
@@ -40,7 +40,7 @@ const (
 	ResultBlocked EvaluationResult = "blocked"
 )
 
-// CheckResult represents results for eligibility checks
+// CheckResult represents results for eligibility checks.
 type CheckResult string
 
 const (
@@ -48,7 +48,7 @@ const (
 	CheckResultFail CheckResult = "fail"
 )
 
-// StepResult represents results for action steps
+// StepResult represents results for action steps.
 type StepResult string
 
 const (
@@ -56,7 +56,7 @@ const (
 	StepResultFail StepResult = "fail"
 )
 
-// Decision represents final decision outcomes
+// Decision represents final decision outcomes.
 type Decision string
 
 const (
@@ -64,7 +64,7 @@ const (
 	DecisionRejected Decision = "rejected"
 )
 
-// Status represents overall phase/reconciliation status
+// Status represents overall phase/reconciliation status.
 type Status string
 
 const (
@@ -74,7 +74,7 @@ const (
 	StatusSkipped   Status = "skipped"
 )
 
-// TriggerReason represents why a reconciliation was triggered
+// TriggerReason represents why a reconciliation was triggered.
 type TriggerReason string
 
 const (
@@ -100,12 +100,12 @@ const (
 	TriggerSystemEnvironmentUnlinked TriggerReason = "system-environment.unlinked" // Environment unlinked from system
 )
 
-// PersistenceStore interface for storing trace spans
+// PersistenceStore interface for storing trace spans.
 type PersistenceStore interface {
 	WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error
 }
 
-// Attribute keys for trace spans (exported for use by spanstore package)
+// Attribute keys for trace spans (exported for use by spanstore package).
 const (
 	AttrPhase         = "ctrlplane.phase"
 	AttrNodeType      = "ctrlplane.node_type"
@@ -120,7 +120,7 @@ const (
 	AttrTrigger       = "ctrlplane.trigger"
 )
 
-// Internal aliases for backward compatibility within the trace package
+// Internal aliases for backward compatibility within the trace package.
 const (
 	attrPhase         = AttrPhase
 	attrNodeType      = AttrNodeType
@@ -135,7 +135,7 @@ const (
 	attrTrigger       = AttrTrigger
 )
 
-// AttributeOptions holds optional parameters for building attributes
+// AttributeOptions holds optional parameters for building attributes.
 type AttributeOptions struct {
 	releaseID     *string
 	jobID         *string
@@ -143,38 +143,38 @@ type AttributeOptions struct {
 	trigger       *TriggerReason
 }
 
-// AttributeOption is a function that configures AttributeOptions
+// AttributeOption is a function that configures AttributeOptions.
 type AttributeOption func(*AttributeOptions)
 
-// WithReleaseID sets the release ID attribute
+// WithReleaseID sets the release ID attribute.
 func WithReleaseID(releaseID string) AttributeOption {
 	return func(o *AttributeOptions) {
 		o.releaseID = &releaseID
 	}
 }
 
-// WithJobID sets the job ID attribute
+// WithJobID sets the job ID attribute.
 func WithJobID(jobID string) AttributeOption {
 	return func(o *AttributeOptions) {
 		o.jobID = &jobID
 	}
 }
 
-// WithParentTraceID sets the parent trace ID attribute
+// WithParentTraceID sets the parent trace ID attribute.
 func WithParentTraceID(parentTraceID string) AttributeOption {
 	return func(o *AttributeOptions) {
 		o.parentTraceID = &parentTraceID
 	}
 }
 
-// WithTrigger sets the trigger reason attribute
+// WithTrigger sets the trigger reason attribute.
 func WithTrigger(trigger TriggerReason) AttributeOption {
 	return func(o *AttributeOptions) {
 		o.trigger = &trigger
 	}
 }
 
-// buildAttributes creates OTel attributes for spans
+// buildAttributes creates OTel attributes for spans.
 func buildAttributes(
 	phase Phase,
 	nodeType NodeType,
@@ -218,7 +218,7 @@ func buildAttributes(
 	return attrs
 }
 
-// metadataToAttributes converts metadata to OTel attributes
+// metadataToAttributes converts metadata to OTel attributes.
 func metadataToAttributes(key string, value any) []attribute.KeyValue {
 	switch v := value.(type) {
 	case string:

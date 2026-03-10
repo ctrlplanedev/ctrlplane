@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"sort"
 	"time"
+
+	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 type releaseTargetMatch struct {
@@ -31,7 +31,12 @@ func toResource(req *oapi.ResourcePreviewRequest) *oapi.Resource {
 	}
 }
 
-func matchEnvironments(ctx context.Context, ws *workspace.Workspace, systemId string, resource *oapi.Resource) ([]*oapi.Environment, error) {
+func matchEnvironments(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	systemId string,
+	resource *oapi.Resource,
+) ([]*oapi.Environment, error) {
 	envs := ws.Systems().Environments(systemId)
 	matched := make([]*oapi.Environment, 0, len(envs))
 
@@ -48,7 +53,12 @@ func matchEnvironments(ctx context.Context, ws *workspace.Workspace, systemId st
 	return matched, nil
 }
 
-func matchDeployments(ctx context.Context, ws *workspace.Workspace, systemId string, resource *oapi.Resource) ([]*oapi.Deployment, error) {
+func matchDeployments(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	systemId string,
+	resource *oapi.Resource,
+) ([]*oapi.Deployment, error) {
 	deployments := ws.Systems().Deployments(systemId)
 	matched := make([]*oapi.Deployment, 0, len(deployments))
 
@@ -65,7 +75,11 @@ func matchDeployments(ctx context.Context, ws *workspace.Workspace, systemId str
 	return matched, nil
 }
 
-func buildMatches(system *oapi.System, deployments []*oapi.Deployment, environments []*oapi.Environment) []releaseTargetMatch {
+func buildMatches(
+	system *oapi.System,
+	deployments []*oapi.Deployment,
+	environments []*oapi.Environment,
+) []releaseTargetMatch {
 	matches := make([]releaseTargetMatch, 0, len(deployments)*len(environments))
 	for _, dep := range deployments {
 		for _, env := range environments {
@@ -79,7 +93,11 @@ func buildMatches(system *oapi.System, deployments []*oapi.Deployment, environme
 	return matches
 }
 
-func (s *ReleaseTargets) PreviewReleaseTargetsForResource(c *gin.Context, workspaceId string, params oapi.PreviewReleaseTargetsForResourceParams) {
+func (s *ReleaseTargets) PreviewReleaseTargetsForResource(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.PreviewReleaseTargetsForResourceParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

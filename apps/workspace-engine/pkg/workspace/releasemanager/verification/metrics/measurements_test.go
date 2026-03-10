@@ -3,9 +3,9 @@ package metrics
 import (
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestMeasurementsPhase_FailureLimitZero_FailsOnAnyFailure(t *testing.T) {
@@ -86,7 +86,9 @@ func verificationMetricStatus(count int, failureThreshold *int) *oapi.Verificati
 	}
 }
 
-func verificationMeasurements(statuses ...oapi.VerificationMeasurementStatus) []oapi.VerificationMeasurement {
+func verificationMeasurements(
+	statuses ...oapi.VerificationMeasurementStatus,
+) []oapi.VerificationMeasurement {
 	now := time.Now()
 	measurements := make([]oapi.VerificationMeasurement, 0, len(statuses))
 	for i, status := range statuses {

@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/store"
 )
 
 func setupTestStore(t *testing.T) (*store.Store, context.Context) {
@@ -52,7 +52,13 @@ func createTestResource(ctx context.Context, s *store.Store) *oapi.Resource {
 	return resource
 }
 
-func createTestVersion(ctx context.Context, s *store.Store, deploymentID string, tag string, createdAt time.Time) *oapi.DeploymentVersion {
+func createTestVersion(
+	ctx context.Context,
+	s *store.Store,
+	deploymentID string,
+	tag string,
+	createdAt time.Time,
+) *oapi.DeploymentVersion {
 	version := &oapi.DeploymentVersion{
 		Id:           uuid.New().String(),
 		DeploymentId: deploymentID,
@@ -64,7 +70,13 @@ func createTestVersion(ctx context.Context, s *store.Store, deploymentID string,
 	return version
 }
 
-func createTestReleaseTarget(ctx context.Context, s *store.Store, deployment *oapi.Deployment, environment *oapi.Environment, resource *oapi.Resource) *oapi.ReleaseTarget {
+func createTestReleaseTarget(
+	ctx context.Context,
+	s *store.Store,
+	deployment *oapi.Deployment,
+	environment *oapi.Environment,
+	resource *oapi.Resource,
+) *oapi.ReleaseTarget {
 	rt := &oapi.ReleaseTarget{
 		DeploymentId:  deployment.Id,
 		EnvironmentId: environment.Id,
@@ -74,7 +86,12 @@ func createTestReleaseTarget(ctx context.Context, s *store.Store, deployment *oa
 	return rt
 }
 
-func createTestRelease(ctx context.Context, s *store.Store, rt *oapi.ReleaseTarget, version *oapi.DeploymentVersion) *oapi.Release {
+func createTestRelease(
+	ctx context.Context,
+	s *store.Store,
+	rt *oapi.ReleaseTarget,
+	version *oapi.DeploymentVersion,
+) *oapi.Release {
 	release := &oapi.Release{
 		ReleaseTarget: *rt,
 		Version:       *version,
@@ -235,45 +252,52 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		assert.Contains(t, result.Message, "Same version as currently deployed")
 	})
 
-	t.Run("denies version when not enough time has elapsed since current version", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+	t.Run(
+		"denies version when not enough time has elapsed since current version",
+		func(t *testing.T) {
+			s, ctx := setupTestStore(t)
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+			deployment, systemID := createTestDeployment(ctx, s)
+			environment := createTestEnvironment(ctx, s, systemID)
+			resource := createTestResource(ctx, s)
+			releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
-		// v1.0 created 30 minutes ago, deployed
-		baseTime := time.Now().Add(-30 * time.Minute)
-		v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release := createTestRelease(ctx, s, releaseTarget, v1)
-		createSuccessfulJob(ctx, s, release)
+			// v1.0 created 30 minutes ago, deployed
+			baseTime := time.Now().Add(-30 * time.Minute)
+			v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
+			release := createTestRelease(ctx, s, releaseTarget, v1)
+			createSuccessfulJob(ctx, s, release)
 
-		// v1.1 created 20 minutes after v1.0 (10 minutes ago)
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(20*time.Minute))
+			// v1.1 created 20 minutes after v1.0 (10 minutes ago)
+			v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(20*time.Minute))
 
-		rule := &oapi.PolicyRule{
-			Id: "test-rule",
-			VersionCooldown: &oapi.VersionCooldownRule{
-				IntervalSeconds: 3600, // 1 hour required
-			},
-		}
+			rule := &oapi.PolicyRule{
+				Id: "test-rule",
+				VersionCooldown: &oapi.VersionCooldownRule{
+					IntervalSeconds: 3600, // 1 hour required
+				},
+			}
 
-		eval := NewEvaluatorFromStore(s, rule)
-		require.NotNil(t, eval)
+			eval := NewEvaluatorFromStore(s, rule)
+			require.NotNil(t, eval)
 
-		scope := evaluator.EvaluatorScope{
-			Version:     v1_1,
-			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
-			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
-			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
-		}
+			scope := evaluator.EvaluatorScope{
+				Version:     v1_1,
+				Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+				Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+				Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+			}
 
-		result := eval.Evaluate(ctx, scope)
-		assert.False(t, result.Allowed, "Version should be denied when not enough time has elapsed")
-		assert.Contains(t, result.Message, "Version cooldown")
-		assert.Contains(t, result.Message, "remaining")
-	})
+			result := eval.Evaluate(ctx, scope)
+			assert.False(
+				t,
+				result.Allowed,
+				"Version should be denied when not enough time has elapsed",
+			)
+			assert.Contains(t, result.Message, "Version cooldown")
+			assert.Contains(t, result.Message, "remaining")
+		},
+	)
 
 	t.Run("allows version when enough time has elapsed since current version", func(t *testing.T) {
 		s, ctx := setupTestStore(t)
@@ -372,9 +396,27 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		createSuccessfulJob(ctx, s, release)
 
 		// Rapid releases (all created within 70 minutes of v1.0)
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(20*time.Minute)) // +20min
-		v1_2 := createTestVersion(ctx, s, deployment.Id, "v1.2.0", baseTime.Add(40*time.Minute)) // +40min
-		v1_3 := createTestVersion(ctx, s, deployment.Id, "v1.3.0", baseTime.Add(70*time.Minute)) // +70min
+		v1_1 := createTestVersion(
+			ctx,
+			s,
+			deployment.Id,
+			"v1.1.0",
+			baseTime.Add(20*time.Minute),
+		) // +20min
+		v1_2 := createTestVersion(
+			ctx,
+			s,
+			deployment.Id,
+			"v1.2.0",
+			baseTime.Add(40*time.Minute),
+		) // +40min
+		v1_3 := createTestVersion(
+			ctx,
+			s,
+			deployment.Id,
+			"v1.3.0",
+			baseTime.Add(70*time.Minute),
+		) // +70min
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -455,7 +497,11 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		// v1.2 should be allowed because enough time has elapsed since v1.1 (in progress) was created
 		// (2.5 hours > 1 hour)
 		result := eval.Evaluate(ctx, scope)
-		assert.True(t, result.Allowed, "Should be allowed when enough time has elapsed since in-progress version")
+		assert.True(
+			t,
+			result.Allowed,
+			"Should be allowed when enough time has elapsed since in-progress version",
+		)
 		assert.Contains(t, result.Message, "in_progress")
 	})
 

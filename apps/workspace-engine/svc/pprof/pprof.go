@@ -6,9 +6,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"workspace-engine/svc"
-
 	"github.com/charmbracelet/log"
+	"workspace-engine/svc"
 )
 
 var _ svc.Service = (*Service)(nil)

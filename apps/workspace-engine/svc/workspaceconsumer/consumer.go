@@ -3,6 +3,7 @@ package workspaceconsumer
 import (
 	"context"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/db"
 	dbpersistence "workspace-engine/pkg/db/persistence"
 	"workspace-engine/pkg/messaging"
@@ -14,8 +15,6 @@ import (
 	wsstore "workspace-engine/pkg/workspace/store"
 	"workspace-engine/svc"
 	"workspace-engine/svc/workspaceconsumer/kafka"
-
-	"github.com/charmbracelet/log"
 )
 
 var _ svc.Service = (*Service)(nil)

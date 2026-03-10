@@ -3,9 +3,9 @@ package creators
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 // NewPolicy creates a test Policy with sensible defaults.

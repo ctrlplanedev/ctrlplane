@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
@@ -81,13 +82,15 @@ func TestMeasure(t *testing.T) {
 			name:   "successful GET request",
 			config: &Config{Method: "GET", Timeout: 5 * time.Second},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != http.MethodGet {
-						t.Errorf("expected GET method, got %s", r.Method)
-					}
-					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write([]byte("test response"))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodGet {
+							t.Errorf("expected GET method, got %s", r.Method)
+						}
+						w.WriteHeader(http.StatusOK)
+						_, _ = w.Write([]byte("test response"))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
@@ -101,13 +104,15 @@ func TestMeasure(t *testing.T) {
 			name:   "POST request with body",
 			config: &Config{Method: "POST", Body: `{"key":"value"}`, Timeout: 5 * time.Second},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != http.MethodPost {
-						t.Errorf("expected POST method, got %s", r.Method)
-					}
-					w.WriteHeader(http.StatusCreated)
-					_, _ = w.Write([]byte(`{"success":true}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodPost {
+							t.Errorf("expected POST method, got %s", r.Method)
+						}
+						w.WriteHeader(http.StatusCreated)
+						_, _ = w.Write([]byte(`{"success":true}`))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 201,
@@ -128,15 +133,17 @@ func TestMeasure(t *testing.T) {
 				},
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if auth := r.Header.Get("Authorization"); auth != "Bearer token123" {
-						t.Errorf("expected Authorization 'Bearer token123', got %s", auth)
-					}
-					if ct := r.Header.Get("Content-Type"); ct != "application/json" {
-						t.Errorf("expected Content-Type 'application/json', got %s", ct)
-					}
-					w.WriteHeader(http.StatusOK)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if auth := r.Header.Get("Authorization"); auth != "Bearer token123" {
+							t.Errorf("expected Authorization 'Bearer token123', got %s", auth)
+						}
+						if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+							t.Errorf("expected Content-Type 'application/json', got %s", ct)
+						}
+						w.WriteHeader(http.StatusOK)
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
@@ -145,11 +152,14 @@ func TestMeasure(t *testing.T) {
 			name:   "JSON response parsing",
 			config: &Config{Method: "GET", Timeout: 5 * time.Second},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]any{"metric": "value", "count": 42})
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusOK)
+						_ = json.NewEncoder(w).
+							Encode(map[string]any{"metric": "value", "count": 42})
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
@@ -167,10 +177,12 @@ func TestMeasure(t *testing.T) {
 			name:   "4xx status code",
 			config: &Config{Method: "GET", Timeout: 5 * time.Second},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-					_, _ = w.Write([]byte("not found"))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(http.StatusNotFound)
+						_, _ = w.Write([]byte("not found"))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 404,
@@ -179,10 +191,12 @@ func TestMeasure(t *testing.T) {
 			name:   "5xx status code",
 			config: &Config{Method: "GET", Timeout: 5 * time.Second},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = w.Write([]byte("internal error"))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(http.StatusInternalServerError)
+						_, _ = w.Write([]byte("internal error"))
+					}),
+				)
 			},
 			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 500,
@@ -191,10 +205,12 @@ func TestMeasure(t *testing.T) {
 			name:   "timeout",
 			config: &Config{Method: "GET", Timeout: 100 * time.Millisecond},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					time.Sleep(200 * time.Millisecond)
-					w.WriteHeader(http.StatusOK)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						time.Sleep(200 * time.Millisecond)
+						w.WriteHeader(http.StatusOK)
+					}),
+				)
 			},
 			providerCtx: &provider.ProviderContext{},
 			wantError:   true,
@@ -290,8 +306,12 @@ func TestResolve(t *testing.T) {
 			wantURL: "http://example.com/api/prod-deploy-123",
 		},
 		{
-			name:   "resolve body template",
-			config: &Config{URL: "http://example.com", Method: "POST", Body: `{"env":"{{ .environment.name }}"}`},
+			name: "resolve body template",
+			config: &Config{
+				URL:    "http://example.com",
+				Method: "POST",
+				Body:   `{"env":"{{ .environment.name }}"}`,
+			},
 			providerCtx: &provider.ProviderContext{
 				Environment: map[string]any{"id": "env-456", "name": "staging"},
 			},
@@ -301,16 +321,22 @@ func TestResolve(t *testing.T) {
 		{
 			name: "resolve header templates",
 			config: &Config{
-				URL:     "http://example.com",
-				Method:  "GET",
-				Headers: map[string]string{"X-Environment": "{{ .environment.name }}", "X-Deployment": "{{ .deployment.name }}"},
+				URL:    "http://example.com",
+				Method: "GET",
+				Headers: map[string]string{
+					"X-Environment": "{{ .environment.name }}",
+					"X-Deployment":  "{{ .deployment.name }}",
+				},
 			},
 			providerCtx: &provider.ProviderContext{
 				Environment: map[string]any{"name": "prod"},
 				Deployment:  map[string]any{"name": "api-deployment"},
 			},
-			wantURL:     "http://example.com",
-			wantHeaders: map[string]string{"X-Environment": "prod", "X-Deployment": "api-deployment"},
+			wantURL: "http://example.com",
+			wantHeaders: map[string]string{
+				"X-Environment": "prod",
+				"X-Deployment":  "api-deployment",
+			},
 		},
 		{
 			name:        "no templates",

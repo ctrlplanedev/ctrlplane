@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // ----- Mocks -----
@@ -27,7 +26,12 @@ type dispatchCall struct {
 	Inputs map[string]any
 }
 
-func (m *mockWorkflowDispatcher) DispatchWorkflow(_ context.Context, cfg oapi.GithubJobAgentConfig, ref string, inputs map[string]any) error {
+func (m *mockWorkflowDispatcher) DispatchWorkflow(
+	_ context.Context,
+	cfg oapi.GithubJobAgentConfig,
+	ref string,
+	inputs map[string]any,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.calls = append(m.calls, dispatchCall{Cfg: cfg, Ref: ref, Inputs: inputs})
@@ -54,7 +58,13 @@ type updateCall struct {
 	Message string
 }
 
-func (m *mockSetter) UpdateJob(_ context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error {
+func (m *mockSetter) UpdateJob(
+	_ context.Context,
+	jobID string,
+	status oapi.JobStatus,
+	message string,
+	metadata map[string]string,
+) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.calls = append(m.calls, updateCall{JobID: jobID, Status: status, Message: message})

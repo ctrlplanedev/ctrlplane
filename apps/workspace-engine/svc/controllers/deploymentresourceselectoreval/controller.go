@@ -5,21 +5,19 @@ import (
 	"fmt"
 	"runtime"
 	"time"
-	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
-
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/pkg/store/resources"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
+	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/resources"
+	"workspace-engine/svc"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentresourceselectoreval")
@@ -55,9 +53,13 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	resources, err := c.getter.GetResources(ctx, deployment.WorkspaceID.String(), resources.GetResourcesOptions{
-		CEL: deployment.ResourceSelector,
-	})
+	resources, err := c.getter.GetResources(
+		ctx,
+		deployment.WorkspaceID.String(),
+		resources.GetResourcesOptions{
+			CEL: deployment.ResourceSelector,
+		},
+	)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("get resources: %w", err)
 	}
@@ -92,7 +94,11 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	return reconcile.Result{}, nil
 }
 
-func (c *Controller) enqueueReleaseTargets(ctx context.Context, workspaceID uuid.UUID, releaseTargets []ReleaseTarget) error {
+func (c *Controller) enqueueReleaseTargets(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	releaseTargets []ReleaseTarget,
+) error {
 	_, span := tracer.Start(ctx, "EnqueueReleaseTargets")
 	defer span.End()
 	span.SetAttributes(attribute.Int("count", len(releaseTargets)))

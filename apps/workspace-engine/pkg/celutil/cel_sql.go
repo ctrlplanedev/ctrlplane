@@ -37,7 +37,7 @@ func NewSQLExtractor(celVariable string) *SQLExtractor {
 }
 
 // WithColumn maps a CEL property to a SQL column expression.
-// Example: WithColumn("kind", "resource.kind")
+// Example: WithColumn("kind", "resource.kind").
 func (e *SQLExtractor) WithColumn(celField, sqlColumn string) *SQLExtractor {
 	e.columns[celField] = sqlColumn
 	return e
@@ -45,7 +45,7 @@ func (e *SQLExtractor) WithColumn(celField, sqlColumn string) *SQLExtractor {
 
 // WithJSONBField maps a CEL map-access property to a SQL JSONB column.
 // The generated SQL uses the ->> operator with a parameterized key.
-// Example: WithJSONBField("metadata", "resource.metadata")
+// Example: WithJSONBField("metadata", "resource.metadata").
 func (e *SQLExtractor) WithJSONBField(celField, sqlColumn string) *SQLExtractor {
 	e.jsonbFields[celField] = sqlColumn
 	return e
@@ -284,7 +284,10 @@ func escapeLikePattern(s string) string {
 
 // resolveColumn checks if an expression represents a field access on the
 // configured CEL variable that maps to a SQL column or JSONB expression.
-func (e *SQLExtractor) resolveColumn(expr ast.Expr, param int) (sqlExpr string, colArgs []any, nextParam int, ok bool) {
+func (e *SQLExtractor) resolveColumn(
+	expr ast.Expr,
+	param int,
+) (sqlExpr string, colArgs []any, nextParam int, ok bool) {
 	if expr.Kind() == ast.SelectKind {
 		sel := expr.AsSelect()
 		if e.isCELVar(sel.Operand()) {
@@ -301,7 +304,8 @@ func (e *SQLExtractor) resolveColumn(expr ast.Expr, param int) (sqlExpr string, 
 			operand, index := call.Args()[0], call.Args()[1]
 			if operand.Kind() == ast.SelectKind {
 				sel := operand.AsSelect()
-				if sqlCol, found := e.jsonbFields[sel.FieldName()]; found && e.isCELVar(sel.Operand()) {
+				if sqlCol, found := e.jsonbFields[sel.FieldName()]; found &&
+					e.isCELVar(sel.Operand()) {
 					key, ok := extractStringLiteral(index)
 					if ok {
 						sqlExpr := fmt.Sprintf("%s->>$%d", sqlCol, param)

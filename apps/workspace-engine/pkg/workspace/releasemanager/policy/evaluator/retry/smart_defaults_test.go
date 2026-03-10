@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 // =============================================================================
@@ -139,7 +139,11 @@ func TestRetryEvaluator_SmartDefault_DoesNotCountCancelled(t *testing.T) {
 
 	// Should still allow (cancelled jobs don't count with smart default)
 	result := evaluator.Evaluate(ctx, release)
-	assert.True(t, result.Allowed, "Should allow deployment (cancelled doesn't count with smart default)")
+	assert.True(
+		t,
+		result.Allowed,
+		"Should allow deployment (cancelled doesn't count with smart default)",
+	)
 	assert.Contains(t, result.Message, "0/1")
 }
 
@@ -333,6 +337,10 @@ func TestRetryEvaluator_ZeroMaxRetries_AllowsAfterCancelled(t *testing.T) {
 	})
 
 	result := evaluator.Evaluate(ctx, release)
-	assert.True(t, result.Allowed, "Should allow: cancelled jobs don't count, even with maxRetries=0")
+	assert.True(
+		t,
+		result.Allowed,
+		"Should allow: cancelled jobs don't count, even with maxRetries=0",
+	)
 	assert.Contains(t, result.Message, "First attempt")
 }

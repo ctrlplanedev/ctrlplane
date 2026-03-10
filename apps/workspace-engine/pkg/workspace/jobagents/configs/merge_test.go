@@ -2,9 +2,9 @@ package configs
 
 import (
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestMerge_DeepMergePrecedenceAndNoInputMutation(t *testing.T) {

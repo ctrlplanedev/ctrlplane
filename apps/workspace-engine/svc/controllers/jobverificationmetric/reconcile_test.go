@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
 // ---------------------------------------------------------------------------
@@ -33,7 +32,10 @@ type mockGetter struct {
 	getProviderCtxErr  error
 }
 
-func (g *mockGetter) GetVerificationMetric(_ context.Context, id string) (*metrics.VerificationMetric, error) {
+func (g *mockGetter) GetVerificationMetric(
+	_ context.Context,
+	id string,
+) (*metrics.VerificationMetric, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.getMetricCallCount++
@@ -46,7 +48,10 @@ func (g *mockGetter) GetVerificationMetric(_ context.Context, id string) (*metri
 	return g.metrics[id], nil
 }
 
-func (g *mockGetter) GetProviderContext(_ context.Context, _ string) (*provider.ProviderContext, error) {
+func (g *mockGetter) GetProviderContext(
+	_ context.Context,
+	_ string,
+) (*provider.ProviderContext, error) {
 	if g.getProviderCtxErr != nil {
 		return nil, g.getProviderCtxErr
 	}
@@ -74,7 +79,11 @@ type mockSetter struct {
 	getter *mockGetter
 }
 
-func (s *mockSetter) RecordMeasurement(_ context.Context, metricID string, measurement metrics.Measurement) error {
+func (s *mockSetter) RecordMeasurement(
+	_ context.Context,
+	metricID string,
+	measurement metrics.Measurement,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.recordErr != nil {
@@ -94,7 +103,11 @@ func (s *mockSetter) RecordMeasurement(_ context.Context, metricID string, measu
 	return nil
 }
 
-func (s *mockSetter) CompleteMetric(_ context.Context, metricID string, status metrics.VerificationStatus) error {
+func (s *mockSetter) CompleteMetric(
+	_ context.Context,
+	metricID string,
+	status metrics.VerificationStatus,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.completeErr != nil {
@@ -186,7 +199,12 @@ func TestProcess_PropagatesRequeueAfter(t *testing.T) {
 	item := reconcileItem(m.ID, "verification-metric")
 	result, err := ctrl.Process(context.Background(), item)
 	require.NoError(t, err)
-	assert.Greater(t, result.RequeueAfter, time.Duration(0), "should propagate interval guard requeue")
+	assert.Greater(
+		t,
+		result.RequeueAfter,
+		time.Duration(0),
+		"should propagate interval guard requeue",
+	)
 	assert.Empty(t, setter.measurements, "should not have measured — interval not elapsed")
 }
 
@@ -290,11 +308,17 @@ func TestProcess_UsesItemScopeID(t *testing.T) {
 	setter := &mockSetter{getter: getter}
 	ctrl := NewController(getter, setter)
 
-	result1, err := ctrl.Process(context.Background(), reconcileItem(m1.ID, JobVerificationMetricKind))
+	result1, err := ctrl.Process(
+		context.Background(),
+		reconcileItem(m1.ID, JobVerificationMetricKind),
+	)
 	require.NoError(t, err)
 	assert.Greater(t, result1.RequeueAfter, time.Duration(0), "m1 still running — should requeue")
 
-	result2, err := ctrl.Process(context.Background(), reconcileItem(m2.ID, JobVerificationMetricKind))
+	result2, err := ctrl.Process(
+		context.Background(),
+		reconcileItem(m2.ID, JobVerificationMetricKind),
+	)
 	require.NoError(t, err)
 	assert.Equal(t, time.Duration(0), result2.RequeueAfter, "m2 complete — no requeue")
 	assert.Equal(t, metrics.VerificationPassed, setter.completed[m2.ID])
@@ -388,7 +412,12 @@ func TestReconcile_IntervalGuard_LargeInterval(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, setter.measurements)
 	require.NotNil(t, result.RequeueAfter)
-	assert.Greater(t, *result.RequeueAfter, 59*time.Minute, "should defer for nearly the full interval")
+	assert.Greater(
+		t,
+		*result.RequeueAfter,
+		59*time.Minute,
+		"should defer for nearly the full interval",
+	)
 }
 
 // ---------------------------------------------------------------------------

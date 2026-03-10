@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // ---------------------------------------------------------------------------
@@ -51,7 +50,10 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 	return agent, nil
 }
 
-func (m *mockGetter) GetVerificationPolicies(_ context.Context, _ *ReleaseTarget) ([]oapi.VerificationMetricSpec, error) {
+func (m *mockGetter) GetVerificationPolicies(
+	_ context.Context,
+	_ *ReleaseTarget,
+) ([]oapi.VerificationMetricSpec, error) {
 	return m.verificationPolicies, m.verificationPoliciesErr
 }
 
@@ -69,11 +71,21 @@ type mockSetter struct {
 	createErr   error
 }
 
-func (m *mockSetter) UpdateJob(_ context.Context, _ string, _ oapi.JobStatus, _ string, _ map[string]string) error {
+func (m *mockSetter) UpdateJob(
+	_ context.Context,
+	_ string,
+	_ oapi.JobStatus,
+	_ string,
+	_ map[string]string,
+) error {
 	return nil
 }
 
-func (m *mockSetter) CreateVerifications(_ context.Context, job *oapi.Job, specs []oapi.VerificationMetricSpec) error {
+func (m *mockSetter) CreateVerifications(
+	_ context.Context,
+	job *oapi.Job,
+	specs []oapi.VerificationMetricSpec,
+) error {
 	m.createCalls = append(m.createCalls, createVerificationsCall{Job: job, Specs: specs})
 	return m.createErr
 }
@@ -100,7 +112,10 @@ type mockVerifier struct {
 	specs map[string][]oapi.VerificationMetricSpec
 }
 
-func (m *mockVerifier) AgentVerifications(agentType string, _ oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error) {
+func (m *mockVerifier) AgentVerifications(
+	agentType string,
+	_ oapi.JobAgentConfig,
+) ([]oapi.VerificationMetricSpec, error) {
 	return m.specs[agentType], nil
 }
 

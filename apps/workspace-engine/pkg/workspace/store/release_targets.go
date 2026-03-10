@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"sort"
+
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/repository/memory/indexstore"
-
-	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace/store/release_targets")
@@ -55,7 +55,10 @@ func (r *ReleaseTargets) Remove(key string) {
 	r.releaseTargets.Remove(key)
 }
 
-func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, *oapi.Job, error) {
+func (r *ReleaseTargets) GetCurrentRelease(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) (*oapi.Release, *oapi.Job, error) {
 	if releaseTarget == nil {
 		return nil, nil, fmt.Errorf("releaseTarget is nil")
 	}
@@ -98,10 +101,15 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 		// Otherwise, skip this job and check the next one
 	}
 
-	return nil, nil, fmt.Errorf("no valid release found (all jobs have failed/running/cancelled verifications)")
+	return nil, nil, fmt.Errorf(
+		"no valid release found (all jobs have failed/running/cancelled verifications)",
+	)
 }
 
-func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Job, error) {
+func (r *ReleaseTargets) GetLatestJob(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) (*oapi.Job, error) {
 	jobs := r.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 	if len(jobs) == 0 {
 		return nil, fmt.Errorf("no jobs found for release target")
@@ -124,7 +132,10 @@ func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.R
 	return jobsList[0], nil
 }
 
-func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+func (r *ReleaseTargets) GetPolicies(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) ([]*oapi.Policy, error) {
 	ctx, span := tracer.Start(ctx, "ReleaseTargets.GetPolicies")
 	defer span.End()
 
@@ -154,7 +165,11 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 	return policiesSlice, nil
 }
 
-func (r *ReleaseTargets) MatchPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget, policies []*oapi.Policy) ([]*oapi.Policy, error) {
+func (r *ReleaseTargets) MatchPolicies(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	policies []*oapi.Policy,
+) ([]*oapi.Policy, error) {
 	ctx, span := tracer.Start(ctx, "ReleaseTargets.GetPolicies")
 	defer span.End()
 
@@ -183,7 +198,10 @@ func (r *ReleaseTargets) MatchPolicies(ctx context.Context, releaseTarget *oapi.
 	return policiesSlice, nil
 }
 
-func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) []*oapi.ReleaseTarget {
+func (r *ReleaseTargets) GetForResource(
+	ctx context.Context,
+	resourceId string,
+) []*oapi.ReleaseTarget {
 	releaseTargets, err := r.releaseTargets.GetBy("resource_id", resourceId)
 	if err != nil {
 		return nil
@@ -191,15 +209,24 @@ func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) 
 	return releaseTargets
 }
 
-func (r *ReleaseTargets) GetForDeployment(ctx context.Context, deploymentId string) ([]*oapi.ReleaseTarget, error) {
+func (r *ReleaseTargets) GetForDeployment(
+	ctx context.Context,
+	deploymentId string,
+) ([]*oapi.ReleaseTarget, error) {
 	return r.releaseTargets.GetBy("deployment_id", deploymentId)
 }
 
-func (r *ReleaseTargets) GetForEnvironment(ctx context.Context, environmentId string) ([]*oapi.ReleaseTarget, error) {
+func (r *ReleaseTargets) GetForEnvironment(
+	ctx context.Context,
+	environmentId string,
+) ([]*oapi.ReleaseTarget, error) {
 	return r.releaseTargets.GetBy("environment_id", environmentId)
 }
 
-func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*oapi.ReleaseTarget, error) {
+func (r *ReleaseTargets) GetForSystem(
+	ctx context.Context,
+	systemId string,
+) ([]*oapi.ReleaseTarget, error) {
 	environments := r.store.Systems.Environments(systemId)
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, environment := range environments {
@@ -212,7 +239,10 @@ func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*
 	return releaseTargets, nil
 }
 
-func (r *ReleaseTargets) GetForPolicy(ctx context.Context, policy *oapi.Policy) (map[string]*oapi.ReleaseTarget, error) {
+func (r *ReleaseTargets) GetForPolicy(
+	ctx context.Context,
+	policy *oapi.Policy,
+) (map[string]*oapi.ReleaseTarget, error) {
 	targetMap := make(map[string]*oapi.ReleaseTarget)
 
 	allReleaseTargets := r.releaseTargets.Items()
@@ -230,7 +260,11 @@ func (r *ReleaseTargets) GetForPolicy(ctx context.Context, policy *oapi.Policy) 
 			continue
 		}
 
-		isMatch := selector.MatchPolicy(ctx, policy, selector.NewResolvedReleaseTarget(environment, deployment, resource))
+		isMatch := selector.MatchPolicy(
+			ctx,
+			policy,
+			selector.NewResolvedReleaseTarget(environment, deployment, resource),
+		)
 		if isMatch {
 			targetMap[releaseTarget.Key()] = releaseTarget
 		}

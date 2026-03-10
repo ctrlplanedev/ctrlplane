@@ -8,9 +8,9 @@ import (
 	"io"
 	"net/http"
 	"time"
-	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
 var _ provider.Provider = (*Provider)(nil)
@@ -80,7 +80,10 @@ func NewFromJSON(data json.RawMessage) (*Provider, error) {
 
 func (p *Provider) Type() string { return "http" }
 
-func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
+func (p *Provider) Measure(
+	ctx context.Context,
+	providerCtx *provider.ProviderContext,
+) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 	resolved := Resolve(p.config, providerCtx)
 

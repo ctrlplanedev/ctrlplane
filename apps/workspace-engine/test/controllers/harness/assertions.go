@@ -3,10 +3,9 @@ package harness
 import (
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // AssertReleaseCreated asserts that at least one release was persisted.

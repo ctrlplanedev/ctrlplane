@@ -2,21 +2,26 @@ package relationships
 
 import (
 	"context"
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/oapi"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/workspace/relationships/matcher")
 
 // EntityMapCache stores pre-computed map representations of entities for CEL evaluation
-// Key is entity ID, value is the map representation
+// Key is entity ID, value is the map representation.
 type EntityMapCache map[string]map[string]any
 
-func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
+func Matches(
+	ctx context.Context,
+	matcher *oapi.RelationshipRule_Matcher,
+	from *oapi.RelatableEntity,
+	to *oapi.RelatableEntity,
+) bool {
 	ctx, span := tracer.Start(ctx, "Relationships.Matches")
 	defer span.End()
 
@@ -61,8 +66,14 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 }
 
 // MatchesWithCache evaluates a matcher with optional cached entity maps for performance
-// If cache is provided and contains the entities, it will use cached maps instead of converting
-func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity, cache EntityMapCache) bool {
+// If cache is provided and contains the entities, it will use cached maps instead of converting.
+func MatchesWithCache(
+	ctx context.Context,
+	matcher *oapi.RelationshipRule_Matcher,
+	from *oapi.RelatableEntity,
+	to *oapi.RelatableEntity,
+	cache EntityMapCache,
+) bool {
 	ctx, span := tracer.Start(ctx, "Relationships.MatchesWithCache")
 	defer span.End()
 
@@ -119,7 +130,7 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 }
 
 // BuildEntityMapCache pre-computes map representations for all entities
-// This is expensive but only needs to be done once per rule evaluation
+// This is expensive but only needs to be done once per rule evaluation.
 func BuildEntityMapCache(entities []*oapi.RelatableEntity) EntityMapCache {
 	cache := make(EntityMapCache, len(entities))
 	for _, entity := range entities {

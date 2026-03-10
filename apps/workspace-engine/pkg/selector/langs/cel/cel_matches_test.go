@@ -3,11 +3,11 @@ package cel_test
 import (
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	cel "workspace-engine/pkg/selector/langs/cel"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	cel "workspace-engine/pkg/selector/langs/cel"
 )
 
 func TestCompile(t *testing.T) {

@@ -3,6 +3,7 @@ package releasemanager
 import (
 	"context"
 	"fmt"
+
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
@@ -15,14 +16,20 @@ type releasemanagerVerificationHooks struct {
 
 var _ verification.VerificationHooks = &releasemanagerVerificationHooks{}
 
-func newReleaseManagerVerificationHooks(store *store.Store, stateIndex *StateIndex) *releasemanagerVerificationHooks {
+func newReleaseManagerVerificationHooks(
+	store *store.Store,
+	stateIndex *StateIndex,
+) *releasemanagerVerificationHooks {
 	return &releasemanagerVerificationHooks{
 		store:      store,
 		stateIndex: stateIndex,
 	}
 }
 
-func (h *releasemanagerVerificationHooks) dirtyStateForVerification(ctx context.Context, verification *oapi.JobVerification) error {
+func (h *releasemanagerVerificationHooks) dirtyStateForVerification(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	job, ok := h.store.Jobs.Get(verification.JobId)
 	if !ok {
 		return fmt.Errorf("job not found")
@@ -38,22 +45,40 @@ func (h *releasemanagerVerificationHooks) dirtyStateForVerification(ctx context.
 	return nil
 }
 
-func (h *releasemanagerVerificationHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+func (h *releasemanagerVerificationHooks) OnMeasurementTaken(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+	metricIndex int,
+	measurement *oapi.VerificationMeasurement,
+) error {
 	return h.dirtyStateForVerification(ctx, verification)
 }
 
-func (h *releasemanagerVerificationHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error {
+func (h *releasemanagerVerificationHooks) OnMetricComplete(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+	metricIndex int,
+) error {
 	return h.dirtyStateForVerification(ctx, verification)
 }
 
-func (h *releasemanagerVerificationHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
+func (h *releasemanagerVerificationHooks) OnVerificationStarted(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	return h.dirtyStateForVerification(ctx, verification)
 }
 
-func (h *releasemanagerVerificationHooks) OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) error {
+func (h *releasemanagerVerificationHooks) OnVerificationComplete(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	return h.dirtyStateForVerification(ctx, verification)
 }
 
-func (h *releasemanagerVerificationHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error {
+func (h *releasemanagerVerificationHooks) OnVerificationStopped(
+	ctx context.Context,
+	verification *oapi.JobVerification,
+) error {
 	return h.dirtyStateForVerification(ctx, verification)
 }

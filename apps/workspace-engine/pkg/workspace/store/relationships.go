@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var relationshipRulesTracer = otel.Tracer("workspace/store/relationship_rules")
@@ -66,6 +66,9 @@ func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
 	return r.repo.Items()
 }
 
-func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {
+func (r *RelationshipRules) GetRelatedEntities(
+	ctx context.Context,
+	entity *oapi.RelatableEntity,
+) (map[string][]*oapi.EntityRelation, error) {
 	return r.store.RelationshipIndexes.GetRelatedEntities(ctx, entity)
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
@@ -153,7 +154,11 @@ func TestBuildQueryURL_RangeQueryWithExplicitEnd(t *testing.T) {
 }
 
 func TestBuildQueryURL_InvalidStep(t *testing.T) {
-	config := &Config{Address: "http://prometheus:9090", Query: "up", RangeQuery: &RangeQuery{Step: "invalid"}}
+	config := &Config{
+		Address:    "http://prometheus:9090",
+		Query:      "up",
+		RangeQuery: &RangeQuery{Step: "invalid"},
+	}
 	_, err := buildQueryURL(config, time.Now())
 	if err == nil {
 		t.Fatal("expected error for invalid step duration")
@@ -164,7 +169,11 @@ func TestBuildQueryURL_InvalidStep(t *testing.T) {
 }
 
 func TestBuildQueryURL_InvalidStart(t *testing.T) {
-	config := &Config{Address: "http://prometheus:9090", Query: "up", RangeQuery: &RangeQuery{Step: "15s", Start: ptr("invalid")}}
+	config := &Config{
+		Address:    "http://prometheus:9090",
+		Query:      "up",
+		RangeQuery: &RangeQuery{Step: "15s", Start: ptr("invalid")},
+	}
 	_, err := buildQueryURL(config, time.Now())
 	if err == nil {
 		t.Fatal("expected error for invalid start duration")
@@ -175,7 +184,11 @@ func TestBuildQueryURL_InvalidStart(t *testing.T) {
 }
 
 func TestBuildQueryURL_InvalidEnd(t *testing.T) {
-	config := &Config{Address: "http://prometheus:9090", Query: "up", RangeQuery: &RangeQuery{Step: "15s", End: ptr("invalid")}}
+	config := &Config{
+		Address:    "http://prometheus:9090",
+		Query:      "up",
+		RangeQuery: &RangeQuery{Step: "15s", End: ptr("invalid")},
+	}
 	_, err := buildQueryURL(config, time.Now())
 	if err == nil {
 		t.Fatal("expected error for invalid end duration")
@@ -315,7 +328,11 @@ func TestResolveProviderTemplates(t *testing.T) {
 
 	providerCtx := &provider.ProviderContext{
 		Deployment: map[string]any{"id": "d1", "name": "api"},
-		Variables:  map[string]any{"host": "prometheus.internal", "token": "secret123", "tenant": "org-a"},
+		Variables: map[string]any{
+			"host":   "prometheus.internal",
+			"token":  "secret123",
+			"tenant": "org-a",
+		},
 	}
 
 	resolved := resolveProviderTemplates(config, providerCtx)
@@ -359,7 +376,10 @@ func TestMeasure_InstantQueryE2E(t *testing.T) {
 			"data": map[string]any{
 				"resultType": "vector",
 				"result": []map[string]any{
-					{"metric": map[string]string{"__name__": "up", "job": "prometheus"}, "value": []any{1700000000, "1"}},
+					{
+						"metric": map[string]string{"__name__": "up", "job": "prometheus"},
+						"value":  []any{1700000000, "1"},
+					},
 				},
 			},
 		})
@@ -387,7 +407,9 @@ func TestMeasure_InstantQueryE2E(t *testing.T) {
 }
 
 func TestMeasure_ConnectionRefused(t *testing.T) {
-	p, _ := NewPrometheusProvider(&Config{Address: "http://localhost:1", Query: "up", Timeout: ptr(int64(1))})
+	p, _ := NewPrometheusProvider(
+		&Config{Address: "http://localhost:1", Query: "up", Timeout: ptr(int64(1))},
+	)
 	_, _, err := p.Measure(context.Background(), &provider.ProviderContext{})
 	if err == nil {
 		t.Fatal("expected error for connection refused")

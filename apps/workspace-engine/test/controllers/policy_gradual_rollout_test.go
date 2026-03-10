@@ -3,10 +3,9 @@ package controllers_test
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	. "workspace-engine/test/controllers/harness"
-
-	"github.com/google/uuid"
 )
 
 // ---------------------------------------------------------------------------

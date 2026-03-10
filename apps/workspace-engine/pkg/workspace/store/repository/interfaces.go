@@ -2,6 +2,7 @@ package repository
 
 import (
 	"time"
+
 	"workspace-engine/pkg/oapi"
 )
 
@@ -211,5 +212,7 @@ type UserApprovalRecordRepo interface {
 	Set(entity *oapi.UserApprovalRecord) error
 	Remove(key string) error
 	Items() map[string]*oapi.UserApprovalRecord
-	GetApprovedByVersionAndEnvironment(versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
+	GetApprovedByVersionAndEnvironment(
+		versionID, environmentID string,
+	) ([]*oapi.UserApprovalRecord, error)
 }

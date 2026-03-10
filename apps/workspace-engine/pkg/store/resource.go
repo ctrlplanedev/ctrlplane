@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	legacystore "workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 type ResourceGetter interface {
@@ -24,7 +24,10 @@ func NewPostgresResourceGetter(queries *db.Queries) *PostgresResourceGetter {
 	return &PostgresResourceGetter{queries: queries}
 }
 
-func (g *PostgresResourceGetter) GetResource(ctx context.Context, resourceID string) (*oapi.Resource, error) {
+func (g *PostgresResourceGetter) GetResource(
+	ctx context.Context,
+	resourceID string,
+) (*oapi.Resource, error) {
 	resource, err := g.queries.GetResourceByID(ctx, uuid.MustParse(resourceID))
 	if err != nil {
 		return nil, err
@@ -40,7 +43,10 @@ func NewStoreResourceGetter(store *legacystore.Store) *StoreResourceGetter {
 	return &StoreResourceGetter{store: store}
 }
 
-func (s *StoreResourceGetter) GetResource(ctx context.Context, resourceID string) (*oapi.Resource, error) {
+func (s *StoreResourceGetter) GetResource(
+	ctx context.Context,
+	resourceID string,
+) (*oapi.Resource, error) {
 	resource, ok := s.store.Resources.Get(resourceID)
 	if !ok {
 		return nil, fmt.Errorf("resource not found")

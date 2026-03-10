@@ -5,17 +5,21 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type ResourceProviders struct{}
 
-func (s *ResourceProviders) GetResourceProviderByName(c *gin.Context, workspaceId string, name string) {
+func (s *ResourceProviders) GetResourceProviderByName(
+	c *gin.Context,
+	workspaceId string,
+	name string,
+) {
 	decodedName, err := url.PathUnescape(name)
 	if err != nil {
 		fmt.Println("Failed to decode provider name:", name, "error:", err)
@@ -45,7 +49,11 @@ func (s *ResourceProviders) GetResourceProviderByName(c *gin.Context, workspaceI
 	})
 }
 
-func (s *ResourceProviders) GetResourceProviders(c *gin.Context, workspaceId string, params oapi.GetResourceProvidersParams) {
+func (s *ResourceProviders) GetResourceProviders(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.GetResourceProvidersParams,
+) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -88,7 +96,7 @@ func (s *ResourceProviders) GetResourceProviders(c *gin.Context, workspaceId str
 }
 
 // CacheBatch temporarily stores a large resource batch in memory
-// This allows the API to send a small Kafka event with just a reference
+// This allows the API to send a small Kafka event with just a reference.
 func (s *ResourceProviders) CacheBatch(c *gin.Context, workspaceId string) {
 	// Parse request body
 	var body struct {

@@ -3,10 +3,11 @@ package date
 import (
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 
-// Test entity type
+// Test entity type.
 type testEntity struct {
 	ID        string
 	Name      string
@@ -14,7 +15,7 @@ type testEntity struct {
 	UpdatedAt string
 }
 
-// Test helper to create entity builder
+// Test helper to create entity builder.
 type entityBuilder struct {
 	entity *testEntity
 }
@@ -547,13 +548,25 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 			}
 			if !tt.wantErr {
 				if result.Property != tt.condition.Property {
-					t.Errorf("ConvertFromUnknownCondition() Property = %v, want %v", result.Property, tt.condition.Property)
+					t.Errorf(
+						"ConvertFromUnknownCondition() Property = %v, want %v",
+						result.Property,
+						tt.condition.Property,
+					)
 				}
 				if string(result.Operator) != tt.condition.Operator {
-					t.Errorf("ConvertFromUnknownCondition() Operator = %v, want %v", result.Operator, tt.condition.Operator)
+					t.Errorf(
+						"ConvertFromUnknownCondition() Operator = %v, want %v",
+						result.Operator,
+						tt.condition.Operator,
+					)
 				}
 				if result.Value != tt.condition.Value {
-					t.Errorf("ConvertFromUnknownCondition() Value = %v, want %v", result.Value, tt.condition.Value)
+					t.Errorf(
+						"ConvertFromUnknownCondition() Value = %v, want %v",
+						result.Value,
+						tt.condition.Value,
+					)
 				}
 			}
 		})

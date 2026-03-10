@@ -2,12 +2,12 @@ package workspace
 
 import (
 	"context"
+
+	"github.com/aws/smithy-go/ptr"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/aws/smithy-go/ptr"
 )
 
 type WorkspaceOption func(*Workspace)

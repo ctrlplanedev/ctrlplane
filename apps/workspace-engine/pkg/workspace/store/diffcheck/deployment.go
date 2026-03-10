@@ -3,16 +3,16 @@ package diffcheck
 import (
 	"encoding/json"
 	"slices"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
+	"workspace-engine/pkg/oapi"
 )
 
 // HasDeploymentChanges detects changes between two deployments using structural diffing
 // Returns a map where keys are field paths (e.g., "name", "slug", "jobAgentConfig.key")
 // and values are always true (indicating the field changed)
 // Supports deeply nested paths for complex jobAgentConfig structures
-// Ignores system-managed fields like id
+// Ignores system-managed fields like id.
 func HasDeploymentChanges(old, new *oapi.Deployment) map[string]bool {
 	if old == nil || new == nil {
 		return map[string]bool{"all": true}
@@ -70,7 +70,7 @@ func HasDeploymentChanges(old, new *oapi.Deployment) map[string]bool {
 	return changed
 }
 
-// isIgnoredDeploymentField checks if a field should be ignored when comparing deployments
+// isIgnoredDeploymentField checks if a field should be ignored when comparing deployments.
 func isIgnoredDeploymentField(fieldPath string) bool {
 	ignoredFields := []string{
 		"id",
@@ -79,7 +79,7 @@ func isIgnoredDeploymentField(fieldPath string) bool {
 	return slices.Contains(ignoredFields, fieldPath)
 }
 
-// hasDeploymentChangesBasic is a fallback implementation without external dependencies
+// hasDeploymentChangesBasic is a fallback implementation without external dependencies.
 func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 	changed := make(map[string]bool)
 
@@ -126,7 +126,8 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 
 	// Compare JobAgentConfig (map)
 	for key := range oldJobAgentConfigMap {
-		if newVal, exists := newJobAgentConfigMap[key]; !exists || !deepEqual(oldJobAgentConfigMap[key], newVal) {
+		if newVal, exists := newJobAgentConfigMap[key]; !exists ||
+			!deepEqual(oldJobAgentConfigMap[key], newVal) {
 			changed["jobagentconfig."+key] = true
 		}
 	}

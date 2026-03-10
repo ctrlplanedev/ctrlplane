@@ -2,10 +2,10 @@ package releases
 
 import (
 	"net/http"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/http/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 type Releases struct {

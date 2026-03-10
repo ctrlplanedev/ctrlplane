@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var jobsTracer = otel.Tracer("workspace/store/jobs")
@@ -124,7 +124,9 @@ func (j *Jobs) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.Release
 	return jobsList[0]
 }
 
-func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
 	for _, job := range j.GetJobsForReleaseTarget(releaseTarget) {
 		if !job.IsInProcessingState() {

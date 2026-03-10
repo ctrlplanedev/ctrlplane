@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 var workflowJobTemplatesTracer = otel.Tracer("workspace/store/workflow_job_templates")
@@ -36,7 +36,10 @@ func (w *WorkflowJobTemplates) Get(id string) (*oapi.WorkflowJobTemplate, bool) 
 	return w.repo.Get(id)
 }
 
-func (w *WorkflowJobTemplates) Upsert(ctx context.Context, workflowJobTemplate *oapi.WorkflowJobTemplate) {
+func (w *WorkflowJobTemplates) Upsert(
+	ctx context.Context,
+	workflowJobTemplate *oapi.WorkflowJobTemplate,
+) {
 	_, span := workflowJobTemplatesTracer.Start(ctx, "UpsertWorkflowJobTemplate")
 	defer span.End()
 

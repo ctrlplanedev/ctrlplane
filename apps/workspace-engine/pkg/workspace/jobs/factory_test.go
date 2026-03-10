@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/store"
 )
 
 func newID() string { return uuid.New().String() }
@@ -39,7 +39,12 @@ func setupTestStore() *store.Store {
 	return store.New("test-workspace", cs)
 }
 
-func createTestDeployment(t *testing.T, id string, jobAgentId *string, jobAgentConfig oapi.JobAgentConfig) *oapi.Deployment {
+func createTestDeployment(
+	t *testing.T,
+	id string,
+	jobAgentId *string,
+	jobAgentConfig oapi.JobAgentConfig,
+) *oapi.Deployment {
 	t.Helper()
 	return &oapi.Deployment{
 		Id:               id,
@@ -51,7 +56,12 @@ func createTestDeployment(t *testing.T, id string, jobAgentId *string, jobAgentC
 	}
 }
 
-func createTestEnvironment(t *testing.T, id string, systemId string, name string) *oapi.Environment {
+func createTestEnvironment(
+	t *testing.T,
+	id string,
+	systemId string,
+	name string,
+) *oapi.Environment {
 	t.Helper()
 	return &oapi.Environment{
 		Id:               id,
@@ -62,7 +72,14 @@ func createTestEnvironment(t *testing.T, id string, systemId string, name string
 	}
 }
 
-func createTestResource(t *testing.T, id string, name string, kind string, identifier string, config map[string]any) *oapi.Resource {
+func createTestResource(
+	t *testing.T,
+	id string,
+	name string,
+	kind string,
+	identifier string,
+	config map[string]any,
+) *oapi.Resource {
 	t.Helper()
 	return &oapi.Resource{
 		Id:         id,
@@ -72,7 +89,13 @@ func createTestResource(t *testing.T, id string, name string, kind string, ident
 		Config:     config,
 	}
 }
-func createTestJobAgent(t *testing.T, id string, agentType string, config oapi.JobAgentConfig) *oapi.JobAgent {
+
+func createTestJobAgent(
+	t *testing.T,
+	id string,
+	agentType string,
+	config oapi.JobAgentConfig,
+) *oapi.JobAgent {
 	t.Helper()
 	return &oapi.JobAgent{
 		Id:     id,
@@ -82,12 +105,26 @@ func createTestJobAgent(t *testing.T, id string, agentType string, config oapi.J
 	}
 }
 
-func createTestRelease(t *testing.T, deploymentId, environmentId, resourceId, versionId string) *oapi.Release {
+func createTestRelease(
+	t *testing.T,
+	deploymentId, environmentId, resourceId, versionId string,
+) *oapi.Release {
 	t.Helper()
-	return createTestReleaseWithJobAgentConfig(t, deploymentId, environmentId, resourceId, versionId, nil)
+	return createTestReleaseWithJobAgentConfig(
+		t,
+		deploymentId,
+		environmentId,
+		resourceId,
+		versionId,
+		nil,
+	)
 }
 
-func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environmentId, resourceId, versionId string, jobAgentConfig map[string]any) *oapi.Release {
+func createTestReleaseWithJobAgentConfig(
+	t *testing.T,
+	deploymentId, environmentId, resourceId, versionId string,
+	jobAgentConfig map[string]any,
+) *oapi.Release {
 	t.Helper()
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -147,7 +184,14 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
 	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
 	environment := createTestEnvironment(t, envID, newID(), "production")
-	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]any{})
+	resource := createTestResource(
+		t,
+		resourceID,
+		"server-1",
+		"server",
+		"server-1",
+		map[string]any{},
+	)
 
 	_, _ = st.Resources.Upsert(ctx, resource)
 	st.JobAgents.Upsert(ctx, jobAgent)
@@ -197,7 +241,14 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
 	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
-	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]any{})
+	resource := createTestResource(
+		t,
+		resourceID,
+		"server-1",
+		"server",
+		"server-1",
+		map[string]any{},
+	)
 	environment := createTestEnvironment(t, envID, newID(), "production")
 
 	_, _ = st.Resources.Upsert(ctx, resource)
@@ -232,8 +283,18 @@ func setupFullStore(t *testing.T) (*store.Store, *oapi.JobAgent, string, string,
 	environmentId := newID()
 	resourceId := newID()
 
-	jobAgent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{"agent_key": "agent_val"}`))
-	deployment := createTestDeployment(t, deploymentId, &jobAgentId, mustCreateJobAgentConfig(t, `{"deploy_key": "deploy_val"}`))
+	jobAgent := createTestJobAgent(
+		t,
+		jobAgentId,
+		"custom",
+		mustCreateJobAgentConfig(t, `{"agent_key": "agent_val"}`),
+	)
+	deployment := createTestDeployment(
+		t,
+		deploymentId,
+		&jobAgentId,
+		mustCreateJobAgentConfig(t, `{"deploy_key": "deploy_val"}`),
+	)
 
 	environment := &oapi.Environment{
 		Id:       environmentId,
@@ -299,7 +360,9 @@ func TestFactory_CreateJobForRelease_DispatchContextHasCorrectEntities(t *testin
 	require.Equal(t, "v1.0.0", dc.Version.Tag)
 }
 
-func TestFactory_CreateJobForRelease_DispatchContextVariablesPointsToReleaseVariables(t *testing.T) {
+func TestFactory_CreateJobForRelease_DispatchContextVariablesPointsToReleaseVariables(
+	t *testing.T,
+) {
 	st, jobAgent, deploymentId, environmentId, resourceId := setupFullStore(t)
 	ctx := context.Background()
 
@@ -353,7 +416,14 @@ func TestFactory_CreateJobForRelease_UsesResolvedJobAgentConfig(t *testing.T) {
 	_ = st.Environments.Upsert(ctx, environment)
 	st.Resources.Upsert(ctx, resource)
 
-	release := createTestReleaseWithJobAgentConfig(t, deployID, envID, resourceID, newID(), versionConfig)
+	release := createTestReleaseWithJobAgentConfig(
+		t,
+		deployID,
+		envID,
+		resourceID,
+		newID(),
+		versionConfig,
+	)
 
 	factory := NewFactory(st)
 	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
@@ -412,7 +482,9 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverridesAgentTemplate(t 
 	require.Equal(t, "agent-token", job.JobAgentConfig["apiKey"])
 }
 
-func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentTemplate(t *testing.T) {
+func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentTemplate(
+	t *testing.T,
+) {
 	st := setupTestStore()
 	ctx := context.Background()
 
@@ -445,7 +517,14 @@ func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentT
 	_ = st.Environments.Upsert(ctx, environment)
 	st.Resources.Upsert(ctx, resource)
 
-	release := createTestReleaseWithJobAgentConfig(t, deployID, envID, resourceID, newID(), versionConfig)
+	release := createTestReleaseWithJobAgentConfig(
+		t,
+		deployID,
+		envID,
+		resourceID,
+		newID(),
+		versionConfig,
+	)
 
 	factory := NewFactory(st)
 	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
@@ -457,7 +536,9 @@ func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentT
 	require.Equal(t, "agent-token", job.JobAgentConfig["apiKey"])
 }
 
-func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeploymentAgentsConfigured(t *testing.T) {
+func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeploymentAgentsConfigured(
+	t *testing.T,
+) {
 	st := setupTestStore()
 	ctx := context.Background()
 

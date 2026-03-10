@@ -3,10 +3,11 @@ package deploymentversions
 import (
 	"testing"
 	"time"
+
 	"workspace-engine/pkg/oapi"
 )
 
-// Helper function to create a job with specific status and createdAt
+// Helper function to create a job with specific status and createdAt.
 func createJob(status oapi.JobStatus, createdAt time.Time) *oapi.Job {
 	return &oapi.Job{
 		Status:    status,
@@ -14,7 +15,7 @@ func createJob(status oapi.JobStatus, createdAt time.Time) *oapi.Job {
 	}
 }
 
-// Helper function to create a fullReleaseTarget
+// Helper function to create a fullReleaseTarget.
 func createFullReleaseTarget(jobs []*oapi.Job, resourceName string) *fullReleaseTarget {
 	return &fullReleaseTarget{
 		Jobs: jobs,
