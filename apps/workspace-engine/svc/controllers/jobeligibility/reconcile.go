@@ -135,6 +135,25 @@ func (r *reconciler) checkEligibility(ctx context.Context) (bool, *time.Time, st
 	return true, nil, reason
 }
 
+func (r *reconciler) createFailureJob(ctx context.Context, status oapi.JobStatus, message string) error {
+	now := time.Now()
+	job := &oapi.Job{
+		Id:             uuid.New().String(),
+		ReleaseId:      r.release.Id.String(),
+		JobAgentConfig: oapi.JobAgentConfig{},
+		Status:         status,
+		Message:        &message,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		CompletedAt:    &now,
+		Metadata:       make(map[string]string),
+	}
+	if err := r.setter.CreateJob(ctx, job, r.release); err != nil {
+		return fmt.Errorf("create failure job: %w", err)
+	}
+	return nil
+}
+
 func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 	deploymentID, err := uuid.Parse(r.release.ReleaseTarget.DeploymentId)
 	if err != nil {
@@ -147,7 +166,8 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 	}
 
 	if deployment.JobAgents == nil || len(*deployment.JobAgents) == 0 {
-		return fmt.Errorf("no job agents configured for deployment %s", deployment.Name)
+		msg := fmt.Sprintf("No job agents configured for deployment '%s'", deployment.Name)
+		return r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg)
 	}
 
 	for _, agentRef := range *deployment.JobAgents {
@@ -158,8 +178,11 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 
 		jobAgent, err := r.getter.GetJobAgent(ctx, agentID)
 		if err != nil {
+			msg := fmt.Sprintf("Job agent '%s' not found", agentRef.Ref)
+			if createErr := r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg); createErr != nil {
+				return fmt.Errorf("create failure job for agent %s: %w (original: %w)", agentRef.Ref, createErr, err)
+			}
 			continue
-			// return fmt.Errorf("get job agent %s: %w", agentRef.Ref, err)
 		}
 
 		job, err := jobs.NewFactoryFromGetters(r.getter).CreateJobForRelease(ctx, r.release, jobAgent, nil)

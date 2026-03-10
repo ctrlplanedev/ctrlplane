@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
@@ -58,6 +59,9 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+		if updateErr := c.setter.UpdateJob(ctx, job.Id, oapi.JobStatusFailure, err.Error(), nil); updateErr != nil {
+			return reconcile.Result{}, fmt.Errorf("update job to failure: %w (original: %w)", updateErr, err)
+		}
 		return reconcile.Result{}, fmt.Errorf("reconcile job dispatch: %w", err)
 	}
 	if result.RequeueAfter != nil {
