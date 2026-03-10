@@ -4,7 +4,7 @@ import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, asc, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, asc, desc, eq, inArray, sql, takeFirst } from "@ctrlplane/db";
 import {
   enqueueDeploymentSelectorEval,
   enqueuePolicyEval,
@@ -269,7 +269,7 @@ export const deploymentsRouter = router({
           schema.release.resourceId,
           schema.release.environmentId,
           schema.release.deploymentId,
-          desc(schema.job.completedAt),
+          sql`${schema.job.completedAt} desc nulls last`,
         );
 
       const currentVersionMap = new Map(
