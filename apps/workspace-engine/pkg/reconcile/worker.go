@@ -232,6 +232,21 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 		return
 	}
 
+	_, ackErr := w.queue.AckSuccess(ctx, AckSuccessParams{
+		ItemID:           item.ID,
+		WorkerID:         w.cfg.WorkerID,
+		ClaimedUpdatedAt: item.UpdatedAt,
+	})
+	if ackErr != nil {
+		if w.cfg.Hooks.OnDropped != nil {
+			w.cfg.Hooks.OnDropped(item, ackErr)
+		}
+		return
+	}
+	if w.cfg.Hooks.OnProcessed != nil {
+		w.cfg.Hooks.OnProcessed(item)
+	}
+
 	if result.RequeueAfter > 0 {
 		requeueErr := w.queue.Enqueue(ctx, EnqueueParams{
 			WorkspaceID: item.WorkspaceID,
@@ -247,21 +262,6 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 				w.cfg.Hooks.OnDropped(item, requeueErr)
 			}
 		}
-	}
-
-	_, ackErr := w.queue.AckSuccess(ctx, AckSuccessParams{
-		ItemID:           item.ID,
-		WorkerID:         w.cfg.WorkerID,
-		ClaimedUpdatedAt: item.UpdatedAt,
-	})
-	if ackErr != nil {
-		if w.cfg.Hooks.OnDropped != nil {
-			w.cfg.Hooks.OnDropped(item, ackErr)
-		}
-		return
-	}
-	if w.cfg.Hooks.OnProcessed != nil {
-		w.cfg.Hooks.OnProcessed(item)
 	}
 }
 
