@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/store"
+
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/jobs")
@@ -127,10 +128,6 @@ func (f *Factory) buildDispatchContext(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get environment: %w", err)
 	}
-	envCopy, err := deepCopy(environment)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy environment: %w", err)
-	}
 
 	resourceID, err := uuid.Parse(release.ReleaseTarget.ResourceId)
 	if err != nil {
@@ -140,35 +137,16 @@ func (f *Factory) buildDispatchContext(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource: %w", err)
 	}
-	resourceCopy, err := deepCopy(resource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy resource: %w", err)
-	}
-
-	releaseCopy, err := deepCopy(release)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy release: %w", err)
-	}
-
-	deploymentCopy, err := deepCopy(deployment)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy deployment: %w", err)
-	}
-
-	agentCopy, err := deepCopy(jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy job agent: %w", err)
-	}
 
 	return &oapi.DispatchContext{
-		Release:        releaseCopy,
-		Deployment:     deploymentCopy,
-		Environment:    envCopy,
-		Resource:       resourceCopy,
-		JobAgent:       *agentCopy,
+		Release:        release,
+		Deployment:     deployment,
+		Environment:    environment,
+		Resource:       resource,
+		JobAgent:       *jobAgent,
 		JobAgentConfig: jobAgent.Config,
-		Version:        &releaseCopy.Version,
-		Variables:      &releaseCopy.Variables,
+		Version:        &release.Version,
+		Variables:      &release.Variables,
 	}, nil
 }
 
@@ -178,7 +156,6 @@ func (f *Factory) CreateJobForRelease(
 	ctx context.Context,
 	release *oapi.Release,
 	jobAgent *oapi.JobAgent,
-	action *trace.Action,
 ) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "CreateJobForRelease",
 		oteltrace.WithAttributes(
@@ -201,52 +178,7 @@ func (f *Factory) CreateJobForRelease(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployment: %w", err)
 	}
-
-	if action != nil {
-		action.AddStep("Lookup deployment", trace.StepResultPass,
-			fmt.Sprintf("Found deployment: %s (%s)", deployment.Name, deployment.Slug)).
-			AddMetadata("deployment_id", deployment.Id).
-			AddMetadata("deployment_name", deployment.Name)
-	}
-
-	if action != nil {
-		action.AddStep(
-			"Validate job agent",
-			trace.StepResultPass,
-			fmt.Sprintf(
-				"Job agent '%s' (type: %s) found and validated",
-				jobAgent.Name,
-				jobAgent.Type,
-			),
-		).
-			AddMetadata("job_agent_id", jobAgent.Id).
-			AddMetadata("job_agent_name", jobAgent.Name).
-			AddMetadata("job_agent_type", jobAgent.Type)
-	}
-
-	if action != nil {
-		configMsg := "Applied default job agent configuration"
-		action.AddStep("Configure job", trace.StepResultPass, configMsg)
-	}
-
 	jobId := uuid.New().String()
-
-	if action != nil {
-		action.AddStep(
-			"Create job",
-			trace.StepResultPass,
-			fmt.Sprintf(
-				"Job created successfully with ID %s for release %s",
-				jobId,
-				release.Id.String(),
-			),
-		).
-			AddMetadata("job_id", jobId).
-			AddMetadata("job_status", string(oapi.JobStatusPending)).
-			AddMetadata("job_agent_id", jobAgent.Id).
-			AddMetadata("release_id", release.Id.String()).
-			AddMetadata("version_tag", release.Version.Tag)
-	}
 
 	dispatchContext, err := f.buildDispatchContext(ctx, release, deployment, jobAgent)
 	if err != nil {

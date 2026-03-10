@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -32,17 +33,26 @@ type reconciler struct {
 }
 
 func (r *reconciler) loadInput(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "loadInput")
+	defer span.End()
+
 	release, err := r.getter.GetDesiredRelease(ctx, r.rt)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("get desired release: %w", err)
 	}
 	r.release = release
 	if release == nil {
+		span.AddEvent("no desired release found for release target")
 		return nil
 	}
+	span.SetAttributes(attribute.String("release", fmt.Sprintf("%+v", release)))
 
 	policies, err := r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("get policies for release target: %w", err)
 	}
 	r.policies = policies
@@ -198,7 +208,7 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 		}
 
 		job, err := jobs.NewFactoryFromGetters(r.getter).
-			CreateJobForRelease(ctx, r.release, jobAgent, nil)
+			CreateJobForRelease(ctx, r.release, jobAgent)
 		if err != nil {
 			return fmt.Errorf("build job: %w", err)
 		}

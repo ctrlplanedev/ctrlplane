@@ -65,7 +65,7 @@ func (s *PostgresSetter) CreateJob(
 		JobAgentID:      jobAgentIDParam,
 		JobAgentConfig:  jobAgentConfig,
 		Status:          db.ToDBJobStatus(job.Status),
-		Message:         job.Message,
+		Message:         toPgText(job.Message),
 		CreatedAt:       pgtype.Timestamptz{Time: job.CreatedAt, Valid: !job.CreatedAt.IsZero()},
 		UpdatedAt:       pgtype.Timestamptz{Time: job.UpdatedAt, Valid: !job.UpdatedAt.IsZero()},
 		CompletedAt:     completedAt,
@@ -99,4 +99,11 @@ func (s *PostgresSetter) EnqueueJobDispatch(
 		ScopeType:   "job",
 		ScopeID:     jobID,
 	})
+}
+
+func toPgText(s *string) pgtype.Text {
+	if s == nil {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: *s, Valid: true}
 }

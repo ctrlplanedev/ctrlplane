@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var _ Getter = (*PostgresGetter)(nil)
@@ -38,6 +40,15 @@ func (g *PostgresGetter) GetDesiredRelease(
 	ctx context.Context,
 	rt *ReleaseTarget,
 ) (*oapi.Release, error) {
+	ctx, span := tracer.Start(ctx, "GetDesiredRelease")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("release_target.resource_id", rt.ResourceID.String()),
+		attribute.String("release_target.environment_id", rt.EnvironmentID.String()),
+		attribute.String("release_target.deployment_id", rt.DeploymentID.String()),
+	)
+
 	// TODO: Implement once the desired_release DB schema and queries exist.
 	row, err := db.GetQueries(ctx).
 		GetDesiredReleaseByReleaseTarget(ctx, db.GetDesiredReleaseByReleaseTargetParams{
@@ -46,12 +57,13 @@ func (g *PostgresGetter) GetDesiredRelease(
 			DeploymentID:  rt.DeploymentID,
 		})
 	if errors.Is(err, pgx.ErrNoRows) {
+		span.AddEvent("no desired release found for release target")
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return db.ToOapiRelease(row), nil
+	return db.ToOapiFullRelease(row), nil
 }
 
 func (g *PostgresGetter) GetJobsForReleaseTarget(

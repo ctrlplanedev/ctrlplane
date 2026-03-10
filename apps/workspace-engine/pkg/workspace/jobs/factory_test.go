@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func newID() string { return uuid.New().String() }
@@ -157,7 +158,7 @@ func TestFactory_CreateJobForRelease_DeploymentNotFound(t *testing.T) {
 	release := createTestRelease(t, newID(), newID(), newID(), newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.Error(t, err)
 	require.Nil(t, job)
@@ -202,7 +203,7 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	beforeCreation := time.Now()
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	afterCreation := time.Now()
 
@@ -261,7 +262,7 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 	jobIds := make(map[string]bool)
 	for range 10 {
 		release := createTestRelease(t, deployID, envID, resourceID, versionID)
-		job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+		job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 		require.NoError(t, err)
 		require.NotNil(t, job)
 		require.False(t, jobIds[job.Id], "Job ID should be unique")
@@ -327,7 +328,7 @@ func TestFactory_CreateJobForRelease_BuildsDispatchContext(t *testing.T) {
 	release := createTestRelease(t, deploymentId, environmentId, resourceId, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job)
@@ -349,7 +350,7 @@ func TestFactory_CreateJobForRelease_DispatchContextHasCorrectEntities(t *testin
 	release := createTestRelease(t, deploymentId, environmentId, resourceId, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	dc := job.DispatchContext
@@ -374,7 +375,7 @@ func TestFactory_CreateJobForRelease_DispatchContextVariablesPointsToReleaseVari
 	}
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job.DispatchContext.Variables)
@@ -426,7 +427,7 @@ func TestFactory_CreateJobForRelease_UsesResolvedJobAgentConfig(t *testing.T) {
 	)
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job)
@@ -473,7 +474,7 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverridesAgentTemplate(t 
 	release := createTestRelease(t, deployID, envID, resourceID, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job)
@@ -527,7 +528,7 @@ func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentT
 	)
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job)
@@ -581,7 +582,7 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeplo
 	release := createTestRelease(t, deployID, envID, resourceID, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, selectedAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, selectedAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job)
@@ -627,7 +628,7 @@ func TestFactory_CreateJobForRelease_UsesResolvedConfigWithoutReMerge(t *testing
 	release := createTestRelease(t, deployID, envID, resourceID, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent)
 
 	require.NoError(t, err)
 	require.NotNil(t, job)
@@ -660,7 +661,7 @@ func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testi
 	release := createTestRelease(t, deployID, missingEnvID, resourceID, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, agent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, agent)
 
 	require.Error(t, err)
 	require.Nil(t, job)
@@ -691,7 +692,7 @@ func TestFactory_CreateJobForRelease_DispatchContextResourceNotFound(t *testing.
 	release := createTestRelease(t, deployID, envID, missingResourceID, newID())
 
 	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, agent, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, agent)
 
 	require.Error(t, err)
 	require.Nil(t, job)

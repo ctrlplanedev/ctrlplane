@@ -390,6 +390,54 @@ func ToOapiRelease(row Release) *oapi.Release {
 	}
 }
 
+func ToOapiFullRelease(row GetDesiredReleaseByReleaseTargetRow) *oapi.Release {
+	variables := make(map[string]oapi.LiteralValue)
+	if len(row.Variables) > 0 {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(row.Variables, &raw); err != nil {
+			log.Error("failed to unmarshal release variables", "error", err)
+		} else {
+			for k, v := range raw {
+				var lv oapi.LiteralValue
+				if err := lv.UnmarshalJSON(v); err != nil {
+					log.Error("failed to unmarshal literal value", "key", k, "error", err)
+					continue
+				}
+				variables[k] = lv
+			}
+		}
+	}
+
+	var versionMessage *string
+	if row.VersionMessage.Valid {
+		versionMessage = &row.VersionMessage.String
+	}
+
+	return &oapi.Release{
+		Id:        row.ID,
+		CreatedAt: row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		ReleaseTarget: oapi.ReleaseTarget{
+			ResourceId:    row.ResourceID.String(),
+			EnvironmentId: row.EnvironmentID.String(),
+			DeploymentId:  row.DeploymentID.String(),
+		},
+		EncryptedVariables: []string{},
+		Variables:          variables,
+		Version: oapi.DeploymentVersion{
+			Id:             row.VersionID.String(),
+			Name:           row.VersionName,
+			Tag:            row.VersionTag,
+			Config:         row.VersionConfig,
+			JobAgentConfig: oapi.JobAgentConfig(row.VersionJobAgentConfig),
+			DeploymentId:   row.DeploymentID.String(),
+			Metadata:       row.VersionMetadata,
+			Status:         oapi.DeploymentVersionStatus(row.VersionStatus),
+			Message:        versionMessage,
+			CreatedAt:      row.VersionCreatedAt.Time,
+		},
+	}
+}
+
 func ToOapiDeploymentVersion(row DeploymentVersion) *oapi.DeploymentVersion {
 	v := &oapi.DeploymentVersion{
 		Id:             row.ID.String(),

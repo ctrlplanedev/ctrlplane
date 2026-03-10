@@ -92,10 +92,19 @@ SET
 RETURNING *;
 
 -- name: GetDesiredReleaseByReleaseTarget :one
-SELECT r.*
+SELECT
+    r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at,
+    dv.tag AS version_tag, dv.name AS version_name, dv.config AS version_config,
+    dv.job_agent_config AS version_job_agent_config, dv.metadata AS version_metadata,
+    dv.status AS version_status, dv.message AS version_message,
+    dv.created_at AS version_created_at,
+    COALESCE(jsonb_object_agg(rv.key, rv.value) FILTER (WHERE rv.key IS NOT NULL), '{}'::jsonb) AS variables
 FROM release_target_desired_release rtr
 JOIN release r ON r.id = rtr.desired_release_id
-WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3;
+JOIN deployment_version dv ON dv.id = r.version_id
+LEFT JOIN release_variable rv ON rv.release_id = r.id
+WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3
+GROUP BY r.id, dv.id;
 
 -- name: GetReleaseByJobID :one
 SELECT r.*
