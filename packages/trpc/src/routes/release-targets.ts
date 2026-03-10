@@ -28,10 +28,7 @@ export const releaseTargetsRouter = router({
         .where(
           and(
             eq(schema.computedPolicyReleaseTarget.resourceId, resourceId),
-            eq(
-              schema.computedPolicyReleaseTarget.environmentId,
-              environmentId,
-            ),
+            eq(schema.computedPolicyReleaseTarget.environmentId, environmentId),
             eq(schema.computedPolicyReleaseTarget.deploymentId, deploymentId),
           ),
         );

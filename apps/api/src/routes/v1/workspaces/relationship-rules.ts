@@ -1,32 +1,108 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { and, count, eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import {
+  enqueueAllReleaseTargetsDesiredVersion,
+  enqueueManyRelationshipEval,
+} from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
+
+const composeCel = (body: {
+  fromType: string;
+  toType: string;
+  matcher: { cel: string };
+}): string => {
+  const matcherCel = body.matcher.cel;
+  if (!body.fromType || !body.toType) return matcherCel;
+  return `from.type == "${body.fromType}" && to.type == "${body.toType}" && ${matcherCel}`;
+};
+
+const enqueueRelationshipReconciliation = async (workspaceId: string) => {
+  const [resources, deployments, environments] = await Promise.all([
+    db
+      .select({ id: schema.resource.id })
+      .from(schema.resource)
+      .where(eq(schema.resource.workspaceId, workspaceId)),
+    db
+      .select({ id: schema.deployment.id })
+      .from(schema.deployment)
+      .where(eq(schema.deployment.workspaceId, workspaceId)),
+    db
+      .select({ id: schema.environment.id })
+      .from(schema.environment)
+      .where(eq(schema.environment.workspaceId, workspaceId)),
+  ]);
+
+  const evalItems = [
+    ...resources.map((r) => ({
+      workspaceId,
+      entityType: "resource" as const,
+      entityId: r.id,
+    })),
+    ...deployments.map((d) => ({
+      workspaceId,
+      entityType: "deployment" as const,
+      entityId: d.id,
+    })),
+    ...environments.map((e) => ({
+      workspaceId,
+      entityType: "environment" as const,
+      entityId: e.id,
+    })),
+  ];
+
+  await Promise.all([
+    enqueueManyRelationshipEval(db, evalItems),
+    enqueueAllReleaseTargetsDesiredVersion(db, workspaceId),
+  ]);
+};
+
+const toRuleResponse = (r: typeof schema.relationshipRule.$inferSelect) => ({
+  id: r.id,
+  name: r.name,
+  description: r.description ?? undefined,
+  reference: r.reference,
+  workspaceId: r.workspaceId,
+  metadata: r.metadata ?? {},
+  fromType: "",
+  toType: "",
+  relationshipType: "",
+  matcher: { cel: r.cel },
+});
 
 const listRelationshipRules: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/relationship-rules",
   "get"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const { offset, limit } = req.query;
+  const { offset: rawOffset, limit: rawLimit } = req.query;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/relationship-rules",
-    { params: { path: { workspaceId }, query: { offset, limit } } },
-  );
+  const limitVal = rawLimit ?? 50;
+  const offsetVal = rawOffset ?? 0;
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Failed to list relationship rules",
-      response.response.status,
-    );
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(schema.relationshipRule)
+    .where(eq(schema.relationshipRule.workspaceId, workspaceId));
 
-  res.status(200).json(response.data);
-  return;
+  const total = countResult?.total ?? 0;
+
+  const rows = await db
+    .select()
+    .from(schema.relationshipRule)
+    .where(eq(schema.relationshipRule.workspaceId, workspaceId))
+    .limit(limitVal)
+    .offset(offsetVal);
+
+  res.status(200).json({
+    items: rows.map(toRuleResponse),
+    total,
+    offset: offsetVal,
+    limit: limitVal,
+  });
 };
 
 const createRelationshipRule: AsyncTypedHandler<
@@ -36,21 +112,25 @@ const createRelationshipRule: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
-  const relationshipRule: WorkspaceEngine["schemas"]["RelationshipRule"] = {
-    id: uuidv4(),
-    workspaceId,
-    ...body,
-  };
+  const cel = composeCel(body);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.RelationshipRuleCreated,
-    timestamp: Date.now(),
-    data: relationshipRule,
-  });
+  const [inserted] = await db
+    .insert(schema.relationshipRule)
+    .values({
+      name: body.name,
+      description: body.description,
+      workspaceId,
+      reference: body.reference,
+      cel,
+      metadata: body.metadata,
+    })
+    .returning();
 
-  res.status(201).json(relationshipRule);
-  return;
+  if (inserted == null) throw new ApiError("Failed to create rule", 500);
+
+  await enqueueRelationshipReconciliation(workspaceId);
+
+  res.status(201).json(toRuleResponse(inserted));
 };
 
 const getRelationshipRule: AsyncTypedHandler<
@@ -58,18 +138,21 @@ const getRelationshipRule: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, relationshipRuleId } = req.params;
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}",
-    { params: { path: { workspaceId, relationshipRuleId } } },
-  );
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Relationship rule not found",
-      response.response.status,
-    );
+  const rule = await db
+    .select()
+    .from(schema.relationshipRule)
+    .where(
+      and(
+        eq(schema.relationshipRule.id, relationshipRuleId),
+        eq(schema.relationshipRule.workspaceId, workspaceId),
+      ),
+    )
+    .then((rows) => rows[0]);
 
-  res.status(200).json(response.data);
+  if (rule == null) throw new ApiError("Relationship rule not found", 404);
+
+  res.status(200).json(toRuleResponse(rule));
 };
 
 const deleteRelationshipRule: AsyncTypedHandler<
@@ -78,25 +161,26 @@ const deleteRelationshipRule: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, relationshipRuleId } = req.params;
 
-  const relationshipRuleResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}",
-    { params: { path: { workspaceId, relationshipRuleId } } },
-  );
+  const rule = await db
+    .select()
+    .from(schema.relationshipRule)
+    .where(
+      and(
+        eq(schema.relationshipRule.id, relationshipRuleId),
+        eq(schema.relationshipRule.workspaceId, workspaceId),
+      ),
+    )
+    .then((rows) => rows[0]);
 
-  if (relationshipRuleResponse.error != null)
-    throw new ApiError(
-      relationshipRuleResponse.error.error ?? "Relationship rule not found",
-      relationshipRuleResponse.response.status,
-    );
+  if (rule == null) throw new ApiError("Relationship rule not found", 404);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.RelationshipRuleDeleted,
-    timestamp: Date.now(),
-    data: relationshipRuleResponse.data,
-  });
+  await db
+    .delete(schema.relationshipRule)
+    .where(eq(schema.relationshipRule.id, relationshipRuleId));
 
-  res.status(202).json({ id: relationshipRuleId });
+  await enqueueRelationshipReconciliation(workspaceId);
+
+  res.status(200).json({ id: relationshipRuleId });
 };
 
 const upsertRelationshipRule: AsyncTypedHandler<
@@ -106,21 +190,36 @@ const upsertRelationshipRule: AsyncTypedHandler<
   const { workspaceId, relationshipRuleId } = req.params;
   const { body } = req;
 
-  const relationshipRule: WorkspaceEngine["schemas"]["RelationshipRule"] = {
-    id: relationshipRuleId,
-    workspaceId,
-    ...body,
-  };
+  const cel = composeCel(body);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.RelationshipRuleUpdated,
-    timestamp: Date.now(),
-    data: relationshipRule,
-  });
+  const [upserted] = await db
+    .insert(schema.relationshipRule)
+    .values({
+      id: relationshipRuleId,
+      name: body.name,
+      description: body.description,
+      workspaceId,
+      reference: body.reference,
+      cel,
+      metadata: body.metadata,
+    })
+    .onConflictDoUpdate({
+      target: schema.relationshipRule.id,
+      set: {
+        name: body.name,
+        description: body.description,
+        reference: body.reference,
+        cel,
+        metadata: body.metadata,
+      },
+    })
+    .returning();
 
-  res.status(202).json(relationshipRule);
-  return;
+  if (upserted == null) throw new ApiError("Failed to upsert rule", 500);
+
+  await enqueueRelationshipReconciliation(workspaceId);
+
+  res.status(200).json(toRuleResponse(upserted));
 };
 
 export const relationshipRulesRouter = Router({ mergeParams: true })

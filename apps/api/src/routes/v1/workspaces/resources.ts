@@ -2,6 +2,13 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
+import { and, asc, count, eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import {
+  enqueueManyDeploymentSelectorEval,
+  enqueueManyEnvironmentSelectorEval,
+} from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
@@ -15,7 +22,7 @@ const listResources: AsyncTypedHandler<
   const decodedCel =
     typeof cel === "string" ? decodeURIComponent(cel.replace(/\+/g, " ")) : cel;
 
-  const result = await getClientFor(workspaceId).POST(
+  const result = await getClientFor().POST(
     "/v1/workspaces/{workspaceId}/resources/query",
     {
       body: {
@@ -37,25 +44,39 @@ const listResources: AsyncTypedHandler<
   res.status(200).json(result.data);
 };
 
+const findResource = async (workspaceId: string, identifier: string) => {
+  const resource = await db.query.resource.findFirst({
+    where: and(
+      eq(schema.resource.workspaceId, workspaceId),
+      eq(schema.resource.identifier, identifier),
+    ),
+  });
+  if (resource == null) throw new ApiError("Resource not found", 404);
+  return resource;
+};
+
+const toResourceResponse = (r: NonNullable<Awaited<ReturnType<typeof findResource>>>) => ({
+  id: r.id,
+  identifier: r.identifier,
+  name: r.name,
+  kind: r.kind,
+  version: r.version,
+  config: r.config,
+  metadata: r.metadata ?? {},
+  workspaceId: r.workspaceId,
+  createdAt: r.createdAt.toISOString(),
+  updatedAt: r.updatedAt?.toISOString(),
+  deletedAt: r.deletedAt?.toISOString(),
+  providerId: r.providerId,
+});
+
 const getResourceByIdentifier: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
   "get"
 > = async (req, res) => {
   const { workspaceId, identifier } = req.params;
-
-  const resourceIdentifier = encodeURIComponent(identifier);
-  const result = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-    { params: { path: { workspaceId, resourceIdentifier } } },
-  );
-
-  if (result.error != null)
-    throw new ApiError(
-      result.error.error ?? "Resource not found",
-      result.response.status,
-    );
-
-  res.status(200).json(result.data);
+  const resource = await findResource(workspaceId, identifier);
+  res.status(200).json(toResourceResponse(resource));
 };
 
 const deleteResourceByIdentifier: AsyncTypedHandler<
@@ -63,40 +84,35 @@ const deleteResourceByIdentifier: AsyncTypedHandler<
   "delete"
 > = async (req, res) => {
   const { workspaceId, identifier } = req.params;
+  const resource = await findResource(workspaceId, identifier);
 
-  const resourceIdentifier = encodeURIComponent(identifier);
-  const resourceResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-    { params: { path: { workspaceId, resourceIdentifier } } },
-  );
-  if (resourceResponse.error != null) {
-    const status = resourceResponse.response.status;
-    if (status >= 500) {
-      throw new ApiError(
-        resourceResponse.error.error ?? "Internal server error",
-        status,
-      );
-    }
-    throw new ApiError(
-      resourceResponse.error.error ?? "Resource not found",
-      status,
-    );
-  }
+  await db.delete(schema.resource).where(eq(schema.resource.id, resource.id));
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.ResourceDeleted,
-      timestamp: Date.now(),
-      data: resourceResponse.data,
-    });
-  } catch {
-    throw new ApiError("Failed to delete resource", 500);
-  }
+  const [environments, deployments] = await Promise.all([
+    db
+      .select({ id: schema.environment.id })
+      .from(schema.environment)
+      .where(eq(schema.environment.workspaceId, workspaceId)),
+    db
+      .select({ id: schema.deployment.id })
+      .from(schema.deployment)
+      .where(eq(schema.deployment.workspaceId, workspaceId)),
+  ]);
 
-  res.status(202).json({
-    id: resourceResponse.data.id,
-    message: "Resource delete requested",
+  await Promise.all([
+    enqueueManyEnvironmentSelectorEval(
+      db,
+      environments.map((e) => ({ workspaceId, environmentId: e.id })),
+    ),
+    enqueueManyDeploymentSelectorEval(
+      db,
+      deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
+    ),
+  ]);
+
+  res.status(200).json({
+    id: resource.id,
+    message: "Resource deleted",
   });
 };
 
@@ -105,24 +121,18 @@ const getVariablesForResource: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, identifier } = req.params;
-  const { limit, offset } = req.query;
+  const resource = await findResource(workspaceId, identifier);
 
-  const resourceIdentifier = encodeURIComponent(identifier);
-  const result = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
-    {
-      params: { path: { workspaceId, resourceIdentifier } },
-      query: { limit, offset },
-    },
-  );
+  const rows = await db
+    .select({
+      resourceId: schema.resourceVariable.resourceId,
+      key: schema.resourceVariable.key,
+      value: schema.resourceVariable.value,
+    })
+    .from(schema.resourceVariable)
+    .where(eq(schema.resourceVariable.resourceId, resource.id));
 
-  if (result.error != null)
-    throw new ApiError(
-      result.error.error ?? "Failed to get variables for resource",
-      result.response.status,
-    );
-
-  res.status(200).json(result.data);
+  res.status(200).json(rows);
 };
 
 const updateVariablesForResource: AsyncTypedHandler<
@@ -162,31 +172,61 @@ const updateVariablesForResource: AsyncTypedHandler<
   });
 };
 
+const parseSelector = (raw: string | null | undefined) => {
+  if (raw == null || raw === "false") return undefined;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return { cel: raw };
+  }
+};
+
 const getDeploymentsForResource: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/deployments",
   "get"
 > = async (req, res) => {
   const { workspaceId, identifier } = req.params;
-  const { limit, offset } = req.query;
+  const { limit: rawLimit, offset: rawOffset } = req.query;
+  const resource = await findResource(workspaceId, identifier);
 
-  const resourceIdentifier = encodeURIComponent(identifier);
-  const result = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments",
-    {
-      params: {
-        path: { workspaceId, resourceIdentifier },
-        query: { limit, offset },
-      },
-    },
-  );
+  const limitVal = rawLimit ?? 50;
+  const offsetVal = rawOffset ?? 0;
 
-  if (result.error != null)
-    throw new ApiError(
-      result.error.error ?? "Failed to get deployments for resource",
-      result.response.status,
-    );
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(schema.computedDeploymentResource)
+    .where(eq(schema.computedDeploymentResource.resourceId, resource.id));
 
-  res.status(200).json(result.data);
+  const total = countResult?.total ?? 0;
+
+  const rows = await db
+    .select({ deployment: schema.deployment })
+    .from(schema.computedDeploymentResource)
+    .innerJoin(
+      schema.deployment,
+      eq(
+        schema.computedDeploymentResource.deploymentId,
+        schema.deployment.id,
+      ),
+    )
+    .where(eq(schema.computedDeploymentResource.resourceId, resource.id))
+    .orderBy(asc(schema.deployment.name))
+    .limit(limitVal)
+    .offset(offsetVal);
+
+  const items = rows.map((r) => ({
+    id: r.deployment.id,
+    name: r.deployment.name,
+    slug: r.deployment.name,
+    description: r.deployment.description,
+    jobAgentId: r.deployment.jobAgentId ?? undefined,
+    jobAgentConfig: r.deployment.jobAgentConfig,
+    jobAgents: r.deployment.jobAgents,
+    resourceSelector: parseSelector(r.deployment.resourceSelector),
+    metadata: r.deployment.metadata,
+  }));
+
+  res.status(200).json({ items, total, offset: offsetVal, limit: limitVal });
 };
 
 const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
@@ -194,30 +234,23 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, resourceIdentifier, deploymentId } = req.params;
+  const resource = await findResource(workspaceId, resourceIdentifier);
 
-  const encodedResourceIdentifier = encodeURIComponent(resourceIdentifier);
+  const releaseTarget = await db.query.releaseTargetDesiredRelease.findFirst({
+    where: and(
+      eq(schema.releaseTargetDesiredRelease.resourceId, resource.id),
+      eq(schema.releaseTargetDesiredRelease.deploymentId, deploymentId),
+    ),
+  });
 
-  const result = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
-    {
-      params: {
-        path: {
-          workspaceId,
-          resourceIdentifier: encodedResourceIdentifier,
-          deploymentId,
-        },
-      },
-    },
-  );
+  if (releaseTarget == null)
+    throw new ApiError("Release target not found", 404);
 
-  if (result.error != null)
-    throw new ApiError(
-      result.error.error ??
-        "Failed to get release target for resource in deployment",
-      result.response.status,
-    );
-
-  res.status(200).json(result.data);
+  res.status(200).json({
+    resourceId: releaseTarget.resourceId,
+    environmentId: releaseTarget.environmentId,
+    deploymentId: releaseTarget.deploymentId,
+  });
 };
 
 export const resourceRouter = Router({ mergeParams: true })
