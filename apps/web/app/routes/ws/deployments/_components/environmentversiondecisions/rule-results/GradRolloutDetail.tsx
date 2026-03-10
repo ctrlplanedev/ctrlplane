@@ -92,6 +92,7 @@ function RolloutRow({
   const completed = rules.filter((rule) => rule.allowed).length;
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   const isComplete = completed === total && total > 0;
+  const isWaiting = completed === 0;
 
   const label = policyName ?? "Gradual Rollout";
   const { estimatedCompletion, nextDeployment } = getRolloutTimes(rules);
@@ -107,17 +108,21 @@ function RolloutRow({
       </div>
       {!isComplete && (
         <span className="shrink-0 text-muted-foreground">
-          {nextDeployment != null && isFuture(nextDeployment) && (
+          {isWaiting && "Waiting for other policies to pass"}
+          {!isWaiting && nextDeployment != null && isFuture(nextDeployment) && (
             <>next in {formatDistanceToNowStrict(nextDeployment)}</>
           )}
-          {nextDeployment != null &&
+          {!isWaiting &&
+            nextDeployment != null &&
             isFuture(nextDeployment) &&
             estimatedCompletion != null &&
             isFuture(estimatedCompletion) &&
             " · "}
-          {estimatedCompletion != null && isFuture(estimatedCompletion) && (
-            <>done in {formatDistanceToNowStrict(estimatedCompletion)}</>
-          )}
+          {!isWaiting &&
+            estimatedCompletion != null &&
+            isFuture(estimatedCompletion) && (
+              <>done in {formatDistanceToNowStrict(estimatedCompletion)}</>
+            )}
         </span>
       )}
     </div>
