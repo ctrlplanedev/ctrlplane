@@ -615,6 +615,38 @@ func (q *Queries) ListVersionSelectorRulesByPolicyID(ctx context.Context, policy
 	return items, nil
 }
 
+const setPoliciesForReleaseTarget = `-- name: SetPoliciesForReleaseTarget :exec
+
+WITH deleted AS (
+    DELETE FROM computed_policy_release_target
+    WHERE resource_id = $4
+      AND environment_id = $2
+      AND deployment_id = $3
+)
+INSERT INTO computed_policy_release_target (policy_id, environment_id, deployment_id, resource_id, computed_at)
+SELECT unnest($1::uuid[]), $2, $3, $4, NOW()
+`
+
+type SetPoliciesForReleaseTargetParams struct {
+	PolicyIds     []uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// ============================================================
+// computed_policy_release_target
+// ============================================================
+func (q *Queries) SetPoliciesForReleaseTarget(ctx context.Context, arg SetPoliciesForReleaseTargetParams) error {
+	_, err := q.db.Exec(ctx, setPoliciesForReleaseTarget,
+		arg.PolicyIds,
+		arg.EnvironmentID,
+		arg.DeploymentID,
+		arg.ResourceID,
+	)
+	return err
+}
+
 const upsertAnyApprovalRule = `-- name: UpsertAnyApprovalRule :exec
 INSERT INTO policy_rule_any_approval (id, policy_id, min_approvals, created_at)
 VALUES ($1, $2, $3, COALESCE($4::timestamptz, NOW()))

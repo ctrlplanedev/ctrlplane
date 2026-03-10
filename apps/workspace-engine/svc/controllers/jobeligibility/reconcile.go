@@ -158,7 +158,8 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 
 		jobAgent, err := r.getter.GetJobAgent(ctx, agentID)
 		if err != nil {
-			return fmt.Errorf("get job agent %s: %w", agentRef.Ref, err)
+			continue
+			// return fmt.Errorf("get job agent %s: %w", agentRef.Ref, err)
 		}
 
 		job, err := jobs.NewFactoryFromGetters(r.getter).CreateJobForRelease(ctx, r.release, jobAgent, nil)

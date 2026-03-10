@@ -270,6 +270,15 @@ type ComputedEnvironmentResource struct {
 	LastEvaluatedAt pgtype.Timestamptz
 }
 
+type ComputedPolicyReleaseTarget struct {
+	ID            uuid.UUID
+	PolicyID      uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+	ResourceID    uuid.UUID
+	ComputedAt    pgtype.Timestamptz
+}
+
 type Deployment struct {
 	ID               uuid.UUID
 	Name             string

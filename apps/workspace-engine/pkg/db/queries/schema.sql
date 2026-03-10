@@ -456,3 +456,11 @@ CREATE TABLE policy_rule_evaluation (
 CREATE UNIQUE INDEX policy_rule_evaluation_scope_idx
     ON policy_rule_evaluation (rule_id, environment_id, version_id, resource_id);
 
+CREATE TABLE "computed_policy_release_target" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"policy_id" uuid NOT NULL,
+	"environment_id" uuid NOT NULL,
+	"deployment_id" uuid NOT NULL,
+	"resource_id" uuid NOT NULL,
+	"computed_at" timestamp with time zone DEFAULT now() NOT NULL
+);

@@ -1177,6 +1177,13 @@
       "when": 1773109397908,
       "tag": "0167_swift_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 168,
+      "version": "7",
+      "when": 1773115401503,
+      "tag": "0168_new_shatterstar",
+      "breakpoints": true
     }
   ]
 }

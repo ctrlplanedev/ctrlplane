@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, count, eq } from "@ctrlplane/db";
 import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -314,13 +314,22 @@ export const policiesRouter = router({
   releaseTargets: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string(),
         policyId: z.string(),
       }),
     )
-    .query(() => {
-      // TODO: Implement
+    .query(async ({ input, ctx }) => {
+      const { policyId } = input;
 
-      return [];
+      const releaseTargets = await ctx.db.query.computedPolicyReleaseTarget.findMany({
+        where: eq(schema.computedPolicyReleaseTarget.policyId, policyId),
+        limit: 1_000,
+      });
+
+      const [countResult] = await ctx.db
+        .select({ count: count() })
+        .from(schema.computedPolicyReleaseTarget)
+        .where(eq(schema.computedPolicyReleaseTarget.policyId, policyId));
+
+      return { releaseTargets, count: countResult?.count ?? 0 };
     }),
 });

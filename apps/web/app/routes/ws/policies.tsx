@@ -52,15 +52,6 @@ export function meta() {
   ];
 }
 
-function useReleaseTargets(policyId: string) {
-  const { workspace } = useWorkspace();
-  const { data, isLoading } = trpc.policies.releaseTargets.useQuery({
-    workspaceId: workspace.id,
-    policyId: policyId,
-  });
-  return { releaseTargets: data ?? [], isLoading };
-}
-
 type Policy = NonNullable<RouterOutputs["policies"]["list"]>[number];
 
 function PolicyRow({
@@ -72,8 +63,10 @@ function PolicyRow({
   onDelete: () => void;
   onView: () => void;
 }) {
-  const { releaseTargets, isLoading } = useReleaseTargets(policy.id);
-  const releaseTargetCount = releaseTargets.length;
+  const { data, isLoading } = trpc.policies.releaseTargets.useQuery({
+    policyId: policy.id,
+  });
+  const releaseTargetCount = data?.count ?? 0;
 
   return (
     <TableRow className="cursor-pointer hover:bg-muted/50" onClick={onView}>
@@ -116,25 +109,88 @@ function PolicyRow({
 function getPolicyRules(policy: Policy): Record<string, unknown>[] {
   const rules: Record<string, unknown>[] = [];
   for (const r of policy.anyApprovalRules)
-    rules.push({ id: r.id, policyId: r.policyId, anyApproval: { minApprovals: r.minApprovals } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      anyApproval: { minApprovals: r.minApprovals },
+    });
   for (const r of policy.deploymentDependencyRules)
-    rules.push({ id: r.id, policyId: r.policyId, deploymentDependency: { dependsOn: r.dependsOn } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      deploymentDependency: { dependsOn: r.dependsOn },
+    });
   for (const r of policy.deploymentWindowRules)
-    rules.push({ id: r.id, policyId: r.policyId, deploymentWindow: { allowWindow: r.allowWindow, durationMinutes: r.durationMinutes, rrule: r.rrule, timezone: r.timezone } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      deploymentWindow: {
+        allowWindow: r.allowWindow,
+        durationMinutes: r.durationMinutes,
+        rrule: r.rrule,
+        timezone: r.timezone,
+      },
+    });
   for (const r of policy.environmentProgressionRules)
-    rules.push({ id: r.id, policyId: r.policyId, environmentProgression: { dependsOnEnvironmentSelector: r.dependsOnEnvironmentSelector, maximumAgeHours: r.maximumAgeHours, minimumSoakTimeMinutes: r.minimumSoakTimeMinutes, minimumSuccessPercentage: r.minimumSuccessPercentage, successStatuses: r.successStatuses } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      environmentProgression: {
+        dependsOnEnvironmentSelector: r.dependsOnEnvironmentSelector,
+        maximumAgeHours: r.maximumAgeHours,
+        minimumSoakTimeMinutes: r.minimumSoakTimeMinutes,
+        minimumSuccessPercentage: r.minimumSuccessPercentage,
+        successStatuses: r.successStatuses,
+      },
+    });
   for (const r of policy.gradualRolloutRules)
-    rules.push({ id: r.id, policyId: r.policyId, gradualRollout: { rolloutType: r.rolloutType, timeScaleInterval: r.timeScaleInterval } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      gradualRollout: {
+        rolloutType: r.rolloutType,
+        timeScaleInterval: r.timeScaleInterval,
+      },
+    });
   for (const r of policy.retryRules)
-    rules.push({ id: r.id, policyId: r.policyId, retry: { maxRetries: r.maxRetries, backoffSeconds: r.backoffSeconds, backoffStrategy: r.backoffStrategy, maxBackoffSeconds: r.maxBackoffSeconds, retryOnStatuses: r.retryOnStatuses } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      retry: {
+        maxRetries: r.maxRetries,
+        backoffSeconds: r.backoffSeconds,
+        backoffStrategy: r.backoffStrategy,
+        maxBackoffSeconds: r.maxBackoffSeconds,
+        retryOnStatuses: r.retryOnStatuses,
+      },
+    });
   for (const r of policy.rollbackRules)
-    rules.push({ id: r.id, policyId: r.policyId, rollback: { onJobStatuses: r.onJobStatuses, onVerificationFailure: r.onVerificationFailure } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      rollback: {
+        onJobStatuses: r.onJobStatuses,
+        onVerificationFailure: r.onVerificationFailure,
+      },
+    });
   for (const r of policy.verificationRules)
-    rules.push({ id: r.id, policyId: r.policyId, verification: { metrics: r.metrics, triggerOn: r.triggerOn } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      verification: { metrics: r.metrics, triggerOn: r.triggerOn },
+    });
   for (const r of policy.versionCooldownRules)
-    rules.push({ id: r.id, policyId: r.policyId, versionCooldown: { intervalSeconds: r.intervalSeconds } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      versionCooldown: { intervalSeconds: r.intervalSeconds },
+    });
   for (const r of policy.versionSelectorRules)
-    rules.push({ id: r.id, policyId: r.policyId, versionSelector: { selector: r.selector, description: r.description } });
+    rules.push({
+      id: r.id,
+      policyId: r.policyId,
+      versionSelector: { selector: r.selector, description: r.description },
+    });
   return rules;
 }
 
@@ -221,7 +277,7 @@ function EditPolicyDialog({
       typeof parsed.metadata === "object" &&
       !Array.isArray(parsed.metadata)
         ? (parsed.metadata as Record<string, string>)
-        : (policy.metadata as Record<string, string>);
+        : policy.metadata;
     const rules = Array.isArray(parsed.rules)
       ? (parsed.rules as Record<string, unknown>[])
       : getPolicyRules(policy);

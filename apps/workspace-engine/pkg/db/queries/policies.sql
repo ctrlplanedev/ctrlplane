@@ -230,3 +230,17 @@ SET description = EXCLUDED.description, selector = EXCLUDED.selector;
 
 -- name: DeleteVersionSelectorRulesByPolicyID :exec
 DELETE FROM policy_rule_version_selector WHERE policy_id = $1;
+
+-- ============================================================
+-- computed_policy_release_target
+-- ============================================================
+
+-- name: SetPoliciesForReleaseTarget :exec
+WITH deleted AS (
+    DELETE FROM computed_policy_release_target
+    WHERE resource_id = @resource_id
+      AND environment_id = @environment_id
+      AND deployment_id = @deployment_id
+)
+INSERT INTO computed_policy_release_target (policy_id, environment_id, deployment_id, resource_id, computed_at)
+SELECT unnest(@policy_ids::uuid[]), @environment_id, @deployment_id, @resource_id, NOW();

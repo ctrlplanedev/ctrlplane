@@ -22,6 +22,7 @@ export * from "./resource-variable.js";
 export * from "./deployment-variable.js";
 export * from "./workflow.js";
 export * from "./policy-skip.js";
+export * from "./policy-release-target.js";
 export * from "./policy-rule-summary.js";
 export * from "./job-verification-metric.js";
 export * from "./relationships.js";

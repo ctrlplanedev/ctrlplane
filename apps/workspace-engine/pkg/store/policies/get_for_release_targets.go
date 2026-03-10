@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 )
@@ -66,6 +67,24 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(ctx co
 		Environment: db.ToOapiEnvironment(environment),
 		Deployment:  db.ToOapiDeployment(deployment),
 		Resource:    db.ToOapiResource(resource),
+	})
+
+	policyIDs := make([]uuid.UUID, 0, len(policies))
+	for _, policy := range policies {
+		policyID, err := uuid.Parse(policy.Id)
+		if err != nil {
+			log.Error("failed to parse policy id", "policy_id", policy.Id, "error", err)
+			continue
+		}
+		policyIDs = append(policyIDs, policyID)
+	}
+
+	log.Info("setting policies for release target", "policy_ids", len(policyIDs), "environment_id", environmentID, "deployment_id", deploymentID, "resource_id", resourceID)
+	db.GetQueries(ctx).SetPoliciesForReleaseTarget(ctx, db.SetPoliciesForReleaseTargetParams{
+		PolicyIds:     policyIDs,
+		EnvironmentID: environmentID,
+		DeploymentID:  deploymentID,
+		ResourceID:    resourceID,
 	})
 
 	return policies, nil
