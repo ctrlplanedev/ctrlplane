@@ -45,13 +45,13 @@ const getAgentsArrayWithLegacyAgent = (
   const agentsArrayWithLegacyAgent = [
     ...agentsArray,
     deployment.jobAgentId != null &&
-      deployment.jobAgentId !== "" &&
-      deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
+    deployment.jobAgentId !== "" &&
+    deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
       ? {
-        ref: deployment.jobAgentId,
-        config: deployment.jobAgentConfig,
-        selector: "true",
-      }
+          ref: deployment.jobAgentId,
+          config: deployment.jobAgentConfig,
+          selector: "true",
+        }
       : null,
   ].filter(isPresent);
   return agentsArrayWithLegacyAgent;
@@ -372,12 +372,12 @@ export const deploymentsRouter = router({
         latestJob:
           rt.latestJob != null
             ? {
-              ...rt.latestJob,
-              verifications: buildVerifications(
-                rt.latestJob.id,
-                rt.latestJob.createdAt,
-              ),
-            }
+                ...rt.latestJob,
+                verifications: buildVerifications(
+                  rt.latestJob.id,
+                  rt.latestJob.createdAt,
+                ),
+              }
             : null,
       }));
     }),
@@ -543,11 +543,11 @@ export const deploymentsRouter = router({
       const values =
         variableIds.length > 0
           ? await ctx.db.query.deploymentVariableValue.findMany({
-            where: inArray(
-              schema.deploymentVariableValue.deploymentVariableId,
-              variableIds,
-            ),
-          })
+              where: inArray(
+                schema.deploymentVariableValue.deploymentVariableId,
+                variableIds,
+              ),
+            })
           : [];
 
       const valuesByVarId = new Map<
@@ -797,15 +797,16 @@ export const deploymentsRouter = router({
           })),
         ];
 
-        const environmentIds = p.environmentProgressionRules.length > 0
-          ? [
-            ...new Set(
-              rows
-                .filter((r) => r.policyId === p.id)
-                .map((r) => r.environmentId),
-            ),
-          ]
-          : [];
+        const environmentIds =
+          p.environmentProgressionRules.length > 0
+            ? [
+                ...new Set(
+                  rows
+                    .filter((r) => r.policyId === p.id)
+                    .map((r) => r.environmentId),
+                ),
+              ]
+            : [];
 
         return {
           policy: {

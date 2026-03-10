@@ -1,7 +1,9 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import {
+  enqueuePolicyEval,
   enqueueReleaseTargetsForDeployment,
   enqueueReleaseTargetsForEnvironment,
 } from "@ctrlplane/db/reconcilers";
@@ -86,5 +88,46 @@ export const deploymentVersionsRouter = router({
       );
 
       return updated;
+    }),
+
+  evaulate: protectedProcedure
+    .input(
+      z.object({
+        versionId: z.uuid(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { versionId } = input;
+
+      const data = await ctx.db
+        .select()
+        .from(schema.deployment)
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.deployment.id, schema.deploymentVersion.deploymentId),
+        )
+        .where(eq(schema.deploymentVersion.id, versionId))
+        .then(takeFirstOrNull);
+
+      if (!data)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment version not found",
+        });
+      const { deployment } = data;
+      if (deployment.workspaceId == null)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Deployment does not have a workspace.",
+        });
+
+      await enqueuePolicyEval(ctx.db, deployment.workspaceId, versionId);
+
+      const policyEvaluations = await ctx.db
+        .select()
+        .from(schema.policyRuleEvaluation)
+        .where(eq(schema.policyRuleEvaluation.versionId, versionId));
+
+      return policyEvaluations;
     }),
 });
