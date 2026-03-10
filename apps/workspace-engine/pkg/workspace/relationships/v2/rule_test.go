@@ -46,7 +46,7 @@ func TestRelationshipRule_Match_InvalidCEL(t *testing.T) {
 	to := map[string]any{"type": "deployment", "id": "d1", "name": "app"}
 
 	_, err := rule.Match(from, to)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestRelationshipRule_Match_AlwaysTrue(t *testing.T) {

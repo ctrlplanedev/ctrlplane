@@ -360,7 +360,7 @@ func TestHandleResourceProviderSetResources_InvalidJSON(t *testing.T) {
 
 	// Handle event should fail
 	err := HandleResourceProviderSetResources(ctx, ws, rawEvent)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestHandleResourceProviderSetResources_ChangesetTracking(t *testing.T) {

@@ -90,11 +90,11 @@ func TestCompileProgram_ValidExpression(t *testing.T) {
 
 func TestCompileProgram_InvalidExpression(t *testing.T) {
 	_, err := cel.CompileProgram("this is not valid CEL !!!")
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestCompileProgram_EmptyExpression(t *testing.T) {
 	// Empty expression should fail to compile (no output type)
 	_, err := cel.CompileProgram("")
-	assert.Error(t, err)
+	require.Error(t, err)
 }

@@ -124,7 +124,7 @@ func TestEvalBool(t *testing.T) {
 			cel.Variable("x", cel.IntType),
 		)
 		_, err := EvalBool(prg, map[string]any{})
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("list contains expression", func(t *testing.T) {
@@ -291,5 +291,5 @@ func TestVariables(t *testing.T) {
 
 func TestVariables_InvalidExpression(t *testing.T) {
 	_, err := Variables(">>>invalid<<<")
-	assert.Error(t, err)
+	require.Error(t, err)
 }

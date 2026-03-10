@@ -216,7 +216,7 @@ func TestProcess_ReconcileError_Propagated(t *testing.T) {
 	ctrl := NewController(getter, &mockSetter{})
 	item := reconcileItem("any-id", "verification-metric")
 	_, err := ctrl.Process(context.Background(), item)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reconcile verification metric")
 }
 
@@ -252,7 +252,7 @@ func TestProcess_GetProviderContextError_Propagated(t *testing.T) {
 
 	item := reconcileItem(m.ID, JobVerificationMetricKind)
 	_, err := ctrl.Process(context.Background(), item)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reconcile verification metric")
 	assert.Contains(t, err.Error(), "get provider context")
 }
@@ -279,7 +279,7 @@ func TestProcess_CompleteMetricError_Propagated(t *testing.T) {
 
 	item := reconcileItem(m.ID, JobVerificationMetricKind)
 	_, err := ctrl.Process(context.Background(), item)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reconcile verification metric")
 	assert.Contains(t, err.Error(), "complete metric")
 }
@@ -609,7 +609,7 @@ func TestReconcile_GetProviderContextError(t *testing.T) {
 	setter := &mockSetter{}
 
 	_, err := Reconcile(context.Background(), getter, setter, m.ID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get provider context")
 }
 
@@ -619,7 +619,7 @@ func TestReconcile_RecordMeasurementError(t *testing.T) {
 	setter := &mockSetter{recordErr: fmt.Errorf("disk full"), getter: getter}
 
 	_, err := Reconcile(context.Background(), getter, setter, m.ID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "record measurement")
 }
 
@@ -631,7 +631,7 @@ func TestReconcile_ReReadMetricError(t *testing.T) {
 
 	setter := &mockSetter{getter: getter}
 	_, err := Reconcile(context.Background(), getter, setter, m.ID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "re-read verification metric")
 }
 
@@ -642,7 +642,7 @@ func TestReconcile_CompleteMetricError(t *testing.T) {
 	setter := &mockSetter{completeErr: fmt.Errorf("queue down"), getter: getter}
 
 	_, err := Reconcile(context.Background(), getter, setter, m.ID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "complete metric")
 }
 

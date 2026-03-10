@@ -691,7 +691,7 @@ func TestPlanDeployment_EnvironmentNotFound(t *testing.T) {
 	if err == nil {
 		assert.Nil(t, release)
 	} else {
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 

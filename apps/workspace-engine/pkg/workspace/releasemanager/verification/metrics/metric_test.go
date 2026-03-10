@@ -117,7 +117,7 @@ func TestMeasure_InvalidSuccessCondition(t *testing.T) {
 
 	_, err := Measure(ctx, &metric, &provider.ProviderContext{})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMeasure_EmptySuccessCondition(t *testing.T) {
@@ -126,7 +126,7 @@ func TestMeasure_EmptySuccessCondition(t *testing.T) {
 
 	_, err := Measure(ctx, &metric, &provider.ProviderContext{})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMeasure_InvalidFailureCondition(t *testing.T) {
@@ -137,7 +137,7 @@ func TestMeasure_InvalidFailureCondition(t *testing.T) {
 
 	_, err := Measure(ctx, &metric, &provider.ProviderContext{})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMeasure_InvalidProvider(t *testing.T) {

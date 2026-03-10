@@ -123,7 +123,7 @@ func TestResourceProviderCache_TTLExpiration(t *testing.T) {
 
 	// After retrieval, it should be deleted (one-time use)
 	_, err = cache.Retrieve(ctx, batchId2)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestResourceProviderCache_LargePayload(t *testing.T) {

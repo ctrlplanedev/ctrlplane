@@ -182,7 +182,7 @@ func TestParseJobAgentConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			addr, key, tmpl, err := ParseJobAgentConfig(tt.config)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)

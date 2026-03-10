@@ -222,7 +222,7 @@ func TestCel_CompileError(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = env.Compile(`this is not valid cel !!!`)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestCel_InListExpression(t *testing.T) {

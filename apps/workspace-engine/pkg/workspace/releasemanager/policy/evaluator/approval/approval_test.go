@@ -859,7 +859,7 @@ func TestParseTimestamp_InvalidFormat(t *testing.T) {
 
 	for _, input := range invalidInputs {
 		_, err := parseTimestamp(input)
-		assert.Error(t, err, "invalid format %q should produce an error", input)
+		require.Error(t, err, "invalid format %q should produce an error", input)
 	}
 }
 

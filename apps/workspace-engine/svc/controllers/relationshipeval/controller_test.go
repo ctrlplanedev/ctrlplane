@@ -194,7 +194,7 @@ func TestParseScopeID(t *testing.T) {
 
 	t.Run("bad uuid", func(t *testing.T) {
 		_, _, err := ParseScopeID("resource:not-a-uuid")
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("roundtrip", func(t *testing.T) {

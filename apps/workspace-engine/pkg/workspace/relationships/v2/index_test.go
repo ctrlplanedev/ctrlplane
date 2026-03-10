@@ -489,5 +489,5 @@ func TestNewRelationshipIndex_InvalidCEL(t *testing.T) {
 		Matcher: oapi.CelMatcher{Cel: "invalid $$$ expression"},
 	}
 	_, err := NewRelationshipIndex(store, rule)
-	assert.Error(t, err)
+	require.Error(t, err)
 }

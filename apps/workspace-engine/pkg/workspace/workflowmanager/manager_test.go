@@ -49,7 +49,7 @@ package workflowmanager
 
 // 	workflowRun, ok := store.WorkflowRuns.Get(wfRun.Id)
 // 	assert.True(t, ok)
-// 	assert.NoError(t, err)
+// 	require.NoError(t, err)
 // 	assert.NotNil(t, workflowRun)
 // 	assert.Equal(t, workflowID, workflowRun.WorkflowId)
 // 	assert.Equal(t, map[string]any{
@@ -134,7 +134,7 @@ package workflowmanager
 // 	wfRun, err := manager.CreateWorkflowRun(ctx, "test-workflow", map[string]any{
 // 		"test-input": "test-value",
 // 	})
-// 	assert.NoError(t, err)
+// 	require.NoError(t, err)
 // 	assert.NotNil(t, wfRun)
 // 	assert.Equal(t, "test-workflow", wfRun.WorkflowId)
 
@@ -195,7 +195,7 @@ package workflowmanager
 // 	wfRun, _ := manager.CreateWorkflowRun(ctx, "test-workflow", nil)
 
 // 	wfv, err := NewWorkflowRunView(store, wfRun.Id)
-// 	assert.NoError(t, err)
+// 	require.NoError(t, err)
 // 	assert.False(t, wfv.IsComplete())
 
 // 	wfJobs := store.WorkflowJobs.GetByWorkflowRunId(wfRun.Id)
@@ -248,7 +248,7 @@ package workflowmanager
 // 	wfRun, err := manager.CreateWorkflowRun(ctx, "test-workflow", map[string]any{
 // 		"run_job": true,
 // 	})
-// 	assert.NoError(t, err)
+// 	require.NoError(t, err)
 // 	assert.NotNil(t, wfRun)
 
 // 	wfJobs := store.WorkflowJobs.GetByWorkflowRunId(wfRun.Id)

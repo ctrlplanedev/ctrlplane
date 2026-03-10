@@ -157,7 +157,7 @@ func TestUnionStore_Close(t *testing.T) {
 	unionStore := union.New(store1, store2)
 
 	err := unionStore.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestUnionStore_StoreCount(t *testing.T) {

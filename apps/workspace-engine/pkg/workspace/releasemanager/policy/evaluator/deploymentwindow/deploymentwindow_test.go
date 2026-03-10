@@ -790,7 +790,7 @@ func TestValidateRRule_Valid(t *testing.T) {
 
 	for _, rruleStr := range validRRules {
 		err := ValidateRRule(rruleStr)
-		assert.NoError(t, err, "expected no error for valid rrule: %s", rruleStr)
+		require.NoError(t, err, "expected no error for valid rrule: %s", rruleStr)
 	}
 }
 
@@ -804,7 +804,7 @@ func TestValidateRRule_Invalid(t *testing.T) {
 
 	for _, rruleStr := range invalidRRules {
 		err := ValidateRRule(rruleStr)
-		assert.Error(t, err, "expected error for invalid rrule: %s", rruleStr)
+		require.Error(t, err, "expected error for invalid rrule: %s", rruleStr)
 	}
 }
 

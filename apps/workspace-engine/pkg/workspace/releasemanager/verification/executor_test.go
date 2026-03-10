@@ -56,7 +56,7 @@ func TestExecutor_Execute_ReleaseNotFound(t *testing.T) {
 
 	_, err := executor.Execute(ctx, &metric, nonExistentReleaseID)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to build provider context")
 	assert.Contains(t, err.Error(), "release not found")
 }
@@ -105,7 +105,7 @@ func TestExecutor_Execute_ContextCancellation(t *testing.T) {
 	// Execute should fail due to context timeout
 	_, err := executor.Execute(ctx, &metric, release.Id.String())
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestExecutor_Execute_WithTemplatedURL(t *testing.T) {

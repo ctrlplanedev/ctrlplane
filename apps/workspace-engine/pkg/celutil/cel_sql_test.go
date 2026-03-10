@@ -229,7 +229,7 @@ func TestExtractResourceFilter(t *testing.T) {
 
 func TestExtractResourceFilter_InvalidExpression(t *testing.T) {
 	_, err := ExtractResourceFilter(">>>invalid<<<", 2)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestSQLExtractor_TableQualifiedColumns(t *testing.T) {

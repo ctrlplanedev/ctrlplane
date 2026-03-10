@@ -170,7 +170,7 @@ func TestRecorder_RecordError_VerificationNotFound(t *testing.T) {
 
 	_, err := recorder.RecordError(ctx, nonExistentID, 0, testError)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verification not found")
 }
 
@@ -202,7 +202,7 @@ func TestRecorder_UpdateMessage_VerificationNotFound(t *testing.T) {
 	nonExistentID := uuid.New().String()
 	err := recorder.UpdateMessage(ctx, nonExistentID, "some message")
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verification not found")
 }
 

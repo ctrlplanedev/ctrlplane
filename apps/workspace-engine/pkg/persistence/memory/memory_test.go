@@ -202,5 +202,5 @@ func TestStore_Close(t *testing.T) {
 	store := memory.NewStore()
 
 	err := store.Close()
-	assert.NoError(t, err, "Close should not return an error")
+	require.NoError(t, err, "Close should not return an error")
 }

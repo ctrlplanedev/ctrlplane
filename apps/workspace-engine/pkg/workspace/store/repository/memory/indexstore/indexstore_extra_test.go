@@ -36,7 +36,7 @@ func TestStore_First(t *testing.T) {
 
 	// Find by status
 	result, err = store.First("status", string(oapi.JobStatusPending))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "job-1", result.Id)
 }
@@ -119,11 +119,11 @@ func TestMemDBAdapter_Unset(t *testing.T) {
 
 	// Unset it
 	err = adapter.Unset(t.Context(), job)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify it's gone
 	result, err = store.First("id", "job-1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -134,5 +134,5 @@ func TestMemDBAdapter_Unset_NonExistent(t *testing.T) {
 	adapter := NewMemDBAdapter[*oapi.Job](db, "job")
 	job := &oapi.Job{Id: "nonexistent", Status: oapi.JobStatusPending, ReleaseId: "rel-1"}
 	err = adapter.Unset(t.Context(), job)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
