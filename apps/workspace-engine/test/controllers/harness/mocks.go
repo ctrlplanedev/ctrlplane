@@ -312,6 +312,10 @@ func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(rt *oapi.Re
 	return nil
 }
 
+func (g *DesiredReleaseGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {
+	return nil, nil
+}
+
 type eligibilityCall struct {
 	WorkspaceID string
 	RT          *desiredrelease.ReleaseTarget
