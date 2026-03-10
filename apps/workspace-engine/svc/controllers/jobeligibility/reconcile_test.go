@@ -245,8 +245,6 @@ func setupHappyPath(rt *ReleaseTarget, release *oapi.Release) (*mockGetter, *moc
 
 func int32Ptr(v int32) *int32 { return &v }
 
-func backoffStrategy(s oapi.RetryRuleBackoffStrategy) *oapi.RetryRuleBackoffStrategy { return &s }
-
 func scopeID(rt *ReleaseTarget) string {
 	return fmt.Sprintf("%s:%s:%s", rt.DeploymentID, rt.EnvironmentID, rt.ResourceID)
 }

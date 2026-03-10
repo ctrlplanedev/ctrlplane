@@ -4,11 +4,11 @@ import { Router } from "express";
 
 import { and, count, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
 import {
   enqueueAllReleaseTargetsDesiredVersion,
   enqueueReleaseTargetsForEnvironment,
 } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
 
@@ -73,8 +73,7 @@ const getEnvironment: AsyncTypedHandler<
     ),
   });
 
-  if (env == null)
-    throw new ApiError("Environment not found", 404);
+  if (env == null) throw new ApiError("Environment not found", 404);
 
   const systemRows = await db
     .select({ system: schema.system })
@@ -113,8 +112,7 @@ const deleteEnvironment: AsyncTypedHandler<
     )
     .returning();
 
-  if (deleted == null)
-    throw new ApiError("Environment not found", 404);
+  if (deleted == null) throw new ApiError("Environment not found", 404);
 
   await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
@@ -130,7 +128,7 @@ const createEnvironment: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
-  const isValid = await validResourceSelector(body.resourceSelector);
+  const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
   const [created] = await db
@@ -161,7 +159,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
   const { workspaceId, environmentId } = req.params;
   const { body } = req;
 
-  const isValid = await validResourceSelector(body.resourceSelector);
+  const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
   await db
