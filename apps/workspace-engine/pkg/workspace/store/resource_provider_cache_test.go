@@ -71,7 +71,7 @@ func TestResourceProviderCache_OneTimeRetrieval(t *testing.T) {
 
 	// Second retrieval should fail (claim check pattern - one-time use)
 	batch, err = cache.Retrieve(ctx, batchId)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, batch)
 	assert.Contains(t, err.Error(), "batch not found or expired")
 }
@@ -82,7 +82,7 @@ func TestResourceProviderCache_BatchNotFound(t *testing.T) {
 
 	// Try to retrieve non-existent batch
 	batch, err := cache.Retrieve(ctx, "non-existent-batch-id")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, batch)
 	assert.Contains(t, err.Error(), "batch not found or expired")
 }

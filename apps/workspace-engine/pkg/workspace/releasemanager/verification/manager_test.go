@@ -178,7 +178,7 @@ func TestManager_StartVerification_NoMetrics(t *testing.T) {
 	// Try to start with empty metrics
 	err := manager.StartVerification(ctx, job, []oapi.VerificationMetricSpec{})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one metric configuration is required")
 
 	// Verify no verification was created
@@ -289,7 +289,7 @@ func TestManager_Restore_NoVerifications(t *testing.T) {
 
 	err := manager.Restore(ctx)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// No verifications should be running
 	manager.scheduler.mu.Lock()

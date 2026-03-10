@@ -158,7 +158,7 @@ func TestExecutor_BuildProviderContext_ReleaseNotFound(t *testing.T) {
 	nonExistentID := uuid.New().String()
 	providerCtx, err := executor.BuildProviderContext(nonExistentID)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, providerCtx)
 	assert.Contains(t, err.Error(), "release not found")
 }

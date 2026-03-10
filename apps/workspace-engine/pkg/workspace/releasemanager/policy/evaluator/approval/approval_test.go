@@ -781,7 +781,7 @@ func TestAnyApprovalEvaluator_EmptyRuleCreatedAt(t *testing.T) {
 
 func TestParseTimestamp_EmptyString(t *testing.T) {
 	result, err := parseTimestamp("")
-	assert.NoError(t, err, "empty string should not produce an error")
+	require.NoError(t, err, "empty string should not produce an error")
 	assert.True(t, result.IsZero(), "empty string should return zero time")
 }
 
@@ -818,7 +818,7 @@ func TestParseTimestamp_WithoutTimezone_Microseconds(t *testing.T) {
 	// This is the format that was causing the backwards compatibility issue
 	input := "2025-11-04T01:39:37.265927"
 	result, err := parseTimestamp(input)
-	assert.NoError(t, err, "timestamp without timezone (microseconds) should parse successfully")
+	require.NoError(t, err, "timestamp without timezone (microseconds) should parse successfully")
 	assert.Equal(t, 2025, result.Year())
 	assert.Equal(t, time.November, result.Month())
 	assert.Equal(t, 4, result.Day())
@@ -830,7 +830,7 @@ func TestParseTimestamp_WithoutTimezone_Microseconds(t *testing.T) {
 func TestParseTimestamp_WithoutTimezone_NoFractionalSeconds(t *testing.T) {
 	input := "2025-11-04T01:39:37"
 	result, err := parseTimestamp(input)
-	assert.NoError(
+	require.NoError(
 		t,
 		err,
 		"timestamp without timezone (no fractional seconds) should parse successfully",
@@ -843,7 +843,7 @@ func TestParseTimestamp_WithoutTimezone_NoFractionalSeconds(t *testing.T) {
 func TestParseTimestamp_WithoutTimezone_Nanoseconds(t *testing.T) {
 	input := "2025-11-04T01:39:37.123456789"
 	result, err := parseTimestamp(input)
-	assert.NoError(t, err, "timestamp without timezone (nanoseconds) should parse successfully")
+	require.NoError(t, err, "timestamp without timezone (nanoseconds) should parse successfully")
 	assert.Equal(t, 2025, result.Year())
 	assert.Equal(t, 123456789, result.Nanosecond())
 }

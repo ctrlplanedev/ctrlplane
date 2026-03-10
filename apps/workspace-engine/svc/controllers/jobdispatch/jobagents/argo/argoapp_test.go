@@ -132,7 +132,7 @@ func TestDispatch_BadConfig(t *testing.T) {
 	job.DispatchContext.JobAgentConfig = oapi.JobAgentConfig{}
 
 	err := a.Dispatch(context.Background(), job)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse job agent config")
 }
 

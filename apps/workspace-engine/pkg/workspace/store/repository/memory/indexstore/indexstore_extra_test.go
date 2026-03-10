@@ -20,7 +20,7 @@ func TestStore_First(t *testing.T) {
 
 	// First on empty store
 	result, err := store.First("id", "nonexistent")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 
 	// Insert a job
@@ -30,7 +30,7 @@ func TestStore_First(t *testing.T) {
 
 	// Find by id
 	result, err = store.First("id", "job-1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "job-1", result.Id)
 
@@ -114,7 +114,7 @@ func TestMemDBAdapter_Unset(t *testing.T) {
 	// Verify it exists
 	store := NewStore[*oapi.Job](db, "job", func(j *oapi.Job) string { return j.Id })
 	result, err := store.First("id", "job-1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 
 	// Unset it

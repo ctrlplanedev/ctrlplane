@@ -58,7 +58,7 @@ func TestRecorder_RecordMeasurement_VerificationNotFound(t *testing.T) {
 
 	_, err := recorder.RecordMeasurement(ctx, nonExistentID, 0, measurement)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verification not found")
 }
 
@@ -77,7 +77,7 @@ func TestRecorder_RecordMeasurement_MetricIndexOutOfRange(t *testing.T) {
 
 	_, err := recorder.RecordMeasurement(ctx, verification.Id, 10, measurement)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "metric index out of range")
 }
 

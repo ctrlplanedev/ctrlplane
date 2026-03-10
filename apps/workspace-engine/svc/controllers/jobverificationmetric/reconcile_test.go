@@ -265,7 +265,7 @@ func TestProcess_RecordMeasurementError_Propagated(t *testing.T) {
 
 	item := reconcileItem(m.ID, JobVerificationMetricKind)
 	_, err := ctrl.Process(context.Background(), item)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reconcile verification metric")
 	assert.Contains(t, err.Error(), "record measurement")
 }
@@ -334,7 +334,7 @@ func TestProcess_ReReadError_Propagated(t *testing.T) {
 
 	item := reconcileItem(m.ID, JobVerificationMetricKind)
 	_, err := ctrl.Process(context.Background(), item)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reconcile verification metric")
 	assert.Contains(t, err.Error(), "re-read verification metric")
 }
@@ -361,7 +361,7 @@ func TestReconcile_GetMetricError(t *testing.T) {
 	setter := &mockSetter{}
 
 	_, err := Reconcile(context.Background(), getter, setter, "any")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get verification metric")
 }
 
