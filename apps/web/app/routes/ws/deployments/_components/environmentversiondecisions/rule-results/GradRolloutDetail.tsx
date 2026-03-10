@@ -43,16 +43,28 @@ function usePolicyNameByRuleId(): Map<string, string> {
   }, [policies]);
 }
 
-function getEstimatedCompletion(rules: RolloutEvaluation[]): Date | null {
+function getRolloutTimes(rules: RolloutEvaluation[]): {
+  estimatedCompletion: Date | null;
+  nextDeployment: Date | null;
+} {
   let latest: Date | null = null;
+  let earliest: Date | null = null;
+  const now = new Date();
+
   for (const rule of rules) {
     const details = rule.details as Partial<RolloutDetails>;
     if (details.target_rollout_time == null) continue;
     const date = new Date(details.target_rollout_time);
     if (isNaN(date.getTime())) continue;
+
     if (latest == null || date > latest) latest = date;
+
+    if (!rule.allowed && date > now) {
+      if (earliest == null || date < earliest) earliest = date;
+    }
   }
-  return latest;
+
+  return { estimatedCompletion: latest, nextDeployment: earliest };
 }
 
 function StatusIcon({
@@ -82,7 +94,7 @@ function RolloutRow({
   const isComplete = completed === total && total > 0;
 
   const label = policyName ?? "Gradual Rollout";
-  const estimatedCompletion = getEstimatedCompletion(rules);
+  const { estimatedCompletion, nextDeployment } = getRolloutTimes(rules);
 
   return (
     <div className="flex w-full items-center gap-2">
@@ -93,13 +105,20 @@ function RolloutRow({
         </span>
         {!isComplete && <Progress value={percent} className="h-1.5 w-24" />}
       </div>
-      {!isComplete && estimatedCompletion != null && isFuture(estimatedCompletion) && (
+      {!isComplete && (
         <span className="shrink-0 text-muted-foreground">
-          in {formatDistanceToNowStrict(estimatedCompletion)}
+          {nextDeployment != null && isFuture(nextDeployment) && (
+            <>next in {formatDistanceToNowStrict(nextDeployment)}</>
+          )}
+          {nextDeployment != null &&
+            isFuture(nextDeployment) &&
+            estimatedCompletion != null &&
+            isFuture(estimatedCompletion) &&
+            " · "}
+          {estimatedCompletion != null && isFuture(estimatedCompletion) && (
+            <>done in {formatDistanceToNowStrict(estimatedCompletion)}</>
+          )}
         </span>
-      )}
-      {isComplete && (
-        <span className="shrink-0 text-muted-foreground">{percent}%</span>
       )}
     </div>
   );
