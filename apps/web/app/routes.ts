@@ -81,6 +81,10 @@ export default [
         "relationship-rules/:ruleId/edit",
         "routes/ws/relationship-rules/page.$reference.edit.tsx",
       ),
+      route(
+        "relationship-rules/:ruleId/relationships",
+        "routes/ws/relationship-rules/page.$ruleId.relationships.tsx",
+      ),
 
       route("systems", "routes/ws/systems.tsx"),
       route("runners", "routes/ws/runners/runners.tsx"),

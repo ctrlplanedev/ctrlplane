@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Edit, PlusIcon, Search, Trash2 } from "lucide-react";
+import { Edit, GitCompareArrows, PlusIcon, Search, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 
 import { trpc } from "~/api/trpc";
@@ -188,6 +188,14 @@ export default function RelationshipRules() {
 
                     <div className="flex items-center gap-1">
                       <Link
+                        to={`/${workspace.slug}/relationship-rules/${rule.id}/relationships`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <GitCompareArrows className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Link
                         to={`/${workspace.slug}/relationship-rules/${rule.id}/edit`}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -259,6 +267,14 @@ export default function RelationshipRules() {
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Rule
                       </Button>
+                      <Link
+                        to={`/${workspace.slug}/relationship-rules/${rule.id}/relationships`}
+                      >
+                        <Button variant="outline" size="sm">
+                          <GitCompareArrows className="mr-2 h-4 w-4" />
+                          View Relationships
+                        </Button>
+                      </Link>
                       <Link
                         to={`/${workspace.slug}/relationship-rules/${rule.reference}/edit`}
                       >

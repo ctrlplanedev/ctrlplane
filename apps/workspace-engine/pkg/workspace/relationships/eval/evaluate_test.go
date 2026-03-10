@@ -219,16 +219,16 @@ func TestEvaluateRule_EmptyCandidates(t *testing.T) {
 	assert.Empty(t, matches)
 }
 
-func TestEvaluateRule_CELCompileError(t *testing.T) {
+func TestEvaluateRule_CELCompileError_ReturnsNoMatches(t *testing.T) {
 	entity := resourceEntity(newID(), newID(), "web", "Server", nil)
 	rule := Rule{
 		ID: newID(), Reference: "bad", Cel: "this is not valid CEL !!!",
 	}
 	candidate := deploymentEntity(newID(), newID(), "web", "web", nil)
 
-	_, err := EvaluateRule(context.Background(), &entity, &rule, []EntityData{candidate})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "compile rule CEL")
+	matches, err := EvaluateRule(context.Background(), &entity, &rule, []EntityData{candidate})
+	require.NoError(t, err)
+	assert.Empty(t, matches)
 }
 
 func TestEvaluateRule_MultipleCandidates_PartialMatch(t *testing.T) {
@@ -393,7 +393,7 @@ func TestEvaluateRules_LoaderError(t *testing.T) {
 	assert.Contains(t, err.Error(), "db connection failed")
 }
 
-func TestEvaluateRules_CELErrorPropagated(t *testing.T) {
+func TestEvaluateRules_CELError_SkipsRule(t *testing.T) {
 	wsID := newID()
 	entity := resourceEntity(newID(), wsID, "web", "Server", nil)
 
@@ -407,9 +407,9 @@ func TestEvaluateRules_CELErrorPropagated(t *testing.T) {
 		ID: newID(), Reference: "bad", Cel: "not valid!!!",
 	}}
 
-	_, err := EvaluateRules(context.Background(), loader, &entity, rules)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "evaluate rule")
+	matches, err := EvaluateRules(context.Background(), loader, &entity, rules)
+	require.NoError(t, err)
+	assert.Empty(t, matches)
 }
 
 // ---------------------------------------------------------------------------

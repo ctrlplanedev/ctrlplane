@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -68,7 +69,9 @@ func EvaluateRule(
 
 	program, err := celEnv.Compile(rule.Cel)
 	if err != nil {
-		return nil, fmt.Errorf("compile rule CEL: %w", err)
+		log.Warn("Skipping rule with invalid CEL expression",
+			"rule", rule.ID, "error", err)
+		return nil, nil
 	}
 
 	celCtx := map[string]any{"from": nil, "to": nil}
@@ -147,7 +150,9 @@ func EvaluateRules(
 	for _, rule := range rules {
 		matches, err := EvaluateRule(ctx, entity, &rule, allCandidates)
 		if err != nil {
-			return nil, fmt.Errorf("evaluate rule %s: %w", rule.ID, err)
+			log.Warn("Skipping rule due to evaluation error",
+				"rule", rule.ID, "error", err)
+			continue
 		}
 		allMatches = append(allMatches, matches...)
 	}

@@ -651,12 +651,13 @@ func TestProcess_SkipsSelfInCandidates(t *testing.T) {
 // Process: CEL compile error
 // ---------------------------------------------------------------------------
 
-func TestProcess_CELCompileError(t *testing.T) {
+func TestProcess_CELCompileError_SkipsRule(t *testing.T) {
 	wsID := newID()
 	entityID := newID()
 
 	entity := resourceEntity(entityID, wsID, "r", "Pod", nil)
 
+	setter := &mockSetter{}
 	getter := &mockGetter{
 		entityInfo: &entity,
 		rules: []RuleInfo{
@@ -666,12 +667,14 @@ func TestProcess_CELCompileError(t *testing.T) {
 			"deployment": {deploymentEntity(newID(), wsID, "d", "d", nil)},
 		},
 	}
-	ctrl := NewController(getter, &mockSetter{})
+	ctrl := NewController(getter, setter)
 
 	_, err := ctrl.Process(context.Background(), reconcile.Item{
 		ScopeID: FormatScopeID("resource", entityID.String()),
 	})
-	assert.ErrorContains(t, err, "compile rule CEL")
+	require.NoError(t, err)
+	require.Len(t, setter.calls, 1)
+	assert.Empty(t, setter.calls[0].relationships)
 }
 
 // ---------------------------------------------------------------------------
