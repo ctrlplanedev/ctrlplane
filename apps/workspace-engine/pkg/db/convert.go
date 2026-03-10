@@ -476,6 +476,26 @@ func parseJobMetadata(raw []byte) map[string]string {
 	return result
 }
 
+var oapiToDBJobStatus = map[oapi.JobStatus]JobStatus{
+	oapi.JobStatusPending:             JobStatusPending,
+	oapi.JobStatusInProgress:          JobStatusInProgress,
+	oapi.JobStatusActionRequired:      JobStatusActionRequired,
+	oapi.JobStatusSuccessful:          JobStatusSuccessful,
+	oapi.JobStatusFailure:             JobStatusFailure,
+	oapi.JobStatusCancelled:           JobStatusCancelled,
+	oapi.JobStatusSkipped:             JobStatusSkipped,
+	oapi.JobStatusInvalidJobAgent:     JobStatusInvalidJobAgent,
+	oapi.JobStatusInvalidIntegration:  JobStatusInvalidIntegration,
+	oapi.JobStatusExternalRunNotFound: JobStatusExternalRunNotFound,
+}
+
+func ToDBJobStatus(s oapi.JobStatus) JobStatus {
+	if dbStatus, ok := oapiToDBJobStatus[s]; ok {
+		return dbStatus
+	}
+	return JobStatus(s)
+}
+
 func ToOapiJobAgent(row JobAgent) *oapi.JobAgent {
 	return &oapi.JobAgent{
 		Id:          row.ID.String(),

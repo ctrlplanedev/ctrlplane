@@ -56,7 +56,7 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 		ID:              jobID,
 		JobAgentID:      jobAgentIDParam,
 		JobAgentConfig:  jobAgentConfig,
-		Status:          db.JobStatus(job.Status),
+		Status:          db.ToDBJobStatus(job.Status),
 		CreatedAt:       pgtype.Timestamptz{Time: job.CreatedAt, Valid: !job.CreatedAt.IsZero()},
 		UpdatedAt:       pgtype.Timestamptz{Time: job.UpdatedAt, Valid: !job.UpdatedAt.IsZero()},
 		DispatchContext: dispatchContext,
