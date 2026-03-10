@@ -320,10 +320,11 @@ export const policiesRouter = router({
     .query(async ({ input, ctx }) => {
       const { policyId } = input;
 
-      const releaseTargets = await ctx.db.query.computedPolicyReleaseTarget.findMany({
-        where: eq(schema.computedPolicyReleaseTarget.policyId, policyId),
-        limit: 1_000,
-      });
+      const releaseTargets =
+        await ctx.db.query.computedPolicyReleaseTarget.findMany({
+          where: eq(schema.computedPolicyReleaseTarget.policyId, policyId),
+          limit: 1_000,
+        });
 
       const [countResult] = await ctx.db
         .select({ count: count() })

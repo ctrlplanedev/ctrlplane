@@ -17,22 +17,17 @@ export function createClient(options: ClientOptions) {
   });
 }
 
-const clientCache = new Map<string, ReturnType<typeof createClient>>();
+let clientCache: ReturnType<typeof createClient> | null = null;
 
-export function getClientFor(workspaceId: string) {
-  const cacheKey = workspaceId;
-
-  if (!clientCache.has(cacheKey)) {
-    clientCache.set(
-      cacheKey,
-      createClient({
-        baseUrl: env.WORKSPACE_ENGINE_ROUTER_URL ?? "http://localhost:9090",
-        headers: { "x-workspace-id": workspaceId },
-      }),
-    );
+export function getClientFor(workspaceId?: string) {
+  if (clientCache == null) {
+    clientCache = createClient({
+      baseUrl: env.WORKSPACE_ENGINE_ROUTER_URL ?? "http://localhost:8081",
+      headers: { "x-workspace-id": workspaceId },
+    });
   }
 
-  return clientCache.get(cacheKey)!;
+  return clientCache;
 }
 
 export { env } from "./config.js";

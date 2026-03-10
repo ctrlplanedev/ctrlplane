@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/store/resources"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/svc/http/server/openapi/utils"
@@ -92,14 +93,6 @@ func getMatchedResources(c *gin.Context, ws *workspace.Workspace, filter *oapi.S
 }
 
 func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oapi.QueryResourcesParams) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
-		})
-		return
-	}
-
 	// Parse request body
 	var body oapi.QueryResourcesJSONBody
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -109,20 +102,35 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		return
 	}
 
-	matchedResources, err := getMatchedResources(c, ws, body.Filter)
+	resourcesGetter := resources.PostgresGetResources{}
+	cel := "true"
+	if body.Filter != nil {
+		sel, err := body.Filter.AsCelSelector()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid filter: " + err.Error(),
+			})
+			return
+		}
+		cel = sel.Cel
+	}
+	resources, err := resourcesGetter.GetResources(c.Request.Context(), workspaceId, resources.GetResourcesOptions{
+		CEL: cel,
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get matched resources: " + err.Error(),
+			"error": "Failed to get resources: " + err.Error(),
 		})
 		return
 	}
 
 	// Sort all matched resources (necessary for consistent pagination)
-	sort.Slice(matchedResources, func(i, j int) bool {
-		if matchedResources[i].Name == matchedResources[j].Name {
-			return matchedResources[i].CreatedAt.Before(matchedResources[j].CreatedAt)
+	sort.Slice(resources, func(i, j int) bool {
+		if resources[i].Name == resources[j].Name {
+			return resources[i].CreatedAt.Before(resources[j].CreatedAt)
 		}
-		return matchedResources[i].Name < matchedResources[j].Name
+		return resources[i].Name < resources[j].Name
 	})
 
 	// Get pagination parameters with defaults
@@ -135,12 +143,12 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		offset = *params.Offset
 	}
 
-	total := len(matchedResources)
+	total := len(resources)
 
 	// Apply pagination
 	start := min(offset, total)
 	end := min(start+limit, total)
-	paginatedResources := matchedResources[start:end]
+	paginatedResources := resources[start:end]
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,

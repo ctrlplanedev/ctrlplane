@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, count, eq, inArray, sql } from "@ctrlplane/db";
+import { and, asc, count, eq, inArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -129,7 +129,7 @@ export const resourcesRouter = router({
         return { cel: kindFilter };
       })();
 
-      const result = await getClientFor(input.workspaceId).POST(
+      const result = await getClientFor().POST(
         "/v1/workspaces/{workspaceId}/resources/query",
         {
           body: { filter },
@@ -385,26 +385,32 @@ export const resourcesRouter = router({
         resourceIdentifier: z.string(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { workspaceId, resourceIdentifier } = input;
-      // URL encode the identifier to handle special characters like slashes
-      const encodedIdentifier = encodeURIComponent(resourceIdentifier);
-      const result = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
-        {
-          params: {
-            path: { workspaceId, resourceIdentifier: encodedIdentifier },
-          },
-        },
-      );
 
-      if (result.error) {
-        throw new Error(
-          `Failed to fetch resource variables: ${JSON.stringify(result.error)}`,
-        );
-      }
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(
+          eq(schema.resource.workspaceId, workspaceId),
+          eq(schema.resource.identifier, resourceIdentifier),
+        ),
+      });
 
-      return result.data;
+      if (!resource)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Resource not found",
+        });
+
+      const rows = await ctx.db
+        .select({
+          resourceId: schema.resourceVariable.resourceId,
+          key: schema.resourceVariable.key,
+          value: schema.resourceVariable.value,
+        })
+        .from(schema.resourceVariable)
+        .where(eq(schema.resourceVariable.resourceId, resource.id));
+
+      return rows;
     }),
 
   setVariable: protectedProcedure
@@ -441,18 +447,14 @@ export const resourcesRouter = router({
 
   kinds: protectedProcedure
     .input(z.object({ workspaceId: z.uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { workspaceId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/kinds",
-        { params: { path: { workspaceId } } },
-      );
+      const rows = await ctx.db
+        .selectDistinct({ kind: schema.resource.kind })
+        .from(schema.resource)
+        .where(eq(schema.resource.workspaceId, workspaceId))
+        .orderBy(asc(schema.resource.kind));
 
-      if (result.error != null)
-        throw new Error(
-          `Failed to fetch resource kinds: ${JSON.stringify(result.error)}`,
-        );
-
-      return result.data;
+      return rows.map((r) => r.kind);
     }),
 });
