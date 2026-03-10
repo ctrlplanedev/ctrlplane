@@ -53,8 +53,6 @@ func main() {
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global),
 		workspaceticker.New(producer),
-		// wsConsumer,
-		// routerregistrar.New(config.Global, wsConsumer.Consumer()),
 
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
