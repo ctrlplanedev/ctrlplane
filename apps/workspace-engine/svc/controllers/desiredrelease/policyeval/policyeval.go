@@ -22,6 +22,18 @@ import (
 
 var tracer = otel.Tracer("workspace/desiredrelease/policyeval")
 
+func RuleTypes() []string {
+	return []string{
+		(&versionselector.Evaluator{}).RuleType(),
+		(&approval.AnyApprovalEvaluator{}).RuleType(),
+		(&environmentprogression.EnvironmentProgressionEvaluator{}).RuleType(),
+		(&gradualrollout.GradualRolloutEvaluator{}).RuleType(),
+		(&deploymentdependency.DeploymentDependencyEvaluator{}).RuleType(),
+		(&deploymentwindow.DeploymentWindowEvaluator{}).RuleType(),
+		(&versioncooldown.VersionCooldownEvaluator{}).RuleType(),
+	}
+}
+
 // ruleEvaluators returns evaluators for a single policy rule.
 func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(

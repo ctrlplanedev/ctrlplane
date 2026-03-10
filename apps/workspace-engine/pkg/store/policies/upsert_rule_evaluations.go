@@ -26,7 +26,21 @@ type RuleEvaluationParams struct {
 
 var _ UpsertRuleEvaluations = (*PostgresUpsertRuleEvaluations)(nil)
 
-type PostgresUpsertRuleEvaluations struct{}
+func NewPostgresUpsertRuleEvaluations(ruleTypes []string) UpsertRuleEvaluations {
+	return &PostgresUpsertRuleEvaluations{
+		ruleTypes: ruleTypes,
+	}
+}
+
+type PostgresUpsertRuleEvaluations struct {
+	ruleTypes []string
+}
+
+type scopeKey struct {
+	EnvironmentID uuid.UUID
+	VersionID     uuid.UUID
+	ResourceID    uuid.UUID
+}
 
 func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(ctx context.Context, evaluations []RuleEvaluationParams) error {
 	ctx, span := tracer.Start(ctx, "Store.UpsertRuleEvaluations")
@@ -37,12 +51,21 @@ func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(ctx context.Contex
 	}
 
 	batchParams := make([]db.BatchUpsertPolicyRuleEvaluationParams, 0, len(evaluations))
+	ruleIDsByScope := make(map[scopeKey][]uuid.UUID)
+
 	for _, e := range evaluations {
 		dbParams, err := toDBParams(e)
 		if err != nil {
 			return fmt.Errorf("to db params: %w", err)
 		}
 		batchParams = append(batchParams, dbParams)
+
+		key := scopeKey{
+			EnvironmentID: dbParams.EnvironmentID,
+			VersionID:     dbParams.VersionID,
+			ResourceID:    dbParams.ResourceID,
+		}
+		ruleIDsByScope[key] = append(ruleIDsByScope[key], dbParams.RuleID)
 	}
 
 	results := db.GetQueries(ctx).BatchUpsertPolicyRuleEvaluation(ctx, batchParams)
@@ -52,7 +75,25 @@ func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(ctx context.Contex
 			batchErr = fmt.Errorf("batch upsert policy rule evaluation %d: %w", i, err)
 		}
 	})
-	return batchErr
+	if batchErr != nil {
+		return batchErr
+	}
+
+	q := db.GetQueries(ctx)
+	for scope, ruleIDs := range ruleIDsByScope {
+		err := q.DeleteStalePolicyRuleEvaluations(ctx, db.DeleteStalePolicyRuleEvaluationsParams{
+			EnvironmentID: scope.EnvironmentID,
+			VersionID:     scope.VersionID,
+			ResourceID:    scope.ResourceID,
+			RuleTypes:     p.ruleTypes,
+			KeepRuleIds:   ruleIDs,
+		})
+		if err != nil {
+			return fmt.Errorf("delete stale policy rule evaluations: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func toDBParams(e RuleEvaluationParams) (db.BatchUpsertPolicyRuleEvaluationParams, error) {

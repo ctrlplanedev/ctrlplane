@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/store/policies"
+	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ var _ Setter = (*PostgresSetter)(nil)
 
 func NewPostgresSetter(queue reconcile.Queue) *PostgresSetter {
 	return &PostgresSetter{
-		upsertRuleEvaluationsSetter: &policies.PostgresUpsertRuleEvaluations{},
+		upsertRuleEvaluationsSetter: policies.NewPostgresUpsertRuleEvaluations(policyeval.RuleTypes()),
 		Queue:                       queue,
 	}
 }

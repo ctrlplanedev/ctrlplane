@@ -15,3 +15,11 @@ SET rule_type          = EXCLUDED.rule_type,
     satisfied_at       = EXCLUDED.satisfied_at,
     next_evaluation_at = EXCLUDED.next_evaluation_at,
     evaluated_at       = EXCLUDED.evaluated_at;
+
+-- name: DeleteStalePolicyRuleEvaluations :exec
+DELETE FROM policy_rule_evaluation
+WHERE environment_id = @environment_id
+  AND version_id = @version_id
+  AND resource_id = @resource_id
+  AND rule_type = ANY(@rule_types::text[])
+  AND rule_id != ALL(@keep_rule_ids::uuid[]);
