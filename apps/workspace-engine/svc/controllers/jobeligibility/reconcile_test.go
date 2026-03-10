@@ -1002,7 +1002,7 @@ func TestReconcile_CreatedJobHasValidUUID(t *testing.T) {
 	assert.NoError(t, parseErr, "job ID should be a valid UUID")
 }
 
-func TestReconcile_NoJobAgents_Error(t *testing.T) {
+func TestReconcile_NoJobAgents_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
@@ -1010,21 +1010,23 @@ func TestReconcile_NoJobAgents_Error(t *testing.T) {
 	getter.deployment.JobAgents = &emptyAgents
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no job agents configured")
-	assert.Empty(t, setter.createdJobs)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
 }
 
-func TestReconcile_NilJobAgents_Error(t *testing.T) {
+func TestReconcile_NilJobAgents_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 	getter.deployment.JobAgents = nil
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no job agents configured")
-	assert.Empty(t, setter.createdJobs)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
 }
 
 func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {
@@ -1068,15 +1070,17 @@ func TestReconcile_GetDeploymentFails_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "get deployment")
 }
 
-func TestReconcile_GetJobAgentFails_Error(t *testing.T) {
+func TestReconcile_GetJobAgentFails_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 	getter.jobAgentErr = fmt.Errorf("agent unavailable")
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "get job agent")
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
 }
 
 func TestReconcile_GetEnvironmentFails_Error(t *testing.T) {
