@@ -206,7 +206,7 @@ type InsertJobParams struct {
 	JobAgentID      pgtype.UUID
 	JobAgentConfig  []byte
 	Status          JobStatus
-	Message         *string
+	Message         pgtype.Text
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
 	CompletedAt     pgtype.Timestamptz
