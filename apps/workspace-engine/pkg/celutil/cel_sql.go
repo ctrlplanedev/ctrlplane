@@ -174,8 +174,8 @@ func (e *SQLExtractor) tryExtractComparison(call ast.CallExpr, param int) (strin
 	if colExpr, colArgs, nextParam, ok := e.resolveColumn(args[0], param); ok {
 		if val, ok := e.extractValue(args[1]); ok {
 			clause := fmt.Sprintf("%s %s $%d", colExpr, op, nextParam)
-			allArgs := append(colArgs, val)
-			return clause, allArgs, nextParam + 1
+			colArgs = append(colArgs, val)
+			return clause, colArgs, nextParam + 1
 		}
 	}
 
@@ -183,8 +183,8 @@ func (e *SQLExtractor) tryExtractComparison(call ast.CallExpr, param int) (strin
 	if colExpr, colArgs, nextParam, ok := e.resolveColumn(args[1], param); ok {
 		if val, ok := e.extractValue(args[0]); ok {
 			clause := fmt.Sprintf("%s %s $%d", colExpr, op, nextParam)
-			allArgs := append(colArgs, val)
-			return clause, allArgs, nextParam + 1
+			colArgs = append(colArgs, val)
+			return clause, colArgs, nextParam + 1
 		}
 	}
 
@@ -224,8 +224,8 @@ func (e *SQLExtractor) tryExtractIn(call ast.CallExpr, param int) (string, []any
 	}
 
 	clause := fmt.Sprintf("%s IN (%s)", colExpr, strings.Join(placeholders, ", "))
-	allArgs := append(colArgs, valArgs...)
-	return clause, allArgs, param
+	colArgs = append(colArgs, valArgs...)
+	return clause, colArgs, param
 }
 
 // tryExtractStringFunc handles CEL member functions startsWith, endsWith, and
@@ -269,8 +269,8 @@ func (e *SQLExtractor) tryExtractStringFunc(call ast.CallExpr, param int) (strin
 	}
 
 	clause := fmt.Sprintf("%s LIKE $%d", colExpr, param)
-	allArgs := append(colArgs, pattern)
-	return clause, allArgs, param + 1
+	colArgs = append(colArgs, pattern)
+	return clause, colArgs, param + 1
 }
 
 // escapeLikePattern escapes SQL LIKE special characters (%, _, \) in a

@@ -86,7 +86,9 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	retryEvaluators := c.buildRetryEvaluators(ctx, release, span)
 
 	// Combine static evaluators with dynamic retry evaluators
-	allEvaluators := append(c.staticEvaluators, retryEvaluators...)
+	allEvaluators := make([]evaluator.JobEvaluator, 0, len(c.staticEvaluators)+len(retryEvaluators))
+	allEvaluators = append(allEvaluators, c.staticEvaluators...)
+	allEvaluators = append(allEvaluators, retryEvaluators...)
 	span.SetAttributes(attribute.Int("eligibility_evaluators.count", len(allEvaluators)))
 
 	if len(allEvaluators) > 0 {
@@ -160,12 +162,13 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	}
 
 	// Determine final decision
-	if hasPending {
+	switch {
+	case hasPending:
 		result.Decision = EligibilityPending
 		result.NextEvaluationTime = earliestNextTime
-	} else if hasBlocked || !canCreate {
+	case hasBlocked || !canCreate:
 		result.Decision = EligibilityDenied
-	} else {
+	default:
 		result.Decision = EligibilityAllowed
 	}
 

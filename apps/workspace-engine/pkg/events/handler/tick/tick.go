@@ -61,7 +61,7 @@ func HandleWorkspaceTick(
 	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
 	defer span.End()
 
-	workspaceTickCount.Upsert(ws.ID, 1, func(exist bool, old int64, new int64) int64 {
+	workspaceTickCount.Upsert(ws.ID, 1, func(exist bool, old int64, _ int64) int64 {
 		return old + 1
 	})
 

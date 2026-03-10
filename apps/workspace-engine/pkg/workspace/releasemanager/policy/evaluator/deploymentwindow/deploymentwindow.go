@@ -167,11 +167,9 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 	if isInsideWindow {
 		// If inside window, next eval is when window closes
 		nextEvalTime = windowEnd
-	} else {
+	} else if !nextOccurrence.IsZero() {
 		// If outside window, next eval is when next window opens
-		if !nextOccurrence.IsZero() {
-			nextEvalTime = nextOccurrence
-		}
+		nextEvalTime = nextOccurrence
 	}
 
 	// Build the result based on window type

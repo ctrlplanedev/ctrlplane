@@ -13,8 +13,8 @@ import (
 // and values are always true (indicating the field changed)
 // Supports deeply nested paths for complex jobAgentConfig structures
 // Ignores system-managed fields like id.
-func HasDeploymentChanges(old, new *oapi.Deployment) map[string]bool {
-	if old == nil || new == nil {
+func HasDeploymentChanges(old, updated *oapi.Deployment) map[string]bool {
+	if old == nil || updated == nil {
 		return map[string]bool{"all": true}
 	}
 
@@ -39,18 +39,18 @@ func HasDeploymentChanges(old, new *oapi.Deployment) map[string]bool {
 
 	oldMap, err := toMap(old)
 	if err != nil {
-		return hasDeploymentChangesBasic(old, new)
+		return hasDeploymentChangesBasic(old, updated)
 	}
-	newMap, err := toMap(new)
+	newMap, err := toMap(updated)
 	if err != nil {
-		return hasDeploymentChangesBasic(old, new)
+		return hasDeploymentChangesBasic(old, updated)
 	}
 
 	// Use diff library to detect all changes
 	changelog, err := diff.Diff(oldMap, newMap)
 	if err != nil {
 		// Fallback to basic comparison if diff fails
-		return hasDeploymentChangesBasic(old, new)
+		return hasDeploymentChangesBasic(old, updated)
 	}
 
 	// Convert diff changelog to our field path format
@@ -80,27 +80,27 @@ func isIgnoredDeploymentField(fieldPath string) bool {
 }
 
 // hasDeploymentChangesBasic is a fallback implementation without external dependencies.
-func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
+func hasDeploymentChangesBasic(old, updated *oapi.Deployment) map[string]bool {
 	changed := make(map[string]bool)
 
-	if old.Name != new.Name {
+	if old.Name != updated.Name {
 		changed["name"] = true
 	}
-	if old.Slug != new.Slug {
+	if old.Slug != updated.Slug {
 		changed["slug"] = true
 	}
 
 	// Compare Description (pointer field)
-	if (old.Description == nil && new.Description != nil) ||
-		(old.Description != nil && new.Description == nil) ||
-		(old.Description != nil && new.Description != nil && *old.Description != *new.Description) {
+	if (old.Description == nil && updated.Description != nil) ||
+		(old.Description != nil && updated.Description == nil) ||
+		(old.Description != nil && updated.Description != nil && *old.Description != *updated.Description) {
 		changed["description"] = true
 	}
 
 	// Compare JobAgentId (pointer field)
-	if (old.JobAgentId == nil && new.JobAgentId != nil) ||
-		(old.JobAgentId != nil && new.JobAgentId == nil) ||
-		(old.JobAgentId != nil && new.JobAgentId != nil && *old.JobAgentId != *new.JobAgentId) {
+	if (old.JobAgentId == nil && updated.JobAgentId != nil) ||
+		(old.JobAgentId != nil && updated.JobAgentId == nil) ||
+		(old.JobAgentId != nil && updated.JobAgentId != nil && *old.JobAgentId != *updated.JobAgentId) {
 		changed["jobagentid"] = true
 	}
 
@@ -108,7 +108,7 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 	if err != nil {
 		return changed
 	}
-	newJobAgentConfigJSON, err := json.Marshal(new.JobAgentConfig)
+	updatedJobAgentConfigJSON, err := json.Marshal(updated.JobAgentConfig)
 	if err != nil {
 		return changed
 	}
@@ -118,27 +118,27 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 	if err != nil {
 		return changed
 	}
-	var newJobAgentConfigMap map[string]any
-	err = json.Unmarshal(newJobAgentConfigJSON, &newJobAgentConfigMap)
+	var updatedJobAgentConfigMap map[string]any
+	err = json.Unmarshal(updatedJobAgentConfigJSON, &updatedJobAgentConfigMap)
 	if err != nil {
 		return changed
 	}
 
 	// Compare JobAgentConfig (map)
 	for key := range oldJobAgentConfigMap {
-		if newVal, exists := newJobAgentConfigMap[key]; !exists ||
+		if newVal, exists := updatedJobAgentConfigMap[key]; !exists ||
 			!deepEqual(oldJobAgentConfigMap[key], newVal) {
 			changed["jobagentconfig."+key] = true
 		}
 	}
-	for key := range newJobAgentConfigMap {
+	for key := range updatedJobAgentConfigMap {
 		if _, exists := oldJobAgentConfigMap[key]; !exists {
 			changed["jobagentconfig."+key] = true
 		}
 	}
 
 	// Compare ResourceSelector using deep equality
-	if !deepEqual(old.ResourceSelector, new.ResourceSelector) {
+	if !deepEqual(old.ResourceSelector, updated.ResourceSelector) {
 		changed["resourceselector"] = true
 	}
 

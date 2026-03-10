@@ -122,7 +122,9 @@ func TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID(t *testing.T) {
 	_ = invalidRT.Persist(invalidStore)
 	invalidSpans := invalidStore.GetSpans()
 
-	allSpans := append(validSpans, invalidSpans...)
+	allSpans := make([]sdktrace.ReadOnlySpan, 0, len(validSpans)+len(invalidSpans))
+	allSpans = append(allSpans, validSpans...)
+	allSpans = append(allSpans, invalidSpans...)
 
 	store := &DBStore{pool: nil}
 

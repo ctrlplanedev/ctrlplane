@@ -112,8 +112,8 @@ func randomElement(slice []string) string {
 	return slice[rand.Intn(len(slice))]
 }
 
-func randomInt(min, max int) int {
-	return rand.Intn(max-min) + min
+func randomInt(lo, hi int) int {
+	return rand.Intn(hi-lo) + lo
 }
 
 func randomIntFromSlice(values []int) int {
@@ -264,7 +264,8 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 
 		resourceJSON, err := json.Marshal(resource)
 		if err != nil {
-			log.Fatalf("Failed to marshal resource: %v", err)
+			log.Printf("Failed to marshal resource: %v", err)
+			return
 		}
 
 		event := Event{
@@ -276,7 +277,8 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 
 		eventJSON, err := json.Marshal(event)
 		if err != nil {
-			log.Fatalf("Failed to marshal event: %v", err)
+			log.Printf("Failed to marshal event: %v", err)
+			return
 		}
 
 		err = producer.Produce(&kafka.Message{
@@ -284,7 +286,8 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 			Value:          eventJSON,
 		}, deliveryChan)
 		if err != nil {
-			log.Fatalf("Failed to produce message: %v", err)
+			log.Printf("Failed to produce message: %v", err)
+			return
 		}
 
 		if (i+1)%100 == 0 {

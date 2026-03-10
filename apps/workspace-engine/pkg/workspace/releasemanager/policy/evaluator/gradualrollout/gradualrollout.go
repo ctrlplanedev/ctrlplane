@@ -58,9 +58,7 @@ func NewEvaluator(getters Getters, rolloutRule *oapi.PolicyRule) evaluator.Evalu
 		return nil
 	}
 
-	timeGetter := func() time.Time {
-		return time.Now()
-	}
+	timeGetter := time.Now
 	if testTimeGetterFactory != nil {
 		timeGetter = testTimeGetterFactory
 	}
@@ -276,16 +274,17 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(
 			)
 		}
 
-		if foundApprovalPolicy && foundEnvironmentProgressionPolicy {
+		switch {
+		case foundApprovalPolicy && foundEnvironmentProgressionPolicy:
 			// Use the later of the two times - that's when both conditions are satisfied
 			if approvalSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
 				baseStartTime = approvalSatisfiedAt
 			} else {
 				baseStartTime = environmentProgressionSatisfiedAt
 			}
-		} else if foundApprovalPolicy {
+		case foundApprovalPolicy:
 			baseStartTime = approvalSatisfiedAt
-		} else {
+		default:
 			baseStartTime = environmentProgressionSatisfiedAt
 		}
 	}

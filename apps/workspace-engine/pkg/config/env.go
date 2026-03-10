@@ -17,30 +17,30 @@ func init() {
 
 type Config struct {
 	// Server configuration
-	Host      string `envconfig:"HOST"       default:"0.0.0.0"`
-	Port      int    `envconfig:"PORT"       default:"8081"`
-	PprofPort int    `envconfig:"PPROF_PORT" default:"6060"`
+	Host      string `default:"0.0.0.0" envconfig:"HOST"`
+	Port      int    `default:"8081"    envconfig:"PORT"`
+	PprofPort int    `default:"6060"    envconfig:"PPROF_PORT"`
 
 	// Kafka configuration
-	KafkaBrokers       string `envconfig:"KAFKA_BROKERS"        default:"localhost:9092"`
-	KafkaGroupID       string `envconfig:"KAFKA_GROUP_ID"       default:"workspace-engine"`
-	KafkaTopic         string `envconfig:"KAFKA_TOPIC"          default:"workspace-events"`
-	KafkaConsumerTopic string `envconfig:"KAFKA_CONSUMER_TOPIC" default:"workspace-events"`
+	KafkaBrokers       string `default:"localhost:9092"   envconfig:"KAFKA_BROKERS"`
+	KafkaGroupID       string `default:"workspace-engine" envconfig:"KAFKA_GROUP_ID"`
+	KafkaTopic         string `default:"workspace-events" envconfig:"KAFKA_TOPIC"`
+	KafkaConsumerTopic string `default:"workspace-events" envconfig:"KAFKA_CONSUMER_TOPIC"`
 
-	OTELServiceName          string `envconfig:"OTEL_SERVICE_NAME"           default:"ctrlplane/workspace-engine"`
-	OTELExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"localhost:4318"`
+	OTELServiceName          string `default:"ctrlplane/workspace-engine" envconfig:"OTEL_SERVICE_NAME"`
+	OTELExporterOTLPEndpoint string `default:"localhost:4318"             envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 
-	GithubBotAppID      string `envconfig:"GITHUB_BOT_APP_ID"      default:""`
-	GithubBotPrivateKey string `envconfig:"GITHUB_BOT_PRIVATE_KEY" default:""`
+	GithubBotAppID      string `default:"" envconfig:"GITHUB_BOT_APP_ID"`
+	GithubBotPrivateKey string `default:"" envconfig:"GITHUB_BOT_PRIVATE_KEY"`
 
-	PostgresURL             string `envconfig:"POSTGRES_URL"              default:"postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"`
-	PostgresMaxPoolSize     int    `envconfig:"POSTGRES_MAX_POOL_SIZE"    default:"50"`
-	PostgresApplicationName string `envconfig:"POSTGRES_APPLICATION_NAME" default:"workspace-engine"`
+	PostgresURL             string `default:"postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane" envconfig:"POSTGRES_URL"`
+	PostgresMaxPoolSize     int    `default:"50"                                                        envconfig:"POSTGRES_MAX_POOL_SIZE"`
+	PostgresApplicationName string `default:"workspace-engine"                                          envconfig:"POSTGRES_APPLICATION_NAME"`
 
-	TraceTokenSecret string `envconfig:"TRACE_TOKEN_SECRET" default:"secret"`
+	TraceTokenSecret string `default:"secret" envconfig:"TRACE_TOKEN_SECRET"`
 
 	// Comma-separated list of services to run (empty means all).
-	Services string `envconfig:"SERVICES" default:""`
+	Services string `default:"" envconfig:"SERVICES"`
 }
 
 // IsServiceEnabled reports whether kind appears in the SERVICES list.

@@ -236,7 +236,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			getters:         e.getters,
 			soakMinutes:     *e.rule.MinimumSockTimeMinutes,
 			successStatuses: successStatuses,
-			timeGetter:      func() time.Time { return time.Now() },
+			timeGetter:      time.Now,
 		}
 	}
 

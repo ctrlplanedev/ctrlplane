@@ -96,17 +96,17 @@ func makeEnvironmentReleaseTargets(
 	return releaseTargets, nil
 }
 
-func diffReleaseTargets(old, new []*oapi.ReleaseTarget) (added, removed []*oapi.ReleaseTarget) {
+func diffReleaseTargets(old, updated []*oapi.ReleaseTarget) (added, removed []*oapi.ReleaseTarget) {
 	oldSet := make(map[string]struct{}, len(old))
 	for _, rt := range old {
 		oldSet[rt.Key()] = struct{}{}
 	}
-	newSet := make(map[string]struct{}, len(new))
-	for _, rt := range new {
+	newSet := make(map[string]struct{}, len(updated))
+	for _, rt := range updated {
 		newSet[rt.Key()] = struct{}{}
 	}
 
-	for _, rt := range new {
+	for _, rt := range updated {
 		if _, ok := oldSet[rt.Key()]; !ok {
 			added = append(added, rt)
 		}

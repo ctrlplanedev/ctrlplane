@@ -36,9 +36,7 @@ func NewSoakTimeEvaluator(
 		getters:         getters,
 		soakMinutes:     soakMinutes,
 		successStatuses: successStatuses,
-		timeGetter: func() time.Time {
-			return time.Now()
-		},
+		timeGetter:      time.Now,
 	})
 }
 

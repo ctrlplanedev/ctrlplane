@@ -274,7 +274,7 @@ func (m ConcurrentMap[K, V]) Clear() {
 // It returns once the size of each buffered channel is determined,
 // before all the channels are populated using goroutines.
 func snapshot[K comparable, V any](m ConcurrentMap[K, V]) (chans []chan Tuple[K, V]) {
-	//When you access map items before initializing.
+	// When you access map items before initializing.
 	if len(m.shards) == 0 {
 		panic(`cmap.ConcurrentMap is not initialized. Should run New() before usage.`)
 	}

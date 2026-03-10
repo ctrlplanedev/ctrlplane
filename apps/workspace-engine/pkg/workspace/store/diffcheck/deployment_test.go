@@ -23,7 +23,7 @@ func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:        "api-deployment",
 		Slug:        "api-deployment",
 		Description: &desc,
@@ -35,7 +35,7 @@ func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Empty(t, changes, "Should have no changes when deployments are identical")
 }
 
@@ -97,7 +97,7 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 		ResourceSelector: oldSelector,
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:        "api-new",
 		Slug:        "api-new",
 		Description: &newDesc,
@@ -110,7 +110,7 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 		ResourceSelector: newSelector,
 	}
 
-	changes := hasDeploymentChangesBasic(old, new)
+	changes := hasDeploymentChangesBasic(old, updated)
 	assert.True(t, changes["name"])
 	assert.True(t, changes["description"])
 	assert.True(t, changes["jobagentid"])
@@ -129,14 +129,14 @@ func TestHasDeploymentChanges_NameChanged(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "web-deployment",
 		Slug:           "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["name"], "Should detect name change")
 }
@@ -149,14 +149,14 @@ func TestHasDeploymentChanges_SlugChanged(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment-v2",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["slug"], "Should detect slug change")
 }
@@ -173,7 +173,7 @@ func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		Description:    &newDesc,
@@ -181,7 +181,7 @@ func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["description"], "Should detect description change")
 }
@@ -198,7 +198,7 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		JobAgentId:     &newAgent,
@@ -206,7 +206,7 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["jobagentid"], "Should detect jobAgentId change")
 }
@@ -222,7 +222,7 @@ func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -232,7 +232,7 @@ func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["jobagentconfig.image"], "Should detect jobAgentConfig.image change")
 }
@@ -247,7 +247,7 @@ func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -257,7 +257,7 @@ func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
 	assert.True(t, changes["jobagentconfig.image"], "Should detect new jobAgentConfig key")
 }
@@ -273,7 +273,7 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -282,7 +282,7 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should detect removed jobAgentConfig key")
 	assert.True(
 		t,
@@ -304,7 +304,7 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -316,7 +316,7 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should detect nested config change")
 	assert.True(
 		t,
@@ -348,7 +348,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 		Id:               "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:             "api-deployment",
 		Slug:             "api-deployment",
 		ResourceSelector: newSelector,
@@ -356,7 +356,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 		Id:               "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.GreaterOrEqual(t, len(changes), 1, "Should detect resourceSelector change")
 	// Check if any selector-related field changed
 	hasResourceSelectorChange := false
@@ -386,7 +386,7 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:        "web-deployment",
 		Slug:        "web-deployment",
 		Description: &newDesc,
@@ -397,7 +397,7 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 		Id: "deploy-456", // Different ID (should be ignored)
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.GreaterOrEqual(t, len(changes), 5, "Should detect multiple changes")
 	assert.True(t, changes["name"], "Should detect name change")
 	assert.True(t, changes["slug"], "Should detect slug change")
@@ -419,14 +419,14 @@ func TestHasDeploymentChanges_IdIgnored(t *testing.T) {
 		Id:             "deploy-old",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-new",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Empty(t, changes, "Should ignore id field changes")
 	assert.False(t, changes["id"], "Should not detect id change")
 }
@@ -439,14 +439,14 @@ func TestHasDeploymentChanges_IdIgnoredWithOtherChanges(t *testing.T) {
 		Id:             "deploy-old",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "web-deployment",
 		Slug:           "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-new",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should only detect name change, not id change")
 	assert.True(t, changes["name"], "Should detect name change")
 	assert.False(t, changes["id"], "Should not detect id change")
@@ -460,14 +460,14 @@ func TestHasDeploymentChanges_EmptyJobAgentConfig(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Empty(t, changes, "Should have no changes with empty jobAgentConfig")
 }
 
@@ -482,7 +482,7 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		Description:    &newDesc,
@@ -490,7 +490,7 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 		Id:             "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should detect description added")
 	assert.True(t, changes["description"], "Should detect description change from nil to set")
 }
@@ -512,7 +512,7 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	new := &oapi.Deployment{
+	updated := &oapi.Deployment{
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -528,7 +528,7 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 		Id: "deploy-123",
 	}
 
-	changes := HasDeploymentChanges(old, new)
+	changes := HasDeploymentChanges(old, updated)
 	assert.Len(t, changes, 1, "Should detect deeply nested change")
 	assert.True(t, changes["jobagentconfig.services.database.credentials.password"],
 		"Should detect full nested path jobagentconfig.services.database.credentials.password")

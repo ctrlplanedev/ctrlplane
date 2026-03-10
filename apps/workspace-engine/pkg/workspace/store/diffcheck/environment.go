@@ -11,18 +11,18 @@ import (
 // Returns a map where keys are field paths (e.g., "name", "description", "resourceSelector")
 // and values are always true (indicating the field changed)
 // Ignores system-managed fields like createdAt and id.
-func HasEnvironmentChanges(old, new *oapi.Environment) map[string]bool {
-	if old == nil || new == nil {
+func HasEnvironmentChanges(old, updated *oapi.Environment) map[string]bool {
+	if old == nil || updated == nil {
 		return map[string]bool{"all": true}
 	}
 
 	changed := make(map[string]bool)
 
 	// Use diff library to detect all changes
-	changelog, err := diff.Diff(old, new)
+	changelog, err := diff.Diff(old, updated)
 	if err != nil {
 		// Fallback to basic comparison if diff fails
-		return hasEnvironmentChangesBasic(old, new)
+		return hasEnvironmentChangesBasic(old, updated)
 	}
 
 	// Convert diff changelog to our field path format
@@ -53,22 +53,22 @@ func isIgnoredEnvironmentField(fieldPath string) bool {
 }
 
 // hasEnvironmentChangesBasic is a fallback implementation without external dependencies.
-func hasEnvironmentChangesBasic(old, new *oapi.Environment) map[string]bool {
+func hasEnvironmentChangesBasic(old, updated *oapi.Environment) map[string]bool {
 	changed := make(map[string]bool)
 
-	if old.Name != new.Name {
+	if old.Name != updated.Name {
 		changed["name"] = true
 	}
 
 	// Compare Description (pointer field)
-	if (old.Description == nil && new.Description != nil) ||
-		(old.Description != nil && new.Description == nil) ||
-		(old.Description != nil && new.Description != nil && *old.Description != *new.Description) {
+	if (old.Description == nil && updated.Description != nil) ||
+		(old.Description != nil && updated.Description == nil) ||
+		(old.Description != nil && updated.Description != nil && *old.Description != *updated.Description) {
 		changed["description"] = true
 	}
 
 	// Compare ResourceSelector using deep equality
-	if !deepEqual(old.ResourceSelector, new.ResourceSelector) {
+	if !deepEqual(old.ResourceSelector, updated.ResourceSelector) {
 		changed["resourceselector"] = true
 	}
 

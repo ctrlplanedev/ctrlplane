@@ -1378,8 +1378,8 @@ func WorkflowStringInputKey(key string) WorkflowInputOption {
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
 		cfg["key"] = key
-		new, _ := json.Marshal(cfg)
-		_ = input.UnmarshalJSON(new)
+		raw, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(raw)
 	}
 }
 
@@ -1389,8 +1389,8 @@ func WorkflowStringInputDefault(defaultValue string) WorkflowInputOption {
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
 		cfg["default"] = defaultValue
-		new, _ := json.Marshal(cfg)
-		_ = input.UnmarshalJSON(new)
+		raw, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(raw)
 	}
 }
 
@@ -1410,8 +1410,8 @@ func WorkflowNumberInputKey(key string) WorkflowInputOption {
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
 		cfg["key"] = key
-		new, _ := json.Marshal(cfg)
-		_ = input.UnmarshalJSON(new)
+		raw, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(raw)
 	}
 }
 
@@ -1421,8 +1421,8 @@ func WorkflowNumberInputDefault(defaultValue float32) WorkflowInputOption {
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
 		cfg["default"] = defaultValue
-		new, _ := json.Marshal(cfg)
-		_ = input.UnmarshalJSON(new)
+		raw, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(raw)
 	}
 }
 
@@ -1442,8 +1442,8 @@ func WorkflowBooleanInputKey(key string) WorkflowInputOption {
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
 		cfg["key"] = key
-		new, _ := json.Marshal(cfg)
-		_ = input.UnmarshalJSON(new)
+		raw, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(raw)
 	}
 }
 
@@ -1453,8 +1453,8 @@ func WorkflowBooleanInputDefault(defaultValue bool) WorkflowInputOption {
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
 		cfg["default"] = defaultValue
-		new, _ := json.Marshal(cfg)
-		_ = input.UnmarshalJSON(new)
+		raw, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(raw)
 	}
 }
 

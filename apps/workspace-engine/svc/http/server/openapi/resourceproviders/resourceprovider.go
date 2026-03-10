@@ -100,8 +100,8 @@ func (s *ResourceProviders) GetResourceProviders(
 func (s *ResourceProviders) CacheBatch(c *gin.Context, workspaceId string) {
 	// Parse request body
 	var body struct {
-		ProviderId string           `json:"providerId" binding:"required"`
-		Resources  []*oapi.Resource `json:"resources" binding:"required"`
+		ProviderId string           `binding:"required" json:"providerId"`
+		Resources  []*oapi.Resource `binding:"required" json:"resources"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

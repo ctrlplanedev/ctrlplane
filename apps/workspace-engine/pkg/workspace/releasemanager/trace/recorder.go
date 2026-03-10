@@ -312,11 +312,12 @@ func (r *ReconcileTarget) Complete(status Status) {
 func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 	var targetStore PersistenceStore
 
-	if len(store) > 0 {
+	switch {
+	case len(store) > 0:
 		targetStore = store[0]
-	} else if r.store != nil {
+	case r.store != nil:
 		targetStore = r.store
-	} else {
+	default:
 		return fmt.Errorf("no persistence store configured")
 	}
 

@@ -47,10 +47,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 			now := time.Now()
 			resource.UpdatedAt = &now
 		}
-	} else {
-		if resource.CreatedAt.IsZero() {
-			resource.CreatedAt = time.Now()
-		}
+	} else if resource.CreatedAt.IsZero() {
+		resource.CreatedAt = time.Now()
 	}
 
 	if err := r.repo.Set(resource); err != nil {

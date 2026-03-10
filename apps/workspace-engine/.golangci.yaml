@@ -3,12 +3,19 @@ linters:
   disable:
     - errcheck
   enable:
+    # - tagliatelle
     # - nilerr
     # - govet
     # - nestif
+    - copyloopvar
     - iface
+    - fatcontext
     # - nilnil
     - godot
+    - gocritic
+    - mirror
+    - tagalign
+    # - predeclared
     # - gosec
     # - interfacebloat
     - intrange
@@ -27,6 +34,11 @@ linters:
   settings:
     interfacebloat:
       max: 5
+    tagliatelle:
+      case:
+        rules:
+          # yaml: camel
+          envconfig: upperSnake
 
 formatters:
   enable:

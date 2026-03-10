@@ -41,8 +41,7 @@ func NewProducer(brokers string, topic string, config *kafka.ConfigMap) (*Produc
 	// Handle delivery reports in the background
 	go func() {
 		for e := range p.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
+			if ev, ok := e.(*kafka.Message); ok {
 				if ev.TopicPartition.Error != nil {
 					log.Error("Failed to deliver message",
 						"error", ev.TopicPartition.Error,

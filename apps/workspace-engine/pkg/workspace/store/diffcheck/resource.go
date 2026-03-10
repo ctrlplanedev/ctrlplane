@@ -12,18 +12,18 @@ import (
 // Returns a map where keys are field paths (e.g., "name", "config.replicas", "config.database.host", "metadata.env")
 // and values are always true (indicating the field changed)
 // Supports deeply nested paths for complex config/metadata structures.
-func HasResourceChanges(old, new *oapi.Resource) map[string]bool {
-	if old == nil || new == nil {
+func HasResourceChanges(old, updated *oapi.Resource) map[string]bool {
+	if old == nil || updated == nil {
 		return map[string]bool{"all": true}
 	}
 
 	changed := make(map[string]bool)
 
 	// Use diff library to detect all changes
-	changelog, err := diff.Diff(old, new)
+	changelog, err := diff.Diff(old, updated)
 	if err != nil {
 		// Fallback to basic comparison if diff fails
-		return hasResourceChangesBasic(old, new)
+		return hasResourceChangesBasic(old, updated)
 	}
 
 	// Convert diff changelog to our field path format
@@ -86,29 +86,29 @@ func convertPathToFieldName(path []string) string {
 }
 
 // hasResourceChangesBasic is a fallback implementation without external dependencies.
-func hasResourceChangesBasic(old, new *oapi.Resource) map[string]bool {
+func hasResourceChangesBasic(old, updated *oapi.Resource) map[string]bool {
 	changed := make(map[string]bool)
 
-	if old.Name != new.Name {
+	if old.Name != updated.Name {
 		changed["name"] = true
 	}
-	if old.Kind != new.Kind {
+	if old.Kind != updated.Kind {
 		changed["kind"] = true
 	}
-	if old.Identifier != new.Identifier {
+	if old.Identifier != updated.Identifier {
 		changed["identifier"] = true
 	}
-	if old.Version != new.Version {
+	if old.Version != updated.Version {
 		changed["version"] = true
 	}
 
 	// Compare config
 	for key := range old.Config {
-		if newVal, exists := new.Config[key]; !exists || !deepEqual(old.Config[key], newVal) {
+		if newVal, exists := updated.Config[key]; !exists || !deepEqual(old.Config[key], newVal) {
 			changed["config."+key] = true
 		}
 	}
-	for key := range new.Config {
+	for key := range updated.Config {
 		if _, exists := old.Config[key]; !exists {
 			changed["config."+key] = true
 		}
@@ -116,11 +116,11 @@ func hasResourceChangesBasic(old, new *oapi.Resource) map[string]bool {
 
 	// Compare metadata
 	for key := range old.Metadata {
-		if newVal, exists := new.Metadata[key]; !exists || old.Metadata[key] != newVal {
+		if newVal, exists := updated.Metadata[key]; !exists || old.Metadata[key] != newVal {
 			changed["metadata."+key] = true
 		}
 	}
-	for key := range new.Metadata {
+	for key := range updated.Metadata {
 		if _, exists := old.Metadata[key]; !exists {
 			changed["metadata."+key] = true
 		}

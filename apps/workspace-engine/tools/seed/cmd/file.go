@@ -35,7 +35,8 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatalf("Failed to read file: %v", err)
+		log.Printf("Failed to read file: %v", err)
+		return
 	}
 
 	type event struct {
@@ -47,7 +48,8 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 
 	dataJSON := make([]event, 0)
 	if err := yaml.Unmarshal(data, &dataJSON); err != nil {
-		log.Fatalf("Failed to unmarshal file: %v", err)
+		log.Printf("Failed to unmarshal file: %v", err)
+		return
 	}
 
 	topic := "workspace-events"
@@ -58,7 +60,8 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 
 		eventJSON, err := json.Marshal(event)
 		if err != nil {
-			log.Fatalf("Failed to marshal event: %v", err)
+			log.Printf("Failed to marshal event: %v", err)
+			return
 		}
 
 		err = producer.Produce(&kafka.Message{
@@ -66,7 +69,8 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 			Value:          eventJSON,
 		}, deliveryChan)
 		if err != nil {
-			log.Fatalf("Failed to produce message: %v", err)
+			log.Printf("Failed to produce message: %v", err)
+			return
 		}
 	}
 

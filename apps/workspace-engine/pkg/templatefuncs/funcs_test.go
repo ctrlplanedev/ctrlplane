@@ -61,10 +61,8 @@ func TestFailFunction(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
 				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
 			}
 		})
 	}

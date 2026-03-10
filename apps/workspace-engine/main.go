@@ -38,8 +38,8 @@ func main() {
 
 	producer, err := kafka.NewProducer(kafka.Brokers)
 	if err != nil {
-		log.Fatal("Failed to create Kafka producer", "error", err)
-		panic(err)
+		log.Error("Failed to create Kafka producer", "error", err)
+		return
 	}
 	messaging.InitProducer(producer)
 	defer messaging.CloseProducer()
@@ -82,7 +82,7 @@ func main() {
 	log.Info("Enabled services", "services", enabled)
 
 	if err := runner.Run(ctx); err != nil {
-		log.Fatal("Runner failed", "error", err)
+		log.Error("Runner failed", "error", err)
 	}
 
 	log.Info("Workspace engine shut down")

@@ -269,12 +269,12 @@ func (w *Worker) retryBackoff(attemptCount int32) time.Duration {
 	exp := min(max(int(attemptCount), 0), 16)
 	backoff := time.Second * time.Duration(1<<exp)
 
-	max := w.cfg.MaxRetryBackoff
-	if max <= 0 {
-		max = defaultRetryBackoffCap
+	maxBackoff := w.cfg.MaxRetryBackoff
+	if maxBackoff <= 0 {
+		maxBackoff = defaultRetryBackoffCap
 	}
-	if backoff > max {
-		return max
+	if backoff > maxBackoff {
+		return maxBackoff
 	}
 	return backoff
 }

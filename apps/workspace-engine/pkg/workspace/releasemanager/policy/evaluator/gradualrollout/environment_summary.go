@@ -131,9 +131,10 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(
 			}
 		}
 
-		if evaluation.Allowed {
+		switch {
+		case evaluation.Allowed:
 			deployedTargets++
-		} else if evaluation.ActionRequired {
+		case evaluation.ActionRequired:
 			pendingTargets++
 
 			if targetTime != nil {
@@ -144,7 +145,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(
 					estimatedCompletionTime = targetTime
 				}
 			}
-		} else {
+		default:
 			deniedTargets++
 		}
 

@@ -143,6 +143,7 @@ func BuildEntityMapCache(entities []*oapi.RelatableEntity) EntityMapCache {
 
 // EntityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation.
 // This is exported for use in incremental relationship computation.
+//
 // Deprecated: Use celutil.EntityToMap directly.
 func EntityToMap(entity any) (map[string]any, error) {
 	return celutil.EntityToMap(entity)
