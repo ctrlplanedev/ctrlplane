@@ -2,18 +2,26 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { and, eq, inArray, notInArray, sql, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  notInArray,
+  sql,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import {
+  enqueueManyDeploymentSelectorEval,
+  enqueueManyEnvironmentSelectorEval,
+} from "@ctrlplane/db/reconcilers";
 import {
   deployment,
   environment,
   resource,
   resourceProvider,
 } from "@ctrlplane/db/schema";
-import {
-  enqueueManyDeploymentSelectorEval,
-  enqueueManyEnvironmentSelectorEval,
-} from "@ctrlplane/db/reconcilers";
 
 const upsertResourceProvider: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resource-providers",
@@ -29,13 +37,13 @@ const upsertResourceProvider: AsyncTypedHandler<
       target: [resourceProvider.workspaceId, resourceProvider.name],
       set: { name },
     })
-    .returning().then(takeFirstOrNull);
+    .returning()
+    .then(takeFirstOrNull);
 
   if (provider == null) {
     res.status(500).json({ error: "Failed to upsert resource provider" });
     return;
   }
-
 
   res.status(202).json(provider);
 };
@@ -163,7 +171,39 @@ const setResourceProviderResources: AsyncTypedHandler<
   res.status(202).json({ ok: true, method: "direct" });
 };
 
+const getResourceProviderResources: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, name } = req.params;
+
+  const provider = await db
+    .select()
+    .from(resourceProvider)
+    .where(
+      and(
+        eq(resourceProvider.workspaceId, workspaceId),
+        eq(resourceProvider.name, name),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (provider == null) {
+    res.status(404).json({ error: "Resource provider not found" });
+    return;
+  }
+
+  const resources = await db
+    .select()
+    .from(resource)
+    .where(eq(resource.providerId, provider.id))
+    .orderBy(desc(resource.createdAt));
+
+  res.status(200).json({ items: resources, total: resources.length });
+};
+
 export const resourceProvidersRouter = Router({ mergeParams: true })
   .put("/", asyncHandler(upsertResourceProvider))
   .get("/name/:name", asyncHandler(getResourceProviderByName))
+  .get("/name/:name/resources", asyncHandler(getResourceProviderResources))
   .put("/:providerId/set", asyncHandler(setResourceProviderResources));

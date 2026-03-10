@@ -14,6 +14,19 @@ local openapi = import '../lib/openapi.libsonnet';
       ),
     },
   },
+  '/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources': {
+    get: {
+      summary: 'Get the resources for a resource provider',
+      operationId: 'getResourceProviderResources',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.nameParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Resource')) +
+                 openapi.notFoundResponse() +
+                 openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/resource-providers': {
     put: {
       summary: 'Upsert resource provider',
