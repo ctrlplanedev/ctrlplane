@@ -87,10 +87,8 @@ resource "ctrlplane_policy" "test2" {
     min_approvals = 1
   }
 
-  deployment_window {
-    duration_minutes = 10
-    rrule            = "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR"
-    timezone         = "America/New_York"
-    allow_window     = true
+  gradual_rollout {
+    rollout_type        = "linear"
+    time_scale_interval = 300
   }
 }

@@ -23,10 +23,15 @@ export const deploymentVersionsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      const data = await ctx.db.select().from(schema.deployment).innerJoin(
-        schema.deploymentVersion,
-        eq(schema.deployment.id, schema.deploymentVersion.deploymentId),
-      ).where(eq(schema.deploymentVersion.id, input.deploymentVersionId)).then(takeFirstOrNull);
+      const data = await ctx.db
+        .select()
+        .from(schema.deployment)
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.deployment.id, schema.deploymentVersion.deploymentId),
+        )
+        .where(eq(schema.deploymentVersion.id, input.deploymentVersionId))
+        .then(takeFirstOrNull);
 
       if (data == null)
         throw new TRPCError({
@@ -69,7 +74,11 @@ export const deploymentVersionsRouter = router({
           deployment.workspaceId,
           record.environmentId,
         );
-        await enqueuePolicyEval(ctx.db, deployment.workspaceId, input.deploymentVersionId);
+        await enqueuePolicyEval(
+          ctx.db,
+          deployment.workspaceId,
+          input.deploymentVersionId,
+        );
       }
 
       return record;
@@ -144,16 +153,17 @@ export const deploymentVersionsRouter = router({
 
       await enqueuePolicyEval(ctx.db, deployment.workspaceId, versionId);
 
-      const conditions = [
-        eq(schema.policyRuleEvaluation.versionId, versionId),
-      ];
+      const conditions = [eq(schema.policyRuleEvaluation.versionId, versionId)];
       if (input.environmentId != null) {
-        conditions.push(eq(schema.policyRuleEvaluation.environmentId, input.environmentId));
+        conditions.push(
+          eq(schema.policyRuleEvaluation.environmentId, input.environmentId),
+        );
       }
 
-      const policyEvaluations = await ctx.db.query.policyRuleEvaluation.findMany({
-        where: and(...conditions),
-      });
+      const policyEvaluations =
+        await ctx.db.query.policyRuleEvaluation.findMany({
+          where: and(...conditions),
+        });
 
       return policyEvaluations;
     }),

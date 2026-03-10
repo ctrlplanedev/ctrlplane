@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+import type { DeploymentVersionStatus } from "../types";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,12 @@ import { DeploymentVersion } from "./DeploymentVersion";
 type EnvironmentVersionDecisionsProps = {
   environment: { id: string; name: string };
   deploymentId: string;
-  versions: { id: string; name?: string; tag?: string }[];
+  versions: {
+    id: string;
+    name?: string;
+    tag?: string;
+    status: DeploymentVersionStatus;
+  }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };

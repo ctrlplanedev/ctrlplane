@@ -6,6 +6,7 @@ import { trpc } from "~/api/trpc";
 import { Spinner } from "~/components/ui/spinner";
 import { ApprovalDetail } from "./rule-results/ApprovalDetail";
 import { DeploymentWindowDetail } from "./rule-results/DeploymentWindowDetail";
+import { GradRolloutDetail } from "./rule-results/GradRolloutDetail";
 
 type DeploymentVersionProps = {
   version: { id: string; status: DeploymentVersionStatus };
@@ -40,12 +41,15 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
   const approvalDetail = rules.approval[0]?.details as
     | ApprovalDetailProps
     | undefined;
-  console.log(rules.approval);
+  console.log(Object.keys(rules));
   return (
     <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
       {approvalDetail && <ApprovalDetail {...approvalDetail} />}
       {"deploymentWindow" in rules && (
         <DeploymentWindowDetail windows={rules.deploymentWindow} />
+      )}
+      {"gradualRollout" in rules && (
+        <GradRolloutDetail rules={rules.gradualRollout} />
       )}
       {/* {data.policyResults.map(({ policy, ruleResults }, idx) => (
         <div key={idx} className="w-full space-y-1 rounded-lg border p-2">
