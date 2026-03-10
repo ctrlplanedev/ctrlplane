@@ -1,6 +1,4 @@
-import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
-import _ from "lodash";
 import { PackagePlus } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
@@ -24,6 +22,8 @@ import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentVersionDecisions } from "./_components/environmentversiondecisions/EnvironmentVersionDecisions";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/versioncard/VersionCard";
+import { useComputedEdges } from "./_hooks/useComputedEdges";
+import { useComputedNodes } from "./_hooks/useComputedNotes";
 
 export function meta() {
   return [
@@ -109,17 +109,6 @@ export default function DeploymentDetail() {
     [envIds, environmentsQuery.data],
   );
 
-  const envDependsOn = useCallback(
-    (environmentId: string) =>
-      policies
-        .filter(({ policy }) => policy.enabled)
-        .filter(({ releaseTargets }) =>
-          releaseTargets.some((rt) => rt.environmentId === environmentId),
-        )
-        .flatMap(({ environmentIds }) => environmentIds),
-    [policies],
-  );
-
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
   const selectedVersion =
@@ -138,143 +127,14 @@ export default function DeploymentDetail() {
     [selectedVersionId, setSearchParams],
   );
 
-  const handleEnvironmentSelect = useCallback(
-    (environmentId: string) => {
-      setSearchParams(
-        selectedEnvironmentId === environmentId ? {} : { env: environmentId },
-      );
-    },
-    [selectedEnvironmentId, setSearchParams],
-  );
-
-  // Create ReactFlow nodes for environments (left to right flow)
-  const computedNodes: Node[] = useMemo(() => {
-    const versions = versionsQuery.data ?? [];
-    if (versions.length === 0) return [];
-
-    const firstVersion = versions[0];
-
-    // Group release targets by environment using lodash groupBy
-    const releaseTargetsByEnv = _.groupBy(
-      releaseTargets,
-      (rt) => rt.releaseTarget.environmentId,
-    );
-
-    const nodes: Node[] = [
-      {
-        id: "version-source",
-        type: "version",
-        position: { x: 50, y: 150 },
-        data: firstVersion,
-      },
-      ...environments.map((environment) => {
-        const envReleaseTargets = releaseTargetsByEnv[environment.id] ?? [];
-
-        // Count resources per version (current)
-        const currentVersionCounts: Record<string, number> = {};
-        envReleaseTargets.forEach((rt) => {
-          const versionId = rt.currentVersion?.id;
-          if (versionId) {
-            currentVersionCounts[versionId] =
-              (currentVersionCounts[versionId] ?? 0) + 1;
-          }
-        });
-
-        // Count resources per version (desired)
-        const desiredVersionCounts: Record<string, number> = {};
-        envReleaseTargets.forEach((rt) => {
-          const versionId = rt.desiredVersion?.id;
-          if (versionId) {
-            desiredVersionCounts[versionId] =
-              (desiredVersionCounts[versionId] ?? 0) + 1;
-          }
-        });
-
-        // Map version IDs to tags with counts
-        const currentVersionsWithCounts = Object.entries(currentVersionCounts)
-          .map(([id, count]) => ({
-            name: versions.find((v) => v.id === id)?.name ?? id,
-            tag: versions.find((v) => v.id === id)?.tag ?? id,
-            count,
-          }))
-          .filter((v) => v.tag);
-
-        const desiredVersionsWithCounts = Object.entries(desiredVersionCounts)
-          .map(([id, count]) => ({
-            name: versions.find((v) => v.id === id)?.name ?? id,
-            tag: versions.find((v) => v.id === id)?.tag ?? id,
-            count,
-          }))
-          .filter((v) => v.tag);
-
-        // Collect jobs from latest job in each release target
-        const jobs = envReleaseTargets
-          .map((rt) => rt.latestJob)
-          .filter((job): job is NonNullable<typeof job> => job != null);
-
-        return {
-          id: environment.id,
-          type: "environment",
-          position: { x: 0, y: 0 },
-          data: {
-            id: environment.id,
-            name: environment.name,
-            resourceCount: envReleaseTargets.length,
-            jobs,
-            currentVersionsWithCounts,
-            desiredVersionsWithCounts,
-            isLoading: releaseTargetsQuery.isLoading,
-            onSelect: () => handleEnvironmentSelect(environment.id),
-          },
-        };
-      }),
-    ];
-
-    return nodes;
-  }, [
-    environments,
+  const computedNodes = useComputedNodes({
+    versions: versionsQuery.data ?? [],
     releaseTargets,
-    versionsQuery.data,
-    handleEnvironmentSelect,
-    releaseTargetsQuery.isLoading,
-  ]);
+    environments,
+    isLoading: releaseTargetsQuery.isLoading,
+  });
 
-  // Create edges showing deployment progression (left to right)
-  const computedEdges: Edge[] = useMemo(() => {
-    const connections: Edge[] = [];
-    const environmentsWithIncoming = new Set<string>();
-
-    // Create edges based on environment dependencies (if the field exists)
-    for (const environment of environments) {
-      // Check if environment has dependency information
-      const dependsOnIds = envDependsOn(environment.id);
-      for (const dependsOnEnvironmentId of dependsOnIds) {
-        connections.push({
-          id: `${dependsOnEnvironmentId}-${environment.id}`,
-          source: dependsOnEnvironmentId,
-          target: environment.id,
-          animated: true,
-          style: { stroke: "#3b82f6", strokeWidth: 2 },
-        });
-        environmentsWithIncoming.add(environment.id);
-      }
-    }
-
-    // Connect environments with no dependencies to the version node
-    for (const environment of environments) {
-      if (!environmentsWithIncoming.has(environment.id)) {
-        connections.push({
-          id: `version-source-${environment.id}`,
-          source: "version-source",
-          target: environment.id,
-          animated: true,
-          style: { stroke: "#8b5cf6", strokeWidth: 2 },
-        });
-      }
-    }
-
-    return connections;
-  }, [environments, envDependsOn]);
+  const computedEdges = useComputedEdges({ environments, policies });
 
   const versions = versionsQuery.data ?? [];
   const noVersions = !versionsQuery.isLoading && versions.length === 0;
