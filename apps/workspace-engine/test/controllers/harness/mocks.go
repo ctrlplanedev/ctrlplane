@@ -312,8 +312,16 @@ func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(rt *oapi.Re
 	return nil
 }
 
-func (g *DesiredReleaseGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {
-	return nil, nil
+func (g *DesiredReleaseGetter) GetReleaseByJobID(_ context.Context, jobID string) (*oapi.Release, error) {
+	for _, jobs := range g.JobsByReleaseTarget {
+		if job, ok := jobs[jobID]; ok {
+			if release, ok := g.Releases[job.ReleaseId]; ok {
+				return release, nil
+			}
+			return nil, fmt.Errorf("release not found for job %s", jobID)
+		}
+	}
+	return nil, fmt.Errorf("job %s not found", jobID)
 }
 
 type eligibilityCall struct {
