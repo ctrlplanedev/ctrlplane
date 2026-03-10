@@ -5,7 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 
 import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { enqueuePolicyEval, enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
+import {
+  enqueuePolicyEval,
+  enqueueReleaseTargetsForDeployment,
+} from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
@@ -83,18 +86,16 @@ const listDeployments: AsyncTypedHandler<
   const systemLinks =
     deploymentIds.length > 0
       ? await db
-        .select({
-          deploymentId: schema.systemDeployment.deploymentId,
-          system: schema.system,
-        })
-        .from(schema.systemDeployment)
-        .innerJoin(
-          schema.system,
-          eq(schema.systemDeployment.systemId, schema.system.id),
-        )
-        .where(
-          inArray(schema.systemDeployment.deploymentId, deploymentIds),
-        )
+          .select({
+            deploymentId: schema.systemDeployment.deploymentId,
+            system: schema.system,
+          })
+          .from(schema.systemDeployment)
+          .innerJoin(
+            schema.system,
+            eq(schema.systemDeployment.systemId, schema.system.id),
+          )
+          .where(inArray(schema.systemDeployment.deploymentId, deploymentIds))
       : [];
 
   const systemsByDeploymentId = new Map<
@@ -148,14 +149,14 @@ const getDeployment: AsyncTypedHandler<
   const variableValues =
     variableIds.length > 0
       ? await db
-        .select()
-        .from(schema.deploymentVariableValue)
-        .where(
-          inArray(
-            schema.deploymentVariableValue.deploymentVariableId,
-            variableIds,
-          ),
-        )
+          .select()
+          .from(schema.deploymentVariableValue)
+          .where(
+            inArray(
+              schema.deploymentVariableValue.deploymentVariableId,
+              variableIds,
+            ),
+          )
       : [];
 
   const valuesByVariableId = new Map<
@@ -331,6 +332,7 @@ const createDeploymentVersion: AsyncTypedHandler<
 
   const data = {
     ...body,
+    name: body.name === "" ? body.tag : body.name,
     config: body.config ?? {},
     jobAgentConfig: body.jobAgentConfig ?? {},
     metadata: body.metadata ?? {},

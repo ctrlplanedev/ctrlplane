@@ -589,10 +589,14 @@ export const deploymentsRouter = router({
     })
     .mutation(async ({ input, ctx }) => {
       const { workspaceId, ...versionData } = input;
+      const name =
+        versionData.name == null || versionData.name === ""
+          ? versionData.tag
+          : versionData.name;
       const version = {
         id: uuidv4(),
         ...versionData,
-        name: versionData.name ?? versionData.tag,
+        name,
         metadata: {} as Record<string, string>,
         createdAt: new Date(),
       };
