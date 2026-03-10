@@ -18,7 +18,6 @@ import (
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
 	"workspace-engine/svc/workspaceconsumer/kafka"
-	"workspace-engine/svc/workspaceticker"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -52,7 +51,6 @@ func main() {
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global),
-		workspaceticker.New(producer),
 
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
