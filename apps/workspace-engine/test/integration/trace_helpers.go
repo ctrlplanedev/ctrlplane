@@ -90,7 +90,7 @@ func VerifyTraceStructure(t *testing.T, spans []sdktrace.ReadOnlySpan, expectedP
 }
 
 // AssertSpanAttributes verifies specific attributes on a span
-func AssertSpanAttributes(t *testing.T, span sdktrace.ReadOnlySpan, expectedAttrs map[string]interface{}) {
+func AssertSpanAttributes(t *testing.T, span sdktrace.ReadOnlySpan, expectedAttrs map[string]any) {
 	t.Helper()
 
 	attrs := make(map[string]attribute.Value)
@@ -155,8 +155,8 @@ func VerifyTraceTimeline(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 }
 
 // ExtractTraceMetadata extracts metadata from span events
-func ExtractTraceMetadata(span sdktrace.ReadOnlySpan) map[string]interface{} {
-	metadata := make(map[string]interface{})
+func ExtractTraceMetadata(span sdktrace.ReadOnlySpan) map[string]any {
+	metadata := make(map[string]any)
 
 	for _, event := range span.Events() {
 		for _, attr := range event.Attributes {
@@ -252,7 +252,7 @@ func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 
 	// Verify all sequences from 0 to N-1 are present
 	n := len(sequences)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if !seenSequences[i] {
 			t.Errorf("sequence number %d missing (expected 0 to %d): %v", i, n-1, sequences)
 			break

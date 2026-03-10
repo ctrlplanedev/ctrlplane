@@ -226,7 +226,7 @@ func TestScheduler_ConcurrentSchedule(t *testing.T) {
 	now := time.Now()
 
 	// Concurrently schedule 100 targets
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -244,7 +244,7 @@ func TestScheduler_ConcurrentGetDueAndClear(t *testing.T) {
 	now := time.Now()
 
 	// Schedule some targets
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		rt := newTestReleaseTarget("res-"+string(rune(i)), "env-1", "dep-1")
 		scheduler.Schedule(rt, now.Add(-time.Duration(i)*time.Minute))
 	}
@@ -252,16 +252,14 @@ func TestScheduler_ConcurrentGetDueAndClear(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Concurrently call GetDue
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+		wg.Go(func() {
 			scheduler.GetDue(now)
-		}()
+		})
 	}
 
 	// Concurrently call Clear
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -343,8 +341,7 @@ func BenchmarkScheduler_Schedule(b *testing.B) {
 	scheduler := NewReconciliationScheduler()
 	now := time.Now()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		rt := newTestReleaseTarget("res-"+string(rune(i%1000)), "env-1", "dep-1")
 		scheduler.Schedule(rt, now.Add(time.Duration(i)*time.Minute))
 	}
@@ -355,13 +352,12 @@ func BenchmarkScheduler_GetDue(b *testing.B) {
 	now := time.Now()
 
 	// Pre-populate with 1000 targets
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		rt := newTestReleaseTarget("res-"+string(rune(i)), "env-1", "dep-1")
 		scheduler.Schedule(rt, now.Add(time.Duration(i)*time.Minute))
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		scheduler.GetDue(now)
 	}
 }

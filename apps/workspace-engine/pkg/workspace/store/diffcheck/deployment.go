@@ -2,6 +2,7 @@ package diffcheck
 
 import (
 	"encoding/json"
+	"slices"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
@@ -75,13 +76,7 @@ func isIgnoredDeploymentField(fieldPath string) bool {
 		"id",
 	}
 
-	for _, ignored := range ignoredFields {
-		if fieldPath == ignored {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ignoredFields, fieldPath)
 }
 
 // hasDeploymentChangesBasic is a fallback implementation without external dependencies

@@ -18,7 +18,7 @@ import (
 // testUUID generates a deterministic UUID from a namespace and index so tests
 // are reproducible while using realistic ID formats.
 func testUUID(namespace string, i int) string {
-	return uuid.NewSHA1(uuid.NameSpaceDNS, []byte(fmt.Sprintf("%s-%d", namespace, i))).String()
+	return uuid.NewSHA1(uuid.NameSpaceDNS, fmt.Appendf(nil, "%s-%d", namespace, i)).String()
 }
 
 // celEvaluator holds a compiled CEL environment and a registry of entities so

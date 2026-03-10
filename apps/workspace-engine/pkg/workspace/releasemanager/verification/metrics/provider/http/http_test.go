@@ -101,7 +101,7 @@ func TestMeasure(t *testing.T) {
 			},
 			setupServer: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != "GET" {
+					if r.Method != http.MethodGet {
 						t.Errorf("expected GET method, got %s", r.Method)
 					}
 					w.WriteHeader(http.StatusOK)
@@ -126,7 +126,7 @@ func TestMeasure(t *testing.T) {
 			},
 			setupServer: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != "POST" {
+					if r.Method != http.MethodPost {
 						t.Errorf("expected POST method, got %s", r.Method)
 					}
 					w.WriteHeader(http.StatusCreated)

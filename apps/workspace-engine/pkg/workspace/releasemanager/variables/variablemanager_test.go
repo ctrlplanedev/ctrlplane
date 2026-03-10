@@ -110,7 +110,7 @@ func mustCreateSelector(celExpression string) *oapi.Selector {
 }
 
 // Helper function to create a literal value from a Go value
-func mustCreateLiteralValue(value interface{}) *oapi.LiteralValue {
+func mustCreateLiteralValue(value any) *oapi.LiteralValue {
 	lv := &oapi.LiteralValue{}
 	switch v := value.(type) {
 	case string:
@@ -155,7 +155,7 @@ func mustCreateLiteralValue(value interface{}) *oapi.LiteralValue {
 }
 
 // Helper function to create a Value with a literal
-func mustCreateValueFromLiteral(value interface{}) *oapi.Value {
+func mustCreateValueFromLiteral(value any) *oapi.Value {
 	v := &oapi.Value{}
 	lv := mustCreateLiteralValue(value)
 	if err := v.FromLiteralValue(*lv); err != nil {

@@ -1,6 +1,7 @@
 package diffcheck
 
 import (
+	"slices"
 	"strings"
 	"workspace-engine/pkg/oapi"
 
@@ -56,13 +57,7 @@ func isIgnoredField(fieldPath string) bool {
 		"providerid",
 	}
 
-	for _, ignored := range ignoredFields {
-		if fieldPath == ignored {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ignoredFields, fieldPath)
 }
 
 // convertPathToFieldName converts a diff path to our field naming convention
@@ -79,14 +74,15 @@ func convertPathToFieldName(path []string) string {
 	}
 
 	// Convert first element to lowercase
-	result := strings.ToLower(path[0])
+	var result strings.Builder
+	result.WriteString(strings.ToLower(path[0]))
 
 	// Append remaining path elements with dots
 	for i := 1; i < len(path); i++ {
-		result += "." + path[i]
+		result.WriteString("." + path[i])
 	}
 
-	return result
+	return result.String()
 }
 
 // hasResourceChangesBasic is a fallback implementation without external dependencies

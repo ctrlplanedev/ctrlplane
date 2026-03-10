@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"os"
 	"testing"
 	"time"
@@ -17,10 +18,10 @@ import (
 
 // Mock entity types for testing
 type mockResource struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name"`
-	Kind     string                 `json:"kind"`
-	Metadata map[string]interface{} `json:"metadata"`
+	ID       string         `json:"id"`
+	Name     string         `json:"name"`
+	Kind     string         `json:"kind"`
+	Metadata map[string]any `json:"metadata"`
 }
 
 func (m *mockResource) CompactionKey() (string, string) {
@@ -37,12 +38,10 @@ func (m *mockDeployment) CompactionKey() (string, string) {
 	return "mock_deployment", m.ID
 }
 
-func customJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
+func customJobAgentConfig(m map[string]any) oapi.JobAgentConfig {
 	// Minimal approach for tests: force discriminator, marshal, and rely on generated UnmarshalJSON.
-	payload := map[string]interface{}{}
-	for k, v := range m {
-		payload[k] = v
-	}
+	payload := map[string]any{}
+	maps.Copy(payload, m)
 	payload["type"] = "custom"
 
 	b, err := json.Marshal(payload)
@@ -57,12 +56,10 @@ func customJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 	return cfg
 }
 
-func customFullJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
+func customFullJobAgentConfig(m map[string]any) oapi.JobAgentConfig {
 	// For Job.jobAgentConfig (resolved/merged config)
-	payload := map[string]interface{}{}
-	for k, v := range m {
-		payload[k] = v
-	}
+	payload := map[string]any{}
+	maps.Copy(payload, m)
 	payload["type"] = "custom"
 
 	b, err := json.Marshal(payload)
@@ -77,12 +74,10 @@ func customFullJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 	return cfg
 }
 
-func customJobAgentDefaults(m map[string]interface{}) oapi.JobAgentConfig {
+func customJobAgentDefaults(m map[string]any) oapi.JobAgentConfig {
 	// For JobAgent.config (agent default config)
-	payload := map[string]interface{}{}
-	for k, v := range m {
-		payload[k] = v
-	}
+	payload := map[string]any{}
+	maps.Copy(payload, m)
 	payload["type"] = "custom"
 
 	b, err := json.Marshal(payload)
@@ -187,7 +182,7 @@ func makeChange(namespace string, changeType persistence.ChangeType, entity pers
 }
 
 // Helper to verify changelog entry exists in DB
-func verifyChangelogEntry(t *testing.T, ctx context.Context, conn *pgxpool.Conn, workspaceID, entityType, entityID string) map[string]interface{} {
+func verifyChangelogEntry(t *testing.T, ctx context.Context, conn *pgxpool.Conn, workspaceID, entityType, entityID string) map[string]any {
 	t.Helper()
 
 	var entityData []byte
@@ -202,7 +197,7 @@ func verifyChangelogEntry(t *testing.T, ctx context.Context, conn *pgxpool.Conn,
 		t.Fatalf("Failed to query changelog entry: %v", err)
 	}
 
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(entityData, &data); err != nil {
 		t.Fatalf("Failed to unmarshal entity data: %v", err)
 	}
@@ -239,7 +234,7 @@ func TestStore_Save_Upsert_SingleEntity(t *testing.T) {
 		ID:   uuid.New().String(),
 		Name: "test-resource",
 		Kind: "pod",
-		Metadata: map[string]interface{}{
+		Metadata: map[string]any{
 			"namespace": "default",
 			"labels":    map[string]string{"app": "test"},
 		},
@@ -351,7 +346,7 @@ func TestStore_Save_Upsert_UpdateExisting(t *testing.T) {
 		ID:   resourceID,
 		Name: "updated-name",
 		Kind: "deployment",
-		Metadata: map[string]interface{}{
+		Metadata: map[string]any{
 			"updated": true,
 		},
 	}
@@ -639,7 +634,7 @@ func TestStore_SaveAndLoad_Resource(t *testing.T) {
 		Name:        "test-resource",
 		Kind:        "pod",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{"key": "value"},
+		Config:      map[string]any{"key": "value"},
 		Metadata:    map[string]string{"label": "test"},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -691,7 +686,7 @@ func TestStore_SaveAndLoad_Deployment(t *testing.T) {
 		Id:             uuid.New().String(),
 		Name:           "test-deployment",
 		Slug:           "test-deployment-slug",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"version": "v1.2.3"}),
+		JobAgentConfig: customJobAgentConfig(map[string]any{"version": "v1.2.3"}),
 	}
 
 	// Save
@@ -742,7 +737,7 @@ func TestStore_SaveAndLoad_MultipleEntities(t *testing.T) {
 		Name:        "resource-1",
 		Kind:        "pod",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -753,7 +748,7 @@ func TestStore_SaveAndLoad_MultipleEntities(t *testing.T) {
 		Name:        "resource-2",
 		Kind:        "service",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -819,7 +814,7 @@ func TestStore_SaveAndLoad_UpdatedEntity(t *testing.T) {
 		Name:        "original-name",
 		Kind:        "pod",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -839,7 +834,7 @@ func TestStore_SaveAndLoad_UpdatedEntity(t *testing.T) {
 		Name:        "updated-name",
 		Kind:        "deployment",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{"updated": true},
+		Config:      map[string]any{"updated": true},
 		Metadata:    map[string]string{},
 		Version:     "v2",
 		CreatedAt:   time.Now(),
@@ -887,7 +882,7 @@ func TestStore_SaveAndLoad_DeletedEntity(t *testing.T) {
 		Name:        "keep-me",
 		Kind:        "pod",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -898,7 +893,7 @@ func TestStore_SaveAndLoad_DeletedEntity(t *testing.T) {
 		Name:        "delete-me",
 		Kind:        "service",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -960,7 +955,7 @@ func TestStore_Load_WorkspaceIsolation(t *testing.T) {
 		Name:        "workspace-1-resource",
 		Kind:        "pod",
 		WorkspaceId: workspaceID1,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -971,7 +966,7 @@ func TestStore_Load_WorkspaceIsolation(t *testing.T) {
 		Name:        "workspace-2-resource",
 		Kind:        "service",
 		WorkspaceId: workspaceID2,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),
@@ -1043,7 +1038,7 @@ func TestStore_SaveAndLoad_OAPIResource(t *testing.T) {
 		Name:        "test-resource",
 		Kind:        "kubernetes/pod",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{"key": "value"},
+		Config:      map[string]any{"key": "value"},
 		Metadata:    map[string]string{"label": "test"},
 		Version:     "v1",
 		CreatedAt:   now,
@@ -1133,7 +1128,7 @@ func TestStore_SaveAndLoad_OAPIDeployment(t *testing.T) {
 		Id:             uuid.New().String(),
 		Name:           "test-deployment",
 		Slug:           "test-deployment-slug",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"config": "value"}),
+		JobAgentConfig: customJobAgentConfig(map[string]any{"config": "value"}),
 	}
 
 	changes := persistence.Changes{
@@ -1255,7 +1250,7 @@ func TestStore_SaveAndLoad_OAPIJob(t *testing.T) {
 		ReleaseId:      uuid.New().String(),
 		JobAgentId:     uuid.New().String(),
 		Status:         oapi.JobStatusPending,
-		JobAgentConfig: customFullJobAgentConfig(map[string]interface{}{"config": "value"}),
+		JobAgentConfig: customFullJobAgentConfig(map[string]any{"config": "value"}),
 		Metadata:       map[string]string{"key": "value"},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -1299,7 +1294,7 @@ func TestStore_SaveAndLoad_OAPIJobAgent(t *testing.T) {
 		Name:        "test-agent",
 		Type:        "custom",
 		WorkspaceId: workspaceID,
-		Config:      customJobAgentDefaults(map[string]interface{}{"cluster": "prod"}),
+		Config:      customJobAgentDefaults(map[string]any{"cluster": "prod"}),
 	}
 
 	changes := persistence.Changes{
@@ -1382,7 +1377,7 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 		Name:        "Resource 1",
 		Kind:        "pod",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		Version:     "v1",
 		CreatedAt:   time.Now(),

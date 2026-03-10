@@ -237,7 +237,7 @@ func setupHappyPath(rt *ReleaseTarget, release *oapi.Release) (*mockGetter, *moc
 		deployment:  deployment,
 		jobAgents:   map[string]*oapi.JobAgent{agent.Id: agent},
 		environment: &oapi.Environment{Id: rt.EnvironmentID.String(), Name: "test-env", Metadata: map[string]string{}},
-		resource:    &oapi.Resource{Id: rt.ResourceID.String(), Name: "test-resource", Identifier: "test", Kind: "test", Metadata: map[string]string{}, Config: map[string]interface{}{}},
+		resource:    &oapi.Resource{Id: rt.ResourceID.String(), Name: "test-resource", Identifier: "test", Kind: "test", Metadata: map[string]string{}, Config: map[string]any{}},
 	}
 	setter := &mockSetter{}
 	return getter, setter
@@ -617,7 +617,7 @@ func TestReconcile_PolicyMaxRetries3_AtLimit_Allowed(t *testing.T) {
 	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 3})}
 
 	jobs := make([]*oapi.Job, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		jobs[i] = testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Duration(3-i)*time.Minute))
 	}
 	getter.jobs = jobs
@@ -635,7 +635,7 @@ func TestReconcile_PolicyMaxRetries3_Exceeded_Denied(t *testing.T) {
 	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 3})}
 
 	jobs := make([]*oapi.Job, 4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		jobs[i] = testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Duration(4-i)*time.Minute))
 	}
 	getter.jobs = jobs
@@ -841,7 +841,7 @@ func TestReconcile_ExponentialBackoff_WithMaxCap(t *testing.T) {
 	// 4 failed jobs: uncapped backoff = 10 * 2^3 = 80s, but capped at 25s
 	now := time.Now()
 	jobs := make([]*oapi.Job, 4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		created := now.Add(-time.Duration(100-i*10) * time.Second)
 		completed := created.Add(time.Second)
 		jobs[3-i] = testJobWithCompletion(release, oapi.JobStatusFailure, created, completed)
@@ -1044,7 +1044,7 @@ func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {
 		deployment:  deployment,
 		jobAgents:   map[string]*oapi.JobAgent{agent1.Id: agent1, agent2.Id: agent2},
 		environment: &oapi.Environment{Id: rt.EnvironmentID.String(), Name: "test-env", Metadata: map[string]string{}},
-		resource:    &oapi.Resource{Id: rt.ResourceID.String(), Name: "test-resource", Identifier: "test", Kind: "test", Metadata: map[string]string{}, Config: map[string]interface{}{}},
+		resource:    &oapi.Resource{Id: rt.ResourceID.String(), Name: "test-resource", Identifier: "test", Kind: "test", Metadata: map[string]string{}, Config: map[string]any{}},
 	}
 	setter := &mockSetter{}
 

@@ -150,7 +150,7 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 	}
 
 	// Create request
-	req, err := http.NewRequestWithContext(ctx, "POST", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL, nil)
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("failed to create request: %w", err)
 	}

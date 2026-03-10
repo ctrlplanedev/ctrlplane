@@ -1,6 +1,7 @@
 package diffcheck
 
 import (
+	"slices"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
@@ -48,13 +49,7 @@ func isIgnoredEnvironmentField(fieldPath string) bool {
 		"id",
 	}
 
-	for _, ignored := range ignoredFields {
-		if fieldPath == ignored {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ignoredFields, fieldPath)
 }
 
 // hasEnvironmentChangesBasic is a fallback implementation without external dependencies

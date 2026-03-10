@@ -79,7 +79,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 		)
 
 		// Collect all attributes for JSONB storage
-		allAttributes := make(map[string]interface{})
+		allAttributes := make(map[string]any)
 
 		for _, attr := range span.Attributes() {
 			key := string(attr.Key)
@@ -201,7 +201,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 }
 
 // attributeValueToInterface converts OTel attribute value to Go interface{}
-func attributeValueToInterface(value attribute.Value) interface{} {
+func attributeValueToInterface(value attribute.Value) any {
 	switch value.Type() {
 	case attribute.BOOL:
 		return value.AsBool()
@@ -225,7 +225,7 @@ func attributeValueToInterface(value attribute.Value) interface{} {
 }
 
 // nullableTime converts zero time to nil for database NULL
-func nullableTime(t time.Time) interface{} {
+func nullableTime(t time.Time) any {
 	if t.IsZero() {
 		return nil
 	}

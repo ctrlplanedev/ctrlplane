@@ -182,7 +182,7 @@ func TestInMemoryStore_ConcurrentWrites(t *testing.T) {
 	numGoroutines := 10
 
 	// Write spans concurrently
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -236,7 +236,7 @@ func TestInMemoryStore_ConcurrentReads(t *testing.T) {
 	numReaders := 20
 
 	// Read concurrently
-	for i := 0; i < numReaders; i++ {
+	for i := range numReaders {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -260,7 +260,7 @@ func TestInMemoryStore_ConcurrentReadWrite(t *testing.T) {
 	numReaders := 10
 
 	// Concurrent writers
-	for i := 0; i < numWriters; i++ {
+	for i := range numWriters {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -279,7 +279,7 @@ func TestInMemoryStore_ConcurrentReadWrite(t *testing.T) {
 	}
 
 	// Concurrent readers
-	for i := 0; i < numReaders; i++ {
+	for i := range numReaders {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -353,7 +353,7 @@ func TestInMemoryStore_LargeBatch(t *testing.T) {
 	planning := rt.StartPlanning()
 
 	// Create many evaluations
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		eval := planning.StartEvaluation("Policy")
 		eval.SetResult(trace.ResultAllowed, "Approved")
 		eval.End()
@@ -454,7 +454,7 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 	ctx := context.Background()
 
 	// Write multiple batches
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
 		rt.Complete(trace.StatusCompleted)
 

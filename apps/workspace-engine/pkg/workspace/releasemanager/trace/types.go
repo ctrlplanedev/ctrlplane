@@ -219,7 +219,7 @@ func buildAttributes(
 }
 
 // metadataToAttributes converts metadata to OTel attributes
-func metadataToAttributes(key string, value interface{}) []attribute.KeyValue {
+func metadataToAttributes(key string, value any) []attribute.KeyValue {
 	switch v := value.(type) {
 	case string:
 		return []attribute.KeyValue{attribute.String(key, v)}

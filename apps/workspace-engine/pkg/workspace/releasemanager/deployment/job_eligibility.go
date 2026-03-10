@@ -124,7 +124,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	// Build eligibility result with reason and next evaluation time
 	result := &EligibilityResult{
 		Reason:  "eligible",
-		Details: make(map[string]interface{}),
+		Details: make(map[string]any),
 	}
 
 	// Check for pending results (e.g., backoff waiting)

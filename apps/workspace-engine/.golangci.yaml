@@ -2,27 +2,39 @@ version: "2"
 linters:
   disable:
     - errcheck
-    - nilerr
-    - govet
-    - nestif
+  enable:
+    # - nilerr
+    # - govet
+    # - nestif
     - iface
-    - nilnil
-    - godot
-    - gosec
-    - interfacebloat
-    - intrange
-    - iotamixing
-    - maintidx
+    # - nilnil
+    # - godot
+    # - gosec
+    # - interfacebloat
+    # - intrange
+    # - iotamixing
+    # - maintidx
     - modernize
-    - paralleltest
-    - testifylint
-    - thelper
-    - unconvert
-    - unqueryvet
-    - unused
+    # - paralleltest
+    # - testifylint
+    # - thelper
+    # - unconvert
+    # - unqueryvet
+    # - unused
     - usestdlibvars
-    - asciicheck
-    - bidichk
+    # - asciicheck
+    # - bidichk
   settings:
     interfacebloat:
       max: 5
+
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: "interface{}"
+          replacement: "any"
+        - pattern: "a[b:len(a)]"
+          replacement: "a[b:]"

@@ -50,7 +50,7 @@ func generateDeployment(ctx context.Context, systemID string, store *store.Store
 
 func generateResources(ctx context.Context, numResources int, store *store.Store) []*oapi.Resource {
 	resources := make([]*oapi.Resource, numResources)
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		resource := &oapi.Resource{
 			Id:         uuid.New().String(),
 			Identifier: fmt.Sprintf("test-resource-%d", i),

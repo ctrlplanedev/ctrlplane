@@ -420,10 +420,7 @@ func (idx *MatchIndex) evaluateCross(ctx context.Context, rows, cols []string, s
 		return 0
 	}
 
-	rowsPerBatch := maxPairsPerBatch / len(cols)
-	if rowsPerBatch < 1 {
-		rowsPerBatch = 1
-	}
+	rowsPerBatch := max(maxPairsPerBatch/len(cols), 1)
 
 	numCols := len(cols)
 	totalEvals := 0

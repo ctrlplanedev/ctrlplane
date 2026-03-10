@@ -254,7 +254,7 @@ func TestPop(t *testing.T) {
 
 func TestCount(t *testing.T) {
 	m := New[Animal]()
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -281,7 +281,7 @@ func TestIterator(t *testing.T) {
 	m := New[Animal]()
 
 	// Insert 100 elements.
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -305,7 +305,7 @@ func TestBufferedIterator(t *testing.T) {
 	m := New[Animal]()
 
 	// Insert 100 elements.
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -329,7 +329,7 @@ func TestClear(t *testing.T) {
 	m := New[Animal]()
 
 	// Insert 100 elements.
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -344,7 +344,7 @@ func TestIterCb(t *testing.T) {
 	m := New[Animal]()
 
 	// Insert 100 elements.
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -362,7 +362,7 @@ func TestItems(t *testing.T) {
 	m := New[Animal]()
 
 	// Insert 100 elements.
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -381,7 +381,7 @@ func TestConcurrent(t *testing.T) {
 
 	// Using go routines insert 1000 ints into our map.
 	go func() {
-		for i := 0; i < iterations/2; i++ {
+		for i := range iterations / 2 {
 			// Add item to map.
 			m.Set(strconv.Itoa(i), i)
 
@@ -425,7 +425,7 @@ func TestConcurrent(t *testing.T) {
 	}
 
 	// Make sure all inserted values we're fetched from map.
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		if i != a[i] {
 			t.Error("missing value", i)
 		}
@@ -456,7 +456,7 @@ func TestKeys(t *testing.T) {
 	m := New[Animal]()
 
 	// Insert 100 elements.
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
@@ -533,13 +533,13 @@ func TestKeysWhenRemoving(t *testing.T) {
 
 	// Insert 100 elements.
 	Total := 100
-	for i := 0; i < Total; i++ {
+	for i := range Total {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 
 	// Remove 10 elements concurrently.
 	Num := 10
-	for i := 0; i < Num; i++ {
+	for i := range Num {
 		go func(c *ConcurrentMap[string, Animal], n int) {
 			c.Remove(strconv.Itoa(n))
 		}(&m, i)
@@ -556,7 +556,7 @@ func TestUnDrainedIter(t *testing.T) {
 	m := New[Animal]()
 	// Insert 100 elements.
 	Total := 100
-	for i := 0; i < Total; i++ {
+	for i := range Total {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 	counter := 0
@@ -608,7 +608,7 @@ func TestUnDrainedIterBuffered(t *testing.T) {
 	m := New[Animal]()
 	// Insert 100 elements.
 	Total := 100
-	for i := 0; i < Total; i++ {
+	for i := range Total {
 		m.Set(strconv.Itoa(i), Animal{strconv.Itoa(i)})
 	}
 	counter := 0
@@ -742,7 +742,7 @@ func TestGobDecode(t *testing.T) {
 func TestGobEncodeDecodeRoundTrip(t *testing.T) {
 	// Create a map with data
 	m1 := New[SerializableAnimal]()
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		m1.Set(strconv.Itoa(i), SerializableAnimal{strconv.Itoa(i)})
 	}
 
@@ -765,7 +765,7 @@ func TestGobEncodeDecodeRoundTrip(t *testing.T) {
 	}
 
 	// Verify all elements match
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		key := strconv.Itoa(i)
 		val1, ok1 := m1.Get(key)
 		val2, ok2 := m2.Get(key)
@@ -967,7 +967,7 @@ func TestNewWithCustomShardingFunction(t *testing.T) {
 	}
 
 	// Add elements
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		m.Set(i, strconv.Itoa(i))
 	}
 
@@ -976,7 +976,7 @@ func TestNewWithCustomShardingFunction(t *testing.T) {
 	}
 
 	// Verify all elements can be retrieved
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		val, ok := m.Get(i)
 		if !ok {
 			t.Errorf("key %d should exist", i)
@@ -990,7 +990,7 @@ func TestNewWithCustomShardingFunction(t *testing.T) {
 	// Verify the sharding function is being used by checking shard distribution
 	// With our custom sharding function, key i should be in shard i % SHARD_COUNT
 	shardCounts := make(map[int]int)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		shard := m.GetShard(i)
 		shardIndex := i % SHARD_COUNT
 		shard.RLock()

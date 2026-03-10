@@ -65,15 +65,15 @@ type Event struct {
 }
 
 type Resource struct {
-	ID          string                 `json:"id"`
-	WorkspaceID string                 `json:"workspaceId"`
-	Name        string                 `json:"name"`
-	Kind        string                 `json:"kind"`
-	Version     string                 `json:"version"`
-	Identifier  string                 `json:"identifier"`
-	CreatedAt   string                 `json:"createdAt"`
-	Config      map[string]interface{} `json:"config"`
-	Metadata    map[string]string      `json:"metadata"`
+	ID          string            `json:"id"`
+	WorkspaceID string            `json:"workspaceId"`
+	Name        string            `json:"name"`
+	Kind        string            `json:"kind"`
+	Version     string            `json:"version"`
+	Identifier  string            `json:"identifier"`
+	CreatedAt   string            `json:"createdAt"`
+	Config      map[string]any    `json:"config"`
+	Metadata    map[string]string `json:"metadata"`
 }
 
 var randomCmd = &cobra.Command{
@@ -134,7 +134,7 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		Version:     "ctrlplane.dev/v1",
 		Identifier:  identifier,
 		CreatedAt:   time.Now().Add(-time.Duration(randomInt(0, 30)) * 24 * time.Hour).Format(time.RFC3339),
-		Config:      make(map[string]interface{}),
+		Config:      make(map[string]any),
 		Metadata:    make(map[string]string),
 	}
 
@@ -193,7 +193,7 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 
 	// Add random labels
 	labelCount := randomInt(2, 6)
-	for i := 0; i < labelCount; i++ {
+	for i := range labelCount {
 		key := fmt.Sprintf("label-%d", i)
 		value := fmt.Sprintf("value-%s", uuid.New().String()[:8])
 		resource.Metadata[key] = value

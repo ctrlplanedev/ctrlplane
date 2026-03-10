@@ -132,13 +132,13 @@ func TestResourceProviderCache_LargePayload(t *testing.T) {
 
 	// Create a large batch (1000 resources)
 	resources := make([]*oapi.Resource, 1000)
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		resources[i] = &oapi.Resource{
 			Id:         string(rune(i)),
 			Identifier: string(rune(i)),
 			Name:       string(rune(i)),
 			Kind:       "TestKind",
-			Config:     map[string]interface{}{"key": "value"},
+			Config:     map[string]any{"key": "value"},
 			Metadata:   map[string]string{"meta": "data"},
 		}
 	}
@@ -168,7 +168,7 @@ func TestResourceProviderCache_ConcurrentAccess(t *testing.T) {
 	const numGoroutines = 10
 	batchIds := make(chan string, numGoroutines)
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(index int) {
 			resources := []*oapi.Resource{
 				{
@@ -191,7 +191,7 @@ func TestResourceProviderCache_ConcurrentAccess(t *testing.T) {
 	collected := make([]string, 0, numGoroutines)
 	timeout := time.After(5 * time.Second)
 
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		select {
 		case batchId := <-batchIds:
 			collected = append(collected, batchId)
@@ -287,11 +287,11 @@ func TestResourceProviderCache_ResourceIntegrity(t *testing.T) {
 			Identifier: "complex-resource",
 			Name:       "Complex Resource",
 			Kind:       "ComplexKind",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"string":  "value",
 				"number":  42,
 				"boolean": true,
-				"nested": map[string]interface{}{
+				"nested": map[string]any{
 					"key": "nested-value",
 				},
 			},
@@ -339,7 +339,7 @@ func BenchmarkResourceProviderCache_Store(b *testing.B) {
 	cache := GetResourceProviderBatchCache()
 
 	resources := make([]*oapi.Resource, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		resources[i] = &oapi.Resource{
 			Id:         string(rune(i)),
 			Identifier: string(rune(i)),
@@ -350,8 +350,7 @@ func BenchmarkResourceProviderCache_Store(b *testing.B) {
 
 	providerId := "bench-provider"
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := cache.Store(ctx, providerId, resources)
 		if err != nil {
 			b.Fatal(err)
@@ -364,7 +363,7 @@ func BenchmarkResourceProviderCache_Retrieve(b *testing.B) {
 	cache := GetResourceProviderBatchCache()
 
 	resources := make([]*oapi.Resource, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		resources[i] = &oapi.Resource{
 			Id:         string(rune(i)),
 			Identifier: string(rune(i)),
@@ -399,7 +398,7 @@ func BenchmarkResourceProviderCache_StoreAndRetrieve(b *testing.B) {
 	cache := GetResourceProviderBatchCache()
 
 	resources := make([]*oapi.Resource, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		resources[i] = &oapi.Resource{
 			Id:         string(rune(i)),
 			Identifier: string(rune(i)),
@@ -410,8 +409,7 @@ func BenchmarkResourceProviderCache_StoreAndRetrieve(b *testing.B) {
 
 	providerId := "bench-provider"
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		batchId, err := cache.Store(ctx, providerId, resources)
 		if err != nil {
 			b.Fatal(err)

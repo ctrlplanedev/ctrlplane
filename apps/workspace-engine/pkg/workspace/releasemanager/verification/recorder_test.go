@@ -90,7 +90,7 @@ func TestRecorder_RecordMeasurement_MultipleMeasurements(t *testing.T) {
 	verification := createTestVerification(s, ctx, release.Id.String(), 1, 60)
 
 	// Record multiple measurements
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		status := oapi.Passed
 		if i%2 != 0 {
 			status = oapi.Failed
@@ -119,7 +119,7 @@ func TestRecorder_RecordMeasurement_MultipleMetrics(t *testing.T) {
 	verification := createTestVerification(s, ctx, release.Id.String(), 3, 60)
 
 	// Record measurement for each metric
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		measurement := oapi.VerificationMeasurement{
 			Message:    ptr("Measurement for metric " + string(rune('1'+i))),
 			Status:     oapi.Passed,
@@ -132,7 +132,7 @@ func TestRecorder_RecordMeasurement_MultipleMetrics(t *testing.T) {
 	// Verify each metric has one measurement
 	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		assert.Len(t, updated.Metrics[i].Measurements, 1)
 	}
 }
@@ -218,7 +218,7 @@ func TestRecorder_ConcurrentRecordMeasurements(t *testing.T) {
 	var wg sync.WaitGroup
 	numGoroutines := 10
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -251,8 +251,8 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Concurrently record measurements to different metrics
-	for metricIdx := 0; metricIdx < 3; metricIdx++ {
-		for i := 0; i < 5; i++ {
+	for metricIdx := range 3 {
+		for i := range 5 {
 			wg.Add(1)
 			go func(mIdx, mNum int) {
 				defer wg.Done()
@@ -268,7 +268,7 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 	}
 
 	// Also update message concurrently
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -282,7 +282,7 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 	// Verify measurements were recorded (order may vary due to concurrency)
 	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		assert.Len(t, updated.Metrics[i].Measurements, 5)
 	}
 	assert.NotNil(t, updated.Message)

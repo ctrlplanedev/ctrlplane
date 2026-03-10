@@ -249,7 +249,7 @@ func TestDispatch_MultipleJobs(t *testing.T) {
 	setter := &mockSetter{}
 	tr := &TestRunner{timeFunc: instantTimer, setter: setter}
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		job := newTestJob(fmt.Sprintf("job-%d", i), nil)
 		require.NoError(t, tr.Dispatch(context.Background(), job))
 	}
@@ -262,7 +262,7 @@ func TestDispatch_MultipleJobs(t *testing.T) {
 	for _, c := range setter.getCalls() {
 		seen[c.JobID] = true
 	}
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		assert.True(t, seen[fmt.Sprintf("job-%d", i)])
 	}
 }
@@ -368,7 +368,7 @@ func TestDispatch_ConcurrentDispatches(t *testing.T) {
 	tr := &TestRunner{timeFunc: instantTimer, setter: setter}
 
 	var wg sync.WaitGroup
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()

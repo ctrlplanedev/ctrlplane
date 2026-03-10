@@ -128,9 +128,9 @@ func TestMetadataToAttributes(t *testing.T) {
 	tests := []struct {
 		name          string
 		key           string
-		value         interface{}
+		value         any
 		expectedType  attribute.Type
-		expectedValue interface{}
+		expectedValue any
 	}{
 		{
 			name:          "string value",

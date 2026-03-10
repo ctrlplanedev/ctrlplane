@@ -15,7 +15,7 @@ func TestHasResourceChanges_NoChanges(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:latest",
 		},
@@ -30,7 +30,7 @@ func TestHasResourceChanges_NoChanges(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:latest",
 		},
@@ -50,7 +50,7 @@ func TestHasResourceChanges_NilInputs(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -79,11 +79,11 @@ func TestHasResourceChangesBasic_DetectsChanges(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "id-old",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"image":   "nginx:v1",
 			"enabled": true,
 			"thread":  2,
-			"nested": map[string]interface{}{
+			"nested": map[string]any{
 				"key": "value",
 			},
 		},
@@ -98,7 +98,7 @@ func TestHasResourceChangesBasic_DetectsChanges(t *testing.T) {
 		Kind:       "statefulset",
 		Identifier: "id-new",
 		Version:    "v2",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"image":   "nginx:v2",
 			"enabled": false,
 			"extra":   1,
@@ -130,7 +130,7 @@ func TestHasResourceChanges_NameChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -139,7 +139,7 @@ func TestHasResourceChanges_NameChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -154,7 +154,7 @@ func TestHasResourceChanges_KindChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -163,7 +163,7 @@ func TestHasResourceChanges_KindChanged(t *testing.T) {
 		Kind:       "statefulset",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -178,7 +178,7 @@ func TestHasResourceChanges_IdentifierChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "old-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -187,7 +187,7 @@ func TestHasResourceChanges_IdentifierChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "new-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -202,7 +202,7 @@ func TestHasResourceChanges_VersionChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -211,7 +211,7 @@ func TestHasResourceChanges_VersionChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v2",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -226,7 +226,7 @@ func TestHasResourceChanges_ConfigValueChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:1.0",
 		},
@@ -238,7 +238,7 @@ func TestHasResourceChanges_ConfigValueChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:2.0",
 		},
@@ -256,7 +256,7 @@ func TestHasResourceChanges_ConfigKeyAdded(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 		},
 		Metadata: map[string]string{},
@@ -267,7 +267,7 @@ func TestHasResourceChanges_ConfigKeyAdded(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:latest",
 		},
@@ -285,7 +285,7 @@ func TestHasResourceChanges_ConfigKeyRemoved(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:latest",
 		},
@@ -297,7 +297,7 @@ func TestHasResourceChanges_ConfigKeyRemoved(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 		},
 		Metadata: map[string]string{},
@@ -315,7 +315,7 @@ func TestHasResourceChanges_MetadataValueChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env":  "staging",
 			"team": "platform",
@@ -327,7 +327,7 @@ func TestHasResourceChanges_MetadataValueChanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env":  "production",
 			"team": "platform",
@@ -345,7 +345,7 @@ func TestHasResourceChanges_MetadataKeyAdded(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env": "prod",
 		},
@@ -356,7 +356,7 @@ func TestHasResourceChanges_MetadataKeyAdded(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env":  "prod",
 			"team": "platform",
@@ -374,7 +374,7 @@ func TestHasResourceChanges_MetadataKeyRemoved(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env":  "prod",
 			"team": "platform",
@@ -386,7 +386,7 @@ func TestHasResourceChanges_MetadataKeyRemoved(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env": "prod",
 		},
@@ -404,7 +404,7 @@ func TestHasResourceChanges_MultipleChanges(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "old-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 			"image":    "nginx:1.0",
 		},
@@ -419,7 +419,7 @@ func TestHasResourceChanges_MultipleChanges(t *testing.T) {
 		Kind:       "statefulset",
 		Identifier: "new-id",
 		Version:    "v2",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 5,
 			"image":    "nginx:2.0",
 		},
@@ -453,7 +453,7 @@ func TestHasResourceChanges_EmptyMaps(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -462,7 +462,7 @@ func TestHasResourceChanges_EmptyMaps(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -485,7 +485,7 @@ func TestHasResourceChanges_NilToPopulatedConfig(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 		},
 		Metadata: map[string]string{},
@@ -502,7 +502,7 @@ func TestHasResourceChanges_NilToPopulatedMetadata(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   nil,
 	}
 
@@ -511,7 +511,7 @@ func TestHasResourceChanges_NilToPopulatedMetadata(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata: map[string]string{
 			"env": "prod",
 		},
@@ -532,7 +532,7 @@ func TestHasResourceChanges_ComplexConfigValues(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas":    3,
 			"port":        8080,
 			"enabled":     true,
@@ -546,7 +546,7 @@ func TestHasResourceChanges_ComplexConfigValues(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas":    3,
 			"port":        9090, // Changed
 			"enabled":     true,
@@ -567,7 +567,7 @@ func TestHasResourceChanges_SlicesInConfig(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"ports": []int{80, 443},
 		},
 		Metadata: map[string]string{},
@@ -578,7 +578,7 @@ func TestHasResourceChanges_SlicesInConfig(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"ports": []int{80, 443, 8080},
 		},
 		Metadata: map[string]string{},
@@ -596,7 +596,7 @@ func TestHasResourceChanges_SlicesUnchanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"ports": []int{80, 443},
 		},
 		Metadata: map[string]string{},
@@ -607,7 +607,7 @@ func TestHasResourceChanges_SlicesUnchanged(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"ports": []int{80, 443},
 		},
 		Metadata: map[string]string{},
@@ -623,7 +623,7 @@ func TestHasResourceChanges_SameValueDifferentType(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"port": "8080", // String
 		},
 		Metadata: map[string]string{},
@@ -634,7 +634,7 @@ func TestHasResourceChanges_SameValueDifferentType(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"port": 8080, // Integer
 		},
 		Metadata: map[string]string{},
@@ -651,7 +651,7 @@ func TestHasResourceChanges_AllFieldsChanged(t *testing.T) {
 		Kind:       "old-kind",
 		Identifier: "old-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"old-key": "old-value",
 		},
 		Metadata: map[string]string{
@@ -664,7 +664,7 @@ func TestHasResourceChanges_AllFieldsChanged(t *testing.T) {
 		Kind:       "new-kind",
 		Identifier: "new-id",
 		Version:    "v2",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"new-key": "new-value",
 		},
 		Metadata: map[string]string{
@@ -694,8 +694,8 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"database": map[string]interface{}{
+			Config: map[string]any{
+				"database": map[string]any{
 					"host": "localhost",
 					"port": 5432,
 				},
@@ -708,8 +708,8 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"database": map[string]interface{}{
+			Config: map[string]any{
+				"database": map[string]any{
 					"host": "localhost",
 					"port": 5432,
 				},
@@ -728,8 +728,8 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"database": map[string]interface{}{
+			Config: map[string]any{
+				"database": map[string]any{
 					"host": "localhost",
 					"port": 5432,
 				},
@@ -742,8 +742,8 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"database": map[string]interface{}{
+			Config: map[string]any{
+				"database": map[string]any{
 					"host": "prod-db.example.com", // Changed
 					"port": 5432,
 				},
@@ -763,10 +763,10 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"services": map[string]interface{}{
-					"database": map[string]interface{}{
-						"credentials": map[string]interface{}{
+			Config: map[string]any{
+				"services": map[string]any{
+					"database": map[string]any{
+						"credentials": map[string]any{
 							"username": "admin",
 							"password": "old-password",
 						},
@@ -781,10 +781,10 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"services": map[string]interface{}{
-					"database": map[string]interface{}{
-						"credentials": map[string]interface{}{
+			Config: map[string]any{
+				"services": map[string]any{
+					"database": map[string]any{
+						"credentials": map[string]any{
 							"username": "admin",
 							"password": "new-password", // Deep change
 						},
@@ -806,10 +806,10 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"services": map[string]interface{}{
-					"database": map[string]interface{}{
-						"credentials": map[string]interface{}{
+			Config: map[string]any{
+				"services": map[string]any{
+					"database": map[string]any{
+						"credentials": map[string]any{
 							"username": "admin",
 							"password": "secret",
 						},
@@ -824,10 +824,10 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"services": map[string]interface{}{
-					"database": map[string]interface{}{
-						"credentials": map[string]interface{}{
+			Config: map[string]any{
+				"services": map[string]any{
+					"database": map[string]any{
+						"credentials": map[string]any{
 							"username": "admin",
 							"password": "secret", // Same
 						},
@@ -848,7 +848,7 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"ports":    []int{80, 443},
 				"replicas": 3,
 			},
@@ -860,7 +860,7 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"ports":    []int{80, 443, 8080}, // Element added
 				"replicas": 3,
 			},
@@ -879,7 +879,7 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"ports": []int{80, 443, 8080},
 			},
 			Metadata: map[string]string{},
@@ -890,7 +890,7 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"ports": []int{80, 443, 9090}, // Last element changed
 			},
 			Metadata: map[string]string{},
@@ -908,10 +908,10 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"replicas": 3,
 				"image":    "nginx:1.0",
-				"env": map[string]interface{}{
+				"env": map[string]any{
 					"LOG_LEVEL": "info",
 					"DEBUG":     false,
 				},
@@ -924,10 +924,10 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"replicas": 5, // Changed
 				"image":    "nginx:1.0",
-				"env": map[string]interface{}{
+				"env": map[string]any{
 					"LOG_LEVEL": "debug", // Changed (nested)
 					"DEBUG":     true,    // Changed (nested)
 				},
@@ -949,13 +949,13 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"volumes": []interface{}{
-					map[string]interface{}{
+			Config: map[string]any{
+				"volumes": []any{
+					map[string]any{
 						"name":      "data",
 						"mountPath": "/data",
 					},
-					map[string]interface{}{
+					map[string]any{
 						"name":      "logs",
 						"mountPath": "/logs",
 					},
@@ -969,13 +969,13 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"volumes": []interface{}{
-					map[string]interface{}{
+			Config: map[string]any{
+				"volumes": []any{
+					map[string]any{
 						"name":      "data",
 						"mountPath": "/data",
 					},
-					map[string]interface{}{
+					map[string]any{
 						"name":      "logs",
 						"mountPath": "/var/logs", // Changed
 					},
@@ -997,11 +997,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"deployment": map[string]interface{}{
+			Config: map[string]any{
+				"deployment": map[string]any{
 					"strategy": "rolling",
-					"volumes": []interface{}{
-						map[string]interface{}{
+					"volumes": []any{
+						map[string]any{
 							"name": "data",
 							"size": "10Gi",
 						},
@@ -1016,11 +1016,11 @@ func TestHasResourceChanges_DeeplyNestedConfigValues(t *testing.T) {
 			Kind:       "deployment",
 			Identifier: "test-id",
 			Version:    "v1",
-			Config: map[string]interface{}{
-				"deployment": map[string]interface{}{
+			Config: map[string]any{
+				"deployment": map[string]any{
 					"strategy": "rolling",
-					"volumes": []interface{}{
-						map[string]interface{}{
+					"volumes": []any{
+						map[string]any{
 							"name": "data",
 							"size": "10Gi",
 						},
@@ -1044,7 +1044,7 @@ func TestHasResourceChanges_CreatedAtIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		CreatedAt:  oldTime,
 	}
@@ -1054,7 +1054,7 @@ func TestHasResourceChanges_CreatedAtIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		CreatedAt:  newTime,
 	}
@@ -1074,7 +1074,7 @@ func TestHasResourceChanges_UpdatedAtIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		UpdatedAt:  &oldTime,
 	}
@@ -1084,7 +1084,7 @@ func TestHasResourceChanges_UpdatedAtIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		UpdatedAt:  &newTime,
 	}
@@ -1104,7 +1104,7 @@ func TestHasResourceChanges_LockedAtIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		LockedAt:   &oldTime,
 	}
@@ -1114,7 +1114,7 @@ func TestHasResourceChanges_LockedAtIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		LockedAt:   &newTime,
 	}
@@ -1134,7 +1134,7 @@ func TestHasResourceChanges_TimestampsIgnoredWithOtherChanges(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 3,
 		},
 		Metadata:  map[string]string{},
@@ -1148,7 +1148,7 @@ func TestHasResourceChanges_TimestampsIgnoredWithOtherChanges(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"replicas": 5, // Changed
 		},
 		Metadata:  map[string]string{},
@@ -1176,7 +1176,7 @@ func TestHasResourceChanges_NilToSetTimestampsIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		UpdatedAt:  nil,
 		LockedAt:   nil,
@@ -1187,7 +1187,7 @@ func TestHasResourceChanges_NilToSetTimestampsIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		UpdatedAt:  &newTime,
 		LockedAt:   &newTime,
@@ -1209,7 +1209,7 @@ func TestHasResourceChanges_SetToNilTimestampsIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		UpdatedAt:  &oldTime,
 		LockedAt:   &oldTime,
@@ -1220,7 +1220,7 @@ func TestHasResourceChanges_SetToNilTimestampsIgnored(t *testing.T) {
 		Kind:       "deployment",
 		Identifier: "test-id",
 		Version:    "v1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 		UpdatedAt:  nil,
 		LockedAt:   nil,

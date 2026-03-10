@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"testing"
 	"time"
 	"workspace-engine/pkg/events/handler"
@@ -56,11 +57,9 @@ func createTestEnvironment(systemID, environmentID, name string) *oapi.Environme
 	}
 }
 
-func customJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
-	payload := map[string]interface{}{}
-	for k, v := range m {
-		payload[k] = v
-	}
+func customJobAgentConfig(m map[string]any) oapi.JobAgentConfig {
+	payload := map[string]any{}
+	maps.Copy(payload, m)
 	payload["type"] = "custom"
 	b, err := json.Marshal(payload)
 	if err != nil {
@@ -130,7 +129,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 	}
 
 	// Create multiple environments to trigger expensive recomputation
-	for i := 0; i < numEnvironments; i++ {
+	for i := range numEnvironments {
 		environmentID := uuid.New().String()
 		envName := fmt.Sprintf("env-%d", i)
 		env := createTestEnvironment(systemID, environmentID, envName)
@@ -170,7 +169,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 	}
 
 	// Create multiple deployments to trigger expensive recomputation
-	for i := 0; i < numDeployments; i++ {
+	for i := range numDeployments {
 		deploymentID := uuid.New().String()
 		deploymentName := fmt.Sprintf("deployment-%d", i)
 		deployment := createTestDeployment(systemID, deploymentID, deploymentName)
@@ -254,7 +253,7 @@ func BenchmarkHandleResourceProviderSetResources(b *testing.B) {
 				}
 
 				// Create event payload with batchId reference
-				payload := map[string]interface{}{
+				payload := map[string]any{
 					"providerId": providerID,
 					"batchId":    batchId,
 				}
@@ -289,7 +288,7 @@ func BenchmarkHandleResourceProviderSetResources_ScaleEnvironments(b *testing.B)
 
 			// Create resources
 			resources := make([]*oapi.Resource, resourceCount)
-			for i := 0; i < resourceCount; i++ {
+			for i := range resourceCount {
 				resourceID := uuid.New().String()
 				identifier := fmt.Sprintf("resource-%d", i)
 				name := fmt.Sprintf("Resource %d", i)
@@ -313,7 +312,7 @@ func BenchmarkHandleResourceProviderSetResources_ScaleEnvironments(b *testing.B)
 				}
 
 				// Create event payload with batchId reference
-				payload := map[string]interface{}{
+				payload := map[string]any{
 					"providerId": providerID,
 					"batchId":    batchId,
 				}
@@ -348,7 +347,7 @@ func BenchmarkHandleResourceProviderSetResources_ScaleDeployments(b *testing.B) 
 
 			// Create resources
 			resources := make([]*oapi.Resource, resourceCount)
-			for i := 0; i < resourceCount; i++ {
+			for i := range resourceCount {
 				resourceID := uuid.New().String()
 				identifier := fmt.Sprintf("resource-%d", i)
 				name := fmt.Sprintf("Resource %d", i)
@@ -372,7 +371,7 @@ func BenchmarkHandleResourceProviderSetResources_ScaleDeployments(b *testing.B) 
 				}
 
 				// Create event payload with batchId reference
-				payload := map[string]interface{}{
+				payload := map[string]any{
 					"providerId": providerID,
 					"batchId":    batchId,
 				}
@@ -404,7 +403,7 @@ func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 	// Create a large set of resources
 	resourceCount := 1000
 	resources := make([]*oapi.Resource, resourceCount)
-	for i := 0; i < resourceCount; i++ {
+	for i := range resourceCount {
 		resourceID := uuid.New().String()
 		identifier := fmt.Sprintf("resource-%d", i)
 		name := fmt.Sprintf("Resource %d", i)
@@ -438,7 +437,7 @@ func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 		}
 
 		// Create event payload with batchId reference
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"providerId": providerID,
 			"batchId":    batchId,
 		}
@@ -467,7 +466,7 @@ func BenchmarkHandleResourceProviderSetResources_MemoryAllocation(b *testing.B) 
 	// Create resources
 	resourceCount := 500
 	resources := make([]*oapi.Resource, resourceCount)
-	for i := 0; i < resourceCount; i++ {
+	for i := range resourceCount {
 		resourceID := uuid.New().String()
 		identifier := fmt.Sprintf("resource-%d", i)
 		name := fmt.Sprintf("Resource %d", i)
@@ -494,7 +493,7 @@ func BenchmarkHandleResourceProviderSetResources_MemoryAllocation(b *testing.B) 
 		}
 
 		// Create event payload with batchId reference
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"providerId": providerID,
 			"batchId":    batchId,
 		}
@@ -524,7 +523,7 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 	// Create initial set of resources
 	resourceCount := 100
 	resources := make([]*oapi.Resource, resourceCount)
-	for i := 0; i < resourceCount; i++ {
+	for i := range resourceCount {
 		resourceID := uuid.New().String()
 		identifier := fmt.Sprintf("resource-%d", i)
 		name := fmt.Sprintf("Resource %d", i)
@@ -542,7 +541,7 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 		b.Fatalf("Failed to cache initial resources: %v", err)
 	}
 
-	initialPayload := map[string]interface{}{
+	initialPayload := map[string]any{
 		"providerId": providerID,
 		"batchId":    initialBatchId,
 	}
@@ -563,7 +562,7 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 
 	// Now benchmark updating these resources
 	updatedResources := make([]*oapi.Resource, resourceCount)
-	for i := 0; i < resourceCount; i++ {
+	for i := range resourceCount {
 		identifier := fmt.Sprintf("resource-%d", i)
 		name := fmt.Sprintf("Updated Resource %d", i)
 
@@ -579,17 +578,16 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 	}
 
 	// Reset timer to exclude setup time
-	b.ResetTimer()
 
 	// Run benchmark
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		// Cache the updated resources
 		updateBatchId, err := cache.Store(ctx, providerID, updatedResources)
 		if err != nil {
 			b.Fatalf("Failed to cache updated resources: %v", err)
 		}
 
-		updatePayload := map[string]interface{}{
+		updatePayload := map[string]any{
 			"providerId": providerID,
 			"batchId":    updateBatchId,
 		}

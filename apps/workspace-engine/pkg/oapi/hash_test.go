@@ -119,18 +119,17 @@ func TestFnv64a(t *testing.T) {
 func BenchmarkSelector_Hash(b *testing.B) {
 	s := &Selector{}
 	_ = s.FromJsonSelector(JsonSelector{
-		Json: map[string]interface{}{
+		Json: map[string]any{
 			"type": "Resource",
-			"conditions": []interface{}{
-				map[string]interface{}{"key": "metadata.name", "operator": "equals", "value": "test"},
-				map[string]interface{}{"key": "metadata.namespace", "operator": "equals", "value": "default"},
+			"conditions": []any{
+				map[string]any{"key": "metadata.name", "operator": "equals", "value": "test"},
+				map[string]any{"key": "metadata.namespace", "operator": "equals", "value": "default"},
 			},
 		},
 	})
 
-	b.ResetTimer()
 	b.ReportAllocs()
-	for range b.N {
+	for b.Loop() {
 		_ = s.Hash()
 	}
 }
@@ -138,9 +137,8 @@ func BenchmarkSelector_Hash(b *testing.B) {
 func BenchmarkFnv64a(b *testing.B) {
 	data := []byte(`{"type":"Resource","conditions":[{"key":"metadata.name","operator":"equals","value":"test"}]}`)
 
-	b.ResetTimer()
 	b.ReportAllocs()
-	for range b.N {
+	for b.Loop() {
 		_ = fnv64a(data)
 	}
 }

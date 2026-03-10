@@ -32,7 +32,7 @@ func TestSetState(t *testing.T) {
 
 func TestSetState_HistoryLimit(t *testing.T) {
 	ws := NewWorkspaceStatus("ws-1")
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		ws.SetState(WorkspaceState(fmt.Sprintf("state-%d", i)), "")
 	}
 	assert.Len(t, ws.StateHistory, 20, "History should be capped at 20")
@@ -50,7 +50,7 @@ func TestSetError(t *testing.T) {
 
 func TestSetError_HistoryLimit(t *testing.T) {
 	ws := NewWorkspaceStatus("ws-1")
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		ws.SetError(fmt.Errorf("error %d", i))
 	}
 	assert.Len(t, ws.StateHistory, 20, "History should be capped at 20")

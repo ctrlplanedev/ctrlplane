@@ -1,5 +1,5 @@
 package oapi
 
-func (w *WorkflowRun) Map() map[string]interface{} {
+func (w *WorkflowRun) Map() map[string]any {
 	return structToMap(w)
 }

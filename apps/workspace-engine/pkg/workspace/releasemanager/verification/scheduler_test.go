@@ -116,7 +116,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Version:    "1.0.0",
 		Identifier: "test-res-1",
 		Metadata:   map[string]string{},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 	_, _ = s.Resources.Upsert(ctx, resource)
@@ -203,7 +203,7 @@ func createTestVerification(s *store.Store, ctx context.Context, jobId string, m
 
 func createTestVerificationWithURL(s *store.Store, ctx context.Context, jobId string, metricCount int, intervalSeconds int32, url string) *oapi.JobVerification {
 	metrics := make([]oapi.VerificationMetricStatus, metricCount)
-	for i := 0; i < metricCount; i++ {
+	for i := range metricCount {
 		// Create a simple HTTP provider config
 		method := oapi.GET
 		httpProvider := oapi.HTTPMetricProvider{
@@ -403,7 +403,7 @@ func TestScheduler_ConcurrentStartStop(t *testing.T) {
 
 	// Create multiple verifications
 	verificationIDs := make([]string, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		release := createTestRelease(s, ctx)
 		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id
@@ -750,7 +750,7 @@ func BenchmarkScheduler_ConcurrentOperations(b *testing.B) {
 
 	// Pre-create verifications
 	verificationIDs := make([]string, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		release := createTestRelease(s, ctx)
 		verification := createTestVerification(s, ctx, release.Id.String(), 2, 3600)
 		verificationIDs[i] = verification.Id

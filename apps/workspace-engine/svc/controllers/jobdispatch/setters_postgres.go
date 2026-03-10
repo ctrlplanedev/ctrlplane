@@ -71,7 +71,7 @@ func (s *PostgresSetter) UpdateJob(
 
 	if err := queries.UpdateJobStatus(ctx, db.UpdateJobStatusParams{
 		ID:      jobIDUUID,
-		Status:  db.JobStatus(status),
+		Status:  db.ToDBJobStatus(status),
 		Message: pgtype.Text{String: message, Valid: true},
 	}); err != nil {
 		return fmt.Errorf("update job status: %w", err)

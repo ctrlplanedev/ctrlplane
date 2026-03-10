@@ -44,7 +44,7 @@ func generateJWT(appID int64, privateKey []byte) (string, error) {
 func getInstallationToken(jwtToken string, installationID int) (string, error) {
 	url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
 
-	req, err := http.NewRequest("POST", url, nil)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}

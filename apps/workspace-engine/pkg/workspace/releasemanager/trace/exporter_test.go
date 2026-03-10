@@ -179,9 +179,9 @@ func TestInMemoryExporter_Concurrency(t *testing.T) {
 	numGoroutines := 10
 	spansPerGoroutine := 10
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(id int) {
-			for j := 0; j < spansPerGoroutine; j++ {
+			for range spansPerGoroutine {
 				_, span := tracer.Start(ctx, "concurrent-span")
 				span.End()
 			}
@@ -190,7 +190,7 @@ func TestInMemoryExporter_Concurrency(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		<-done
 	}
 
@@ -250,7 +250,7 @@ func TestInMemoryExporter_GetSpans_ThreadSafe(t *testing.T) {
 	done := make(chan bool)
 
 	go func() {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			_, span := tracer.Start(ctx, "span")
 			span.End()
 			time.Sleep(time.Microsecond)
@@ -259,7 +259,7 @@ func TestInMemoryExporter_GetSpans_ThreadSafe(t *testing.T) {
 	}()
 
 	go func() {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			_ = exporter.getSpans()
 			time.Sleep(time.Microsecond)
 		}

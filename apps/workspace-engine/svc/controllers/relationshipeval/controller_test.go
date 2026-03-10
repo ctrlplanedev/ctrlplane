@@ -1021,7 +1021,7 @@ func TestProcess_LargeCandidateSet(t *testing.T) {
 
 	var candidates []EntityInfo
 	var expectedMatches []uuid.UUID
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		id := newID()
 		meta := map[string]any{"match": "no"}
 		if i%10 == 0 {

@@ -198,7 +198,7 @@ func TestBuildQueryURL_TrailingSlash(t *testing.T) {
 
 func TestSetHeaders_BearerToken(t *testing.T) {
 	config := &Config{Authentication: &Authentication{BearerToken: ptr("my-secret-token")}}
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	if err := setHeaders(req, config, http.DefaultClient); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestSetHeaders_CustomHeaders(t *testing.T) {
 			{Key: "X-Custom", Value: "value"},
 		},
 	}
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	if err := setHeaders(req, config, http.DefaultClient); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -228,7 +228,7 @@ func TestSetHeaders_CustomHeaders(t *testing.T) {
 
 func TestSetHeaders_NoAuth(t *testing.T) {
 	config := &Config{}
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	if err := setHeaders(req, config, http.DefaultClient); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

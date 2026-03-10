@@ -256,13 +256,11 @@ func TestMemoizedEvaluator_ThreadSafety(t *testing.T) {
 	var wg sync.WaitGroup
 	numGoroutines := 100
 
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range numGoroutines {
+		wg.Go(func() {
 			result := memoized.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "should not return nil result")
-		}()
+		})
 	}
 
 	wg.Wait()

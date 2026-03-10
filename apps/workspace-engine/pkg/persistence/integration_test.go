@@ -43,7 +43,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: "test-resource-1",
 		Metadata:   map[string]string{"env": "production"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -125,7 +125,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: resourceIdentifier,
 		Metadata:   map[string]string{},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -147,7 +147,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 		Version:    "2.0.0",
 		Identifier: resourceIdentifier,
 		Metadata:   map[string]string{},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -194,7 +194,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: resourceIdentifier,
 		Metadata:   map[string]string{},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -326,7 +326,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: "test-res",
 		Metadata:   map[string]string{},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -548,7 +548,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: "web-server-1",
 		Metadata:   map[string]string{"cluster": "us-east-1"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 

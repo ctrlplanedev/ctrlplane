@@ -86,7 +86,7 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 		JobAgentConfig: oapi.JobAgentConfig{
 			"image":    "nginx:v1",
 			"replicas": 1,
-			"nested": map[string]interface{}{
+			"nested": map[string]any{
 				"key": "value",
 			},
 		},
@@ -288,7 +288,7 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
-			"database": map[string]interface{}{
+			"database": map[string]any{
 				"host": "localhost",
 				"port": 5432,
 			},
@@ -300,7 +300,7 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
-			"database": map[string]interface{}{
+			"database": map[string]any{
 				"host": "prod-db.example.com",
 				"port": 5432,
 			},
@@ -316,14 +316,14 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	oldSelector := &oapi.Selector{}
 	_ = oldSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
+		Json: map[string]any{
 			"app": "api",
 		},
 	})
 
 	newSelector := &oapi.Selector{}
 	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
+		Json: map[string]any{
 			"app": "web",
 		},
 	})
@@ -482,9 +482,9 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
-			"services": map[string]interface{}{
-				"database": map[string]interface{}{
-					"credentials": map[string]interface{}{
+			"services": map[string]any{
+				"database": map[string]any{
+					"credentials": map[string]any{
 						"username": "admin",
 						"password": "old-password",
 					},
@@ -498,9 +498,9 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 		Name: "api-deployment",
 		Slug: "api-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{
-			"services": map[string]interface{}{
-				"database": map[string]interface{}{
-					"credentials": map[string]interface{}{
+			"services": map[string]any{
+				"database": map[string]any{
+					"credentials": map[string]any{
 						"username": "admin",
 						"password": "new-password",
 					},

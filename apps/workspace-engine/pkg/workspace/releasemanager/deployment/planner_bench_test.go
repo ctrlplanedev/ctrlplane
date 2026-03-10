@@ -128,7 +128,7 @@ func setupBenchmarkPlanner(
 
 	// Create resources
 	resourceIDs := make([]string, numResources)
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		resourceID := uuid.New().String()
 		resourceIDs[i] = resourceID
 		resourceName := fmt.Sprintf("resource-%d", i)
@@ -146,7 +146,7 @@ func setupBenchmarkPlanner(
 
 	// Create environments
 	environmentIDs := make([]string, numEnvironments)
-	for i := 0; i < numEnvironments; i++ {
+	for i := range numEnvironments {
 		environmentID := uuid.New().String()
 		environmentIDs[i] = environmentID
 		envName := fmt.Sprintf("env-%d", i)
@@ -159,7 +159,7 @@ func setupBenchmarkPlanner(
 
 	// Create deployments with versions
 	deploymentIDs := make([]string, numDeployments)
-	for i := 0; i < numDeployments; i++ {
+	for i := range numDeployments {
 		deploymentID := uuid.New().String()
 		deploymentIDs[i] = deploymentID
 		deploymentName := fmt.Sprintf("deployment-%d", i)
@@ -170,7 +170,7 @@ func setupBenchmarkPlanner(
 		}
 
 		// Create versions for this deployment
-		for v := 0; v < numVersionsPerDeployment; v++ {
+		for v := range numVersionsPerDeployment {
 			versionID := uuid.New().String()
 			versionTag := fmt.Sprintf("v1.%d.%d", i, v)
 			status := oapi.DeploymentVersionStatusReady
@@ -188,7 +188,7 @@ func setupBenchmarkPlanner(
 	}
 
 	// Create policies
-	for i := 0; i < numPolicies; i++ {
+	for i := range numPolicies {
 		policyID := uuid.New().String()
 		policyName := fmt.Sprintf("policy-%d", i)
 		pol := createTestPolicy(policyID, workspaceID, policyName)
@@ -383,7 +383,7 @@ func BenchmarkPlanDeployment_HighConcurrency(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				// Run operations in batches of 'concurrency'
-				for c := 0; c < concurrency; c++ {
+				for c := range concurrency {
 					wg.Add(1)
 					go func(idx int) {
 						defer wg.Done()
@@ -504,11 +504,10 @@ func BenchmarkPlanDeployment_MultipleTargets(b *testing.B) {
 
 	b.Logf("Testing with %d release targets", len(releaseTargets))
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	// Cycle through all release targets
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		ctx := context.Background()
 		releaseTarget := releaseTargets[i%len(releaseTargets)]
 		_, err := planner.PlanDeployment(ctx, releaseTarget)
@@ -665,7 +664,7 @@ func setupPlannerWithVariables(
 
 	// Create resources with resource variables
 	resourceIDs := make([]string, numResources)
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		resourceID := uuid.New().String()
 		resourceIDs[i] = resourceID
 		resourceName := fmt.Sprintf("resource-%d", i)
@@ -680,7 +679,7 @@ func setupPlannerWithVariables(
 		// Add resource variables (these override deployment variables)
 		if i%3 == 0 {
 			// Add some resource-specific variable overrides
-			for v := 0; v < 3; v++ {
+			for v := range 3 {
 				stringVal := fmt.Sprintf("resource-%d-value-%d", i, v)
 
 				// Create value
@@ -701,7 +700,7 @@ func setupPlannerWithVariables(
 
 	// Create environments
 	environmentIDs := make([]string, numEnvironments)
-	for i := 0; i < numEnvironments; i++ {
+	for i := range numEnvironments {
 		environmentID := uuid.New().String()
 		environmentIDs[i] = environmentID
 		envName := fmt.Sprintf("env-%d", i)
@@ -713,7 +712,7 @@ func setupPlannerWithVariables(
 
 	// Create deployments with variables and versions
 	deploymentIDs := make([]string, numDeployments)
-	for i := 0; i < numDeployments; i++ {
+	for i := range numDeployments {
 		deploymentID := uuid.New().String()
 		deploymentIDs[i] = deploymentID
 		deploymentName := fmt.Sprintf("deployment-%d", i)
@@ -724,7 +723,7 @@ func setupPlannerWithVariables(
 		}
 
 		// Create deployment variables
-		for v := 0; v < numVariablesPerDeployment; v++ {
+		for v := range numVariablesPerDeployment {
 			dvID := uuid.New().String()
 			varKey := fmt.Sprintf("var_%d", v)
 			defaultVal := fmt.Sprintf("default-value-%d", v)
@@ -742,7 +741,7 @@ func setupPlannerWithVariables(
 			st.DeploymentVariables.Upsert(ctx, dvID, dv)
 
 			// Create deployment variable values with resource selectors
-			for val := 0; val < numValuesPerVariable; val++ {
+			for val := range numValuesPerVariable {
 				dvvID := uuid.New().String()
 				priority := int64(val + 1)
 				value := fmt.Sprintf("value-%d-%d", v, val)

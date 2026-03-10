@@ -422,7 +422,7 @@ func ToOapiJobFromGetJobByIDRow(row GetJobByIDRow) *oapi.Job {
 func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 	j := &oapi.Job{
 		Id:        row.ID.String(),
-		Status:    oapi.JobStatus(row.Status),
+		Status:    ToOapiJobStatus(row.Status),
 		ReleaseId: row.ReleaseID.String(),
 	}
 	if row.CreatedAt.Valid {
@@ -489,11 +489,31 @@ var oapiToDBJobStatus = map[oapi.JobStatus]JobStatus{
 	oapi.JobStatusExternalRunNotFound: JobStatusExternalRunNotFound,
 }
 
+var dbToOapiJobStatus = map[JobStatus]oapi.JobStatus{
+	JobStatusPending:             oapi.JobStatusPending,
+	JobStatusInProgress:          oapi.JobStatusInProgress,
+	JobStatusActionRequired:      oapi.JobStatusActionRequired,
+	JobStatusSuccessful:          oapi.JobStatusSuccessful,
+	JobStatusFailure:             oapi.JobStatusFailure,
+	JobStatusCancelled:           oapi.JobStatusCancelled,
+	JobStatusSkipped:             oapi.JobStatusSkipped,
+	JobStatusInvalidJobAgent:     oapi.JobStatusInvalidJobAgent,
+	JobStatusInvalidIntegration:  oapi.JobStatusInvalidIntegration,
+	JobStatusExternalRunNotFound: oapi.JobStatusExternalRunNotFound,
+}
+
 func ToDBJobStatus(s oapi.JobStatus) JobStatus {
 	if dbStatus, ok := oapiToDBJobStatus[s]; ok {
 		return dbStatus
 	}
 	return JobStatus(s)
+}
+
+func ToOapiJobStatus(s JobStatus) oapi.JobStatus {
+	if oapiStatus, ok := dbToOapiJobStatus[s]; ok {
+		return oapiStatus
+	}
+	return oapi.JobStatus(s)
 }
 
 func ToOapiJobAgent(row JobAgent) *oapi.JobAgent {

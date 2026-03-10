@@ -24,7 +24,7 @@ func NewResource(workspaceID string) *oapi.Resource {
 		CreatedAt:   time.Now(),
 		WorkspaceId: workspaceID,
 		ProviderId:  nil,
-		Config:      make(map[string]interface{}),
+		Config:      make(map[string]any),
 		LockedAt:    nil,
 		UpdatedAt:   nil,
 		DeletedAt:   nil,

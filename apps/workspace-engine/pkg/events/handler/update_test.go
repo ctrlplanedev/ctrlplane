@@ -357,8 +357,7 @@ func TestMergeFields_DoesNotModifyOriginal(t *testing.T) {
 }
 
 func TestBuildFieldMap(t *testing.T) {
-	entity := TestEntity{}
-	entityType := reflect.TypeOf(entity)
+	entityType := reflect.TypeFor[TestEntity]()
 
 	fieldMap := buildFieldMap(entityType)
 

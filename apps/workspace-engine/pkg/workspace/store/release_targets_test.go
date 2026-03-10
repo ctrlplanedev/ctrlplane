@@ -34,7 +34,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		Version:    "1.0.0",
 		Identifier: "test-res-" + uuid.New().String()[:8],
 		Metadata:   map[string]string{},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 	_, _ = s.Resources.Upsert(ctx, resource)

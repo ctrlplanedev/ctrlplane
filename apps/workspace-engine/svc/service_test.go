@@ -109,8 +109,7 @@ func TestRunner_StopsAllServicesOnContextCancel(t *testing.T) {
 }
 
 func TestRunner_StartErrorStopsEarly(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	a := newMock("a")
 	b := newMock("b")

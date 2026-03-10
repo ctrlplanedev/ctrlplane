@@ -385,7 +385,7 @@ func TestEmptyIndex(t *testing.T) {
 
 func TestConcurrentSafety(t *testing.T) {
 	store := newTestStore()
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		store.set("e"+string(rune('A'+i%26)), "v"+string(rune('A'+i%26)))
 	}
 
@@ -395,7 +395,7 @@ func TestConcurrentSafety(t *testing.T) {
 	ctx := context.Background()
 
 	// Concurrent adds
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -404,16 +404,14 @@ func TestConcurrentSafety(t *testing.T) {
 	}
 
 	// Concurrent recomputes
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+		wg.Go(func() {
 			idx.Recompute(ctx)
-		}()
+		})
 	}
 
 	// Concurrent reads
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -422,7 +420,7 @@ func TestConcurrentSafety(t *testing.T) {
 	}
 
 	// Concurrent dirties
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -494,20 +492,20 @@ func TestGenericTypePointer(t *testing.T) {
 
 func TestParallelRecompute_BasicCorrectness(t *testing.T) {
 	store := newTestStore()
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		id := fmt.Sprintf("e%d", i)
 		store.set(id, fmt.Sprintf("value-%d", i))
 	}
 
 	idx := New(store.computeFunc, WithConcurrency(4))
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		idx.AddEntity(fmt.Sprintf("e%d", i))
 	}
 
 	n := idx.Recompute(context.Background())
 	assert.Equal(t, 100, n)
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		id := fmt.Sprintf("e%d", i)
 		v, ok := idx.Get(id)
 		require.True(t, ok, "entity %s missing", id)
@@ -536,7 +534,7 @@ func TestParallelRecompute_ErrorsDoNotOverwriteValues(t *testing.T) {
 
 func TestParallelRecompute_ConcurrentSafety(t *testing.T) {
 	store := newTestStore()
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		store.set(fmt.Sprintf("e%d", i), fmt.Sprintf("v%d", i))
 	}
 
@@ -545,20 +543,18 @@ func TestParallelRecompute_ConcurrentSafety(t *testing.T) {
 	var wg sync.WaitGroup
 	ctx := context.Background()
 
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		idx.AddEntity(fmt.Sprintf("e%d", i))
 	}
 
 	// Concurrent recomputes + reads + dirties
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+		wg.Go(func() {
 			idx.Recompute(ctx)
-		}()
+		})
 	}
 
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -566,7 +562,7 @@ func TestParallelRecompute_ConcurrentSafety(t *testing.T) {
 		}(i)
 	}
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()

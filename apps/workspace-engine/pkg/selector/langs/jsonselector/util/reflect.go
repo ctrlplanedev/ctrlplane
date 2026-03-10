@@ -62,12 +62,12 @@ func GetDateProperty(entity any, fieldName string) (time.Time, error) {
 	}
 
 	// Handle time.Time directly
-	if field.Type() == reflect.TypeOf(time.Time{}) {
+	if field.Type() == reflect.TypeFor[time.Time]() {
 		return field.Interface().(time.Time), nil
 	}
 
 	// Handle *time.Time
-	if field.Type() == reflect.TypeOf((*time.Time)(nil)) {
+	if field.Type() == reflect.TypeFor[*time.Time]() {
 		if field.IsNil() {
 			return time.Time{}, fmt.Errorf("field %s is nil", fieldName)
 		}

@@ -161,7 +161,7 @@ func TestConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < operationsPerGoroutine; j++ {
+			for j := range operationsPerGoroutine {
 				cs.RecordUpsert(TestEntity{
 					ID:   string(rune(id*operationsPerGoroutine + j)),
 					Name: "Concurrent",
@@ -175,7 +175,7 @@ func TestConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < operationsPerGoroutine; j++ {
+			for j := range operationsPerGoroutine {
 				cs.RecordDelete(TestEntity{
 					ID:   string(rune(id*operationsPerGoroutine + j + 1000)),
 					Name: "Concurrent",
@@ -186,13 +186,11 @@ func TestConcurrentAccess(t *testing.T) {
 
 	// Concurrent reads
 	for range numGoroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := 0; j < operationsPerGoroutine; j++ {
+		wg.Go(func() {
+			for range operationsPerGoroutine {
 				_ = cs.Changes()
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

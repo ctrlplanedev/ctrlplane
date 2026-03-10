@@ -333,7 +333,7 @@ func TestSetHeaders_BearerToken(t *testing.T) {
 		},
 	}
 
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	setHeaders(req, config, http.DefaultClient)
 
 	got := req.Header.Get("Authorization")
@@ -352,7 +352,7 @@ func TestSetHeaders_CustomHeaders(t *testing.T) {
 		Headers: &headers,
 	}
 
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	setHeaders(req, config, http.DefaultClient)
 
 	if got := req.Header.Get("X-Scope-OrgID"); got != "tenant_a" {
@@ -366,7 +366,7 @@ func TestSetHeaders_CustomHeaders(t *testing.T) {
 func TestSetHeaders_NoAuth(t *testing.T) {
 	config := &oapi.PrometheusMetricProvider{}
 
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	setHeaders(req, config, http.DefaultClient)
 
 	if got := req.Header.Get("Authorization"); got != "" {
@@ -925,7 +925,7 @@ func TestMeasure_CustomHeadersSent(t *testing.T) {
 
 func TestMeasure_PrometheusError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(422)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		_, _ = w.Write([]byte(`{"status":"error","errorType":"bad_data","error":"invalid query"}`))
 	}))
 	defer server.Close()

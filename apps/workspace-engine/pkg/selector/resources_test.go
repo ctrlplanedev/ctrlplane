@@ -3,6 +3,7 @@ package selector
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -19,7 +20,7 @@ func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *oapi
 		t.Fatalf("Failed to marshal condition: %v", err)
 	}
 
-	var conditionMap map[string]interface{}
+	var conditionMap map[string]any
 	if err := json.Unmarshal(jsonBytes, &conditionMap); err != nil {
 		t.Fatalf("Failed to unmarshal condition: %v", err)
 	}
@@ -456,13 +457,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			}
 
 			for _, expectedID := range tt.expectedIDs {
-				found := false
-				for _, resultID := range resultIDs {
-					if resultID == expectedID {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(resultIDs, expectedID)
 				if !found {
 					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
 				}
@@ -800,13 +795,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 			}
 
 			for _, expectedID := range tt.expectedIDs {
-				found := false
-				for _, resultID := range resultIDs {
-					if resultID == expectedID {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(resultIDs, expectedID)
 				if !found {
 					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
 				}
@@ -816,12 +805,12 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 }
 
 func TestFilterResources_ConfigFieldConditions(t *testing.T) {
-	config1 := map[string]interface{}{
+	config1 := map[string]any{
 		"replicas": "3",
 		"version":  "1.2.0",
 	}
 
-	config2 := map[string]interface{}{
+	config2 := map[string]any{
 		"replicas": "5",
 		"version":  "2.0.0",
 	}
@@ -905,13 +894,7 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 			}
 
 			for _, expectedID := range tt.expectedIDs {
-				found := false
-				for _, resultID := range resultIDs {
-					if resultID == expectedID {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(resultIDs, expectedID)
 				if !found {
 					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
 				}

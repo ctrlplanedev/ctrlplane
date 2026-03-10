@@ -138,7 +138,7 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 		return time.Time{}, nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL, nil)
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("failed to create request: %w", err)
 	}

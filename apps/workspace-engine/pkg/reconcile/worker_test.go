@@ -148,8 +148,7 @@ func TestStartStopAndStopBranches(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	if err := w.Start(ctx); err != nil {
 		t.Fatalf("start: %v", err)
 	}

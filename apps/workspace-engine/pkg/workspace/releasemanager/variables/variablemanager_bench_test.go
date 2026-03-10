@@ -93,7 +93,7 @@ func setupVariableBenchmark(
 	}
 
 	// Create deployment variables
-	for i := 0; i < numDeploymentVariables; i++ {
+	for i := range numDeploymentVariables {
 		varID := uuid.New().String()
 		key := fmt.Sprintf("var_%d", i)
 
@@ -110,7 +110,7 @@ func setupVariableBenchmark(
 		st.DeploymentVariables.Upsert(ctx, varID, deploymentVar)
 
 		// Create deployment variable values with selectors
-		for j := 0; j < numDeploymentVariableValues; j++ {
+		for j := range numDeploymentVariableValues {
 			valueID := uuid.New().String()
 
 			// Create selector that matches based on tier and region
@@ -154,7 +154,7 @@ func setupVariableBenchmark(
 	}
 
 	// Create resource variables (overrides)
-	for i := 0; i < numResourceVariables; i++ {
+	for i := range numResourceVariables {
 		key := fmt.Sprintf("var_%d", i) // Same keys as deployment variables
 
 		value := &oapi.Value{}
@@ -278,10 +278,9 @@ func BenchmarkEvaluate_10Variables_NoOverrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 10, 0, 1, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -300,10 +299,9 @@ func BenchmarkEvaluate_50Variables_NoOverrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 1, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -322,10 +320,9 @@ func BenchmarkEvaluate_100Variables_NoOverrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 100, 0, 1, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -344,10 +341,9 @@ func BenchmarkEvaluate_50Variables_25Overrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 25, 1, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -366,10 +362,9 @@ func BenchmarkEvaluate_50Variables_50Overrides(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 50, 1, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -388,10 +383,9 @@ func BenchmarkEvaluate_50Variables_5Values(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 5, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -410,10 +404,9 @@ func BenchmarkEvaluate_50Variables_10Values(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 10, false)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -432,10 +425,9 @@ func BenchmarkEvaluate_WithRelationships(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 50, 0, 1, true)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -455,10 +447,9 @@ func BenchmarkEvaluate_ComplexScenario(b *testing.B) {
 	manager, releaseTarget, _ := setupVariableBenchmark(b, 100, 30, 5, true)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -586,7 +577,7 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 	numServices := numResources - numDatabases - numVPCs
 
 	// Create databases
-	for i := 0; i < numDatabases; i++ {
+	for i := range numDatabases {
 		dbID := uuid.New().String()
 		dbResource := createBenchResource(workspaceID, dbID, fmt.Sprintf("database-%d", i))
 		dbResource.Kind = "database"
@@ -600,7 +591,7 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 	}
 
 	// Create VPCs
-	for i := 0; i < numVPCs; i++ {
+	for i := range numVPCs {
 		vpcID := uuid.New().String()
 		vpcResource := createBenchResource(workspaceID, vpcID, fmt.Sprintf("vpc-%d", i))
 		vpcResource.Kind = "vpc"
@@ -614,7 +605,7 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 
 	// Create service resources that reference databases and VPCs
 	serviceIDs := make([]string, 0)
-	for i := 0; i < numServices; i++ {
+	for i := range numServices {
 		serviceID := uuid.New().String()
 		serviceResource := createBenchResource(workspaceID, serviceID, fmt.Sprintf("service-%d", i))
 		serviceResource.Kind = "service"
@@ -793,10 +784,9 @@ func BenchmarkEvaluate_10ReferenceVariables_2Rules_1000Resources(b *testing.B) {
 	manager, releaseTarget, _ := setupLargeRelationshipBenchmark(b, 1000)
 	ctx := context.Background()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
 			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
@@ -872,7 +862,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	serviceIDs := make([]string, 0, numServices)
 
 	// Create service resources
-	for i := 0; i < numServices; i++ {
+	for i := range numServices {
 		resourceID := uuid.New().String()
 		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("service-%d", i))
 		resource.Kind = "service"
@@ -887,7 +877,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	}
 
 	// Create database resources
-	for i := 0; i < numDatabases; i++ {
+	for i := range numDatabases {
 		resourceID := uuid.New().String()
 		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("database-%d", i))
 		resource.Kind = "database"
@@ -901,7 +891,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	}
 
 	// Create cache resources (Redis, Memcached, etc.)
-	for i := 0; i < numCaches; i++ {
+	for i := range numCaches {
 		resourceID := uuid.New().String()
 		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("cache-%d", i))
 		resource.Kind = "cache"
@@ -914,7 +904,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	}
 
 	// Create queue resources (SQS, RabbitMQ, etc.)
-	for i := 0; i < numQueues; i++ {
+	for i := range numQueues {
 		resourceID := uuid.New().String()
 		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("queue-%d", i))
 		resource.Kind = "queue"
@@ -1143,7 +1133,6 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	b.Logf("  Total Variable Evaluations per Iteration: %d", len(releaseTargets)*numReferenceVariables)
 	b.Logf("  Expected GetRelatedEntities calls: %d", len(releaseTargets)*numReferenceVariables)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	// This amplifies the N×M issue:
@@ -1152,7 +1141,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	// = 9,000 GetRelatedEntities calls
 	// Each call scans through ~3,000 resources
 	// = ~27,000,000 resource comparisons per iteration
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, releaseTarget := range releaseTargets {
 			resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
 			if !exists {
@@ -1208,7 +1197,7 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 			serviceIDs := make([]string, 0, numServices)
 
 			// Create service resources (80%)
-			for i := 0; i < numServices; i++ {
+			for i := range numServices {
 				resourceID := uuid.New().String()
 				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("service-%d", i))
 				resource.Kind = "service"
@@ -1222,7 +1211,7 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 			}
 
 			// Create database resources (10%)
-			for i := 0; i < numDatabases; i++ {
+			for i := range numDatabases {
 				resourceID := uuid.New().String()
 				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("database-%d", i))
 				resource.Kind = "database"
@@ -1235,7 +1224,7 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 			}
 
 			// Create VPC resources (10%)
-			for i := 0; i < numVPCs; i++ {
+			for i := range numVPCs {
 				resourceID := uuid.New().String()
 				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("vpc-%d", i))
 				resource.Kind = "vpc"
@@ -1380,11 +1369,8 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 
 			// Create multiple release targets (one per service)
 			releaseTargets := make([]*oapi.ReleaseTarget, 0, scenario.numReleaseTargets)
-			numTargets := scenario.numReleaseTargets
-			if numTargets > len(serviceIDs) {
-				numTargets = len(serviceIDs)
-			}
-			for i := 0; i < numTargets; i++ {
+			numTargets := min(scenario.numReleaseTargets, len(serviceIDs))
+			for i := range numTargets {
 				releaseTarget := createBenchReleaseTarget(environmentID, deploymentID, serviceIDs[i])
 				releaseTargets = append(releaseTargets, releaseTarget)
 			}

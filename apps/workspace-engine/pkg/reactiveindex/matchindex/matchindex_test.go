@@ -343,8 +343,8 @@ func TestDeduplication(t *testing.T) {
 
 func TestConcurrentSafety(t *testing.T) {
 	store := newTestEvalStore()
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
+	for i := range 10 {
+		for j := range 10 {
 			store.set(
 				"sel"+string(rune('0'+i)),
 				"entity"+string(rune('0'+j)),
@@ -358,7 +358,7 @@ func TestConcurrentSafety(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Register selectors concurrently
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -368,7 +368,7 @@ func TestConcurrentSafety(t *testing.T) {
 	wg.Wait()
 
 	// Register entities concurrently
-	for j := 0; j < 10; j++ {
+	for j := range 10 {
 		wg.Add(1)
 		go func(j int) {
 			defer wg.Done()
@@ -381,7 +381,7 @@ func TestConcurrentSafety(t *testing.T) {
 	idx.Recompute(context.Background())
 
 	// Dirty + Recompute concurrently
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
@@ -402,10 +402,10 @@ func TestConcurrentSafety(t *testing.T) {
 	idx.Recompute(context.Background())
 
 	// Verify reads don't panic
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		_ = idx.GetMatches("sel" + string(rune('0'+i)))
 	}
-	for j := 0; j < 10; j++ {
+	for j := range 10 {
 		_ = idx.GetMatchingSelectors("entity" + string(rune('0'+j)))
 	}
 }

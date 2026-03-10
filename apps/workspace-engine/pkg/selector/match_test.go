@@ -18,7 +18,7 @@ func createJsonSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.
 		t.Fatalf("Failed to marshal condition: %v", err)
 	}
 
-	var conditionMap map[string]interface{}
+	var conditionMap map[string]any
 	if err := json.Unmarshal(jsonBytes, &conditionMap); err != nil {
 		t.Fatalf("Failed to unmarshal condition: %v", err)
 	}
@@ -46,7 +46,7 @@ func createEmptyJsonSelector(t *testing.T) *oapi.Selector {
 	t.Helper()
 
 	selector := &oapi.Selector{}
-	if err := selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{}}); err != nil {
+	if err := selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{}}); err != nil {
 		t.Fatalf("Failed to create empty JSON selector: %v", err)
 	}
 	return selector
@@ -953,7 +953,7 @@ func TestMatch_JsonSelector_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name      string
 		condition unknown.UnknownCondition
-		item      interface{}
+		item      any
 		wantMatch bool
 		wantErr   bool
 	}{

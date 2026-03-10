@@ -162,7 +162,7 @@ func (a *GithubAction) generateJWT(appID int64, privateKey []byte) (string, erro
 func (a *GithubAction) getInstallationToken(jwtToken string, installationID int) (string, error) {
 	url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
 
-	req, err := http.NewRequest("POST", url, nil)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -193,7 +193,7 @@ func (a *GithubAction) getInstallationToken(jwtToken string, installationID int)
 	return result.Token, nil
 }
 
-func toInt(v interface{}) int {
+func toInt(v any) int {
 	switch val := v.(type) {
 	case int:
 		return val
@@ -204,7 +204,7 @@ func toInt(v interface{}) int {
 	}
 }
 
-func toInt64(v interface{}) int64 {
+func toInt64(v any) int64 {
 	switch val := v.(type) {
 	case int64:
 		return val

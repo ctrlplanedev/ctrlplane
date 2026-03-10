@@ -25,7 +25,7 @@ func TestTemplatableJob_Map(t *testing.T) {
 				Identifier: "my-app-identifier",
 				Kind:       "Kubernetes",
 				Version:    "1.0.0",
-				Config: map[string]interface{}{
+				Config: map[string]any{
 					"namespace": "production",
 					"cluster":   "us-west-2",
 				},

@@ -32,7 +32,7 @@ type EligibilityResult struct {
 	NextEvaluationTime *time.Time
 
 	// Details contains additional structured information about the decision
-	Details map[string]interface{}
+	Details map[string]any
 }
 
 // IsAllowed returns true if the job can be created immediately.

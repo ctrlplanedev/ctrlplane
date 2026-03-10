@@ -478,7 +478,7 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 
 	// Start multiple verifications
 	jobs := make([]*oapi.Job, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		release := createTestRelease(s, ctx)
 		jobs[i] = createTestJob(s, ctx, release.Id.String())
 		err := manager.StartVerification(ctx, jobs[i], metrics)
@@ -704,7 +704,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s := newTestStore()
 		// Create 10 running verifications per store
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			release := createTestRelease(s, ctx)
 			job := createTestJob(s, ctx, release.Id.String())
 			createTestVerification(s, ctx, job.Id, 2, 3600)

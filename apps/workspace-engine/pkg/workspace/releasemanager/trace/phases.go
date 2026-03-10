@@ -78,7 +78,7 @@ func (e *Evaluation) SetAttributes(attributes ...attribute.KeyValue) *Evaluation
 }
 
 // AddMetadata adds metadata to the evaluation
-func (e *Evaluation) AddMetadata(key string, value interface{}) *Evaluation {
+func (e *Evaluation) AddMetadata(key string, value any) *Evaluation {
 	attrs := metadataToAttributes(key, value)
 	e.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return e
@@ -166,7 +166,7 @@ type Check struct {
 }
 
 // AddMetadata adds metadata to the check
-func (c *Check) AddMetadata(key string, value interface{}) *Check {
+func (c *Check) AddMetadata(key string, value any) *Check {
 	attrs := metadataToAttributes(key, value)
 	c.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return c
@@ -292,7 +292,7 @@ type Job struct {
 }
 
 // AddMetadata adds metadata to the job
-func (j *Job) AddMetadata(key string, value interface{}) *Job {
+func (j *Job) AddMetadata(key string, value any) *Job {
 	attrs := metadataToAttributes(key, value)
 	j.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return j
@@ -322,7 +322,7 @@ type Action struct {
 }
 
 // AddMetadata adds metadata to the action
-func (a *Action) AddMetadata(key string, value interface{}) *Action {
+func (a *Action) AddMetadata(key string, value any) *Action {
 	attrs := metadataToAttributes(key, value)
 	a.span.AddEvent(key, trace.WithAttributes(attrs...))
 	return a

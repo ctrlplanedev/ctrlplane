@@ -69,10 +69,7 @@ func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 
 	// Add recent state history (last 5 transitions)
 	if len(statusSnapshot.StateHistory) > 0 {
-		historyLimit := 5
-		if len(statusSnapshot.StateHistory) < historyLimit {
-			historyLimit = len(statusSnapshot.StateHistory)
-		}
+		historyLimit := min(len(statusSnapshot.StateHistory), 5)
 		response["recentHistory"] = statusSnapshot.StateHistory[len(statusSnapshot.StateHistory)-historyLimit:]
 	}
 

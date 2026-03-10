@@ -270,7 +270,7 @@ func WithResourceProvider(options ...ResourceProviderOption) WorkspaceOption {
 
 		// If resources were added via WithResourceProviderResource, push the Set event
 		if batchId, ok := rp.Metadata["_test_batch_id"]; ok {
-			payload := map[string]interface{}{
+			payload := map[string]any{
 				"providerId": rp.Id,
 				"batchId":    batchId,
 			}
@@ -578,7 +578,7 @@ func ResourceIdentifier(identifier string) ResourceOption {
 	}
 }
 
-func ResourceConfig(config map[string]interface{}) ResourceOption {
+func ResourceConfig(config map[string]any) ResourceOption {
 	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Config = config
 	}

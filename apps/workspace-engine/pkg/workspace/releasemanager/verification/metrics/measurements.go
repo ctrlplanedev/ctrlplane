@@ -25,7 +25,7 @@ func (m Measurements) FailedCount() int {
 
 func (m Measurements) ConsecutiveSuccessCount() int {
 	count := 0
-	for i := 0; i < len(m); i++ {
+	for i := range m {
 		switch m[i].Status {
 		case oapi.Passed:
 			count++

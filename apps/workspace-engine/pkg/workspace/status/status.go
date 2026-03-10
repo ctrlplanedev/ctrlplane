@@ -1,6 +1,7 @@
 package status
 
 import (
+	"maps"
 	"sync"
 	"time"
 )
@@ -42,14 +43,14 @@ const (
 
 // WorkspaceStatus tracks the current status of a workspace
 type WorkspaceStatus struct {
-	WorkspaceID  string                 `json:"workspaceId"`
-	State        WorkspaceState         `json:"state"`
-	Message      string                 `json:"message,omitempty"`
-	StateEntered time.Time              `json:"stateEntered"`
-	LastUpdated  time.Time              `json:"lastUpdated"`
-	ErrorMessage string                 `json:"errorMessage,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	StateHistory []StateTransition      `json:"stateHistory,omitempty"`
+	WorkspaceID  string            `json:"workspaceId"`
+	State        WorkspaceState    `json:"state"`
+	Message      string            `json:"message,omitempty"`
+	StateEntered time.Time         `json:"stateEntered"`
+	LastUpdated  time.Time         `json:"lastUpdated"`
+	ErrorMessage string            `json:"errorMessage,omitempty"`
+	Metadata     map[string]any    `json:"metadata,omitempty"`
+	StateHistory []StateTransition `json:"stateHistory,omitempty"`
 
 	mu sync.RWMutex
 }
@@ -70,7 +71,7 @@ func NewWorkspaceStatus(workspaceID string) *WorkspaceStatus {
 		State:        StateInitializing,
 		StateEntered: now,
 		LastUpdated:  now,
-		Metadata:     make(map[string]interface{}),
+		Metadata:     make(map[string]any),
 		StateHistory: []StateTransition{},
 	}
 }
@@ -124,7 +125,7 @@ func (s *WorkspaceStatus) SetError(err error) {
 }
 
 // UpdateMetadata updates metadata fields
-func (s *WorkspaceStatus) UpdateMetadata(key string, value interface{}) {
+func (s *WorkspaceStatus) UpdateMetadata(key string, value any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -138,10 +139,8 @@ func (s *WorkspaceStatus) GetSnapshot() WorkspaceStatus {
 	defer s.mu.RUnlock()
 
 	// Create a deep copy
-	metadata := make(map[string]interface{})
-	for k, v := range s.Metadata {
-		metadata[k] = v
-	}
+	metadata := make(map[string]any)
+	maps.Copy(metadata, s.Metadata)
 
 	history := make([]StateTransition, len(s.StateHistory))
 	copy(history, s.StateHistory)

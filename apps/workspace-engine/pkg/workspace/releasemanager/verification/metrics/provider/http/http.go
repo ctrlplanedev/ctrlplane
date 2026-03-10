@@ -108,7 +108,7 @@ func (p *Provider) Config() *Config {
 
 // ConfigAsMetric returns the provider's configuration as metrics.HTTPConfig
 // This allows the provider to implement metrics.HTTPConfigProvider without import cycles
-func (p *Provider) ConfigAsMetric() interface{} {
+func (p *Provider) ConfigAsMetric() any {
 	return struct {
 		URL     string
 		Method  string

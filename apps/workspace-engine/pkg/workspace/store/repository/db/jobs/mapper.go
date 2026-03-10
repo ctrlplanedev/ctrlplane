@@ -73,32 +73,6 @@ type metadataEntry struct {
 	Value string `json:"value"`
 }
 
-var dbToOapiStatus = map[db.JobStatus]oapi.JobStatus{
-	"cancelled":              oapi.JobStatusCancelled,
-	"skipped":                oapi.JobStatusSkipped,
-	"in_progress":            oapi.JobStatusInProgress,
-	"action_required":        oapi.JobStatusActionRequired,
-	"pending":                oapi.JobStatusPending,
-	"failure":                oapi.JobStatusFailure,
-	"invalid_job_agent":      oapi.JobStatusInvalidJobAgent,
-	"invalid_integration":    oapi.JobStatusInvalidIntegration,
-	"external_run_not_found": oapi.JobStatusExternalRunNotFound,
-	"successful":             oapi.JobStatusSuccessful,
-}
-
-var oapiToDBStatus = map[oapi.JobStatus]db.JobStatus{
-	oapi.JobStatusCancelled:           "cancelled",
-	oapi.JobStatusSkipped:             "skipped",
-	oapi.JobStatusInProgress:          "in_progress",
-	oapi.JobStatusActionRequired:      "action_required",
-	oapi.JobStatusPending:             "pending",
-	oapi.JobStatusFailure:             "failure",
-	oapi.JobStatusInvalidJobAgent:     "invalid_job_agent",
-	oapi.JobStatusInvalidIntegration:  "invalid_integration",
-	oapi.JobStatusExternalRunNotFound: "external_run_not_found",
-	oapi.JobStatusSuccessful:          "successful",
-}
-
 func ToOapi(row jobRow) *oapi.Job {
 	config := make(oapi.JobAgentConfig)
 	if len(row.JobAgentConfig) > 0 {
@@ -132,7 +106,7 @@ func ToOapi(row jobRow) *oapi.Job {
 		Id:              row.ID.String(),
 		JobAgentId:      jobAgentId,
 		JobAgentConfig:  config,
-		Status:          dbToOapiStatus[row.Status],
+		Status:          db.ToOapiJobStatus(row.Status),
 		ReleaseId:       row.ReleaseID.String(),
 		Metadata:        metadata,
 		CreatedAt:       row.CreatedAt.Time,
@@ -191,7 +165,7 @@ func ToUpsertParams(j *oapi.Job) (db.UpsertJobParams, error) {
 		ID:              id,
 		JobAgentID:      agentID,
 		JobAgentConfig:  agentConfig,
-		Status:          oapiToDBStatus[j.Status],
+		Status:          db.ToDBJobStatus(j.Status),
 		CreatedAt:       pgtype.Timestamptz{Time: j.CreatedAt, Valid: !j.CreatedAt.IsZero()},
 		UpdatedAt:       pgtype.Timestamptz{Time: j.UpdatedAt, Valid: !j.UpdatedAt.IsZero()},
 		DispatchContext: dispatchContextBytes,

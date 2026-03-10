@@ -51,7 +51,7 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 			"env":     "production",
 			"cluster": "us-east-1",
 		},
-		Config:    map[string]interface{}{},
+		Config:    map[string]any{},
 		CreatedAt: time.Now(),
 	}
 
@@ -67,7 +67,7 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 			"env":     "development",
 			"cluster": "us-west-1",
 		},
-		Config:    map[string]interface{}{},
+		Config:    map[string]any{},
 		CreatedAt: time.Now(),
 	}
 
@@ -214,7 +214,7 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Kind:       "kubernetes",
 		Version:    "1.0.0",
 		Metadata:   map[string]string{"env": "production"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -226,7 +226,7 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Kind:       "kubernetes",
 		Version:    "1.0.0",
 		Metadata:   map[string]string{"env": "staging"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -238,7 +238,7 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Kind:       "kubernetes",
 		Version:    "1.0.0",
 		Metadata:   map[string]string{"env": "development"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -344,7 +344,7 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: "res-1",
 		Metadata:   map[string]string{"env": "production", "tier": "frontend"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -356,7 +356,7 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Version:    "1.0.0",
 		Identifier: "res-2",
 		Metadata:   map[string]string{"env": "production", "tier": "backend"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -518,7 +518,7 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 		Version:    "1.0.0",
 		Identifier: "test-res",
 		Metadata:   map[string]string{"env": "production"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -594,7 +594,7 @@ func TestStore_Restore_ResourceProviders(t *testing.T) {
 		Identifier: "aws-res-1",
 		ProviderId: &provider1Id,
 		Metadata:   map[string]string{"provider": "aws"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -607,7 +607,7 @@ func TestStore_Restore_ResourceProviders(t *testing.T) {
 		Identifier: "gcp-res-1",
 		ProviderId: &provider2Id,
 		Metadata:   map[string]string{"provider": "gcp"},
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -945,7 +945,7 @@ func TestStore_Restore_LargeDataset(t *testing.T) {
 
 	// Create 1000 resources
 	numResources := 1000
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		resource := &oapi.Resource{
 			Id:         uuid.New().String(),
 			Name:       "resource-" + string(rune(i)),
@@ -953,7 +953,7 @@ func TestStore_Restore_LargeDataset(t *testing.T) {
 			Version:    "1.0.0",
 			Identifier: "large-res-" + string(rune(i)),
 			Metadata:   map[string]string{"index": string(rune(i))},
-			Config:     map[string]interface{}{},
+			Config:     map[string]any{},
 			CreatedAt:  time.Now(),
 		}
 		builder.Set(resource)
@@ -1013,7 +1013,7 @@ func TestStore_Restore_DuplicateIDs(t *testing.T) {
 		Kind:       "kubernetes",
 		Version:    "1.0.0",
 		Identifier: "res-1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 
@@ -1032,7 +1032,7 @@ func TestStore_Restore_DuplicateIDs(t *testing.T) {
 		Kind:       "docker",
 		Version:    "2.0.0",
 		Identifier: "res-2",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		CreatedAt:  time.Now(),
 	}
 

@@ -21,9 +21,11 @@ func TestNew(t *testing.T) {
 	p := New(config)
 	if p == nil {
 		t.Fatal("expected provider to be created")
+		return
 	}
 	if p.config != config {
 		t.Error("expected config to be set")
+		return
 	}
 }
 

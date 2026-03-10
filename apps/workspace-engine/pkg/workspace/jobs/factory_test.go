@@ -62,7 +62,7 @@ func createTestEnvironment(t *testing.T, id string, systemId string, name string
 	}
 }
 
-func createTestResource(t *testing.T, id string, name string, kind string, identifier string, config map[string]interface{}) *oapi.Resource {
+func createTestResource(t *testing.T, id string, name string, kind string, identifier string, config map[string]any) *oapi.Resource {
 	t.Helper()
 	return &oapi.Resource{
 		Id:         id,
@@ -87,7 +87,7 @@ func createTestRelease(t *testing.T, deploymentId, environmentId, resourceId, ve
 	return createTestReleaseWithJobAgentConfig(t, deploymentId, environmentId, resourceId, versionId, nil)
 }
 
-func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environmentId, resourceId, versionId string, jobAgentConfig map[string]interface{}) *oapi.Release {
+func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environmentId, resourceId, versionId string, jobAgentConfig map[string]any) *oapi.Release {
 	t.Helper()
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -99,7 +99,7 @@ func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environment
 			Id:             versionId,
 			Tag:            "v1.0.0",
 			DeploymentId:   deploymentId,
-			Config:         map[string]interface{}{},
+			Config:         map[string]any{},
 			Metadata:       map[string]string{},
 			CreatedAt:      time.Now(),
 			JobAgentConfig: jobAgentConfig,
@@ -147,7 +147,7 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
 	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
 	environment := createTestEnvironment(t, envID, newID(), "production")
-	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]interface{}{})
+	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]any{})
 
 	_, _ = st.Resources.Upsert(ctx, resource)
 	st.JobAgents.Upsert(ctx, jobAgent)
@@ -197,7 +197,7 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
 	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
-	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]interface{}{})
+	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]any{})
 	environment := createTestEnvironment(t, envID, newID(), "production")
 
 	_, _ = st.Resources.Upsert(ctx, resource)
@@ -208,7 +208,7 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 	factory := NewFactory(st)
 
 	jobIds := make(map[string]bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		release := createTestRelease(t, deployID, envID, resourceID, versionID)
 		job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 		require.NoError(t, err)
@@ -246,7 +246,7 @@ func setupFullStore(t *testing.T) (*store.Store, *oapi.JobAgent, string, string,
 		Name:       "server-1",
 		Kind:       "server",
 		Identifier: "server-1",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{"region": "us-east-1"},
 		CreatedAt:  time.Now(),
 	}
@@ -345,7 +345,7 @@ func TestFactory_CreateJobForRelease_UsesResolvedJobAgentConfig(t *testing.T) {
 	}
 	resource := &oapi.Resource{
 		Id: resourceID, Name: "server-1", Kind: "server", Identifier: "server-1",
-		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
 	}
 
 	st.JobAgents.Upsert(ctx, jobAgent)
@@ -488,7 +488,7 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeplo
 	}
 	resource := &oapi.Resource{
 		Id: resourceID, Name: "server-1", Kind: "server", Identifier: "server-1",
-		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
 	}
 
 	st.JobAgents.Upsert(ctx, selectedAgent)
@@ -535,7 +535,7 @@ func TestFactory_CreateJobForRelease_UsesResolvedConfigWithoutReMerge(t *testing
 	}
 	resource := &oapi.Resource{
 		Id: resourceID, Name: "server-1", Kind: "server", Identifier: "server-1",
-		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
 	}
 
 	st.JobAgents.Upsert(ctx, jobAgent)
@@ -569,7 +569,7 @@ func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testi
 
 	resource := &oapi.Resource{
 		Id: resourceID, Name: "server-1", Kind: "server", Identifier: "server-1",
-		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
+		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
 	}
 
 	st.JobAgents.Upsert(ctx, agent)

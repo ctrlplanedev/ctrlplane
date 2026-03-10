@@ -28,7 +28,7 @@ func TestHandleResourceProviderSetResources_WithCachedBatch(t *testing.T) {
 			Name:        "Test Resource 1",
 			Kind:        "TestKind",
 			WorkspaceId: ws.ID,
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		},
@@ -38,7 +38,7 @@ func TestHandleResourceProviderSetResources_WithCachedBatch(t *testing.T) {
 			Name:        "Test Resource 2",
 			Kind:        "TestKind",
 			WorkspaceId: ws.ID,
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		},
@@ -52,7 +52,7 @@ func TestHandleResourceProviderSetResources_WithCachedBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create event with batch reference
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": providerId,
 		"batchId":    batchId,
 	}
@@ -90,7 +90,7 @@ func TestHandleResourceProviderSetResources_BatchNotFound(t *testing.T) {
 	providerId := "test-provider-2"
 
 	// Create event with non-existent batch reference
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": providerId,
 		"batchId":    "non-existent-batch-id",
 	}
@@ -125,7 +125,7 @@ func TestHandleResourceProviderSetResources_ProviderIdMismatch(t *testing.T) {
 			Name:        "Test Resource 1",
 			Kind:        "TestKind",
 			WorkspaceId: ws.ID,
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		},
@@ -140,7 +140,7 @@ func TestHandleResourceProviderSetResources_ProviderIdMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create event with wrong provider ID
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": wrongProviderId,
 		"batchId":    batchId,
 	}
@@ -169,14 +169,14 @@ func TestHandleResourceProviderSetResources_LargeBatch(t *testing.T) {
 
 	// Create large batch (500 resources)
 	resources := make([]*oapi.Resource, 500)
-	for i := 0; i < 500; i++ {
+	for i := range 500 {
 		resources[i] = &oapi.Resource{
 			Id:          string(rune(i)),
 			Identifier:  string(rune(i)),
 			Name:        string(rune(i)),
 			Kind:        "TestKind",
 			WorkspaceId: ws.ID,
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		}
@@ -190,7 +190,7 @@ func TestHandleResourceProviderSetResources_LargeBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create event with batch reference
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": providerId,
 		"batchId":    batchId,
 	}
@@ -228,7 +228,7 @@ func TestHandleResourceProviderSetResources_WorkspaceIdOverride(t *testing.T) {
 			Name:        "Test Resource 1",
 			Kind:        "TestKind",
 			WorkspaceId: "wrong-workspace-id",
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		},
@@ -242,7 +242,7 @@ func TestHandleResourceProviderSetResources_WorkspaceIdOverride(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create event with batch reference
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": providerId,
 		"batchId":    batchId,
 	}
@@ -281,7 +281,7 @@ func TestHandleResourceProviderSetResources_ClaimCheckPattern(t *testing.T) {
 			Name:        "Test Resource 1",
 			Kind:        "TestKind",
 			WorkspaceId: ws.ID,
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		},
@@ -295,7 +295,7 @@ func TestHandleResourceProviderSetResources_ClaimCheckPattern(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create event with batch reference
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": providerId,
 		"batchId":    batchId,
 	}
@@ -353,7 +353,7 @@ func TestHandleResourceProviderSetResources_ChangesetTracking(t *testing.T) {
 			Name:        "Test Resource 1",
 			Kind:        "TestKind",
 			WorkspaceId: ws.ID,
-			Config:      map[string]interface{}{},
+			Config:      map[string]any{},
 			Metadata:    map[string]string{},
 			Version:     "v1",
 		},
@@ -367,7 +367,7 @@ func TestHandleResourceProviderSetResources_ChangesetTracking(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create event with batch reference
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"providerId": providerId,
 		"batchId":    batchId,
 	}
