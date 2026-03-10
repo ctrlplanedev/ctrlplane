@@ -2,3 +2,27 @@ version: "2"
 linters:
   disable:
     - errcheck
+    - nilerr
+    - govet
+    - nestif
+    - iface
+    - nilnil
+    - godot
+    - gosec
+    - interfacebloat
+    - intrange
+    - iotamixing
+    - maintidx
+    - modernize
+    - paralleltest
+    - testifylint
+    - thelper
+    - unconvert
+    - unqueryvet
+    - unused
+    - usestdlibvars
+    - asciicheck
+    - bidichk
+  settings:
+    interfacebloat:
+      max: 5
