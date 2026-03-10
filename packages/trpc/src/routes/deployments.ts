@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
 import { parse } from "cel-js";
 import { isPresent } from "ts-is-present";
@@ -11,9 +10,7 @@ import {
   enqueueReleaseTargetsForDeployment,
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -494,64 +491,78 @@ export const deploymentsRouter = router({
         jobAgentConfig: deploymentJobAgentConfig,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, deploymentId, jobAgentId, jobAgentConfig } = input;
-      const deployment = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        { params: { path: { workspaceId, deploymentId } } },
-      );
-
-      if (!deployment.data) throw new Error("Deployment not found");
 
       const getTypedJobAgentConfig = (
         config: z.infer<typeof deploymentJobAgentConfig>,
       ) => {
         const ghResult = deploymentGhConfig.safeParse(config);
-        if (ghResult.success) {
+        if (ghResult.success)
           return { ...ghResult.data, type: "github-app" as const };
-        }
         const argoCdResult = deploymentArgoCdConfig.safeParse(config);
-        if (argoCdResult.success) {
+        if (argoCdResult.success)
           return { ...argoCdResult.data, type: "argo-cd" as const };
-        }
         const tfeResult = deploymentTfeConfig.safeParse(config);
-        if (tfeResult.success) {
+        if (tfeResult.success)
           return { ...tfeResult.data, type: "tfe" as const };
-        }
         return { ...config, type: "custom" as const };
       };
 
-      const updateData: WorkspaceEngine["schemas"]["Deployment"] = {
-        ...deployment.data.deployment,
-        jobAgentId,
-        jobAgentConfig: getTypedJobAgentConfig(jobAgentConfig),
-      };
+      const typedConfig = getTypedJobAgentConfig(jobAgentConfig);
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.DeploymentUpdated,
-        timestamp: Date.now(),
-        data: updateData,
-      });
+      const [updated] = await ctx.db
+        .update(schema.deployment)
+        .set({ jobAgentId, jobAgentConfig: typedConfig })
+        .where(eq(schema.deployment.id, deploymentId))
+        .returning();
 
-      return updateData;
+      if (updated == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment not found",
+        });
+
+      await Promise.all([
+        enqueueDeploymentSelectorEval(ctx.db, { workspaceId, deploymentId }),
+        enqueueReleaseTargetsForDeployment(ctx.db, workspaceId, deploymentId),
+      ]);
+
+      return updated;
     }),
 
   variables: protectedProcedure
     .input(z.object({ workspaceId: z.uuid(), deploymentId: z.string() }))
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
-            },
-          },
-        },
-      );
-      return response.data?.variables ?? [];
+    .query(async ({ input, ctx }) => {
+      const variables = await ctx.db.query.deploymentVariable.findMany({
+        where: eq(schema.deploymentVariable.deploymentId, input.deploymentId),
+      });
+
+      const variableIds = variables.map((v) => v.id);
+      const values =
+        variableIds.length > 0
+          ? await ctx.db.query.deploymentVariableValue.findMany({
+              where: inArray(
+                schema.deploymentVariableValue.deploymentVariableId,
+                variableIds,
+              ),
+            })
+          : [];
+
+      const valuesByVarId = new Map<
+        string,
+        (typeof schema.deploymentVariableValue.$inferSelect)[]
+      >();
+      for (const val of values) {
+        const arr = valuesByVarId.get(val.deploymentVariableId) ?? [];
+        arr.push(val);
+        valuesByVarId.set(val.deploymentVariableId, arr);
+      }
+
+      return variables.map((variable) => ({
+        variable,
+        values: valuesByVarId.get(variable.id) ?? [],
+      }));
     }),
 
   createVersion: protectedProcedure
@@ -611,51 +622,205 @@ export const deploymentsRouter = router({
         variableId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, deploymentId, variableId } = input;
 
-      const deployment = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        { params: { path: { workspaceId, deploymentId } } },
-      );
+      const variable = await ctx.db.query.deploymentVariable.findFirst({
+        where: and(
+          eq(schema.deploymentVariable.id, variableId),
+          eq(schema.deploymentVariable.deploymentId, deploymentId),
+        ),
+      });
 
-      if (!deployment.data)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Deployment not found",
-        });
-
-      const variable = deployment.data.variables.find(
-        (v) => v.variable.id === variableId,
-      );
-
-      if (!variable)
+      if (variable == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Deployment variable not found",
         });
 
-      await sendGoEvent({
+      await ctx.db
+        .delete(schema.deploymentVariable)
+        .where(eq(schema.deploymentVariable.id, variableId));
+
+      await enqueueReleaseTargetsForDeployment(
+        ctx.db,
         workspaceId,
-        eventType: Event.DeploymentVariableDeleted,
-        timestamp: Date.now(),
-        data: variable.variable,
-      });
+        deploymentId,
+      );
 
       return { success: true };
     }),
 
   policies: protectedProcedure
     .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/policies",
-        {
-          params: {
-            path: input,
-          },
+    .query(async ({ input, ctx }) => {
+      const rows = await ctx.db
+        .select({
+          policyId: schema.computedPolicyReleaseTarget.policyId,
+          resourceId: schema.computedPolicyReleaseTarget.resourceId,
+          environmentId: schema.computedPolicyReleaseTarget.environmentId,
+          deploymentId: schema.computedPolicyReleaseTarget.deploymentId,
+        })
+        .from(schema.computedPolicyReleaseTarget)
+        .where(
+          eq(
+            schema.computedPolicyReleaseTarget.deploymentId,
+            input.deploymentId,
+          ),
+        );
+
+      const policyIds = [...new Set(rows.map((r) => r.policyId))];
+      if (policyIds.length === 0) return [];
+
+      const releaseTargetsByPolicy = new Map<
+        string,
+        { resourceId: string; environmentId: string; deploymentId: string }[]
+      >();
+      for (const row of rows) {
+        const arr = releaseTargetsByPolicy.get(row.policyId) ?? [];
+        arr.push({
+          resourceId: row.resourceId,
+          environmentId: row.environmentId,
+          deploymentId: row.deploymentId,
+        });
+        releaseTargetsByPolicy.set(row.policyId, arr);
+      }
+
+      const policies = await ctx.db.query.policy.findMany({
+        where: inArray(schema.policy.id, policyIds),
+        with: {
+          anyApprovalRules: true,
+          deploymentDependencyRules: true,
+          deploymentWindowRules: true,
+          environmentProgressionRules: true,
+          gradualRolloutRules: true,
+          retryRules: true,
+          rollbackRules: true,
+          verificationRules: true,
+          versionCooldownRules: true,
+          versionSelectorRules: true,
         },
-      );
-      return response.data?.items ?? [];
+      });
+
+      return policies.map((p) => {
+        const rules = [
+          ...p.anyApprovalRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            anyApproval: { minApprovals: r.minApprovals },
+          })),
+          ...p.deploymentDependencyRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            deploymentDependency: { dependsOn: r.dependsOn },
+          })),
+          ...p.deploymentWindowRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            deploymentWindow: {
+              allowWindow: r.allowWindow,
+              durationMinutes: r.durationMinutes,
+              rrule: r.rrule,
+              timezone: r.timezone,
+            },
+          })),
+          ...p.environmentProgressionRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            environmentProgression: {
+              dependsOnEnvironmentSelector: r.dependsOnEnvironmentSelector,
+              maximumAgeHours: r.maximumAgeHours,
+              minimumSoakTimeMinutes: r.minimumSoakTimeMinutes,
+              minimumSuccessPercentage: r.minimumSuccessPercentage,
+              successStatuses: r.successStatuses,
+            },
+          })),
+          ...p.gradualRolloutRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            gradualRollout: {
+              rolloutType: r.rolloutType,
+              timeScaleInterval: r.timeScaleInterval,
+            },
+          })),
+          ...p.retryRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            retry: {
+              maxRetries: r.maxRetries,
+              backoffSeconds: r.backoffSeconds,
+              backoffStrategy: r.backoffStrategy,
+              maxBackoffSeconds: r.maxBackoffSeconds,
+              retryOnStatuses: r.retryOnStatuses,
+            },
+          })),
+          ...p.rollbackRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            rollback: {
+              onJobStatuses: r.onJobStatuses,
+              onVerificationFailure: r.onVerificationFailure,
+            },
+          })),
+          ...p.verificationRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            verification: {
+              metrics: r.metrics,
+              triggerOn: r.triggerOn,
+            },
+          })),
+          ...p.versionCooldownRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            versionCooldown: { intervalSeconds: r.intervalSeconds },
+          })),
+          ...p.versionSelectorRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            versionSelector: {
+              description: r.description,
+              selector: r.selector,
+            },
+          })),
+        ];
+
+        const environmentIds = p.environmentProgressionRules.length > 0
+          ? [
+              ...new Set(
+                rows
+                  .filter((r) => r.policyId === p.id)
+                  .map((r) => r.environmentId),
+              ),
+            ]
+          : [];
+
+        return {
+          policy: {
+            id: p.id,
+            name: p.name,
+            description: p.description ?? undefined,
+            selector: p.selector,
+            metadata: p.metadata,
+            priority: p.priority,
+            enabled: p.enabled,
+            workspaceId: p.workspaceId,
+            createdAt: p.createdAt.toISOString(),
+            rules,
+          },
+          environmentIds,
+          releaseTargets: releaseTargetsByPolicy.get(p.id) ?? [],
+        };
+      });
     }),
 });

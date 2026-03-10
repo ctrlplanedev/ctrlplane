@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { useParams } from "react-router";
@@ -25,7 +24,26 @@ import {
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
 
-function Value({ value }: { value: WorkspaceEngine["schemas"]["Value"] }) {
+type VariableValue = {
+  id: string;
+  deploymentVariableId: string;
+  value: unknown;
+  resourceSelector: string | null;
+  priority: number;
+};
+
+type VariableWithValues = {
+  variable: {
+    id: string;
+    deploymentId: string;
+    key: string;
+    description: string | null;
+    defaultValue: unknown;
+  };
+  values: VariableValue[];
+};
+
+function Value({ value }: { value: unknown }) {
   if (
     typeof value === "string" ||
     typeof value === "number" ||
@@ -36,21 +54,30 @@ function Value({ value }: { value: WorkspaceEngine["schemas"]["Value"] }) {
         <span className="text-sm font-medium text-muted-foreground">
           Value:
         </span>
-        <span className="font-mono text-sm text-green-700">{value}</span>
+        <span className="font-mono text-sm text-green-700">
+          {String(value)}
+        </span>
       </div>
     );
-  if (typeof value === "object" && "path" in value && "reference" in value)
+  if (
+    typeof value === "object" &&
+    value != null &&
+    "path" in value &&
+    "reference" in value
+  ) {
+    const ref = value as { reference: string; path: string[] };
     return (
       <div className="flex items-start gap-3">
         <span className="text-sm font-medium text-muted-foreground">
           Reference:
         </span>
         <span className="font-mono text-sm text-blue-600">
-          {value.reference}.{value.path.join(".")}
+          {ref.reference}.{ref.path.join(".")}
         </span>
       </div>
     );
-  if (typeof value === "object")
+  }
+  if (typeof value === "object" && value != null)
     return (
       <div className="flex items-start gap-3">
         <span className="text-sm font-medium text-muted-foreground">
@@ -67,7 +94,7 @@ function Value({ value }: { value: WorkspaceEngine["schemas"]["Value"] }) {
 export function ValueSection({
   variableValue,
 }: {
-  variableValue: WorkspaceEngine["schemas"]["DeploymentVariableValue"];
+  variableValue: VariableValue;
 }) {
   const { value, resourceSelector } = variableValue;
 
@@ -85,11 +112,7 @@ export function ValueSection({
           Resource Selector:
         </span>
         <span className="font-mono text-sm ">
-          {resourceSelector == null
-            ? "None"
-            : "cel" in resourceSelector
-              ? resourceSelector.cel
-              : JSON.stringify(resourceSelector.json)}
+          {resourceSelector ?? "None"}
         </span>
       </div>
     </div>
@@ -99,7 +122,7 @@ export function ValueSection({
 export function DeploymentVariableSection({
   variable,
 }: {
-  variable: WorkspaceEngine["schemas"]["DeploymentVariableWithValues"];
+  variable: VariableWithValues;
 }) {
   const [open, setOpen] = useState(false);
   const { workspace } = useWorkspace();

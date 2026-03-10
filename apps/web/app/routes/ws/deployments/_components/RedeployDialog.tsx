@@ -110,6 +110,7 @@ function getRuleType(rule: {
   environmentProgression?: unknown;
   gradualRollout?: unknown;
   retry?: unknown;
+  rollback?: unknown;
   verification?: unknown;
   versionCooldown?: unknown;
   versionSelector?: unknown;
@@ -120,6 +121,7 @@ function getRuleType(rule: {
   if (rule.environmentProgression != null) return "environment progression";
   if (rule.gradualRollout != null) return "gradual rollout";
   if (rule.retry != null) return "retry";
+  if (rule.rollback != null) return "rollback";
   if (rule.verification != null) return "verification";
   if (rule.versionCooldown != null) return "version cooldown";
   if (rule.versionSelector != null) return "version selector";

@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
@@ -23,39 +22,35 @@ import { Label } from "~/components/ui/label";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "../_components/DeploymentProvider";
 
-type Value = WorkspaceEngine["schemas"]["Value"];
-type LiteralValue = WorkspaceEngine["schemas"]["LiteralValue"];
-
-function formatValue(value: Value | LiteralValue): string {
+function formatValue(value: unknown): string {
   if (typeof value === "string") return value;
   if (typeof value === "number") return value.toString();
   if (typeof value === "boolean") return value.toString();
 
-  if (typeof value === "object") {
+  if (typeof value === "object" && value != null) {
     if ("object" in value) {
-      return JSON.stringify(value.object, null, 2);
+      return JSON.stringify(
+        (value as { object: unknown }).object,
+        null,
+        2,
+      );
     }
     if ("reference" in value) {
-      const pathStr = value.path.length > 0 ? `[${value.path.join(".")}]` : "";
-      return `reference: ${value.reference}${pathStr}`;
+      const ref = value as { reference: string; path: string[] };
+      const pathStr = ref.path.length > 0 ? `[${ref.path.join(".")}]` : "";
+      return `reference: ${ref.reference}${pathStr}`;
     }
     if ("valueHash" in value) {
-      return `[sensitive: ${value.valueHash}]`;
+      return `[sensitive: ${(value as { valueHash: string }).valueHash}]`;
     }
   }
 
   return JSON.stringify(value, null, 2);
 }
 
-function formatSelector(selector?: {
-  cel?: string;
-  json?: Record<string, unknown>;
-}): string {
+function formatSelector(selector: string | null | undefined): string {
   if (!selector) return "No selector";
-  if ("cel" in selector && selector.cel) return selector.cel;
-  if ("json" in selector && selector.json)
-    return JSON.stringify(selector.json, null, 2);
-  return "No selector";
+  return selector;
 }
 
 export default function DeploymentsSettingsPage() {
@@ -152,7 +147,7 @@ export default function DeploymentsSettingsPage() {
                                 <span className="font-semibold">
                                   {variable.key}
                                 </span>
-                                {variable.defaultValue && (
+                                {variable.defaultValue != null && (
                                   <Badge variant="outline" className="text-xs">
                                     Default:{" "}
                                     {formatValue(variable.defaultValue)}

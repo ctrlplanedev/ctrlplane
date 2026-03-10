@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { Fragment, useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router";
@@ -32,9 +31,32 @@ import { getRuleDisplay } from "./_components/environmentversiondecisions/policy
 
 import type { ReleaseTargetWithState } from "./_components/types";
 
-type ResolvedPolicy = WorkspaceEngine["schemas"]["ResolvedPolicy"];
-type PolicyRule = WorkspaceEngine["schemas"]["PolicyRule"];
-type Selector = WorkspaceEngine["schemas"]["Selector"];
+type PolicyRule = Record<string, unknown> & {
+  id: string;
+  policyId: string;
+  createdAt: string;
+};
+
+type ResolvedPolicy = {
+  policy: {
+    id: string;
+    name: string;
+    description?: string | null;
+    selector: string;
+    metadata: Record<string, string>;
+    priority: number;
+    enabled: boolean;
+    workspaceId: string;
+    createdAt: string;
+    rules: PolicyRule[];
+  };
+  environmentIds: string[];
+  releaseTargets: {
+    resourceId: string;
+    environmentId: string;
+    deploymentId: string;
+  }[];
+};
 
 type ReleaseTargetRef = {
   resourceId: string;
@@ -45,10 +67,9 @@ type ReleaseTargetRef = {
 const releaseTargetKey = (releaseTarget: ReleaseTargetRef) =>
   `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`;
 
-const formatSelector = (selector?: Selector) => {
+const formatSelector = (selector?: string | null) => {
   if (!selector) return "any";
-  if ("cel" in selector) return selector.cel;
-  return JSON.stringify(selector);
+  return selector;
 };
 
 const truncateText = (value: string, maxLength = 120) => {
@@ -57,106 +78,108 @@ const truncateText = (value: string, maxLength = 120) => {
 };
 
 const getRuleDetails = (rule: PolicyRule): string[] => {
-  if (rule.anyApproval != null)
-    return [`Min approvals: ${rule.anyApproval.minApprovals}`];
+  const r = rule as Record<string, any>;
 
-  if (rule.deploymentDependency != null) {
+  if (r.anyApproval != null)
+    return [`Min approvals: ${r.anyApproval.minApprovals}`];
+
+  if (r.deploymentDependency != null) {
     return [
-      `Depends on: ${truncateText(rule.deploymentDependency.dependsOn)}`,
+      `Depends on: ${truncateText(r.deploymentDependency.dependsOn)}`,
     ];
   }
 
-  if (rule.deploymentWindow != null) {
+  if (r.deploymentWindow != null) {
     const details = [
-      rule.deploymentWindow.allowWindow
+      r.deploymentWindow.allowWindow
         ? "Allow deployments during window"
         : "Block deployments during window",
-      `Duration: ${rule.deploymentWindow.durationMinutes}m`,
-      `RRule: ${truncateText(rule.deploymentWindow.rrule, 100)}`,
+      `Duration: ${r.deploymentWindow.durationMinutes}m`,
+      `RRule: ${truncateText(r.deploymentWindow.rrule, 100)}`,
     ];
-    if (rule.deploymentWindow.timezone) {
-      details.push(`Timezone: ${rule.deploymentWindow.timezone}`);
+    if (r.deploymentWindow.timezone) {
+      details.push(`Timezone: ${r.deploymentWindow.timezone}`);
     }
     return details;
   }
 
-  if (rule.environmentProgression != null) {
+  if (r.environmentProgression != null) {
     const details = [
       `Depends on environments: ${truncateText(
         formatSelector(
-          rule.environmentProgression.dependsOnEnvironmentSelector,
+          r.environmentProgression.dependsOnEnvironmentSelector,
         ),
       )}`,
-      `Min success: ${rule.environmentProgression.minimumSuccessPercentage}%`,
-      `Soak time: ${rule.environmentProgression.minimumSockTimeMinutes}m`,
+      `Min success: ${r.environmentProgression.minimumSuccessPercentage}%`,
+      `Soak time: ${r.environmentProgression.minimumSoakTimeMinutes}m`,
     ];
-    if (rule.environmentProgression.maximumAgeHours != null) {
-      details.push(`Max age: ${rule.environmentProgression.maximumAgeHours}h`);
+    if (r.environmentProgression.maximumAgeHours != null) {
+      details.push(`Max age: ${r.environmentProgression.maximumAgeHours}h`);
     }
     if (
-      rule.environmentProgression.successStatuses != null &&
-      rule.environmentProgression.successStatuses.length > 0
+      r.environmentProgression.successStatuses != null &&
+      r.environmentProgression.successStatuses.length > 0
     ) {
       details.push(
-        `Success statuses: ${rule.environmentProgression.successStatuses.join(", ")}`,
+        `Success statuses: ${r.environmentProgression.successStatuses.join(", ")}`,
       );
     }
     return details;
   }
 
-  if (rule.gradualRollout != null) {
+  if (r.gradualRollout != null) {
     return [
-      `Strategy: ${rule.gradualRollout.rolloutType}`,
-      `Interval: ${rule.gradualRollout.timeScaleInterval}s`,
+      `Strategy: ${r.gradualRollout.rolloutType}`,
+      `Interval: ${r.gradualRollout.timeScaleInterval}s`,
     ];
   }
 
-  if (rule.retry != null) {
+  if (r.retry != null) {
     const details = [
-      `Max retries: ${rule.retry.maxRetries}`,
-      `Backoff: ${rule.retry.backoffStrategy}`,
+      `Max retries: ${r.retry.maxRetries}`,
+      `Backoff: ${r.retry.backoffStrategy}`,
     ];
-    if (rule.retry.backoffSeconds != null) {
-      details.push(`Backoff delay: ${rule.retry.backoffSeconds}s`);
+    if (r.retry.backoffSeconds != null) {
+      details.push(`Backoff delay: ${r.retry.backoffSeconds}s`);
     }
-    if (rule.retry.maxBackoffSeconds != null) {
-      details.push(`Max backoff: ${rule.retry.maxBackoffSeconds}s`);
+    if (r.retry.maxBackoffSeconds != null) {
+      details.push(`Max backoff: ${r.retry.maxBackoffSeconds}s`);
     }
-    if (rule.retry.retryOnStatuses != null) {
-      details.push(`Statuses: ${rule.retry.retryOnStatuses.join(", ")}`);
+    if (r.retry.retryOnStatuses != null) {
+      details.push(`Statuses: ${r.retry.retryOnStatuses.join(", ")}`);
     }
     return details;
   }
 
-  if (rule.rollback != null) {
+  if (r.rollback != null) {
     const details = [
-      rule.rollback.onVerificationFailure
+      r.rollback.onVerificationFailure
         ? "Rollback on verification failure"
         : "No rollback on verification failure",
     ];
-    if (rule.rollback.onJobStatuses != null) {
-      details.push(`Job statuses: ${rule.rollback.onJobStatuses.join(", ")}`);
+    if (r.rollback.onJobStatuses != null) {
+      details.push(`Job statuses: ${r.rollback.onJobStatuses.join(", ")}`);
     }
     return details;
   }
 
-  if (rule.verification != null) {
+  if (r.verification != null) {
     return [
-      `Metrics: ${rule.verification.metrics.length}`,
-      `Trigger: ${rule.verification.triggerOn}`,
+      `Metrics: ${Array.isArray(r.verification.metrics) ? r.verification.metrics.length : 0}`,
+      `Trigger: ${r.verification.triggerOn}`,
     ];
   }
 
-  if (rule.versionCooldown != null) {
-    return [`Cooldown: ${rule.versionCooldown.intervalSeconds}s`];
+  if (r.versionCooldown != null) {
+    return [`Cooldown: ${r.versionCooldown.intervalSeconds}s`];
   }
 
-  if (rule.versionSelector != null) {
+  if (r.versionSelector != null) {
     return [
-      ...(rule.versionSelector.description
-        ? [rule.versionSelector.description]
+      ...(r.versionSelector.description
+        ? [r.versionSelector.description]
         : []),
-      `Selector: ${truncateText(formatSelector(rule.versionSelector.selector))}`,
+      `Selector: ${truncateText(formatSelector(r.versionSelector.selector))}`,
     ];
   }
 
