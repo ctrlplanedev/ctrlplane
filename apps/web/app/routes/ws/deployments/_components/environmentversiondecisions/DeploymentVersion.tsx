@@ -1,75 +1,31 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import { toast } from "sonner";
+import _ from "lodash";
 
+import type { DeploymentVersionStatus } from "../types";
+import type { ApprovalDetailProps } from "./rule-results/ApprovalDetail";
 import { trpc } from "~/api/trpc";
-import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
-import { useWorkspace } from "~/components/WorkspaceProvider";
-import { PolicySkipDialog } from "./policy-skip/PolicySkipDialog";
-import { RuleResult } from "./RuleResult";
-
-const GLOBAL_EVALUATORS: WorkspaceEngine["schemas"]["PolicyRule"][] = [
-  {
-    id: "pausedVersions",
-    policyId: "",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "deployableVersions",
-    policyId: "",
-    createdAt: new Date().toISOString(),
-  },
-];
-
-function usePolicyEvaluations(versionId: string, environmentId: string) {
-  const { workspace } = useWorkspace();
-  const { data, isLoading } = trpc.policies.evaluate.useQuery(
-    {
-      workspaceId: workspace.id,
-      scope: { environmentId, versionId },
-    },
-    { refetchInterval: 30_000 },
-  );
-
-  return { data, isLoading };
-}
-
-function useApproveVersion(versionId: string, environmentId: string) {
-  const utils = trpc.useUtils();
-  const { workspace } = useWorkspace();
-  const approveMutation = trpc.deploymentVersions.approve.useMutation();
-  const onClickApprove = () =>
-    approveMutation
-      .mutateAsync({
-        workspaceId: workspace.id,
-        deploymentVersionId: versionId,
-        environmentId: environmentId,
-        status: "approved",
-      })
-      .then(() => {
-        toast.success("Approval record queued successfully");
-        utils.policies.evaluate.invalidate({
-          workspaceId: workspace.id,
-          scope: { environmentId, versionId },
-        });
-      });
-
-  return { onClickApprove, isPending: approveMutation.isPending };
-}
+import { ApprovalDetail } from "./rule-results/ApprovalDetail";
+import { DeploymentWindowDetail } from "./rule-results/DeploymentWindowDetail";
 
 type DeploymentVersionProps = {
-  version: { id: string };
+  version: { id: string; status: DeploymentVersionStatus };
   environment: { id: string };
 };
 
 export function DeploymentVersion(props: DeploymentVersionProps) {
   const { version, environment } = props;
 
-  const { data, isLoading } = usePolicyEvaluations(version.id, environment.id);
-  const { onClickApprove, isPending } = useApproveVersion(
-    version.id,
-    environment.id,
+  const { data, isLoading } = trpc.deploymentVersions.evaulate.useQuery(
+    {
+      versionId: version.id,
+      environmentId: environment.id,
+    },
+    {
+      refetchInterval: 5000,
+    },
   );
+
+  const rules = _.groupBy(data, (d) => d.ruleType);
 
   if (isLoading)
     return (
@@ -81,9 +37,17 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
 
   if (data == null) return null;
 
+  const approvalDetail = rules.approval[0]?.details as
+    | ApprovalDetailProps
+    | undefined;
+  console.log(rules.approval);
   return (
     <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
-      {data.policyResults.map(({ policy, ruleResults }, idx) => (
+      {approvalDetail && <ApprovalDetail {...approvalDetail} />}
+      {"deploymentWindow" in rules && (
+        <DeploymentWindowDetail windows={rules.deploymentWindow} />
+      )}
+      {/* {data.policyResults.map(({ policy, ruleResults }, idx) => (
         <div key={idx} className="w-full space-y-1 rounded-lg border p-2">
           <div className="mb-2 flex items-center font-semibold">
             {policy == null ? "Global Policies" : policy.name}
@@ -108,7 +72,7 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
             />
           ))}
         </div>
-      ))}
+      ))} */}
     </div>
   );
 }

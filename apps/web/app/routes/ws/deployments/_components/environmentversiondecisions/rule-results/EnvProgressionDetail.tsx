@@ -234,8 +234,7 @@ export function EnvProgressionDetail({
     details as Record<string, unknown>,
   );
   const successfulCount = parsed.data.successful_environments ?? 0;
-  const totalCount =
-    parsed.data.dependency_environment_count ?? envDetails.size;
+  const totalCount = 0;
 
   return (
     <Dialog>

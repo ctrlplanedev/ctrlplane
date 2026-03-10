@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import {
   enqueuePolicyEval,
   enqueueReleaseTargetsForDeployment,
@@ -15,7 +15,6 @@ export const deploymentVersionsRouter = router({
   approve: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
         deploymentVersionId: z.string(),
         environmentId: z.string(),
         status: z.enum(["approved", "rejected"]).default("approved"),
@@ -23,6 +22,25 @@ export const deploymentVersionsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+
+      const data = await ctx.db.select().from(schema.deployment).innerJoin(
+        schema.deploymentVersion,
+        eq(schema.deployment.id, schema.deploymentVersion.deploymentId),
+      ).where(eq(schema.deploymentVersion.id, input.deploymentVersionId)).then(takeFirstOrNull);
+
+      if (data == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment not found",
+        });
+
+      const { deployment } = data;
+
+      if (deployment.workspaceId == null)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Deployment does not have a workspace.",
+        });
 
       const [record] = await ctx.db
         .insert(schema.userApprovalRecord)
@@ -45,12 +63,14 @@ export const deploymentVersionsRouter = router({
         })
         .returning();
 
-      if (record != null)
+      if (record != null) {
         await enqueueReleaseTargetsForEnvironment(
           ctx.db,
-          input.workspaceId,
+          deployment.workspaceId,
           record.environmentId,
         );
+        await enqueuePolicyEval(ctx.db, deployment.workspaceId, input.deploymentVersionId);
+      }
 
       return record;
     }),
@@ -94,9 +114,10 @@ export const deploymentVersionsRouter = router({
     .input(
       z.object({
         versionId: z.uuid(),
+        environmentId: z.uuid().optional(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
+    .query(async ({ input, ctx }) => {
       const { versionId } = input;
 
       const data = await ctx.db
@@ -123,10 +144,16 @@ export const deploymentVersionsRouter = router({
 
       await enqueuePolicyEval(ctx.db, deployment.workspaceId, versionId);
 
-      const policyEvaluations = await ctx.db
-        .select()
-        .from(schema.policyRuleEvaluation)
-        .where(eq(schema.policyRuleEvaluation.versionId, versionId));
+      const conditions = [
+        eq(schema.policyRuleEvaluation.versionId, versionId),
+      ];
+      if (input.environmentId != null) {
+        conditions.push(eq(schema.policyRuleEvaluation.environmentId, input.environmentId));
+      }
+
+      const policyEvaluations = await ctx.db.query.policyRuleEvaluation.findMany({
+        where: and(...conditions),
+      });
 
       return policyEvaluations;
     }),
