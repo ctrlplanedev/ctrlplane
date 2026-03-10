@@ -181,9 +181,6 @@ func Reconcile(
 		return nil, recordErr(span, "resolve variables", err)
 	}
 
-	fmt.Println("version", r.version.Tag)
-	fmt.Println("variables", r.vars)
-
 	release, err := r.persistRelease(ctx)
 	if err != nil {
 		return nil, recordErr(span, "persist release", err)
@@ -194,7 +191,7 @@ func Reconcile(
 	}
 
 	span.SetStatus(codes.Ok, "reconcile completed: release="+release.Id.String())
-	return &ReconcileResult{}, nil
+	return &ReconcileResult{NextReconcileAt: nextTime}, nil
 }
 
 func recordErr(span trace.Span, msg string, err error) error {
