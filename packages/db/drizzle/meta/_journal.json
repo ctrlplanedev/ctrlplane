@@ -1170,6 +1170,13 @@
       "when": 1773083810580,
       "tag": "0166_gigantic_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 167,
+      "version": "7",
+      "when": 1773109397908,
+      "tag": "0167_swift_black_knight",
+      "breakpoints": true
     }
   ]
 }

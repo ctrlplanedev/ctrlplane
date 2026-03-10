@@ -36,6 +36,7 @@ export const jobReason = pgEnum("job_reason", [
   "policy_override",
   "env_policy_override",
   "config_policy_override",
+  "redeploy",
 ]);
 
 export const job = pgTable(

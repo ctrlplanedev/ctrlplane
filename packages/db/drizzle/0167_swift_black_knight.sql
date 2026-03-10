@@ -1,0 +1,1 @@
+ALTER TYPE "public"."job_reason" ADD VALUE 'redeploy';
