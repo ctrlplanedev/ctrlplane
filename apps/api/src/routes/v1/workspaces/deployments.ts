@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
+import { enqueuePolicyEval, enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
@@ -348,6 +348,7 @@ const createDeploymentVersion: AsyncTypedHandler<
       .then(takeFirst);
 
     await enqueueReleaseTargetsForDeployment(tx, workspaceId, deploymentId);
+    await enqueuePolicyEval(tx, workspaceId, version.id);
 
     return version;
   });

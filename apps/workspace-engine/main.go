@@ -16,6 +16,7 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch"
 	"workspace-engine/svc/controllers/jobeligibility"
 	"workspace-engine/svc/controllers/jobverificationmetric"
+	"workspace-engine/svc/controllers/policyeval"
 	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
@@ -44,9 +45,6 @@ func main() {
 	messaging.InitProducer(producer)
 	defer messaging.CloseProducer()
 
-	// reconcileQueue := postgres.New(db.GetPool(ctx))
-	// wsConsumer := workspaceconsumer.New(kafka.Brokers, kafka.Topic, reconcileQueue)
-
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global),
@@ -58,6 +56,7 @@ func main() {
 		jobverificationmetric.New(WorkerID, db.GetPool(ctx)),
 		relationshipeval.New(WorkerID, db.GetPool(ctx)),
 		desiredrelease.New(WorkerID, db.GetPool(ctx)),
+		policyeval.New(WorkerID, db.GetPool(ctx)),
 	}
 
 	enabled := make(map[string]bool)

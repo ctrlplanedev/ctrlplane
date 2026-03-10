@@ -7,6 +7,7 @@ import { z } from "zod";
 import { and, asc, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import {
   enqueueDeploymentSelectorEval,
+  enqueuePolicyEval,
   enqueueReleaseTargetsForDeployment,
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
@@ -608,6 +609,7 @@ export const deploymentsRouter = router({
           workspaceId,
           insertedVersion.deploymentId,
         );
+        await enqueuePolicyEval(tx, workspaceId, insertedVersion.id);
         return insertedVersion;
       });
 
