@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -16,6 +17,20 @@ var _ Setter = &PostgresSetter{}
 
 type PostgresSetter struct {
 	Queue reconcile.Queue
+}
+
+func (s *PostgresSetter) getExistingJob(ctx context.Context, jobID string) (*oapi.Job, error) {
+	jobIDUUID, err := uuid.Parse(jobID)
+	if err != nil {
+		return nil, nil
+	}
+
+	jobRow, err := db.GetQueries(ctx).GetJobByID(ctx, jobIDUUID)
+	if err != nil {
+		return nil, fmt.Errorf("get job by id: %w", err)
+	}
+
+	return db.ToOapiJobFromGetJobByIDRow(jobRow), nil
 }
 
 func (s *PostgresSetter) UpdateJob(
@@ -31,6 +46,11 @@ func (s *PostgresSetter) UpdateJob(
 	}
 
 	queries := db.GetQueries(ctx)
+
+	existingJob, err := s.getExistingJob(ctx, jobID)
+	if err != nil {
+		return fmt.Errorf("get existing job: %w", err)
+	}
 
 	if err := queries.UpdateJobStatus(ctx, db.UpdateJobStatusParams{
 		ID:      jobIDUUID,
@@ -50,6 +70,32 @@ func (s *PostgresSetter) UpdateJob(
 		}
 	}
 
+	if existingJob != nil && existingJob.Status == status {
+		workspaceID, err := queries.GetWorkspaceIDByJobID(ctx, jobIDUUID)
+		if err != nil {
+			return fmt.Errorf("get workspace id by job id: %w", err)
+		}
+
+		allReleaseTargets, err := queries.GetReleaseTargetsForWorkspace(ctx, workspaceID)
+		if err != nil {
+			return fmt.Errorf("get release targets for workspace: %w", err)
+		}
+
+		params := make([]events.DesiredReleaseEvalParams, len(allReleaseTargets))
+		for i, releaseTarget := range allReleaseTargets {
+			params[i] = events.DesiredReleaseEvalParams{
+				WorkspaceID:   workspaceID.String(),
+				ResourceID:    releaseTarget.ResourceID.String(),
+				EnvironmentID: releaseTarget.EnvironmentID.String(),
+				DeploymentID:  releaseTarget.DeploymentID.String(),
+			}
+		}
+
+		if err := events.EnqueueManyDesiredRelease(s.Queue, ctx, params); err != nil {
+			return fmt.Errorf("enqueue many desired release: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -64,33 +110,6 @@ func (s *PostgresSetter) CreateVerifications(ctx context.Context, job *oapi.Job,
 	if err != nil {
 		return fmt.Errorf("parse release id: %w", err)
 	}
-	// agentIDUUID, err := uuid.Parse(job.JobAgentId)
-	// if err != nil {
-	// 	return fmt.Errorf("parse agent id: %w", err)
-	// }
-
-	// agentConfig, err := json.Marshal(job.JobAgentConfig)
-	// if err != nil {
-	// 	return fmt.Errorf("marshal job agent config: %w", err)
-	// }
-
-	// if err := queries.InsertJob(ctx, db.InsertJobParams{
-	// 	ID:             jobIDUUID,
-	// 	JobAgentID:     pgtype.UUID{Bytes: agentIDUUID, Valid: true},
-	// 	JobAgentConfig: agentConfig,
-	// 	Status:         db.JobStatus(job.Status),
-	// 	CreatedAt:      pgtype.Timestamptz{Time: job.CreatedAt, Valid: true},
-	// 	UpdatedAt:      pgtype.Timestamptz{Time: job.UpdatedAt, Valid: true},
-	// }); err != nil {
-	// 	return fmt.Errorf("insert job: %w", err)
-	// }
-
-	// if err := queries.InsertReleaseJob(ctx, db.InsertReleaseJobParams{
-	// 	ReleaseID: releaseIDUUID,
-	// 	JobID:     jobIDUUID,
-	// }); err != nil {
-	// 	return fmt.Errorf("insert release_job: %w", err)
-	// }
 
 	if len(specs) == 0 {
 		return nil
