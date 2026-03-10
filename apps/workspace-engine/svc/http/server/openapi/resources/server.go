@@ -8,9 +8,7 @@ import (
 	"sort"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/store/resources"
-	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/svc/http/server/openapi/utils"
 
@@ -56,40 +54,6 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 	c.JSON(http.StatusNotFound, gin.H{
 		"error": "Resource not found",
 	})
-}
-
-func getMatchedResources(c *gin.Context, ws *workspace.Workspace, filter *oapi.Selector) ([]*oapi.Resource, error) {
-	allResources := ws.Resources().Items()
-	var matchedResources []*oapi.Resource
-	if filter == nil {
-		matchedResources = make([]*oapi.Resource, 0, len(allResources))
-		for _, resource := range allResources {
-			matchedResources = append(matchedResources, resource)
-		}
-
-		return matchedResources, nil
-	}
-
-	sel, err := filter.AsCelSelector()
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter to cel selector: %w, %s", err, string(sel.Cel))
-	}
-
-	resourceSlice := make([]*oapi.Resource, 0, len(allResources))
-	for _, resource := range allResources {
-		resourceSlice = append(resourceSlice, resource)
-	}
-
-	// Filter resources using the selector
-	matchedResources, err = selector.Filter(
-		c.Request.Context(), filter, resourceSlice,
-		selector.WithChunking(100, 10),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter resources: %w", err)
-	}
-
-	return matchedResources, nil
 }
 
 func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oapi.QueryResourcesParams) {
