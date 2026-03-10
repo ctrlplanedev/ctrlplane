@@ -103,7 +103,17 @@ const useReleaseTargetPolicies = (releaseTargetKey: string) => {
   return { policies, isLoading };
 };
 
-function getRuleType(rule: WorkspaceEngine["schemas"]["PolicyRule"]): string {
+function getRuleType(rule: {
+  anyApproval?: unknown;
+  deploymentDependency?: unknown;
+  deploymentWindow?: unknown;
+  environmentProgression?: unknown;
+  gradualRollout?: unknown;
+  retry?: unknown;
+  verification?: unknown;
+  versionCooldown?: unknown;
+  versionSelector?: unknown;
+}): string {
   if (rule.anyApproval != null) return "approval";
   if (rule.deploymentDependency != null) return "deployment dependency";
   if (rule.deploymentWindow != null) return "deployment window";

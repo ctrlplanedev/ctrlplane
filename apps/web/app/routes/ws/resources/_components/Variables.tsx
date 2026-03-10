@@ -182,7 +182,7 @@ export function ResourceVariables() {
                 className="flex items-start gap-2 font-mono text-xs font-semibold"
               >
                 <span className="shrink-0 text-red-600">{key}:</span>
-                <Value value={value} />
+                <Value value={value as WorkspaceEngine["schemas"]["Value"]} />
               </div>
             ))}
       </CardContent>

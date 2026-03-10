@@ -37,13 +37,7 @@ type Config struct {
 	PostgresMaxPoolSize     int    `envconfig:"POSTGRES_MAX_POOL_SIZE" default:"50"`
 	PostgresApplicationName string `envconfig:"POSTGRES_APPLICATION_NAME" default:"workspace-engine"`
 
-	// Router registration
-	RouterURL       string `envconfig:"ROUTER_URL" default:"http://localhost:9091"`
-	RegisterAddress string `envconfig:"REGISTER_ADDRESS" default:""`
-
 	TraceTokenSecret string `envconfig:"TRACE_TOKEN_SECRET" default:"secret"`
-
-	MigrateLegacyEntities bool `envconfig:"MIGRATE_LEGACY_ENTITIES" default:"true"`
 
 	// Comma-separated list of services to run (empty means all).
 	Services string `envconfig:"SERVICES" default:""`
