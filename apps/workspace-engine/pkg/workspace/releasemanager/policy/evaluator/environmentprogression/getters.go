@@ -2,6 +2,7 @@ package environmentprogression
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -9,7 +10,11 @@ import (
 	legacystore "workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var gettersTracer = otel.Tracer("workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression/getters")
 
 type environmentGetter = store.EnvironmentGetter
 type deploymentGetter = store.DeploymentGetter
@@ -29,6 +34,7 @@ type Getters interface {
 	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
 	GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
 	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
+	GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +95,18 @@ func (s *StoreGetters) GetJobsForReleaseTarget(_ context.Context, releaseTarget 
 func (s *StoreGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
 	pol := s.store.Policies.Items()
 	return pol, nil
+}
+
+func (s *StoreGetters) GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error) {
+	job, ok := s.store.Jobs.Get(jobID)
+	if !ok {
+		return nil, fmt.Errorf("job not found")
+	}
+	release, ok := s.store.Releases.Get(job.ReleaseId)
+	if !ok {
+		return nil, fmt.Errorf("release not found")
+	}
+	return release, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -188,27 +206,28 @@ func (p *PostgresGetters) GetReleaseTargetsForDeployment(ctx context.Context, de
 }
 
 func (p *PostgresGetters) GetJobsForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
-	releases, err := p.queries.ListReleasesByReleaseTarget(ctx, db.ListReleasesByReleaseTargetParams{
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
+	ctx, span := gettersTracer.Start(ctx, "GetJobsForReleaseTarget")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("release_target.deployment_id", releaseTarget.DeploymentId))
+	span.SetAttributes(attribute.String("release_target.environment_id", releaseTarget.EnvironmentId))
+	span.SetAttributes(attribute.String("release_target.resource_id", releaseTarget.ResourceId))
+
+	rows, err := p.queries.ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
 		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
+		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
+		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
 	})
 	if err != nil {
 		return nil
 	}
+	span.SetAttributes(attribute.Int("jobs.count", len(rows)))
 
-	result := make(map[string]*oapi.Job)
-	for _, rel := range releases {
-		jobs, err := p.queries.ListJobsByReleaseID(ctx, rel.ID)
-		if err != nil {
-			continue
-		}
-		for _, row := range jobs {
-			j := db.ToOapiJob(row)
-			result[j.Id] = j
-		}
+	jobs := make(map[string]*oapi.Job, len(rows))
+	for _, row := range rows {
+		jobs[row.ID.String()] = db.ToOapiJob(db.ListJobsByReleaseIDRow(row))
 	}
-	return result
+	return jobs
 }
 
 func (p *PostgresGetters) GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error) {
@@ -224,4 +243,20 @@ func (p *PostgresGetters) GetAllPolicies(ctx context.Context, workspaceID string
 		result[pol.Id] = pol
 	}
 	return result, nil
+}
+
+func (p *PostgresGetters) GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error) {
+	row, err := p.queries.GetReleaseByJobID(ctx, uuid.MustParse(jobID))
+	if err != nil {
+		return nil, err
+	}
+	release := db.ToOapiRelease(row)
+
+	versionRow, err := p.queries.GetDeploymentVersionByID(ctx, row.VersionID)
+	if err != nil {
+		return nil, err
+	}
+	release.Version = *db.ToOapiDeploymentVersion(versionRow)
+
+	return release, nil
 }

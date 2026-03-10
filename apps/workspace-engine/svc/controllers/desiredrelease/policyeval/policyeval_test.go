@@ -130,6 +130,9 @@ func (m *mockGetter) GetReleaseTargetsForResource(_ context.Context, _ string) [
 func (m *mockGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget) *oapi.Job {
 	return nil
 }
+func (m *mockGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {
+	return nil, nil
+}
 
 // compile-time check
 var _ Getter = (*mockGetter)(nil)

@@ -2,6 +2,7 @@ package environmentprogression
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -91,22 +92,39 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	_, span := jobTrackerTracer.Start(ctx, "compute")
 	defer span.End()
 
+	span.SetAttributes(attribute.String("version.id", t.Version.Id))
+	span.SetAttributes(attribute.String("version.tag", t.Version.Tag))
+
 	// Use indexed lookup through release targets instead of scanning all jobs
 	for _, rt := range t.ReleaseTargets {
+		span.AddEvent("GetJobsForReleaseTarget", trace.WithAttributes(attribute.String("release_target.key", rt.Key())))
 		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
 		rtJobs := t.getters.GetJobsForReleaseTarget(ctx, &rt)
 		for _, job := range rtJobs {
 			// Get the release to check version
-			release, _ := t.getters.GetRelease(ctx, job.ReleaseId)
+			release, err := t.getters.GetReleaseByJobID(ctx, job.Id)
+			if err != nil {
+				span.AddEvent("GetReleaseByJobID", trace.WithAttributes(attribute.String("job.id", job.Id), attribute.String("error", err.Error())))
+				continue
+			}
 			if release == nil {
 				continue
 			}
+			span.AddEvent("found release", trace.WithAttributes(attribute.String("release", fmt.Sprintf("%+v", release))))
 			// Filter by version ID
 			if release.Version.Id != t.Version.Id {
 				continue
 			}
 
-			if t.SuccessStatuses[job.Status] && job.CompletedAt != nil {
+			hasCompletedAt := job.CompletedAt != nil
+		span.AddEvent("job check", trace.WithAttributes(
+			attribute.String("job.id", job.Id),
+			attribute.String("job.status", string(job.Status)),
+			attribute.Bool("job.has_completed_at", hasCompletedAt),
+			attribute.Bool("job.is_success_status", t.SuccessStatuses[job.Status]),
+		))
+
+		if t.SuccessStatuses[job.Status] && hasCompletedAt {
 				targetKey := rt.Key()
 				// Store the oldest successful completion time for this release target
 				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {

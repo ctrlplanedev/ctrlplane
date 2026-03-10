@@ -58,7 +58,8 @@ SET value = EXCLUDED.value;
 UPDATE job
 SET status = $2,
     message = $3,
-    updated_at = NOW()
+    updated_at = NOW(),
+    completed_at = CASE WHEN $2 NOT IN ('pending'::job_status, 'in_progress'::job_status, 'action_required'::job_status) THEN NOW() ELSE completed_at END
 WHERE id = $1;
 
 -- name: DeleteJobMetadataByJobID :exec

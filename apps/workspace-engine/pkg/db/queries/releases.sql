@@ -96,3 +96,9 @@ SELECT r.*
 FROM release_target_desired_release rtr
 JOIN release r ON r.id = rtr.desired_release_id
 WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3;
+
+-- name: GetReleaseByJobID :one
+SELECT r.*
+FROM release r
+JOIN release_job rj ON rj.release_id = r.id
+WHERE rj.job_id = $1;

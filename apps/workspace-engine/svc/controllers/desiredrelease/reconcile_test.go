@@ -116,6 +116,9 @@ func (m *mockReconcileGetter) GetReleaseTargetsForResource(_ context.Context, _ 
 func (m *mockReconcileGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget) *oapi.Job {
 	return nil
 }
+func (m *mockReconcileGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {
+	return nil, nil
+}
 
 var _ Getter = (*mockReconcileGetter)(nil)
 

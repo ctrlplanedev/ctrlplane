@@ -80,10 +80,14 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		panic("failed to get pgx pool")
 	}
 
+	kind := "job-dispatch"
+	queue := postgres.NewForKinds(pgxPool, kind)
+	enqueueQueue := postgres.New(pgxPool)
+
 	dispatcher := jobagents.NewRegistry(&PostgresGetter{})
-	dispatcher.Register(argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{}))
-	dispatcher.Register(testrunner.New(&PostgresSetter{}))
-	dispatcher.Register(github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{}))
+	dispatcher.Register(argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{Queue: enqueueQueue}))
+	dispatcher.Register(testrunner.New(&PostgresSetter{Queue: enqueueQueue}))
+	dispatcher.Register(github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{Queue: enqueueQueue}))
 
 	log.Debug(
 		"Creating job dispatch reconcile worker",
@@ -99,10 +103,6 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		MaxConcurrency:  runtime.GOMAXPROCS(0),
 		MaxRetryBackoff: 10 * time.Second,
 	}
-
-	kind := "job-dispatch"
-	queue := postgres.NewForKinds(pgxPool, kind)
-	enqueueQueue := postgres.New(pgxPool)
 	controller := &Controller{
 		getter:     &PostgresGetter{},
 		setter:     &PostgresSetter{Queue: enqueueQueue},

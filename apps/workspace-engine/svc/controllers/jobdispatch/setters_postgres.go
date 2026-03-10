@@ -11,6 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ Setter = &PostgresSetter{}
@@ -40,6 +42,12 @@ func (s *PostgresSetter) UpdateJob(
 	message string,
 	metadata map[string]string,
 ) error {
+	ctx, span := tracer.Start(ctx, "UpdateJob", trace.WithAttributes(
+		attribute.String("job.id", jobID),
+		attribute.String("job.new_status", string(status)),
+	))
+	defer span.End()
+
 	jobIDUUID, err := uuid.Parse(jobID)
 	if err != nil {
 		return fmt.Errorf("parse job id: %w", err)
@@ -50,6 +58,15 @@ func (s *PostgresSetter) UpdateJob(
 	existingJob, err := s.getExistingJob(ctx, jobID)
 	if err != nil {
 		return fmt.Errorf("get existing job: %w", err)
+	}
+
+	span.SetAttributes(
+		attribute.Bool("job.existing_found", existingJob != nil),
+	)
+	if existingJob != nil {
+		span.SetAttributes(
+			attribute.String("job.existing_status", string(existingJob.Status)),
+		)
 	}
 
 	if err := queries.UpdateJobStatus(ctx, db.UpdateJobStatusParams{
@@ -70,31 +87,51 @@ func (s *PostgresSetter) UpdateJob(
 		}
 	}
 
+	statusChanged := existingJob != nil && existingJob.Status != status
+	span.SetAttributes(attribute.Bool("job.status_changed", statusChanged))
+
 	if existingJob != nil && existingJob.Status == status {
-		workspaceID, err := queries.GetWorkspaceIDByJobID(ctx, jobIDUUID)
-		if err != nil {
-			return fmt.Errorf("get workspace id by job id: %w", err)
-		}
+		span.AddEvent("skipping desired release enqueue - status unchanged")
+		return nil
+	}
 
-		allReleaseTargets, err := queries.GetReleaseTargetsForWorkspace(ctx, workspaceID)
-		if err != nil {
-			return fmt.Errorf("get release targets for workspace: %w", err)
-		}
+	if existingJob == nil {
+		span.AddEvent("skipping desired release enqueue - no existing job found")
+		return nil
+	}
 
-		params := make([]events.DesiredReleaseEvalParams, len(allReleaseTargets))
-		for i, releaseTarget := range allReleaseTargets {
-			params[i] = events.DesiredReleaseEvalParams{
-				WorkspaceID:   workspaceID.String(),
-				ResourceID:    releaseTarget.ResourceID.String(),
-				EnvironmentID: releaseTarget.EnvironmentID.String(),
-				DeploymentID:  releaseTarget.DeploymentID.String(),
-			}
-		}
+	workspaceID, err := queries.GetWorkspaceIDByJobID(ctx, jobIDUUID)
+	if err != nil {
+		return fmt.Errorf("get workspace id by job id: %w", err)
+	}
 
-		if err := events.EnqueueManyDesiredRelease(s.Queue, ctx, params); err != nil {
-			return fmt.Errorf("enqueue many desired release: %w", err)
+	allReleaseTargets, err := queries.GetReleaseTargetsForWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("get release targets for workspace: %w", err)
+	}
+
+	span.SetAttributes(
+		attribute.String("workspace.id", workspaceID.String()),
+		attribute.Int("release_targets.count", len(allReleaseTargets)),
+	)
+
+	params := make([]events.DesiredReleaseEvalParams, len(allReleaseTargets))
+	for i, releaseTarget := range allReleaseTargets {
+		params[i] = events.DesiredReleaseEvalParams{
+			WorkspaceID:   workspaceID.String(),
+			ResourceID:    releaseTarget.ResourceID.String(),
+			EnvironmentID: releaseTarget.EnvironmentID.String(),
+			DeploymentID:  releaseTarget.DeploymentID.String(),
 		}
 	}
+
+	if err := events.EnqueueManyDesiredRelease(s.Queue, ctx, params); err != nil {
+		return fmt.Errorf("enqueue many desired release: %w", err)
+	}
+
+	span.AddEvent("desired release enqueued", trace.WithAttributes(
+		attribute.Int("enqueued.count", len(params)),
+	))
 
 	return nil
 }

@@ -156,6 +156,27 @@ func (q *Queries) GetReleaseByID(ctx context.Context, id uuid.UUID) (Release, er
 	return i, err
 }
 
+const getReleaseByJobID = `-- name: GetReleaseByJobID :one
+SELECT r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at
+FROM release r
+JOIN release_job rj ON rj.release_id = r.id
+WHERE rj.job_id = $1
+`
+
+func (q *Queries) GetReleaseByJobID(ctx context.Context, jobID uuid.UUID) (Release, error) {
+	row := q.db.QueryRow(ctx, getReleaseByJobID, jobID)
+	var i Release
+	err := row.Scan(
+		&i.ID,
+		&i.ResourceID,
+		&i.EnvironmentID,
+		&i.DeploymentID,
+		&i.VersionID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getReleaseVariablesByReleaseID = `-- name: GetReleaseVariablesByReleaseID :many
 SELECT id, release_id, key, value, encrypted, created_at FROM release_variable WHERE release_id = $1
 `
