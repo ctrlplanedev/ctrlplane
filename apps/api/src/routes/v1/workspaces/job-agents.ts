@@ -2,23 +2,56 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+import { and, count, eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
+
+const formatJobAgent = (agent: typeof schema.jobAgent.$inferSelect) => ({
+  ...agent,
+  metadata: {},
+});
+
+const listJobAgents: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/job-agents",
+  "get"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const limit = req.query.limit ?? 50;
+  const offset = req.query.offset ?? 0;
+
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(schema.jobAgent)
+    .where(eq(schema.jobAgent.workspaceId, workspaceId));
+
+  const total = countResult?.total ?? 0;
+
+  const items = await db
+    .select()
+    .from(schema.jobAgent)
+    .where(eq(schema.jobAgent.workspaceId, workspaceId))
+    .limit(limit)
+    .offset(offset);
+
+  res.status(200).json({ items: items.map(formatJobAgent), total, limit, offset });
+};
 
 const getJobAgent: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
   "get"
 > = async (req, res) => {
   const { workspaceId, jobAgentId } = req.params;
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
-    { params: { path: { workspaceId, jobAgentId } } },
-  );
 
-  if (response.error != null)
-    throw new ApiError(response.error.error ?? "Job agent not found", response.response.status);
+  const agent = await db.query.jobAgent.findFirst({
+    where: and(
+      eq(schema.jobAgent.id, jobAgentId),
+      eq(schema.jobAgent.workspaceId, workspaceId),
+    ),
+  });
 
-  res.status(200).json(response.data);
+  if (agent == null) throw new ApiError("Job agent not found", 404);
+
+  res.status(200).json(formatJobAgent(agent));
 };
 
 const upsertJobAgent: AsyncTypedHandler<
@@ -28,25 +61,23 @@ const upsertJobAgent: AsyncTypedHandler<
   const { workspaceId, jobAgentId } = req.params;
   const { body } = req;
 
-  const agent = {
-    id: jobAgentId,
-    name: body.name,
-    type: body.type,
-    workspaceId,
-    config: body.config,
-    metadata: body.metadata ?? {},
-  };
-
-  try {
-    await sendGoEvent({
+  await db
+    .insert(schema.jobAgent)
+    .values({
+      id: jobAgentId,
+      name: body.name,
+      type: body.type,
       workspaceId,
-      eventType: Event.JobAgentUpdated,
-      timestamp: Date.now(),
-      data: agent,
+      config: body.config,
+    })
+    .onConflictDoUpdate({
+      target: schema.jobAgent.id,
+      set: {
+        name: body.name,
+        type: body.type,
+        config: body.config,
+      },
     });
-  } catch {
-    throw new ApiError("Failed to update job agent", 500);
-  }
 
   res.status(202).json({
     id: jobAgentId,
@@ -59,55 +90,20 @@ const deleteJobAgent: AsyncTypedHandler<
   "delete"
 > = async (req, res) => {
   const { workspaceId, jobAgentId } = req.params;
-  const jobAgentResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
-    { params: { path: { workspaceId, jobAgentId } } },
-  );
 
-  if (jobAgentResponse.error != null)
-    throw new ApiError(jobAgentResponse.error.error ?? "Job agent not found", jobAgentResponse.response.status);
+  const [deleted] = await db
+    .delete(schema.jobAgent)
+    .where(
+      and(
+        eq(schema.jobAgent.id, jobAgentId),
+        eq(schema.jobAgent.workspaceId, workspaceId),
+      ),
+    )
+    .returning();
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.JobAgentDeleted,
-      timestamp: Date.now(),
-      data: jobAgentResponse.data,
-    });
-  } catch {
-    throw new ApiError("Failed to delete job agent", 500);
-  }
+  if (deleted == null) throw new ApiError("Job agent not found", 404);
 
-  res.status(202).json({
-    id: jobAgentId,
-    message: "Job agent delete requested",
-  });
-};
-
-const listJobAgents: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/job-agents",
-  "get"
-> = async (req, res) => {
-  const { workspaceId } = req.params;
-  const { limit = 50, offset = 0 } = req.query as {
-    limit?: number;
-    offset?: number;
-  };
-
-  const result = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/job-agents",
-    {
-      params: {
-        path: { workspaceId },
-        query: { limit, offset },
-      },
-    },
-  );
-
-  if (result.error != null)
-    throw new ApiError(result.error.error ?? "Failed to list job agents", result.response.status);
-
-  res.status(200).json(result.data);
+  res.status(202).json({ id: jobAgentId, message: "Job agent deleted" });
 };
 
 export const jobAgentsRouter = Router({ mergeParams: true })

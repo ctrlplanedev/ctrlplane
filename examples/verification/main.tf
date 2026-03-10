@@ -9,21 +9,21 @@ terraform {
 
 provider "ctrlplane" {}
 
-resource "ctrlplane_job_agent" "test" {
-  name = "verification-job-agent"
+# resource "ctrlplane_job_agent" "test" {
+#   name = "verification-job-agent"
 
-  test_runner {
-    delay_seconds = 5
-  }
-}
+#   test_runner {
+#     delay_seconds = 5
+#   }
+# }
 
 resource "ctrlplane_deployment" "test" {
   name              = "verification-deployment"
   resource_selector = "resource.kind.contains('Kubernetes')"
 
-  job_agent {
-    id = ctrlplane_job_agent.test.id
-  }
+  # job_agent {
+  #   id = ctrlplane_job_agent.test.id
+  # }
 }
 
 resource "ctrlplane_environment" "test" {

@@ -1,62 +1,118 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
-import { takeFirst } from "@ctrlplane/db";
+import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { validResourceSelector } from "../valid-selector.js";
 import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
+
+const parseSelector = (raw: string | null | undefined) => {
+  if (raw == null || raw === "false") return undefined;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return { cel: raw };
+  }
+};
+
+const formatDeployment = (dep: typeof schema.deployment.$inferSelect) => ({
+  id: dep.id,
+  name: dep.name,
+  slug: dep.name,
+  description: dep.description,
+  jobAgentId: dep.jobAgentId ?? undefined,
+  jobAgentConfig: dep.jobAgentConfig,
+  jobAgents: dep.jobAgents,
+  resourceSelector: parseSelector(dep.resourceSelector),
+  metadata: dep.metadata,
+});
+
+const formatSystem = (sys: typeof schema.system.$inferSelect) => ({
+  id: sys.id,
+  workspaceId: sys.workspaceId,
+  name: sys.name,
+  slug: sys.name,
+  description: sys.description,
+  metadata: sys.metadata,
+});
+
+const formatDeploymentVersion = (
+  ver: typeof schema.deploymentVersion.$inferSelect,
+) => ({
+  id: ver.id,
+  name: ver.name,
+  tag: ver.tag,
+  config: ver.config,
+  jobAgentConfig: ver.jobAgentConfig,
+  deploymentId: ver.deploymentId,
+  status: ver.status,
+  message: ver.message ?? undefined,
+  createdAt: ver.createdAt.toISOString(),
+  metadata: ver.metadata,
+});
 
 const listDeployments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments",
   "get"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const { limit, offset } = req.query;
+  const limit = req.query.limit ?? 50;
+  const offset = req.query.offset ?? 0;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments",
-    {
-      params: {
-        path: { workspaceId },
-        query: { limit, offset },
-      },
-    },
-  );
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(schema.deployment)
+    .where(eq(schema.deployment.workspaceId, workspaceId));
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Failed to list deployments",
-      response.response.status,
-    );
+  const total = countResult?.total ?? 0;
 
-  res.json(response.data);
-};
+  const deployments = await db
+    .select()
+    .from(schema.deployment)
+    .where(eq(schema.deployment.workspaceId, workspaceId))
+    .limit(limit)
+    .offset(offset);
 
-const existingDeploymentById = async (
-  workspaceId: string,
-  deploymentId: string,
-) => {
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-    { params: { path: { workspaceId, deploymentId } } },
-  );
-  if (response.error != null) {
-    if (response.response.status === 404) return null;
-    throw new ApiError(
-      response.error.error ?? "Failed to get deployment",
-      response.response.status,
-    );
+  const deploymentIds = deployments.map((d) => d.id);
+
+  const systemLinks =
+    deploymentIds.length > 0
+      ? await db
+        .select({
+          deploymentId: schema.systemDeployment.deploymentId,
+          system: schema.system,
+        })
+        .from(schema.systemDeployment)
+        .innerJoin(
+          schema.system,
+          eq(schema.systemDeployment.systemId, schema.system.id),
+        )
+        .where(
+          inArray(schema.systemDeployment.deploymentId, deploymentIds),
+        )
+      : [];
+
+  const systemsByDeploymentId = new Map<
+    string,
+    (typeof schema.system.$inferSelect)[]
+  >();
+  for (const link of systemLinks) {
+    const arr = systemsByDeploymentId.get(link.deploymentId) ?? [];
+    arr.push(link.system);
+    systemsByDeploymentId.set(link.deploymentId, arr);
   }
 
-  return response.data;
+  const items = deployments.map((dep) => ({
+    deployment: formatDeployment(dep),
+    systems: (systemsByDeploymentId.get(dep.id) ?? []).map(formatSystem),
+  }));
+
+  res.status(200).json({ items, total, limit, offset });
 };
 
 const getDeployment: AsyncTypedHandler<
@@ -64,50 +120,74 @@ const getDeployment: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, deploymentId } = req.params;
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-    { params: { path: { workspaceId, deploymentId } } },
-  );
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Deployment not found",
-      response.response.status,
-    );
+  const dep = await db.query.deployment.findFirst({
+    where: and(
+      eq(schema.deployment.id, deploymentId),
+      eq(schema.deployment.workspaceId, workspaceId),
+    ),
+  });
 
-  res.json(response.data);
-};
+  if (dep == null) throw new ApiError("Deployment not found", 404);
 
-const deleteDeployment: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-  "delete"
-> = async (req, res) => {
-  const { workspaceId, deploymentId } = req.params;
+  const systemRows = await db
+    .select({ system: schema.system })
+    .from(schema.systemDeployment)
+    .innerJoin(
+      schema.system,
+      eq(schema.systemDeployment.systemId, schema.system.id),
+    )
+    .where(eq(schema.systemDeployment.deploymentId, deploymentId));
 
-  const deploymentResponse = await existingDeploymentById(
-    workspaceId,
-    deploymentId,
-  );
-  const deployment = deploymentResponse?.deployment;
+  const variables = await db
+    .select()
+    .from(schema.deploymentVariable)
+    .where(eq(schema.deploymentVariable.deploymentId, deploymentId));
 
-  if (deployment == null) {
-    throw new ApiError("Deployment not found", 404);
+  const variableIds = variables.map((v) => v.id);
+  const variableValues =
+    variableIds.length > 0
+      ? await db
+        .select()
+        .from(schema.deploymentVariableValue)
+        .where(
+          inArray(
+            schema.deploymentVariableValue.deploymentVariableId,
+            variableIds,
+          ),
+        )
+      : [];
+
+  const valuesByVariableId = new Map<
+    string,
+    (typeof schema.deploymentVariableValue.$inferSelect)[]
+  >();
+  for (const val of variableValues) {
+    const arr = valuesByVariableId.get(val.deploymentVariableId) ?? [];
+    arr.push(val);
+    valuesByVariableId.set(val.deploymentVariableId, arr);
   }
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.DeploymentDeleted,
-      timestamp: Date.now(),
-      data: deployment,
-    });
-  } catch {
-    throw new ApiError("Failed to delete deployment", 500);
-  }
-
-  res
-    .status(202)
-    .json({ id: deploymentId, message: "Deployment delete requested" });
+  res.status(200).json({
+    deployment: formatDeployment(dep),
+    systems: systemRows.map((r) => formatSystem(r.system)),
+    variables: variables.map((v) => ({
+      variable: {
+        id: v.id,
+        key: v.key,
+        deploymentId: v.deploymentId,
+        description: v.description ?? undefined,
+        defaultValue: v.defaultValue ?? undefined,
+      },
+      values: (valuesByVariableId.get(v.id) ?? []).map((val) => ({
+        id: val.id,
+        deploymentVariableId: val.deploymentVariableId,
+        priority: val.priority,
+        value: val.value,
+        resourceSelector: parseSelector(val.resourceSelector),
+      })),
+    })),
+  });
 };
 
 const postDeployment: AsyncTypedHandler<
@@ -117,31 +197,28 @@ const postDeployment: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
-  const deployment: WorkspaceEngine["schemas"]["Deployment"] = {
-    id: uuidv4(),
-    metadata: {},
-    ...body,
-    jobAgentConfig: body.jobAgentConfig ?? {},
-    jobAgents: body.jobAgents ?? [],
-  };
-
   const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.DeploymentCreated,
-      timestamp: Date.now(),
-      data: deployment,
-    });
-  } catch {
-    throw new ApiError("Failed to create deployment", 500);
-  }
+  const id = uuidv4();
 
-  res
-    .status(202)
-    .json({ id: deployment.id, message: "Deployment creation requested" });
+  await db.insert(schema.deployment).values({
+    id,
+    name: body.name,
+    description: body.description ?? "",
+    jobAgentConfig: body.jobAgentConfig ?? {},
+    jobAgents: body.jobAgents ?? [],
+    resourceSelector:
+      body.resourceSelector != null
+        ? JSON.stringify(body.resourceSelector)
+        : "false",
+    metadata: body.metadata ?? {},
+    workspaceId,
+  });
+
+  await enqueueReleaseTargetsForDeployment(db, workspaceId, id);
+
+  res.status(202).json({ id, message: "Deployment creation requested" });
 };
 
 const upsertDeployment: AsyncTypedHandler<
@@ -151,82 +228,98 @@ const upsertDeployment: AsyncTypedHandler<
   const { workspaceId, deploymentId } = req.params;
   const { body } = req;
 
-  const existingDeploymentResponse = await existingDeploymentById(
-    workspaceId,
-    deploymentId,
-  );
-  const { deployment } = existingDeploymentResponse ?? {};
-
-  if (deployment == null) {
-    try {
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.DeploymentCreated,
-        timestamp: Date.now(),
-        data: {
-          metadata: {},
-          ...body,
-          id: deploymentId,
-          jobAgentConfig: body.jobAgentConfig ?? {},
-          jobAgents: body.jobAgents ?? [],
-        },
-      });
-    } catch {
-      throw new ApiError("Failed to create deployment", 500);
-    }
-
-    res
-      .status(202)
-      .json({ id: deploymentId, message: "Deployment creation requested" });
-    return;
-  }
-
   const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  try {
-    await sendGoEvent({
+  await db
+    .insert(schema.deployment)
+    .values({
+      id: deploymentId,
+      name: body.name,
+      description: body.description ?? "",
+      jobAgentConfig: body.jobAgentConfig ?? {},
+      jobAgents: body.jobAgents ?? [],
+      resourceSelector:
+        body.resourceSelector != null
+          ? JSON.stringify(body.resourceSelector)
+          : "false",
+      metadata: body.metadata ?? {},
       workspaceId,
-      eventType: Event.DeploymentUpdated,
-      timestamp: Date.now(),
-      data: {
-        ...deployment,
-        ...body,
-        metadata: body.metadata ?? {},
+    })
+    .onConflictDoUpdate({
+      target: schema.deployment.id,
+      set: {
+        name: body.name,
+        description: body.description ?? "",
         jobAgentConfig: body.jobAgentConfig ?? {},
-        jobAgents: body.jobAgents ?? deployment.jobAgents ?? [],
+        jobAgents: body.jobAgents ?? [],
+        resourceSelector:
+          body.resourceSelector != null
+            ? JSON.stringify(body.resourceSelector)
+            : "false",
+        metadata: body.metadata ?? {},
       },
     });
-  } catch {
-    throw new ApiError("Failed to update deployment", 500);
-  }
+
+  await enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 
   res
     .status(202)
     .json({ id: deploymentId, message: "Deployment update requested" });
 };
 
+const deleteDeployment: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, deploymentId } = req.params;
+
+  const [deleted] = await db
+    .delete(schema.deployment)
+    .where(
+      and(
+        eq(schema.deployment.id, deploymentId),
+        eq(schema.deployment.workspaceId, workspaceId),
+      ),
+    )
+    .returning();
+
+  if (deleted == null) throw new ApiError("Deployment not found", 404);
+
+  res
+    .status(202)
+    .json({ id: deploymentId, message: "Deployment delete requested" });
+};
+
 const listDeploymentVersions: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
   "get"
 > = async (req, res) => {
-  const { workspaceId, deploymentId } = req.params;
-  const { limit, offset } = req.query;
+  const { deploymentId } = req.params;
+  const limit = req.query.limit ?? 50;
+  const offset = req.query.offset ?? 0;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-    {
-      params: { path: { workspaceId, deploymentId }, query: { limit, offset } },
-    },
-  );
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(schema.deploymentVersion)
+    .where(eq(schema.deploymentVersion.deploymentId, deploymentId));
 
-  if (response.error != null)
-    throw new ApiError(
-      response.error.error ?? "Failed to list deployment versions",
-      response.response.status,
-    );
+  const total = countResult?.total ?? 0;
 
-  res.json(response.data);
+  const versions = await db
+    .select()
+    .from(schema.deploymentVersion)
+    .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
+    .orderBy(schema.deploymentVersion.createdAt)
+    .limit(limit)
+    .offset(offset);
+
+  res.status(200).json({
+    items: versions.map(formatDeploymentVersion),
+    total,
+    limit,
+    offset,
+  });
 };
 
 const createDeploymentVersion: AsyncTypedHandler<
@@ -259,7 +352,7 @@ const createDeploymentVersion: AsyncTypedHandler<
     return version;
   });
 
-  res.status(200).json(version);
+  res.status(200).json(formatDeploymentVersion(version));
 };
 
 export const deploymentsRouter = Router({ mergeParams: true })
