@@ -103,7 +103,10 @@ const setResourceProviderResources: AsyncTypedHandler<
         await tx
           .insert(resource)
           .values({
-            ...r,
+            identifier: r.identifier,
+            name: r.name,
+            version: r.version,
+            kind: r.kind,
             workspaceId,
             providerId,
             config: r.config ?? {},
