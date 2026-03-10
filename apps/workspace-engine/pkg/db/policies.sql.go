@@ -624,7 +624,8 @@ WITH deleted AS (
       AND deployment_id = $3
 )
 INSERT INTO computed_policy_release_target (policy_id, environment_id, deployment_id, resource_id, computed_at)
-SELECT unnest($1::uuid[]), $2, $3, $4, NOW()
+SELECT DISTINCT unnest($1::uuid[]), $2, $3, $4, NOW()
+ON CONFLICT (policy_id, environment_id, deployment_id, resource_id) DO UPDATE SET computed_at = NOW()
 `
 
 type SetPoliciesForReleaseTargetParams struct {

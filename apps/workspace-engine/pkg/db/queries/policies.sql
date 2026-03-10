@@ -243,4 +243,5 @@ WITH deleted AS (
       AND deployment_id = @deployment_id
 )
 INSERT INTO computed_policy_release_target (policy_id, environment_id, deployment_id, resource_id, computed_at)
-SELECT unnest(@policy_ids::uuid[]), @environment_id, @deployment_id, @resource_id, NOW();
+SELECT DISTINCT unnest(@policy_ids::uuid[]), @environment_id, @deployment_id, @resource_id, NOW()
+ON CONFLICT (policy_id, environment_id, deployment_id, resource_id) DO UPDATE SET computed_at = NOW();
