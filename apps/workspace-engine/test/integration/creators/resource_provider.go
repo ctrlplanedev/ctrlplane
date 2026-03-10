@@ -5,7 +5,6 @@ import (
 	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // NewResourceProvider creates a test ResourceProvider with sensible defaults
@@ -19,7 +18,7 @@ func NewResourceProvider(workspaceID string) *oapi.ResourceProvider {
 		Id:          id,
 		Name:        "test-provider",
 		CreatedAt:   time.Now(),
-		WorkspaceId: openapi_types.UUID(workspaceUUID),
+		WorkspaceId: workspaceUUID,
 		Metadata:    make(map[string]string),
 	}
 

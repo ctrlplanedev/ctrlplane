@@ -484,7 +484,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 	// Check that messages array exists and has correct length
 	messages, ok := result.Details["messages"].([]*oapi.RuleEvaluation)
 	assert.True(t, ok, "messages should be an array of RuleEvaluations")
-	assert.Equal(t, 3, len(messages), "should have one message per release target")
+	assert.Len(t, messages, 3, "should have one message per release target")
 
 	// Verify the messages correspond to individual evaluations
 	for i, msg := range messages {

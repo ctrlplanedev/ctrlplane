@@ -403,7 +403,7 @@ func TestProcess_RequeueOnBackoff(t *testing.T) {
 
 	result, err := ctrl.Process(context.Background(), item)
 	require.NoError(t, err)
-	assert.True(t, result.RequeueAfter > 0, "should requeue with positive duration when in backoff")
+	assert.Positive(t, result.RequeueAfter, "should requeue with positive duration when in backoff")
 	assert.Empty(t, setter.createdJobs, "should not create a job during backoff")
 }
 

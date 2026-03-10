@@ -54,7 +54,7 @@ func TestEvalBool(t *testing.T) {
 			cel.Variable("x", cel.IntType),
 		)
 		_, err := EvalBool(prg, map[string]any{"x": int64(5)})
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boolean")
 	})
 
@@ -63,7 +63,7 @@ func TestEvalBool(t *testing.T) {
 			cel.Variable("x", cel.IntType),
 		)
 		_, err := EvalBool(prg, map[string]any{"x": "not_an_int"})
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("string result returns error", func(t *testing.T) {

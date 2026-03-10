@@ -186,7 +186,7 @@ func TestSummaryEvaluator_SomeTargetsDenied(t *testing.T) {
 }
 
 func TestSummaryEvaluator_Pluralize(t *testing.T) {
-	assert.Equal(t, "", pluralize(1))
+	assert.Empty(t, pluralize(1))
 	assert.Equal(t, "s", pluralize(0))
 	assert.Equal(t, "s", pluralize(2))
 	assert.Equal(t, "s", pluralize(10))

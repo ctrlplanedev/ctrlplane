@@ -148,7 +148,7 @@ func TestResolveValue_Literal_String(t *testing.T) {
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "hello", string(s))
+	assert.Equal(t, "hello", s)
 }
 
 func TestResolveValue_Literal_Int(t *testing.T) {
@@ -202,7 +202,7 @@ func TestResolveValue_Reference_ResourceName(t *testing.T) {
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "db-server", string(s))
+	assert.Equal(t, "db-server", s)
 }
 
 func TestResolveValue_Reference_ResourceMetadata(t *testing.T) {
@@ -230,7 +230,7 @@ func TestResolveValue_Reference_ResourceMetadata(t *testing.T) {
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "10.0.0.0/16", string(s))
+	assert.Equal(t, "10.0.0.0/16", s)
 }
 
 func TestResolveValue_Reference_DeploymentName(t *testing.T) {
@@ -253,7 +253,7 @@ func TestResolveValue_Reference_DeploymentName(t *testing.T) {
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "api-service", string(s))
+	assert.Equal(t, "api-service", s)
 }
 
 func TestResolveValue_Reference_EnvironmentName(t *testing.T) {
@@ -275,7 +275,7 @@ func TestResolveValue_Reference_EnvironmentName(t *testing.T) {
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "staging", string(s))
+	assert.Equal(t, "staging", s)
 }
 
 func TestResolveValue_Reference_NotFound(t *testing.T) {
@@ -350,7 +350,7 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 	require.Contains(t, resolved, "region")
 	s, err := resolved["region"].AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "resource-region", string(s))
+	assert.Equal(t, "resource-region", s)
 }
 
 // ---------------------------------------------------------------------------
@@ -384,7 +384,7 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 	require.Contains(t, resolved, "image")
 	s, err := resolved["image"].AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "nginx:latest", string(s))
+	assert.Equal(t, "nginx:latest", s)
 }
 
 // ---------------------------------------------------------------------------
@@ -412,7 +412,7 @@ func TestResolve_DefaultValueFallback(t *testing.T) {
 	require.Contains(t, resolved, "replicas")
 	i, err := resolved["replicas"].AsIntegerValue()
 	require.NoError(t, err)
-	assert.Equal(t, 3, int(i))
+	assert.Equal(t, 3, i)
 }
 
 // ---------------------------------------------------------------------------
@@ -482,7 +482,7 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 	require.NoError(t, err)
 	s, err := resolved["image"].AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "high-priority", string(s))
+	assert.Equal(t, "high-priority", s)
 }
 
 // ---------------------------------------------------------------------------
@@ -530,13 +530,13 @@ func TestResolve_MultipleVariables(t *testing.T) {
 	assert.Len(t, resolved, 3)
 
 	s, _ := resolved["region"].AsStringValue()
-	assert.Equal(t, "us-west-2", string(s))
+	assert.Equal(t, "us-west-2", s)
 
 	i, _ := resolved["replicas"].AsIntegerValue()
-	assert.Equal(t, 2, int(i))
+	assert.Equal(t, 2, i)
 
 	b, _ := resolved["debug"].AsBooleanValue()
-	assert.False(t, bool(b))
+	assert.False(t, b)
 }
 
 // ---------------------------------------------------------------------------
@@ -624,7 +624,7 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 	require.Contains(t, resolved, "db_host")
 	s, err := resolved["db_host"].AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "db.internal", string(s))
+	assert.Equal(t, "db.internal", s)
 }
 
 // ---------------------------------------------------------------------------
@@ -691,7 +691,7 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 	require.Contains(t, resolved, "cluster_endpoint")
 	s, err := resolved["cluster_endpoint"].AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "https://k8s.internal", string(s))
+	assert.Equal(t, "https://k8s.internal", s)
 }
 
 // ---------------------------------------------------------------------------
@@ -844,7 +844,7 @@ func TestResolveValue_Reference_ResourceConfig(t *testing.T) {
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
-	assert.Equal(t, "vpc-12345", string(s))
+	assert.Equal(t, "vpc-12345", s)
 }
 
 // ---------------------------------------------------------------------------

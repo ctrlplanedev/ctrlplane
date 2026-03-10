@@ -75,7 +75,7 @@ func TestPolicyEvaluation_GetPendingActions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.policy.GetPendingActions()
-			assert.Equal(t, tt.want, len(got))
+			assert.Len(t, got, tt.want)
 		})
 	}
 }
@@ -678,7 +678,7 @@ func TestDeployDecision_GetApprovalActions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.decision.GetApprovalActions()
-			assert.Equal(t, tt.want, len(got))
+			assert.Len(t, got, tt.want)
 			// Verify all returned actions are approval type
 			for _, action := range got {
 				actionTypeStr := string(*action.ActionType)
@@ -805,7 +805,7 @@ func TestDeployDecision_GetWaitActions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.decision.GetWaitActions()
-			assert.Equal(t, tt.want, len(got))
+			assert.Len(t, got, tt.want)
 			// Verify all returned actions are wait type
 			for _, action := range got {
 				actionTypeStr := string(*action.ActionType)
@@ -872,13 +872,13 @@ func TestDeployDecision_ComplexScenarios(t *testing.T) {
 		assert.True(t, decision.NeedsWait(), "should need to wait")
 
 		pendingActions := decision.GetPendingActions()
-		assert.Equal(t, 2, len(pendingActions), "should have 2 pending actions")
+		assert.Len(t, pendingActions, 2, "should have 2 pending actions")
 
 		approvalActions := decision.GetApprovalActions()
-		assert.Equal(t, 1, len(approvalActions), "should have 1 approval action")
+		assert.Len(t, approvalActions, 1, "should have 1 approval action")
 
 		waitActions := decision.GetWaitActions()
-		assert.Equal(t, 1, len(waitActions), "should have 1 wait action")
+		assert.Len(t, waitActions, 1, "should have 1 wait action")
 	})
 
 	t.Run("complex scenario - blocked with pending actions", func(t *testing.T) {
@@ -904,7 +904,7 @@ func TestDeployDecision_ComplexScenarios(t *testing.T) {
 		assert.True(t, decision.NeedsApproval(), "should still report needing approval")
 
 		pendingActions := decision.GetPendingActions()
-		assert.Equal(t, 1, len(pendingActions), "should still have pending actions")
+		assert.Len(t, pendingActions, 1, "should still have pending actions")
 	})
 
 	t.Run("complex scenario - all policies pass", func(t *testing.T) {
@@ -940,6 +940,6 @@ func TestDeployDecision_ComplexScenarios(t *testing.T) {
 		assert.False(t, decision.NeedsWait(), "should not need to wait")
 
 		pendingActions := decision.GetPendingActions()
-		assert.Equal(t, 0, len(pendingActions), "should have no pending actions")
+		assert.Empty(t, pendingActions, "should have no pending actions")
 	})
 }

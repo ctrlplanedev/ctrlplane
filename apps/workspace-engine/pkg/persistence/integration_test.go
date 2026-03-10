@@ -217,7 +217,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	// Load and verify resource is gone (deletions are filtered out in Load)
 	loadedChanges, err := persistenceStore.Load(ctx, namespace)
 	require.NoError(t, err)
-	require.Len(t, loadedChanges, 0, "Deleted entities should not be returned by Load()")
+	require.Empty(t, loadedChanges, "Deleted entities should not be returned by Load()")
 
 	// Verify the deletion is tracked internally (entity count includes deleted entities)
 	assert.Equal(t, 1, persistenceStore.EntityCount(namespace), "Deletion should be tracked for compaction")
@@ -763,7 +763,7 @@ func TestUserApprovalRecordKeyIncludesEnvironment(t *testing.T) {
 	_, ok = testStore.Repo().UserApprovalRecords().Get(recordTwo.Key())
 	assert.True(t, ok, "second user approval record should be stored")
 
-	assert.Equal(t, 2, len(testStore.Repo().UserApprovalRecords().Items()))
+	assert.Len(t, testStore.Repo().UserApprovalRecords().Items(), 2)
 }
 
 // Helper function to create string pointers

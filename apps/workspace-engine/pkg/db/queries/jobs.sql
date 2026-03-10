@@ -1,6 +1,6 @@
 -- name: InsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at, dispatch_context)
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+INSERT INTO job (id, job_agent_id, job_agent_config, status, message, created_at, updated_at, completed_at, dispatch_context)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 
 -- name: InsertReleaseJob :exec
 INSERT INTO release_job (release_id, job_id) VALUES ($1, $2);

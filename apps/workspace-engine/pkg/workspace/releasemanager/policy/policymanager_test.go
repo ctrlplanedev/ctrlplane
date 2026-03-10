@@ -193,7 +193,7 @@ func TestEvaluatePolicy(t *testing.T) {
 			},
 			expectedPassed: true,
 			checkResult: func(t *testing.T, result *oapi.PolicyEvaluation) {
-				assert.Len(t, result.RuleResults, 0)
+				assert.Empty(t, result.RuleResults)
 				assert.True(t, result.Allowed())
 			},
 		},
@@ -369,7 +369,7 @@ func TestEvaluatePolicy_SkipsEvaluatorWithMissingScope(t *testing.T) {
 
 	require.NotNil(t, result)
 	// Evaluator should be skipped due to missing scope fields
-	assert.Len(t, result.RuleResults, 0, "evaluators should be skipped when scope is incomplete")
+	assert.Empty(t, result.RuleResults, "evaluators should be skipped when scope is incomplete")
 	assert.True(t, result.Allowed(), "policy with no executed rules should allow")
 }
 

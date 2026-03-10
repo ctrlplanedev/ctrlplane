@@ -226,7 +226,7 @@ func TestResourceProviderCache_EmptyResources(t *testing.T) {
 	batch, err := cache.Retrieve(ctx, batchId)
 	require.NoError(t, err)
 	require.NotNil(t, batch)
-	assert.Len(t, batch.Resources, 0)
+	assert.Empty(t, batch.Resources)
 	assert.Equal(t, providerId, batch.ProviderId)
 }
 

@@ -132,7 +132,7 @@ func TestRelationshipIndexes_AddRuleAndRecompute(t *testing.T) {
 	assert.True(t, s.RelationshipIndexes.IsDirty())
 
 	n := s.RelationshipIndexes.Recompute(ctx)
-	assert.Greater(t, n, 0)
+	assert.Positive(t, n)
 	assert.False(t, s.RelationshipIndexes.IsDirty())
 
 	// Query relationships for the resource

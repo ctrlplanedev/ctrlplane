@@ -551,8 +551,8 @@ func TestFactory_CreateJobForRelease_UsesResolvedConfigWithoutReMerge(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, job)
 	require.Equal(t, "selected-deployment-agent-template", job.JobAgentConfig["template"])
-	require.Equal(t, float64(60), job.JobAgentConfig["timeout"])
-	require.Equal(t, float64(2), job.JobAgentConfig["retries"])
+	require.InEpsilon(t, float64(60), job.JobAgentConfig["timeout"], 0)
+	require.InEpsilon(t, float64(2), job.JobAgentConfig["retries"], 0)
 }
 
 func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testing.T) {

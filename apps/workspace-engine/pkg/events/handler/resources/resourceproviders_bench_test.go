@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // createTestResource creates a test resource with the given ID and workspace
@@ -105,7 +104,7 @@ func createTestResourceProvider(workspaceID, providerID, name string) *oapi.Reso
 	workspaceUUID, _ := uuid.Parse(workspaceID)
 	return &oapi.ResourceProvider{
 		Id:          providerID,
-		WorkspaceId: openapi_types.UUID(workspaceUUID),
+		WorkspaceId: workspaceUUID,
 		Name:        name,
 		CreatedAt:   time.Now(),
 		Metadata:    make(map[string]string),

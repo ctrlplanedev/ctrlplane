@@ -289,7 +289,7 @@ func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 		t.Fatalf("failed to get integer value: %v", err)
 	}
 
-	if int(replicasInt) != 5 {
+	if replicasInt != 5 {
 		t.Errorf("expected replicas = 5 (resource value), got %d", replicasInt)
 	}
 }
@@ -909,7 +909,7 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 
 	replicas1 := result1["replicas"]
 	replicas1Int, _ := replicas1.AsIntegerValue()
-	if int(replicas1Int) != 10 {
+	if replicas1Int != 10 {
 		t.Errorf("expected replicas for production = 10, got %d", replicas1Int)
 	}
 
@@ -937,7 +937,7 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 
 	replicas2 := result2["replicas"]
 	replicas2Int, _ := replicas2.AsIntegerValue()
-	if int(replicas2Int) != 3 {
+	if replicas2Int != 3 {
 		t.Errorf("expected replicas for staging = 3, got %d", replicas2Int)
 	}
 }

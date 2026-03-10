@@ -50,7 +50,7 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (DateCondit
 }
 
 func (c DateCondition) Matches(entity any) (bool, error) {
-	value, err := util.GetDateProperty(entity, string(c.Property))
+	value, err := util.GetDateProperty(entity, c.Property)
 	if err != nil {
 		return false, err
 	}

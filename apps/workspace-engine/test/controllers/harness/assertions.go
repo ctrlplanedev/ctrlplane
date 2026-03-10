@@ -82,7 +82,7 @@ func (p *TestPipeline) AssertReleaseVariableEquals(t *testing.T, idx int, key, e
 	require.True(t, ok, "variable %q not found on release %d", key, idx)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err, "variable %q is not a string value", key)
-	assert.Equal(t, expected, string(s))
+	assert.Equal(t, expected, s)
 }
 
 // ReleaseVariables returns the resolved variables map from the release at the

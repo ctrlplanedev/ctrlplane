@@ -245,7 +245,7 @@ func TestNewScheduler(t *testing.T) {
 	assert.NotNil(t, scheduler)
 	assert.NotNil(t, scheduler.store)
 	assert.NotNil(t, scheduler.cancelFuncs)
-	assert.Equal(t, 0, len(scheduler.cancelFuncs))
+	assert.Empty(t, scheduler.cancelFuncs)
 }
 
 func TestScheduler_StartVerification_NotFound(t *testing.T) {
@@ -259,7 +259,7 @@ func TestScheduler_StartVerification_NotFound(t *testing.T) {
 
 	// Should not panic and should not create any cancel functions
 	scheduler.mu.Lock()
-	assert.Equal(t, 0, len(scheduler.cancelFuncs))
+	assert.Empty(t, scheduler.cancelFuncs)
 	scheduler.mu.Unlock()
 }
 
@@ -278,7 +278,7 @@ func TestScheduler_StartVerification_AlreadyRunning(t *testing.T) {
 	cancelFuncs1 := scheduler.cancelFuncs[verification.Id]
 	scheduler.mu.Unlock()
 
-	assert.Equal(t, 1, len(cancelFuncs1))
+	assert.Len(t, cancelFuncs1, 1)
 
 	// Try to start again - should be a no-op
 	scheduler.StartVerification(ctx, verification.Id)
@@ -288,7 +288,7 @@ func TestScheduler_StartVerification_AlreadyRunning(t *testing.T) {
 	scheduler.mu.Unlock()
 
 	// Should be the same cancel functions
-	assert.Equal(t, len(cancelFuncs1), len(cancelFuncs2))
+	assert.Len(t, cancelFuncs2, len(cancelFuncs1))
 
 	// Clean up
 	scheduler.StopVerification(verification.Id)
@@ -320,7 +320,7 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 	scheduler.StartVerification(ctx, verification.Id)
 
 	scheduler.mu.Lock()
-	assert.Equal(t, 0, len(scheduler.cancelFuncs))
+	assert.Empty(t, scheduler.cancelFuncs)
 	scheduler.mu.Unlock()
 }
 
@@ -338,7 +338,7 @@ func TestScheduler_StartVerification_Success(t *testing.T) {
 	cancelFuncs := scheduler.cancelFuncs[verification.Id]
 	scheduler.mu.Unlock()
 
-	assert.Equal(t, 3, len(cancelFuncs), "should have one cancel func per metric")
+	assert.Len(t, cancelFuncs, 3, "should have one cancel func per metric")
 
 	// Clean up
 	scheduler.StopVerification(verification.Id)
@@ -355,15 +355,15 @@ func TestScheduler_StopVerification(t *testing.T) {
 	scheduler.StartVerification(ctx, verification.Id)
 
 	scheduler.mu.Lock()
-	assert.Equal(t, 1, len(scheduler.cancelFuncs))
-	assert.Equal(t, 2, len(scheduler.cancelFuncs[verification.Id]))
+	assert.Len(t, scheduler.cancelFuncs, 1)
+	assert.Len(t, scheduler.cancelFuncs[verification.Id], 2)
 	scheduler.mu.Unlock()
 
 	// Stop the verification
 	scheduler.StopVerification(verification.Id)
 
 	scheduler.mu.Lock()
-	assert.Equal(t, 0, len(scheduler.cancelFuncs))
+	assert.Empty(t, scheduler.cancelFuncs)
 	scheduler.mu.Unlock()
 }
 
@@ -424,7 +424,7 @@ func TestScheduler_ConcurrentStartStop(t *testing.T) {
 
 	// Verify all started
 	scheduler.mu.Lock()
-	assert.Equal(t, 10, len(scheduler.cancelFuncs))
+	assert.Len(t, scheduler.cancelFuncs, 10)
 	scheduler.mu.Unlock()
 
 	// Concurrently stop all verifications
@@ -440,7 +440,7 @@ func TestScheduler_ConcurrentStartStop(t *testing.T) {
 
 	// Verify all stopped
 	scheduler.mu.Lock()
-	assert.Equal(t, 0, len(scheduler.cancelFuncs))
+	assert.Empty(t, scheduler.cancelFuncs)
 	scheduler.mu.Unlock()
 }
 
@@ -460,7 +460,7 @@ func TestScheduler_MultipleMetrics(t *testing.T) {
 	cancelFuncs := scheduler.cancelFuncs[verification.Id]
 	scheduler.mu.Unlock()
 
-	assert.Equal(t, 5, len(cancelFuncs), "should have one goroutine per metric")
+	assert.Len(t, cancelFuncs, 5, "should have one goroutine per metric")
 
 	// Clean up
 	scheduler.StopVerification(verification.Id)
@@ -478,20 +478,20 @@ func TestScheduler_RestartAfterStop(t *testing.T) {
 	scheduler.StartVerification(ctx, verification.Id)
 
 	scheduler.mu.Lock()
-	assert.Equal(t, 1, len(scheduler.cancelFuncs))
+	assert.Len(t, scheduler.cancelFuncs, 1)
 	scheduler.mu.Unlock()
 
 	scheduler.StopVerification(verification.Id)
 
 	scheduler.mu.Lock()
-	assert.Equal(t, 0, len(scheduler.cancelFuncs))
+	assert.Empty(t, scheduler.cancelFuncs)
 	scheduler.mu.Unlock()
 
 	scheduler.StartVerification(ctx, verification.Id)
 
 	scheduler.mu.Lock()
-	assert.Equal(t, 1, len(scheduler.cancelFuncs))
-	assert.Equal(t, 2, len(scheduler.cancelFuncs[verification.Id]))
+	assert.Len(t, scheduler.cancelFuncs, 1)
+	assert.Len(t, scheduler.cancelFuncs[verification.Id], 2)
 	scheduler.mu.Unlock()
 
 	// Clean up
@@ -521,7 +521,7 @@ func TestScheduler_VerificationWithNoMetrics(t *testing.T) {
 	cancelFuncs := scheduler.cancelFuncs[verification.Id]
 	scheduler.mu.Unlock()
 
-	assert.Equal(t, 0, len(cancelFuncs))
+	assert.Empty(t, cancelFuncs)
 }
 
 // Integration test: verify measurements are actually taken
@@ -604,7 +604,7 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 	}, 2*time.Second, 100*time.Millisecond, "should have taken 1 measurement")
 
 	// Should have exactly 1 measurement (goroutine should have stopped)
-	assert.Equal(t, 1, len(updatedVerification.Metrics[0].Measurements))
+	assert.Len(t, updatedVerification.Metrics[0].Measurements, 1)
 
 	// Clean up
 	scheduler.StopVerification(verification.Id)

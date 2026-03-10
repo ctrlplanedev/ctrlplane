@@ -33,7 +33,7 @@ func (r *Repo) Get(id string) (*oapi.Resource, bool) {
 		return nil, false
 	}
 
-	return ToOapi(ResourceRow(row)), true
+	return ToOapi(row), true
 }
 
 func (r *Repo) GetByIdentifier(identifier string) (*oapi.Resource, bool) {

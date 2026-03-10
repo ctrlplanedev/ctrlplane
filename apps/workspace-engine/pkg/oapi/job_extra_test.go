@@ -37,7 +37,7 @@ func TestLiteralValue_String(t *testing.T) {
 
 	t.Run("empty union returns empty", func(t *testing.T) {
 		lv := &LiteralValue{}
-		assert.Equal(t, "", lv.String())
+		assert.Empty(t, lv.String())
 	})
 }
 

@@ -331,7 +331,7 @@ func TestRun_RunRound_IntermediateState(t *testing.T) {
 
 	// Now use RunRound to process remaining desired-release items.
 	n := p.RunRound()
-	require.Greater(t, n, 0, "round should process desired releases")
+	require.Positive(t, n, "round should process desired releases")
 	p.AssertReleaseCreated(t)
 	p.AssertReleaseVersion(t, 0, "v1.0.0")
 

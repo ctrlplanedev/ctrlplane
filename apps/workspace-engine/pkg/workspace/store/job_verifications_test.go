@@ -43,7 +43,7 @@ func TestGetByJobId(t *testing.T) {
 	// Get verifications for job
 	results := s.JobVerifications.GetByJobId(jobId)
 
-	require.Equal(t, 2, len(results))
+	require.Len(t, results, 2)
 	// Results should be sorted by CreatedAt descending
 	assert.Equal(t, verification2.Id, results[0].Id)
 	assert.Equal(t, verification1.Id, results[1].Id)
@@ -93,7 +93,7 @@ func TestGetByJobId_MultipleJobs(t *testing.T) {
 	// Get verifications for job1 only
 	results := s.JobVerifications.GetByJobId(job1Id)
 
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	assert.Equal(t, verification1.Id, results[0].Id)
 	assert.Equal(t, job1Id, results[0].JobId)
 }

@@ -8,7 +8,7 @@ linters:
     # - nestif
     - iface
     # - nilnil
-    # - godot
+    - godot
     # - gosec
     # - interfacebloat
     # - intrange
@@ -16,14 +16,14 @@ linters:
     # - maintidx
     - modernize
     # - paralleltest
-    # - testifylint
+    - testifylint
     # - thelper
     # - unconvert
-    # - unqueryvet
-    # - unused
+    - unqueryvet
+    - unused
     - usestdlibvars
-    # - asciicheck
-    # - bidichk
+    - asciicheck
+    - bidichk
   settings:
     interfacebloat:
       max: 5

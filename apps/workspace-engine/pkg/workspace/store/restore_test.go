@@ -144,7 +144,7 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 	// Verify the environment correctly filtered resources based on the selector
 	assert.Contains(t, envResources, resourceId, "Production resource should be in environment")
 	assert.NotContains(t, envResources, devResourceId, "Development resource should not be in environment")
-	assert.Equal(t, 1, len(envResources), "Should have exactly 1 matching resource")
+	assert.Len(t, envResources, 1, "Should have exactly 1 matching resource")
 
 	// Verify deployment materialized views are also initialized
 	deploymentResources := testStore.Resources.ForDeployment(ctx, restoredDeployment)
@@ -154,7 +154,7 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 	// Verify the deployment correctly filtered resources based on the selector
 	assert.Contains(t, deploymentResources, resourceId, "Production resource should be in deployment")
 	assert.NotContains(t, deploymentResources, devResourceId, "Development resource should not be in deployment")
-	assert.Equal(t, 1, len(deploymentResources), "Should have exactly 1 matching resource")
+	assert.Len(t, deploymentResources, 1, "Should have exactly 1 matching resource")
 }
 
 // TestStore_Restore_EmptyEnvironments tests that restoration works even with no environments
@@ -301,21 +301,21 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 	assert.Contains(t, prodResources, prodResourceId)
 	assert.NotContains(t, prodResources, stagingResourceId)
 	assert.NotContains(t, prodResources, devResourceId)
-	assert.Equal(t, 1, len(prodResources))
+	assert.Len(t, prodResources, 1)
 
 	stagingResources := testStore.Resources.ForEnvironment(ctx, stagingEnv)
 	require.NoError(t, err, "Staging environment resources should be accessible")
 	assert.Contains(t, stagingResources, stagingResourceId)
 	assert.NotContains(t, stagingResources, prodResourceId)
 	assert.NotContains(t, stagingResources, devResourceId)
-	assert.Equal(t, 1, len(stagingResources))
+	assert.Len(t, stagingResources, 1)
 
 	devResources := testStore.Resources.ForEnvironment(ctx, devEnv)
 	require.NoError(t, err, "Development environment resources should be accessible")
 	assert.Contains(t, devResources, devResourceId)
 	assert.NotContains(t, devResources, prodResourceId)
 	assert.NotContains(t, devResources, stagingResourceId)
-	assert.Equal(t, 1, len(devResources))
+	assert.Len(t, devResources, 1)
 }
 
 // TestStore_Restore_AllMaterializedViewsInitialized is a comprehensive test that validates
@@ -464,14 +464,14 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		require.NoError(t, err, "Should access env1 resources after restore")
 		assert.Contains(t, env1Resources, resource1Id)
 		assert.Contains(t, env1Resources, resource2Id)
-		assert.Equal(t, 2, len(env1Resources), "env1 should have both production resources")
+		assert.Len(t, env1Resources, 2, "env1 should have both production resources")
 
 		// Verify env2 resources materialized view is initialized
 		env2Resources := testStore.Resources.ForEnvironment(ctx, env2)
 		require.NoError(t, err, "Should access env2 resources after restore")
 		assert.Contains(t, env2Resources, resource1Id)
 		assert.NotContains(t, env2Resources, resource2Id)
-		assert.Equal(t, 1, len(env2Resources), "env2 should have only frontend resource")
+		assert.Len(t, env2Resources, 1, "env2 should have only frontend resource")
 	})
 
 	// ==========================================
@@ -483,14 +483,14 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		require.NoError(t, err, "Should access deploy1 resources after restore")
 		assert.Contains(t, deploy1Resources, resource2Id)
 		assert.NotContains(t, deploy1Resources, resource1Id)
-		assert.Equal(t, 1, len(deploy1Resources), "deploy1 should have only backend resource")
+		assert.Len(t, deploy1Resources, 1, "deploy1 should have only backend resource")
 
 		// Verify deploy2 resources materialized view is initialized
 		deploy2Resources := testStore.Resources.ForDeployment(ctx, deploy2)
 		require.NoError(t, err, "Should access deploy2 resources after restore")
 		assert.Contains(t, deploy2Resources, resource1Id)
 		assert.NotContains(t, deploy2Resources, resource2Id)
-		assert.Equal(t, 1, len(deploy2Resources), "deploy2 should have only frontend resource")
+		assert.Len(t, deploy2Resources, 1, "deploy2 should have only frontend resource")
 	})
 }
 
@@ -557,7 +557,7 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 	require.NoError(t, err, "Should be able to query environment resources after restore")
 	require.NotNil(t, envResources, "Environment resources should not be nil")
 	assert.Contains(t, envResources, resourceId, "Production resource should be in environment")
-	assert.Equal(t, 1, len(envResources), "Should have exactly 1 matching resource")
+	assert.Len(t, envResources, 1, "Should have exactly 1 matching resource")
 }
 
 // TestStore_Restore_ResourceProviders tests restoration of resource providers and their resources
@@ -980,7 +980,7 @@ func TestStore_Restore_LargeDataset(t *testing.T) {
 
 	// Verify all resources were restored
 	allResources := testStore.Resources.Items()
-	assert.Equal(t, numResources, len(allResources), "All resources should be restored")
+	assert.Len(t, allResources, numResources, "All resources should be restored")
 }
 
 // TestStore_Restore_EmptyChanges tests restoration with empty change set

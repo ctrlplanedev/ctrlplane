@@ -55,11 +55,11 @@ func TestVariable_MultipleDefaults(t *testing.T) {
 	vars := p.ReleaseVariables(t, 0)
 	i, err := vars["replicas"].AsIntegerValue()
 	require.NoError(t, err)
-	assert.Equal(t, 3, int(i))
+	assert.Equal(t, 3, i)
 
 	b, err := vars["debug"].AsBooleanValue()
 	require.NoError(t, err)
-	assert.False(t, bool(b))
+	assert.False(t, b)
 }
 
 // ---------------------------------------------------------------------------
@@ -255,7 +255,7 @@ func TestVariable_MixedLiteralAndReference(t *testing.T) {
 	vars := p.ReleaseVariables(t, 0)
 	i, err := vars["replicas"].AsIntegerValue()
 	require.NoError(t, err)
-	assert.Equal(t, 3, int(i))
+	assert.Equal(t, 3, i)
 }
 
 // ---------------------------------------------------------------------------

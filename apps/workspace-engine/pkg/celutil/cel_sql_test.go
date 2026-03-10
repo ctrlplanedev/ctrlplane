@@ -287,7 +287,7 @@ func TestSQLExtractor_IgnoresOtherVariables(t *testing.T) {
 
 	filter, err := extractor.Extract(`deployment.kind == "web"`, 2)
 	require.NoError(t, err)
-	assert.Equal(t, "", filter.Clause)
+	assert.Empty(t, filter.Clause)
 	assert.Nil(t, filter.Args)
 }
 

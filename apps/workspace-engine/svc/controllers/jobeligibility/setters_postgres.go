@@ -52,13 +52,20 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 
 	q := db.GetQueries(ctx).WithTx(tx)
 
+	var completedAt pgtype.Timestamptz
+	if job.CompletedAt != nil {
+		completedAt = pgtype.Timestamptz{Time: *job.CompletedAt, Valid: true}
+	}
+
 	if err := q.InsertJob(ctx, db.InsertJobParams{
 		ID:              jobID,
 		JobAgentID:      jobAgentIDParam,
 		JobAgentConfig:  jobAgentConfig,
 		Status:          db.ToDBJobStatus(job.Status),
+		Message:         job.Message,
 		CreatedAt:       pgtype.Timestamptz{Time: job.CreatedAt, Valid: !job.CreatedAt.IsZero()},
 		UpdatedAt:       pgtype.Timestamptz{Time: job.UpdatedAt, Valid: !job.UpdatedAt.IsZero()},
+		CompletedAt:     completedAt,
 		DispatchContext: dispatchContext,
 	}); err != nil {
 		return fmt.Errorf("insert job: %w", err)

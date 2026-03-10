@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Mock entity types for testing
@@ -1086,7 +1085,7 @@ func TestStore_SaveAndLoad_OAPIResourceProvider(t *testing.T) {
 	rp := &oapi.ResourceProvider{
 		Id:          uuid.New().String(),
 		Name:        "test-provider",
-		WorkspaceId: openapi_types.UUID(workspaceUUID),
+		WorkspaceId: workspaceUUID,
 		Metadata:    map[string]string{"type": "kubernetes"},
 		CreatedAt:   time.Now(),
 	}
@@ -1386,7 +1385,7 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 	resourceProvider := &oapi.ResourceProvider{
 		Id:          uuid.New().String(),
 		Name:        "Provider 1",
-		WorkspaceId: openapi_types.UUID(workspaceUUID),
+		WorkspaceId: workspaceUUID,
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}

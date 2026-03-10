@@ -207,7 +207,7 @@ func TestVerificationAction_Execute_CreatesVerification(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 1, len(v.Metrics))
+	assert.Len(t, v.Metrics, 1)
 	assert.Equal(t, "health-check", v.Metrics[0].Name)
 
 	// Verification should be in running status (scheduler started)
@@ -333,7 +333,7 @@ func TestVerificationAction_Execute_DefaultsTriggerToJobSuccess(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 1, len(v.Metrics))
+	assert.Len(t, v.Metrics, 1)
 }
 
 func TestVerificationAction_Execute_DeduplicatesMetrics(t *testing.T) {
@@ -382,7 +382,7 @@ func TestVerificationAction_Execute_DeduplicatesMetrics(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 3, len(v.Metrics)) // health-check, latency-check, error-rate (deduplicated)
+	assert.Len(t, v.Metrics, 3) // health-check, latency-check, error-rate (deduplicated)
 
 	// Check names are unique
 	names := make(map[string]bool)
@@ -432,7 +432,7 @@ func TestVerificationAction_Execute_TriggerJobCreated(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 1, len(v.Metrics))
+	assert.Len(t, v.Metrics, 1)
 	assert.Equal(t, "startup-check", v.Metrics[0].Name)
 	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
@@ -473,7 +473,7 @@ func TestVerificationAction_Execute_TriggerJobStarted(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 1, len(v.Metrics))
+	assert.Len(t, v.Metrics, 1)
 	assert.Equal(t, "progress-check", v.Metrics[0].Name)
 	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
@@ -514,7 +514,7 @@ func TestVerificationAction_Execute_TriggerJobFailure(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 1, len(v.Metrics))
+	assert.Len(t, v.Metrics, 1)
 	assert.Equal(t, "failure-analysis", v.Metrics[0].Name)
 	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
@@ -586,7 +586,7 @@ func TestVerificationAction_Execute_PolicyWithMixedRules(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 1, len(v.Metrics))
+	assert.Len(t, v.Metrics, 1)
 	assert.Equal(t, "health-check", v.Metrics[0].Name)
 }
 
@@ -647,7 +647,7 @@ func TestVerificationAction_Execute_MultipleVerificationRulesInPolicy(t *testing
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	v := verifications[0]
-	assert.Equal(t, 3, len(v.Metrics))
+	assert.Len(t, v.Metrics, 3)
 
 	// Check all metrics are present
 	names := make(map[string]bool)
@@ -864,11 +864,11 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be in running status")
 
 	// Verify metric specifications are correctly transferred
-	require.Equal(t, 1, len(v.Metrics), "should have one metric")
+	require.Len(t, v.Metrics, 1, "should have one metric")
 	metricStatus := v.Metrics[0]
 	assert.Equal(t, "detailed-health-check", metricStatus.Name)
 	assert.EqualValues(t, 60, metricStatus.IntervalSeconds)
-	assert.EqualValues(t, 10, metricStatus.Count)
+	assert.Equal(t, 10, metricStatus.Count)
 	assert.Equal(t, "result.statusCode == 200", metricStatus.SuccessCondition)
 	require.NotNil(t, metricStatus.FailureThreshold)
 	assert.Equal(t, 2, *metricStatus.FailureThreshold)
@@ -966,7 +966,7 @@ func TestVerificationAction_Execute_MultipleMetricsAllRunning(t *testing.T) {
 	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status())
 
 	// All metrics should be present
-	require.Equal(t, 3, len(v.Metrics))
+	require.Len(t, v.Metrics, 3)
 
 	// Each metric should have empty measurements (just started)
 	for _, m := range v.Metrics {

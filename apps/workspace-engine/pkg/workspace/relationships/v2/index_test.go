@@ -128,7 +128,7 @@ func TestRelationshipIndex_AddEntityAndRecompute(t *testing.T) {
 	assert.True(t, idx.IsDirty(ctx))
 
 	evals := idx.Recompute(ctx)
-	assert.Greater(t, evals, 0)
+	assert.Positive(t, evals)
 	assert.False(t, idx.IsDirty(ctx))
 
 	// r1 should match d1 (same name "app") and vice versa
@@ -206,7 +206,7 @@ func TestRelationshipIndex_DirtyEntity(t *testing.T) {
 	assert.True(t, idx.IsDirty(ctx))
 
 	evals := idx.Recompute(ctx)
-	assert.Greater(t, evals, 0)
+	assert.Positive(t, evals)
 	assert.False(t, idx.IsDirty(ctx))
 }
 
@@ -233,7 +233,7 @@ func TestRelationshipIndex_DirtyAll(t *testing.T) {
 	assert.True(t, idx.IsDirty(ctx))
 
 	evals := idx.Recompute(ctx)
-	assert.Greater(t, evals, 0)
+	assert.Positive(t, evals)
 }
 
 func TestRelationshipIndex_SelfMatchExcluded(t *testing.T) {

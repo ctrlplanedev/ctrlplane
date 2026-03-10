@@ -196,7 +196,7 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 	}
 
 	// Store should be in a valid state (no race conditions)
-	assert.Greater(t, store.NamespaceCount(), 0, "Concurrent writes should succeed")
+	assert.Positive(t, store.NamespaceCount(), "Concurrent writes should succeed")
 }
 
 func TestStore_Close(t *testing.T) {

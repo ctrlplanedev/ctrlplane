@@ -60,10 +60,10 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	require.Len(t, verifications, 1)
 	verification := verifications[0]
 	assert.Equal(t, job.Id, verification.JobId)
-	assert.Equal(t, 1, len(verification.Metrics))
+	assert.Len(t, verification.Metrics, 1)
 	assert.Equal(t, "health-check", verification.Metrics[0].Name)
 	assert.EqualValues(t, 30, verification.Metrics[0].IntervalSeconds)
-	assert.EqualValues(t, 5, verification.Metrics[0].Count)
+	assert.Equal(t, 5, verification.Metrics[0].Count)
 	// Note: scheduler runs first measurement immediately, so we should have at least one
 	assert.LessOrEqual(t, len(verification.Metrics[0].Measurements), verification.Metrics[0].Count)
 
@@ -113,7 +113,7 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 	verifications := s.JobVerifications.GetByJobId(job.Id)
 	require.Len(t, verifications, 1)
 	verification := verifications[0]
-	assert.Equal(t, 2, len(verification.Metrics))
+	assert.Len(t, verification.Metrics, 2)
 	assert.Equal(t, "health-check", verification.Metrics[0].Name)
 	assert.Equal(t, "availability-check", verification.Metrics[1].Name)
 
@@ -557,13 +557,13 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	metric := verification.Metrics[0]
 	assert.Equal(t, "complex-check", metric.Name)
 	assert.EqualValues(t, 120, metric.IntervalSeconds)
-	assert.EqualValues(t, 20, metric.Count)
+	assert.Equal(t, 20, metric.Count)
 	assert.Equal(t, "result.body.status == 'ok'", metric.SuccessCondition)
 	require.NotNil(t, metric.FailureCondition, "FailureCondition should be preserved")
 	assert.Equal(t, failureCondition, *metric.FailureCondition)
-	assert.EqualValues(t, 5, *metric.FailureThreshold)
+	assert.Equal(t, 5, *metric.FailureThreshold)
 	require.NotNil(t, metric.SuccessThreshold, "SuccessThreshold should be preserved")
-	assert.EqualValues(t, 3, *metric.SuccessThreshold)
+	assert.Equal(t, 3, *metric.SuccessThreshold)
 
 	// Clean up
 	manager.scheduler.StopVerification(verification.Id)

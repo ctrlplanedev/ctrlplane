@@ -190,7 +190,7 @@ func TestPolicySkips_GetAllForTarget(t *testing.T) {
 
 	t.Run("no match for different version", func(t *testing.T) {
 		results := s.PolicySkips.GetAllForTarget("v3", "env-1", "res-1")
-		assert.Len(t, results, 0)
+		assert.Empty(t, results)
 	})
 
 	t.Run("env wildcard matches different resource", func(t *testing.T) {

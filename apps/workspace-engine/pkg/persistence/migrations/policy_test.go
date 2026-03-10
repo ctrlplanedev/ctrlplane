@@ -239,7 +239,7 @@ func TestPolicySelectorsToSelector_OtherFieldsPreserved(t *testing.T) {
 	assert.Equal(t, "true", result["selector"])
 	assert.Equal(t, "p1", result["id"])
 	assert.Equal(t, "my-policy", result["name"])
-	assert.Equal(t, float64(10), result["priority"])
+	assert.InEpsilon(t, float64(10), result["priority"], 0)
 	assert.NotNil(t, result["rules"])
 }
 

@@ -108,7 +108,7 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 				policy.AddRuleResult(*ruleResult)
 			}
 
-			assert.Equal(t, len(tt.ruleResults), len(policy.RuleResults))
+			assert.Len(t, policy.RuleResults, len(tt.ruleResults))
 		})
 	}
 }
@@ -309,7 +309,7 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 			pending := policy.GetPendingActions()
 
 			assert.NotNil(t, pending)
-			assert.Equal(t, tt.expectedCount, len(pending))
+			assert.Len(t, pending, tt.expectedCount)
 
 			// Verify all returned results require action
 			for _, result := range pending {
@@ -341,7 +341,7 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		// Test pending actions
 		assert.True(t, policy.HasPendingActions())
 		pending := policy.GetPendingActions()
-		assert.Equal(t, 1, len(pending))
+		assert.Len(t, pending, 1)
 		assert.Equal(t, "waiting for manager approval", pending[0].Message)
 
 		// Note: Summary field is optional and may not be generated automatically
@@ -396,7 +396,7 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		assert.False(t, policy.HasDenials())
 		assert.True(t, policy.HasPendingActions())
 		pending := policy.GetPendingActions()
-		assert.Equal(t, 2, len(pending))
+		assert.Len(t, pending, 2)
 
 		// Note: Summary field is optional and may not be generated automatically
 		// If Summary is populated, verify it contains expected information

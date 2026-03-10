@@ -197,8 +197,8 @@ func (q *Queries) GetWorkspaceIDByReleaseID(ctx context.Context, id uuid.UUID) (
 }
 
 const insertJob = `-- name: InsertJob :exec
-INSERT INTO job (id, job_agent_id, job_agent_config, status, created_at, updated_at, dispatch_context)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO job (id, job_agent_id, job_agent_config, status, message, created_at, updated_at, completed_at, dispatch_context)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type InsertJobParams struct {
@@ -206,8 +206,10 @@ type InsertJobParams struct {
 	JobAgentID      pgtype.UUID
 	JobAgentConfig  []byte
 	Status          JobStatus
+	Message         *string
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
 	DispatchContext []byte
 }
 
@@ -217,8 +219,10 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 		arg.JobAgentID,
 		arg.JobAgentConfig,
 		arg.Status,
+		arg.Message,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.CompletedAt,
 		arg.DispatchContext,
 	)
 	return err

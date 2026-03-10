@@ -272,7 +272,7 @@ func TestGetMapValue(t *testing.T) {
 
 func TestExtractValueAsString(t *testing.T) {
 	t.Run("nil value", func(t *testing.T) {
-		assert.Equal(t, "", extractValueAsString(nil))
+		assert.Empty(t, extractValueAsString(nil))
 	})
 
 	t.Run("string value", func(t *testing.T) {

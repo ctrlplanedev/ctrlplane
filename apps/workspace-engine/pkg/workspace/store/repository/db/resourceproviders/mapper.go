@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ToOapi converts a db.ResourceProvider into an oapi.ResourceProvider.
@@ -26,7 +25,7 @@ func ToOapi(row db.ResourceProvider) *oapi.ResourceProvider {
 	return &oapi.ResourceProvider{
 		Id:          row.ID.String(),
 		Name:        row.Name,
-		WorkspaceId: openapi_types.UUID(row.WorkspaceID),
+		WorkspaceId: row.WorkspaceID,
 		CreatedAt:   createdAt,
 		Metadata:    metadata,
 	}
@@ -39,7 +38,7 @@ func ToUpsertParams(rp *oapi.ResourceProvider) (db.UpsertResourceProviderParams,
 		return db.UpsertResourceProviderParams{}, fmt.Errorf("parse id: %w", err)
 	}
 
-	wsID := uuid.UUID(rp.WorkspaceId)
+	wsID := rp.WorkspaceId
 
 	metadata := rp.Metadata
 	if metadata == nil {

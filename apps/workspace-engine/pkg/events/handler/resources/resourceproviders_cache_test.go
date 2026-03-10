@@ -316,7 +316,7 @@ func TestHandleResourceProviderSetResources_ClaimCheckPattern(t *testing.T) {
 
 	// Second event with same batchId should fail (claim check pattern - one-time use)
 	err = HandleResourceProviderSetResources(ctx, ws, rawEvent)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "batch not found or expired")
 }
 

@@ -572,7 +572,7 @@ func TestSelector_MutateAndRerun_SelectorChangedOnMock(t *testing.T) {
 	p.Run()
 
 	// Computed resources updated to 0 Nodes since selector now targets Pods.
-	assert.Len(t, p.ComputedResources(), 0, "after selector change, no Nodes match Pod selector")
+	assert.Empty(t, p.ComputedResources(), "after selector change, no Nodes match Pod selector")
 	// A second release is still created because the release target still exists.
 	p.AssertReleaseCount(t, 2)
 }
@@ -743,7 +743,7 @@ func TestSelector_Dynamic_FilterMatchesNothing_ThenMatches(t *testing.T) {
 	)
 
 	p.Run()
-	assert.Len(t, p.ComputedResources(), 0, "round 1: GPU selector matches nothing")
+	assert.Empty(t, p.ComputedResources(), "round 1: GPU selector matches nothing")
 
 	// Fix the filter to something that matches.
 	p.SelectorGetter.Deployment.ResourceSelector = `resource.kind == "Node"`

@@ -298,10 +298,10 @@ func TestParseFromMapEdgeCases(t *testing.T) {
 func TestUnknownConditionStructure(t *testing.T) {
 	t.Run("zero value condition", func(t *testing.T) {
 		var condition UnknownCondition
-		assert.Equal(t, "", condition.Property)
-		assert.Equal(t, "", condition.Operator)
-		assert.Equal(t, "", condition.Value)
-		assert.Equal(t, "", condition.MetadataKey)
+		assert.Empty(t, condition.Property)
+		assert.Empty(t, condition.Operator)
+		assert.Empty(t, condition.Value)
+		assert.Empty(t, condition.MetadataKey)
 		assert.Nil(t, condition.Conditions)
 	})
 

@@ -175,7 +175,7 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 	rules, err := GetRules(ctx, st, releaseTarget, RetryRuleExtractor, nil)
 
 	require.NoError(t, err)
-	assert.Len(t, rules, 0, "Should extract 0 retry rules when none exist")
+	assert.Empty(t, rules, "Should extract 0 retry rules when none exist")
 }
 
 func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
@@ -245,7 +245,7 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 	rules, err := GetRules(ctx, st, releaseTarget, RetryRuleExtractor, nil)
 
 	require.NoError(t, err)
-	assert.Len(t, rules, 0, "Should not extract rules from disabled policies")
+	assert.Empty(t, rules, "Should not extract rules from disabled policies")
 }
 
 func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
@@ -496,7 +496,7 @@ func TestPolicyResolver_GetRules_SelectorWithEnvironment(t *testing.T) {
 
 	rules, err := GetRules(ctx, st, releaseTarget, RetryRuleExtractor, nil)
 	require.NoError(t, err)
-	assert.Len(t, rules, 0, "Policy targeting 'production' should not match 'staging' environment")
+	assert.Empty(t, rules, "Policy targeting 'production' should not match 'staging' environment")
 }
 
 func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {

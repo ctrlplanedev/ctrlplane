@@ -49,7 +49,7 @@ func TestCelToSelector_EmptyString(t *testing.T) {
 
 	cs, err := sel.AsCelSelector()
 	require.NoError(t, err)
-	assert.Equal(t, "", cs.Cel)
+	assert.Empty(t, cs.Cel)
 }
 
 func TestCelToSelector_LiteralTrue(t *testing.T) {

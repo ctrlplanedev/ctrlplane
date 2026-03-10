@@ -320,5 +320,5 @@ func TestRecorder_AppendMeasurement_PreservesExistingMeasurements(t *testing.T) 
 	assert.Equal(t, oapi.Failed, updated.Metrics[0].Measurements[1].Status)
 
 	// Other metric should be unaffected
-	assert.Len(t, updated.Metrics[1].Measurements, 0)
+	assert.Empty(t, updated.Metrics[1].Measurements)
 }

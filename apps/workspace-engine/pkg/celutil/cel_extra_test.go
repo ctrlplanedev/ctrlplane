@@ -78,7 +78,7 @@ func TestEntityToMap(t *testing.T) {
 		result, err := EntityToMap(TestEntity{Name: "test", Age: 25})
 		require.NoError(t, err)
 		assert.Equal(t, "test", result["name"])
-		assert.Equal(t, float64(25), result["age"]) // JSON numbers are float64
+		assert.InEpsilon(t, float64(25), result["age"], 0)
 	})
 
 	t.Run("unmarshalable value", func(t *testing.T) {

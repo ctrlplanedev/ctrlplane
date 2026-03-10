@@ -185,7 +185,7 @@ func TestExecutor_BuildProviderContext_WithVariables(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, providerCtx)
-	assert.Equal(t, 2, len(providerCtx.Variables))
+	assert.Len(t, providerCtx.Variables, 2)
 	assert.Contains(t, providerCtx.Variables, "env")
 	assert.Contains(t, providerCtx.Variables, "version")
 }

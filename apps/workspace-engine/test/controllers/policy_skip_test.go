@@ -401,7 +401,7 @@ func TestPolicySkip_Dynamic_RemoveSkipReblocks(t *testing.T) {
 	p.EnqueueSelectorEval()
 	p.Run()
 
-	assert.Equal(t, releaseCountBefore, len(p.Releases()),
+	assert.Len(t, p.Releases(), releaseCountBefore,
 		"after removing skip, no new release should be created")
 }
 

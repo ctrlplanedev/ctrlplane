@@ -428,7 +428,7 @@ func TestCollectEvaluators(t *testing.T) {
 		}
 		evals := CollectEvaluators(ctx, getter, rt, policies)
 		baseCount := len(CollectEvaluators(ctx, getter, rt, nil))
-		assert.Equal(t, baseCount, len(evals), "disabled policy should add no evaluators")
+		assert.Len(t, evals, baseCount, "disabled policy should add no evaluators")
 	})
 
 	t.Run("includes evaluators from enabled policies", func(t *testing.T) {
@@ -473,7 +473,7 @@ func TestCollectEvaluators(t *testing.T) {
 		}
 		evals := CollectEvaluators(ctx, getter, rt, policies)
 		baseCount := len(CollectEvaluators(ctx, getter, rt, nil))
-		assert.Equal(t, baseCount, len(evals))
+		assert.Len(t, evals, baseCount)
 	})
 
 	t.Run("handles empty rule (no rule-type fields) as no-op", func(t *testing.T) {
@@ -482,7 +482,7 @@ func TestCollectEvaluators(t *testing.T) {
 		}
 		evals := CollectEvaluators(ctx, getter, rt, policies)
 		baseCount := len(CollectEvaluators(ctx, getter, rt, nil))
-		assert.Equal(t, baseCount, len(evals))
+		assert.Len(t, evals, baseCount)
 	})
 
 	t.Run("handles mix of nil, disabled, and enabled policies", func(t *testing.T) {
@@ -497,7 +497,7 @@ func TestCollectEvaluators(t *testing.T) {
 		}
 		mixed := CollectEvaluators(ctx, getter, rt, policies)
 		clean := CollectEvaluators(ctx, getter, rt, enabledOnly)
-		assert.Equal(t, len(clean), len(mixed))
+		assert.Len(t, mixed, len(clean))
 	})
 }
 

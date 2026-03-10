@@ -132,7 +132,7 @@ func TestJSONEntityRegistry_MigrateRaw_TransformsJSON(t *testing.T) {
 	require.NoError(t, json.Unmarshal(output, &result))
 	assert.Equal(t, "migrated", result["name"])
 	assert.Nil(t, result["old_name"])
-	assert.Equal(t, float64(99), result["value"])
+	assert.InEpsilon(t, float64(99), result["value"], 0)
 }
 
 func TestJSONEntityRegistry_MigrateRaw_ErrorPropagates(t *testing.T) {
