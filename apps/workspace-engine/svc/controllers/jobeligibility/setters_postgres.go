@@ -25,9 +25,13 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 		return fmt.Errorf("parse job id: %w", err)
 	}
 
-	jobAgentID, err := uuid.Parse(job.JobAgentId)
-	if err != nil {
-		return fmt.Errorf("parse job agent id: %w", err)
+	var jobAgentIDParam pgtype.UUID
+	if job.JobAgentId != "" {
+		parsed, err := uuid.Parse(job.JobAgentId)
+		if err != nil {
+			return fmt.Errorf("parse job agent id: %w", err)
+		}
+		jobAgentIDParam = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
 	jobAgentConfig, err := json.Marshal(job.JobAgentConfig)
@@ -50,7 +54,7 @@ func (s *PostgresSetter) CreateJob(ctx context.Context, job *oapi.Job, release *
 
 	if err := q.InsertJob(ctx, db.InsertJobParams{
 		ID:              jobID,
-		JobAgentID:      pgtype.UUID{Bytes: jobAgentID, Valid: true},
+		JobAgentID:      jobAgentIDParam,
 		JobAgentConfig:  jobAgentConfig,
 		Status:          db.JobStatus(job.Status),
 		CreatedAt:       pgtype.Timestamptz{Time: job.CreatedAt, Valid: !job.CreatedAt.IsZero()},
