@@ -1,9 +1,7 @@
-import { TRPCError } from "@trpc/server";
 import z from "zod";
 
 import { and, desc, eq, inArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -15,21 +13,154 @@ export const releaseTargetsRouter = router({
         releaseTargetKey: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      const { workspaceId, releaseTargetKey } = input;
-      const resp = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies",
-        {
-          params: { path: { workspaceId, releaseTargetKey } },
+    .query(async ({ input, ctx }) => {
+      const { releaseTargetKey } = input;
+
+      const resourceId = releaseTargetKey.slice(0, 36);
+      const environmentId = releaseTargetKey.slice(37, 73);
+      const deploymentId = releaseTargetKey.slice(74, 110);
+
+      const mappings = await ctx.db
+        .selectDistinct({
+          policyId: schema.computedPolicyReleaseTarget.policyId,
+        })
+        .from(schema.computedPolicyReleaseTarget)
+        .where(
+          and(
+            eq(schema.computedPolicyReleaseTarget.resourceId, resourceId),
+            eq(
+              schema.computedPolicyReleaseTarget.environmentId,
+              environmentId,
+            ),
+            eq(schema.computedPolicyReleaseTarget.deploymentId, deploymentId),
+          ),
+        );
+
+      const policyIds = mappings.map((m) => m.policyId);
+      if (policyIds.length === 0) return [];
+
+      const policies = await ctx.db.query.policy.findMany({
+        where: inArray(schema.policy.id, policyIds),
+        with: {
+          anyApprovalRules: true,
+          deploymentDependencyRules: true,
+          deploymentWindowRules: true,
+          environmentProgressionRules: true,
+          gradualRolloutRules: true,
+          retryRules: true,
+          rollbackRules: true,
+          verificationRules: true,
+          versionCooldownRules: true,
+          versionSelectorRules: true,
         },
-      );
-      if (resp.error != null)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            resp.error.error ?? "Failed to get policies for release target",
-        });
-      return resp.data.policies ?? [];
+      });
+
+      return policies.map((p) => {
+        const rules = [
+          ...p.anyApprovalRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            anyApproval: { minApprovals: r.minApprovals },
+          })),
+          ...p.deploymentDependencyRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            deploymentDependency: { dependsOn: r.dependsOn },
+          })),
+          ...p.deploymentWindowRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            deploymentWindow: {
+              allowWindow: r.allowWindow,
+              durationMinutes: r.durationMinutes,
+              rrule: r.rrule,
+              timezone: r.timezone,
+            },
+          })),
+          ...p.environmentProgressionRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            environmentProgression: {
+              dependsOnEnvironmentSelector: r.dependsOnEnvironmentSelector,
+              maximumAgeHours: r.maximumAgeHours,
+              minimumSoakTimeMinutes: r.minimumSoakTimeMinutes,
+              minimumSuccessPercentage: r.minimumSuccessPercentage,
+              successStatuses: r.successStatuses,
+            },
+          })),
+          ...p.gradualRolloutRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            gradualRollout: {
+              rolloutType: r.rolloutType,
+              timeScaleInterval: r.timeScaleInterval,
+            },
+          })),
+          ...p.retryRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            retry: {
+              maxRetries: r.maxRetries,
+              backoffSeconds: r.backoffSeconds,
+              backoffStrategy: r.backoffStrategy,
+              maxBackoffSeconds: r.maxBackoffSeconds,
+              retryOnStatuses: r.retryOnStatuses,
+            },
+          })),
+          ...p.rollbackRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            rollback: {
+              onJobStatuses: r.onJobStatuses,
+              onVerificationFailure: r.onVerificationFailure,
+            },
+          })),
+          ...p.verificationRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            verification: {
+              metrics: r.metrics,
+              triggerOn: r.triggerOn,
+            },
+          })),
+          ...p.versionCooldownRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            versionCooldown: { intervalSeconds: r.intervalSeconds },
+          })),
+          ...p.versionSelectorRules.map((r) => ({
+            id: r.id,
+            policyId: r.policyId,
+            createdAt: r.createdAt.toISOString(),
+            versionSelector: {
+              description: r.description,
+              selector: r.selector,
+            },
+          })),
+        ];
+
+        return {
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          selector: p.selector,
+          metadata: p.metadata,
+          priority: p.priority,
+          enabled: p.enabled,
+          workspaceId: p.workspaceId,
+          createdAt: p.createdAt.toISOString(),
+          rules,
+        };
+      });
     }),
 
   evaluations: protectedProcedure

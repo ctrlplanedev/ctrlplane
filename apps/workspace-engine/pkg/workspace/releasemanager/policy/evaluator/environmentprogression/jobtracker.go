@@ -117,14 +117,14 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 			}
 
 			hasCompletedAt := job.CompletedAt != nil
-		span.AddEvent("job check", trace.WithAttributes(
-			attribute.String("job.id", job.Id),
-			attribute.String("job.status", string(job.Status)),
-			attribute.Bool("job.has_completed_at", hasCompletedAt),
-			attribute.Bool("job.is_success_status", t.SuccessStatuses[job.Status]),
-		))
+			span.AddEvent("job check", trace.WithAttributes(
+				attribute.String("job.id", job.Id),
+				attribute.String("job.status", string(job.Status)),
+				attribute.Bool("job.has_completed_at", hasCompletedAt),
+				attribute.Bool("job.is_success_status", t.SuccessStatuses[job.Status]),
+			))
 
-		if t.SuccessStatuses[job.Status] && hasCompletedAt {
+			if t.SuccessStatuses[job.Status] && hasCompletedAt {
 				targetKey := rt.Key()
 				// Store the oldest successful completion time for this release target
 				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {

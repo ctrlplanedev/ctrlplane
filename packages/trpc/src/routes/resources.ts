@@ -1,8 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { and, asc, count, eq, inArray, sql } from "@ctrlplane/db";
+import {
+  enqueueManyDeploymentSelectorEval,
+  enqueueManyEnvironmentSelectorEval,
+} from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -23,21 +26,54 @@ export const resourcesRouter = router({
         metadata: z.record(z.string(), z.string()),
       }),
     )
-    .mutation(async ({ input }) => {
-      const data = {
-        id: uuidv4(),
-        ...input,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        workspaceId: input.workspaceId,
-      };
-      await sendGoEvent({
-        workspaceId: input.workspaceId,
-        eventType: Event.ResourceCreated,
-        timestamp: Date.now(),
-        data,
-      });
-      return data;
+    .mutation(async ({ input, ctx }) => {
+      const [resource] = await ctx.db
+        .insert(schema.resource)
+        .values({
+          workspaceId: input.workspaceId,
+          name: input.name,
+          kind: input.kind,
+          version: input.version,
+          identifier: input.identifier,
+          config: input.config,
+          metadata: input.metadata,
+        })
+        .onConflictDoUpdate({
+          target: [schema.resource.identifier, schema.resource.workspaceId],
+          set: {
+            name: input.name,
+            kind: input.kind,
+            version: input.version,
+            config: input.config,
+            metadata: input.metadata,
+          },
+        })
+        .returning();
+
+      const { workspaceId } = input;
+      const [environments, deployments] = await Promise.all([
+        ctx.db
+          .select({ id: schema.environment.id })
+          .from(schema.environment)
+          .where(eq(schema.environment.workspaceId, workspaceId)),
+        ctx.db
+          .select({ id: schema.deployment.id })
+          .from(schema.deployment)
+          .where(eq(schema.deployment.workspaceId, workspaceId)),
+      ]);
+
+      await Promise.all([
+        enqueueManyEnvironmentSelectorEval(
+          ctx.db,
+          environments.map((e) => ({ workspaceId, environmentId: e.id })),
+        ),
+        enqueueManyDeploymentSelectorEval(
+          ctx.db,
+          deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
+        ),
+      ]);
+
+      return resource!;
     }),
 
   delete: protectedProcedure
@@ -47,31 +83,49 @@ export const resourcesRouter = router({
         identifier: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, identifier } = input;
-      const resourceIdentifier = encodeURIComponent(identifier);
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-        {
-          params: {
-            path: { workspaceId, resourceIdentifier },
-          },
-        },
-      );
-      if (result.error) {
-        throw new Error(
-          `Failed to fetch resource: ${JSON.stringify(result.error)}`,
-        );
-      }
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.ResourceDeleted,
-        timestamp: Date.now(),
-        data: result.data,
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(
+          eq(schema.resource.workspaceId, workspaceId),
+          eq(schema.resource.identifier, identifier),
+        ),
       });
 
-      return result.data;
+      if (!resource)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Resource not found",
+        });
+
+      await ctx.db
+        .delete(schema.resource)
+        .where(eq(schema.resource.id, resource.id));
+
+      const [environments, deployments] = await Promise.all([
+        ctx.db
+          .select({ id: schema.environment.id })
+          .from(schema.environment)
+          .where(eq(schema.environment.workspaceId, workspaceId)),
+        ctx.db
+          .select({ id: schema.deployment.id })
+          .from(schema.deployment)
+          .where(eq(schema.deployment.workspaceId, workspaceId)),
+      ]);
+
+      await Promise.all([
+        enqueueManyEnvironmentSelectorEval(
+          ctx.db,
+          environments.map((e) => ({ workspaceId, environmentId: e.id })),
+        ),
+        enqueueManyDeploymentSelectorEval(
+          ctx.db,
+          deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
+        ),
+      ]);
+
+      return resource;
     }),
 
   get: protectedProcedure
