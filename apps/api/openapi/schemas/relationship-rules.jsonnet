@@ -1,29 +1,11 @@
-local openapi = import '../lib/openapi.libsonnet';
-
 {
-  RelatableEntityType: {
-    type: 'string',
-    enum: ['deployment', 'environment', 'resource'],
-  },
-
-  CelMatcher: {
-    type: 'object',
-    required: ['cel'],
-    properties: {
-      cel: { type: 'string' },
-    },
-  },
-
   RelationshipRule: {
     type: 'object',
     required: [
       'id',
       'name',
       'reference',
-      'fromType',
-      'toType',
-      'matcher',
-      'relationshipType',
+      'cel',
       'metadata',
       'workspaceId',
     ],
@@ -32,16 +14,7 @@ local openapi = import '../lib/openapi.libsonnet';
       name: { type: 'string' },
       description: { type: 'string' },
       reference: { type: 'string' },
-      fromType: openapi.schemaRef('RelatableEntityType'),
-      fromSelector: openapi.schemaRef('Selector'),
-      toType: openapi.schemaRef('RelatableEntityType'),
-      toSelector: openapi.schemaRef('Selector'),
-      matcher: {
-        oneOf: [
-          openapi.schemaRef('CelMatcher'),
-        ],
-      },
-      relationshipType: { type: 'string' },
+      cel: { type: 'string' },
       metadata: {
         type: 'object',
         additionalProperties: { type: 'string' },
@@ -55,26 +28,14 @@ local openapi = import '../lib/openapi.libsonnet';
     required: [
       'name',
       'reference',
-      'fromType',
-      'toType',
-      'matcher',
-      'relationshipType',
+      'cel',
       'metadata',
     ],
     properties: {
       name: { type: 'string' },
       description: { type: 'string' },
       reference: { type: 'string' },
-      fromType: openapi.schemaRef('RelatableEntityType'),
-      fromSelector: openapi.schemaRef('Selector'),
-      toType: openapi.schemaRef('RelatableEntityType'),
-      toSelector: openapi.schemaRef('Selector'),
-      matcher: {
-        oneOf: [
-          openapi.schemaRef('CelMatcher'),
-        ],
-      },
-      relationshipType: { type: 'string' },
+      cel: { type: 'string' },
       metadata: {
         type: 'object',
         additionalProperties: { type: 'string' },
@@ -87,26 +48,14 @@ local openapi = import '../lib/openapi.libsonnet';
     required: [
       'name',
       'reference',
-      'fromType',
-      'toType',
-      'matcher',
-      'relationshipType',
+      'cel',
       'metadata',
     ],
     properties: {
       name: { type: 'string' },
       description: { type: 'string' },
       reference: { type: 'string' },
-      fromType: openapi.schemaRef('RelatableEntityType'),
-      fromSelector: openapi.schemaRef('Selector'),
-      toType: openapi.schemaRef('RelatableEntityType'),
-      toSelector: openapi.schemaRef('Selector'),
-      matcher: {
-        oneOf: [
-          openapi.schemaRef('CelMatcher'),
-        ],
-      },
-      relationshipType: { type: 'string' },
+      cel: { type: 'string' },
       metadata: {
         type: 'object',
         additionalProperties: { type: 'string' },

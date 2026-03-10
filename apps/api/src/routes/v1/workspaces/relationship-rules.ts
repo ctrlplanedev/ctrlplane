@@ -10,16 +10,6 @@ import {
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
-const composeCel = (body: {
-  fromType: string;
-  toType: string;
-  matcher: { cel: string };
-}): string => {
-  const matcherCel = body.matcher.cel;
-  if (!body.fromType || !body.toType) return matcherCel;
-  return `from.type == "${body.fromType}" && to.type == "${body.toType}" && ${matcherCel}`;
-};
-
 const enqueueRelationshipReconciliation = async (workspaceId: string) => {
   const [resources, deployments, environments] = await Promise.all([
     db
@@ -65,12 +55,9 @@ const toRuleResponse = (r: typeof schema.relationshipRule.$inferSelect) => ({
   name: r.name,
   description: r.description ?? undefined,
   reference: r.reference,
+  cel: r.cel,
   workspaceId: r.workspaceId,
   metadata: r.metadata ?? {},
-  fromType: "",
-  toType: "",
-  relationshipType: "",
-  matcher: { cel: r.cel },
 });
 
 const listRelationshipRules: AsyncTypedHandler<
@@ -112,8 +99,6 @@ const createRelationshipRule: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
-  const cel = composeCel(body);
-
   const [inserted] = await db
     .insert(schema.relationshipRule)
     .values({
@@ -121,7 +106,7 @@ const createRelationshipRule: AsyncTypedHandler<
       description: body.description,
       workspaceId,
       reference: body.reference,
-      cel,
+      cel: body.cel,
       metadata: body.metadata,
     })
     .returning();
@@ -190,8 +175,6 @@ const upsertRelationshipRule: AsyncTypedHandler<
   const { workspaceId, relationshipRuleId } = req.params;
   const { body } = req;
 
-  const cel = composeCel(body);
-
   const [upserted] = await db
     .insert(schema.relationshipRule)
     .values({
@@ -200,7 +183,7 @@ const upsertRelationshipRule: AsyncTypedHandler<
       description: body.description,
       workspaceId,
       reference: body.reference,
-      cel,
+      cel: body.cel,
       metadata: body.metadata,
     })
     .onConflictDoUpdate({
@@ -209,7 +192,7 @@ const upsertRelationshipRule: AsyncTypedHandler<
         name: body.name,
         description: body.description,
         reference: body.reference,
-        cel,
+        cel: body.cel,
         metadata: body.metadata,
       },
     })

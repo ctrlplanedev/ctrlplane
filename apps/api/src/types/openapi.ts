@@ -914,9 +914,6 @@ export interface components {
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
         BooleanValue: boolean;
-        CelMatcher: {
-            cel: string;
-        };
         CelSelector: {
             cel: string;
         };
@@ -983,18 +980,13 @@ export interface components {
             versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         CreateRelationshipRuleRequest: {
+            cel: string;
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
-            fromType: components["schemas"]["RelatableEntityType"];
-            matcher: components["schemas"]["CelMatcher"];
             metadata: {
                 [key: string]: string;
             };
             name: string;
             reference: string;
-            relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
-            toType: components["schemas"]["RelatableEntityType"];
         };
         CreateSystemRequest: {
             description?: string;
@@ -1480,22 +1472,15 @@ export interface components {
             path: string[];
             reference: string;
         };
-        /** @enum {string} */
-        RelatableEntityType: "deployment" | "environment" | "resource";
         RelationshipRule: {
+            cel: string;
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
-            fromType: components["schemas"]["RelatableEntityType"];
             id: string;
-            matcher: components["schemas"]["CelMatcher"];
             metadata: {
                 [key: string]: string;
             };
             name: string;
             reference: string;
-            relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
-            toType: components["schemas"]["RelatableEntityType"];
             workspaceId: string;
         };
         Release: {
@@ -1813,18 +1798,13 @@ export interface components {
             versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         UpsertRelationshipRuleRequest: {
+            cel: string;
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
-            fromType: components["schemas"]["RelatableEntityType"];
-            matcher: components["schemas"]["CelMatcher"];
             metadata: {
                 [key: string]: string;
             };
             name: string;
             reference: string;
-            relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
-            toType: components["schemas"]["RelatableEntityType"];
         };
         UpsertResourceProviderRequest: {
             id: string;
