@@ -17,13 +17,8 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
   const { version, environment } = props;
 
   const { data, isLoading } = trpc.deploymentVersions.evaulate.useQuery(
-    {
-      versionId: version.id,
-      environmentId: environment.id,
-    },
-    {
-      refetchInterval: 5000,
-    },
+    { versionId: version.id, environmentId: environment.id },
+    { refetchInterval: 5000 },
   );
 
   const rules = _.groupBy(data, (d) => d.ruleType);
@@ -37,11 +32,12 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
     );
 
   if (data == null) return null;
+  console.log(Object.keys(rules));
 
-  const approvalDetail = rules.approval[0]?.details as
+  const approvalDetail = rules.approval?.[0]?.details as
     | ApprovalDetailProps
     | undefined;
-  console.log(Object.keys(rules));
+
   return (
     <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
       {approvalDetail && <ApprovalDetail {...approvalDetail} />}
@@ -51,32 +47,6 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
       {"gradualRollout" in rules && (
         <GradRolloutDetail rules={rules.gradualRollout} />
       )}
-      {/* {data.policyResults.map(({ policy, ruleResults }, idx) => (
-        <div key={idx} className="w-full space-y-1 rounded-lg border p-2">
-          <div className="mb-2 flex items-center font-semibold">
-            {policy == null ? "Global Policies" : policy.name}
-            <div className="grow" />
-            <PolicySkipDialog
-              environmentId={environment.id}
-              versionId={version.id}
-              rules={policy?.rules ?? GLOBAL_EVALUATORS}
-            >
-              <Button size="sm" variant="outline" className="h-4 px-1 text-xs">
-                Configure skips
-              </Button>
-            </PolicySkipDialog>
-          </div>
-
-          {ruleResults.map((ruleResult) => (
-            <RuleResult
-              key={ruleResult.ruleId}
-              ruleResult={ruleResult}
-              onClickApprove={onClickApprove}
-              isPending={isPending}
-            />
-          ))}
-        </div>
-      ))} */}
     </div>
   );
 }
