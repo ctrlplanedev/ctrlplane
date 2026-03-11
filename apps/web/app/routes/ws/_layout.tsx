@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  BarChart3,
   Briefcase,
   ChevronRight,
   ChevronsUpDown,
@@ -85,8 +86,8 @@ const navigationGroups = [
       { title: "Resources", to: "/resources", icon: Server },
       { title: "Providers", to: "/providers", icon: Plug },
       // { title: "Groupings", to: "/groupings", icon: LayoutGrid },
+      { title: "Aggregates", to: "/resource-aggregates", icon: BarChart3 },
       { title: "Relationship Rules", to: "/relationship-rules", icon: Link2 },
-      // { title: "Views", to: "/views", icon: Eye },
     ],
   },
 ];

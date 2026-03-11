@@ -181,26 +181,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get resources for a deployment
-         * @description Returns a paginated list of resources for deployment {deploymentId}.
-         */
-        get: operations["getDeploymentResources"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions": {
         parameters: {
             query?: never;
@@ -313,26 +293,6 @@ export interface paths {
          * @description Returns a list of release targets for an environment.
          */
         get: operations["getReleaseTargetsForEnvironment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get resources for an environment
-         * @description Returns a paginated list of resources for environment {environmentId}.
-         */
-        get: operations["getEnvironmentResources"];
         put?: never;
         post?: never;
         delete?: never;
@@ -932,20 +892,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/resources/kinds": {
+    "/v1/workspaces/{workspaceId}/resources/aggregates": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get kinds for a workspace
-         * @description Returns a list of all resource kinds in a workspace.
-         */
-        get: operations["getKindsForWorkspace"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Compute resource aggregate
+         * @description Filters resources by a CEL expression and groups them by specified properties, returning counts per group.
+         */
+        post: operations["computeAggergate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -966,126 +926,6 @@ export interface paths {
          * @description Returns paginated resources that match the provided CEL expression. Use the "resource" variable in your expression to access resource properties.
          */
         post: operations["queryResources"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get resource by identifier
-         * @description Returns a specific resource by its identifier.
-         */
-        get: operations["getResourceByIdentifier"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get deployments for a resource
-         * @description Returns a paginated list of deployments that match the given resource.
-         */
-        get: operations["getDeploymentsForResource"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get relationships for a resource
-         * @description Returns all relationships for the specified resource.
-         */
-        get: operations["getRelationshipsForResource"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get release targets for a resource
-         * @description Returns a list of release targets for a resource.
-         */
-        get: operations["getReleaseTargetsForResource"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get release target for a resource in a deployment
-         * @description Returns a release target for a resource in a deployment.
-         */
-        get: operations["getReleaseTargetForResourceInDeployment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get variables for a resource
-         * @description Returns a list of variables for a resource
-         */
-        get: operations["getVariablesForResource"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1269,6 +1109,14 @@ export interface components {
             serverUrl: string;
             /** @description ArgoCD application template. */
             template: string;
+        };
+        BasicResource: {
+            id: string;
+            identifier: string;
+            kind: string;
+            name: string;
+            version: string;
+            workspaceId: string;
         };
         BooleanValue: boolean;
         CelMatcher: {
@@ -2674,53 +2522,6 @@ export interface operations {
             };
         };
     };
-    getDeploymentResources: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return */
-                limit?: number;
-                /** @description Number of items to skip */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["Resource"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     getVersionsForDeployment: {
         parameters: {
             query?: {
@@ -3009,53 +2810,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getEnvironmentResources: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return */
-                limit?: number;
-                /** @description Number of items to skip */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the environment */
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["Resource"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
                 };
             };
             /** @description Resource not found */
@@ -4385,7 +4139,7 @@ export interface operations {
             };
         };
     };
-    getKindsForWorkspace: {
+    computeAggergate: {
         parameters: {
             query?: never;
             header?: never;
@@ -4395,28 +4149,43 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
+                    filter?: string;
+                    groupBy?: {
+                        /** @description Label for this grouping */
+                        name: string;
+                        /** @description Dot-path property to group by (e.g. kind, metadata.region) */
+                        property: string;
+                    }[];
+                };
+            };
+        };
         responses: {
-            /** @description The requested kinds */
+            /** @description OK response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string[];
+                    "application/json": {
+                        groups: {
+                            /** @description Number of resources in this group */
+                            count: number;
+                            /** @description Map of grouping name to its value for this bucket */
+                            key: {
+                                [key: string]: string;
+                            };
+                        }[];
+                        /** @description Total number of matching resources */
+                        total: number;
+                    };
                 };
             };
             /** @description Invalid request */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4468,294 +4237,6 @@ export interface operations {
             };
             /** @description Invalid request */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getResourceByIdentifier: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                resourceIdentifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The requested resource */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Resource"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getDeploymentsForResource: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return */
-                limit?: number;
-                /** @description Number of items to skip */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                resourceIdentifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["Deployment"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getRelationshipsForResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                resourceIdentifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The requested relationships */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: components["schemas"]["EntityRelation"][];
-                    };
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getReleaseTargetsForResource: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return */
-                limit?: number;
-                /** @description Number of items to skip */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                resourceIdentifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["ReleaseTargetWithState"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getReleaseTargetForResourceInDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                resourceIdentifier: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The requested release target */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReleaseTarget"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getVariablesForResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                resourceIdentifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The requested variables */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceVariable"][];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

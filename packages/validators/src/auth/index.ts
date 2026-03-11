@@ -73,6 +73,12 @@ export enum Permission {
   ResourceRelationshipRuleDelete = "resourceRelationshipRule.delete",
   ResourceRelationshipRuleList = "resourceRelationshipRule.list",
 
+  ResourceAggregateCreate = "resourceAggregate.create",
+  ResourceAggregateList = "resourceAggregate.list",
+  ResourceAggregateGet = "resourceAggregate.get",
+  ResourceAggregateUpdate = "resourceAggregate.update",
+  ResourceAggregateDelete = "resourceAggregate.delete",
+
   RelationshipRuleCreate = "relationshipRule.create",
   RelationshipRuleUpdate = "relationshipRule.update",
   RelationshipRuleDelete = "relationshipRule.delete",

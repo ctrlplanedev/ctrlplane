@@ -1,71 +1,25 @@
 package resources
 
 import (
-	"context"
-	"fmt"
 	"net/http"
-	"net/url"
 	"sort"
 
-	"github.com/charmbracelet/log"
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/resources"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/svc/http/server/openapi/utils"
+
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 )
 
 type Resources struct{}
 
 var resourceTracer = otel.Tracer("server/openapi/resources")
 
-func (r *Resources) GetResourceByIdentifier(
-	c *gin.Context,
-	workspaceId string,
-	resourceIdentifier string,
-) {
-	// URL decode the identifier (in case it contains special characters like slashes)
-	decodedIdentifier, err := url.PathUnescape(resourceIdentifier)
-	if err != nil {
-		fmt.Println("Failed to decode resourceIdentifier:", resourceIdentifier, "error:", err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid resource identifier: " + err.Error(),
-		})
-		return
-	}
-
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
-		})
-		return
-	}
-
-	// Iterate through resources to find by identifier
-	resources := ws.Resources().Items()
-	for _, resource := range resources {
-		if resource.Identifier == decodedIdentifier {
-			c.JSON(http.StatusOK, resource)
-			return
-		}
-	}
-
-	c.JSON(http.StatusNotFound, gin.H{
-		"error": "Resource not found",
-	})
-}
-
 func (r *Resources) QueryResources(
 	c *gin.Context,
 	workspaceId string,
 	params oapi.QueryResourcesParams,
 ) {
-	// Parse request body
 	var body oapi.QueryResourcesJSONBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -101,7 +55,6 @@ func (r *Resources) QueryResources(
 		return
 	}
 
-	// Sort all matched resources (necessary for consistent pagination)
 	sort.Slice(resources, func(i, j int) bool {
 		if resources[i].Name == resources[j].Name {
 			return resources[i].CreatedAt.Before(resources[j].CreatedAt)
@@ -109,7 +62,6 @@ func (r *Resources) QueryResources(
 		return resources[i].Name < resources[j].Name
 	})
 
-	// Get pagination parameters with defaults
 	limit := 50
 	if params.Limit != nil {
 		limit = *params.Limit
@@ -121,7 +73,6 @@ func (r *Resources) QueryResources(
 
 	total := len(resources)
 
-	// Apply pagination
 	start := min(offset, total)
 	end := min(start+limit, total)
 	paginatedResources := resources[start:end]
@@ -134,394 +85,45 @@ func (r *Resources) QueryResources(
 	})
 }
 
-func (r *Resources) GetRelationshipsForResource(
-	c *gin.Context,
-	workspaceId string,
-	resourceIdentifier string,
-) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
-		})
-		return
-	}
-
-	resource, ok := ws.Resources().Get(resourceIdentifier)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Resource not found",
-		})
-		return
-	}
-
-	relatableEntity := relationships.NewResourceEntity(resource)
-	relatedEntities, err := ws.RelationshipRules().
-		GetRelatedEntities(c.Request.Context(), relatableEntity)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get relationships: " + err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, relatedEntities)
+type computeAggregateBody struct {
+	Filter  string `json:"filter"`
+	GroupBy []struct {
+		Name     string `json:"name"`
+		Property string `json:"property"`
+	} `json:"groupBy"`
 }
 
-func (r *Resources) GetVariablesForResource(
+func (r *Resources) ComputeAggergate(
 	c *gin.Context,
 	workspaceId string,
-	resourceIdentifier string,
 ) {
-	_, span := resourceTracer.Start(c.Request.Context(), "GetVariablesForResource")
+	ctx := c.Request.Context()
+	_, span := resourceTracer.Start(ctx, "Resources.ComputeAggregate")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("workspace.id", workspaceId),
-		attribute.String("resource.identifier", resourceIdentifier),
-	)
-
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "Failed to get workspace")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
+	var body computeAggregateBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body: " + err.Error(),
 		})
 		return
 	}
 
-	allResources := ws.Resources().Items()
-	var resource *oapi.Resource
-	for _, r := range allResources {
-		if r.Identifier == resourceIdentifier {
-			resource = r
-			break
-		}
+	groupBy := make([]Grouping, len(body.GroupBy))
+	for i, g := range body.GroupBy {
+		groupBy[i] = Grouping{Name: g.Name, Property: g.Property}
 	}
 
-	if resource == nil {
-		span.RecordError(fmt.Errorf("resource not found"))
-		span.SetStatus(codes.Error, "Resource not found")
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Resource not found",
-		})
-		return
-	}
-
-	span.SetAttributes(
-		attribute.String("resource.id", resource.Id),
-	)
-
-	allVariables := ws.ResourceVariables().Items()
-	variables := make([]oapi.ResourceVariable, 0, len(allVariables))
-	for _, variable := range allVariables {
-		if variable.ResourceId == resource.Id {
-			variables = append(variables, *variable)
-		}
-	}
-
-	span.SetAttributes(
-		attribute.Int("variables.count", len(variables)),
-	)
-
-	c.JSON(http.StatusOK, variables)
-}
-
-func (r *Resources) GetDeploymentsForResource(
-	c *gin.Context,
-	workspaceId string,
-	resourceIdentifier string,
-	params oapi.GetDeploymentsForResourceParams,
-) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
-		})
-		return
-	}
-
-	allResources := ws.Resources().Items()
-	var resource *oapi.Resource
-	for _, r := range allResources {
-		if r.Identifier == resourceIdentifier {
-			resource = r
-			break
-		}
-	}
-
-	if resource == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Resource not found",
-		})
-		return
-	}
-
-	deployments, err := ws.Deployments().ForResource(c.Request.Context(), resource)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get deployments for resource: " + err.Error(),
-		})
-		return
-	}
-
-	sort.Slice(deployments, func(i, j int) bool {
-		return deployments[i].Name < deployments[j].Name
+	result, err := ComputeAggregate(ctx, &resources.PostgresGetResources{}, workspaceId, AggregateRequest{
+		Filter:  body.Filter,
+		GroupBy: groupBy,
 	})
-
-	limit := 50
-	if params.Limit != nil {
-		limit = *params.Limit
-	}
-	offset := 0
-	if params.Offset != nil {
-		offset = *params.Offset
-	}
-
-	total := len(deployments)
-	start := min(offset, total)
-	end := min(start+limit, total)
-	paginatedDeployments := deployments[start:end]
-
-	c.JSON(http.StatusOK, gin.H{
-		"total":  total,
-		"offset": offset,
-		"limit":  limit,
-		"items":  paginatedDeployments,
-	})
-}
-
-func (r *Resources) GetReleaseTargetsForResource(
-	c *gin.Context,
-	workspaceId string,
-	resourceIdentifier string,
-	params oapi.GetReleaseTargetsForResourceParams,
-) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
+			"error": "Failed to compute aggregate: " + err.Error(),
 		})
 		return
 	}
 
-	allResources := ws.Resources().Items()
-	var resource *oapi.Resource
-	for _, r := range allResources {
-		if r.Identifier == resourceIdentifier {
-			resource = r
-			break
-		}
-	}
-
-	if resource == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Resource not found",
-		})
-		return
-	}
-
-	releaseTargets := ws.ReleaseTargets().GetForResource(c.Request.Context(), resource.Id)
-	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
-	for _, releaseTarget := range releaseTargets {
-		if releaseTarget == nil {
-			log.Error("release target is nil", "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
-			continue
-		}
-		if releaseTarget.ResourceId == resource.Id {
-			releaseTargetsList = append(releaseTargetsList, releaseTarget)
-		}
-	}
-
-	sort.Slice(releaseTargetsList, func(i, j int) bool {
-		return releaseTargetsList[i].Key() < releaseTargetsList[j].Key()
-	})
-
-	limit := 50
-	if params.Limit != nil {
-		limit = *params.Limit
-	}
-	offset := 0
-	if params.Offset != nil {
-		offset = *params.Offset
-	}
-
-	total := len(releaseTargetsList)
-	start := min(offset, total)
-	end := min(start+limit, total)
-
-	paginatedTargets := releaseTargetsList[start:end]
-
-	// Process each release target, logging errors but continuing with valid ones
-	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
-	skippedCount := 0
-
-	type result struct {
-		item *oapi.ReleaseTargetWithState
-		err  error
-	}
-
-	results, err := concurrency.ProcessInChunks(
-		c.Request.Context(),
-		paginatedTargets,
-		func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (result, error) {
-			if releaseTarget == nil {
-				return result{nil, fmt.Errorf("release target is nil")}, nil
-			}
-
-			state, err := ws.ReleaseManager().GetReleaseTargetState(
-				c.Request.Context(),
-				releaseTarget,
-			)
-			if err != nil {
-				return result{
-					nil,
-					fmt.Errorf(
-						"error getting release target state for key=%s: %w",
-						releaseTarget.Key(),
-						err,
-					),
-				}, nil
-			}
-
-			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
-			if !ok {
-				return result{
-					nil,
-					fmt.Errorf(
-						"environment not found: environmentId=%s for release target key=%s",
-						releaseTarget.EnvironmentId,
-						releaseTarget.Key(),
-					),
-				}, nil
-			}
-
-			res, ok := ws.Resources().Get(releaseTarget.ResourceId)
-			if !ok {
-				return result{
-					nil,
-					fmt.Errorf(
-						"resource not found: resourceId=%s for release target key=%s",
-						releaseTarget.ResourceId,
-						releaseTarget.Key(),
-					),
-				}, nil
-			}
-
-			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
-			if !ok {
-				return result{
-					nil,
-					fmt.Errorf(
-						"deployment not found: deploymentId=%s for release target key=%s",
-						releaseTarget.DeploymentId,
-						releaseTarget.Key(),
-					),
-				}, nil
-			}
-
-			item := &oapi.ReleaseTargetWithState{
-				ReleaseTarget: *releaseTarget,
-				State:         *state,
-				Environment:   *environment,
-				Resource:      *res,
-				Deployment:    *deployment,
-			}
-			return result{item, nil}, nil
-		},
-	)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	// Filter out results with errors, log them
-	for _, res := range results {
-		if res.err != nil {
-			log.Warn("Skipping invalid release target", "error", res.err.Error())
-			skippedCount++
-			continue
-		}
-		if res.item != nil {
-			releaseTargetsWithState = append(releaseTargetsWithState, res.item)
-		}
-	}
-
-	if skippedCount > 0 {
-		log.Warn("Skipped invalid release targets in GetReleaseTargetsForResource",
-			"resourceId", resource.Id,
-			"skippedCount", skippedCount,
-			"validCount", len(releaseTargetsWithState))
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"total":  total,
-		"offset": offset,
-		"limit":  limit,
-		"items":  releaseTargetsWithState,
-	})
-}
-
-func (r *Resources) GetReleaseTargetForResourceInDeployment(
-	c *gin.Context,
-	workspaceId string,
-	resourceIdentifier string,
-	deploymentId string,
-) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
-		})
-		return
-	}
-
-	resource, ok := ws.Resources().Get(resourceIdentifier)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Resource not found",
-		})
-		return
-	}
-
-	allReleaseTargets := ws.ReleaseTargets().GetForResource(c.Request.Context(), resource.Id)
-
-	for _, releaseTarget := range allReleaseTargets {
-		if releaseTarget.DeploymentId == deploymentId {
-			c.JSON(http.StatusOK, releaseTarget)
-			return
-		}
-	}
-
-	c.JSON(http.StatusNotFound, gin.H{
-		"error": "Release target not found",
-	})
-}
-
-func (r *Resources) GetKindsForWorkspace(c *gin.Context, workspaceId string) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get workspace: " + err.Error(),
-		})
-		return
-	}
-
-	kinds := make(map[string]bool)
-	for _, resource := range ws.Resources().Items() {
-		kinds[resource.Kind] = true
-	}
-
-	kindsList := make([]string, 0, len(kinds))
-	for kind := range kinds {
-		kindsList = append(kindsList, kind)
-	}
-
-	sort.Strings(kindsList)
-
-	c.JSON(http.StatusOK, kindsList)
+	c.JSON(http.StatusOK, result)
 }

@@ -53,6 +53,37 @@
             ],
             "type": "object"
          },
+         "BasicResource": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "version",
+               "kind",
+               "identifier",
+               "workspaceId"
+            ],
+            "type": "object"
+         },
          "BooleanValue": {
             "type": "boolean"
          },
@@ -3573,104 +3604,6 @@
             "summary": "Get release targets for a deployment"
          }
       },
-      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
-         "get": {
-            "description": "Returns a paginated list of resources for deployment {deploymentId}.",
-            "operationId": "getDeploymentResources",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment",
-                  "in": "path",
-                  "name": "deploymentId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Maximum number of items to return",
-                  "in": "query",
-                  "name": "limit",
-                  "required": false,
-                  "schema": {
-                     "default": 50,
-                     "maximum": 1000,
-                     "minimum": 1,
-                     "type": "integer"
-                  }
-               },
-               {
-                  "description": "Number of items to skip",
-                  "in": "query",
-                  "name": "offset",
-                  "required": false,
-                  "schema": {
-                     "default": 0,
-                     "minimum": 0,
-                     "type": "integer"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/Resource"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "Paginated list of items"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get resources for a deployment"
-         }
-      },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions": {
          "get": {
             "description": "Returns a list of releases for a deployment.",
@@ -4175,104 +4108,6 @@
                }
             },
             "summary": "Get release targets for an environment"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
-         "get": {
-            "description": "Returns a paginated list of resources for environment {environmentId}.",
-            "operationId": "getEnvironmentResources",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the environment",
-                  "in": "path",
-                  "name": "environmentId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Maximum number of items to return",
-                  "in": "query",
-                  "name": "limit",
-                  "required": false,
-                  "schema": {
-                     "default": 50,
-                     "maximum": 1000,
-                     "minimum": 1,
-                     "type": "integer"
-                  }
-               },
-               {
-                  "description": "Number of items to skip",
-                  "in": "query",
-                  "name": "offset",
-                  "required": false,
-                  "schema": {
-                     "default": 0,
-                     "minimum": 0,
-                     "type": "integer"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/Resource"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "Paginated list of items"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get resources for an environment"
          }
       },
       "/v1/workspaces/{workspaceId}/github-entities/{installationId}": {
@@ -6446,10 +6281,10 @@
             "summary": "Get a resource provider by name"
          }
       },
-      "/v1/workspaces/{workspaceId}/resources/kinds": {
-         "get": {
-            "description": "Returns a list of all resource kinds in a workspace.",
-            "operationId": "getKindsForWorkspace",
+      "/v1/workspaces/{workspaceId}/resources/aggregates": {
+         "post": {
+            "description": "Filters resources by a CEL expression and groups them by specified properties, returning counts per group.",
+            "operationId": "computeAggergate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6461,19 +6296,85 @@
                   }
                }
             ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "filter": {
+                              "description": "CEL expression to filter resources. Defaults to \"true\" (all resources).",
+                              "type": "string"
+                           },
+                           "groupBy": {
+                              "items": {
+                                 "properties": {
+                                    "name": {
+                                       "description": "Label for this grouping",
+                                       "type": "string"
+                                    },
+                                    "property": {
+                                       "description": "Dot-path property to group by (e.g. kind, metadata.region)",
+                                       "type": "string"
+                                    }
+                                 },
+                                 "required": [
+                                    "name",
+                                    "property"
+                                 ],
+                                 "type": "object"
+                              },
+                              "type": "array"
+                           }
+                        },
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
             "responses": {
                "200": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "items": {
-                              "type": "string"
+                           "properties": {
+                              "groups": {
+                                 "items": {
+                                    "properties": {
+                                       "count": {
+                                          "description": "Number of resources in this group",
+                                          "type": "integer"
+                                       },
+                                       "key": {
+                                          "additionalProperties": {
+                                             "type": "string"
+                                          },
+                                          "description": "Map of grouping name to its value for this bucket",
+                                          "type": "object"
+                                       }
+                                    },
+                                    "required": [
+                                       "key",
+                                       "count"
+                                    ],
+                                    "type": "object"
+                                 },
+                                 "type": "array"
+                              },
+                              "total": {
+                                 "description": "Total number of matching resources",
+                                 "type": "integer"
+                              }
                            },
-                           "type": "array"
+                           "required": [
+                              "total",
+                              "groups"
+                           ],
+                           "type": "object"
                         }
                      }
                   },
-                  "description": "The requested kinds"
+                  "description": "OK response"
                },
                "400": {
                   "content": {
@@ -6484,19 +6385,9 @@
                      }
                   },
                   "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
                }
             },
-            "summary": "Get kinds for a workspace"
+            "summary": "Compute resource aggregate"
          }
       },
       "/v1/workspaces/{workspaceId}/resources/query": {
@@ -6601,476 +6492,6 @@
                }
             },
             "summary": "Query resources with CEL expression"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}": {
-         "get": {
-            "description": "Returns a specific resource by its identifier.",
-            "operationId": "getResourceByIdentifier",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Identifier of the resource",
-                  "in": "path",
-                  "name": "resourceIdentifier",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/Resource"
-                        }
-                     }
-                  },
-                  "description": "The requested resource"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get resource by identifier"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments": {
-         "get": {
-            "description": "Returns a paginated list of deployments that match the given resource.",
-            "operationId": "getDeploymentsForResource",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Identifier of the resource",
-                  "in": "path",
-                  "name": "resourceIdentifier",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Maximum number of items to return",
-                  "in": "query",
-                  "name": "limit",
-                  "required": false,
-                  "schema": {
-                     "default": 50,
-                     "maximum": 1000,
-                     "minimum": 1,
-                     "type": "integer"
-                  }
-               },
-               {
-                  "description": "Number of items to skip",
-                  "in": "query",
-                  "name": "offset",
-                  "required": false,
-                  "schema": {
-                     "default": 0,
-                     "minimum": 0,
-                     "type": "integer"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/Deployment"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "Paginated list of items"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get deployments for a resource"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships": {
-         "get": {
-            "description": "Returns all relationships for the specified resource.",
-            "operationId": "getRelationshipsForResource",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Identifier of the resource",
-                  "in": "path",
-                  "name": "resourceIdentifier",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "additionalProperties": {
-                              "items": {
-                                 "$ref": "#/components/schemas/EntityRelation"
-                              },
-                              "type": "array"
-                           },
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "The requested relationships"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get relationships for a resource"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets": {
-         "get": {
-            "description": "Returns a list of release targets for a resource.",
-            "operationId": "getReleaseTargetsForResource",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Identifier of the resource",
-                  "in": "path",
-                  "name": "resourceIdentifier",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Maximum number of items to return",
-                  "in": "query",
-                  "name": "limit",
-                  "required": false,
-                  "schema": {
-                     "default": 50,
-                     "maximum": 1000,
-                     "minimum": 1,
-                     "type": "integer"
-                  }
-               },
-               {
-                  "description": "Number of items to skip",
-                  "in": "query",
-                  "name": "offset",
-                  "required": false,
-                  "schema": {
-                     "default": 0,
-                     "minimum": 0,
-                     "type": "integer"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/ReleaseTargetWithState"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "Paginated list of items"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get release targets for a resource"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
-         "get": {
-            "description": "Returns a release target for a resource in a deployment.",
-            "operationId": "getReleaseTargetForResourceInDeployment",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Identifier of the resource",
-                  "in": "path",
-                  "name": "resourceIdentifier",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment",
-                  "in": "path",
-                  "name": "deploymentId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ReleaseTarget"
-                        }
-                     }
-                  },
-                  "description": "The requested release target"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get release target for a resource in a deployment"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables": {
-         "get": {
-            "description": "Returns a list of variables for a resource",
-            "operationId": "getVariablesForResource",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Identifier of the resource",
-                  "in": "path",
-                  "name": "resourceIdentifier",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "items": {
-                              "$ref": "#/components/schemas/ResourceVariable"
-                           },
-                           "type": "array"
-                        }
-                     }
-                  },
-                  "description": "The requested variables"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get variables for a resource"
          }
       },
       "/v1/workspaces/{workspaceId}/status": {

@@ -239,6 +239,16 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
+// BasicResource defines model for BasicResource.
+type BasicResource struct {
+	Id          string `json:"id"`
+	Identifier  string `json:"identifier"`
+	Kind        string `json:"kind"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	WorkspaceId string `json:"workspaceId"`
+}
+
 // BooleanValue defines model for BooleanValue.
 type BooleanValue = bool
 
@@ -1422,15 +1432,6 @@ type GetReleaseTargetsForDeploymentParams struct {
 	Query *string `form:"query,omitempty" json:"query,omitempty"`
 }
 
-// GetDeploymentResourcesParams defines parameters for GetDeploymentResources.
-type GetDeploymentResourcesParams struct {
-	// Limit Maximum number of items to return
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Offset Number of items to skip
-	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
-}
-
 // GetVersionsForDeploymentParams defines parameters for GetVersionsForDeployment.
 type GetVersionsForDeploymentParams struct {
 	// Limit Maximum number of items to return
@@ -1451,15 +1452,6 @@ type ListEnvironmentsParams struct {
 
 // GetReleaseTargetsForEnvironmentParams defines parameters for GetReleaseTargetsForEnvironment.
 type GetReleaseTargetsForEnvironmentParams struct {
-	// Limit Maximum number of items to return
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Offset Number of items to skip
-	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
-}
-
-// GetEnvironmentResourcesParams defines parameters for GetEnvironmentResources.
-type GetEnvironmentResourcesParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1581,6 +1573,19 @@ type CacheBatchJSONBody struct {
 	Resources []Resource `json:"resources"`
 }
 
+// ComputeAggergateJSONBody defines parameters for ComputeAggergate.
+type ComputeAggergateJSONBody struct {
+	// Filter CEL expression to filter resources. Defaults to "true" (all resources).
+	Filter  *string `json:"filter,omitempty"`
+	GroupBy *[]struct {
+		// Name Label for this grouping
+		Name string `json:"name"`
+
+		// Property Dot-path property to group by (e.g. kind, metadata.region)
+		Property string `json:"property"`
+	} `json:"groupBy,omitempty"`
+}
+
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
 	Filter *Selector `json:"filter,omitempty"`
@@ -1588,24 +1593,6 @@ type QueryResourcesJSONBody struct {
 
 // QueryResourcesParams defines parameters for QueryResources.
 type QueryResourcesParams struct {
-	// Limit Maximum number of items to return
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Offset Number of items to skip
-	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
-}
-
-// GetDeploymentsForResourceParams defines parameters for GetDeploymentsForResource.
-type GetDeploymentsForResourceParams struct {
-	// Limit Maximum number of items to return
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Offset Number of items to skip
-	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
-}
-
-// GetReleaseTargetsForResourceParams defines parameters for GetReleaseTargetsForResource.
-type GetReleaseTargetsForResourceParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1657,6 +1644,9 @@ type GetReleaseTargetStatesJSONRequestBody GetReleaseTargetStatesJSONBody
 
 // CacheBatchJSONRequestBody defines body for CacheBatch for application/json ContentType.
 type CacheBatchJSONRequestBody CacheBatchJSONBody
+
+// ComputeAggergateJSONRequestBody defines body for ComputeAggergate for application/json ContentType.
+type ComputeAggergateJSONRequestBody ComputeAggergateJSONBody
 
 // QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
 type QueryResourcesJSONRequestBody QueryResourcesJSONBody
@@ -2750,9 +2740,6 @@ type ServerInterface interface {
 	// Get release targets for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets)
 	GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params GetReleaseTargetsForDeploymentParams)
-	// Get resources for a deployment
-	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
-	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string, params GetDeploymentResourcesParams)
 	// Get versions for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions)
 	GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params GetVersionsForDeploymentParams)
@@ -2771,9 +2758,6 @@ type ServerInterface interface {
 	// Get release targets for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets)
 	GetReleaseTargetsForEnvironment(c *gin.Context, workspaceId string, environmentId string, params GetReleaseTargetsForEnvironmentParams)
-	// Get resources for an environment
-	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
-	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string, params GetEnvironmentResourcesParams)
 	// Get GitHub entity by installation ID
 	// (GET /v1/workspaces/{workspaceId}/github-entities/{installationId})
 	GetGitHubEntityByInstallationId(c *gin.Context, workspaceId string, installationId int)
@@ -2864,30 +2848,12 @@ type ServerInterface interface {
 	// Get a resource provider by name
 	// (GET /v1/workspaces/{workspaceId}/resource-providers/name/{name})
 	GetResourceProviderByName(c *gin.Context, workspaceId string, name string)
-	// Get kinds for a workspace
-	// (GET /v1/workspaces/{workspaceId}/resources/kinds)
-	GetKindsForWorkspace(c *gin.Context, workspaceId string)
+	// Compute resource aggregate
+	// (POST /v1/workspaces/{workspaceId}/resources/aggregates)
+	ComputeAggergate(c *gin.Context, workspaceId string)
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
 	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
-	// Get resource by identifier
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
-	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
-	// Get deployments for a resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments)
-	GetDeploymentsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params GetDeploymentsForResourceParams)
-	// Get relationships for a resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships)
-	GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
-	// Get release targets for a resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets)
-	GetReleaseTargetsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params GetReleaseTargetsForResourceParams)
-	// Get release target for a resource in a deployment
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId})
-	GetReleaseTargetForResourceInDeployment(c *gin.Context, workspaceId string, resourceIdentifier string, deploymentId string)
-	// Get variables for a resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables)
-	GetVariablesForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
 	// Get engine status
 	// (GET /v1/workspaces/{workspaceId}/status)
 	GetEngineStatus(c *gin.Context, workspaceId string)
@@ -3217,58 +3183,6 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForDeployment(c *gin.Context
 	siw.Handler.GetReleaseTargetsForDeployment(c, workspaceId, deploymentId, params)
 }
 
-// GetDeploymentResources operation middleware
-func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetDeploymentResourcesParams
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "offset" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetDeploymentResources(c, workspaceId, deploymentId, params)
-}
-
 // GetVersionsForDeployment operation middleware
 func (siw *ServerInterfaceWrapper) GetVersionsForDeployment(c *gin.Context) {
 
@@ -3522,58 +3436,6 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForEnvironment(c *gin.Contex
 	}
 
 	siw.Handler.GetReleaseTargetsForEnvironment(c, workspaceId, environmentId, params)
-}
-
-// GetEnvironmentResources operation middleware
-func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "environmentId" -------------
-	var environmentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetEnvironmentResourcesParams
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "offset" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId, params)
 }
 
 // GetGitHubEntityByInstallationId operation middleware
@@ -4699,8 +4561,8 @@ func (siw *ServerInterfaceWrapper) GetResourceProviderByName(c *gin.Context) {
 	siw.Handler.GetResourceProviderByName(c, workspaceId, name)
 }
 
-// GetKindsForWorkspace operation middleware
-func (siw *ServerInterfaceWrapper) GetKindsForWorkspace(c *gin.Context) {
+// ComputeAggergate operation middleware
+func (siw *ServerInterfaceWrapper) ComputeAggergate(c *gin.Context) {
 
 	var err error
 
@@ -4720,7 +4582,7 @@ func (siw *ServerInterfaceWrapper) GetKindsForWorkspace(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetKindsForWorkspace(c, workspaceId)
+	siw.Handler.ComputeAggergate(c, workspaceId)
 }
 
 // QueryResources operation middleware
@@ -4764,251 +4626,6 @@ func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 	}
 
 	siw.Handler.QueryResources(c, workspaceId, params)
-}
-
-// GetResourceByIdentifier operation middleware
-func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceIdentifier" -------------
-	var resourceIdentifier string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
-}
-
-// GetDeploymentsForResource operation middleware
-func (siw *ServerInterfaceWrapper) GetDeploymentsForResource(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceIdentifier" -------------
-	var resourceIdentifier string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetDeploymentsForResourceParams
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "offset" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetDeploymentsForResource(c, workspaceId, resourceIdentifier, params)
-}
-
-// GetRelationshipsForResource operation middleware
-func (siw *ServerInterfaceWrapper) GetRelationshipsForResource(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceIdentifier" -------------
-	var resourceIdentifier string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetRelationshipsForResource(c, workspaceId, resourceIdentifier)
-}
-
-// GetReleaseTargetsForResource operation middleware
-func (siw *ServerInterfaceWrapper) GetReleaseTargetsForResource(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceIdentifier" -------------
-	var resourceIdentifier string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetReleaseTargetsForResourceParams
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "offset" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetReleaseTargetsForResource(c, workspaceId, resourceIdentifier, params)
-}
-
-// GetReleaseTargetForResourceInDeployment operation middleware
-func (siw *ServerInterfaceWrapper) GetReleaseTargetForResourceInDeployment(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceIdentifier" -------------
-	var resourceIdentifier string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetReleaseTargetForResourceInDeployment(c, workspaceId, resourceIdentifier, deploymentId)
-}
-
-// GetVariablesForResource operation middleware
-func (siw *ServerInterfaceWrapper) GetVariablesForResource(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceIdentifier" -------------
-	var resourceIdentifier string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetVariablesForResource(c, workspaceId, resourceIdentifier)
 }
 
 // GetEngineStatus operation middleware
@@ -5359,14 +4976,12 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/policies", wrapper.GetPoliciesForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/release-targets", wrapper.GetReleaseTargetsForDeployment)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions", wrapper.GetVersionsForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deploymentversions/:deploymentVersionId", wrapper.GetDeploymentVersion)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relations", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments", wrapper.ListEnvironments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/release-targets", wrapper.GetReleaseTargetsForEnvironment)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/github-entities/:installationId", wrapper.GetGitHubEntityByInstallationId)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents", wrapper.GetJobAgents)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId", wrapper.GetJobAgent)
@@ -5397,14 +5012,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers", wrapper.GetResourceProviders)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/cache-batch", wrapper.CacheBatch)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/kinds", wrapper.GetKindsForWorkspace)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/deployments", wrapper.GetDeploymentsForResource)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets", wrapper.GetReleaseTargetsForResource)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets/deployment/:deploymentId", wrapper.GetReleaseTargetForResourceInDeployment)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/variables", wrapper.GetVariablesForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)

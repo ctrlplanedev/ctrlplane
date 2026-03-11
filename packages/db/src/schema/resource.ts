@@ -13,6 +13,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { user } from "./auth.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -95,3 +96,31 @@ export const resourceSchema = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
+
+export type Groupings = Array<{ name: string; property: string }>;
+
+export const resourceAggregate = pgTable(
+  "resource_aggregate",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+      () => new Date(),
+    ),
+    createdBy: uuid("created_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    filter: text("filter").default("true").notNull(),
+    groupBy: jsonb("group_by").$type<Groupings>(),
+  },
+  (t) => [index().on(t.workspaceId)],
+);
+
+export type ResourceAggregate = InferSelectModel<typeof resourceAggregate>;

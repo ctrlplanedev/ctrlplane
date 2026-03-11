@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/charmbracelet/log"
-	"github.com/gin-gonic/gin"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/http/server/openapi/utils"
+
+	"github.com/charmbracelet/log"
+	"github.com/gin-gonic/gin"
 )
 
 type Environments struct{}
@@ -120,73 +121,6 @@ func (s *Environments) ListEnvironments(
 		"offset": offset,
 		"limit":  limit,
 		"items":  environmentsList[start:end],
-	})
-}
-
-func (s *Environments) GetEnvironmentResources(
-	c *gin.Context,
-	workspaceId string,
-	environmentId string,
-	params oapi.GetEnvironmentResourcesParams,
-) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	resources, err := ws.Environments().Resources(c.Request.Context(), environmentId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	sort.Slice(resources, func(i, j int) bool {
-		if resources[i] == nil && resources[j] == nil {
-			return false
-		}
-		if resources[i] == nil {
-			return false
-		}
-		if resources[j] == nil {
-			return true
-		}
-		if resources[i].Name < resources[j].Name {
-			return true
-		}
-		if resources[i].Name > resources[j].Name {
-			return false
-		}
-		// Names are equal; compare Id
-		return resources[i].Id < resources[j].Id
-	})
-
-	// Get pagination parameters with defaults
-	limit := 50
-	if params.Limit != nil {
-		limit = *params.Limit
-	}
-	offset := 0
-	if params.Offset != nil {
-		offset = *params.Offset
-	}
-
-	total := len(resources)
-
-	// Apply pagination
-	start := min(offset, total)
-	end := min(start+limit, total)
-	paginatedResources := resources[start:end]
-
-	c.JSON(http.StatusOK, gin.H{
-		"total":  total,
-		"offset": offset,
-		"limit":  limit,
-		"items":  paginatedResources,
 	})
 }
 

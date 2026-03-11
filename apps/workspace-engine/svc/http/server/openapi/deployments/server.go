@@ -9,16 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/svc/http/server/openapi/utils"
+
+	"github.com/charmbracelet/log"
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var deploymentTracer = otel.Tracer("workspace-engine/deployments")
@@ -125,74 +126,6 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 	}
 
 	c.JSON(http.StatusOK, deploymentWithVariables)
-}
-
-func (s *Deployments) GetDeploymentResources(
-	c *gin.Context,
-	workspaceId string,
-	deploymentId string,
-	params oapi.GetDeploymentResourcesParams,
-) {
-	ws, err := utils.GetWorkspace(c, workspaceId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	resources, err := ws.Deployments().Resources(c.Request.Context(), deploymentId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	// Sort the resourceList by resource.Name (nil-safe, ascending); if Name is the same, sort by CreatedAt
-	sort.Slice(resources, func(i, j int) bool {
-		if resources[i] == nil && resources[j] == nil {
-			return false
-		}
-		if resources[i] == nil {
-			return false
-		}
-		if resources[j] == nil {
-			return true
-		}
-		if resources[i].Name < resources[j].Name {
-			return true
-		}
-		if resources[i].Name > resources[j].Name {
-			return false
-		}
-		// Names are equal; compare CreatedAt
-		return resources[i].CreatedAt.Before(resources[j].CreatedAt)
-	})
-
-	// Get pagination parameters with defaults
-	limit := 50
-	if params.Limit != nil {
-		limit = *params.Limit
-	}
-	offset := 0
-	if params.Offset != nil {
-		offset = *params.Offset
-	}
-
-	total := len(resources)
-
-	// Apply pagination
-	start := min(offset, total)
-	end := min(start+limit, total)
-	paginatedResources := resources[start:end]
-
-	c.JSON(http.StatusOK, gin.H{
-		"total":  total,
-		"offset": offset,
-		"limit":  limit,
-		"items":  paginatedResources,
-	})
 }
 
 func (s *Deployments) ListDeployments(

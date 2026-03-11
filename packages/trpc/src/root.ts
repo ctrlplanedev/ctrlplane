@@ -12,6 +12,7 @@ import { reconcileRouter } from "./routes/reconcile.js";
 import { redeployRouter } from "./routes/redeploy.js";
 import { relationshipsRouter } from "./routes/relationships.js";
 import { releaseTargetsRouter } from "./routes/release-targets.js";
+import { resourceAggregatesRouter } from "./routes/resource-aggregates.js";
 import { resourceProvidersRouter } from "./routes/resource-providers.js";
 import { resourcesRouter } from "./routes/resources.js";
 import { systemsRouter } from "./routes/systems.js";
@@ -39,6 +40,7 @@ export const appRouter = router({
   policySkips: policySkipsRouter,
   reconcile: reconcileRouter,
   redeploy: redeployRouter,
+  resourceAggregates: resourceAggregatesRouter,
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
   releaseTargets: releaseTargetsRouter,

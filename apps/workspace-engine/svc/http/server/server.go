@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi"
+
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -13,8 +16,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/http/server/openapi"
 )
 
 var tracer = otel.Tracer("server")

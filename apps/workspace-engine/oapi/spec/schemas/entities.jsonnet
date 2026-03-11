@@ -1,6 +1,25 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  BasicResource: {
+    type: 'object',
+    required: [
+      'id',
+      'name',
+      'version',
+      'kind',
+      'identifier',
+      'workspaceId',
+    ],
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+      version: { type: 'string' },
+      kind: { type: 'string' },
+      workspaceId: { type: 'string' },
+      identifier: { type: 'string' },
+    },
+  },
   Resource: {
     type: 'object',
     required: [
