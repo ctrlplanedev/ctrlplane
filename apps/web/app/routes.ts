@@ -99,15 +99,6 @@ export default [
         route("create", "routes/ws/policies/page.create.tsx"),
       ]),
 
-      route("workflows", "routes/ws/workflows.tsx"),
-      route("workflows", "routes/ws/workflows/_layout.tsx", [
-        route(":workflowId", "routes/ws/workflows/page.$workflowId.tsx"),
-        route(
-          ":workflowId/:workflowRunId",
-          "routes/ws/workflows/page.$workflowId.$workflowRunId.tsx",
-        ),
-      ]),
-
       route("settings", "routes/ws/settings/_layout.tsx", [
         route("general", "routes/ws/settings/general.tsx"),
         route("members", "routes/ws/settings/members.tsx"),
