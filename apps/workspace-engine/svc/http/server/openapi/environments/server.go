@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/charmbracelet/log"
+	"github.com/gin-gonic/gin"
+
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/http/server/openapi/utils"
-
-	"github.com/charmbracelet/log"
-	"github.com/gin-gonic/gin"
 )
 
 type Environments struct{}

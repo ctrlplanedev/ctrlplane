@@ -28,7 +28,9 @@ const dbToOapiStatus: Record<string, string> = {
   successful: "successful",
 };
 
-const toVersionResponse = (v: typeof schema.deploymentVersion.$inferSelect) => ({
+const toVersionResponse = (
+  v: typeof schema.deploymentVersion.$inferSelect,
+) => ({
   id: v.id,
   name: v.name,
   tag: v.tag,
@@ -58,13 +60,14 @@ const toJobResponseForState = (
   ...(j.message != null && { message: j.message }),
   ...(j.startedAt != null && { startedAt: j.startedAt.toISOString() }),
   ...(j.completedAt != null && { completedAt: j.completedAt.toISOString() }),
-  ...(j.dispatchContext != null &&
-    Object.keys(j.dispatchContext).length > 0 && {
-      dispatchContext: j.dispatchContext,
-    }),
+  ...(Object.keys(j.dispatchContext).length > 0 && {
+    dispatchContext: j.dispatchContext,
+  }),
 });
 
-const buildReleaseResponse = async (releaseRow: typeof schema.release.$inferSelect) => {
+const buildReleaseResponse = async (
+  releaseRow: typeof schema.release.$inferSelect,
+) => {
   const [version, variables] = await Promise.all([
     db
       .select()
@@ -128,10 +131,12 @@ const computeReleaseTargetState = async (
   environmentId: string,
   deploymentId: string,
 ) => {
-  const [desiredReleaseRow, latestSuccessfulJob, latestJob] =
-    await Promise.all([
+  const [desiredReleaseRow, latestSuccessfulJob, latestJob] = await Promise.all(
+    [
       db
-        .select({ desiredReleaseId: schema.releaseTargetDesiredRelease.desiredReleaseId })
+        .select({
+          desiredReleaseId: schema.releaseTargetDesiredRelease.desiredReleaseId,
+        })
         .from(schema.releaseTargetDesiredRelease)
         .where(
           and(
@@ -144,8 +149,14 @@ const computeReleaseTargetState = async (
       db
         .select({ job: schema.job, releaseId: schema.releaseJob.releaseId })
         .from(schema.job)
-        .innerJoin(schema.releaseJob, eq(schema.releaseJob.jobId, schema.job.id))
-        .innerJoin(schema.release, eq(schema.release.id, schema.releaseJob.releaseId))
+        .innerJoin(
+          schema.releaseJob,
+          eq(schema.releaseJob.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.release.id, schema.releaseJob.releaseId),
+        )
         .where(
           and(
             eq(schema.release.resourceId, resourceId),
@@ -161,8 +172,14 @@ const computeReleaseTargetState = async (
       db
         .select({ job: schema.job, releaseId: schema.releaseJob.releaseId })
         .from(schema.job)
-        .innerJoin(schema.releaseJob, eq(schema.releaseJob.jobId, schema.job.id))
-        .innerJoin(schema.release, eq(schema.release.id, schema.releaseJob.releaseId))
+        .innerJoin(
+          schema.releaseJob,
+          eq(schema.releaseJob.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.release.id, schema.releaseJob.releaseId),
+        )
         .where(
           and(
             eq(schema.release.resourceId, resourceId),
@@ -173,7 +190,8 @@ const computeReleaseTargetState = async (
         .orderBy(desc(schema.job.createdAt))
         .limit(1)
         .then((rows) => rows[0]),
-    ]);
+    ],
+  );
 
   const state: Record<string, unknown> = {};
 
@@ -230,7 +248,10 @@ const getReleaseTargetJobs: AsyncTypedHandler<
     .select({ total: count() })
     .from(schema.job)
     .innerJoin(schema.releaseJob, eq(schema.releaseJob.jobId, schema.job.id))
-    .innerJoin(schema.release, eq(schema.release.id, schema.releaseJob.releaseId))
+    .innerJoin(
+      schema.release,
+      eq(schema.release.id, schema.releaseJob.releaseId),
+    )
     .where(releaseTargetFilter);
 
   const total = countResult?.total ?? 0;
@@ -239,7 +260,10 @@ const getReleaseTargetJobs: AsyncTypedHandler<
     .select({ job: schema.job, releaseId: schema.releaseJob.releaseId })
     .from(schema.job)
     .innerJoin(schema.releaseJob, eq(schema.releaseJob.jobId, schema.job.id))
-    .innerJoin(schema.release, eq(schema.release.id, schema.releaseJob.releaseId))
+    .innerJoin(
+      schema.release,
+      eq(schema.release.id, schema.releaseJob.releaseId),
+    )
     .where(releaseTargetFilter)
     .orderBy(desc(schema.job.createdAt))
     .limit(limitVal)
@@ -250,7 +274,11 @@ const getReleaseTargetJobs: AsyncTypedHandler<
 
   res.status(200).json({
     items: rows.map((r) =>
-      toJobResponseForState(r.job, r.releaseId, metadataMap.get(r.job.id) ?? {}),
+      toJobResponseForState(
+        r.job,
+        r.releaseId,
+        metadataMap.get(r.job.id) ?? {},
+      ),
     ),
     total,
     offset: offsetVal,
@@ -267,7 +295,9 @@ const getReleaseTargetDesiredRelease: AsyncTypedHandler<
     parseReleaseTargetKey(releaseTargetKey);
 
   const row = await db
-    .select({ desiredReleaseId: schema.releaseTargetDesiredRelease.desiredReleaseId })
+    .select({
+      desiredReleaseId: schema.releaseTargetDesiredRelease.desiredReleaseId,
+    })
     .from(schema.releaseTargetDesiredRelease)
     .where(
       and(
@@ -313,8 +343,7 @@ const getReleaseTargetState: AsyncTypedHandler<
     )
     .then((rows) => rows[0]);
 
-  if (rtExists == null)
-    throw new ApiError("Release target not found", 404);
+  if (rtExists == null) throw new ApiError("Release target not found", 404);
 
   const state = await computeReleaseTargetState(
     resourceId,
@@ -392,7 +421,9 @@ const previewReleaseTargetsForResource: AsyncTypedHandler<
 
   const systemIds = systems.map((s) => s.id);
   if (systemIds.length === 0) {
-    res.status(200).json({ items: [], total: 0, limit: limitVal, offset: offsetVal });
+    res
+      .status(200)
+      .json({ items: [], total: 0, limit: limitVal, offset: offsetVal });
     return;
   }
 
@@ -403,7 +434,10 @@ const previewReleaseTargetsForResource: AsyncTypedHandler<
         deployment: schema.deployment,
       })
       .from(schema.systemDeployment)
-      .innerJoin(schema.deployment, eq(schema.deployment.id, schema.systemDeployment.deploymentId))
+      .innerJoin(
+        schema.deployment,
+        eq(schema.deployment.id, schema.systemDeployment.deploymentId),
+      )
       .where(inArray(schema.systemDeployment.systemId, systemIds)),
     db
       .select({
@@ -411,11 +445,13 @@ const previewReleaseTargetsForResource: AsyncTypedHandler<
         environment: schema.environment,
       })
       .from(schema.systemEnvironment)
-      .innerJoin(schema.environment, eq(schema.environment.id, schema.systemEnvironment.environmentId))
+      .innerJoin(
+        schema.environment,
+        eq(schema.environment.id, schema.systemEnvironment.environmentId),
+      )
       .where(inArray(schema.systemEnvironment.systemId, systemIds)),
   ]);
 
-  const systemMap = new Map(systems.map((s) => [s.id, s]));
   const depsBySystem = new Map<string, (typeof sysDeployments)[number][]>();
   for (const sd of sysDeployments) {
     const arr = depsBySystem.get(sd.systemId) ?? [];
@@ -450,8 +486,10 @@ const previewReleaseTargetsForResource: AsyncTypedHandler<
   }
 
   allMatches.sort((a, b) => {
-    if (a.system.name !== b.system.name) return a.system.name.localeCompare(b.system.name);
-    if (a.deployment.name !== b.deployment.name) return a.deployment.name.localeCompare(b.deployment.name);
+    if (a.system.name !== b.system.name)
+      return a.system.name.localeCompare(b.system.name);
+    if (a.deployment.name !== b.deployment.name)
+      return a.deployment.name.localeCompare(b.deployment.name);
     return a.environment.name.localeCompare(b.environment.name);
   });
 

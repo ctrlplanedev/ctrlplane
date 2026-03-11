@@ -9,17 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"workspace-engine/pkg/concurrency"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace"
-	"workspace-engine/svc/http/server/openapi/utils"
-
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+
+	"workspace-engine/pkg/concurrency"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace"
+	"workspace-engine/svc/http/server/openapi/utils"
 )
 
 var deploymentTracer = otel.Tracer("workspace-engine/deployments")

@@ -106,7 +106,7 @@ func TestComputeAggregateFromResources_InvalidCelProperty(t *testing.T) {
 
 	assert.Equal(t, 2, result.Total)
 	require.Len(t, result.Groups, 1)
-	assert.Equal(t, "", result.Groups[0].Key["bad"])
+	assert.Empty(t, result.Groups[0].Key["bad"])
 	assert.Equal(t, 2, result.Groups[0].Count)
 }
 

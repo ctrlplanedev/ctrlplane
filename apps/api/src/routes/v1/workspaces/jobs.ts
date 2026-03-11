@@ -4,9 +4,7 @@ import { Router } from "express";
 
 import { and, count, desc, eq, inArray, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  enqueueDesiredRelease,
-} from "@ctrlplane/db/reconcilers";
+import { enqueueDesiredRelease } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
 const dbToOapiStatus: Record<string, string> = {
@@ -69,10 +67,9 @@ const toJobResponse = (
   ...(j.message != null && { message: j.message }),
   ...(j.startedAt != null && { startedAt: j.startedAt.toISOString() }),
   ...(j.completedAt != null && { completedAt: j.completedAt.toISOString() }),
-  ...(j.dispatchContext != null &&
-    Object.keys(j.dispatchContext).length > 0 && {
-      dispatchContext: j.dispatchContext,
-    }),
+  ...(Object.keys(j.dispatchContext).length > 0 && {
+    dispatchContext: j.dispatchContext,
+  }),
 });
 
 const getJobs: AsyncTypedHandler<
@@ -169,9 +166,9 @@ const getJob: AsyncTypedHandler<
 
   const metadataMap = await getMetadataForJobs([jobId]);
 
-  res.status(200).json(
-    toJobResponse(row.job, row.releaseId, metadataMap.get(jobId) ?? {}),
-  );
+  res
+    .status(200)
+    .json(toJobResponse(row.job, row.releaseId, metadataMap.get(jobId) ?? {}));
 };
 
 const getJobWithRelease: AsyncTypedHandler<
@@ -215,8 +212,7 @@ const getJobWithRelease: AsyncTypedHandler<
     )
     .then((rows) => rows[0]);
 
-  if (row == null)
-    throw new ApiError("Job not found", 404);
+  if (row == null) throw new ApiError("Job not found", 404);
 
   const metadataMap = await getMetadataForJobs([jobId]);
   const jobResponse = toJobResponse(
