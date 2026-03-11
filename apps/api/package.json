@@ -25,7 +25,6 @@
     "@auth/express": "^0.12.0",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
-    "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/trpc": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
