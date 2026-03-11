@@ -929,7 +929,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         CreateDeploymentVersionRequest: {
@@ -954,7 +955,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
         };
         CreatePolicyRequest: {
             description?: string;
@@ -1076,7 +1078,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         DeploymentAndSystems: {
@@ -1191,7 +1194,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1721,7 +1725,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         UpsertDeploymentVariableRequest: {
@@ -1761,7 +1766,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
         };
         UpsertJobAgentRequest: {
             config: {
