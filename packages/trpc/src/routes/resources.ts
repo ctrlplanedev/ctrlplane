@@ -1,13 +1,13 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { and, asc, count, eq, inArray, sql } from "@ctrlplane/db";
+import { and, asc, count, eq, inArray, sql, takeFirst } from "@ctrlplane/db";
 import {
   enqueueManyDeploymentSelectorEval,
   enqueueManyEnvironmentSelectorEval,
+  enqueueReleaseTargetsForResource,
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
@@ -481,22 +481,25 @@ export const resourcesRouter = router({
         ]),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { workspaceId, resourceId, key, value } = input;
 
       const formattedValue =
         typeof value === "object" ? { object: value } : value;
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.ResourceVariableCreated,
-        timestamp: Date.now(),
-        data: {
+      const resourceVariable = await ctx.db
+        .insert(schema.resourceVariable)
+        .values({
           resourceId,
           key,
           value: formattedValue,
-        },
-      });
+        })
+        .returning()
+        .then(takeFirst);
+
+      await enqueueReleaseTargetsForResource(ctx.db, workspaceId, resourceId);
+
+      return resourceVariable;
     }),
 
   kinds: protectedProcedure

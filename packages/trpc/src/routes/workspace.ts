@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { and, eq, isNull, or, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -78,14 +77,6 @@ export const workspaceRouter = router({
           .where(eq(schema.user.id, ctx.session.user.id));
 
         return workspace;
-      });
-
-      // Trigger workspace engine to save initial snapshot
-      await sendGoEvent({
-        workspaceId: newWorkspace.id,
-        eventType: Event.WorkspaceSave,
-        timestamp: Date.now(),
-        data: {},
       });
 
       return newWorkspace;

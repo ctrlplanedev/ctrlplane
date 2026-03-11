@@ -1,11 +1,8 @@
 import { TRPCError } from "@trpc/server";
-import { v4 as uuidv4 } from "uuid";
 import z from "zod";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -71,15 +68,13 @@ export const jobAgentsRouter = router({
         config: jobAgentConfig,
       }),
     )
-    .mutation(async ({ input }) => {
-      const data = { ...input, id: uuidv4() };
-      await sendGoEvent({
-        workspaceId: input.workspaceId,
-        eventType: Event.JobAgentCreated,
-        timestamp: Date.now(),
-        data,
-      });
-      return data;
+    .mutation(async ({ input, ctx }) => {
+      const jobAgent = await ctx.db
+        .insert(schema.jobAgent)
+        .values(input)
+        .returning()
+        .then(takeFirst);
+      return jobAgent;
     }),
 
   delete: protectedProcedure
@@ -97,23 +92,10 @@ export const jobAgentsRouter = router({
 
   deployments: protectedProcedure
     .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/deployments",
-        {
-          params: {
-            path: input,
-            query: { limit: 1000, offset: 0 },
-          },
-        },
-      );
-
-      if (response.error != null)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: response.error.error,
-        });
-
-      return response.data;
-    }),
+    .query(({ input, ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.deployment)
+        .where(eq(schema.deployment.jobAgentId, input.jobAgentId)),
+    ),
 });
