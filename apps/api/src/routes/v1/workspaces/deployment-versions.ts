@@ -1,13 +1,11 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
 
 const upsertUserApprovalRecord: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records",
@@ -17,30 +15,61 @@ const upsertUserApprovalRecord: AsyncTypedHandler<
   if (req.apiContext == null) throw new ApiError("Unauthorized", 401);
   const { user } = req.apiContext;
 
-  const record: WorkspaceEngine["schemas"]["UserApprovalRecord"] = {
+  const deploymentVersionEntry = await db
+    .select()
+    .from(schema.deploymentVersion)
+    .innerJoin(
+      schema.deployment,
+      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
+    )
+    .where(
+      and(
+        eq(schema.deploymentVersion.id, deploymentVersionId),
+        eq(schema.deployment.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (deploymentVersionEntry == null) {
+    res.status(404).json({ error: "Deployment version not found" });
+    return;
+  }
+
+  const { deployment } = deploymentVersionEntry;
+
+  const environmentIds = await db
+    .select()
+    .from(schema.systemDeployment)
+    .innerJoin(
+      schema.system,
+      eq(schema.systemDeployment.systemId, schema.system.id),
+    )
+    .innerJoin(
+      schema.systemEnvironment,
+      eq(schema.system.id, schema.systemEnvironment.systemId),
+    )
+    .where(eq(schema.systemDeployment.deploymentId, deployment.id))
+    .then((rows) => rows.map((row) => row.system_environment.environmentId));
+
+  const records = environmentIds.map((environmentId) => ({
     userId: user.id,
     versionId: deploymentVersionId,
-    environmentId: "",
+    environmentId,
     status: req.body.status,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
     reason: req.body.reason,
-  };
+  }));
 
-  try {
-    for (const environmentId of req.body.environmentIds)
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.UserApprovalRecordCreated,
-        timestamp: Date.now(),
-        data: { ...record, environmentId },
-      });
-  } catch {
-    throw new ApiError("Failed to update user approval record", 500);
-  }
+  await db
+    .insert(schema.userApprovalRecord)
+    .values(records)
+    .onConflictDoNothing();
+
+  await enqueueReleaseTargetsForDeployment(db, workspaceId, deployment.id);
 
   res.status(202).json({
     id: deploymentVersionId,
-    message: "User approval record update requested",
+    message: "User approval record upserted",
   });
 };
 
