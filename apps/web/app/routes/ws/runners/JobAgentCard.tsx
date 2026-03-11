@@ -81,7 +81,7 @@ function useAgentDeployments(jobAgentId: string) {
     workspaceId: workspace.id,
     jobAgentId,
   });
-  const deployments = deploymentsQuery.data?.items ?? [];
+  const deployments = deploymentsQuery.data ?? [];
 
   return { deployments, isLoading: deploymentsQuery.isLoading };
 }
