@@ -75,24 +75,24 @@ function JobsTableRow({ job }: { job: Job }) {
   return (
     <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
       <TableCell className="font-medium">
-        {job.dispatchContext?.deployment?.name ?? (
+        {job.dispatchContext.deployment?.name ?? (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell>
-        {job.dispatchContext?.environment?.name ?? (
+        {job.dispatchContext.environment?.name ?? (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell>
-        {job.dispatchContext?.resource?.name ?? (
+        {job.dispatchContext.resource?.name ?? (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell className="font-mono  font-medium">
         <div className="max-w-72 truncate">
-          {job.dispatchContext?.version?.name ??
-            job.dispatchContext?.version?.tag}
+          {job.dispatchContext.version?.name ||
+            job.dispatchContext.version?.tag}
         </div>
       </TableCell>
       <VariablesCell job={job} />

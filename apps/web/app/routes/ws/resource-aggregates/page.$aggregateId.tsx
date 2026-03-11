@@ -61,10 +61,11 @@ export default function AggregateDetailPage() {
   const buildCelForGroup = (group: { key: Record<string, string> }) => {
     const parts: string[] = [];
     if (aggregate?.filter && aggregate.filter !== "true")
-      parts.push(aggregate.filter);
+      parts.push(`(${aggregate.filter})`);
     for (const col of groupByColumns) {
       const val = group.key[col.name];
-      if (val) parts.push(`${col.property} == "${val}"`);
+      const escaped = val.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      if (val) parts.push(`(${col.property}) == "${escaped}"`);
     }
     return parts.length > 0 ? parts.join(" && ") : "true";
   };
@@ -133,7 +134,7 @@ export default function AggregateDetailPage() {
 
       {!isLoading && groups.length > 0 && (
         <Table className="border-b">
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
               {groupByColumns.map((col) => (
                 <TableHead key={col.name} className="font-semibold">

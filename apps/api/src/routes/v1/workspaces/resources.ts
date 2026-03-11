@@ -142,32 +142,21 @@ const updateVariablesForResource: AsyncTypedHandler<
   const { workspaceId, identifier } = req.params;
   const { body } = req;
 
-  const resourceIdentifier = encodeURIComponent(identifier);
-  const resourceResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-    { params: { path: { workspaceId, resourceIdentifier } } },
-  );
-
-  if (resourceResponse.error != null) {
-    throw new ApiError(
-      resourceResponse.error.error ?? "Failed to get resource",
-      resourceResponse.response.status,
-    );
-  }
+  const resource = await findResource(workspaceId, identifier);
 
   try {
     await sendGoEvent({
       workspaceId,
       eventType: Event.ResourceVariablesBulkUpdated,
       timestamp: Date.now(),
-      data: { resourceId: resourceResponse.data.id, variables: body },
+      data: { resourceId: resource.id, variables: body },
     });
   } catch {
     throw new ApiError("Failed to update resource variables", 500);
   }
 
   res.status(202).json({
-    id: resourceResponse.data.id,
+    id: resource.id,
     message: "Resource variables update requested",
   });
 };
