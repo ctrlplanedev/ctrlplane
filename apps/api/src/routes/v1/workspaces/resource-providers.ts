@@ -4,11 +4,13 @@ import { Router } from "express";
 
 import {
   and,
+  count,
   desc,
   eq,
   inArray,
   notInArray,
   sql,
+  takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -71,6 +73,46 @@ const getResourceProviderByName: AsyncTypedHandler<
   }
 
   res.status(200).json(provider);
+};
+
+const deleteResourceProviderByName: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, name } = req.params;
+
+  const existing = await db
+    .select()
+    .from(resourceProvider)
+    .where(
+      and(
+        eq(resourceProvider.workspaceId, workspaceId),
+        eq(resourceProvider.name, name),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (existing == null) {
+    res.status(404).json({ error: "Resource provider not found" });
+    return;
+  }
+
+  const resourceCount = await db
+    .select({ count: count() })
+    .from(resource)
+    .where(eq(resource.providerId, existing.id))
+    .then(takeFirst)
+    .then(({ count }) => count);
+
+  if (resourceCount > 0) {
+    res
+      .status(400)
+      .json({ error: `Resource provider has resources: ${resourceCount}` });
+    return;
+  }
+
+  await db.delete(resourceProvider).where(eq(resourceProvider.id, existing.id));
+  res.status(202).json(existing);
 };
 
 const setResourceProviderResources: AsyncTypedHandler<
@@ -205,5 +247,6 @@ const getResourceProviderResources: AsyncTypedHandler<
 export const resourceProvidersRouter = Router({ mergeParams: true })
   .put("/", asyncHandler(upsertResourceProvider))
   .get("/name/:name", asyncHandler(getResourceProviderByName))
+  .delete("/name/:name", asyncHandler(deleteResourceProviderByName))
   .get("/name/:name/resources", asyncHandler(getResourceProviderResources))
   .put("/:providerId/set", asyncHandler(setResourceProviderResources));

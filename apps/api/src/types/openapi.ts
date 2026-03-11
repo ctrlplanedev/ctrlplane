@@ -628,7 +628,8 @@ export interface paths {
         get: operations["getResourceProviderByName"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete a resource provider by name */
+        delete: operations["deleteResourceProviderByName"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4341,6 +4342,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceProvider"];
+                };
+            };
+        };
+    };
+    deleteResourceProviderByName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Name of the resource provider */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceProvider"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

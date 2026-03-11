@@ -13,6 +13,17 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.schemaRef('ResourceProvider'),
       ),
     },
+    delete: {
+      summary: 'Delete a resource provider by name',
+      operationId: 'deleteResourceProviderByName',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.nameParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProvider')) +
+                 openapi.notFoundResponse() +
+                 openapi.badRequestResponse(),
+    },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources': {
     get: {
