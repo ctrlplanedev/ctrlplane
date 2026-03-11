@@ -8,6 +8,7 @@ import { ApprovalDetail } from "./rule-results/ApprovalDetail";
 import { DeploymentWindowDetail } from "./rule-results/DeploymentWindowDetail";
 import { EnvironmentProgressionDetail } from "./rule-results/EnvironmentProgressionDetail";
 import { GradRolloutDetail } from "./rule-results/GradRolloutDetail";
+import { VersionStatusDetail } from "./rule-results/VersionStatusDetail";
 
 type DeploymentVersionProps = {
   version: { id: string; status: DeploymentVersionStatus };
@@ -34,9 +35,9 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
 
   if (data == null) return null;
 
-  const approvalDetail = rules.approval?.[0]?.details as
-    | ApprovalDetailProps
-    | undefined;
+  const approvalDetail =
+    "approval" in rules &&
+    (rules.approval[0]?.details as ApprovalDetailProps | undefined);
 
   return (
     <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
@@ -47,9 +48,10 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
       {"gradualRollout" in rules && (
         <GradRolloutDetail rules={rules.gradualRollout} />
       )}
-      {rules.environmentProgression && (
+      {"environmentProgression" in rules && (
         <EnvironmentProgressionDetail rules={rules.environmentProgression} />
       )}
+      <VersionStatusDetail version={version} />
     </div>
   );
 }

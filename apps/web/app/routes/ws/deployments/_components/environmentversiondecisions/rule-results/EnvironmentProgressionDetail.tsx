@@ -263,7 +263,6 @@ function ProgressionRow({
 
   const total = details.dependency_environment_count ?? envDetails.length;
   const successful = details.successful_environments ?? 0;
-  const percent = total > 0 ? Math.round((successful / total) * 100) : 0;
 
   const label = policyName ?? "Environment Progression";
   const isPending = rule.actionRequired && !rule.allowed;
@@ -329,7 +328,7 @@ export const EnvironmentProgressionDetail: React.FC<
       {Object.entries(grouped).map(([ruleId, ruleGroup]) => (
         <ProgressionRow
           key={ruleId}
-          rule={ruleGroup[0]!}
+          rule={ruleGroup[0]}
           policyName={policyNameByRuleId.get(ruleId)}
         />
       ))}
