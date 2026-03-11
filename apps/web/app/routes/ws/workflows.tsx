@@ -1,4 +1,3 @@
-import { trpc } from "~/api/trpc";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,8 +6,6 @@ import {
 } from "~/components/ui/breadcrumb";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
-import { useWorkspace } from "~/components/WorkspaceProvider";
-import { WorkflowCard } from "./workflows/_components/WorkflowCard";
 
 export function meta() {
   return [
@@ -42,24 +39,24 @@ function PageHeader() {
 }
 
 export default function Workflows() {
-  const { workspace } = useWorkspace();
+  // const { workspace } = useWorkspace();
 
-  const { data } = trpc.workflows.list.useQuery({
-    workspaceId: workspace.id,
-    limit: 100,
-    offset: 0,
-  });
+  // const { data } = trpc.workflows.list.useQuery({
+  //   workspaceId: workspace.id,
+  //   limit: 100,
+  //   offset: 0,
+  // });
 
-  const workflows = data?.items ?? [];
+  // const workflows = data?.items ?? [];
 
   return (
     <>
       <PageHeader />
-      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
         {workflows.map((workflow) => (
           <WorkflowCard key={workflow.id} workflow={workflow} />
         ))}
-      </div>
+      </div> */}
     </>
   );
 }

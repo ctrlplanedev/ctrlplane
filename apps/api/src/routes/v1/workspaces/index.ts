@@ -1,11 +1,11 @@
 import { asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { deploymentVersionsRouter } from "./deployment-versions.js";
 import {
   deploymentVariablesRouter,
   deploymentVariableValuesRouter,
 } from "./deployment-variables.js";
+import { deploymentVersionsRouter } from "./deployment-versions.js";
 import { deploymentsRouter } from "./deployments.js";
 import { environmentsRouter } from "./environments.js";
 import {
@@ -25,7 +25,6 @@ import { releaseRouter } from "./releases.js";
 import { resourceProvidersRouter } from "./resource-providers.js";
 import { resourceRouter } from "./resources.js";
 import { systemRouter } from "./systems.js";
-import { workflowsRouter } from "./workflows.js";
 
 /**
  * Creates the workspaces router
@@ -43,7 +42,10 @@ export const createWorkspacesRouter = (): Router =>
     .use("/:workspaceId/resource-providers", resourceProvidersRouter)
     .use("/:workspaceId/deployments", deploymentsRouter)
     .use("/:workspaceId/deployment-variables", deploymentVariablesRouter)
-    .use("/:workspaceId/deployment-variable-values", deploymentVariableValuesRouter)
+    .use(
+      "/:workspaceId/deployment-variable-values",
+      deploymentVariableValuesRouter,
+    )
     .use("/:workspaceId/environments", environmentsRouter)
     .use("/:workspaceId/policies", policiesRouter)
     .use("/:workspaceId/deployment-versions", deploymentVersionsRouter)
@@ -51,5 +53,4 @@ export const createWorkspacesRouter = (): Router =>
     .use("/:workspaceId/relationship-rules", relationshipRulesRouter)
     .use("/:workspaceId/release-targets", releaseTargetsRouter)
     .use("/:workspaceId/releases", releaseRouter)
-    .use("/:workspaceId/job-agents", jobAgentsRouter)
-    .use("/:workspaceId/workflows", workflowsRouter);
+    .use("/:workspaceId/job-agents", jobAgentsRouter);
