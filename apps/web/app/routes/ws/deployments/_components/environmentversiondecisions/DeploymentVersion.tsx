@@ -6,6 +6,7 @@ import { trpc } from "~/api/trpc";
 import { Spinner } from "~/components/ui/spinner";
 import { ApprovalDetail } from "./rule-results/ApprovalDetail";
 import { DeploymentWindowDetail } from "./rule-results/DeploymentWindowDetail";
+import { EnvironmentProgressionDetail } from "./rule-results/EnvironmentProgressionDetail";
 import { GradRolloutDetail } from "./rule-results/GradRolloutDetail";
 
 type DeploymentVersionProps = {
@@ -32,7 +33,6 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
     );
 
   if (data == null) return null;
-  console.log(Object.keys(rules));
 
   const approvalDetail = rules.approval?.[0]?.details as
     | ApprovalDetailProps
@@ -46,6 +46,9 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
       )}
       {"gradualRollout" in rules && (
         <GradRolloutDetail rules={rules.gradualRollout} />
+      )}
+      {rules.environmentProgression && (
+        <EnvironmentProgressionDetail rules={rules.environmentProgression} />
       )}
     </div>
   );
