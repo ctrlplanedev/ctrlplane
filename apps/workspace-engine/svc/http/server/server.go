@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/http/server/openapi"
 )
