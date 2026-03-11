@@ -565,7 +565,8 @@
                   "type": "integer"
                },
                "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "A CEL expression to select which resources this value applies to",
+                  "type": "string"
                },
                "value": {
                   "$ref": "#/components/schemas/Value"
@@ -2334,7 +2335,8 @@
                   "type": "integer"
                },
                "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "A CEL expression to select which resources this value applies to",
+                  "type": "string"
                },
                "value": {
                   "$ref": "#/components/schemas/Value"

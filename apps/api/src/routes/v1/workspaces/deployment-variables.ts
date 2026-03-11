@@ -1,15 +1,15 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
 import {
+  deployment,
   deploymentVariable,
   deploymentVariableValue,
 } from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
 
 import { validResourceSelector } from "../valid-selector.js";
 
@@ -106,25 +106,41 @@ const upsertDeploymentVariable: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, variableId } = req.params;
   const { body } = req;
+  const { deploymentId } = req.body;
 
-  const variableData: WorkspaceEngine["schemas"]["DeploymentVariable"] = {
-    id: variableId,
-    deploymentId: body.deploymentId,
-    key: body.key,
-    description: body.description ?? "",
-    defaultValue: body.defaultValue ?? undefined,
-  };
+  const dep = await db
+    .select()
+    .from(deployment)
+    .where(
+      and(
+        eq(deployment.id, deploymentId),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentVariableUpdated,
-    timestamp: Date.now(),
-    data: variableData,
-  });
+  if (dep == null) {
+    res.status(404).json({ error: "Deployment not found" });
+    return;
+  }
+
+  await db
+    .insert(deploymentVariable)
+    .values({ id: variableId, ...body })
+    .onConflictDoUpdate({
+      target: [deploymentVariable.deploymentId, deploymentVariable.key],
+      set: {
+        id: variableId,
+        description: body.description ?? "",
+        defaultValue: body.defaultValue ?? undefined,
+      },
+    });
+
+  await enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 
   res.status(202).json({
     id: variableId,
-    message: "Deployment variable update requested",
+    message: "Deployment variable upserted",
   });
 };
 
@@ -137,30 +153,34 @@ const deleteDeploymentVariable: AsyncTypedHandler<
   const variable = await db
     .select()
     .from(deploymentVariable)
-    .where(eq(deploymentVariable.id, variableId))
-    .then(takeFirstOrNull);
+    .innerJoin(deployment, eq(deploymentVariable.deploymentId, deployment.id))
+    .where(
+      and(
+        eq(deploymentVariable.id, variableId),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull)
+    .then((row) => row?.deployment_variable ?? null);
 
-  if (variable == null)
-    throw new ApiError("Deployment variable not found", 404);
+  if (variable == null) {
+    res.status(404).json({ error: "Deployment variable not found" });
+    return;
+  }
 
-  await sendGoEvent({
+  await db
+    .delete(deploymentVariable)
+    .where(eq(deploymentVariable.id, variableId));
+
+  await enqueueReleaseTargetsForDeployment(
+    db,
     workspaceId,
-    eventType: Event.DeploymentVariableDeleted,
-    timestamp: Date.now(),
-    data: {
-      id: variable.id,
-      deploymentId: variable.deploymentId,
-      key: variable.key,
-      description: variable.description ?? "",
-      defaultValue:
-        (variable.defaultValue as WorkspaceEngine["schemas"]["DeploymentVariable"]["defaultValue"]) ??
-        undefined,
-    },
-  });
+    variable.deploymentId,
+  );
 
   res.status(202).json({
     id: variableId,
-    message: "Deployment variable deletion requested",
+    message: "Deployment variable deleted",
   });
 };
 
@@ -192,29 +212,60 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
   const { workspaceId, valueId } = req.params;
   const { body } = req;
 
-  if (body.resourceSelector != null) {
-    const isValid = validResourceSelector(body.resourceSelector);
-    if (!isValid) throw new ApiError("Invalid resource selector", 400);
+  const { deploymentVariableId } = body;
+
+  const isValidCel = validResourceSelector(body.resourceSelector);
+  if (!isValidCel) {
+    const error = "Invalid resource selector, must be a valid CEL expression";
+    res.status(400).json({ error });
+    return;
   }
 
-  const valueData: WorkspaceEngine["schemas"]["DeploymentVariableValue"] = {
-    id: valueId,
-    deploymentVariableId: body.deploymentVariableId,
-    priority: body.priority,
-    resourceSelector: body.resourceSelector ?? undefined,
-    value: body.value,
-  };
+  const variable = await db
+    .select()
+    .from(deploymentVariable)
+    .innerJoin(deployment, eq(deploymentVariable.deploymentId, deployment.id))
+    .where(
+      and(
+        eq(deploymentVariable.id, deploymentVariableId),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull)
+    .then((row) => row?.deployment_variable ?? null);
 
-  await sendGoEvent({
+  if (variable == null) {
+    res.status(404).json({ error: "Deployment variable not found" });
+    return;
+  }
+
+  await db
+    .insert(deploymentVariableValue)
+    .values({
+      id: valueId,
+      deploymentVariableId,
+      priority: body.priority,
+      resourceSelector: body.resourceSelector ?? undefined,
+      value: body.value,
+    })
+    .onConflictDoUpdate({
+      target: [deploymentVariableValue.id],
+      set: {
+        priority: body.priority,
+        resourceSelector: body.resourceSelector ?? undefined,
+        value: body.value,
+      },
+    });
+
+  await enqueueReleaseTargetsForDeployment(
+    db,
     workspaceId,
-    eventType: Event.DeploymentVariableValueUpdated,
-    timestamp: Date.now(),
-    data: valueData,
-  });
+    variable.deploymentId,
+  );
 
   res.status(202).json({
     id: valueId,
-    message: "Deployment variable value update requested",
+    message: "Deployment variable value upserted",
   });
 };
 
@@ -224,34 +275,38 @@ const deleteDeploymentVariableValue: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, valueId } = req.params;
 
-  const value = await db
+  const entry = await db
     .select()
     .from(deploymentVariableValue)
-    .where(eq(deploymentVariableValue.id, valueId))
+    .innerJoin(
+      deploymentVariable,
+      eq(deploymentVariableValue.deploymentVariableId, deploymentVariable.id),
+    )
+    .innerJoin(deployment, eq(deploymentVariable.deploymentId, deployment.id))
+    .where(
+      and(
+        eq(deploymentVariableValue.id, valueId),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
     .then(takeFirstOrNull);
 
-  if (value == null)
-    throw new ApiError("Deployment variable value not found", 404);
+  if (entry == null) {
+    res.status(404).json({ error: "Deployment variable value not found" });
+    return;
+  }
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentVariableValueDeleted,
-    timestamp: Date.now(),
-    data: {
-      id: value.id,
-      deploymentVariableId: value.deploymentVariableId,
-      value:
-        value.value as WorkspaceEngine["schemas"]["DeploymentVariableValue"]["value"],
-      resourceSelector:
-        (value.resourceSelector as unknown as WorkspaceEngine["schemas"]["DeploymentVariableValue"]["resourceSelector"]) ??
-        undefined,
-      priority: value.priority,
-    },
-  });
+  const { deployment: dep } = entry;
+
+  await db
+    .delete(deploymentVariableValue)
+    .where(eq(deploymentVariableValue.id, valueId));
+
+  await enqueueReleaseTargetsForDeployment(db, workspaceId, dep.id);
 
   res.status(202).json({
     id: valueId,
-    message: "Deployment variable value deletion requested",
+    message: "Deployment variable value deleted",
   });
 };
 

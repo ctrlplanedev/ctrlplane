@@ -20,7 +20,7 @@ local openapi = import '../lib/openapi.libsonnet';
       id: { type: 'string' },
       deploymentVariableId: { type: 'string' },
       priority: { type: 'integer', format: 'int64' },
-      resourceSelector: openapi.schemaRef('Selector'),
+      resourceSelector: { type: 'string', description: 'A CEL expression to select which resources this value applies to' },
       value: openapi.schemaRef('Value'),
     },
   },
@@ -69,7 +69,7 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       deploymentVariableId: { type: 'string' },
       priority: { type: 'integer', format: 'int64' },
-      resourceSelector: openapi.schemaRef('Selector'),
+      resourceSelector: { type: 'string', description: 'A CEL expression to select which resources this value applies to' },
       value: openapi.schemaRef('Value'),
     },
   },

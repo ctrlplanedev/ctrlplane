@@ -1113,7 +1113,8 @@ export interface components {
             id: string;
             /** Format: int64 */
             priority: number;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description A CEL expression to select which resources this value applies to */
+            resourceSelector?: string;
             value: components["schemas"]["Value"];
         };
         DeploymentVariableValueRequestAccepted: {
@@ -1733,7 +1734,8 @@ export interface components {
             deploymentVariableId: string;
             /** Format: int64 */
             priority: number;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description A CEL expression to select which resources this value applies to */
+            resourceSelector?: string;
             value: components["schemas"]["Value"];
         };
         UpsertDeploymentVersionRequest: {
