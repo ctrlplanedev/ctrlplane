@@ -6,7 +6,11 @@ import {
   isPast,
 } from "date-fns";
 import _ from "lodash";
-import { CheckCircle2Icon, CircleAlertIcon } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  CircleAlertIcon,
+  FastForwardIcon,
+} from "lucide-react";
 import { rrulestr } from "rrule";
 
 import { trpc } from "~/api/trpc";
@@ -18,6 +22,7 @@ type DeploymentWindow = NonNullable<
 
 export type DeploymentWindowDetailProps = {
   windows: DeploymentWindow[];
+  skippedRuleIds?: Set<string>;
 };
 
 type DeploymentWindowProperties = {
@@ -61,10 +66,12 @@ function WindowRow({
   window: windowEval,
   details,
   policyName,
+  isSkipped,
 }: {
   window: DeploymentWindow;
   details: DeploymentWindowProperties;
   policyName: string | undefined;
+  isSkipped: boolean;
 }) {
   const isAllowWindow = details.window_type === "allow";
   const isOpen = isAllowWindow ? windowEval.allowed : !windowEval.allowed;
@@ -94,6 +101,17 @@ function WindowRow({
 
   const windowLabel =
     policyName ?? (isAllowWindow ? "Allow Window" : "Deny Window");
+
+  if (isSkipped)
+    return (
+      <div className="flex w-full items-center gap-2 opacity-60">
+        <div className="flex grow items-center gap-2">
+          <FastForwardIcon className="size-3 text-muted-foreground" />
+          <span className="line-through">{windowLabel}</span>
+        </div>
+        <span className="shrink-0 text-muted-foreground">Skipped</span>
+      </div>
+    );
 
   return (
     <div className="flex w-full items-center gap-2">
@@ -128,6 +146,7 @@ function WindowRow({
 
 export const DeploymentWindowDetail: React.FC<DeploymentWindowDetailProps> = ({
   windows,
+  skippedRuleIds,
 }) => {
   const policyNameByRuleId = usePolicyNameByRuleId();
   const deploymentWindows = _.groupBy(windows, (w) => w.ruleId);
@@ -145,6 +164,7 @@ export const DeploymentWindowDetail: React.FC<DeploymentWindowDetailProps> = ({
               window={representative}
               details={details}
               policyName={policyNameByRuleId.get(ruleId)}
+              isSkipped={skippedRuleIds?.has(ruleId) ?? false}
             />
           );
         })}

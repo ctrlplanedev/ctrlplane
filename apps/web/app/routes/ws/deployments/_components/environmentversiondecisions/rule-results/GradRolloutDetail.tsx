@@ -5,6 +5,7 @@ import _ from "lodash";
 import {
   CheckCircle2Icon,
   CircleAlertIcon,
+  FastForwardIcon,
   Loader2Icon,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ type RolloutEvaluation = NonNullable<
 
 export type GradRolloutDetailProps = {
   rules: RolloutEvaluation[];
+  skippedRuleIds?: Set<string>;
 };
 
 type RolloutDetails = {
@@ -84,9 +86,13 @@ function StatusIcon({
 function RolloutRow({
   rules,
   policyName,
+  showPolicyName,
+  isSkipped,
 }: {
   rules: RolloutEvaluation[];
   policyName: string | undefined;
+  showPolicyName: boolean;
+  isSkipped: boolean;
 }) {
   const total = rules.length;
   const completed = rules.filter((rule) => rule.allowed).length;
@@ -94,8 +100,19 @@ function RolloutRow({
   const isComplete = completed === total && total > 0;
   const isWaiting = completed === 0;
 
-  const label = policyName ?? "Gradual Rollout";
+  const label = policyName != null && showPolicyName ? policyName : "Gradual Rollout";
   const { estimatedCompletion, nextDeployment } = getRolloutTimes(rules);
+
+  if (isSkipped)
+    return (
+      <div className="flex w-full items-center gap-2 opacity-60">
+        <div className="flex grow items-center gap-2">
+          <FastForwardIcon className="size-3 text-muted-foreground" />
+          <span className="line-through">{label}</span>
+        </div>
+        <span className="shrink-0 text-muted-foreground">Skipped</span>
+      </div>
+    );
 
   return (
     <div className="flex w-full items-center gap-2">
@@ -131,18 +148,23 @@ function RolloutRow({
 
 export const GradRolloutDetail: React.FC<GradRolloutDetailProps> = ({
   rules,
+  skippedRuleIds,
 }) => {
   const policyNameByRuleId = usePolicyNameByRuleId();
   if (rules.length === 0) return null;
 
   const groupedRules = _.groupBy(rules, (rule) => rule.ruleId);
+  const entries = Object.entries(groupedRules);
+  const hasMultiple = entries.length > 1;
   return (
     <>
-      {Object.entries(groupedRules).map(([ruleId, ruleGroup]) => (
+      {entries.map(([ruleId, ruleGroup]) => (
         <RolloutRow
           key={ruleId}
           rules={ruleGroup}
           policyName={policyNameByRuleId.get(ruleId)}
+          showPolicyName={hasMultiple}
+          isSkipped={skippedRuleIds?.has(ruleId) ?? false}
         />
       ))}
     </>

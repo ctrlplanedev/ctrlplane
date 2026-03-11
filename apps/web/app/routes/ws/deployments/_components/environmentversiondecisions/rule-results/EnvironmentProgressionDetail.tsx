@@ -6,6 +6,7 @@ import {
   CheckCircle2Icon,
   CircleAlertIcon,
   Clock,
+  FastForwardIcon,
   Loader2Icon,
 } from "lucide-react";
 
@@ -253,9 +254,11 @@ function DependencyProgressBar({
 function ProgressionRow({
   rule,
   policyName,
+  isSkipped,
 }: {
   rule: RuleEvaluation;
   policyName: string | undefined;
+  isSkipped: boolean;
 }) {
   const details = rule.details as Partial<ProgressionDetails> &
     Record<string, unknown>;
@@ -267,6 +270,17 @@ function ProgressionRow({
   const label = policyName ?? "Environment Progression";
   const isPending = rule.actionRequired && !rule.allowed;
   const allPassed = rule.allowed;
+
+  if (isSkipped)
+    return (
+      <div className="flex w-full items-center gap-2 opacity-60">
+        <div className="flex grow items-center gap-2">
+          <FastForwardIcon className="size-3 text-muted-foreground" />
+          <span className="line-through">{label}</span>
+        </div>
+        <span className="shrink-0 text-muted-foreground">Skipped</span>
+      </div>
+    );
 
   return (
     <Dialog>
@@ -314,11 +328,12 @@ function ProgressionRow({
 
 export type EnvironmentProgressionDetailProps = {
   rules: RuleEvaluation[];
+  skippedRuleIds?: Set<string>;
 };
 
 export const EnvironmentProgressionDetail: React.FC<
   EnvironmentProgressionDetailProps
-> = ({ rules }) => {
+> = ({ rules, skippedRuleIds }) => {
   const policyNameByRuleId = usePolicyNameByRuleId();
   if (rules.length === 0) return null;
 
@@ -330,6 +345,7 @@ export const EnvironmentProgressionDetail: React.FC<
           key={ruleId}
           rule={ruleGroup[0]}
           policyName={policyNameByRuleId.get(ruleId)}
+          isSkipped={skippedRuleIds?.has(ruleId) ?? false}
         />
       ))}
     </>

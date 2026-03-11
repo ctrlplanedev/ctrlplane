@@ -1,4 +1,8 @@
-import { CheckCircle2Icon, CircleAlertIcon } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  CircleAlertIcon,
+  FastForwardIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -40,13 +44,16 @@ export type ApprovalDetailProps = {
   environment_id: string;
   version_id: string;
   min_approvals: number;
+  isSkipped?: boolean;
 };
 export const ApprovalDetail: React.FC<ApprovalDetailProps> = ({
-  approvers,
+  approvers: rawApprovers,
   min_approvals,
   version_id,
   environment_id,
+  isSkipped,
 }) => {
+  const approvers = Array.isArray(rawApprovers) ? rawApprovers : [];
   const { data: session } = trpc.user.session.useQuery();
   const isApprover = approvers.includes(session?.id ?? "");
   const approveMutation = trpc.deploymentVersions.approve.useMutation();
@@ -62,6 +69,18 @@ export const ApprovalDetail: React.FC<ApprovalDetailProps> = ({
       });
   const approvedCount = approvers.length;
   const isPassing = approvedCount >= min_approvals;
+
+  if (isSkipped)
+    return (
+      <div className="flex w-full items-center gap-2 opacity-60">
+        <div className="flex grow items-center gap-2">
+          <FastForwardIcon className="size-3 text-muted-foreground" />
+          <span className="line-through">Approval</span>
+        </div>
+        <span className="shrink-0 text-muted-foreground">Skipped</span>
+      </div>
+    );
+
   return (
     <div className="flex w-full items-center gap-2">
       <div className="flex grow items-center gap-2">

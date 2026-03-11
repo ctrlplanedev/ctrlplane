@@ -91,4 +91,8 @@ resource "ctrlplane_policy" "test2" {
     rollout_type        = "linear"
     time_scale_interval = 300
   }
+  
+  version_cooldown {
+    duration = "10m"
+  }
 }
