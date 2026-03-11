@@ -73,6 +73,10 @@ export default [
         route(":identifier", "routes/ws/resources/page.$identifier.tsx"),
       ]),
       route("resource-aggregates", "routes/ws/resource-aggregates.tsx"),
+      route(
+        "resource-aggregates/:aggregateId",
+        "routes/ws/resource-aggregates/page.$aggregateId.tsx",
+      ),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
       route(
         "relationship-rules/create",

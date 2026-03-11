@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart3, Plus, Search, Trash2 } from "lucide-react";
+import { Link } from "react-router";
 
 import { trpc } from "~/api/trpc";
 import {
@@ -137,9 +138,10 @@ export default function ResourceAggregates() {
         ) : (
           <div className="space-y-2">
             {filtered.map((agg) => (
-              <div
+              <Link
                 key={agg.id}
-                className="flex items-center justify-between rounded-lg border bg-card p-4"
+                to={`/${workspace.slug}/resource-aggregates/${agg.id}`}
+                className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -175,14 +177,15 @@ export default function ResourceAggregates() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
                     setAggregateToDelete({ id: agg.id, name: agg.name });
                     setDeleteDialogOpen(true);
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
+              </Link>
             ))}
           </div>
         )}
