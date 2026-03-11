@@ -1,11 +1,56 @@
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { desc, eq, inArray } from "@ctrlplane/db";
+import { and, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
+import {
+  enqueueAllReleaseTargetsDesiredVersion,
+  enqueueManyRelationshipEval,
+} from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
 
 import { protectedProcedure, router } from "../trpc.js";
+
+const enqueueRelationshipReconciliation = async (
+  db: Parameters<typeof enqueueManyRelationshipEval>[0],
+  workspaceId: string,
+) => {
+  const [resources, deployments, environments] = await Promise.all([
+    db
+      .select({ id: schema.resource.id })
+      .from(schema.resource)
+      .where(eq(schema.resource.workspaceId, workspaceId)),
+    db
+      .select({ id: schema.deployment.id })
+      .from(schema.deployment)
+      .where(eq(schema.deployment.workspaceId, workspaceId)),
+    db
+      .select({ id: schema.environment.id })
+      .from(schema.environment)
+      .where(eq(schema.environment.workspaceId, workspaceId)),
+  ]);
+
+  const evalItems = [
+    ...resources.map((r) => ({
+      workspaceId,
+      entityType: "resource" as const,
+      entityId: r.id,
+    })),
+    ...deployments.map((d) => ({
+      workspaceId,
+      entityType: "deployment" as const,
+      entityId: d.id,
+    })),
+    ...environments.map((e) => ({
+      workspaceId,
+      entityType: "environment" as const,
+      entityId: e.id,
+    })),
+  ];
+
+  await Promise.all([
+    enqueueManyRelationshipEval(db, evalItems),
+    enqueueAllReleaseTargetsDesiredVersion(db, workspaceId),
+  ]);
+};
 
 export const relationshipsRouter = router({
   list: protectedProcedure
@@ -36,61 +81,36 @@ export const relationshipsRouter = router({
           .min(1)
           .regex(/^[a-z0-9-_]+$/),
         description: z.string().optional(),
-        relationshipType: z.string().min(1),
-        fromType: z.enum(["deployment", "environment", "resource"]),
-        fromSelectorCel: z.string().optional(),
-        toType: z.enum(["deployment", "environment", "resource"]),
-        toSelectorCel: z.string().optional(),
-        matcherCel: z.string().min(1),
+        cel: z.string().min(1),
         metadata: z.record(z.string(), z.string()).default({}),
       }),
     )
-    .mutation(async ({ input }) => {
-      const {
-        workspaceId,
-        name,
-        reference,
-        description,
-        relationshipType,
-        fromType,
-        fromSelectorCel,
-        toType,
-        toSelectorCel,
-        matcherCel,
-        metadata,
-      } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { workspaceId, name, reference, description, cel, metadata } =
+        input;
 
-      const data = {
-        id: uuidv4(),
-        workspaceId,
-        name,
-        reference,
-        description: description ?? null,
-        relationshipType,
-        fromType,
-        fromSelector: fromSelectorCel ? { cel: fromSelectorCel } : undefined,
-        toType,
-        toSelector: toSelectorCel ? { cel: toSelectorCel } : undefined,
-        matcher: { cel: matcherCel },
-        metadata,
-      };
+      const inserted = await ctx.db
+        .insert(schema.relationshipRule)
+        .values({
+          name,
+          description,
+          workspaceId,
+          reference,
+          cel,
+          metadata,
+        })
+        .returning()
+        .then(takeFirst);
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.RelationshipRuleCreated,
-        timestamp: Date.now(),
-        data: {
-          ...data,
-          description: data.description ?? undefined,
-        },
-      });
+      await enqueueRelationshipReconciliation(ctx.db, workspaceId);
 
-      return data;
+      return inserted;
     }),
 
   update: protectedProcedure
     .input(
       z.object({
+        id: z.string(),
         workspaceId: z.uuid(),
         name: z.string().min(1),
         reference: z
@@ -98,56 +118,29 @@ export const relationshipsRouter = router({
           .min(1)
           .regex(/^[a-z0-9-_]+$/),
         description: z.string().optional(),
-        relationshipType: z.string().min(1),
-        fromType: z.enum(["deployment", "environment", "resource"]),
-        fromSelectorCel: z.string().optional(),
-        toType: z.enum(["deployment", "environment", "resource"]),
-        toSelectorCel: z.string().optional(),
-        matcherCel: z.string().min(1),
+        cel: z.string().min(1),
         metadata: z.record(z.string(), z.string()).default({}),
       }),
     )
-    .mutation(async ({ input }) => {
-      const {
-        workspaceId,
-        name,
-        reference,
-        description,
-        relationshipType,
-        fromType,
-        fromSelectorCel,
-        toType,
-        toSelectorCel,
-        matcherCel,
-        metadata,
-      } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { id, workspaceId, name, reference, description, cel, metadata } =
+        input;
 
-      const data = {
-        id: uuidv4(),
-        workspaceId,
-        name,
-        reference,
-        description: description ?? null,
-        relationshipType,
-        fromType,
-        fromSelector: fromSelectorCel ? { cel: fromSelectorCel } : undefined,
-        toType,
-        toSelector: toSelectorCel ? { cel: toSelectorCel } : undefined,
-        matcher: { cel: matcherCel },
-        metadata,
-      };
+      const updated = await ctx.db
+        .update(schema.relationshipRule)
+        .set({ name, description, reference, cel, metadata })
+        .where(
+          and(
+            eq(schema.relationshipRule.id, id),
+            eq(schema.relationshipRule.workspaceId, workspaceId),
+          ),
+        )
+        .returning()
+        .then(takeFirst);
 
-      await sendGoEvent({
-        workspaceId,
-        eventType: Event.RelationshipRuleUpdated,
-        timestamp: Date.now(),
-        data: {
-          ...data,
-          description: data.description ?? undefined,
-        },
-      });
+      await enqueueRelationshipReconciliation(ctx.db, workspaceId);
 
-      return data;
+      return updated;
     }),
 
   delete: protectedProcedure
@@ -158,11 +151,13 @@ export const relationshipsRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { relationshipRuleId } = input;
+      const { workspaceId, relationshipRuleId } = input;
 
       await ctx.db
         .delete(schema.relationshipRule)
         .where(eq(schema.relationshipRule.id, relationshipRuleId));
+
+      await enqueueRelationshipReconciliation(ctx.db, workspaceId);
 
       return { id: relationshipRuleId };
     }),

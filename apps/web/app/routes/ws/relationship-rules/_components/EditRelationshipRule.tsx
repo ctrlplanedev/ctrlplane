@@ -18,18 +18,10 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import CelExpressionInput from "../../_components/CelExpiressionInput";
 
-// Validation schema for relationship rule editing
 const relationshipRuleSchema = z.object({
   name: z
     .string()
@@ -46,17 +38,7 @@ const relationshipRuleSchema = z.object({
     .string()
     .max(500, { message: "Description must be at most 500 characters long" })
     .optional(),
-  relationshipType: z
-    .string()
-    .min(1, { message: "Relationship type is required" })
-    .max(100, {
-      message: "Relationship type must be at most 100 characters long",
-    }),
-  fromType: z.enum(["deployment", "environment", "resource"]),
-  fromSelectorCel: z.string().optional(),
-  toType: z.enum(["deployment", "environment", "resource"]),
-  toSelectorCel: z.string().optional(),
-  matcherCel: z.string().min(1, { message: "Matcher is required" }),
+  cel: z.string().min(1, { message: "CEL expression is required" }),
   metadata: z
     .array(
       z.object({
@@ -78,7 +60,6 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
 
-  // Fetch the relationship rule
   const { data: relationshipRules, isLoading } =
     trpc.relationships.list.useQuery({
       workspaceId: workspace.id,
@@ -94,12 +75,7 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
       name: "",
       reference: "",
       description: "",
-      relationshipType: "",
-      fromType: "resource",
-      fromSelectorCel: "",
-      toType: "resource",
-      toSelectorCel: "",
-      matcherCel: "",
+      cel: "",
       metadata: [],
     },
   });
@@ -125,12 +101,7 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
         name: rule.name,
         reference: rule.reference,
         description: rule.description ?? "",
-        relationshipType: "",
-        fromType: "resource",
-        fromSelectorCel: "",
-        toType: "resource",
-        toSelectorCel: "",
-        matcherCel: rule.cel,
+        cel: rule.cel,
         metadata: metadataArray,
       });
     }
@@ -140,10 +111,8 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
     onSuccess: () => {
       toast.success("Relationship rule updated successfully");
 
-      // Invalidate relationship rules list to refetch
       void utils.relationships.list.invalidate();
 
-      // Navigate back to the list
       navigate(`/${workspace.slug}/relationship-rules`);
     },
     onError: (error: unknown) => {
@@ -159,7 +128,6 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
   });
 
   const onSubmit = form.handleSubmit((data: RelationshipRuleFormData) => {
-    // Transform metadata array to record<string, string>
     const metadataRecord = data.metadata.reduce(
       (acc, { key, value }) => {
         acc[key] = value;
@@ -169,16 +137,12 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
     );
 
     updateRelationshipRuleMutation.mutate({
+      id: ruleId,
       workspaceId: workspace.id,
       name: data.name,
       reference: data.reference,
       description: data.description,
-      relationshipType: data.relationshipType,
-      fromType: data.fromType,
-      fromSelectorCel: data.fromSelectorCel ?? undefined,
-      toType: data.toType,
-      toSelectorCel: data.toSelectorCel ?? undefined,
-      matcherCel: data.matcherCel,
+      cel: data.cel,
       metadata: metadataRecord,
     });
   });
@@ -213,7 +177,6 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={onSubmit} className="space-y-6">
-          {/* Basic Info Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Basic Information</h3>
 
@@ -261,27 +224,6 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
 
             <FormField
               control={form.control}
-              name="relationshipType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Relationship Type</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="depends-on, related-to, etc."
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The type of relationship (e.g., depends-on, related-to)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
@@ -300,134 +242,15 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
             />
           </div>
 
-          {/* From Entity Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">From Entity</h3>
+            <h3 className="text-lg font-medium">CEL Expression</h3>
 
             <FormField
               control={form.control}
-              name="fromType"
+              name="cel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>From Type</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select entity type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="resource">Resource</SelectItem>
-                      <SelectItem value="deployment">Deployment</SelectItem>
-                      <SelectItem value="environment">Environment</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    The type of entity this relationship originates from
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="fromSelectorCel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>From Selector (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="rounded-md border border-input p-2">
-                      <CelExpressionInput
-                        height="100px"
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder='resource.kind == "KubernetesCluster" && resource.metadata.region == "us-east-1"'
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Filter which entities match the from side
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* To Entity Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">To Entity</h3>
-
-            <FormField
-              control={form.control}
-              name="toType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>To Type</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select entity type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="resource">Resource</SelectItem>
-                      <SelectItem value="deployment">Deployment</SelectItem>
-                      <SelectItem value="environment">Environment</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    The type of entity this relationship points to
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="toSelectorCel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>To Selector (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="rounded-md border border-input p-2">
-                      <CelExpressionInput
-                        height="100px"
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder='deployment.name.startsWith("api-") && deployment.version == "v1.2.3"'
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Filter which entities match the to side
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* Matcher Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Matcher</h3>
-
-            <FormField
-              control={form.control}
-              name="matcherCel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CEL Matcher Expression</FormLabel>
+                  <FormLabel>CEL Expression</FormLabel>
                   <FormControl>
                     <div className="rounded-md border border-input p-2">
                       <CelExpressionInput
@@ -447,7 +270,6 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
             />
           </div>
 
-          {/* Metadata Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium">Metadata</h3>
@@ -514,7 +336,6 @@ export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
             )}
           </div>
 
-          {/* Submit Button */}
           <div className="flex justify-end gap-2">
             <Button
               type="button"
