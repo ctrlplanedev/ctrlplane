@@ -1,5 +1,6 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
+import { evaluate } from "cel-js";
 import { Router } from "express";
 
 import { and, asc, count, eq } from "@ctrlplane/db";
@@ -7,41 +8,51 @@ import { db } from "@ctrlplane/db/client";
 import {
   enqueueManyDeploymentSelectorEval,
   enqueueManyEnvironmentSelectorEval,
+  enqueueReleaseTargetsForResource,
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { Event, sendGoEvent } from "@ctrlplane/events";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+
+import { validResourceSelector } from "../valid-selector.js";
 
 const listResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources",
   "get"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const { limit, offset, cel } = req.query;
+  const { limit: rawLimit, offset: rawOffset, cel } = req.query;
+
+  const limit = rawLimit ?? 1000;
+  const offset = rawOffset ?? 0;
 
   const decodedCel =
     typeof cel === "string" ? decodeURIComponent(cel.replace(/\+/g, " ")) : cel;
 
-  const result = await getClientFor().POST(
-    "/v1/workspaces/{workspaceId}/resources/query",
-    {
-      body: {
-        filter: decodedCel != null ? { cel: decodedCel } : undefined,
-      },
-      params: {
-        path: { workspaceId },
-        query: { limit, offset },
-      },
-    },
-  );
+  const isValid = validResourceSelector(decodedCel);
+  if (!isValid) {
+    res.status(400).json({ error: "Invalid resource selector" });
+    return;
+  }
 
-  if (result.error != null)
-    throw new ApiError(
-      result.error.error ?? "Failed to list resources",
-      result.response.status,
-    );
+  const allResources = await db
+    .select()
+    .from(schema.resource)
+    .where(eq(schema.resource.workspaceId, workspaceId));
 
-  res.status(200).json(result.data);
+  const filteredResources = allResources.filter((resource) => {
+    if (decodedCel == null) return true;
+    const matches = evaluate(decodedCel, { resource });
+    return matches;
+  });
+
+  const total = filteredResources.length;
+  const paginatedResources = filteredResources.slice(offset, offset + limit);
+
+  res.status(200).json({
+    items: paginatedResources.map(toResourceResponse),
+    total,
+    offset,
+    limit,
+  });
 };
 
 const findResource = async (workspaceId: string, identifier: string) => {
@@ -55,7 +66,9 @@ const findResource = async (workspaceId: string, identifier: string) => {
   return resource;
 };
 
-const toResourceResponse = (r: NonNullable<Awaited<ReturnType<typeof findResource>>>) => ({
+const toResourceResponse = (
+  r: NonNullable<Awaited<ReturnType<typeof findResource>>>,
+) => ({
   id: r.id,
   identifier: r.identifier,
   name: r.name,
@@ -143,17 +156,21 @@ const updateVariablesForResource: AsyncTypedHandler<
   const { body } = req;
 
   const resource = await findResource(workspaceId, identifier);
+  const { id: resourceId } = resource;
 
-  try {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.ResourceVariablesBulkUpdated,
-      timestamp: Date.now(),
-      data: { resourceId: resource.id, variables: body },
-    });
-  } catch {
-    throw new ApiError("Failed to update resource variables", 500);
-  }
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(schema.resourceVariable)
+      .where(eq(schema.resourceVariable.resourceId, resource.id));
+    await tx.insert(schema.resourceVariable).values(
+      Object.entries(body).map(([key, value]) => ({
+        resourceId,
+        key,
+        value,
+      })),
+    );
+    await enqueueReleaseTargetsForResource(tx, workspaceId, resourceId);
+  });
 
   res.status(202).json({
     id: resource.id,
@@ -193,10 +210,7 @@ const getDeploymentsForResource: AsyncTypedHandler<
     .from(schema.computedDeploymentResource)
     .innerJoin(
       schema.deployment,
-      eq(
-        schema.computedDeploymentResource.deploymentId,
-        schema.deployment.id,
-      ),
+      eq(schema.computedDeploymentResource.deploymentId, schema.deployment.id),
     )
     .where(eq(schema.computedDeploymentResource.resourceId, resource.id))
     .orderBy(asc(schema.deployment.name))

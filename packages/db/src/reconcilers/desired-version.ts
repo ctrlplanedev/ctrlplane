@@ -188,3 +188,46 @@ export const enqueueReleaseTargetsForDeployment = async (
     })),
   );
 };
+
+export const enqueueReleaseTargetsForResource = async (
+  db: Tx,
+  workspaceId: string,
+  resourceId: string,
+) => {
+  const releaseTargets = await db
+    .selectDistinctOn([schema.deployment.id, schema.environment.id], {
+      deploymentId: schema.deployment.id,
+      environmentId: schema.environment.id,
+    })
+    .from(schema.computedEnvironmentResource)
+    .innerJoin(
+      schema.environment,
+      eq(
+        schema.computedEnvironmentResource.environmentId,
+        schema.environment.id,
+      ),
+    )
+    .innerJoin(
+      schema.systemEnvironment,
+      eq(schema.environment.id, schema.systemEnvironment.environmentId),
+    )
+    .innerJoin(
+      schema.systemDeployment,
+      eq(schema.systemEnvironment.systemId, schema.systemDeployment.systemId),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.systemDeployment.deploymentId, schema.deployment.id),
+    )
+    .where(eq(schema.computedEnvironmentResource.resourceId, resourceId));
+
+  return enqueueManyDesiredRelease(
+    db,
+    releaseTargets.map((rt) => ({
+      workspaceId,
+      deploymentId: rt.deploymentId,
+      environmentId: rt.environmentId,
+      resourceId,
+    })),
+  );
+};
