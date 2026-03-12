@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var actionTracer = otel.Tracer("EnvironmentProgressionAction")
@@ -18,16 +17,16 @@ var actionTracer = otel.Tracer("EnvironmentProgressionAction")
 type ReconcileFn func(ctx context.Context, targets []*oapi.ReleaseTarget) error
 
 type EnvironmentProgressionAction struct {
-	store       *store.Store
+	getters     Getters
 	reconcileFn ReconcileFn
 }
 
 func NewEnvironmentProgressionAction(
-	storeGetters *store.Store,
+	getters Getters,
 	reconcileFn ReconcileFn,
 ) *EnvironmentProgressionAction {
 	return &EnvironmentProgressionAction{
-		store:       storeGetters,
+		getters:     getters,
 		reconcileFn: reconcileFn,
 	}
 }
@@ -55,7 +54,7 @@ func (a *EnvironmentProgressionAction) Execute(
 		return nil
 	}
 
-	environment := a.getEnvironment(actx.Release.ReleaseTarget.EnvironmentId)
+	environment := a.getEnvironment(ctx, actx.Release.ReleaseTarget.EnvironmentId)
 	if environment == nil {
 		return nil
 	}
@@ -95,9 +94,12 @@ func (a *EnvironmentProgressionAction) Execute(
 	return a.reconcileFn(ctx, progressionDependentTargets)
 }
 
-func (a *EnvironmentProgressionAction) getEnvironment(envId string) *oapi.Environment {
-	env, ok := a.store.Environments.Get(envId)
-	if !ok {
+func (a *EnvironmentProgressionAction) getEnvironment(
+	ctx context.Context,
+	envId string,
+) *oapi.Environment {
+	env, err := a.getters.GetEnvironment(ctx, envId)
+	if err != nil {
 		return nil
 	}
 	return env
@@ -107,8 +109,13 @@ func (a *EnvironmentProgressionAction) getProgressionDependentPolicies(
 	ctx context.Context,
 	environment *oapi.Environment,
 ) ([]*oapi.Policy, error) {
+	allPolicies, err := a.getters.GetAllPolicies(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get policies: %w", err)
+	}
+
 	policies := make([]*oapi.Policy, 0)
-	for _, policy := range a.store.Policies.Items() {
+	for _, policy := range allPolicies {
 		for _, rule := range policy.Rules {
 			if rule.EnvironmentProgression == nil {
 				continue
@@ -139,22 +146,22 @@ func (a *EnvironmentProgressionAction) getProgressionDependentTargets(
 ) ([]*oapi.ReleaseTarget, error) {
 	targetMap := make(map[string]*oapi.ReleaseTarget)
 
-	deploymentTargets, err := a.store.ReleaseTargets.GetForDeployment(ctx, deploymentId)
+	deploymentTargets, err := a.getters.GetReleaseTargetsForDeployment(ctx, deploymentId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployment targets: %w", err)
 	}
 
 	for _, target := range deploymentTargets {
-		environment, ok := a.store.Environments.Get(target.EnvironmentId)
-		if !ok {
+		environment, err := a.getters.GetEnvironment(ctx, target.EnvironmentId)
+		if err != nil {
 			continue
 		}
-		resource, ok := a.store.Resources.Get(target.ResourceId)
-		if !ok {
+		resource, err := a.getters.GetResource(ctx, target.ResourceId)
+		if err != nil {
 			continue
 		}
-		deployment, ok := a.store.Deployments.Get(target.DeploymentId)
-		if !ok {
+		deployment, err := a.getters.GetDeployment(ctx, target.DeploymentId)
+		if err != nil {
 			continue
 		}
 
@@ -236,7 +243,7 @@ func (a *EnvironmentProgressionAction) didThresholdJustCross(
 
 	tracker := NewReleaseTargetJobTracker(
 		ctx,
-		NewStoreGetters(a.store),
+		a.getters,
 		dependencyEnv,
 		version,
 		successStatuses,

@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
@@ -24,16 +23,6 @@ type EnvironmentProgressionEvaluator struct {
 	getters Getters
 	ruleId  string
 	rule    *oapi.EnvironmentProgressionRule
-}
-
-func NewEvaluatorFromStore(
-	store *store.Store,
-	environmentProgressionRule *oapi.PolicyRule,
-) evaluator.Evaluator {
-	if store == nil {
-		return nil
-	}
-	return NewEvaluator(NewStoreGetters(store), environmentProgressionRule)
 }
 
 func NewEvaluator(

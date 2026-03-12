@@ -8,109 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
-
-// setupTestStore creates a test store with environments, jobs, and releases.
-func setupTestStore() *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	// Create system
-	system := &oapi.System{
-		Id:          "system-1",
-		Name:        "test-system",
-		WorkspaceId: "workspace-1",
-	}
-	_ = st.Systems.Upsert(ctx, system)
-
-	// Create resource selector that matches all resources
-	resourceSelector := &oapi.Selector{}
-	_ = resourceSelector.FromCelSelector(oapi.CelSelector{
-		Cel: "true",
-	})
-
-	// Create environments
-	devEnv := &oapi.Environment{
-		Id:               "env-dev",
-		Name:             "dev",
-		ResourceSelector: resourceSelector,
-	}
-	stagingEnv := &oapi.Environment{
-		Id:               "env-staging",
-		Name:             "staging",
-		ResourceSelector: resourceSelector,
-	}
-	prodEnv := &oapi.Environment{
-		Id:               "env-prod",
-		Name:             "prod",
-		ResourceSelector: resourceSelector,
-	}
-	_ = st.Environments.Upsert(ctx, devEnv)
-	_ = st.Environments.Upsert(ctx, stagingEnv)
-	_ = st.Environments.Upsert(ctx, prodEnv)
-	_ = st.SystemEnvironments.Link("system-1", "env-dev")
-	_ = st.SystemEnvironments.Link("system-1", "env-staging")
-	_ = st.SystemEnvironments.Link("system-1", "env-prod")
-
-	// Create deployment
-	jobAgentId := "agent-1"
-	description := "Test deployment"
-
-	deployment := &oapi.Deployment{
-		Id:               "deploy-1",
-		Name:             "my-app",
-		Slug:             "my-app",
-		JobAgentId:       &jobAgentId,
-		Description:      &description,
-		JobAgentConfig:   oapi.JobAgentConfig{},
-		ResourceSelector: resourceSelector,
-	}
-	_ = st.Deployments.Upsert(ctx, deployment)
-	_ = st.SystemDeployments.Link("system-1", "deploy-1")
-
-	// Create resource
-	resource := &oapi.Resource{
-		Id:          "resource-1",
-		Identifier:  "test-resource",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource)
-
-	// Create a release target per environment
-	devReleaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-dev",
-		DeploymentId:  "deploy-1",
-	}
-	stagingReleaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-staging",
-		DeploymentId:  "deploy-1",
-	}
-	prodReleaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-prod",
-		DeploymentId:  "deploy-1",
-	}
-	_ = st.ReleaseTargets.Upsert(ctx, devReleaseTarget)
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
-	_ = st.ReleaseTargets.Upsert(ctx, prodReleaseTarget)
-	return st
-}
 
 // TestEnvironmentProgressionEvaluator_VersionNotInDependency tests that when a version has not been deployed
 // to any dependency environment (matching the selector), the evaluator returns a pending/action-required result.
 // This ensures that versions must succeed in dependency environments before they can be deployed to the target environment.
 func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	// Create a CEL selector that matches staging
@@ -128,7 +33,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	// Create a version for prod environment
@@ -142,7 +47,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	}
 
 	// Get the prod environment
-	prodEnv, _ := st.Environments.Get("env-prod")
+	prodEnv := mock.environments["env-prod"]
 
 	// Evaluate - should be pending since version not in staging
 	scope := evaluator.EvaluatorScope{
@@ -161,7 +66,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 // successfully deployed to a dependency environment (has at least one successful job), the evaluator allows
 // progression to the target environment. This verifies the basic success detection logic.
 func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	// Create a version
@@ -173,7 +78,6 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create a release in staging for this version
 	stagingReleaseTarget := &oapi.ReleaseTarget{
@@ -181,7 +85,6 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -189,13 +92,11 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job for the staging release
 	completedAt := time.Now().Add(-10 * time.Minute)
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-15 * time.Minute),
@@ -203,7 +104,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job)
+	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
 	// Create a CEL selector that matches staging
 	selector := oapi.Selector{}
@@ -220,10 +121,10 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Get the prod environment
-	prodEnv, _ := st.Environments.Get("env-prod")
+	prodEnv := mock.environments["env-prod"]
 
 	// Evaluate - should be allowed since version succeeded in staging
 	scope := evaluator.EvaluatorScope{
@@ -242,7 +143,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 // returns a pending/action-required result. This ensures versions must "soak" (remain stable) for a minimum
 // duration before progressing to the next environment.
 func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	// Create a version
@@ -254,7 +155,6 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create a release in staging for this version
 	stagingReleaseTarget := &oapi.ReleaseTarget{
@@ -269,13 +169,11 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job that completed very recently (2 minutes ago)
 	completedAt := time.Now().Add(-2 * time.Minute)
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-5 * time.Minute),
@@ -283,7 +181,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job)
+	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
 	// Create a CEL selector that matches staging
 	selector := oapi.Selector{}
@@ -302,10 +200,10 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Get the prod environment
-	prodEnv, _ := st.Environments.Get("env-prod")
+	prodEnv := mock.environments["env-prod"]
 
 	// Evaluate - should be pending since soak time not met
 	scope := evaluator.EvaluatorScope{
@@ -324,7 +222,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 // matches no environments in the system, the evaluator denies progression. This handles the edge case where
 // the selector is misconfigured or no matching environments exist.
 func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	// Create a CEL selector that matches nothing
@@ -342,7 +240,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	version := &oapi.DeploymentVersion{
 		Id:           "version-1",
@@ -354,7 +252,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	}
 
 	// Get the prod environment
-	prodEnv, _ := st.Environments.Get("env-prod")
+	prodEnv := mock.environments["env-prod"]
 
 	// Evaluate - should be denied since no matching environments
 	scope := evaluator.EvaluatorScope{
@@ -374,7 +272,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 // where N is the minimum number of successes required). This test uses 3 release targets with a 50% requirement,
 // so satisfiedAt should be set to when the 2nd job completed (at 10:10), as that's when 66% (2/3) first met the 50% threshold.
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -386,7 +284,6 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    versionCreatedAt,
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create release targets for staging
 	stagingReleaseTarget1 := &oapi.ReleaseTarget{
@@ -394,21 +291,40 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
 
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+	mock.addReleaseTarget(stagingReleaseTarget2)
 
 	stagingReleaseTarget3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
+	mock.addReleaseTarget(stagingReleaseTarget3)
+
+	// Create resources for release targets
+	mock.resources["resource-2"] = &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	mock.resources["resource-3"] = &oapi.Resource{
+		Id:          "resource-3",
+		Identifier:  "test-resource-3",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -429,42 +345,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
-	_ = st.Releases.Upsert(ctx, release3)
-
-	// Create resources for release targets
-	resource2 := &oapi.Resource{
-		Id:          "resource-2",
-		Identifier:  "test-resource-2",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	resource3 := &oapi.Resource{
-		Id:          "resource-3",
-		Identifier:  "test-resource-3",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource2)
-	_, _ = st.Resources.Upsert(ctx, resource3)
-	// ReleaseTargets are computed automatically from resources and deployments
-	// Call Items() to ensure ReleaseTargets are computed and available
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err, "failed to get release targets")
 
 	// Create successful jobs with specific timestamps
 	// Job 1 completes first (pass rate 33%)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -472,13 +358,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		CompletedAt:    &completedAt1,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(stagingReleaseTarget1, job1, release1)
 
 	// Job 2 completes second (pass rate 66% - meets 50% requirement)
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC) // This should be the satisfiedAt
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -486,13 +371,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		CompletedAt:    &completedAt2,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job2)
+	mock.addJob(stagingReleaseTarget2, job2, release2)
 
 	// Job 3 completes third (pass rate 100%)
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
@@ -500,11 +384,11 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		CompletedAt:    &completedAt3,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job3)
+	mock.addJob(stagingReleaseTarget3, job3, release3)
 
 	// Create selector and rule with 50% pass rate requirement (no soak time)
 	selector := oapi.Selector{}
-	err = selector.FromCelSelector(oapi.CelSelector{
+	err := selector.FromCelSelector(oapi.CelSelector{
 		Cel: "environment.name == 'staging'",
 	})
 	require.NoError(t, err)
@@ -518,8 +402,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
-	prodEnv, _ := st.Environments.Get("env-prod")
+	eval := NewEvaluator(mock, rule)
+	prodEnv := mock.environments["env-prod"]
 
 	scope := evaluator.EvaluatorScope{
 		Environment: prodEnv,
@@ -544,7 +428,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 // if the most recent successful job completed 40 minutes ago and the soak time is 30 minutes, then satisfiedAt
 // should be 10 minutes ago (40 - 30).
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	versionCreatedAt := time.Now().Add(-2 * time.Hour)
@@ -556,14 +440,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    versionCreatedAt,
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	stagingReleaseTarget := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -571,7 +453,6 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job that completed 40 minutes ago
 	// With 30 minute soak time requirement, it should be satisfied
@@ -586,7 +467,6 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	completedAt := mostRecentSuccess
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -594,7 +474,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job)
+	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
 	selector := oapi.Selector{}
 	err := selector.FromCelSelector(oapi.CelSelector{
@@ -610,8 +490,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
-	prodEnv, _ := st.Environments.Get("env-prod")
+	eval := NewEvaluator(mock, rule)
+	prodEnv := mock.environments["env-prod"]
 
 	scope := evaluator.EvaluatorScope{
 		Environment: prodEnv,
@@ -636,7 +516,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 // when the last condition is satisfied. In this test, pass rate is satisfied at 10:10, but soak time requires
 // the most recent success (10:20) plus 30 minutes, so satisfiedAt should be 10:50 (the later time).
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -648,7 +528,6 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    versionCreatedAt,
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create 2 release targets
 	stagingReleaseTarget1 := &oapi.ReleaseTarget{
@@ -656,14 +535,23 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
 
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+	mock.addReleaseTarget(stagingReleaseTarget2)
+
+	mock.resources["resource-2"] = &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget1,
@@ -677,27 +565,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
-
-	resource2 := &oapi.Resource{
-		Id:          "resource-2",
-		Identifier:  "test-resource-2",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource2)
-	// ReleaseTargets are computed automatically from resources and deployments
 
 	// Job 1 completes first (pass rate 50% - meets requirement)
 	passRateSatisfiedAt := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	completedAt1 := passRateSatisfiedAt
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -705,14 +578,13 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		CompletedAt:    &completedAt1,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(stagingReleaseTarget1, job1, release1)
 
 	// Job 2 completes later (pass rate 100%, most recent success)
 	mostRecentSuccess := time.Date(2024, 1, 1, 10, 20, 0, 0, time.UTC)
 	completedAt2 := mostRecentSuccess
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC),
@@ -720,7 +592,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		CompletedAt:    &completedAt2,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job2)
+	mock.addJob(stagingReleaseTarget2, job2, release2)
 
 	// Soak time requirement: 30 minutes
 	// Soak time satisfied at: mostRecentSuccess + 30 minutes = 10:50
@@ -746,8 +618,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
-	prodEnv, _ := st.Environments.Get("env-prod")
+	eval := NewEvaluator(mock, rule)
+	prodEnv := mock.environments["env-prod"]
 
 	scope := evaluator.EvaluatorScope{
 		Environment: prodEnv,
@@ -772,7 +644,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 // In this test, the pass rate is satisfied when the 3rd job completes (20 minutes ago), but the soak time is
 // satisfied later (mostRecentSuccess + 15 minutes = 5 minutes ago), so satisfiedAt should be 5 minutes ago.
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -784,7 +656,6 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    versionCreatedAt,
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create 3 release targets (need 2 for 67% requirement)
 	stagingReleaseTarget1 := &oapi.ReleaseTarget{
@@ -792,21 +663,39 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
 
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+	mock.addReleaseTarget(stagingReleaseTarget2)
 
 	stagingReleaseTarget3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
+	mock.addReleaseTarget(stagingReleaseTarget3)
+
+	mock.resources["resource-2"] = &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	mock.resources["resource-3"] = &oapi.Resource{
+		Id:          "resource-3",
+		Identifier:  "test-resource-3",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget1,
@@ -826,44 +715,14 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
-	_ = st.Releases.Upsert(ctx, release3)
-
-	resource2 := &oapi.Resource{
-		Id:          "resource-2",
-		Identifier:  "test-resource-2",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	resource3 := &oapi.Resource{
-		Id:          "resource-3",
-		Identifier:  "test-resource-3",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource2)
-	_, _ = st.Resources.Upsert(ctx, resource3)
-	// ReleaseTargets are computed automatically from resources and deployments
-	// Call Items() to ensure ReleaseTargets are computed and available
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err, "failed to get release targets")
 
 	// Job 1 completes early (most recent success for soak time)
-	// Use relative time so soak time calculation works correctly
 	mostRecentSuccess := time.Now().
 		Add(-30 * time.Minute)
 		// 30 minutes ago, satisfies 15-minute soak time
 	completedAt1 := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-35 * time.Minute),
@@ -871,13 +730,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		CompletedAt:    &completedAt1,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(stagingReleaseTarget1, job1, release1)
 
 	// Job 2 completes second (pass rate 66.67% - doesn't meet 67% requirement yet)
 	completedAt2 := time.Now().Add(-18 * time.Minute) // Completes before job3
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-20 * time.Minute),
@@ -885,18 +743,15 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		CompletedAt:    &completedAt2,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job2)
+	mock.addJob(stagingReleaseTarget2, job2, release2)
 
 	// Job 3 completes third (pass rate 100% - meets 67% requirement)
-	// Need 3 successes for 67% requirement (ceil(3 * 0.67) = 3), so pass rate satisfied at: when 3rd job completes
-	// Make job3 complete at least 15 minutes ago so soak time requirement is satisfied
 	passRateSatisfiedAt := time.Now().
 		Add(-20 * time.Minute)
 		// Completes last, satisfying 67% requirement AND soak time (20 > 15)
 	completedAt3 := passRateSatisfiedAt
 	job3 := &oapi.Job{
 		Id:             "job-3",
-		ReleaseId:      release3.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-22 * time.Minute),
@@ -904,18 +759,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		CompletedAt:    &completedAt3,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job3)
+	mock.addJob(stagingReleaseTarget3, job3, release3)
 
-	// Soak time requirement: 15 minutes
-	// mostRecentSuccess = completedAt3 (20 minutes ago)
-	// Soak time satisfied at: 20 minutes ago + 15 minutes = 5 minutes ago
-	// Pass rate satisfied at: 20 minutes ago (when 3rd job completed, meeting 67% requirement)
-	// Soak time satisfied at: 5 minutes ago
-	// Expected satisfiedAt: 5 minutes ago (the later of the two - soak time)
 	soakMinutes := int32(15)
 
 	selector := oapi.Selector{}
-	err = selector.FromCelSelector(oapi.CelSelector{
+	err := selector.FromCelSelector(oapi.CelSelector{
 		Cel: "environment.name == 'staging'",
 	})
 	require.NoError(t, err)
@@ -930,8 +779,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
-	prodEnv, _ := st.Environments.Get("env-prod")
+	eval := NewEvaluator(mock, rule)
+	prodEnv := mock.environments["env-prod"]
 
 	scope := evaluator.EvaluatorScope{
 		Environment: prodEnv,
@@ -960,7 +809,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 // ensures that satisfiedAt is only set when the requirement has actually been satisfied, not when it's still
 // pending or denied.
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -972,14 +821,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    versionCreatedAt,
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	stagingReleaseTarget := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -987,13 +834,11 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job that completed very recently (soak time not met)
 	completedAt := time.Now().Add(-2 * time.Minute)
 	job := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      stagingRelease.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Now().Add(-5 * time.Minute),
@@ -1001,7 +846,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job)
+	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
 	selector := oapi.Selector{}
 	err := selector.FromCelSelector(oapi.CelSelector{
@@ -1018,8 +863,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
-	prodEnv, _ := st.Environments.Get("env-prod")
+	eval := NewEvaluator(mock, rule)
+	prodEnv := mock.environments["env-prod"]
 
 	scope := evaluator.EvaluatorScope{
 		Environment: prodEnv,
@@ -1038,10 +883,18 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 
 // TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed tests that when there are no release targets, the evaluator allows the environment progression.
 func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) {
-	st := setupTestStore()
+	mock := setupMock()
 	ctx := context.Background()
 
-	st.ReleaseTargets.Remove("resource-1-env-staging-deploy-1")
+	// Remove staging release targets for deploy-1
+	filtered := make([]*oapi.ReleaseTarget, 0, len(mock.releaseTargets))
+	for _, rt := range mock.releaseTargets {
+		if rt.EnvironmentId == "env-staging" && rt.DeploymentId == "deploy-1" && rt.ResourceId == "resource-1" {
+			continue
+		}
+		filtered = append(filtered, rt)
+	}
+	mock.releaseTargets = filtered
 
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 	version := &oapi.DeploymentVersion{
@@ -1052,7 +905,6 @@ func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) 
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    versionCreatedAt,
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	selector := oapi.Selector{}
 	err := selector.FromCelSelector(oapi.CelSelector{
@@ -1069,8 +921,8 @@ func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) 
 		},
 	}
 
-	eval := NewEvaluatorFromStore(st, rule)
-	prodEnv, _ := st.Environments.Get("env-prod")
+	eval := NewEvaluator(mock, rule)
+	prodEnv := mock.environments["env-prod"]
 
 	scope := evaluator.EvaluatorScope{
 		Environment: prodEnv,

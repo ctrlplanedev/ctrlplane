@@ -2,7 +2,6 @@ package environmentprogression
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -11,7 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	"workspace-engine/pkg/store/releasetargets"
-	legacystore "workspace-engine/pkg/workspace/store"
 )
 
 var gettersTracer = otel.Tracer(
@@ -44,93 +42,6 @@ type Getters interface {
 	) map[string]*oapi.Job
 	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
 	GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error)
-}
-
-// ---------------------------------------------------------------------------
-// Store-backed implementation
-// ---------------------------------------------------------------------------
-
-var _ Getters = (*StoreGetters)(nil)
-
-type StoreGetters struct {
-	environmentGetter
-	deploymentGetter
-	resourceGetter
-	releaseGetter
-
-	store *legacystore.Store
-}
-
-func NewStoreGetters(ls *legacystore.Store) *StoreGetters {
-	return &StoreGetters{
-		store:             ls,
-		environmentGetter: store.NewStoreEnvironmentGetter(ls),
-		deploymentGetter:  store.NewStoreDeploymentGetter(ls),
-		resourceGetter:    store.NewStoreResourceGetter(ls),
-		releaseGetter:     store.NewStoreReleaseGetter(ls),
-	}
-}
-
-func (s *StoreGetters) GetSystemIDsForEnvironment(environmentID string) []string {
-	return s.store.SystemEnvironments.GetSystemIDsForEnvironment(environmentID)
-}
-
-func (s *StoreGetters) GetReleaseTargetsForDeploymentAndEnvironment(
-	ctx context.Context,
-	deploymentID, environmentID string,
-) ([]oapi.ReleaseTarget, error) {
-	envTargets, err := s.store.ReleaseTargets.GetForEnvironment(ctx, environmentID)
-	if err != nil {
-		return nil, err
-	}
-	rts := make([]oapi.ReleaseTarget, 0, len(envTargets))
-	for _, target := range envTargets {
-		if target.DeploymentId == deploymentID {
-			rts = append(rts, *target)
-		}
-	}
-	return rts, nil
-}
-
-func (s *StoreGetters) GetReleaseTargetsForEnvironment(
-	ctx context.Context,
-	environmentID string,
-) ([]*oapi.ReleaseTarget, error) {
-	return s.store.ReleaseTargets.GetForEnvironment(ctx, environmentID)
-}
-
-func (s *StoreGetters) GetReleaseTargetsForDeployment(
-	ctx context.Context,
-	deploymentID string,
-) ([]*oapi.ReleaseTarget, error) {
-	return s.store.ReleaseTargets.GetForDeployment(ctx, deploymentID)
-}
-
-func (s *StoreGetters) GetJobsForReleaseTarget(
-	_ context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) map[string]*oapi.Job {
-	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
-}
-
-func (s *StoreGetters) GetAllPolicies(
-	ctx context.Context,
-	workspaceID string,
-) (map[string]*oapi.Policy, error) {
-	pol := s.store.Policies.Items()
-	return pol, nil
-}
-
-func (s *StoreGetters) GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error) {
-	job, ok := s.store.Jobs.Get(jobID)
-	if !ok {
-		return nil, fmt.Errorf("job not found")
-	}
-	release, ok := s.store.Releases.Get(job.ReleaseId)
-	if !ok {
-		return nil, fmt.Errorf("release not found")
-	}
-	return release, nil
 }
 
 // ---------------------------------------------------------------------------
