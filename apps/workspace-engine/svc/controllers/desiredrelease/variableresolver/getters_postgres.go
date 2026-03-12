@@ -3,7 +3,6 @@ package variableresolver
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -161,10 +160,6 @@ func (g *PostgresGetter) GetResourceVariables(
 	return result, nil
 }
 
-var celTypePattern = regexp.MustCompile(
-	`^from\.type\s*==\s*"([^"]+)"\s*&&\s*to\.type\s*==\s*"([^"]+)"`,
-)
-
 func (g *PostgresGetter) GetRelationshipRules(
 	ctx context.Context,
 	workspaceID uuid.UUID,
@@ -178,13 +173,6 @@ func (g *PostgresGetter) GetRelationshipRules(
 
 	rules := make([]eval.Rule, 0, len(rows))
 	for _, row := range rows {
-		m := celTypePattern.FindStringSubmatch(row.Cel)
-		if m == nil {
-			return nil, fmt.Errorf(
-				"CEL expression does not start with expected type guards: %q",
-				row.Cel,
-			)
-		}
 		rules = append(rules, eval.Rule{
 			ID:        row.ID,
 			Reference: row.Reference,
