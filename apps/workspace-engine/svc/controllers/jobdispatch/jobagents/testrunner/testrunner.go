@@ -50,6 +50,10 @@ func (t *TestRunner) Dispatch(ctx context.Context, job *oapi.Job) error {
 		message = *cfg.Message
 	}
 
+	if err := t.setter.UpdateJob(ctx, job.Id, oapi.JobStatusInProgress, "", nil); err != nil {
+		return err
+	}
+
 	go t.resolveJobAfterDelay(context.WithoutCancel(ctx), job.Id, delay, finalStatus, message)
 
 	return nil

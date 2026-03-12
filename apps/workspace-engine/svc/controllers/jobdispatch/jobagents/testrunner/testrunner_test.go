@@ -103,13 +103,15 @@ func TestDispatch_DefaultDelay_SuccessfulStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.Equal(t, "job-1", call.JobID)
-	assert.Equal(t, oapi.JobStatusSuccessful, call.Status)
-	assert.Contains(t, call.Message, "Resolved by test-runner after")
+	calls := setter.getCalls()
+	assert.Equal(t, "job-1", calls[0].JobID)
+	assert.Equal(t, oapi.JobStatusInProgress, calls[0].Status)
+	assert.Equal(t, "job-1", calls[1].JobID)
+	assert.Equal(t, oapi.JobStatusSuccessful, calls[1].Status)
+	assert.Contains(t, calls[1].Message, "Resolved by test-runner after")
 }
 
 func TestDispatch_CustomDelay(t *testing.T) {
@@ -121,19 +123,21 @@ func TestDispatch_CustomDelay(t *testing.T) {
 	err := tr.Dispatch(context.Background(), job)
 	require.NoError(t, err)
 
-	// Nothing should happen until we release the timer
-	time.Sleep(50 * time.Millisecond)
-	assert.Empty(t, setter.getCalls())
+	// InProgress should be set immediately, but resolve should wait for timer
+	require.Eventually(t, func() bool {
+		return len(setter.getCalls()) == 1
+	}, time.Second, 10*time.Millisecond)
+	assert.Equal(t, oapi.JobStatusInProgress, setter.getCalls()[0].Status)
 
 	release()
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.Equal(t, "job-1", call.JobID)
-	assert.Equal(t, oapi.JobStatusSuccessful, call.Status)
+	calls := setter.getCalls()
+	assert.Equal(t, "job-1", calls[1].JobID)
+	assert.Equal(t, oapi.JobStatusSuccessful, calls[1].Status)
 }
 
 func TestDispatch_FailureStatus(t *testing.T) {
@@ -147,11 +151,12 @@ func TestDispatch_FailureStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.Equal(t, oapi.JobStatusFailure, call.Status)
+	calls := setter.getCalls()
+	assert.Equal(t, oapi.JobStatusInProgress, calls[0].Status)
+	assert.Equal(t, oapi.JobStatusFailure, calls[1].Status)
 }
 
 func TestDispatch_CustomMessage(t *testing.T) {
@@ -165,12 +170,13 @@ func TestDispatch_CustomMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.Contains(t, call.Message, "custom note")
-	assert.Contains(t, call.Message, "Resolved by test-runner after")
+	calls := setter.getCalls()
+	assert.Equal(t, oapi.JobStatusInProgress, calls[0].Status)
+	assert.Contains(t, calls[1].Message, "custom note")
+	assert.Contains(t, calls[1].Message, "Resolved by test-runner after")
 }
 
 func TestDispatch_NoMessage(t *testing.T) {
@@ -182,11 +188,12 @@ func TestDispatch_NoMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.NotContains(t, call.Message, "\n")
+	calls := setter.getCalls()
+	assert.Equal(t, oapi.JobStatusInProgress, calls[0].Status)
+	assert.NotContains(t, calls[1].Message, "\n")
 }
 
 func TestDispatch_InvalidConfig(t *testing.T) {
@@ -212,11 +219,12 @@ func TestDispatch_FailureStatusString(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.Equal(t, oapi.JobStatusSuccessful, call.Status,
+	calls := setter.getCalls()
+	assert.Equal(t, oapi.JobStatusInProgress, calls[0].Status)
+	assert.Equal(t, oapi.JobStatusSuccessful, calls[1].Status,
 		"non-failure status strings should default to successful")
 }
 
@@ -233,13 +241,14 @@ func TestDispatch_AllConfigFields(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 1
+		return len(setter.getCalls()) == 2
 	}, time.Second, 10*time.Millisecond)
 
-	call := setter.getCalls()[0]
-	assert.Equal(t, oapi.JobStatusFailure, call.Status)
-	assert.Contains(t, call.Message, "all fields set")
-	assert.Contains(t, call.Message, "Resolved by test-runner after 10s")
+	calls := setter.getCalls()
+	assert.Equal(t, oapi.JobStatusInProgress, calls[0].Status)
+	assert.Equal(t, oapi.JobStatusFailure, calls[1].Status)
+	assert.Contains(t, calls[1].Message, "all fields set")
+	assert.Contains(t, calls[1].Message, "Resolved by test-runner after 10s")
 }
 
 // ---------- Multiple dispatches ----------
@@ -254,7 +263,7 @@ func TestDispatch_MultipleJobs(t *testing.T) {
 	}
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 5
+		return len(setter.getCalls()) == 10
 	}, time.Second, 10*time.Millisecond)
 
 	seen := map[string]bool{}
@@ -397,7 +406,7 @@ func TestDispatch_ConcurrentDispatches(t *testing.T) {
 	wg.Wait()
 
 	assert.Eventually(t, func() bool {
-		return len(setter.getCalls()) == 20
+		return len(setter.getCalls()) == 40
 	}, 2*time.Second, 10*time.Millisecond)
 }
 
