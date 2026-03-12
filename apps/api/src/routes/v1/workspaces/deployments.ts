@@ -14,13 +14,11 @@ import * as schema from "@ctrlplane/db/schema";
 import { validResourceSelector } from "../valid-selector.js";
 import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
 
-const parseSelector = (raw: string | null | undefined) => {
+const parseSelector = (
+  raw: string | null | undefined,
+): string | undefined => {
   if (raw == null || raw === "false") return undefined;
-  try {
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    return { cel: raw };
-  }
+  return raw;
 };
 
 const formatDeployment = (dep: typeof schema.deployment.$inferSelect) => ({
@@ -209,10 +207,7 @@ const postDeployment: AsyncTypedHandler<
     description: body.description ?? "",
     jobAgentConfig: body.jobAgentConfig ?? {},
     jobAgents: body.jobAgents ?? [],
-    resourceSelector:
-      body.resourceSelector != null
-        ? JSON.stringify(body.resourceSelector)
-        : "false",
+    resourceSelector: body.resourceSelector ?? "false",
     metadata: body.metadata ?? {},
     workspaceId,
   });
@@ -240,10 +235,7 @@ const upsertDeployment: AsyncTypedHandler<
       description: body.description ?? "",
       jobAgentConfig: body.jobAgentConfig ?? {},
       jobAgents: body.jobAgents ?? [],
-      resourceSelector:
-        body.resourceSelector != null
-          ? JSON.stringify(body.resourceSelector)
-          : "false",
+      resourceSelector: body.resourceSelector ?? "false",
       metadata: body.metadata ?? {},
       workspaceId,
     })
@@ -254,10 +246,7 @@ const upsertDeployment: AsyncTypedHandler<
         description: body.description ?? "",
         jobAgentConfig: body.jobAgentConfig ?? {},
         jobAgents: body.jobAgents ?? [],
-        resourceSelector:
-          body.resourceSelector != null
-            ? JSON.stringify(body.resourceSelector)
-            : "false",
+        resourceSelector: body.resourceSelector ?? "false",
         metadata: body.metadata ?? {},
       },
     });

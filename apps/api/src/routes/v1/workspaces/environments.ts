@@ -12,13 +12,11 @@ import * as schema from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
 
-const parseSelector = (raw: string | null | undefined) => {
+const parseSelector = (
+  raw: string | null | undefined,
+): string | undefined => {
   if (raw == null || raw === "false") return undefined;
-  try {
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    return { cel: raw };
-  }
+  return raw;
 };
 
 const formatEnvironment = (env: typeof schema.environment.$inferSelect) => ({
@@ -136,10 +134,7 @@ const createEnvironment: AsyncTypedHandler<
     .values({
       name: body.name,
       description: body.description ?? "",
-      resourceSelector:
-        body.resourceSelector != null
-          ? JSON.stringify(body.resourceSelector)
-          : "false",
+      resourceSelector: body.resourceSelector ?? "false",
       metadata: body.metadata ?? {},
       workspaceId,
     })
@@ -168,10 +163,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
       id: environmentId,
       name: body.name,
       description: body.description ?? "",
-      resourceSelector:
-        body.resourceSelector != null
-          ? JSON.stringify(body.resourceSelector)
-          : "false",
+      resourceSelector: body.resourceSelector ?? "false",
       metadata: body.metadata ?? {},
       workspaceId,
     })
@@ -180,10 +172,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
       set: {
         name: body.name,
         description: body.description ?? "",
-        resourceSelector:
-          body.resourceSelector != null
-            ? JSON.stringify(body.resourceSelector)
-            : "false",
+        resourceSelector: body.resourceSelector ?? "false",
         metadata: body.metadata ?? {},
       },
     });
