@@ -16,13 +16,11 @@ const formatSystem = (sys: typeof schema.system.$inferSelect) => ({
   metadata: sys.metadata,
 });
 
-const parseSelector = (raw: string | null | undefined) => {
+const parseSelector = (
+  raw: string | null | undefined,
+): string | undefined => {
   if (raw == null || raw === "false") return undefined;
-  try {
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    return { cel: raw };
-  }
+  return raw;
 };
 
 const formatEnvironment = (env: typeof schema.environment.$inferSelect) => ({
