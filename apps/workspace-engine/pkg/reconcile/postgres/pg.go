@@ -6,16 +6,20 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
+
+	"workspace-engine/pkg/reconcile"
+	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"workspace-engine/pkg/reconcile"
-	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 )
 
 const defaultPriority int16 = 100
+
+const enqueueManyBatchSize = 50
 
 var _ reconcile.Queue = (*Queue)(nil)
 
@@ -176,38 +180,53 @@ func (q *Queue) EnqueueMany(ctx context.Context, params []reconcile.EnqueueParam
 		}
 	}
 
+	// Sort by the conflict key so concurrent batch upserts acquire row locks
+	// in a consistent order, reducing deadlock risk.
+	sort.Strings(order)
+
 	n := len(order)
-	workspaceIDs := make([]uuid.UUID, n)
-	kinds := make([]string, n)
-	scopeTypes := make([]string, n)
-	scopeIDs := make([]string, n)
-	eventTSs := make([]pgtype.Timestamptz, n)
-	priorities := make([]int16, n)
-	notBefores := make([]pgtype.Timestamptz, n)
-
+	items := make([]*resolvedItem, n)
 	for i, key := range order {
-		item := deduped[key]
-		workspaceIDs[i] = item.workspaceID
-		kinds[i] = item.kind
-		scopeTypes[i] = item.scopeType
-		scopeIDs[i] = item.scopeID
-		eventTSs[i] = pgtype.Timestamptz{Time: item.eventTS, Valid: true}
-		priorities[i] = item.priority
-		notBefores[i] = pgtype.Timestamptz{Time: item.notBefore, Valid: true}
+		items[i] = deduped[key]
 	}
 
-	err := q.queries.BatchUpsertReconcileWorkScopes(ctx, sqldb.BatchUpsertReconcileWorkScopesParams{
-		WorkspaceIds: workspaceIDs,
-		Kinds:        kinds,
-		ScopeTypes:   scopeTypes,
-		ScopeIds:     scopeIDs,
-		EventTs:      eventTSs,
-		Priorities:   priorities,
-		NotBefores:   notBefores,
-	})
-	if err != nil {
-		return fmt.Errorf("batch enqueue work items: %w", err)
+	for batchStart := 0; batchStart < n; batchStart += enqueueManyBatchSize {
+		batchEnd := min(batchStart + enqueueManyBatchSize, n)
+		batch := items[batchStart:batchEnd]
+
+		batchLen := len(batch)
+		workspaceIDs := make([]uuid.UUID, batchLen)
+		kinds := make([]string, batchLen)
+		scopeTypes := make([]string, batchLen)
+		scopeIDs := make([]string, batchLen)
+		eventTSs := make([]pgtype.Timestamptz, batchLen)
+		priorities := make([]int16, batchLen)
+		notBefores := make([]pgtype.Timestamptz, batchLen)
+
+		for i, item := range batch {
+			workspaceIDs[i] = item.workspaceID
+			kinds[i] = item.kind
+			scopeTypes[i] = item.scopeType
+			scopeIDs[i] = item.scopeID
+			eventTSs[i] = pgtype.Timestamptz{Time: item.eventTS, Valid: true}
+			priorities[i] = item.priority
+			notBefores[i] = pgtype.Timestamptz{Time: item.notBefore, Valid: true}
+		}
+
+		err := q.queries.BatchUpsertReconcileWorkScopes(ctx, sqldb.BatchUpsertReconcileWorkScopesParams{
+			WorkspaceIds: workspaceIDs,
+			Kinds:        kinds,
+			ScopeTypes:   scopeTypes,
+			ScopeIds:     scopeIDs,
+			EventTs:      eventTSs,
+			Priorities:   priorities,
+			NotBefores:   notBefores,
+		})
+		if err != nil {
+			return fmt.Errorf("batch enqueue work items: %w", err)
+		}
 	}
+
 	return nil
 }
 
