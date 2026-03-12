@@ -5,7 +5,7 @@ export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
 
-    WORKSPACE_ENGINE_ROUTER_URL: z.string().url().optional(),
+    WORKSPACE_ENGINE_URL: z.string().url().optional(),
   },
   runtimeEnv: process.env,
 });
