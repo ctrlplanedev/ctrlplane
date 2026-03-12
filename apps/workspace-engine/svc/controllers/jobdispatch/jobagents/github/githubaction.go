@@ -46,8 +46,11 @@ func (a *GithubAction) Type() string {
 }
 
 func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
-	dispatchCtx := job.DispatchContext
-	cfg, err := ParseJobAgentConfig(dispatchCtx.JobAgentConfig)
+	if job.DispatchContext == nil {
+		return fmt.Errorf("job %s has no dispatch context", job.Id)
+	}
+
+	cfg, err := ParseJobAgentConfig(job.DispatchContext.JobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
