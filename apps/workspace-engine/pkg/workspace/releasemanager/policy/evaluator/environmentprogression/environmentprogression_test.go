@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEnvironmentProgressionEvaluator_VersionNotInDependency tests that when a version has not been deployed
@@ -19,11 +20,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a CEL selector that matches staging
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err, "failed to create selector")
+	selector := "environment.name == 'staging'"
 
 	// Create rule: prod depends on staging
 	rule := &oapi.PolicyRule{
@@ -107,11 +104,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
 	// Create a CEL selector that matches staging
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err, "failed to create selector")
+	selector := "environment.name == 'staging'"
 
 	// Create rule: prod depends on staging
 	rule := &oapi.PolicyRule{
@@ -184,11 +177,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
 	// Create a CEL selector that matches staging
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err, "failed to create selector")
+	selector := "environment.name == 'staging'"
 
 	// Create rule: prod depends on staging with 30 minute soak time
 	soakTime := int32(30)
@@ -226,11 +215,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a CEL selector that matches nothing
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'non-existent-env'",
-	})
-	require.NoError(t, err, "failed to create selector")
+	selector := "environment.name == 'non-existent-env'"
 
 	// Create rule with selector that matches no environments
 	rule := &oapi.PolicyRule{
@@ -387,11 +372,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	mock.addJob(stagingReleaseTarget3, job3, release3)
 
 	// Create selector and rule with 50% pass rate requirement (no soak time)
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err)
+	selector := "environment.name == 'staging'"
 
 	minSuccessPercentage := float32(50.0)
 	rule := &oapi.PolicyRule{
@@ -476,11 +457,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	}
 	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err)
+	selector := "environment.name == 'staging'"
 
 	rule := &oapi.PolicyRule{
 		Id: "rule-1",
@@ -602,11 +579,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	// Soak time satisfied at: 10:50
 	// Expected satisfiedAt: 10:50 (the later of the two)
 
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err)
+	selector := "environment.name == 'staging'"
 
 	minSuccessPercentage := float32(50.0)
 	rule := &oapi.PolicyRule{
@@ -763,11 +736,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 
 	soakMinutes := int32(15)
 
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err)
+	selector := "environment.name == 'staging'"
 
 	minSuccessPercentage := float32(67.0)
 	rule := &oapi.PolicyRule{
@@ -848,11 +817,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 	}
 	mock.addJob(stagingReleaseTarget, job, stagingRelease)
 
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err)
+	selector := "environment.name == 'staging'"
 
 	soakMinutes := int32(30)
 	rule := &oapi.PolicyRule{
@@ -907,11 +872,7 @@ func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) 
 		CreatedAt:    versionCreatedAt,
 	}
 
-	selector := oapi.Selector{}
-	err := selector.FromCelSelector(oapi.CelSelector{
-		Cel: "environment.name == 'staging'",
-	})
-	require.NoError(t, err)
+	selector := "environment.name == 'staging'"
 
 	soakMinutes := int32(30)
 	rule := &oapi.PolicyRule{

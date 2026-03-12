@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
@@ -56,31 +57,19 @@ func TestHasEnvironmentChangesBasic_DetectsChanges(t *testing.T) {
 	oldDesc := "old description"
 	newDesc := "new description"
 
-	oldSelector := &oapi.Selector{}
-	assert.NoError(t, oldSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"env": "prod",
-		},
-	}))
-
-	newSelector := &oapi.Selector{}
-	assert.NoError(t, newSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"env":    "staging",
-			"region": "us-east-1",
-		},
-	}))
+	oldSelector := "env == 'prod'"
+	newSelector := "env == 'staging' && region == 'us-east-1'"
 
 	old := &oapi.Environment{
 		Name:             "staging",
 		Description:      &oldDesc,
-		ResourceSelector: oldSelector,
+		ResourceSelector: &oldSelector,
 	}
 
 	updated := &oapi.Environment{
 		Name:             "production",
 		Description:      &newDesc,
-		ResourceSelector: newSelector,
+		ResourceSelector: &newSelector,
 	}
 
 	changes := hasEnvironmentChangesBasic(old, updated)
@@ -168,29 +157,18 @@ func TestHasEnvironmentChanges_DescriptionSetToNil(t *testing.T) {
 
 func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 	// Create selectors with JsonSelector
-	oldSelector := &oapi.Selector{}
-	_ = oldSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"env": "prod",
-		},
-	})
-
-	newSelector := &oapi.Selector{}
-	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"env": "staging",
-		},
-	})
+	oldSelector := "env == 'prod'"
+	newSelector := "env == 'staging'"
 
 	old := &oapi.Environment{
 		Name:             "production",
-		ResourceSelector: oldSelector,
+		ResourceSelector: &oldSelector,
 		Id:               "env-123",
 	}
 
 	updated := &oapi.Environment{
 		Name:             "production",
-		ResourceSelector: newSelector,
+		ResourceSelector: &newSelector,
 		Id:               "env-123",
 	}
 
@@ -210,13 +188,7 @@ func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 }
 
 func TestHasEnvironmentChanges_ResourceSelectorNilToSet(t *testing.T) {
-	newSelector := &oapi.Selector{}
-	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"env": "prod",
-		},
-	})
-
+	newSelector := "env == 'prod'"
 	old := &oapi.Environment{
 		Name:             "production",
 		ResourceSelector: nil,
@@ -225,7 +197,7 @@ func TestHasEnvironmentChanges_ResourceSelectorNilToSet(t *testing.T) {
 
 	updated := &oapi.Environment{
 		Name:             "production",
-		ResourceSelector: newSelector,
+		ResourceSelector: &newSelector,
 		Id:               "env-123",
 	}
 

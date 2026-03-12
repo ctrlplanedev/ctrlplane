@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
@@ -174,7 +175,7 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 		}
 
 		// Apply the selector
-		matched, err := selector.Match(ctx, &e.rule.DependsOnEnvironmentSelector, *env)
+		matched, err := selector.Match(ctx, e.rule.DependsOnEnvironmentSelector, *env)
 		if err != nil {
 			return nil, fmt.Errorf("failed to match environment selector: %w", err)
 		}

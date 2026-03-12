@@ -22,7 +22,7 @@ const useResources = (selector: string) => {
 
   const resourcesQuery = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
-    selector: { cel: selector },
+    selector,
     limit: 200,
     offset: 0,
   });

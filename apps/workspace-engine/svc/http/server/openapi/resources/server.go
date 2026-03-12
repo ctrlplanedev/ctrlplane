@@ -28,16 +28,9 @@ func (r *Resources) QueryResources(
 	}
 
 	resourcesGetter := resources.PostgresGetResources{}
-	cel := "true"
-	if body.Filter != nil {
-		sel, err := body.Filter.AsCelSelector()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid filter: " + err.Error(),
-			})
-			return
-		}
-		cel = sel.Cel
+	cel := body.Filter
+	if cel == "" {
+		cel = "true"
 	}
 	resources, err := resourcesGetter.GetResources(
 		c.Request.Context(),

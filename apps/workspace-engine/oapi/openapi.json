@@ -98,17 +98,6 @@
             ],
             "type": "object"
          },
-         "CelSelector": {
-            "properties": {
-               "cel": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "cel"
-            ],
-            "type": "object"
-         },
          "DatadogMetricProvider": {
             "properties": {
                "aggregator": {
@@ -223,7 +212,8 @@
                   "type": "string"
                },
                "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the deployment should be used",
+                  "type": "string"
                },
                "slug": {
                   "type": "string"
@@ -326,7 +316,8 @@
                   "type": "integer"
                },
                "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the deployment variable value should be used",
+                  "type": "string"
                },
                "value": {
                   "$ref": "#/components/schemas/Value"
@@ -568,7 +559,8 @@
                   "type": "string"
                },
                "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the environment should be used",
+                  "type": "string"
                },
                "workspaceId": {
                   "type": "string"
@@ -586,7 +578,8 @@
          "EnvironmentProgressionRule": {
             "properties": {
                "dependsOnEnvironmentSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the environment progression rule should be used",
+                  "type": "string"
                },
                "maximumAgeHours": {
                   "description": "Maximum age of dependency deployment before blocking progression (prevents stale promotions)",
@@ -1108,18 +1101,6 @@
             ],
             "type": "object"
          },
-         "JsonSelector": {
-            "properties": {
-               "json": {
-                  "additionalProperties": true,
-                  "type": "object"
-               }
-            },
-            "required": [
-               "json"
-            ],
-            "type": "object"
-         },
          "LiteralValue": {
             "oneOf": [
                {
@@ -1595,7 +1576,8 @@
                   "type": "string"
                },
                "fromSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the relationship rule should be used",
+                  "type": "string"
                },
                "fromType": {
                   "$ref": "#/components/schemas/RelatableEntityType"
@@ -1629,7 +1611,8 @@
                   "type": "string"
                },
                "toSelector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the relationship rule should be used",
+                  "type": "string"
                },
                "toType": {
                   "$ref": "#/components/schemas/RelatableEntityType"
@@ -2138,16 +2121,6 @@
             ],
             "type": "object"
          },
-         "Selector": {
-            "oneOf": [
-               {
-                  "$ref": "#/components/schemas/JsonSelector"
-               },
-               {
-                  "$ref": "#/components/schemas/CelSelector"
-               }
-            ]
-         },
          "SensitiveValue": {
             "properties": {
                "valueHash": {
@@ -2520,7 +2493,8 @@
                   "type": "string"
                },
                "selector": {
-                  "$ref": "#/components/schemas/Selector"
+                  "description": "CEL expression to determine if the version selector should be used",
+                  "type": "string"
                }
             },
             "required": [
@@ -2864,7 +2838,8 @@
                "selector": {
                   "properties": {
                      "default": {
-                        "$ref": "#/components/schemas/Selector"
+                        "description": "CEL expression to determine if the selector array input should be used",
+                        "type": "string"
                      },
                      "entityType": {
                         "enum": [
@@ -2933,7 +2908,8 @@
                      "schema": {
                         "properties": {
                            "resourceSelector": {
-                              "$ref": "#/components/schemas/Selector"
+                              "description": "CEL expression to validate.",
+                              "type": "string"
                            }
                         },
                         "type": "object"
@@ -3124,9 +3100,13 @@
                      "schema": {
                         "properties": {
                            "filter": {
-                              "$ref": "#/components/schemas/Selector"
+                              "description": "CEL expression to filter resources. Defaults to \"true\" (all resources).",
+                              "type": "string"
                            }
                         },
+                        "required": [
+                           "filter"
+                        ],
                         "type": "object"
                      }
                   }

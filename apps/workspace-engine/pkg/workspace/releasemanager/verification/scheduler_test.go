@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Helper functions.
@@ -105,9 +106,8 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Name:        "test-env",
 		Description: ptr("Test environment"),
 	}
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	environment.ResourceSelector = selector
+	selector := "true"
+	environment.ResourceSelector = &selector
 	_ = s.Environments.Upsert(ctx, environment)
 
 	// Create deployment
@@ -118,9 +118,8 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Slug:        "test-deployment",
 		Description: ptr("Test deployment"),
 	}
-	deploymentSelector := &oapi.Selector{}
-	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	deployment.ResourceSelector = deploymentSelector
+	deploymentSelector := "true"
+	deployment.ResourceSelector = &deploymentSelector
 	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create version

@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 )
 
 // mockGetters implements the full Getters interface for testing.
@@ -580,11 +581,7 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 	twoHoursLater := baseTime.Add(2 * time.Hour)
 	ts := newTestSetup(3, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
+	selector := "environment.name == 'staging'"
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -640,12 +637,6 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionSkip_SatisfiedAt(t *testi
 	skipTime := baseTime.Add(1 * time.Hour)
 	ts := newTestSetup(3, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
-
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
 		Enabled:  true,
@@ -653,7 +644,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionSkip_SatisfiedAt(t *testi
 		Rules: []oapi.PolicyRule{{
 			Id: "env-prog-rule",
 			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: selector,
+				DependsOnEnvironmentSelector: "environment.name == 'staging'",
 				MinimumSuccessPercentage:     &minSuccess,
 			},
 		}},
@@ -680,19 +671,13 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	ts := newTestSetup(3, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
-
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
 		Enabled:  true,
 		Selector: "true",
 		Rules: []oapi.PolicyRule{{
 			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: selector,
+				DependsOnEnvironmentSelector: "environment.name == 'staging'",
 				MinimumSuccessPercentage:     &minSuccess,
 			},
 		}},
@@ -721,12 +706,6 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 	envProgTime := baseTime.Add(1 * time.Hour)
 	ts := newTestSetup(1, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
-
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
 		Enabled:  true,
@@ -734,7 +713,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		Rules: []oapi.PolicyRule{
 			{Id: "approval-rule", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}},
 			{Id: "env-prog-rule", EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: selector,
+				DependsOnEnvironmentSelector: "environment.name == 'staging'",
 				MinimumSuccessPercentage:     &minSuccess,
 			}},
 		},
@@ -773,11 +752,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 	approvalTime := baseTime.Add(1 * time.Hour)
 	ts := newTestSetup(1, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
+	selector := "environment.name == 'staging'"
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -822,12 +797,6 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	ts := newTestSetup(1, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
-
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
 		Enabled:   true,
@@ -836,7 +805,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 		Rules: []oapi.PolicyRule{
 			{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}},
 			{Id: "env-prog-rule", EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: selector,
+				DependsOnEnvironmentSelector: "environment.name == 'staging'",
 				MinimumSuccessPercentage:     &minSuccess,
 			}},
 		},
@@ -869,11 +838,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	ts := newTestSetup(1, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
+	selector := "environment.name == 'staging'"
 
 	minSuccess := float32(100.0)
 	approvalTime := baseTime.Add(30 * time.Minute)
@@ -1036,12 +1001,6 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 	skipTime := baseTime.Add(1 * time.Hour)
 	ts := newTestSetup(5, baseTime)
 
-	selector := oapi.Selector{}
-	require.NoError(
-		t,
-		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
-	)
-
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
 		Enabled:  true,
@@ -1049,7 +1008,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 		Rules: []oapi.PolicyRule{{
 			Id: "env-prog-rule",
 			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: selector,
+				DependsOnEnvironmentSelector: "environment.name == 'staging'",
 				MinimumSuccessPercentage:     &minSuccess,
 			},
 		}},

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-json"
-	"workspace-engine/pkg/oapi"
 )
 
 var propertyAliases = map[string]string{
@@ -62,18 +61,4 @@ func ParseFromMap(selectorMap map[string]any) (UnknownCondition, error) {
 	}
 
 	return condition, nil
-}
-
-// SelectorToUnknownCondition converts a protobuf Selector to an UnknownCondition.
-func SelectorToUnknownCondition(selector *oapi.Selector) (UnknownCondition, error) {
-	if selector == nil {
-		return UnknownCondition{}, fmt.Errorf("selector is nil")
-	}
-
-	jsonSelector, err := selector.AsJsonSelector()
-	if err != nil {
-		return UnknownCondition{}, err
-	}
-
-	return ParseFromMap(jsonSelector.Json)
 }

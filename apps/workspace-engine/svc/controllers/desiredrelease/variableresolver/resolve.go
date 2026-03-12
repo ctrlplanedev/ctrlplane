@@ -250,7 +250,7 @@ func resolveFromValues(
 			matched = append(matched, v)
 			continue
 		}
-		ok, _ := selector.Match(ctx, v.ResourceSelector, resource)
+		ok, _ := selector.Match(ctx, *v.ResourceSelector, resource)
 		if ok {
 			matched = append(matched, v)
 		}

@@ -91,7 +91,11 @@ func (e *Deployments) Resources(
 		allResourcesSlice = append(allResourcesSlice, resource)
 	}
 
-	resources, err := selector.FilterResources(ctx, deployment.ResourceSelector, allResourcesSlice)
+	sel := ""
+	if deployment.ResourceSelector != nil {
+		sel = *deployment.ResourceSelector
+	}
+	resources, err := selector.FilterResources(ctx, sel, allResourcesSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +114,11 @@ func (e *Deployments) ForResource(
 ) ([]*oapi.Deployment, error) {
 	deployments := make([]*oapi.Deployment, 0)
 	for _, deployment := range e.Items() {
-		matched, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+		sel := ""
+		if deployment.ResourceSelector != nil {
+			sel = *deployment.ResourceSelector
+		}
+		matched, err := selector.Match(ctx, sel, resource)
 		if err != nil {
 			return nil, err
 		}

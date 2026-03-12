@@ -164,9 +164,7 @@ export const resourcesRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        selector: z
-          .object({ json: z.record(z.string(), z.unknown()) })
-          .or(z.object({ cel: z.string() })),
+        selector: z.string(),
         kind: z.string().optional(),
         limit: z.number().min(1).max(1000).default(50),
         offset: z.number().min(0).default(0),
@@ -178,9 +176,9 @@ export const resourcesRouter = router({
       const filter = (() => {
         if (kind == null) return selector;
         const kindFilter = `resource.kind == "${kind}"`;
-        if ("cel" in selector)
-          return { cel: `(${selector.cel}) && ${kindFilter}` };
-        return { cel: kindFilter };
+        if (selector && selector !== "true")
+          return `(${selector}) && ${kindFilter}`;
+        return kindFilter;
       })();
 
       const result = await getClientFor().POST(

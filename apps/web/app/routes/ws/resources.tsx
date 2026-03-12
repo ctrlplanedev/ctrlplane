@@ -67,7 +67,7 @@ export default function Resources() {
   const { data: resources } = trpc.resource.list.useQuery(
     {
       workspaceId: workspace.id,
-      selector: { cel: cleanedCel },
+      selector: cleanedCel,
       kind,
       limit: 200,
       offset: 0,

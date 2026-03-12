@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 )
 
 var policyRepoTracer = otel.Tracer("workspace/store/repository/db/policies")
@@ -302,7 +303,7 @@ func (r *Repo) insertRulesWithQueries(
 				db.UpsertEnvironmentProgressionRuleParams{
 					ID:                           ruleID,
 					PolicyID:                     policyID,
-					DependsOnEnvironmentSelector: selectorToString(ep.DependsOnEnvironmentSelector),
+					DependsOnEnvironmentSelector: ep.DependsOnEnvironmentSelector,
 					MaximumAgeHours:              optInt32ToPgint4(ep.MaximumAgeHours),
 					MinimumSoakTimeMinutes:       optInt32ToPgint4(ep.MinimumSockTimeMinutes),
 					MinimumSuccessPercentage:     optFloat32ToPgfloat4(ep.MinimumSuccessPercentage),
@@ -409,7 +410,7 @@ func (r *Repo) insertRulesWithQueries(
 				ID:          ruleID,
 				PolicyID:    policyID,
 				Description: optStringToPgtext(vs.Description),
-				Selector:    selectorToString(vs.Selector),
+				Selector:    vs.Selector,
 				CreatedAt:   createdAt,
 			}); err != nil {
 				return fmt.Errorf("upsert version_selector rule: %w", err)

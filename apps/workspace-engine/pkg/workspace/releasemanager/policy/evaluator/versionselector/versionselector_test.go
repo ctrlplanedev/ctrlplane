@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func createTestDeployment() (*oapi.Deployment, string) {
@@ -57,13 +58,10 @@ func TestNewEvaluator(t *testing.T) {
 	})
 
 	t.Run("returns evaluator when rule has version selector", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "true",
 			},
 		}
 		eval := NewEvaluator(rule)
@@ -72,13 +70,10 @@ func TestNewEvaluator(t *testing.T) {
 }
 
 func TestScopeFields(t *testing.T) {
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
 	rule := &oapi.PolicyRule{
 		Id: "versionSelector",
 		VersionSelector: &oapi.VersionSelectorRule{
-			Selector: *selector,
+			Selector: "true",
 		},
 	}
 
@@ -107,15 +102,10 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 	t.Run("allows version when CEL expression matches", func(t *testing.T) {
 		version := createTestVersion(deployment.Id, "v2.1.0", nil)
 
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `version.tag.startsWith("v2.")`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "version.tag.startsWith('v2.')",
 			},
 		}
 
@@ -138,15 +128,10 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 	t.Run("blocks version when CEL expression does not match", func(t *testing.T) {
 		version := createTestVersion(deployment.Id, "v1.5.0", nil)
 
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `version.tag.startsWith("v2.")`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "version.tag.startsWith('v2.')",
 			},
 		}
 
@@ -175,15 +160,10 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 	version := createTestVersion(deployment.Id, "v2.0.0", nil)
 
 	t.Run("allows version for matching environment", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `environment.name == "staging"`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "environment.name == 'staging'",
 			},
 		}
 
@@ -202,15 +182,10 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 	})
 
 	t.Run("blocks version for non-matching environment", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `environment.name == "production"`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "environment.name == 'production'",
 			},
 		}
 
@@ -240,15 +215,10 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 	version := createTestVersion(deployment.Id, "v1.0.0", nil)
 
 	t.Run("allows version when resource metadata matches", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `resource.metadata["tier"] == "production"`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "resource.metadata['tier'] == 'production'",
 			},
 		}
 
@@ -267,15 +237,10 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 	})
 
 	t.Run("blocks version when resource metadata does not match", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `resource.metadata["tier"] == "staging"`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "resource.metadata['tier'] == 'staging'",
 			},
 		}
 
@@ -307,15 +272,10 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 	)
 
 	t.Run("allows version when all conditions match", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `version.tag.startsWith("v2.") && environment.name == "staging" && resource.metadata["canary"] == "true"`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "version.tag.startsWith('v2.') && environment.name == 'staging' && resource.metadata['canary'] == 'true'",
 			},
 		}
 
@@ -334,15 +294,10 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 	})
 
 	t.Run("blocks version when one condition fails", func(t *testing.T) {
-		selector := &oapi.Selector{}
-		_ = selector.FromCelSelector(oapi.CelSelector{
-			Cel: `version.tag.startsWith("v3.") && environment.name == "staging"`,
-		})
-
 		rule := &oapi.PolicyRule{
 			Id: "versionSelector",
 			VersionSelector: &oapi.VersionSelectorRule{
-				Selector: *selector,
+				Selector: "version.tag.startsWith('v3.') && environment.name == 'staging'",
 			},
 		}
 
@@ -369,15 +324,10 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 	resource := createTestResource(nil)
 	version := createTestVersion(deployment.Id, "v1.0.0", nil)
 
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: `invalid CEL expression!!!`,
-	})
-
 	rule := &oapi.PolicyRule{
 		Id: "versionSelector",
 		VersionSelector: &oapi.VersionSelectorRule{
-			Selector: *selector,
+			Selector: "invalid cel expression!!!",
 		},
 	}
 
@@ -404,16 +354,11 @@ func TestEvaluate_WithDescription(t *testing.T) {
 	resource := createTestResource(nil)
 	version := createTestVersion(deployment.Id, "v1.0.0", nil)
 
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: `version.tag.startsWith("v2.")`,
-	})
-
 	description := "Only deploy v2.x versions to staging"
 	rule := &oapi.PolicyRule{
 		Id: "versionSelector",
 		VersionSelector: &oapi.VersionSelectorRule{
-			Selector:    *selector,
+			Selector:    "version.tag.startsWith('v2.')",
 			Description: &description,
 		},
 	}

@@ -10,7 +10,7 @@ type Selector any
 
 func FilterResources(
 	ctx context.Context,
-	sel *oapi.Selector,
+	sel string,
 	resources []*oapi.Resource,
 	_opts ...FilterOption,
 ) (map[string]*oapi.Resource, error) {
@@ -54,12 +54,12 @@ func WithChunking(chunkSize, maxConcurrency int) FilterOption {
 // This is a simplified version of Filter that just does the basic computation.
 func Filter[T any](
 	ctx context.Context,
-	sel *oapi.Selector,
+	sel string,
 	resources []T,
 	_opts ...FilterOption,
 ) ([]T, error) {
 	// If no selector is provided, return empty slice
-	if sel == nil {
+	if sel == "" || sel == "false" {
 		return []T{}, nil
 	}
 

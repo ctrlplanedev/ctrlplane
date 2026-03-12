@@ -5,33 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 )
-
-func selectorFromString(s string) oapi.Selector {
-	var sel oapi.Selector
-	if err := json.Unmarshal([]byte(s), &sel); err == nil {
-		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
-			return sel
-		}
-	}
-	sel = oapi.Selector{}
-	celJSON, _ := json.Marshal(oapi.CelSelector{Cel: s})
-	_ = sel.UnmarshalJSON(celJSON)
-	return sel
-}
-
-func selectorToString(sel oapi.Selector) string {
-	cel, err := sel.AsCelSelector()
-	if err == nil && cel.Cel != "" {
-		return cel.Cel
-	}
-	return "false"
-}
 
 func pgtypeTextToPtr(t pgtype.Text) *string {
 	if t.Valid {
@@ -122,13 +102,12 @@ func PolicyToOapi(row db.Policy, rules RuleRows) *oapi.Policy {
 	}
 
 	for _, r := range rules.EnvironmentProgression {
-		sel := selectorFromString(r.DependsOnEnvironmentSelector)
 		policyRules = append(policyRules, oapi.PolicyRule{
 			Id:        r.ID.String(),
 			PolicyId:  r.PolicyID.String(),
 			CreatedAt: r.CreatedAt.Time.Format(time.RFC3339),
 			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: sel,
+				DependsOnEnvironmentSelector: r.DependsOnEnvironmentSelector,
 				MaximumAgeHours:              pgtypeInt4ToPtr(r.MaximumAgeHours),
 				MinimumSockTimeMinutes:       pgtypeInt4ToPtr(r.MinimumSoakTimeMinutes),
 				MinimumSuccessPercentage:     pgtypeFloat4ToPtr(r.MinimumSuccessPercentage),
@@ -220,14 +199,13 @@ func PolicyToOapi(row db.Policy, rules RuleRows) *oapi.Policy {
 	}
 
 	for _, r := range rules.VersionSelector {
-		sel := selectorFromString(r.Selector)
 		policyRules = append(policyRules, oapi.PolicyRule{
 			Id:        r.ID.String(),
 			PolicyId:  r.PolicyID.String(),
 			CreatedAt: r.CreatedAt.Time.Format(time.RFC3339),
 			VersionSelector: &oapi.VersionSelectorRule{
 				Description: pgtypeTextToPtr(r.Description),
-				Selector:    sel,
+				Selector:    r.Selector,
 			},
 		})
 	}

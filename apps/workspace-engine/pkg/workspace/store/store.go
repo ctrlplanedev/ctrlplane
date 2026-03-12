@@ -508,14 +508,21 @@ func (s *Store) Restore(
 
 		// Check environment selector once per resource
 		for _, resource := range s.Resources.Items() {
-			isInEnv, err := selector.Match(ctx, environment.ResourceSelector, resource)
+			envSel := ""
+			if environment.ResourceSelector != nil {
+				envSel = *environment.ResourceSelector
+			}
+			isInEnv, err := selector.Match(ctx, envSel, resource)
 			if err != nil || !isInEnv {
 				continue
 			}
 
-			// Only check deployment selectors for matching deployments
 			for _, deployment := range matchingDeployments {
-				isInDeployment, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+				depSel := ""
+				if deployment.ResourceSelector != nil {
+					depSel = *deployment.ResourceSelector
+				}
+				isInDeployment, err := selector.Match(ctx, depSel, resource)
 				if err != nil || !isInDeployment {
 					continue
 				}

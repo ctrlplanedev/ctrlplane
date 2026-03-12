@@ -189,9 +189,7 @@ const formatPolicy = (p: PolicyRow) => {
     ...p.environmentProgressionRules.map((r) =>
       formatPolicyRule(r.id, r.policyId, r.createdAt, {
         environmentProgression: {
-          dependsOnEnvironmentSelector: JSON.parse(
-            r.dependsOnEnvironmentSelector,
-          ),
+          dependsOnEnvironmentSelector: r.dependsOnEnvironmentSelector,
           ...(r.maximumAgeHours != null && {
             maximumAgeHours: r.maximumAgeHours,
           }),
@@ -258,7 +256,7 @@ const formatPolicy = (p: PolicyRow) => {
     ...p.versionSelectorRules.map((r) =>
       formatPolicyRule(r.id, r.policyId, r.createdAt, {
         versionSelector: {
-          selector: JSON.parse(r.selector),
+          selector: r.selector,
           ...(r.description != null && { description: r.description }),
         },
       }),

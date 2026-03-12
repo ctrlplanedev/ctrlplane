@@ -628,6 +628,24 @@ export interface paths {
         get: operations["getResourceProviderByName"];
         put?: never;
         post?: never;
+        /** Delete a resource provider by name */
+        delete: operations["deleteResourceProviderByName"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the resources for a resource provider */
+        get: operations["getResourceProviderResources"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -897,12 +915,6 @@ export interface components {
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
         BooleanValue: boolean;
-        CelMatcher: {
-            cel: string;
-        };
-        CelSelector: {
-            cel: string;
-        };
         CreateDeploymentRequest: {
             description?: string;
             jobAgentConfig?: {
@@ -914,7 +926,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         CreateDeploymentVersionRequest: {
@@ -939,7 +952,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
         };
         CreatePolicyRequest: {
             description?: string;
@@ -966,18 +980,13 @@ export interface components {
             versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         CreateRelationshipRuleRequest: {
+            cel: string;
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
-            fromType: components["schemas"]["RelatableEntityType"];
-            matcher: components["schemas"]["CelMatcher"];
             metadata: {
                 [key: string]: string;
             };
             name: string;
             reference: string;
-            relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
-            toType: components["schemas"]["RelatableEntityType"];
         };
         CreateSystemRequest: {
             description?: string;
@@ -1066,7 +1075,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         DeploymentAndSystems: {
@@ -1103,7 +1113,8 @@ export interface components {
             id: string;
             /** Format: int64 */
             priority: number;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description A CEL expression to select which resources this value applies to */
+            resourceSelector?: string;
             value: components["schemas"]["Value"];
         };
         DeploymentVariableValueRequestAccepted: {
@@ -1180,10 +1191,12 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
         };
         EnvironmentProgressionRule: {
-            dependsOnEnvironmentSelector: components["schemas"]["Selector"];
+            /** @description CEL expression to match the environment(s) that must have a successful release before this environment can proceed. */
+            dependsOnEnvironmentSelector: string;
             /**
              * Format: int32
              * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
@@ -1336,11 +1349,6 @@ export interface components {
             release: components["schemas"]["Release"];
             resource?: components["schemas"]["Resource"];
         };
-        JsonSelector: {
-            json: {
-                [key: string]: unknown;
-            };
-        };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
         /** @enum {boolean} */
@@ -1463,22 +1471,15 @@ export interface components {
             path: string[];
             reference: string;
         };
-        /** @enum {string} */
-        RelatableEntityType: "deployment" | "environment" | "resource";
         RelationshipRule: {
+            cel: string;
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
-            fromType: components["schemas"]["RelatableEntityType"];
             id: string;
-            matcher: components["schemas"]["CelMatcher"];
             metadata: {
                 [key: string]: string;
             };
             name: string;
             reference: string;
-            relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
-            toType: components["schemas"]["RelatableEntityType"];
             workspaceId: string;
         };
         Release: {
@@ -1614,7 +1615,6 @@ export interface components {
             /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
             retryOnStatuses?: components["schemas"]["JobStatus"][];
         };
-        Selector: components["schemas"]["JsonSelector"] | components["schemas"]["CelSelector"];
         SensitiveValue: {
             valueHash: string;
         };
@@ -1717,7 +1717,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         UpsertDeploymentVariableRequest: {
@@ -1730,7 +1731,8 @@ export interface components {
             deploymentVariableId: string;
             /** Format: int64 */
             priority: number;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description A CEL expression to select which resources this value applies to */
+            resourceSelector?: string;
             value: components["schemas"]["Value"];
         };
         UpsertDeploymentVersionRequest: {
@@ -1756,7 +1758,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
         };
         UpsertJobAgentRequest: {
             config: {
@@ -1796,18 +1799,13 @@ export interface components {
             versionSelector?: components["schemas"]["VersionSelectorRule"];
         };
         UpsertRelationshipRuleRequest: {
+            cel: string;
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
-            fromType: components["schemas"]["RelatableEntityType"];
-            matcher: components["schemas"]["CelMatcher"];
             metadata: {
                 [key: string]: string;
             };
             name: string;
             reference: string;
-            relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
-            toType: components["schemas"]["RelatableEntityType"];
         };
         UpsertResourceProviderRequest: {
             id: string;
@@ -1920,7 +1918,8 @@ export interface components {
         VersionSelectorRule: {
             /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
             description?: string;
-            selector: components["schemas"]["Selector"];
+            /** @description CEL expression to select which versions are eligible for deployment. */
+            selector: string;
         };
         Workflow: {
             id: string;
@@ -2003,7 +2002,8 @@ export interface components {
         WorkflowSelectorArrayInput: {
             key: string;
             selector: {
-                default?: components["schemas"]["Selector"];
+                /** @description CEL expression for the default selector. */
+                default?: string;
                 /** @enum {string} */
                 entityType: "resource" | "environment" | "deployment";
             };
@@ -4344,6 +4344,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceProvider"];
+                };
+            };
+        };
+    };
+    deleteResourceProviderByName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Name of the resource provider */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceProvider"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getResourceProviderResources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Name of the resource provider */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Resource"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

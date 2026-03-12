@@ -151,7 +151,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
             slug: string;
         };
         DeploymentAndSystems: {
@@ -180,7 +181,8 @@ export interface components {
             id: string;
             /** Format: int64 */
             priority: number;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the deployment variable value should be used */
+            resourceSelector?: string;
             value: components["schemas"]["Value"];
         };
         DeploymentVariableWithValues: {
@@ -259,11 +261,13 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
-            resourceSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
             workspaceId: string;
         };
         EnvironmentProgressionRule: {
-            dependsOnEnvironmentSelector: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the environment progression rule should be used */
+            dependsOnEnvironmentSelector: string;
             /**
              * Format: int32
              * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
@@ -617,7 +621,8 @@ export interface components {
         RelationDirection: "from" | "to";
         RelationshipRule: {
             description?: string;
-            fromSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the relationship rule should be used */
+            fromSelector?: string;
             fromType: components["schemas"]["RelatableEntityType"];
             id: string;
             matcher: components["schemas"]["CelMatcher"] | components["schemas"]["PropertiesMatcher"];
@@ -627,7 +632,8 @@ export interface components {
             name: string;
             reference: string;
             relationshipType: string;
-            toSelector?: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the relationship rule should be used */
+            toSelector?: string;
             toType: components["schemas"]["RelatableEntityType"];
             workspaceId: string;
         };
@@ -970,7 +976,8 @@ export interface components {
         VersionSelectorRule: {
             /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
             description?: string;
-            selector: components["schemas"]["Selector"];
+            /** @description CEL expression to determine if the version selector should be used */
+            selector: string;
         };
         VersionSummary: {
             id: string;
@@ -1065,7 +1072,8 @@ export interface components {
         WorkflowSelectorArrayInput: {
             key: string;
             selector: {
-                default?: components["schemas"]["Selector"];
+                /** @description CEL expression to determine if the selector array input should be used */
+                default?: string;
                 /** @enum {string} */
                 entityType: "resource" | "environment" | "deployment";
             };
@@ -1100,7 +1108,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    resourceSelector?: components["schemas"]["Selector"];
+                    /** @description CEL expression to validate. */
+                    resourceSelector?: string;
                 };
             };
         };
@@ -1193,7 +1202,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    filter?: components["schemas"]["Selector"];
+                    /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
+                    filter: string;
                 };
             };
         };

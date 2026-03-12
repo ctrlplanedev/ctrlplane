@@ -3,8 +3,9 @@ package diffcheck
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHasDeploymentChanges_NoChanges(t *testing.T) {
@@ -71,16 +72,8 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 	oldAgent := "agent-old"
 	newAgent := "agent-new"
 
-	oldSelector := &oapi.Selector{}
-	assert.NoError(t, oldSelector.FromCelSelector(oapi.CelSelector{Cel: "system == 'legacy'"}))
-
-	newSelector := &oapi.Selector{}
-	assert.NoError(
-		t,
-		newSelector.FromCelSelector(
-			oapi.CelSelector{Cel: "system == 'modern' && team == 'platform'"},
-		),
-	)
+	oldSelector := "system == 'legacy'"
+	newSelector := "system == 'modern' && team == 'platform'"
 
 	old := &oapi.Deployment{
 		Name:        "api-old",
@@ -94,7 +87,7 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 				"key": "value",
 			},
 		},
-		ResourceSelector: oldSelector,
+		ResourceSelector: &oldSelector,
 	}
 
 	updated := &oapi.Deployment{
@@ -107,7 +100,7 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 			"replicas": 2,
 			"extra":    true,
 		},
-		ResourceSelector: newSelector,
+		ResourceSelector: &newSelector,
 	}
 
 	changes := hasDeploymentChangesBasic(old, updated)
@@ -326,24 +319,13 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 }
 
 func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
-	oldSelector := &oapi.Selector{}
-	_ = oldSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"app": "api",
-		},
-	})
-
-	newSelector := &oapi.Selector{}
-	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"app": "web",
-		},
-	})
+	oldSelector := "app == 'api'"
+	newSelector := "app == 'web'"
 
 	old := &oapi.Deployment{
 		Name:             "api-deployment",
 		Slug:             "api-deployment",
-		ResourceSelector: oldSelector,
+		ResourceSelector: &oldSelector,
 		JobAgentConfig:   oapi.JobAgentConfig{},
 		Id:               "deploy-123",
 	}
@@ -351,7 +333,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	updated := &oapi.Deployment{
 		Name:             "api-deployment",
 		Slug:             "api-deployment",
-		ResourceSelector: newSelector,
+		ResourceSelector: &newSelector,
 		JobAgentConfig:   oapi.JobAgentConfig{},
 		Id:               "deploy-123",
 	}

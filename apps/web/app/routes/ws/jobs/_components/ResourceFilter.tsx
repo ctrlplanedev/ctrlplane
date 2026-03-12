@@ -27,9 +27,7 @@ function useResourcesSearch() {
 
   const { data, isLoading } = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
-    selector: {
-      cel: `resource.name.contains('${celDebounced}') || resource.identifier.contains('${celDebounced}')`,
-    },
+    selector: `resource.name.contains('${celDebounced}') || resource.identifier.contains('${celDebounced}')`,
     limit: 20,
     offset: 0,
   });

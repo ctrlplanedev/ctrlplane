@@ -11,7 +11,10 @@ local openapi = import '../lib/openapi.libsonnet';
             schema: {
               type: 'object',
               properties: {
-                resourceSelector: openapi.schemaRef('Selector'),
+                resourceSelector: {
+                  type: 'string',
+                  description: 'CEL expression to validate.',
+                },
               },
             },
           },

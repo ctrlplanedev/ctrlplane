@@ -173,17 +173,11 @@ func NewRelationshipIndexes(store *Store) *RelationshipIndexes {
 // selectorToCel converts a Selector into a CEL fragment by extracting its CEL
 // expression and replacing the entity-type variable (e.g. "resource", "deployment",
 // "environment") with the given prefix ("from" or "to").
-func selectorToCel(sel *oapi.Selector, entityType oapi.RelatableEntityType, prefix string) string {
-	if sel == nil {
+func selectorToCel(sel *string, entityType oapi.RelatableEntityType, prefix string) string {
+	if sel == nil || *sel == "" {
 		return ""
 	}
-	cs, err := sel.AsCelSelector()
-	if err != nil || cs.Cel == "" {
-		return ""
-	}
-	// Replace the entity type variable name with the from/to prefix.
-	// e.g. "resource.kind == 'vpc'" → "from.kind == 'vpc'"
-	replaced := strings.ReplaceAll(cs.Cel, string(entityType)+".", prefix+".")
+	replaced := strings.ReplaceAll(*sel, string(entityType)+".", prefix+".")
 	return replaced
 }
 

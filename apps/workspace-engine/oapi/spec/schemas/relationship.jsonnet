@@ -39,9 +39,9 @@ local openapi = import '../lib/openapi.libsonnet';
       description: { type: 'string' },
       reference: { type: 'string' },
       fromType: openapi.schemaRef('RelatableEntityType'),
-      fromSelector: openapi.schemaRef('Selector'),
+      fromSelector: { type: 'string', description: 'CEL expression to determine if the relationship rule should be used' },
       toType: openapi.schemaRef('RelatableEntityType'),
-      toSelector: openapi.schemaRef('Selector'),
+      toSelector: { type: 'string', description: 'CEL expression to determine if the relationship rule should be used' },
       matcher: {
         oneOf: [
           openapi.schemaRef('CelMatcher'),

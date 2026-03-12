@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 // ===== Benchmark Helper Functions =====
@@ -34,8 +35,7 @@ func createBenchResource(workspaceID, id, name string) *oapi.Resource {
 }
 
 func createBenchDeployment(systemID, id, name string) *oapi.Deployment {
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector := "true"
 
 	description := fmt.Sprintf("Benchmark deployment %s", name)
 	jobAgentID := uuid.New().String()
@@ -44,7 +44,7 @@ func createBenchDeployment(systemID, id, name string) *oapi.Deployment {
 		Name:             name,
 		Slug:             name,
 		Description:      &description,
-		ResourceSelector: selector,
+		ResourceSelector: &selector,
 		JobAgentId:       &jobAgentID,
 		JobAgentConfig:   oapi.JobAgentConfig{},
 	}
@@ -114,26 +114,17 @@ func setupVariableBenchmark(
 			valueID := uuid.New().String()
 
 			// Create selector that matches based on tier and region
-			var selector *oapi.Selector
+			var resourceSelector string
 			switch j % 3 {
 			case 0:
 				// Matches production tier
-				selector = &oapi.Selector{}
-				_ = selector.FromCelSelector(oapi.CelSelector{
-					Cel: "resource.metadata.tier == 'production'",
-				})
+				resourceSelector = "resource.metadata.tier == 'production'"
 			case 1:
 				// Matches specific region
-				selector = &oapi.Selector{}
-				_ = selector.FromCelSelector(oapi.CelSelector{
-					Cel: "resource.metadata.region == 'us-west-1'",
-				})
+				resourceSelector = "resource.metadata.region == 'us-west-1'"
 			default:
 				// Matches both
-				selector = &oapi.Selector{}
-				_ = selector.FromCelSelector(oapi.CelSelector{
-					Cel: "resource.metadata.tier == 'production' && resource.metadata.region == 'us-west-1'",
-				})
+				resourceSelector = "resource.metadata.tier == 'production' && resource.metadata.region == 'us-west-1'"
 			}
 
 			value := &oapi.Value{}
@@ -149,7 +140,7 @@ func setupVariableBenchmark(
 					numDeploymentVariableValues - j,
 				), // Higher priority for earlier values
 				Value:            *value,
-				ResourceSelector: selector,
+				ResourceSelector: &resourceSelector,
 			}
 			st.DeploymentVariableValues.Upsert(ctx, valueID, deploymentVarValue)
 		}
@@ -186,22 +177,8 @@ func setupVariableBenchmark(
 
 		// Create relationship rule
 		relRuleID := uuid.New().String()
-		fromSelector := &oapi.Selector{}
-		_ = fromSelector.FromJsonSelector(oapi.JsonSelector{
-			Json: map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			},
-		})
-		toSelector := &oapi.Selector{}
-		_ = toSelector.FromJsonSelector(oapi.JsonSelector{
-			Json: map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "database",
-			},
-		})
+		fromSelector := "kind == 'service'"
+		toSelector := "kind == 'database'"
 
 		matcher := oapi.RelationshipRule_Matcher{}
 		_ = matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
@@ -222,8 +199,8 @@ func setupVariableBenchmark(
 			FromType:         "resource",
 			ToType:           "resource",
 			RelationshipType: "depends-on",
-			FromSelector:     fromSelector,
-			ToSelector:       toSelector,
+			FromSelector:     &fromSelector,
+			ToSelector:       &toSelector,
 			Matcher:          matcher,
 			Metadata:         map[string]string{},
 		}
@@ -641,22 +618,8 @@ func setupLargeRelationshipBenchmark(
 
 	// Create relationship rule 1: Service to Database
 	dbRelRuleID := uuid.New().String()
-	dbFromSelector := &oapi.Selector{}
-	_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "service",
-		},
-	})
-	dbToSelector := &oapi.Selector{}
-	_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "database",
-		},
-	})
+	dbFromSelector := "kind == 'service'"
+	dbToSelector := "kind == 'database'"
 
 	dbMatcher := oapi.RelationshipRule_Matcher{}
 	_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
@@ -677,8 +640,8 @@ func setupLargeRelationshipBenchmark(
 		FromType:         "resource",
 		ToType:           "resource",
 		RelationshipType: "depends-on",
-		FromSelector:     dbFromSelector,
-		ToSelector:       dbToSelector,
+		FromSelector:     &dbFromSelector,
+		ToSelector:       &dbToSelector,
 		Matcher:          dbMatcher,
 		Metadata:         map[string]string{},
 	}
@@ -686,22 +649,8 @@ func setupLargeRelationshipBenchmark(
 
 	// Create relationship rule 2: Service to VPC
 	vpcRelRuleID := uuid.New().String()
-	vpcFromSelector := &oapi.Selector{}
-	_ = vpcFromSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "service",
-		},
-	})
-	vpcToSelector := &oapi.Selector{}
-	_ = vpcToSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "vpc",
-		},
-	})
+	vpcFromSelector := "kind == 'service'"
+	vpcToSelector := "kind == 'vpc'"
 
 	vpcMatcher := oapi.RelationshipRule_Matcher{}
 	_ = vpcMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
@@ -722,8 +671,8 @@ func setupLargeRelationshipBenchmark(
 		FromType:         "resource",
 		ToType:           "resource",
 		RelationshipType: "depends-on",
-		FromSelector:     vpcFromSelector,
-		ToSelector:       vpcToSelector,
+		FromSelector:     &vpcFromSelector,
+		ToSelector:       &vpcToSelector,
 		Matcher:          vpcMatcher,
 		Metadata:         map[string]string{},
 	}
@@ -938,22 +887,8 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 
 	// Create relationship rules - service -> database
 	dbRelRuleID := uuid.New().String()
-	dbFromSelector := &oapi.Selector{}
-	_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "service",
-		},
-	})
-	dbToSelector := &oapi.Selector{}
-	_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "database",
-		},
-	})
+	dbFromSelector := "kind == 'service'"
+	dbToSelector := "kind == 'database'"
 	dbMatcher := oapi.RelationshipRule_Matcher{}
 	_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 		Properties: []oapi.PropertyMatcher{
@@ -972,8 +907,8 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		FromType:         "resource",
 		ToType:           "resource",
 		RelationshipType: "depends-on",
-		FromSelector:     dbFromSelector,
-		ToSelector:       dbToSelector,
+		FromSelector:     &dbFromSelector,
+		ToSelector:       &dbToSelector,
 		Matcher:          dbMatcher,
 		Metadata:         map[string]string{},
 	}
@@ -981,22 +916,8 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 
 	// Create relationship rules - service -> cache
 	cacheRelRuleID := uuid.New().String()
-	cacheFromSelector := &oapi.Selector{}
-	_ = cacheFromSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "service",
-		},
-	})
-	cacheToSelector := &oapi.Selector{}
-	_ = cacheToSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "cache",
-		},
-	})
+	cacheFromSelector := "kind == 'service'"
+	cacheToSelector := "kind == 'cache'"
 	cacheMatcher := oapi.RelationshipRule_Matcher{}
 	_ = cacheMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 		Properties: []oapi.PropertyMatcher{
@@ -1015,8 +936,8 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		FromType:         "resource",
 		ToType:           "resource",
 		RelationshipType: "depends-on",
-		FromSelector:     cacheFromSelector,
-		ToSelector:       cacheToSelector,
+		FromSelector:     &cacheFromSelector,
+		ToSelector:       &cacheToSelector,
 		Matcher:          cacheMatcher,
 		Metadata:         map[string]string{},
 	}
@@ -1024,22 +945,8 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 
 	// Create relationship rules - service -> queue
 	queueRelRuleID := uuid.New().String()
-	queueFromSelector := &oapi.Selector{}
-	_ = queueFromSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "service",
-		},
-	})
-	queueToSelector := &oapi.Selector{}
-	_ = queueToSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "queue",
-		},
-	})
+	queueFromSelector := "kind == 'service'"
+	queueToSelector := "kind == 'queue'"
 	queueMatcher := oapi.RelationshipRule_Matcher{}
 	_ = queueMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 		Properties: []oapi.PropertyMatcher{
@@ -1058,8 +965,8 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		FromType:         "resource",
 		ToType:           "resource",
 		RelationshipType: "depends-on",
-		FromSelector:     queueFromSelector,
-		ToSelector:       queueToSelector,
+		FromSelector:     &queueFromSelector,
+		ToSelector:       &queueToSelector,
 		Matcher:          queueMatcher,
 		Metadata:         map[string]string{},
 	}
@@ -1283,22 +1190,8 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 
 				// Create relationship rules - service -> database
 				dbRelRuleID := uuid.New().String()
-				dbFromSelector := &oapi.Selector{}
-				_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
-					Json: map[string]any{
-						"type":     "kind",
-						"operator": "equals",
-						"value":    "service",
-					},
-				})
-				dbToSelector := &oapi.Selector{}
-				_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
-					Json: map[string]any{
-						"type":     "kind",
-						"operator": "equals",
-						"value":    "database",
-					},
-				})
+				dbFromSelector := "kind == 'service'"
+				dbToSelector := "kind == 'database'"
 				dbMatcher := oapi.RelationshipRule_Matcher{}
 				_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 					Properties: []oapi.PropertyMatcher{
@@ -1317,8 +1210,8 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 					FromType:         "resource",
 					ToType:           "resource",
 					RelationshipType: "depends-on",
-					FromSelector:     dbFromSelector,
-					ToSelector:       dbToSelector,
+					FromSelector:     &dbFromSelector,
+					ToSelector:       &dbToSelector,
 					Matcher:          dbMatcher,
 					Metadata:         map[string]string{},
 				}
@@ -1326,22 +1219,8 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 
 				// Create relationship rules - service -> vpc
 				vpcRelRuleID := uuid.New().String()
-				vpcFromSelector := &oapi.Selector{}
-				_ = vpcFromSelector.FromJsonSelector(oapi.JsonSelector{
-					Json: map[string]any{
-						"type":     "kind",
-						"operator": "equals",
-						"value":    "service",
-					},
-				})
-				vpcToSelector := &oapi.Selector{}
-				_ = vpcToSelector.FromJsonSelector(oapi.JsonSelector{
-					Json: map[string]any{
-						"type":     "kind",
-						"operator": "equals",
-						"value":    "vpc",
-					},
-				})
+				vpcFromSelector := "kind == 'service'"
+				vpcToSelector := "kind == 'vpc'"
 				vpcMatcher := oapi.RelationshipRule_Matcher{}
 				_ = vpcMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 					Properties: []oapi.PropertyMatcher{
@@ -1360,8 +1239,8 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 					FromType:         "resource",
 					ToType:           "resource",
 					RelationshipType: "depends-on",
-					FromSelector:     vpcFromSelector,
-					ToSelector:       vpcToSelector,
+					FromSelector:     &vpcFromSelector,
+					ToSelector:       &vpcToSelector,
 					Matcher:          vpcMatcher,
 					Metadata:         map[string]string{},
 				}

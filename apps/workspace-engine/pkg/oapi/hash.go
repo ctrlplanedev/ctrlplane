@@ -18,19 +18,8 @@ func fnv64a(data []byte) uint64 {
 	return hash
 }
 
-// Hash returns a fast, unique identifier for the selector based on its JSON content.
-// Uses FNV-1a hashing for speed - suitable for cache keys.
-func (s *Selector) Hash() string {
-	if s == nil {
-		return ""
-	}
-	// MarshalJSON returns the union field directly
-	data, err := s.MarshalJSON()
-	if err != nil {
-		return ""
-	}
-	hash := fnv64a(data)
-	// Encode as hex string (16 chars) - faster than fmt.Sprintf
+func SelectorHash(selector string) string {
+	hash := fnv64a([]byte(selector))
 	var buf [16]byte
 	binary.BigEndian.PutUint64(buf[:8], hash)
 	const hextable = "0123456789abcdef"

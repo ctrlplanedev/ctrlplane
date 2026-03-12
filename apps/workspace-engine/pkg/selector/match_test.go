@@ -2,72 +2,23 @@ package selector
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 
-// Helper function to create a JSON selector from an unknown condition.
-func createJsonSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.Selector {
-	t.Helper()
-
-	jsonBytes, err := json.Marshal(condition)
-	if err != nil {
-		t.Fatalf("Failed to marshal condition: %v", err)
-	}
-
-	var conditionMap map[string]any
-	if err := json.Unmarshal(jsonBytes, &conditionMap); err != nil {
-		t.Fatalf("Failed to unmarshal condition: %v", err)
-	}
-
-	selector := &oapi.Selector{}
-	if err := selector.FromJsonSelector(oapi.JsonSelector{Json: conditionMap}); err != nil {
-		t.Fatalf("Failed to create JSON selector: %v", err)
-	}
-	return selector
-}
-
-// Helper function to create a CEL selector.
-func createCelSelector(t *testing.T, expression string) *oapi.Selector {
-	t.Helper()
-
-	selector := &oapi.Selector{}
-	if err := selector.FromCelSelector(oapi.CelSelector{Cel: expression}); err != nil {
-		t.Fatalf("Failed to create CEL selector: %v", err)
-	}
-	return selector
-}
-
-// Helper function to create an empty JSON selector.
-func createEmptyJsonSelector(t *testing.T) *oapi.Selector {
-	t.Helper()
-
-	selector := &oapi.Selector{}
-	if err := selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{}}); err != nil {
-		t.Fatalf("Failed to create empty JSON selector: %v", err)
-	}
-	return selector
-}
-
-func TestMatch_JsonSelector_Resource(t *testing.T) {
+func TestMatch_Resource_Properties(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition unknown.UnknownCondition
+		selector  string
 		resource  oapi.Resource
 		wantMatch bool
 		wantErr   bool
 	}{
 		{
-			name: "name contains match",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "production",
-			},
+			name:     "name contains match",
+			selector: "resource.name.contains('production')",
 			resource: oapi.Resource{
 				Id:   "1",
 				Name: "production-server",
@@ -77,12 +28,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "name contains no match",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "production",
-			},
+			name:     "name contains no match",
+			selector: "resource.name.contains('production')",
 			resource: oapi.Resource{
 				Id:   "2",
 				Name: "staging-server",
@@ -92,12 +39,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "kind equals match",
-			condition: unknown.UnknownCondition{
-				Property: "Kind",
-				Operator: "equals",
-				Value:    "database",
-			},
+			name:     "kind equals match",
+			selector: "resource.kind == 'database'",
 			resource: oapi.Resource{
 				Id:   "3",
 				Name: "postgres",
@@ -107,12 +50,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "identifier starts-with match",
-			condition: unknown.UnknownCondition{
-				Property: "Identifier",
-				Operator: "starts-with",
-				Value:    "k8s-",
-			},
+			name:     "identifier starts-with match",
+			selector: "resource.identifier.startsWith('k8s-')",
 			resource: oapi.Resource{
 				Id:         "4",
 				Identifier: "k8s-cluster-prod",
@@ -123,13 +62,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "metadata equals match",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "equals",
-				Value:       "production",
-				MetadataKey: "env",
-			},
+			name:     "metadata equals match",
+			selector: "resource.metadata['env'] == 'production'",
 			resource: oapi.Resource{
 				Id:   "5",
 				Name: "api-server",
@@ -141,13 +75,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "metadata equals no match",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "equals",
-				Value:       "production",
-				MetadataKey: "env",
-			},
+			name:     "metadata equals no match",
+			selector: "resource.metadata['env'] == 'production'",
 			resource: oapi.Resource{
 				Id:   "6",
 				Name: "api-server",
@@ -159,22 +88,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "AND condition all match",
-			condition: unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "Name",
-						Operator: "contains",
-						Value:    "prod",
-					},
-					{
-						Property: "Kind",
-						Operator: "equals",
-						Value:    "service",
-					},
-				},
-			},
+			name:     "AND condition all match",
+			selector: "resource.name.contains('prod') && resource.kind == 'service'",
 			resource: oapi.Resource{
 				Id:   "7",
 				Name: "prod-api",
@@ -184,22 +99,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "AND condition one does not match",
-			condition: unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "Name",
-						Operator: "contains",
-						Value:    "prod",
-					},
-					{
-						Property: "Kind",
-						Operator: "equals",
-						Value:    "service",
-					},
-				},
-			},
+			name:     "AND condition one does not match",
+			selector: "resource.name.contains('prod') && resource.kind == 'service'",
 			resource: oapi.Resource{
 				Id:   "8",
 				Name: "prod-api",
@@ -209,22 +110,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "OR condition one matches",
-			condition: unknown.UnknownCondition{
-				Operator: "or",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "Name",
-						Operator: "contains",
-						Value:    "staging",
-					},
-					{
-						Property: "Kind",
-						Operator: "equals",
-						Value:    "service",
-					},
-				},
-			},
+			name:     "OR condition one matches",
+			selector: "resource.name.contains('staging') || resource.kind == 'service'",
 			resource: oapi.Resource{
 				Id:   "9",
 				Name: "prod-api",
@@ -234,22 +121,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "OR condition none match",
-			condition: unknown.UnknownCondition{
-				Operator: "or",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "Name",
-						Operator: "contains",
-						Value:    "staging",
-					},
-					{
-						Property: "Kind",
-						Operator: "equals",
-						Value:    "database",
-					},
-				},
-			},
+			name:     "OR condition none match",
+			selector: "resource.name.contains('staging') || resource.kind == 'database'",
 			resource: oapi.Resource{
 				Id:   "10",
 				Name: "prod-api",
@@ -263,9 +136,8 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createJsonSelector(t, tt.condition)
 
-			match, err := Match(ctx, selector, tt.resource)
+			match, err := Match(ctx, tt.selector, tt.resource)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -279,21 +151,17 @@ func TestMatch_JsonSelector_Resource(t *testing.T) {
 	}
 }
 
-func TestMatch_JsonSelector_Deployment(t *testing.T) {
+func TestMatch_Deployment_Properties(t *testing.T) {
 	tests := []struct {
 		name       string
-		condition  unknown.UnknownCondition
+		selector   string
 		deployment oapi.Deployment
 		wantMatch  bool
 		wantErr    bool
 	}{
 		{
-			name: "deployment name contains match",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "api",
-			},
+			name:     "deployment name contains match",
+			selector: "deployment.name.contains('api')",
 			deployment: oapi.Deployment{
 				Id:   "1",
 				Name: "api-deployment",
@@ -306,12 +174,8 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "deployment slug starts-with match",
-			condition: unknown.UnknownCondition{
-				Property: "Slug",
-				Operator: "starts-with",
-				Value:    "prod-",
-			},
+			name:     "deployment slug starts-with match",
+			selector: "deployment.slug.startsWith('prod-')",
 			deployment: oapi.Deployment{
 				Id:             "2",
 				Name:           "Production API",
@@ -322,12 +186,8 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "deployment slug starts-with no match",
-			condition: unknown.UnknownCondition{
-				Property: "Slug",
-				Operator: "starts-with",
-				Value:    "prod-",
-			},
+			name:     "deployment slug starts-with no match",
+			selector: "deployment.slug.startsWith('prod-')",
 			deployment: oapi.Deployment{
 				Id:             "3",
 				Name:           "Staging API",
@@ -342,9 +202,8 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createJsonSelector(t, tt.condition)
 
-			match, err := Match(ctx, selector, tt.deployment)
+			match, err := Match(ctx, tt.selector, tt.deployment)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -358,21 +217,17 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 	}
 }
 
-func TestMatch_JsonSelector_Environment(t *testing.T) {
+func TestMatch_Environment_Properties(t *testing.T) {
 	tests := []struct {
 		name        string
-		condition   unknown.UnknownCondition
+		selector    string
 		environment oapi.Environment
 		wantMatch   bool
 		wantErr     bool
 	}{
 		{
-			name: "environment name equals match",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "equals",
-				Value:    "production",
-			},
+			name:     "environment name equals match",
+			selector: "environment.name == 'production'",
 			environment: oapi.Environment{
 				Id:        "1",
 				Name:      "production",
@@ -382,12 +237,8 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "environment name equals no match",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "equals",
-				Value:    "production",
-			},
+			name:     "environment name equals no match",
+			selector: "environment.name == 'production'",
 			environment: oapi.Environment{
 				Id:        "2",
 				Name:      "staging",
@@ -397,12 +248,8 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "environment name contains match",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "prod",
-			},
+			name:     "environment name contains match",
+			selector: "environment.name.contains('prod')",
 			environment: oapi.Environment{
 				Id:        "3",
 				Name:      "production-us-east",
@@ -416,9 +263,8 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createJsonSelector(t, tt.condition)
 
-			match, err := Match(ctx, selector, tt.environment)
+			match, err := Match(ctx, tt.selector, tt.environment)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -432,9 +278,6 @@ func TestMatch_JsonSelector_Environment(t *testing.T) {
 	}
 }
 
-// NOTE: These tests document the current behavior of the Match function
-// with CEL selectors. There appears to be a bug in match.go lines 37-39
-// where non-empty CEL expressions return false without evaluation.
 func TestMatch_CelSelector_Resource(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -766,9 +609,8 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createCelSelector(t, tt.expression)
 
-			match, err := Match(ctx, selector, tt.resource)
+			match, err := Match(ctx, tt.expression, tt.resource)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -831,9 +673,8 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createCelSelector(t, tt.expression)
 
-			match, err := Match(ctx, selector, tt.deployment)
+			match, err := Match(ctx, tt.expression, tt.deployment)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -893,9 +734,8 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createCelSelector(t, tt.expression)
 
-			match, err := Match(ctx, selector, tt.environment)
+			match, err := Match(ctx, tt.expression, tt.environment)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -909,9 +749,8 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 	}
 }
 
-func TestMatch_EmptyJsonSelector(t *testing.T) {
+func TestMatch_EmptySelector(t *testing.T) {
 	ctx := context.Background()
-	selector := createEmptyJsonSelector(t)
 
 	resource := oapi.Resource{
 		Id:   "1",
@@ -919,30 +758,28 @@ func TestMatch_EmptyJsonSelector(t *testing.T) {
 		Kind: "service",
 	}
 
-	// Empty JSON selector falls through to CEL selector logic
-	// Empty CEL string causes compilation error
-	_, err := Match(ctx, selector, resource)
+	match, err := Match(ctx, "", resource)
 
-	if err == nil {
-		t.Error("Match() expected error for empty selector (CEL compilation fails), got nil")
+	if err != nil {
+		t.Errorf("Match() unexpected error for empty selector: %v", err)
+		return
+	}
+
+	if match {
+		t.Error("Match() expected false for empty selector, got true")
 	}
 }
 
 func TestMatch_InvalidCelExpression(t *testing.T) {
 	ctx := context.Background()
 
-	// Create a CEL selector with invalid syntax
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "invalid syntax =="})
-
 	resource := oapi.Resource{
 		Id:   "1",
 		Name: "test-resource",
 		Kind: "service",
 	}
 
-	// Invalid CEL expressions should return an error during compilation
-	_, err := Match(ctx, selector, resource)
+	_, err := Match(ctx, "invalid syntax ==", resource)
 
 	if err == nil {
 		t.Errorf("Match() expected error for invalid CEL syntax, got nil")
@@ -950,22 +787,17 @@ func TestMatch_InvalidCelExpression(t *testing.T) {
 	}
 }
 
-func TestMatch_JsonSelector_EdgeCases(t *testing.T) {
+func TestMatch_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition unknown.UnknownCondition
+		selector  string
 		item      any
 		wantMatch bool
 		wantErr   bool
 	}{
 		{
-			name: "empty metadata key",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "equals",
-				Value:       "value",
-				MetadataKey: "nonexistent",
-			},
+			name:     "metadata key does not exist",
+			selector: "resource.metadata['nonexistent'] == 'value'",
 			item: oapi.Resource{
 				Id:       "1",
 				Name:     "test",
@@ -975,11 +807,8 @@ func TestMatch_JsonSelector_EdgeCases(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "empty AND conditions",
-			condition: unknown.UnknownCondition{
-				Operator:   "and",
-				Conditions: []unknown.UnknownCondition{},
-			},
+			name:     "true selector matches everything",
+			selector: "true",
 			item: oapi.Resource{
 				Id:   "2",
 				Name: "test",
@@ -988,11 +817,8 @@ func TestMatch_JsonSelector_EdgeCases(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "empty OR conditions",
-			condition: unknown.UnknownCondition{
-				Operator:   "or",
-				Conditions: []unknown.UnknownCondition{},
-			},
+			name:     "false selector matches nothing",
+			selector: "false",
 			item: oapi.Resource{
 				Id:   "3",
 				Name: "test",
@@ -1005,9 +831,8 @@ func TestMatch_JsonSelector_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createJsonSelector(t, tt.condition)
 
-			match, err := Match(ctx, selector, tt.item)
+			match, err := Match(ctx, tt.selector, tt.item)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -1092,9 +917,8 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := createCelSelector(t, tt.expression)
 
-			match, err := Match(ctx, selector, tt.resource)
+			match, err := Match(ctx, tt.expression, tt.resource)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
@@ -1110,12 +934,10 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 
 func TestMatch_Cache_ResourceUpdatedAtInvalidation(t *testing.T) {
 	ctx := context.Background()
-	selector := createCelSelector(t, "resource.name == 'server-v1'")
 
 	now := time.Now()
-	later := now.Add(time.Hour) // Use a significantly different time
+	later := now.Add(time.Hour)
 
-	// Resource v1 - matches selector
 	resourceV1 := &oapi.Resource{
 		Id:        "cache-invalidation-test-1",
 		Name:      "server-v1",
@@ -1124,7 +946,7 @@ func TestMatch_Cache_ResourceUpdatedAtInvalidation(t *testing.T) {
 		UpdatedAt: &now,
 	}
 
-	match1, err := Match(ctx, selector, resourceV1)
+	match1, err := Match(ctx, "resource.name == 'server-v1'", resourceV1)
 	if err != nil {
 		t.Fatalf("Match() error = %v", err)
 	}
@@ -1132,17 +954,15 @@ func TestMatch_Cache_ResourceUpdatedAtInvalidation(t *testing.T) {
 		t.Error("Match() for v1 resource = false, want true")
 	}
 
-	// Resource v2 - same ID, different UpdatedAt, different name (doesn't match selector)
-	// This simulates an entity being updated
 	resourceV2 := &oapi.Resource{
 		Id:        "cache-invalidation-test-1",
-		Name:      "server-v2", // Changed - no longer matches selector
+		Name:      "server-v2",
 		Kind:      "server",
 		CreatedAt: now,
-		UpdatedAt: &later, // Different UpdatedAt = different cache key
+		UpdatedAt: &later,
 	}
 
-	match2, err := Match(ctx, selector, resourceV2)
+	match2, err := Match(ctx, "resource.name == 'server-v1'", resourceV2)
 	if err != nil {
 		t.Fatalf("Match() error = %v", err)
 	}
@@ -1153,20 +973,18 @@ func TestMatch_Cache_ResourceUpdatedAtInvalidation(t *testing.T) {
 
 func TestMatch_Cache_ResourceCreatedAtFallback(t *testing.T) {
 	ctx := context.Background()
-	selector := createCelSelector(t, "resource.kind == 'database'")
 
 	now := time.Now()
 
-	// Resource without UpdatedAt should use CreatedAt for cache key
 	resource := &oapi.Resource{
 		Id:        "cache-test-resource-2",
 		Name:      "postgres",
 		Kind:      "database",
 		CreatedAt: now,
-		UpdatedAt: nil, // No UpdatedAt
+		UpdatedAt: nil,
 	}
 
-	match1, err := Match(ctx, selector, resource)
+	match1, err := Match(ctx, "resource.kind == 'database'", resource)
 	if err != nil {
 		t.Fatalf("Match() error = %v", err)
 	}
@@ -1174,8 +992,7 @@ func TestMatch_Cache_ResourceCreatedAtFallback(t *testing.T) {
 		t.Error("Match() = false, want true")
 	}
 
-	// Same resource should produce same result
-	match2, err := Match(ctx, selector, resource)
+	match2, err := Match(ctx, "resource.kind == 'database'", resource)
 	if err != nil {
 		t.Fatalf("Match() error = %v", err)
 	}
@@ -1186,12 +1003,10 @@ func TestMatch_Cache_ResourceCreatedAtFallback(t *testing.T) {
 
 func TestMatch_Cache_DifferentUpdatedAtProducesDifferentKeys(t *testing.T) {
 	ctx := context.Background()
-	selector := createCelSelector(t, "resource.name == 'test'")
 
 	now := time.Now()
 	later := now.Add(time.Hour)
 
-	// Two resources with same ID but different UpdatedAt should have different cache keys
 	resource1 := &oapi.Resource{
 		Id:        "same-id-different-time",
 		Name:      "test",
@@ -1208,12 +1023,12 @@ func TestMatch_Cache_DifferentUpdatedAtProducesDifferentKeys(t *testing.T) {
 		UpdatedAt: &later,
 	}
 
-	match1, _ := Match(ctx, selector, resource1)
+	match1, _ := Match(ctx, "resource.name == 'test'", resource1)
 	if !match1 {
 		t.Error("First resource should match")
 	}
 
-	match2, _ := Match(ctx, selector, resource2)
+	match2, _ := Match(ctx, "resource.name == 'test'", resource2)
 	if match2 {
 		t.Error("Second resource should not match (different UpdatedAt = different cache key)")
 	}
@@ -1242,7 +1057,7 @@ func TestEntityCacheKey(t *testing.T) {
 	})
 
 	t.Run("resource with zero CreatedAt returns empty (not cached)", func(t *testing.T) {
-		r := &oapi.Resource{Id: "r3", UpdatedAt: nil} // CreatedAt is zero
+		r := &oapi.Resource{Id: "r3", UpdatedAt: nil}
 		key := entityCacheKey(r)
 		if key != "" {
 			t.Errorf(
@@ -1262,7 +1077,7 @@ func TestEntityCacheKey(t *testing.T) {
 	})
 
 	t.Run("job with zero UpdatedAt returns empty (not cached)", func(t *testing.T) {
-		j := &oapi.Job{Id: "j2", CreatedAt: now} // UpdatedAt is zero
+		j := &oapi.Job{Id: "j2", CreatedAt: now}
 		key := entityCacheKey(j)
 		if key != "" {
 			t.Errorf("entityCacheKey() for Job with zero UpdatedAt = %q, want empty string", key)

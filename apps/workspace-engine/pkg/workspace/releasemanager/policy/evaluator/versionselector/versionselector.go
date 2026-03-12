@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versionselector")
@@ -74,27 +75,16 @@ func (e *Evaluator) Evaluate(
 	resource := scope.Resource
 
 	// Try to extract CEL selector first
-	celSelector, celErr := e.rule.Selector.AsCelSelector()
-	if celErr == nil {
+	celSelector := e.rule.Selector
+	if celSelector != "" {
 		return e.evaluateCEL(ctx, scope, deployment, resource, celSelector, span)
-	}
-
-	// Try to extract JSON selector
-	jsonSelector, jsonErr := e.rule.Selector.AsJsonSelector()
-	if jsonErr == nil {
-		return e.evaluateJSON(ctx, scope, deployment, resource, jsonSelector, span)
 	}
 
 	// Failed to parse selector
 	return results.NewDeniedResult(
-		fmt.Sprintf(
-			"Version selector: failed to parse selector: cel error: %v, json error: %v",
-			celErr,
-			jsonErr,
-		),
+		fmt.Sprintf("Version selector: failed to parse selector: %v", celSelector),
 	).
-		WithDetail("celError", celErr.Error()).
-		WithDetail("jsonError", jsonErr.Error())
+		WithDetail("selector", celSelector)
 }
 
 // evaluateCEL evaluates a CEL-based selector.
@@ -103,22 +93,21 @@ func (e *Evaluator) evaluateCEL(
 	scope evaluator.EvaluatorScope,
 	deployment *oapi.Deployment,
 	resource *oapi.Resource,
-	celSelector oapi.CelSelector,
+	celSelector string,
 	span trace.Span,
 ) *oapi.RuleEvaluation {
-	celExpression := celSelector.Cel
 	span.SetAttributes(attribute.String("selector.type", "cel"))
-	span.SetAttributes(attribute.String("selector.expression", celExpression))
+	span.SetAttributes(attribute.String("selector.expression", celSelector))
 
 	// Compile CEL expression
-	program, err := compile(celExpression)
+	program, err := compile(celSelector)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(
 			fmt.Sprintf("Version selector: failed to compile CEL expression: %v", err),
 		).
 			WithDetail("error", err.Error()).
-			WithDetail("expression", celExpression)
+			WithDetail("expression", celSelector)
 	}
 
 	// Build CEL context
@@ -169,7 +158,7 @@ func (e *Evaluator) evaluateCEL(
 			fmt.Sprintf("Version selector: CEL evaluation failed: %v", err),
 		).
 			WithDetail("error", err.Error()).
-			WithDetail("expression", celExpression)
+			WithDetail("expression", celSelector)
 	}
 
 	if !result {
@@ -186,7 +175,7 @@ func (e *Evaluator) evaluateCEL(
 		return results.NewDeniedResult(
 			fmt.Sprintf("Version selector: %s", description),
 		).
-			WithDetail("expression", celExpression).
+			WithDetail("expression", celSelector).
 			WithDetail("version_id", scope.Version.Id).
 			WithDetail("version_tag", scope.Version.Tag)
 	}
@@ -197,7 +186,7 @@ func (e *Evaluator) evaluateCEL(
 		))
 
 	return results.NewAllowedResult("Version selector: version matches selector").
-		WithDetail("expression", celExpression).
+		WithDetail("expression", celSelector).
 		WithDetail("version_id", scope.Version.Id).
 		WithDetail("version_tag", scope.Version.Tag)
 }
@@ -208,13 +197,11 @@ func (e *Evaluator) evaluateJSON(
 	scope evaluator.EvaluatorScope,
 	deployment *oapi.Deployment,
 	resource *oapi.Resource,
-	jsonSelector oapi.JsonSelector,
 	span trace.Span,
 ) *oapi.RuleEvaluation {
 	span.SetAttributes(attribute.String("selector.type", "json"))
 
-	// Use the existing selector matching logic
-	matched, err := selector.Match(ctx, &e.rule.Selector, scope.Version)
+	matched, err := selector.Match(ctx, e.rule.Selector, scope.Version)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(

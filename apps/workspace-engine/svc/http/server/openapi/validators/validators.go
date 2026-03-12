@@ -23,18 +23,12 @@ func (v *Validator) ValidateResourceSelector(c *gin.Context) {
 		return
 	}
 
-	cel, err := req.ResourceSelector.AsCelSelector()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{err.Error()}})
-		return
-	}
-
-	if cel.Cel == "" {
+	if req.ResourceSelector == nil || *req.ResourceSelector == "" {
 		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{"CEL is required"}})
 		return
 	}
 
-	if err := selectorEnv.Validate(cel.Cel); err != nil {
+	if err := selectorEnv.Validate(*req.ResourceSelector); err != nil {
 		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{err.Error()}})
 		return
 	}
