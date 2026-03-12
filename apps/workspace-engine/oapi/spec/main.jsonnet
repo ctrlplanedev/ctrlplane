@@ -8,25 +8,8 @@
 
   // Combine all path modules
   paths:
-    (import 'paths/workspace.jsonnet') +
     (import 'paths/resource.jsonnet') +
-    (import 'paths/policy.jsonnet') +
-    (import 'paths/policy-skip.jsonnet') +
-    (import 'paths/release-target.jsonnet') +
-    (import 'paths/relationship.jsonnet') +
-    (import 'paths/deployment.jsonnet') +
-    (import 'paths/deployment-version.jsonnet') +
-    (import 'paths/deployment-variable.jsonnet') +
-    (import 'paths/environment.jsonnet') +
-    (import 'paths/system.jsonnet') +
-    (import 'paths/job-agents.jsonnet') +
-    (import 'paths/jobs.jsonnet') +
-    (import 'paths/validate.jsonnet') +
-    (import 'paths/resource-providers.jsonnet') +
-    (import 'paths/github-entity.jsonnet') +
-    (import 'paths/relationship-rules.jsonnet') +
-    (import 'paths/release.jsonnet') +
-    (import 'paths/workflow.jsonnet'),
+    (import 'paths/validate.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),
