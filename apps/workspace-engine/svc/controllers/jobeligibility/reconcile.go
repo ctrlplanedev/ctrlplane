@@ -224,7 +224,9 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 			continue
 		}
 
-		jobAgent.Config = oapi.DeepMergeConfigs(jobAgent.Config, agentRef.Config)
+		jobAgent.Config = oapi.DeepMergeConfigs(
+			jobAgent.Config, agentRef.Config, r.release.Version.JobAgentConfig,
+		)
 
 		job, err := jobs.NewFactoryFromGetters(r.getter).
 			CreateJobForRelease(ctx, r.release, jobAgent)

@@ -1438,3 +1438,81 @@ func TestReconcile_NoJobsNoPolices_FirstAttempt(t *testing.T) {
 	require.Len(t, setter.createdJobs, 1)
 	assert.Nil(t, result.NextReconcileAt)
 }
+
+// ---------------------------------------------------------------------------
+// 13. Config deep merge: agent -> deployment agent ref -> version
+// ---------------------------------------------------------------------------
+
+func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	release.Version.JobAgentConfig = oapi.JobAgentConfig{
+		"image":   "v1.2.3",
+		"timeout": float64(90),
+	}
+
+	agent := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "github-runner",
+		Type: "github-app",
+		Config: oapi.JobAgentConfig{
+			"installationId": float64(123),
+			"owner":          "myorg",
+			"repo":           "myrepo",
+			"timeout":        float64(30),
+		},
+	}
+
+	deploymentAgents := []oapi.DeploymentJobAgent{{
+		Ref: agent.Id,
+		Config: oapi.JobAgentConfig{
+			"workflowId": float64(456),
+			"timeout":    float64(60),
+		},
+	}}
+	deployment := &oapi.Deployment{
+		Id:             rt.DeploymentID.String(),
+		Name:           "test-deployment",
+		Slug:           "test-deployment",
+		Metadata:       map[string]string{},
+		JobAgentConfig: oapi.JobAgentConfig{},
+		JobAgents:      &deploymentAgents,
+	}
+
+	getter := &mockGetter{
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents:  map[string]*oapi.JobAgent{agent.Id: agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+
+	cfg := setter.createdJobs[0].JobAgentConfig
+
+	assert.Equal(t, float64(123), cfg["installationId"], "agent-level key should survive")
+	assert.Equal(t, "myorg", cfg["owner"], "agent-level key should survive")
+	assert.Equal(t, "myrepo", cfg["repo"], "agent-level key should survive")
+	assert.Equal(t, float64(456), cfg["workflowId"], "deployment-level key should be merged in")
+	assert.Equal(t, "v1.2.3", cfg["image"], "version-level key should be merged in")
+	assert.Equal(t, float64(90), cfg["timeout"], "version-level should win over deployment and agent")
+}
