@@ -74,7 +74,15 @@ local openapi = import '../lib/openapi.libsonnet';
         required: true,
         content: {
           'application/json': {
-            schema: { type: 'object', properties: { filter: openapi.schemaRef('Selector') } },
+            schema: {
+              type: 'object',
+              properties: {
+                filter: {
+                  type: 'string',
+                  description: 'CEL expression to filter resources. Defaults to "true" (all resources).',
+                },
+              },
+            },
           },
         },
       },

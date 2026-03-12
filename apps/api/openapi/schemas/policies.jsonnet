@@ -145,7 +145,10 @@ local openapi = import '../lib/openapi.libsonnet';
     type: 'object',
     required: ['selector'],
     properties: {
-      selector: openapi.schemaRef('Selector'),
+      selector: {
+        type: 'string',
+        description: 'CEL expression to select which versions are eligible for deployment.',
+      },
       description: {
         type: 'string',
         description: 'Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"',
@@ -157,7 +160,10 @@ local openapi = import '../lib/openapi.libsonnet';
     type: 'object',
     required: ['dependsOnEnvironmentSelector'],
     properties: {
-      dependsOnEnvironmentSelector: openapi.schemaRef('Selector'),
+      dependsOnEnvironmentSelector: {
+        type: 'string',
+        description: 'CEL expression to match the environment(s) that must have a successful release before this environment can proceed.',
+      },
 
       minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },
       successStatuses: { type: 'array', items: openapi.schemaRef('JobStatus') },

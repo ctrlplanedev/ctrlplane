@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func newID() string { return uuid.New().String() }
@@ -22,14 +23,6 @@ func mustCreateJobAgentConfig(t *testing.T, configJSON string) oapi.JobAgentConf
 	err := json.Unmarshal([]byte(configJSON), &config)
 	require.NoError(t, err)
 	return config
-}
-
-func mustCreateResourceSelector(t *testing.T) *oapi.Selector {
-	t.Helper()
-	selector := &oapi.Selector{}
-	err := selector.UnmarshalJSON([]byte(`{"type": "all"}`))
-	require.NoError(t, err)
-	return selector
 }
 
 // Test helpers for setting up store with test data
@@ -46,13 +39,14 @@ func createTestDeployment(
 	jobAgentConfig oapi.JobAgentConfig,
 ) *oapi.Deployment {
 	t.Helper()
+	resourceSelector := "true"
 	return &oapi.Deployment{
 		Id:               id,
 		Name:             "test-deployment",
 		Slug:             "test-deployment",
 		JobAgentId:       jobAgentId,
 		JobAgentConfig:   jobAgentConfig,
-		ResourceSelector: mustCreateResourceSelector(t),
+		ResourceSelector: &resourceSelector,
 	}
 }
 
@@ -63,12 +57,13 @@ func createTestEnvironment(
 	name string,
 ) *oapi.Environment {
 	t.Helper()
+	resourceSelector := "true"
 	return &oapi.Environment{
 		Id:               id,
 		Name:             name,
 		Metadata:         map[string]string{},
 		CreatedAt:        time.Now(),
-		ResourceSelector: mustCreateResourceSelector(t),
+		ResourceSelector: &resourceSelector,
 	}
 }
 

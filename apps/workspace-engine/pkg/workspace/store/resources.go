@@ -157,7 +157,7 @@ func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariab
 	return variables
 }
 
-func (r *Resources) ForSelector(ctx context.Context, sel *oapi.Selector) map[string]*oapi.Resource {
+func (r *Resources) ForSelector(ctx context.Context, sel string) map[string]*oapi.Resource {
 	resources := make(map[string]*oapi.Resource)
 	for _, resource := range r.Items() {
 		matched, err := selector.Match(ctx, sel, resource)
@@ -175,14 +175,20 @@ func (r *Resources) ForEnvironment(
 	ctx context.Context,
 	environment *oapi.Environment,
 ) map[string]*oapi.Resource {
-	return r.ForSelector(ctx, environment.ResourceSelector)
+	if environment.ResourceSelector == nil {
+		return make(map[string]*oapi.Resource)
+	}
+	return r.ForSelector(ctx, *environment.ResourceSelector)
 }
 
 func (r *Resources) ForDeployment(
 	ctx context.Context,
 	deployment *oapi.Deployment,
 ) map[string]*oapi.Resource {
-	return r.ForSelector(ctx, deployment.ResourceSelector)
+	if deployment.ResourceSelector == nil {
+		return make(map[string]*oapi.Resource)
+	}
+	return r.ForSelector(ctx, *deployment.ResourceSelector)
 }
 
 func (r *Resources) ForProvider(ctx context.Context, providerId string) map[string]*oapi.Resource {

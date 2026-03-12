@@ -257,11 +257,6 @@ type CelMatcher struct {
 	Cel string `json:"cel"`
 }
 
-// CelSelector defines model for CelSelector.
-type CelSelector struct {
-	Cel string `json:"cel"`
-}
-
 // DatadogMetricProvider defines model for DatadogMetricProvider.
 type DatadogMetricProvider struct {
 	// Aggregator Datadog aggregator
@@ -300,15 +295,17 @@ type DeployDecision struct {
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description      *string               `json:"description,omitempty"`
-	Id               string                `json:"id"`
-	JobAgentConfig   JobAgentConfig        `json:"jobAgentConfig"`
-	JobAgentId       *string               `json:"jobAgentId,omitempty"`
-	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
-	Metadata         map[string]string     `json:"metadata"`
-	Name             string                `json:"name"`
-	ResourceSelector *Selector             `json:"resourceSelector,omitempty"`
-	Slug             string                `json:"slug"`
+	Description    *string               `json:"description,omitempty"`
+	Id             string                `json:"id"`
+	JobAgentConfig JobAgentConfig        `json:"jobAgentConfig"`
+	JobAgentId     *string               `json:"jobAgentId,omitempty"`
+	JobAgents      *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
+	Metadata       map[string]string     `json:"metadata"`
+	Name           string                `json:"name"`
+
+	// ResourceSelector CEL expression to determine if the deployment should be used
+	ResourceSelector *string `json:"resourceSelector,omitempty"`
+	Slug             string  `json:"slug"`
 }
 
 // DeploymentAndSystems defines model for DeploymentAndSystems.
@@ -343,11 +340,13 @@ type DeploymentVariable struct {
 
 // DeploymentVariableValue defines model for DeploymentVariableValue.
 type DeploymentVariableValue struct {
-	DeploymentVariableId string    `json:"deploymentVariableId"`
-	Id                   string    `json:"id"`
-	Priority             int64     `json:"priority"`
-	ResourceSelector     *Selector `json:"resourceSelector,omitempty"`
-	Value                Value     `json:"value"`
+	DeploymentVariableId string `json:"deploymentVariableId"`
+	Id                   string `json:"id"`
+	Priority             int64  `json:"priority"`
+
+	// ResourceSelector CEL expression to determine if the deployment variable value should be used
+	ResourceSelector *string `json:"resourceSelector,omitempty"`
+	Value            Value   `json:"value"`
 }
 
 // DeploymentVariableWithValues defines model for DeploymentVariableWithValues.
@@ -423,18 +422,21 @@ type EntityRelation struct {
 
 // Environment defines model for Environment.
 type Environment struct {
-	CreatedAt        time.Time         `json:"createdAt"`
-	Description      *string           `json:"description,omitempty"`
-	Id               string            `json:"id"`
-	Metadata         map[string]string `json:"metadata"`
-	Name             string            `json:"name"`
-	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
-	WorkspaceId      string            `json:"workspaceId"`
+	CreatedAt   time.Time         `json:"createdAt"`
+	Description *string           `json:"description,omitempty"`
+	Id          string            `json:"id"`
+	Metadata    map[string]string `json:"metadata"`
+	Name        string            `json:"name"`
+
+	// ResourceSelector CEL expression to determine if the environment should be used
+	ResourceSelector *string `json:"resourceSelector,omitempty"`
+	WorkspaceId      string  `json:"workspaceId"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
 type EnvironmentProgressionRule struct {
-	DependsOnEnvironmentSelector Selector `json:"dependsOnEnvironmentSelector"`
+	// DependsOnEnvironmentSelector CEL expression to determine if the environment progression rule should be used
+	DependsOnEnvironmentSelector string `json:"dependsOnEnvironmentSelector"`
 
 	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
 	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
@@ -453,14 +455,16 @@ type EnvironmentSummary struct {
 
 // EnvironmentWithSystems defines model for EnvironmentWithSystems.
 type EnvironmentWithSystems struct {
-	CreatedAt        time.Time         `json:"createdAt"`
-	Description      *string           `json:"description,omitempty"`
-	Id               string            `json:"id"`
-	Metadata         map[string]string `json:"metadata"`
-	Name             string            `json:"name"`
-	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
-	Systems          []System          `json:"systems"`
-	WorkspaceId      string            `json:"workspaceId"`
+	CreatedAt   time.Time         `json:"createdAt"`
+	Description *string           `json:"description,omitempty"`
+	Id          string            `json:"id"`
+	Metadata    map[string]string `json:"metadata"`
+	Name        string            `json:"name"`
+
+	// ResourceSelector CEL expression to determine if the environment should be used
+	ResourceSelector *string  `json:"resourceSelector,omitempty"`
+	Systems          []System `json:"systems"`
+	WorkspaceId      string   `json:"workspaceId"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -641,11 +645,6 @@ type JobWithRelease struct {
 type JobWithVerifications struct {
 	Job           Job               `json:"job"`
 	Verifications []JobVerification `json:"verifications"`
-}
-
-// JsonSelector defines model for JsonSelector.
-type JsonSelector struct {
-	Json map[string]interface{} `json:"json"`
 }
 
 // LiteralValue defines model for LiteralValue.
@@ -838,8 +837,10 @@ type RelationDirection string
 
 // RelationshipRule defines model for RelationshipRule.
 type RelationshipRule struct {
-	Description      *string                  `json:"description,omitempty"`
-	FromSelector     *Selector                `json:"fromSelector,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// FromSelector CEL expression to determine if the relationship rule should be used
+	FromSelector     *string                  `json:"fromSelector,omitempty"`
 	FromType         RelatableEntityType      `json:"fromType"`
 	Id               string                   `json:"id"`
 	Matcher          RelationshipRule_Matcher `json:"matcher"`
@@ -847,9 +848,11 @@ type RelationshipRule struct {
 	Name             string                   `json:"name"`
 	Reference        string                   `json:"reference"`
 	RelationshipType string                   `json:"relationshipType"`
-	ToSelector       *Selector                `json:"toSelector,omitempty"`
-	ToType           RelatableEntityType      `json:"toType"`
-	WorkspaceId      string                   `json:"workspaceId"`
+
+	// ToSelector CEL expression to determine if the relationship rule should be used
+	ToSelector  *string             `json:"toSelector,omitempty"`
+	ToType      RelatableEntityType `json:"toType"`
+	WorkspaceId string              `json:"workspaceId"`
 }
 
 // RelationshipRule_Matcher defines model for RelationshipRule.Matcher.
@@ -1037,11 +1040,6 @@ type RuleEvaluation struct {
 
 // RuleEvaluationActionType Type of action required
 type RuleEvaluationActionType string
-
-// Selector defines model for Selector.
-type Selector struct {
-	union json.RawMessage
-}
 
 // SensitiveValue defines model for SensitiveValue.
 type SensitiveValue struct {
@@ -1235,8 +1233,10 @@ type VersionCooldownRule struct {
 // VersionSelectorRule defines model for VersionSelectorRule.
 type VersionSelectorRule struct {
 	// Description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"
-	Description *string  `json:"description,omitempty"`
-	Selector    Selector `json:"selector"`
+	Description *string `json:"description,omitempty"`
+
+	// Selector CEL expression to determine if the version selector should be used
+	Selector string `json:"selector"`
 }
 
 // VersionSummary defines model for VersionSummary.
@@ -1384,7 +1384,8 @@ type WorkflowRunWithJobs struct {
 type WorkflowSelectorArrayInput struct {
 	Key      string `json:"key"`
 	Selector struct {
-		Default    *Selector                                    `json:"default,omitempty"`
+		// Default CEL expression to determine if the selector array input should be used
+		Default    *string                                      `json:"default,omitempty"`
 		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
 	} `json:"selector"`
 	Type WorkflowSelectorArrayInputType `json:"type"`
@@ -1408,7 +1409,8 @@ type WorkflowStringInputType string
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
 type ValidateResourceSelectorJSONBody struct {
-	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
+	// ResourceSelector CEL expression to validate.
+	ResourceSelector string `json:"resourceSelector"`
 }
 
 // ComputeAggergateJSONBody defines parameters for ComputeAggergate.
@@ -1426,7 +1428,8 @@ type ComputeAggergateJSONBody struct {
 
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
-	Filter *Selector `json:"filter,omitempty"`
+	// Filter CEL expression to filter resources. Defaults to "true" (all resources).
+	Filter *string `json:"filter,omitempty"`
 }
 
 // QueryResourcesParams defines parameters for QueryResources.
@@ -2089,68 +2092,6 @@ func (t RelationshipRule_Matcher) MarshalJSON() ([]byte, error) {
 }
 
 func (t *RelationshipRule_Matcher) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsJsonSelector returns the union data inside the Selector as a JsonSelector
-func (t Selector) AsJsonSelector() (JsonSelector, error) {
-	var body JsonSelector
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromJsonSelector overwrites any union data inside the Selector as the provided JsonSelector
-func (t *Selector) FromJsonSelector(v JsonSelector) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeJsonSelector performs a merge with any union data inside the Selector, using the provided JsonSelector
-func (t *Selector) MergeJsonSelector(v JsonSelector) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCelSelector returns the union data inside the Selector as a CelSelector
-func (t Selector) AsCelSelector() (CelSelector, error) {
-	var body CelSelector
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCelSelector overwrites any union data inside the Selector as the provided CelSelector
-func (t *Selector) FromCelSelector(v CelSelector) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCelSelector performs a merge with any union data inside the Selector, using the provided CelSelector
-func (t *Selector) MergeCelSelector(v CelSelector) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t Selector) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *Selector) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

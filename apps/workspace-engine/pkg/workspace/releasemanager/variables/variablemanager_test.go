@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 // Helper function to create a test store with a resource.
@@ -80,7 +81,7 @@ func addDeploymentVariableValue(
 	st *store.Store,
 	deploymentVariableID string,
 	priority int64,
-	selector *oapi.Selector,
+	selector string,
 	value *oapi.Value,
 ) {
 	ctx := context.Background()
@@ -90,7 +91,7 @@ func addDeploymentVariableValue(
 		Id:                   valueID,
 		DeploymentVariableId: deploymentVariableID,
 		Priority:             priority,
-		ResourceSelector:     selector,
+		ResourceSelector:     &selector,
 		Value:                *value,
 	}
 
@@ -108,15 +109,6 @@ func addResourceVariable(st *store.Store, resourceID, key string, value *oapi.Va
 	}
 
 	st.ResourceVariables.Upsert(ctx, rv)
-}
-
-// Helper function to create a CEL selector.
-func mustCreateSelector(celExpression string) *oapi.Selector {
-	selector := &oapi.Selector{}
-	if err := selector.FromCelSelector(oapi.CelSelector{Cel: celExpression}); err != nil {
-		panic(err)
-	}
-	return selector
 }
 
 // Helper function to create a literal value from a Go value.
@@ -265,7 +257,7 @@ func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 
 	// Deployment has replicas with value = 3
 	varID := addDeploymentVariable(st, deploymentID, "replicas", nil)
-	selector := mustCreateSelector("true") // matches all resources
+	selector := "true" // matches all resources
 	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral(3))
 
 	// Evaluate
@@ -325,12 +317,11 @@ func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
 
 	// Deployment variable with multiple values
 	varID := addDeploymentVariable(st, deploymentID, "env", nil)
-	selector := mustCreateSelector("true") // both match
 
 	// Add high priority value
-	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral("high-priority"))
+	addDeploymentVariableValue(st, varID, 10, "true", mustCreateValueFromLiteral("high-priority"))
 	// Add low priority value
-	addDeploymentVariableValue(st, varID, 5, selector, mustCreateValueFromLiteral("low-priority"))
+	addDeploymentVariableValue(st, varID, 5, "true", mustCreateValueFromLiteral("low-priority"))
 
 	// Evaluate
 	mgr := New(st)
@@ -391,8 +382,7 @@ func TestVariableManager_FallbackToDefault(t *testing.T) {
 	varID := addDeploymentVariable(st, deploymentID, "config", defaultValue)
 
 	// Selector only matches prod resources
-	selector := mustCreateSelector("resource.metadata.env == 'prod'")
-	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral("prod-config"))
+	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'prod'", mustCreateValueFromLiteral("prod-config"))
 
 	// Evaluate (resource has env=dev, so selector won't match)
 	mgr := New(st)
@@ -452,8 +442,7 @@ func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 	varID := addDeploymentVariable(st, deploymentID, "config", nil)
 
 	// Selector only matches prod resources
-	selector := mustCreateSelector("resource.metadata.env == 'prod'")
-	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral("prod-config"))
+	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'prod'", mustCreateValueFromLiteral("prod-config"))
 
 	// Evaluate (resource has env=dev, so selector won't match)
 	mgr := New(st)
@@ -504,22 +493,20 @@ func TestVariableManager_SelectorFiltering(t *testing.T) {
 	varID := addDeploymentVariable(st, deploymentID, "endpoint", nil)
 
 	// East coast value
-	eastSelector := mustCreateSelector("resource.metadata.region == 'us-east-1'")
 	addDeploymentVariableValue(
 		st,
 		varID,
 		10,
-		eastSelector,
+		"resource.metadata.region == 'us-east-1'",
 		mustCreateValueFromLiteral("east.example.com"),
 	)
 
 	// West coast value
-	westSelector := mustCreateSelector("resource.metadata.region == 'us-west-1'")
 	addDeploymentVariableValue(
 		st,
 		varID,
 		10,
-		westSelector,
+		"resource.metadata.region == 'us-west-1'",
 		mustCreateValueFromLiteral("west.example.com"),
 	)
 
@@ -582,21 +569,19 @@ func TestVariableManager_NoSelectorMatches(t *testing.T) {
 	varID := addDeploymentVariable(st, deploymentID, "endpoint", defaultValue)
 
 	// Only US selectors
-	eastSelector := mustCreateSelector("resource.metadata.region == 'us-east-1'")
 	addDeploymentVariableValue(
 		st,
 		varID,
 		10,
-		eastSelector,
+		"resource.metadata.region == 'us-east-1'",
 		mustCreateValueFromLiteral("east.example.com"),
 	)
 
-	westSelector := mustCreateSelector("resource.metadata.region == 'us-west-1'")
 	addDeploymentVariableValue(
 		st,
 		varID,
 		10,
-		westSelector,
+		"resource.metadata.region == 'us-west-1'",
 		mustCreateValueFromLiteral("west.example.com"),
 	)
 
@@ -807,29 +792,27 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 		st,
 		varID1,
 		10,
-		mustCreateSelector("true"),
+		"true",
 		mustCreateValueFromLiteral("from-deployment"),
 	)
 
 	// var2: resolved from deployment variable value (no resource var)
 	varID2 := addDeploymentVariable(st, deploymentID, "var2", mustCreateLiteralValue("default2"))
-	premiumSelector := mustCreateSelector("resource.metadata.tier == 'premium'")
 	addDeploymentVariableValue(
 		st,
 		varID2,
 		10,
-		premiumSelector,
+		"resource.metadata.tier == 'premium'",
 		mustCreateValueFromLiteral("from-deployment-value"),
 	)
 
 	// var3: resolved from default (selector doesn't match)
 	varID3 := addDeploymentVariable(st, deploymentID, "var3", mustCreateLiteralValue("default3"))
-	basicSelector := mustCreateSelector("resource.metadata.tier == 'basic'")
 	addDeploymentVariableValue(
 		st,
 		varID3,
 		10,
-		basicSelector,
+		"resource.metadata.tier == 'basic'",
 		mustCreateValueFromLiteral("from-deployment-value-basic"),
 	)
 
@@ -839,7 +822,7 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 		st,
 		varID4,
 		10,
-		basicSelector,
+		"resource.metadata.tier == 'basic'",
 		mustCreateValueFromLiteral("basic-only"),
 	)
 
@@ -938,11 +921,9 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 	// Deployment variable with env-specific values
 	varID := addDeploymentVariable(st, deploymentID, "replicas", mustCreateLiteralValue(1))
 
-	prodSelector := mustCreateSelector("resource.metadata.env == 'production'")
-	addDeploymentVariableValue(st, varID, 10, prodSelector, mustCreateValueFromLiteral(10))
+	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'production'", mustCreateValueFromLiteral(10))
 
-	stagingSelector := mustCreateSelector("resource.metadata.env == 'staging'")
-	addDeploymentVariableValue(st, varID, 10, stagingSelector, mustCreateValueFromLiteral(3))
+	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'staging'", mustCreateValueFromLiteral(3))
 
 	mgr := New(st)
 

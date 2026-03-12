@@ -1,7 +1,6 @@
 package environments
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -9,33 +8,6 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 )
-
-func selectorFromString(s string) *oapi.Selector {
-	if s == "" {
-		return nil
-	}
-	var sel oapi.Selector
-	if err := json.Unmarshal([]byte(s), &sel); err == nil {
-		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
-			return &sel
-		}
-	}
-	sel = oapi.Selector{}
-	celJSON, _ := json.Marshal(oapi.CelSelector{Cel: s})
-	_ = sel.UnmarshalJSON(celJSON)
-	return &sel
-}
-
-func selectorToString(sel *oapi.Selector) string {
-	if sel == nil {
-		return "false"
-	}
-	cel, err := sel.AsCelSelector()
-	if err == nil && cel.Cel != "" {
-		return cel.Cel
-	}
-	return "false"
-}
 
 // ToOapi converts a db.Environment into an oapi.Environment.
 func ToOapi(row db.Environment) *oapi.Environment {
@@ -53,7 +25,7 @@ func ToOapi(row db.Environment) *oapi.Environment {
 		Id:               row.ID.String(),
 		Name:             row.Name,
 		Description:      description,
-		ResourceSelector: selectorFromString(row.ResourceSelector),
+		ResourceSelector: &row.ResourceSelector,
 		Metadata:         metadata,
 		CreatedAt:        row.CreatedAt.Time,
 	}
@@ -81,11 +53,16 @@ func ToUpsertParams(e *oapi.Environment) (db.UpsertEnvironmentParams, error) {
 		createdAt = pgtype.Timestamptz{Time: e.CreatedAt, Valid: true}
 	}
 
+	resourceSelector := "false"
+	if e.ResourceSelector != nil && *e.ResourceSelector != "" {
+		resourceSelector = *e.ResourceSelector
+	}
+
 	return db.UpsertEnvironmentParams{
 		ID:               id,
 		Name:             e.Name,
 		Description:      description,
-		ResourceSelector: selectorToString(e.ResourceSelector),
+		ResourceSelector: resourceSelector,
 		Metadata:         metadata,
 		WorkspaceID:      uuid.Nil, // set by caller
 		CreatedAt:        createdAt,

@@ -7,13 +7,14 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/variablemanager")
@@ -195,7 +196,10 @@ func (m *Manager) tryResolveDeploymentVariableValue(
 	// Sort values by priority (higher priority first)
 	sortedValues := make([]*oapi.DeploymentVariableValue, 0, len(values))
 	for _, value := range values {
-		matches, _ := selector.Match(ctx, value.ResourceSelector, resource)
+		if value.ResourceSelector == nil {
+			continue
+		}
+		matches, _ := selector.Match(ctx, *value.ResourceSelector, resource)
 		if !matches {
 			continue
 		}

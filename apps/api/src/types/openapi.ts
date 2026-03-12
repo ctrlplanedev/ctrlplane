@@ -915,9 +915,6 @@ export interface components {
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
         BooleanValue: boolean;
-        CelSelector: {
-            cel: string;
-        };
         CreateDeploymentRequest: {
             description?: string;
             jobAgentConfig?: {
@@ -1198,7 +1195,8 @@ export interface components {
             resourceSelector?: string;
         };
         EnvironmentProgressionRule: {
-            dependsOnEnvironmentSelector: components["schemas"]["Selector"];
+            /** @description CEL expression to match the environment(s) that must have a successful release before this environment can proceed. */
+            dependsOnEnvironmentSelector: string;
             /**
              * Format: int32
              * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
@@ -1350,11 +1348,6 @@ export interface components {
             job: components["schemas"]["Job"];
             release: components["schemas"]["Release"];
             resource?: components["schemas"]["Resource"];
-        };
-        JsonSelector: {
-            json: {
-                [key: string]: unknown;
-            };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
@@ -1622,7 +1615,6 @@ export interface components {
             /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
             retryOnStatuses?: components["schemas"]["JobStatus"][];
         };
-        Selector: components["schemas"]["JsonSelector"] | components["schemas"]["CelSelector"];
         SensitiveValue: {
             valueHash: string;
         };
@@ -1926,7 +1918,8 @@ export interface components {
         VersionSelectorRule: {
             /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
             description?: string;
-            selector: components["schemas"]["Selector"];
+            /** @description CEL expression to select which versions are eligible for deployment. */
+            selector: string;
         };
         Workflow: {
             id: string;
@@ -2009,7 +2002,8 @@ export interface components {
         WorkflowSelectorArrayInput: {
             key: string;
             selector: {
-                default?: components["schemas"]["Selector"];
+                /** @description CEL expression for the default selector. */
+                default?: string;
                 /** @enum {string} */
                 entityType: "resource" | "environment" | "deployment";
             };

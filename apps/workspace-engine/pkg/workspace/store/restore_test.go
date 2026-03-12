@@ -79,11 +79,8 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 	}
 
 	// Set up resource selector to match resources with env=production
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: "resource.metadata['env'] == 'production'",
-	})
-	environment.ResourceSelector = selector
+	selector := "resource.metadata['env'] == 'production'"
+	environment.ResourceSelector = &selector
 
 	// Create deployment with resource selector
 	deploymentId := uuid.New().String()
@@ -94,11 +91,8 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 		Description: ptr("Web application"),
 	}
 
-	deploymentSelector := &oapi.Selector{}
-	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{
-		Cel: "resource.metadata['env'] == 'production'",
-	})
-	deployment.ResourceSelector = deploymentSelector
+	deploymentSelector := "resource.metadata['env'] == 'production'"
+	deployment.ResourceSelector = &deploymentSelector
 
 	// Build changes and save to persistence
 	changes := persistence.NewChangesBuilder(namespace).
@@ -262,33 +256,24 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 		Id:   prodEnvId,
 		Name: "production",
 	}
-	prodSelector := &oapi.Selector{}
-	_ = prodSelector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"},
-	)
-	prodEnv.ResourceSelector = prodSelector
+	prodSelector := "resource.metadata['env'] == 'production'"
+	prodEnv.ResourceSelector = &prodSelector
 
 	stagingEnvId := uuid.New().String()
 	stagingEnv := &oapi.Environment{
 		Id:   stagingEnvId,
 		Name: "staging",
 	}
-	stagingSelector := &oapi.Selector{}
-	_ = stagingSelector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['env'] == 'staging'"},
-	)
-	stagingEnv.ResourceSelector = stagingSelector
+	stagingSelector := "resource.metadata['env'] == 'staging'"
+	stagingEnv.ResourceSelector = &stagingSelector
 
 	devEnvId := uuid.New().String()
 	devEnv := &oapi.Environment{
 		Id:   devEnvId,
 		Name: "development",
 	}
-	devSelector := &oapi.Selector{}
-	_ = devSelector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['env'] == 'development'"},
-	)
-	devEnv.ResourceSelector = devSelector
+	devSelector := "resource.metadata['env'] == 'development'"
+	devEnv.ResourceSelector = &devSelector
 
 	// Save all entities
 	changes := persistence.NewChangesBuilder(namespace).
@@ -387,11 +372,8 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Name:        "production",
 		Description: ptr("Production environment"),
 	}
-	env1Selector := &oapi.Selector{}
-	_ = env1Selector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"},
-	)
-	env1.ResourceSelector = env1Selector
+	env1Selector := "resource.metadata['env'] == 'production'"
+	env1.ResourceSelector = &env1Selector
 
 	env2Id := uuid.New().String()
 	env2 := &oapi.Environment{
@@ -399,11 +381,8 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Name:        "production-frontend",
 		Description: ptr("Production frontend environment"),
 	}
-	env2Selector := &oapi.Selector{}
-	_ = env2Selector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"},
-	)
-	env2.ResourceSelector = env2Selector
+	env2Selector := "resource.metadata['tier'] == 'frontend'"
+	env2.ResourceSelector = &env2Selector
 
 	// Create deployments with selectors
 	deploy1Id := uuid.New().String()
@@ -413,11 +392,8 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Slug:        "api-deploy",
 		Description: ptr("API deployment"),
 	}
-	deploy1Selector := &oapi.Selector{}
-	_ = deploy1Selector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['tier'] == 'backend'"},
-	)
-	deploy1.ResourceSelector = deploy1Selector
+	deploy1Selector := "resource.metadata['tier'] == 'backend'"
+	deploy1.ResourceSelector = &deploy1Selector
 
 	deploy2Id := uuid.New().String()
 	deploy2 := &oapi.Deployment{
@@ -426,11 +402,8 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Slug:        "frontend-deploy",
 		Description: ptr("Frontend deployment"),
 	}
-	deploy2Selector := &oapi.Selector{}
-	_ = deploy2Selector.FromCelSelector(
-		oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"},
-	)
-	deploy2.ResourceSelector = deploy2Selector
+	deploy2Selector := "resource.metadata['tier'] == 'frontend'"
+	deploy2.ResourceSelector = &deploy2Selector
 
 	// Create deployment versions
 	version1Id := uuid.New().String()
@@ -555,9 +528,8 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 		Id:   environmentId,
 		Name: "production",
 	}
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"})
-	environment.ResourceSelector = selector
+	selector := "resource.metadata['env'] == 'production'"
+	environment.ResourceSelector = &selector
 
 	changes := persistence.NewChangesBuilder(namespace).
 		Set(system).
@@ -699,13 +671,11 @@ func TestStore_Restore_RelationshipRules(t *testing.T) {
 	}
 
 	// Set up selectors
-	fromSelector := &oapi.Selector{}
-	_ = fromSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'vpc'"})
-	rule1.FromSelector = fromSelector
+	fromSelector := "resource.kind == 'vpc'"
+	rule1.FromSelector = &fromSelector
 
-	toSelector := &oapi.Selector{}
-	_ = toSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'kubernetes-cluster'"})
-	rule1.ToSelector = toSelector
+	toSelector := "resource.kind == 'kubernetes-cluster'"
+	rule1.ToSelector = &toSelector
 
 	// Set up matcher
 	matcher := &oapi.RelationshipRule_Matcher{}

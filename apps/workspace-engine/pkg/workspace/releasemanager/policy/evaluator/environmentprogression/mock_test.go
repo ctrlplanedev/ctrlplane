@@ -144,23 +144,22 @@ func (m *mockGetters) addJob(rt *oapi.ReleaseTarget, job *oapi.Job, release *oap
 func setupMock() *mockGetters {
 	m := newMockGetters()
 
-	resourceSelector := &oapi.Selector{}
-	_ = resourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	resourceSelector := "true"
 
 	m.environments["env-dev"] = &oapi.Environment{
 		Id:               "env-dev",
 		Name:             "dev",
-		ResourceSelector: resourceSelector,
+		ResourceSelector: &resourceSelector,
 	}
 	m.environments["env-staging"] = &oapi.Environment{
 		Id:               "env-staging",
 		Name:             "staging",
-		ResourceSelector: resourceSelector,
+		ResourceSelector: &resourceSelector,
 	}
 	m.environments["env-prod"] = &oapi.Environment{
 		Id:               "env-prod",
 		Name:             "prod",
-		ResourceSelector: resourceSelector,
+		ResourceSelector: &resourceSelector,
 	}
 
 	m.systemEnvs["env-dev"] = []string{"system-1"}
@@ -214,13 +213,12 @@ func setupMock() *mockGetters {
 func setupMockForSoakTime() *mockGetters {
 	m := newMockGetters()
 
-	resourceSelector := &oapi.Selector{}
-	_ = resourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	resourceSelector := "true"
 
 	m.environments["env-staging"] = &oapi.Environment{
 		Id:               "env-staging",
 		Name:             "staging",
-		ResourceSelector: resourceSelector,
+		ResourceSelector: &resourceSelector,
 	}
 	m.systemEnvs["env-staging"] = []string{"system-1"}
 

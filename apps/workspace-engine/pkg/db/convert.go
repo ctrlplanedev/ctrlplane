@@ -3,33 +3,11 @@ package db
 import (
 	"encoding/json"
 
+	"workspace-engine/pkg/oapi"
+
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
-	"workspace-engine/pkg/oapi"
 )
-
-// celToSelector converts a raw selector string (as stored in the DB) into an
-// oapi.Selector union. It first tries JSON unmarshal for forward-compatibility
-// with the {"cel":"..."} format, then falls back to wrapping the string as a
-// CelSelector for plain CEL expressions. Unrecognized JSON objects (e.g. legacy
-// JSON selectors) produce a "false" CelSelector.
-func celToSelector(raw string) oapi.Selector {
-	if len(raw) > 0 && raw[0] == '{' {
-		var sel oapi.Selector
-		if err := json.Unmarshal([]byte(raw), &sel); err == nil {
-			if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
-				return sel
-			}
-		}
-		log.Warn("unrecognized JSON selector format, treating as false", "selector", raw)
-		var s oapi.Selector
-		_ = s.FromCelSelector(oapi.CelSelector{Cel: "false"})
-		return s
-	}
-	var s oapi.Selector
-	_ = s.FromCelSelector(oapi.CelSelector{Cel: raw})
-	return s
-}
 
 func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
@@ -177,9 +155,8 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 	var progs []progressionJSON
 	_ = json.Unmarshal(row.EnvironmentProgressionRules, &progs)
 	for _, pr := range progs {
-		depSelector := celToSelector(pr.DependsOnEnvironmentSelector)
 		rule := oapi.EnvironmentProgressionRule{
-			DependsOnEnvironmentSelector: depSelector,
+			DependsOnEnvironmentSelector: pr.DependsOnEnvironmentSelector,
 			MaximumAgeHours:              pr.MaximumAgeHours,
 			MinimumSockTimeMinutes:       pr.MinimumSoakTimeMinutes,
 			MinimumSuccessPercentage:     pr.MinimumSuccessPercentage,
@@ -240,13 +217,12 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 	var selectors []selectorJSON
 	_ = json.Unmarshal(row.VersionSelectorRules, &selectors)
 	for _, s := range selectors {
-		vSelector := celToSelector(s.Selector)
 		p.Rules = append(p.Rules, oapi.PolicyRule{
 			Id:       s.Id,
 			PolicyId: p.Id,
 			VersionSelector: &oapi.VersionSelectorRule{
 				Description: s.Description,
-				Selector:    vSelector,
+				Selector:    s.Selector,
 			},
 		})
 	}
@@ -343,8 +319,7 @@ func ToOapiDeploymentVariableValue(row DeploymentVariableValue) oapi.DeploymentV
 		_ = json.Unmarshal(row.Value, &v.Value)
 	}
 	if row.ResourceSelector.Valid && row.ResourceSelector.String != "" {
-		sel := celToSelector(row.ResourceSelector.String)
-		v.ResourceSelector = &sel
+		v.ResourceSelector = &row.ResourceSelector.String
 	}
 	return v
 }

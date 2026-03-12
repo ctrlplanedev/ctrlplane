@@ -3,9 +3,12 @@ package resources
 import (
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
+
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/resources"
 )
@@ -29,15 +32,25 @@ func (r *Resources) QueryResources(
 
 	resourcesGetter := resources.PostgresGetResources{}
 	cel := "true"
-	if body.Filter != nil {
-		sel, err := body.Filter.AsCelSelector()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid filter: " + err.Error(),
-			})
-			return
-		}
-		cel = sel.Cel
+	if body.Filter != nil && *body.Filter != "" {
+		cel = *body.Filter
+	}
+	celValidator, err := celutil.NewEnvBuilder().
+		WithMapVariables("resource").
+		WithStandardExtensions().
+		BuildCached(12 * time.Hour)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create cel validator: " + err.Error(),
+		})
+		return
+	}
+
+	if err := celValidator.Validate(cel); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid filter expression: " + err.Error(),
+		})
+		return
 	}
 	resources, err := resourcesGetter.GetResources(
 		c.Request.Context(),

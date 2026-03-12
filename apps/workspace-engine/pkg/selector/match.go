@@ -2,15 +2,13 @@ package selector
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/dgraph-io/ristretto/v2"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/cel"
-	"workspace-engine/pkg/selector/langs/jsonselector"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/selector/langs/util"
+
+	"github.com/dgraph-io/ristretto/v2"
 )
 
 var matchCache, _ = ristretto.NewCache(&ristretto.Config[string, bool]{
@@ -33,32 +31,8 @@ func (y *YesMatchableCondition) Matches(entity any) (bool, error) {
 	return true, nil
 }
 
-func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCondition, error) {
-	jsonSelector, err := selector.AsJsonSelector()
-	if err == nil && len(jsonSelector.Json) != 0 {
-		unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
-		if err != nil {
-			return &NoMatchableCondition{}, err
-		}
-
-		condition, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
-		if err != nil {
-			return &NoMatchableCondition{}, err
-		}
-
-		return condition, nil
-	}
-
-	cselSelector, err := selector.AsCelSelector()
-	if err != nil {
-		return &NoMatchableCondition{}, fmt.Errorf("selector is not a cel or json selector")
-	}
-
-	if cselSelector.Cel == "" {
-		return &NoMatchableCondition{}, fmt.Errorf("cel selector is empty")
-	}
-
-	condition, err := cel.Compile(cselSelector.Cel)
+func Matchable(ctx context.Context, selector string) (util.MatchableCondition, error) {
+	condition, err := cel.Compile(selector)
 	if err != nil {
 		return &NoMatchableCondition{}, err
 	}
@@ -101,13 +75,13 @@ func entityCacheKey(item any) string {
 	return ""
 }
 
-func Match(ctx context.Context, selector *oapi.Selector, item any) (bool, error) {
-	if selector == nil {
+func Match(ctx context.Context, selector string, item any) (bool, error) {
+	if selector == "" || selector == "false" {
 		return false, nil
 	}
 
 	// Try cache lookup
-	selectorHash := selector.Hash()
+	selectorHash := oapi.SelectorHash(selector)
 	entityKey := entityCacheKey(item)
 	if selectorHash != "" && entityKey != "" {
 		cacheKey := selectorHash + ":" + entityKey

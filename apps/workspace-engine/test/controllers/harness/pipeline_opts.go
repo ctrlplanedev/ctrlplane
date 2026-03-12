@@ -396,9 +396,7 @@ func WithDeploymentWindowRule(
 // WithVersionSelectorRule configures a version selector rule with CEL.
 func WithVersionSelectorRule(cel string) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
-		s := &oapi.Selector{}
-		_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
-		r.VersionSelector = &oapi.VersionSelectorRule{Selector: *s}
+		r.VersionSelector = &oapi.VersionSelectorRule{Selector: cel}
 	}
 }
 
@@ -477,10 +475,8 @@ func WithEnvironmentProgressionRule(
 	opts ...EnvironmentProgressionOption,
 ) PolicyRuleOption {
 	return func(r *oapi.PolicyRule) {
-		sel := &oapi.Selector{}
-		_ = sel.FromCelSelector(oapi.CelSelector{Cel: dependsOnSelector})
 		rule := &oapi.EnvironmentProgressionRule{
-			DependsOnEnvironmentSelector: *sel,
+			DependsOnEnvironmentSelector: dependsOnSelector,
 		}
 		for _, o := range opts {
 			o(rule)
@@ -548,9 +544,7 @@ func ValuePriority(p int64) VariableValueOption {
 // so it only applies to resources matching the selector.
 func ValueSelector(cel string) VariableValueOption {
 	return func(dvv *oapi.DeploymentVariableValue) {
-		s := &oapi.Selector{}
-		_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
-		dvv.ResourceSelector = s
+		dvv.ResourceSelector = &cel
 	}
 }
 

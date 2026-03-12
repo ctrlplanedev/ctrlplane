@@ -10,33 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-func selectorFromString(s string) *oapi.Selector {
-	if s == "" {
-		return nil
-	}
-	var sel oapi.Selector
-	if err := json.Unmarshal([]byte(s), &sel); err == nil {
-		if cs, e := sel.AsCelSelector(); e == nil && cs.Cel != "" {
-			return &sel
-		}
-	}
-	sel = oapi.Selector{}
-	celJSON, _ := json.Marshal(oapi.CelSelector{Cel: s})
-	_ = sel.UnmarshalJSON(celJSON)
-	return &sel
-}
-
-func selectorToString(sel *oapi.Selector) string {
-	if sel == nil {
-		return "false"
-	}
-	cel, err := sel.AsCelSelector()
-	if err == nil && cel.Cel != "" {
-		return cel.Cel
-	}
-	return "false"
-}
-
 // ToOapi converts a db.Deployment into an oapi.Deployment.
 func ToOapi(row db.Deployment) *oapi.Deployment {
 	description := row.Description
@@ -69,9 +42,9 @@ func ToOapi(row db.Deployment) *oapi.Deployment {
 		}
 	}
 
-	var resourceSelector *oapi.Selector
+	var resourceSelector *string
 	if row.ResourceSelector.Valid {
-		resourceSelector = selectorFromString(row.ResourceSelector.String)
+		resourceSelector = &row.ResourceSelector.String
 	}
 
 	return &oapi.Deployment{
@@ -124,7 +97,12 @@ func ToUpsertParams(d *oapi.Deployment) (db.UpsertDeploymentParams, error) {
 		}
 	}
 
-	selStr := selectorToString(d.ResourceSelector)
+	var selStr string
+	if d.ResourceSelector == nil || *d.ResourceSelector == "" {
+		selStr = "false"
+	} else {
+		selStr = *d.ResourceSelector
+	}
 	resourceSelector := pgtype.Text{String: selStr, Valid: true}
 
 	return db.UpsertDeploymentParams{

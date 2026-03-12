@@ -1,30 +1,6 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  // Selector types
-  JsonSelector: {
-    type: 'object',
-    required: ['json'],
-    properties: {
-      json: { type: 'object', additionalProperties: true },
-    },
-  },
-
-  CelSelector: {
-    type: 'object',
-    required: ['cel'],
-    properties: {
-      cel: { type: 'string' },
-    },
-  },
-
-  Selector: {
-    oneOf: [
-      openapi.schemaRef('JsonSelector'),
-      openapi.schemaRef('CelSelector'),
-    ],
-  },
-
   // Property matcher
   PropertyMatcher: {
     type: 'object',

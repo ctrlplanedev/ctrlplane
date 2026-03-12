@@ -4,19 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-)
 
-func celToSelector(cel string) *oapi.Selector {
-	s := &oapi.Selector{}
-	_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
-	return s
-}
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+)
 
 var tracer = otel.Tracer("DeploymentDependencyEvaluator")
 
@@ -58,7 +53,7 @@ func (e *DeploymentDependencyEvaluator) findMatchingDeployments(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
 ) ([]*oapi.Deployment, error) {
-	deploymentSelector := celToSelector(e.rule.DependsOn)
+	deploymentSelector := e.rule.DependsOn
 	deployments, err := e.getters.GetAllDeployments(ctx, scope.Environment.WorkspaceId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployments: %w", err)

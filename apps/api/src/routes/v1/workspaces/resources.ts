@@ -178,13 +178,11 @@ const updateVariablesForResource: AsyncTypedHandler<
   });
 };
 
-const parseSelector = (raw: string | null | undefined) => {
+const parseSelector = (
+  raw: string | null | undefined,
+): string | undefined => {
   if (raw == null || raw === "false") return undefined;
-  try {
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    return { cel: raw };
-  }
+  return raw;
 };
 
 const getDeploymentsForResource: AsyncTypedHandler<

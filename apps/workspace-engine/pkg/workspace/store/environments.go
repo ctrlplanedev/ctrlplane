@@ -77,7 +77,11 @@ func (e *Environments) Resources(
 		allResourcesSlice = append(allResourcesSlice, resource)
 	}
 
-	resources, err := selector.FilterResources(ctx, environment.ResourceSelector, allResourcesSlice)
+	sel := ""
+	if environment.ResourceSelector != nil {
+		sel = *environment.ResourceSelector
+	}
+	resources, err := selector.FilterResources(ctx, sel, allResourcesSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,11 @@ func (e *Environments) ForResource(
 ) ([]*oapi.Environment, error) {
 	environments := make([]*oapi.Environment, 0)
 	for _, environment := range e.Items() {
-		matched, err := selector.Match(ctx, environment.ResourceSelector, resource)
+		sel := ""
+		if environment.ResourceSelector != nil {
+			sel = *environment.ResourceSelector
+		}
+		matched, err := selector.Match(ctx, sel, resource)
 		if err != nil {
 			return nil, err
 		}

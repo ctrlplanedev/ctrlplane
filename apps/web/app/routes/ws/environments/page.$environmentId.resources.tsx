@@ -35,7 +35,7 @@ export default function EnvironmentResources() {
   );
   const resourcesQuery = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
-    selector: { cel: filterDebounced },
+    selector: filterDebounced,
     limit: 200,
     offset: 0,
   });

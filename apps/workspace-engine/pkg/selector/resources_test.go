@@ -2,36 +2,13 @@ package selector
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
-
-// Helper function to convert UnknownCondition to *oapi.Selector.
-func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.Selector {
-	t.Helper()
-
-	// Convert condition to map
-	jsonBytes, err := json.Marshal(condition)
-	if err != nil {
-		t.Fatalf("Failed to marshal condition: %v", err)
-	}
-
-	var conditionMap map[string]any
-	if err := json.Unmarshal(jsonBytes, &conditionMap); err != nil {
-		t.Fatalf("Failed to unmarshal condition: %v", err)
-	}
-
-	v := &oapi.Selector{}
-	if err := v.FromJsonSelector(oapi.JsonSelector{Json: conditionMap}); err != nil {
-		t.Fatalf("Failed to create JSON selector: %v", err)
-	}
-	return v
-}
 
 // Helper function to validate filtered results.
 func validateFilteredResources(
@@ -53,7 +30,6 @@ func validateFilteredResources(
 		}
 	}
 
-	// Check for unexpected IDs
 	for id := range result {
 		if !expectedIDs[id] {
 			t.Errorf("FilterResources() unexpected resource ID %s in results", id)
@@ -64,19 +40,15 @@ func validateFilteredResources(
 func TestFilterResources_StringConditions(t *testing.T) {
 	tests := []struct {
 		name          string
-		condition     unknown.UnknownCondition
+		selector      string
 		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   map[string]bool
 		wantErr       bool
 	}{
 		{
-			name: "contains operator matches exact name",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "production",
-			},
+			name:     "contains operator matches exact name",
+			selector: "resource.name.contains('production')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -94,12 +66,8 @@ func TestFilterResources_StringConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "starts-with operator filters resources",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "starts-with",
-				Value:    "prod",
-			},
+			name:     "starts-with operator filters resources",
+			selector: "resource.name.startsWith('prod')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -119,12 +87,8 @@ func TestFilterResources_StringConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "ends-with operator filters resources",
-			condition: unknown.UnknownCondition{
-				Property: "Kind",
-				Operator: "ends-with",
-				Value:    "service",
-			},
+			name:     "ends-with operator filters resources",
+			selector: "resource.kind.endsWith('service')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -144,12 +108,8 @@ func TestFilterResources_StringConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "contains operator filters resources",
-			condition: unknown.UnknownCondition{
-				Property: "Identifier",
-				Operator: "contains",
-				Value:    "k8s",
-			},
+			name:     "contains operator filters resources",
+			selector: "resource.identifier.contains('k8s')",
 			resources: []*oapi.Resource{
 				{
 					Id:         "1",
@@ -173,8 +133,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := conditionToSelector(t, tt.condition)
-			result, err := FilterResources(ctx, selector, tt.resources)
+			result, err := FilterResources(ctx, tt.selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -189,20 +148,15 @@ func TestFilterResources_StringConditions(t *testing.T) {
 func TestFilterResources_MetadataConditions(t *testing.T) {
 	tests := []struct {
 		name          string
-		condition     unknown.UnknownCondition
+		selector      string
 		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   map[string]bool
 		wantErr       bool
 	}{
 		{
-			name: "metadata equals filter",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "equals",
-				Value:       "production",
-				MetadataKey: "env",
-			},
+			name:     "metadata equals filter",
+			selector: "resource.metadata['env'] == 'production'",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -231,13 +185,8 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "metadata contains filter",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "contains",
-				Value:       "critical",
-				MetadataKey: "tags",
-			},
+			name:     "metadata contains filter",
+			selector: "resource.metadata['tags'].contains('critical')",
 			resources: []*oapi.Resource{
 				{
 					Id: "1",
@@ -257,13 +206,8 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "metadata starts-with filter",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "starts-with",
-				Value:       "us-",
-				MetadataKey: "region",
-			},
+			name:     "metadata starts-with filter",
+			selector: "resource.metadata['region'].startsWith('us-')",
 			resources: []*oapi.Resource{
 				{
 					Id: "1",
@@ -289,13 +233,8 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "metadata missing key returns no matches",
-			condition: unknown.UnknownCondition{
-				Property:    "metadata",
-				Operator:    "equals",
-				Value:       "value",
-				MetadataKey: "nonexistent",
-			},
+			name:     "metadata missing key returns no matches",
+			selector: "resource.metadata['nonexistent'] == 'value'",
 			resources: []*oapi.Resource{
 				{
 					Id: "1",
@@ -313,8 +252,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := conditionToSelector(t, tt.condition)
-			result, err := FilterResources(ctx, selector, tt.resources)
+			result, err := FilterResources(ctx, tt.selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -333,19 +271,15 @@ func TestFilterResources_DateConditions(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		condition     unknown.UnknownCondition
+		selector      string
 		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   []string
 		wantErr       bool
 	}{
 		{
-			name: "after operator filters resources created after date",
-			condition: unknown.UnknownCondition{
-				Property: "created-at",
-				Operator: "after",
-				Value:    baseTime.Format(time.RFC3339),
-			},
+			name:     "after operator filters resources created after date",
+			selector: fmt.Sprintf("resource.createdAt > timestamp('%s')", baseTime.Format(time.RFC3339)),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -365,12 +299,8 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "before operator filters resources created before date",
-			condition: unknown.UnknownCondition{
-				Property: "created-at",
-				Operator: "before",
-				Value:    baseTime.Format(time.RFC3339),
-			},
+			name:     "before operator filters resources created before date",
+			selector: fmt.Sprintf("resource.createdAt < timestamp('%s')", baseTime.Format(time.RFC3339)),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -390,12 +320,8 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "after-or-on operator includes exact match",
-			condition: unknown.UnknownCondition{
-				Property: "created-at",
-				Operator: "after-or-on",
-				Value:    baseTime.Format(time.RFC3339),
-			},
+			name:     "after-or-on operator includes exact match",
+			selector: fmt.Sprintf("resource.createdAt >= timestamp('%s')", baseTime.Format(time.RFC3339)),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -415,12 +341,8 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "before-or-on operator includes exact match",
-			condition: unknown.UnknownCondition{
-				Property: "created-at",
-				Operator: "before-or-on",
-				Value:    baseTime.Format(time.RFC3339),
-			},
+			name:     "before-or-on operator includes exact match",
+			selector: fmt.Sprintf("resource.createdAt <= timestamp('%s')", baseTime.Format(time.RFC3339)),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -444,8 +366,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := conditionToSelector(t, tt.condition)
-			result, err := FilterResources(ctx, selector, tt.resources)
+			result, err := FilterResources(ctx, tt.selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -485,29 +406,15 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		condition     unknown.UnknownCondition
+		selector      string
 		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   []string
 		wantErr       bool
 	}{
 		{
-			name: "AND with multiple string conditions",
-			condition: unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "name",
-						Operator: "starts-with",
-						Value:    "prod",
-					},
-					{
-						Property: "kind",
-						Operator: "contains",
-						Value:    "service",
-					},
-				},
-			},
+			name:     "AND with multiple string conditions",
+			selector: "resource.name.startsWith('prod') && resource.kind.contains('service')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -530,24 +437,8 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "OR with multiple metadata conditions",
-			condition: unknown.UnknownCondition{
-				Operator: "or",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property:    "metadata",
-						Operator:    "equals",
-						Value:       "production",
-						MetadataKey: "env",
-					},
-					{
-						Property:    "metadata",
-						Operator:    "equals",
-						Value:       "staging",
-						MetadataKey: "env",
-					},
-				},
-			},
+			name:     "OR with multiple metadata conditions",
+			selector: "resource.metadata['env'] == 'production' || resource.metadata['env'] == 'staging'",
 			resources: []*oapi.Resource{
 				{
 					Id: "1",
@@ -574,31 +465,10 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 		},
 		{
 			name: "nested AND/OR with string and date conditions",
-			condition: unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Operator: "or",
-						Conditions: []unknown.UnknownCondition{
-							{
-								Property: "name",
-								Operator: "contains",
-								Value:    "api",
-							},
-							{
-								Property: "name",
-								Operator: "contains",
-								Value:    "service",
-							},
-						},
-					},
-					{
-						Property: "created-at",
-						Operator: "after",
-						Value:    recentTime.Format(time.RFC3339),
-					},
-				},
-			},
+			selector: fmt.Sprintf(
+				"(resource.name.contains('api') || resource.name.contains('service')) && resource.createdAt > timestamp('%s')",
+				recentTime.Format(time.RFC3339),
+			),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -626,45 +496,8 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "deeply nested AND/OR/AND with metadata and strings",
-			condition: unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Operator: "or",
-						Conditions: []unknown.UnknownCondition{
-							{
-								Property:    "metadata",
-								Operator:    "starts-with",
-								Value:       "us-",
-								MetadataKey: "region",
-							},
-							{
-								Property:    "metadata",
-								Operator:    "starts-with",
-								Value:       "eu-",
-								MetadataKey: "region",
-							},
-						},
-					},
-					{
-						Operator: "and",
-						Conditions: []unknown.UnknownCondition{
-							{
-								Property: "kind",
-								Operator: "contains",
-								Value:    "cluster",
-							},
-							{
-								Property:    "metadata",
-								Operator:    "equals",
-								Value:       "premium",
-								MetadataKey: "tier",
-							},
-						},
-					},
-				},
-			},
+			name:     "deeply nested AND/OR/AND with metadata and strings",
+			selector: "(resource.metadata['region'].startsWith('us-') || resource.metadata['region'].startsWith('eu-')) && (resource.kind.contains('cluster') && resource.metadata['tier'] == 'premium')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -705,43 +538,10 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 		},
 		{
 			name: "complex nested condition with all types",
-			condition: unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "name",
-						Operator: "starts-with",
-						Value:    "prod",
-					},
-					{
-						Operator: "or",
-						Conditions: []unknown.UnknownCondition{
-							{
-								Property:    "metadata",
-								Operator:    "equals",
-								Value:       "production",
-								MetadataKey: "env",
-							},
-							{
-								Property:    "metadata",
-								Operator:    "equals",
-								Value:       "prod",
-								MetadataKey: "env",
-							},
-						},
-					},
-					{
-						Property: "created-at",
-						Operator: "after",
-						Value:    recentTime.Format(time.RFC3339),
-					},
-					{
-						Property: "kind",
-						Operator: "contains",
-						Value:    "service",
-					},
-				},
-			},
+			selector: fmt.Sprintf(
+				"resource.name.startsWith('prod') && (resource.metadata['env'] == 'production' || resource.metadata['env'] == 'prod') && resource.createdAt > timestamp('%s') && resource.kind.contains('service')",
+				recentTime.Format(time.RFC3339),
+			),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -789,8 +589,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := conditionToSelector(t, tt.condition)
-			result, err := FilterResources(ctx, selector, tt.resources)
+			result, err := FilterResources(ctx, tt.selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -837,19 +636,15 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		condition     unknown.UnknownCondition
+		selector      string
 		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   []string
 		wantErr       bool
 	}{
 		{
-			name: "filter by version field",
-			condition: unknown.UnknownCondition{
-				Property: "Version",
-				Operator: "starts-with",
-				Value:    "1.",
-			},
+			name:     "filter by version field",
+			selector: "resource.version.startsWith('1.')",
 			resources: []*oapi.Resource{
 				{
 					Id:      "1",
@@ -867,12 +662,8 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "filter by identifier with contains",
-			condition: unknown.UnknownCondition{
-				Property: "Identifier",
-				Operator: "contains",
-				Value:    "cluster",
-			},
+			name:     "filter by identifier with contains",
+			selector: "resource.identifier.contains('cluster')",
 			resources: []*oapi.Resource{
 				{
 					Id:         "1",
@@ -896,8 +687,7 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := conditionToSelector(t, tt.condition)
-			result, err := FilterResources(ctx, selector, tt.resources)
+			result, err := FilterResources(ctx, tt.selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -933,29 +723,21 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 	tests := []struct {
 		name          string
-		condition     unknown.UnknownCondition
+		selector      string
 		resources     []*oapi.Resource
 		expectedCount int
 		wantErr       bool
 	}{
 		{
-			name: "empty resource list",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "test",
-			},
+			name:          "empty resource list",
+			selector:      "resource.name.contains('test')",
 			resources:     []*oapi.Resource{},
 			expectedCount: 0,
 			wantErr:       false,
 		},
 		{
-			name: "no resources match condition",
-			condition: unknown.UnknownCondition{
-				Property: "Name",
-				Operator: "contains",
-				Value:    "nonexistent",
-			},
+			name:     "no resources match condition",
+			selector: "resource.name.contains('nonexistent')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -966,12 +748,8 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "all resources match condition",
-			condition: unknown.UnknownCondition{
-				Property: "Kind",
-				Operator: "contains",
-				Value:    "service",
-			},
+			name:     "all resources match condition",
+			selector: "resource.kind.contains('service')",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -990,11 +768,8 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "empty AND condition matches all",
-			condition: unknown.UnknownCondition{
-				Operator:   "and",
-				Conditions: []unknown.UnknownCondition{},
-			},
+			name:     "true selector matches all",
+			selector: "true",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -1009,11 +784,8 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "empty OR condition matches none",
-			condition: unknown.UnknownCondition{
-				Operator:   "or",
-				Conditions: []unknown.UnknownCondition{},
-			},
+			name:     "false selector matches none",
+			selector: "false",
 			resources: []*oapi.Resource{
 				{
 					Id:   "1",
@@ -1028,8 +800,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			selector := conditionToSelector(t, tt.condition)
-			result, err := FilterResources(ctx, selector, tt.resources)
+			result, err := FilterResources(ctx, tt.selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -1055,33 +826,10 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 	t.Run(
 		"filter production kubernetes services in US regions created recently",
 		func(t *testing.T) {
-			condition := unknown.UnknownCondition{
-				Operator: "and",
-				Conditions: []unknown.UnknownCondition{
-					{
-						Property: "kind",
-						Operator: "contains",
-						Value:    "kubernetes-service",
-					},
-					{
-						Property:    "metadata",
-						Operator:    "equals",
-						Value:       "production",
-						MetadataKey: "env",
-					},
-					{
-						Property:    "metadata",
-						Operator:    "starts-with",
-						Value:       "us-",
-						MetadataKey: "region",
-					},
-					{
-						Property: "CreatedAt",
-						Operator: "after",
-						Value:    recentTime.Format(time.RFC3339),
-					},
-				},
-			}
+			sel := fmt.Sprintf(
+				"resource.kind.contains('kubernetes-service') && resource.metadata['env'] == 'production' && resource.metadata['region'].startsWith('us-') && resource.createdAt > timestamp('%s')",
+				recentTime.Format(time.RFC3339),
+			)
 
 			resources := []*oapi.Resource{
 				{
@@ -1127,8 +875,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			selector := conditionToSelector(t, condition)
-			result, err := FilterResources(ctx, selector, resources)
+			result, err := FilterResources(ctx, sel, resources)
 
 			if err != nil {
 				t.Fatalf("FilterResources() unexpected error: %v", err)
@@ -1147,54 +894,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 	)
 
 	t.Run("filter critical services in any production environment", func(t *testing.T) {
-		condition := unknown.UnknownCondition{
-			Operator: "and",
-			Conditions: []unknown.UnknownCondition{
-				{
-					Property:    "metadata",
-					Operator:    "equals",
-					Value:       "critical",
-					MetadataKey: "priority",
-				},
-				{
-					Operator: "or",
-					Conditions: []unknown.UnknownCondition{
-						{
-							Property:    "metadata",
-							Operator:    "equals",
-							Value:       "production",
-							MetadataKey: "env",
-						},
-						{
-							Property:    "metadata",
-							Operator:    "equals",
-							Value:       "prod",
-							MetadataKey: "env",
-						},
-					},
-				},
-				{
-					Operator: "or",
-					Conditions: []unknown.UnknownCondition{
-						{
-							Property: "Name",
-							Operator: "contains",
-							Value:    "payment",
-						},
-						{
-							Property: "Name",
-							Operator: "contains",
-							Value:    "auth",
-						},
-						{
-							Property: "Name",
-							Operator: "contains",
-							Value:    "billing",
-						},
-					},
-				},
-			},
-		}
+		sel := "resource.metadata['priority'] == 'critical' && (resource.metadata['env'] == 'production' || resource.metadata['env'] == 'prod') && (resource.name.contains('payment') || resource.name.contains('auth') || resource.name.contains('billing'))"
 
 		resources := []*oapi.Resource{
 			{
@@ -1232,8 +932,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		selector := conditionToSelector(t, condition)
-		result, err := FilterResources(ctx, selector, resources)
+		result, err := FilterResources(ctx, sel, resources)
 
 		if err != nil {
 			t.Fatalf("FilterResources() unexpected error: %v", err)

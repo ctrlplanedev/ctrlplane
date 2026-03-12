@@ -4,87 +4,49 @@ import (
 	"testing"
 )
 
-func TestSelector_Hash(t *testing.T) {
-	t.Run("nil selector returns empty string", func(t *testing.T) {
-		var s *Selector
-		if got := s.Hash(); got != "" {
-			t.Errorf("Hash() = %q, want empty string", got)
+func TestSelectorHash(t *testing.T) {
+	t.Run("empty string returns consistent hash", func(t *testing.T) {
+		hash := SelectorHash("")
+		if len(hash) != 16 {
+			t.Errorf("SelectorHash() length = %d, want 16", len(hash))
 		}
 	})
 
-	t.Run("json selector produces consistent hash", func(t *testing.T) {
-		s := &Selector{}
-		_ = s.FromJsonSelector(JsonSelector{
-			Json: map[string]any{
-				"type": "Resource",
-				"key":  "metadata.name",
-			},
-		})
-
-		hash1 := s.Hash()
-		hash2 := s.Hash()
+	t.Run("produces consistent hash", func(t *testing.T) {
+		hash1 := SelectorHash("resource.metadata.name == 'test'")
+		hash2 := SelectorHash("resource.metadata.name == 'test'")
 
 		if hash1 != hash2 {
-			t.Errorf("Hash() not deterministic: %q != %q", hash1, hash2)
+			t.Errorf("SelectorHash() not deterministic: %q != %q", hash1, hash2)
 		}
 		if len(hash1) != 16 {
-			t.Errorf("Hash() length = %d, want 16", len(hash1))
-		}
-	})
-
-	t.Run("cel selector produces consistent hash", func(t *testing.T) {
-		s := &Selector{}
-		_ = s.FromCelSelector(CelSelector{
-			Cel: "resource.metadata.name == 'test'",
-		})
-
-		hash1 := s.Hash()
-		hash2 := s.Hash()
-
-		if hash1 != hash2 {
-			t.Errorf("Hash() not deterministic: %q != %q", hash1, hash2)
-		}
-		if len(hash1) != 16 {
-			t.Errorf("Hash() length = %d, want 16", len(hash1))
+			t.Errorf("SelectorHash() length = %d, want 16", len(hash1))
 		}
 	})
 
 	t.Run("different selectors produce different hashes", func(t *testing.T) {
-		s1 := &Selector{}
-		_ = s1.FromJsonSelector(JsonSelector{
-			Json: map[string]any{"key": "value1"},
-		})
+		h1 := SelectorHash("resource.kind == 'Pod'")
+		h2 := SelectorHash("resource.kind == 'Service'")
 
-		s2 := &Selector{}
-		_ = s2.FromJsonSelector(JsonSelector{
-			Json: map[string]any{"key": "value2"},
-		})
-
-		if s1.Hash() == s2.Hash() {
+		if h1 == h2 {
 			t.Error("Different selectors should produce different hashes")
 		}
 	})
 
 	t.Run("same content produces same hash", func(t *testing.T) {
-		s1 := &Selector{}
-		_ = s1.FromCelSelector(CelSelector{Cel: "true"})
+		h1 := SelectorHash("true")
+		h2 := SelectorHash("true")
 
-		s2 := &Selector{}
-		_ = s2.FromCelSelector(CelSelector{Cel: "true"})
-
-		if s1.Hash() != s2.Hash() {
-			t.Errorf("Same content should produce same hash: %q != %q", s1.Hash(), s2.Hash())
+		if h1 != h2 {
+			t.Errorf("Same content should produce same hash: %q != %q", h1, h2)
 		}
 	})
 
 	t.Run("hash contains only hex characters", func(t *testing.T) {
-		s := &Selector{}
-		_ = s.FromCelSelector(CelSelector{Cel: "resource.kind == 'Pod'"})
-
-		hash := s.Hash()
+		hash := SelectorHash("resource.kind == 'Pod'")
 		for i, c := range hash {
 			if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
-				t.Errorf("Hash() contains non-hex char %q at position %d", c, i)
+				t.Errorf("SelectorHash() contains non-hex char %q at position %d", c, i)
 			}
 		}
 	})
@@ -116,31 +78,16 @@ func TestFnv64a(t *testing.T) {
 	})
 }
 
-func BenchmarkSelector_Hash(b *testing.B) {
-	s := &Selector{}
-	_ = s.FromJsonSelector(JsonSelector{
-		Json: map[string]any{
-			"type": "Resource",
-			"conditions": []any{
-				map[string]any{"key": "metadata.name", "operator": "equals", "value": "test"},
-				map[string]any{
-					"key":      "metadata.namespace",
-					"operator": "equals",
-					"value":    "default",
-				},
-			},
-		},
-	})
-
+func BenchmarkSelectorHash(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
-		_ = s.Hash()
+		_ = SelectorHash("resource.kind == 'Pod' && resource.metadata.namespace == 'default'")
 	}
 }
 
 func BenchmarkFnv64a(b *testing.B) {
 	data := []byte(
-		`{"type":"Resource","conditions":[{"key":"metadata.name","operator":"equals","value":"test"}]}`,
+		`resource.kind == 'Pod' && resource.metadata.namespace == 'default'`,
 	)
 
 	b.ReportAllocs()
