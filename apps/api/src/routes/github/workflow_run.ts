@@ -2,8 +2,8 @@ import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
-import { enqueueDesiredRelease } from "@ctrlplane/db/reconcilers";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -87,11 +87,8 @@ export const handleWorkflowRunEvent = async (event: WorkflowRunEvent) => {
       });
   }
 
-  const releaseTarget = await db
+  const result = await db
     .select({
-      deploymentId: schema.release.deploymentId,
-      environmentId: schema.release.environmentId,
-      resourceId: schema.release.resourceId,
       workspaceId: schema.deployment.workspaceId,
     })
     .from(schema.releaseJob)
@@ -106,11 +103,6 @@ export const handleWorkflowRunEvent = async (event: WorkflowRunEvent) => {
     .where(eq(schema.releaseJob.jobId, jobId))
     .then(takeFirstOrNull);
 
-  if (releaseTarget?.workspaceId != null)
-    await enqueueDesiredRelease(db, {
-      workspaceId: releaseTarget.workspaceId,
-      deploymentId: releaseTarget.deploymentId,
-      environmentId: releaseTarget.environmentId,
-      resourceId: releaseTarget.resourceId,
-    });
+  if (result?.workspaceId == null) return;
+  await enqueueAllReleaseTargetsDesiredVersion(db, result.workspaceId);
 };
