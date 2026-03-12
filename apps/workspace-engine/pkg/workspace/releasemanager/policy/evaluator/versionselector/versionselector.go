@@ -60,7 +60,7 @@ func (e *Evaluator) Evaluate(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
 ) *oapi.RuleEvaluation {
-	ctx, span := tracer.Start(ctx, "VersionSelectorEvaluator.Evaluate",
+	_, span := tracer.Start(ctx, "VersionSelectorEvaluator.Evaluate",
 		trace.WithAttributes(
 			attribute.String("version.id", scope.Version.Id),
 			attribute.String("version.tag", scope.Version.Tag),
