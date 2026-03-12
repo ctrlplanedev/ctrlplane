@@ -22,7 +22,7 @@ let clientCache: ReturnType<typeof createClient> | null = null;
 export function getClientFor(workspaceId?: string) {
   if (clientCache == null) {
     clientCache = createClient({
-      baseUrl: env.WORKSPACE_ENGINE_ROUTER_URL ?? "http://localhost:8081",
+      baseUrl: env.WORKSPACE_ENGINE_URL ?? "http://localhost:8081",
       headers: { "x-workspace-id": workspaceId },
     });
   }
