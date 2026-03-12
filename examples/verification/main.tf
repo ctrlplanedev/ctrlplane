@@ -96,3 +96,56 @@ resource "ctrlplane_policy" "test2" {
     duration = "10m"
   }
 }
+
+resource "ctrlplane_policy" "prod" {
+  name     = "prod-dev"
+  selector = "deployment.name.contains('prod')"
+
+  environment_progression {
+    depends_on_environment_selector = "environment.name == 'dev'"
+    maximum_age_hours = 1
+    minimum_success_percentage = 1
+  }
+}
+
+resource "ctrlplane_environment" "dev" {
+  name              = "dev"
+  description       = "Development environment"
+  resource_selector = "resource.kind.contains('KubernetesCluster')"
+}
+
+resource "ctrlplane_environment" "prod" {
+  name              = "prod"
+  description       = "Production environment"
+  resource_selector = "resource.kind.contains('Kubernetes')"
+}
+
+resource "ctrlplane_deployment" "dev" {
+  name              = "Dev Deployment"
+  resource_selector = "resource.kind.contains('Kubernetes')"
+}
+
+resource "ctrlplane_deployment" "prod" {
+  name              = "Prod Deployment"
+  resource_selector = "resource.kind.contains('Kubernetes')"
+}
+
+resource "ctrlplane_deployment_system_link" "dev" {
+  system_id     = ctrlplane_system.test.id
+  deployment_id = ctrlplane_deployment.dev.id
+}
+
+resource "ctrlplane_environment_system_link" "dev" {
+  system_id      = ctrlplane_system.test.id
+  environment_id = ctrlplane_environment.dev.id
+}
+
+resource "ctrlplane_deployment_system_link" "prod" {
+  system_id     = ctrlplane_system.test.id
+  deployment_id = ctrlplane_deployment.prod.id
+}
+
+resource "ctrlplane_environment_system_link" "prod" {
+  system_id      = ctrlplane_system.test.id
+  environment_id = ctrlplane_environment.prod.id
+}
