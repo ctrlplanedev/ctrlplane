@@ -244,31 +244,98 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	}
 
 	// Create 3 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt2)
-	rt3 := &oapi.ReleaseTarget{ResourceId: "resource-3", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt3)
 
-	mock.resources["resource-2"] = &oapi.Resource{Id: "resource-2", Identifier: "test-resource-2", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
-	mock.resources["resource-3"] = &oapi.Resource{Id: "resource-3", Identifier: "test-resource-3", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
+	mock.resources["resource-2"] = &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	mock.resources["resource-3"] = &oapi.Resource{
+		Id:          "resource-3",
+		Identifier:  "test-resource-3",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release3 := &oapi.Release{ReleaseTarget: *rt3, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *rt3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create jobs with specific timestamps
 	// Job 1: 10:05 (33% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	// Job 2: 10:10 (66% success - meets 50% requirement, this should be satisfiedAt)
 	satisfiedAtTime := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	completedAt2 := satisfiedAtTime
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	// Job 3: 10:15 (100% success)
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
-	job3 := &oapi.Job{Id: "job-3", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC), UpdatedAt: completedAt3, CompletedAt: &completedAt3, JobAgentConfig: oapi.JobAgentConfig{}}
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 	mock.addJob(rt3, job3, release3)
@@ -308,18 +375,43 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 
-	mock.resources["resource-1"] = &oapi.Resource{Id: "resource-1", Identifier: "test-resource-1", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
+	mock.resources["resource-1"] = &oapi.Resource{
+		Id:          "resource-1",
+		Identifier:  "test-resource-1",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	env := mock.environments["env-staging"]
 
 	// Create successful job before testing
 	completedAt := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	// Test with one successful job - should be allowed
@@ -388,12 +480,29 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 
-	mock.resources["resource-1"] = &oapi.Resource{Id: "resource-1", Identifier: "test-resource-1", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
+	mock.resources["resource-1"] = &oapi.Resource{
+		Id:          "resource-1",
+		Identifier:  "test-resource-1",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create a job with InProgress status (which we'll treat as successful)
 	completedAt := time.Now().Add(-5 * time.Minute)

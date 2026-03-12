@@ -47,7 +47,10 @@ func newMockGetters() *mockGetters {
 	}
 }
 
-func (m *mockGetters) GetApprovalRecords(_ context.Context, _, _ string) ([]*oapi.UserApprovalRecord, error) {
+func (m *mockGetters) GetApprovalRecords(
+	_ context.Context,
+	_, _ string,
+) ([]*oapi.UserApprovalRecord, error) {
 	return m.approvalRecords, nil
 }
 
@@ -58,11 +61,17 @@ func (m *mockGetters) GetEnvironment(_ context.Context, envID string) (*oapi.Env
 	return nil, fmt.Errorf("environment not found: %s", envID)
 }
 
-func (m *mockGetters) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+func (m *mockGetters) GetAllEnvironments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Environment, error) {
 	return m.environments, nil
 }
 
-func (m *mockGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+func (m *mockGetters) GetAllDeployments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	return m.deployments, nil
 }
 
@@ -87,7 +96,10 @@ func (m *mockGetters) GetRelease(_ context.Context, relID string) (*oapi.Release
 	return nil, fmt.Errorf("release not found: %s", relID)
 }
 
-func (m *mockGetters) GetReleaseTargetsForDeploymentAndEnvironment(_ context.Context, depID, envID string) ([]oapi.ReleaseTarget, error) {
+func (m *mockGetters) GetReleaseTargetsForDeploymentAndEnvironment(
+	_ context.Context,
+	depID, envID string,
+) ([]oapi.ReleaseTarget, error) {
 	key := depID + "/" + envID
 	return m.rtByDepAndEnv[key], nil
 }
@@ -96,11 +108,17 @@ func (m *mockGetters) GetSystemIDsForEnvironment(envID string) []string {
 	return m.systemIDs[envID]
 }
 
-func (m *mockGetters) GetReleaseTargetsForDeployment(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+func (m *mockGetters) GetReleaseTargetsForDeployment(
+	_ context.Context,
+	_ string,
+) ([]*oapi.ReleaseTarget, error) {
 	return m.releaseTargets, nil
 }
 
-func (m *mockGetters) GetJobsForReleaseTarget(_ context.Context, rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetters) GetJobsForReleaseTarget(
+	_ context.Context,
+	rt *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	key := rt.DeploymentId + "/" + rt.EnvironmentId + "/" + rt.ResourceId
 	return m.jobsByRT[key]
 }
@@ -116,11 +134,17 @@ func (m *mockGetters) GetReleaseByJobID(_ context.Context, jobID string) (*oapi.
 	return nil, fmt.Errorf("release not found for job: %s", jobID)
 }
 
-func (m *mockGetters) GetPoliciesForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+func (m *mockGetters) GetPoliciesForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) ([]*oapi.Policy, error) {
 	return m.policies, nil
 }
 
-func (m *mockGetters) GetPolicySkips(_ context.Context, _, _, _ string) ([]*oapi.PolicySkip, error) {
+func (m *mockGetters) GetPolicySkips(
+	_ context.Context,
+	_, _, _ string,
+) ([]*oapi.PolicySkip, error) {
 	return m.policySkips, nil
 }
 
@@ -164,7 +188,9 @@ func makeReleaseTargets(envID, depID string, resources []*oapi.Resource) []*oapi
 
 // deterministicHashingFn returns a hashing function that uses the resource
 // identifier's numeric suffix as the hash, giving a deterministic ordering.
-func deterministicHashingFn(resourceMap map[string]*oapi.Resource) func(*oapi.ReleaseTarget, string) (uint64, error) {
+func deterministicHashingFn(
+	resourceMap map[string]*oapi.Resource,
+) func(*oapi.ReleaseTarget, string) (uint64, error) {
 	return func(rt *oapi.ReleaseTarget, _ string) (uint64, error) {
 		res, ok := resourceMap[rt.ResourceId]
 		if !ok {
@@ -240,7 +266,10 @@ func (ts *testSetup) scope(i int) evaluator.EvaluatorScope {
 	}
 }
 
-func (ts *testSetup) eval(rule *oapi.PolicyRule, timeGetter func() time.Time) GradualRolloutEvaluator {
+func (ts *testSetup) eval(
+	rule *oapi.PolicyRule,
+	timeGetter func() time.Time,
+) GradualRolloutEvaluator {
 	return GradualRolloutEvaluator{
 		getters:    ts.mock,
 		ruleId:     rule.Id,
@@ -294,12 +323,20 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 	result1 := eval.Evaluate(ts.ctx, ts.scope(1))
 	assert.True(t, result1.Allowed, "position 1 should deploy after 60 seconds")
 	assert.Equal(t, int32(1), result1.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result1.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result1.Details["target_rollout_time"],
+	)
 
 	result2 := eval.Evaluate(ts.ctx, ts.scope(2))
 	assert.True(t, result2.Allowed, "position 2 should deploy after 120 seconds")
 	assert.Equal(t, int32(2), result2.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 }
 
 func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
@@ -344,12 +381,20 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	result1 := eval.Evaluate(ts.ctx, ts.scope(1))
 	assert.True(t, result1.Allowed)
 	assert.Equal(t, int32(1), result1.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(20*time.Second).Format(time.RFC3339), result1.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(20*time.Second).Format(time.RFC3339),
+		result1.Details["target_rollout_time"],
+	)
 
 	result2 := eval.Evaluate(ts.ctx, ts.scope(2))
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(2), result2.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(40*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(40*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 }
 
 func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testing.T) {
@@ -432,9 +477,21 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 		}},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: baseTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
-		{UserId: "user-2", CreatedAt: oneHourLater.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
-		{UserId: "user-3", CreatedAt: twoHoursLater.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: baseTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
+		{
+			UserId:    "user-2",
+			CreatedAt: oneHourLater.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
+		{
+			UserId:    "user-3",
+			CreatedAt: twoHoursLater.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
@@ -450,13 +507,21 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result1.Allowed)
 	assert.Equal(t, int32(1), result1.Details["target_rollout_position"])
 	assert.Equal(t, oneHourLater.Format(time.RFC3339), result1.Details["rollout_start_time"])
-	assert.Equal(t, oneHourLater.Add(60*time.Second).Format(time.RFC3339), result1.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		oneHourLater.Add(60*time.Second).Format(time.RFC3339),
+		result1.Details["target_rollout_time"],
+	)
 
 	result2 := eval.Evaluate(ts.ctx, ts.scope(2))
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(2), result2.Details["target_rollout_position"])
 	assert.Equal(t, oneHourLater.Format(time.RFC3339), result2.Details["rollout_start_time"])
-	assert.Equal(t, oneHourLater.Add(120*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		oneHourLater.Add(120*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 }
 
 func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediately(t *testing.T) {
@@ -492,21 +557,34 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 	result1 := eval.Evaluate(ts.ctx, ts.scope(1))
 	assert.True(t, result1.Allowed)
 	assert.Equal(t, int32(1), result1.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result1.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result1.Details["target_rollout_time"],
+	)
 
 	result2 := eval.Evaluate(ts.ctx, ts.scope(2))
 	assert.True(t, result2.Allowed)
 	assert.Equal(t, int32(2), result2.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 }
 
-func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutStartsImmediately(t *testing.T) {
+func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutStartsImmediately(
+	t *testing.T,
+) {
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	twoHoursLater := baseTime.Add(2 * time.Hour)
 	ts := newTestSetup(3, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -538,11 +616,19 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 
 	result1 := eval.Evaluate(ts.ctx, ts.scope(1))
 	assert.True(t, result1.Allowed)
-	assert.Equal(t, baseTime.Add(60*time.Second).Format(time.RFC3339), result1.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(60*time.Second).Format(time.RFC3339),
+		result1.Details["target_rollout_time"],
+	)
 
 	result2 := eval.Evaluate(ts.ctx, ts.scope(2))
 	assert.True(t, result2.Allowed)
-	assert.Equal(t, baseTime.Add(120*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+	assert.Equal(
+		t,
+		baseTime.Add(120*time.Second).Format(time.RFC3339),
+		result2.Details["target_rollout_time"],
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -555,7 +641,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionSkip_SatisfiedAt(t *testi
 	ts := newTestSetup(3, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -592,7 +681,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 	ts := newTestSetup(3, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -630,7 +722,10 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 	ts := newTestSetup(1, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -645,8 +740,16 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
-		{UserId: "user-2", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
+		{
+			UserId:    "user-2",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 	ts.mock.policySkips = []*oapi.PolicySkip{{
 		RuleId:    "env-prog-rule",
@@ -671,7 +774,10 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 	ts := newTestSetup(1, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -686,8 +792,16 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 		},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
-		{UserId: "user-2", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
+		{
+			UserId:    "user-2",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 	ts.mock.policySkips = []*oapi.PolicySkip{{
 		RuleId:    "env-prog-rule",
@@ -709,7 +823,10 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 	ts := newTestSetup(1, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -726,7 +843,11 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 	}}
 	// Only 1 approval (need 2)
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: baseTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: baseTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 	ts.mock.policySkips = []*oapi.PolicySkip{{
 		RuleId:    "env-prog-rule",
@@ -749,7 +870,10 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	ts := newTestSetup(1, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	approvalTime := baseTime.Add(30 * time.Minute)
@@ -765,8 +889,16 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 		},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
-		{UserId: "user-2", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
+		{
+			UserId:    "user-2",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 	// No env prog skip and no data -> unsatisfied
 
@@ -797,8 +929,16 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 		}},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
-		{UserId: "user-2", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
+		{
+			UserId:    "user-2",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
@@ -837,7 +977,11 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 		}},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: approvalTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: approvalTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 
 	currentTime := approvalTime
@@ -845,22 +989,46 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 	eval := ts.eval(rule, func() time.Time { return currentTime })
 
 	currentTime = approvalTime
-	assert.Equal(t, 1, countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets))
+	assert.Equal(
+		t,
+		1,
+		countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets),
+	)
 
 	currentTime = approvalTime.Add(30 * time.Second)
-	assert.Equal(t, 1, countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets))
+	assert.Equal(
+		t,
+		1,
+		countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets),
+	)
 
 	currentTime = approvalTime.Add(60 * time.Second)
-	assert.Equal(t, 2, countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets))
+	assert.Equal(
+		t,
+		2,
+		countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets),
+	)
 
 	currentTime = approvalTime.Add(120 * time.Second)
-	assert.Equal(t, 3, countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets))
+	assert.Equal(
+		t,
+		3,
+		countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets),
+	)
 
 	currentTime = approvalTime.Add(180 * time.Second)
-	assert.Equal(t, 4, countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets))
+	assert.Equal(
+		t,
+		4,
+		countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets),
+	)
 
 	currentTime = approvalTime.Add(240 * time.Second)
-	assert.Equal(t, 5, countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets))
+	assert.Equal(
+		t,
+		5,
+		countAllowedTargets(ts.ctx, t, eval, ts.environment, ts.version, ts.releaseTargets),
+	)
 }
 
 func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowed(t *testing.T) {
@@ -869,7 +1037,10 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 	ts := newTestSetup(5, baseTime)
 
 	selector := oapi.Selector{}
-	require.NoError(t, selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}))
+	require.NoError(
+		t,
+		selector.FromCelSelector(oapi.CelSelector{Cel: "environment.name == 'staging'"}),
+	)
 
 	minSuccess := float32(100.0)
 	ts.mock.policies = []*oapi.Policy{{
@@ -969,7 +1140,11 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 		}},
 	}}
 	ts.mock.approvalRecords = []*oapi.UserApprovalRecord{
-		{UserId: "user-1", CreatedAt: baseTime.Format(time.RFC3339), Status: oapi.ApprovalStatusApproved},
+		{
+			UserId:    "user-1",
+			CreatedAt: baseTime.Format(time.RFC3339),
+			Status:    oapi.ApprovalStatusApproved,
+		},
 	}
 
 	twoHoursLater := baseTime.Add(2 * time.Hour)
@@ -999,13 +1174,23 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 	result1 := eval.Evaluate(ts.ctx, ts.scope(1))
 	assert.False(t, result1.Allowed)
 	require.NotNil(t, result1.NextEvaluationTime)
-	assert.WithinDuration(t, baseTime.Add(40*time.Second), *result1.NextEvaluationTime, 1*time.Second)
+	assert.WithinDuration(
+		t,
+		baseTime.Add(40*time.Second),
+		*result1.NextEvaluationTime,
+		1*time.Second,
+	)
 
 	// Position 2: offset = (2/3)*120 = 80s -> pending at 10s
 	result2 := eval.Evaluate(ts.ctx, ts.scope(2))
 	assert.False(t, result2.Allowed)
 	require.NotNil(t, result2.NextEvaluationTime)
-	assert.WithinDuration(t, baseTime.Add(80*time.Second), *result2.NextEvaluationTime, 1*time.Second)
+	assert.WithinDuration(
+		t,
+		baseTime.Add(80*time.Second),
+		*result2.NextEvaluationTime,
+		1*time.Second,
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -1074,7 +1259,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 	assert.Equal(t, windowOpenTime.Format(time.RFC3339), result0.Details["rollout_start_time"])
 }
 
-func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVersion(t *testing.T) {
+func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVersion(
+	t *testing.T,
+) {
 	versionCreatedAt := time.Date(2025, 1, 6, 0, 0, 0, 0, time.UTC)
 	ts := newTestSetup(3, versionCreatedAt)
 	ts.mock.hasRelease = false
@@ -1222,8 +1409,13 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 
 		assert.Equal(t, windowOpenTime.Format(time.RFC3339), result.Details["rollout_start_time"],
 			"rollout should start from window open time for position %d", i)
-		assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result.Details["target_rollout_time"],
-			"position %d should have correct rollout time", i)
+		assert.Equal(
+			t,
+			expectedRolloutTime.Format(time.RFC3339),
+			result.Details["target_rollout_time"],
+			"position %d should have correct rollout time",
+			i,
+		)
 	}
 }
 
@@ -1266,8 +1458,13 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 
 		assert.Equal(t, denyEnd.Format(time.RFC3339), result.Details["rollout_start_time"],
 			"rollout should start after deny window ends for position %d", i)
-		assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result.Details["target_rollout_time"],
-			"position %d should have correct rollout time", i)
+		assert.Equal(
+			t,
+			expectedRolloutTime.Format(time.RFC3339),
+			result.Details["target_rollout_time"],
+			"position %d should have correct rollout time",
+			i,
+		)
 	}
 }
 
@@ -1297,7 +1494,11 @@ func TestNewEvaluator_Valid(t *testing.T) {
 
 func TestScopeFields(t *testing.T) {
 	e := &GradualRolloutEvaluator{}
-	assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion|evaluator.ScopeReleaseTarget, e.ScopeFields())
+	assert.Equal(
+		t,
+		evaluator.ScopeEnvironment|evaluator.ScopeVersion|evaluator.ScopeReleaseTarget,
+		e.ScopeFields(),
+	)
 }
 
 func TestRuleType(t *testing.T) {

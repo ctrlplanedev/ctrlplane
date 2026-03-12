@@ -2,7 +2,6 @@ package deployableversions
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -845,21 +844,13 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 				t,
 				result.Details,
 				"version_id",
-				fmt.Sprintf(
-					"result should contain version_id for status %s (iteration %d)",
-					tc.status,
-					i,
-				),
+				"result should contain version_id for status %s (iteration %d)", tc.status, i,
 			)
 			assert.Contains(
 				t,
 				result.Details,
 				"version_status",
-				fmt.Sprintf(
-					"result should contain version_status for status %s (iteration %d)",
-					tc.status,
-					i,
-				),
+				"result should contain version_status for status %s (iteration %d)", tc.status, i,
 			)
 		})
 	}

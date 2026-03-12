@@ -38,7 +38,10 @@ func (m *mockGetters) GetEnvironment(_ context.Context, id string) (*oapi.Enviro
 	return m.environments[id], nil
 }
 
-func (m *mockGetters) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+func (m *mockGetters) GetAllEnvironments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Environment, error) {
 	return m.environments, nil
 }
 
@@ -46,7 +49,10 @@ func (m *mockGetters) GetDeployment(_ context.Context, id string) (*oapi.Deploym
 	return m.deployments[id], nil
 }
 
-func (m *mockGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+func (m *mockGetters) GetAllDeployments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	return m.deployments, nil
 }
 
@@ -58,7 +64,10 @@ func (m *mockGetters) GetResource(_ context.Context, id string) (*oapi.Resource,
 	return m.resources[id], nil
 }
 
-func (m *mockGetters) GetJobsForReleaseTarget(_ context.Context, rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetters) GetJobsForReleaseTarget(
+	_ context.Context,
+	rt *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	if rt == nil {
 		return nil
 	}
@@ -69,7 +78,10 @@ func (m *mockGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificatio
 	return m.verifications[jobID]
 }
 
-func (m *mockGetters) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+func (m *mockGetters) GetAllReleaseTargets(
+	_ context.Context,
+	_ string,
+) ([]*oapi.ReleaseTarget, error) {
 	return m.releaseTargets, nil
 }
 
@@ -160,9 +172,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource
@@ -207,9 +227,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource
@@ -274,9 +302,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			ctx := context.Background()
 			mock := newMockGetters()
 
-			deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+			deployment := &oapi.Deployment{
+				Id:   uuid.New().String(),
+				Name: "test-deployment",
+				Slug: "test-deployment",
+			}
 			environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-			resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+			resource := &oapi.Resource{
+				Id:         uuid.New().String(),
+				Identifier: "test-resource-1",
+				Kind:       "service",
+			}
 			mock.deployments[deployment.Id] = deployment
 			mock.environments[environment.Id] = environment
 			mock.resources[resource.Id] = resource
@@ -355,9 +391,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource
@@ -432,9 +476,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource
@@ -509,9 +561,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource
@@ -606,9 +666,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource
@@ -711,9 +779,17 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		ctx := context.Background()
 		mock := newMockGetters()
 
-		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		deployment := &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		}
 		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		resource := &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource-1",
+			Kind:       "service",
+		}
 		mock.deployments[deployment.Id] = deployment
 		mock.environments[environment.Id] = environment
 		mock.resources[resource.Id] = resource

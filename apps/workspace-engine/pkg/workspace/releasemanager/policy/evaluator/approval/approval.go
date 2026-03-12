@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-
-	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/approval")

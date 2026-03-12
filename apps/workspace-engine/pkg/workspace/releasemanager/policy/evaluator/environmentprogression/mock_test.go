@@ -42,7 +42,10 @@ func (m *mockGetters) GetEnvironment(_ context.Context, id string) (*oapi.Enviro
 	return env, nil
 }
 
-func (m *mockGetters) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+func (m *mockGetters) GetAllEnvironments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Environment, error) {
 	return m.environments, nil
 }
 
@@ -54,7 +57,10 @@ func (m *mockGetters) GetDeployment(_ context.Context, id string) (*oapi.Deploym
 	return dep, nil
 }
 
-func (m *mockGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+func (m *mockGetters) GetAllDeployments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	return m.deployments, nil
 }
 
@@ -178,9 +184,27 @@ func setupMock() *mockGetters {
 		CreatedAt:   time.Now(),
 	}
 
-	m.addReleaseTarget(&oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-dev", DeploymentId: "deploy-1"})
-	m.addReleaseTarget(&oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"})
-	m.addReleaseTarget(&oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-prod", DeploymentId: "deploy-1"})
+	m.addReleaseTarget(
+		&oapi.ReleaseTarget{
+			ResourceId:    "resource-1",
+			EnvironmentId: "env-dev",
+			DeploymentId:  "deploy-1",
+		},
+	)
+	m.addReleaseTarget(
+		&oapi.ReleaseTarget{
+			ResourceId:    "resource-1",
+			EnvironmentId: "env-staging",
+			DeploymentId:  "deploy-1",
+		},
+	)
+	m.addReleaseTarget(
+		&oapi.ReleaseTarget{
+			ResourceId:    "resource-1",
+			EnvironmentId: "env-prod",
+			DeploymentId:  "deploy-1",
+		},
+	)
 
 	return m
 }

@@ -889,7 +889,8 @@ func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) 
 	// Remove staging release targets for deploy-1
 	filtered := make([]*oapi.ReleaseTarget, 0, len(mock.releaseTargets))
 	for _, rt := range mock.releaseTargets {
-		if rt.EnvironmentId == "env-staging" && rt.DeploymentId == "deploy-1" && rt.ResourceId == "resource-1" {
+		if rt.EnvironmentId == "env-staging" && rt.DeploymentId == "deploy-1" &&
+			rt.ResourceId == "resource-1" {
 			continue
 		}
 		filtered = append(filtered, rt)

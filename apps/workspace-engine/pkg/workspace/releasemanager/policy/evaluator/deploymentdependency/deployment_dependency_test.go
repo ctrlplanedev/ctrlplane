@@ -25,11 +25,17 @@ func (m *mockGetters) GetDeployment(_ context.Context, id string) (*oapi.Deploym
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *mockGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+func (m *mockGetters) GetAllDeployments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	return m.deployments, nil
 }
 
-func (m *mockGetters) GetReleaseTargetsForResource(_ context.Context, resourceID string) []*oapi.ReleaseTarget {
+func (m *mockGetters) GetReleaseTargetsForResource(
+	_ context.Context,
+	resourceID string,
+) []*oapi.ReleaseTarget {
 	return m.releaseTargets[resourceID]
 }
 

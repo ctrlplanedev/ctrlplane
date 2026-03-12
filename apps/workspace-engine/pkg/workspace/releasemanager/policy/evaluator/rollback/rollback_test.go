@@ -31,9 +31,21 @@ func (m *mockGetters) GetJobVerificationsByJobId(jobId string) []*oapi.JobVerifi
 func newTestScope() evaluator.EvaluatorScope {
 	return evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: uuid.New().String(), Name: "production"},
-		Resource:    &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource", Kind: "service"},
-		Deployment:  &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"},
-		Version:     &oapi.DeploymentVersion{Id: uuid.New().String(), Tag: "v1.0.0", CreatedAt: time.Now()},
+		Resource: &oapi.Resource{
+			Id:         uuid.New().String(),
+			Identifier: "test-resource",
+			Kind:       "service",
+		},
+		Deployment: &oapi.Deployment{
+			Id:   uuid.New().String(),
+			Name: "test-deployment",
+			Slug: "test-deployment",
+		},
+		Version: &oapi.DeploymentVersion{
+			Id:        uuid.New().String(),
+			Tag:       "v1.0.0",
+			CreatedAt: time.Now(),
+		},
 	}
 }
 
@@ -241,7 +253,11 @@ func TestRollbackEvaluator_MultipleJobsPicksLatest(t *testing.T) {
 	newJobId := uuid.New().String()
 	mock := &mockGetters{
 		jobs: map[string]*oapi.Job{
-			oldJobId: {Id: oldJobId, Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-1 * time.Hour)},
+			oldJobId: {
+				Id:        oldJobId,
+				Status:    oapi.JobStatusSuccessful,
+				CreatedAt: time.Now().Add(-1 * time.Hour),
+			},
 			newJobId: {Id: newJobId, Status: oapi.JobStatusFailure, CreatedAt: time.Now()},
 		},
 	}

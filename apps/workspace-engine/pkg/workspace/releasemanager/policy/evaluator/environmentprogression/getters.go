@@ -237,7 +237,10 @@ func (g *StoreGetters) GetEnvironment(_ context.Context, id string) (*oapi.Envir
 	return env, nil
 }
 
-func (g *StoreGetters) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+func (g *StoreGetters) GetAllEnvironments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Environment, error) {
 	return g.store.Environments.Items(), nil
 }
 
@@ -249,7 +252,10 @@ func (g *StoreGetters) GetDeployment(_ context.Context, id string) (*oapi.Deploy
 	return d, nil
 }
 
-func (g *StoreGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+func (g *StoreGetters) GetAllDeployments(
+	_ context.Context,
+	_ string,
+) (map[string]*oapi.Deployment, error) {
 	return g.store.Deployments.Items(), nil
 }
 

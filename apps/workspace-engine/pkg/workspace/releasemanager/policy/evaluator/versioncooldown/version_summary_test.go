@@ -46,7 +46,11 @@ func TestSummaryEvaluator_NoReleaseTargets(t *testing.T) {
 	mock := newMockGetters()
 	ctx := context.Background()
 
-	deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+	deployment := &oapi.Deployment{
+		Id:   uuid.New().String(),
+		Name: "test-deployment",
+		Slug: "test-deployment",
+	}
 	mock.deployments[deployment.Id] = deployment
 
 	version := &oapi.DeploymentVersion{
@@ -79,9 +83,17 @@ func TestSummaryEvaluator_AllTargetsAllowed(t *testing.T) {
 	mock := newMockGetters()
 	ctx := context.Background()
 
-	deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+	deployment := &oapi.Deployment{
+		Id:   uuid.New().String(),
+		Name: "test-deployment",
+		Slug: "test-deployment",
+	}
 	env := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
-	resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+	resource := &oapi.Resource{
+		Id:         uuid.New().String(),
+		Identifier: "test-resource-1",
+		Kind:       "service",
+	}
 	mock.deployments[deployment.Id] = deployment
 	mock.environments[env.Id] = env
 	mock.resources[resource.Id] = resource
@@ -124,10 +136,18 @@ func TestSummaryEvaluator_SomeTargetsDenied(t *testing.T) {
 	mock := newMockGetters()
 	ctx := context.Background()
 
-	deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+	deployment := &oapi.Deployment{
+		Id:   uuid.New().String(),
+		Name: "test-deployment",
+		Slug: "test-deployment",
+	}
 	env1 := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
 	env2 := &oapi.Environment{Id: uuid.New().String(), Name: "production"}
-	resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+	resource := &oapi.Resource{
+		Id:         uuid.New().String(),
+		Identifier: "test-resource-1",
+		Kind:       "service",
+	}
 	mock.deployments[deployment.Id] = deployment
 	mock.environments[env1.Id] = env1
 	mock.environments[env2.Id] = env2

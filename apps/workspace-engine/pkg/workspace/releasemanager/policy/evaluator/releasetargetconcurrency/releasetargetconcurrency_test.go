@@ -11,7 +11,10 @@ type mockGetters struct {
 	processingJobs map[string]map[string]*oapi.Job // keyed by releaseTarget.Key()
 }
 
-func (m *mockGetters) GetJobsInProcessingStateForReleaseTarget(_ context.Context, rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetters) GetJobsInProcessingStateForReleaseTarget(
+	_ context.Context,
+	rt *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	if m.processingJobs == nil {
 		return nil
 	}

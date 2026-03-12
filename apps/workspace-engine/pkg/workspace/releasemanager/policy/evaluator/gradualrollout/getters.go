@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
-
-	"github.com/google/uuid"
 )
 
 type approvalGetters = approval.Getters

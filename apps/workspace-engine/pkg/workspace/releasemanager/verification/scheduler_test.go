@@ -69,36 +69,6 @@ func (ts *TestServer) RequestCount() int {
 	return ts.requestCount
 }
 
-// createTestHTTPProvider creates an HTTP metric provider pointing to the test server.
-func createTestHTTPProvider(
-	serverURL string,
-	method oapi.HTTPMetricProviderMethod,
-) oapi.MetricProvider {
-	provider := oapi.MetricProvider{}
-	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:    serverURL,
-		Method: &method,
-		Type:   oapi.Http,
-	})
-	return provider
-}
-
-// createTestHTTPProviderWithTimeout creates an HTTP metric provider with custom timeout.
-func createTestHTTPProviderWithTimeout(
-	serverURL string,
-	method oapi.HTTPMetricProviderMethod,
-	timeout string,
-) oapi.MetricProvider {
-	provider := oapi.MetricProvider{}
-	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:     serverURL,
-		Method:  &method,
-		Type:    oapi.Http,
-		Timeout: &timeout,
-	})
-	return provider
-}
-
 func newTestStore() *store.Store {
 	changeset := statechange.NewChangeSet[any]()
 	return store.New("test-workspace-"+uuid.New().String(), changeset)

@@ -2,6 +2,7 @@ package retry
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
@@ -14,11 +15,12 @@ type mockGetters struct {
 	jobs map[string]*oapi.Job
 }
 
-func (m *mockGetters) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+func (m *mockGetters) GetJobsForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
 	result := make(map[string]*oapi.Job)
-	for id, job := range m.jobs {
-		result[id] = job
-	}
+	maps.Copy(result, m.jobs)
 	return result
 }
 

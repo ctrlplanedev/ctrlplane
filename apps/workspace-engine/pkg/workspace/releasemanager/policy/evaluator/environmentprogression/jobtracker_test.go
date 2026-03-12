@@ -87,24 +87,61 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	env := mock.environments["env-1"]
 
 	// Create 3 release targets by creating releases
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt3 := &oapi.ReleaseTarget{ResourceId: "resource-3", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 	mock.addReleaseTarget(rt3)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job for release1
 	completedAt := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	// Create pending job for release2
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusPending, CreatedAt: time.Now().Add(-3 * time.Minute), UpdatedAt: time.Now().Add(-3 * time.Minute), JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusPending,
+		CreatedAt:      time.Now().Add(-3 * time.Minute),
+		UpdatedAt:      time.Now().Add(-3 * time.Minute),
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt2, job2, release2)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -124,20 +161,54 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 	env := mock.environments["env-1"]
 
 	// Create 2 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful jobs for both
 	completedAt1 := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	completedAt2 := time.Now().Add(-3 * time.Minute)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-8 * time.Minute), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-8 * time.Minute),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
@@ -181,15 +252,32 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 	env := mock.environments["env-1"]
 
 	// Create release target
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 
 	// Create release
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job completed 15 minutes ago
 	completedAt := time.Now().Add(-15 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-20 * time.Minute), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-20 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -210,22 +298,56 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 	env := mock.environments["env-1"]
 
 	// Create two release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job completed 20 minutes ago
 	completedAt1 := time.Now().Add(-20 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-25 * time.Minute), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-25 * time.Minute),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 
 	// Create successful job completed 5 minutes ago (more recent)
 	completedAt2 := time.Now().Add(-5 * time.Minute)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
@@ -250,14 +372,31 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 	env := mock.environments["env-1"]
 
 	// Create release target
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	// Create release
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job completed 5 minutes ago
 	completedAt := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -298,15 +437,32 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	)
 
 	// Create release target
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 
 	// Create release
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job
 	completedAt := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -342,14 +498,31 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 	env := mock.environments["env-1"]
 
 	// Create release target
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	// Create release
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job completed 5 minutes ago
 	completedAt := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -370,19 +543,52 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 	env := mock.environments["env-1"]
 
 	// Create release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create jobs
 	completedAt := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusPending, CreatedAt: time.Now().Add(-3 * time.Minute), UpdatedAt: time.Now().Add(-3 * time.Minute), JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusPending,
+		CreatedAt:      time.Now().Add(-3 * time.Minute),
+		UpdatedAt:      time.Now().Add(-3 * time.Minute),
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
@@ -408,20 +614,54 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	env2 := mock.environments["env-2"]
 
 	// Create release targets for both environments
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-2", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-2",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create jobs for both
 	completedAt1 := time.Now().Add(-5 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-10 * time.Minute), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-10 * time.Minute),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	completedAt2 := time.Now().Add(-3 * time.Minute)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-8 * time.Minute), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-8 * time.Minute),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
@@ -449,20 +689,45 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	env := mock.environments["env-1"]
 
 	// Create release target
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 
 	// Create release
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create multiple successful jobs for same release target
 	// First success (oldest)
 	completedAt1 := time.Now().Add(-20 * time.Minute)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-25 * time.Minute), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-25 * time.Minute),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 
 	// Second success (newer)
 	completedAt2 := time.Now().Add(-10 * time.Minute)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Now().Add(-15 * time.Minute), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Now().Add(-15 * time.Minute),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt1, job2, release1)
 
@@ -497,29 +762,80 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	env := mock.environments["env-1"]
 
 	// Create 3 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt3 := &oapi.ReleaseTarget{ResourceId: "resource-3", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 	mock.addReleaseTarget(rt3)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release3 := &oapi.Release{ReleaseTarget: *rt3, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *rt3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful jobs with specific timestamps
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt2, job2, release2)
 
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
-	job3 := &oapi.Job{Id: "job-3", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC), UpdatedAt: completedAt3, CompletedAt: &completedAt3, JobAgentConfig: oapi.JobAgentConfig{}}
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt3, job3, release3)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -528,17 +844,32 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
 	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 50%% requirement")
-	assert.Equal(t, completedAt2, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd successful job")
+	assert.Equal(
+		t,
+		completedAt2,
+		satisfiedAt,
+		"expected satisfiedAt to be the timestamp of the 2nd successful job",
+	)
 
 	// Test 100% requirement: need 3 successes
 	satisfiedAt100 := tracker.GetSuccessPercentageSatisfiedAt(100.0)
 	assert.False(t, satisfiedAt100.IsZero(), "expected non-zero satisfiedAt for 100%% requirement")
-	assert.Equal(t, completedAt3, satisfiedAt100, "expected satisfiedAt to be the timestamp of the 3rd successful job")
+	assert.Equal(
+		t,
+		completedAt3,
+		satisfiedAt100,
+		"expected satisfiedAt to be the timestamp of the 3rd successful job",
+	)
 
 	// Test 67% requirement: need 3 successes (ceil(3 * 0.67) = ceil(2.01) = 3)
 	satisfiedAt67 := tracker.GetSuccessPercentageSatisfiedAt(67.0)
 	assert.False(t, satisfiedAt67.IsZero(), "expected non-zero satisfiedAt for 67%% requirement")
-	assert.Equal(t, completedAt3, satisfiedAt67, "expected satisfiedAt to be the timestamp of the 3rd successful job for 67%% requirement")
+	assert.Equal(
+		t,
+		completedAt3,
+		satisfiedAt67,
+		"expected satisfiedAt to be the timestamp of the 3rd successful job for 67%% requirement",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSuccesses(t *testing.T) {
@@ -548,16 +879,41 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 	env := mock.environments["env-1"]
 
 	// Create 3 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt3 := &oapi.ReleaseTarget{ResourceId: "resource-3", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 
 	// Create release for rt1 only
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful job for only one release target
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
@@ -569,7 +925,11 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 
 	// Test 100% requirement: need 3 successes
 	satisfiedAt100 := tracker.GetSuccessPercentageSatisfiedAt(100.0)
-	assert.True(t, satisfiedAt100.IsZero(), "expected zero satisfiedAt for 100%% requirement when not met")
+	assert.True(
+		t,
+		satisfiedAt100.IsZero(),
+		"expected zero satisfiedAt for 100%% requirement when not met",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTargets(t *testing.T) {
@@ -593,8 +953,16 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJob
 	env := mock.environments["env-1"]
 
 	// Create 2 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
@@ -613,20 +981,54 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	env := mock.environments["env-1"]
 
 	// Create 2 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful jobs
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
@@ -635,12 +1037,30 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 
 	// With zero or negative minimum percentage, should default to 100%
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(0.0)
-	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 0%% requirement (defaults to 100%%)")
-	assert.Equal(t, completedAt2, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement")
+	assert.False(
+		t,
+		satisfiedAt.IsZero(),
+		"expected non-zero satisfiedAt for 0%% requirement (defaults to 100%%)",
+	)
+	assert.Equal(
+		t,
+		completedAt2,
+		satisfiedAt,
+		"expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement",
+	)
 
 	satisfiedAtNeg := tracker.GetSuccessPercentageSatisfiedAt(-10.0)
-	assert.False(t, satisfiedAtNeg.IsZero(), "expected non-zero satisfiedAt for negative requirement (defaults to 100%%)")
-	assert.Equal(t, completedAt2, satisfiedAtNeg, "expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement")
+	assert.False(
+		t,
+		satisfiedAtNeg.IsZero(),
+		"expected non-zero satisfiedAt for negative requirement (defaults to 100%%)",
+	)
+	assert.Equal(
+		t,
+		completedAt2,
+		satisfiedAtNeg,
+		"expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompletions(
@@ -652,32 +1072,83 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	env := mock.environments["env-1"]
 
 	// Create 3 release targets
-	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
-	rt3 := &oapi.ReleaseTarget{ResourceId: "resource-3", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
 	mock.addReleaseTarget(rt1)
 	mock.addReleaseTarget(rt2)
 	mock.addReleaseTarget(rt3)
 
 	// Create releases
-	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
-	release3 := &oapi.Release{ReleaseTarget: *rt3, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *rt3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create successful jobs with out-of-order completion times
 	// Job 2 completes first (10:05)
 	completedAt2 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt2, job2, release2)
 
 	// Job 1 completes second (10:10)
 	completedAt1 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
-	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt1, job1, release1)
 
 	// Job 3 completes third (10:15)
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
-	job3 := &oapi.Job{Id: "job-3", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC), UpdatedAt: completedAt3, CompletedAt: &completedAt3, JobAgentConfig: oapi.JobAgentConfig{}}
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
 	mock.addJob(rt3, job3, release3)
 
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
