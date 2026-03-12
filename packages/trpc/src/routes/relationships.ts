@@ -198,32 +198,32 @@ export const relationshipsRouter = router({
       const [resources, deployments, environments] = await Promise.all([
         resourceIds.length > 0
           ? ctx.db
-            .select({
-              id: schema.resource.id,
-              name: schema.resource.name,
-              kind: schema.resource.kind,
-              identifier: schema.resource.identifier,
-            })
-            .from(schema.resource)
-            .where(inArray(schema.resource.id, resourceIds))
+              .select({
+                id: schema.resource.id,
+                name: schema.resource.name,
+                kind: schema.resource.kind,
+                identifier: schema.resource.identifier,
+              })
+              .from(schema.resource)
+              .where(inArray(schema.resource.id, resourceIds))
           : [],
         deploymentIds.length > 0
           ? ctx.db
-            .select({
-              id: schema.deployment.id,
-              name: schema.deployment.name,
-            })
-            .from(schema.deployment)
-            .where(inArray(schema.deployment.id, deploymentIds))
+              .select({
+                id: schema.deployment.id,
+                name: schema.deployment.name,
+              })
+              .from(schema.deployment)
+              .where(inArray(schema.deployment.id, deploymentIds))
           : [],
         environmentIds.length > 0
           ? ctx.db
-            .select({
-              id: schema.environment.id,
-              name: schema.environment.name,
-            })
-            .from(schema.environment)
-            .where(inArray(schema.environment.id, environmentIds))
+              .select({
+                id: schema.environment.id,
+                name: schema.environment.name,
+              })
+              .from(schema.environment)
+              .where(inArray(schema.environment.id, environmentIds))
           : [],
       ]);
 

@@ -191,7 +191,7 @@ func (q *Queue) EnqueueMany(ctx context.Context, params []reconcile.EnqueueParam
 	}
 
 	for batchStart := 0; batchStart < n; batchStart += enqueueManyBatchSize {
-		batchEnd := min(batchStart + enqueueManyBatchSize, n)
+		batchEnd := min(batchStart+enqueueManyBatchSize, n)
 		batch := items[batchStart:batchEnd]
 
 		batchLen := len(batch)
