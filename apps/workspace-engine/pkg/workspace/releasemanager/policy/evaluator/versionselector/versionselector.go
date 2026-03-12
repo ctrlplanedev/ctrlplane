@@ -6,7 +6,6 @@ import (
 
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 
@@ -191,48 +190,3 @@ func (e *Evaluator) evaluateCEL(
 		WithDetail("version_tag", scope.Version.Tag)
 }
 
-// evaluateJSON evaluates a JSON-based selector.
-func (e *Evaluator) evaluateJSON(
-	ctx context.Context,
-	scope evaluator.EvaluatorScope,
-	deployment *oapi.Deployment,
-	resource *oapi.Resource,
-	span trace.Span,
-) *oapi.RuleEvaluation {
-	span.SetAttributes(attribute.String("selector.type", "json"))
-
-	matched, err := selector.Match(ctx, e.rule.Selector, scope.Version)
-	if err != nil {
-		span.RecordError(err)
-		return results.NewDeniedResult(
-			fmt.Sprintf("Version selector: failed to evaluate JSON selector: %v", err),
-		).WithDetail("error", err.Error())
-	}
-
-	if !matched {
-		description := "Version does not match selector"
-		if e.rule.Description != nil && *e.rule.Description != "" {
-			description = *e.rule.Description
-		}
-
-		span.AddEvent("Version blocked by selector",
-			trace.WithAttributes(
-				attribute.Bool("selector.result", false),
-			))
-
-		return results.NewDeniedResult(
-			fmt.Sprintf("Version selector: %s", description),
-		).
-			WithDetail("version_id", scope.Version.Id).
-			WithDetail("version_tag", scope.Version.Tag)
-	}
-
-	span.AddEvent("Version allowed by selector",
-		trace.WithAttributes(
-			attribute.Bool("selector.result", true),
-		))
-
-	return results.NewAllowedResult("Version selector: version matches selector").
-		WithDetail("version_id", scope.Version.Id).
-		WithDetail("version_tag", scope.Version.Tag)
-}

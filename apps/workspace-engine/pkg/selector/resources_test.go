@@ -729,8 +729,8 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:     "empty resource list",
-			selector: "resource.name.contains('test')",
+			name:          "empty resource list",
+			selector:      "resource.name.contains('test')",
 			resources:     []*oapi.Resource{},
 			expectedCount: 0,
 			wantErr:       false,

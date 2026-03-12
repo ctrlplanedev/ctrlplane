@@ -1509,10 +1509,10 @@ func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
 
 	cfg := setter.createdJobs[0].JobAgentConfig
 
-	assert.Equal(t, float64(123), cfg["installationId"], "agent-level key should survive")
+	assert.InEpsilon(t, float64(123), cfg["installationId"], 0, "agent-level key should survive")
 	assert.Equal(t, "myorg", cfg["owner"], "agent-level key should survive")
 	assert.Equal(t, "myrepo", cfg["repo"], "agent-level key should survive")
-	assert.Equal(t, float64(456), cfg["workflowId"], "deployment-level key should be merged in")
+	assert.InEpsilon(t, float64(456), cfg["workflowId"], 0, "deployment-level key should be merged in")
 	assert.Equal(t, "v1.2.3", cfg["image"], "version-level key should be merged in")
-	assert.Equal(t, float64(90), cfg["timeout"], "version-level should win over deployment and agent")
+	assert.InEpsilon(t, float64(90), cfg["timeout"], 0, "version-level should win over deployment and agent")
 }

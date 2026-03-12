@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 func VariableToOapi(row db.DeploymentVariable) *oapi.DeploymentVariable {

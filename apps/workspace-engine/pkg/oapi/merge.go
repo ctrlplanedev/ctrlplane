@@ -12,7 +12,7 @@ func DeepMergeConfigs(configs ...JobAgentConfig) JobAgentConfig {
 	return out
 }
 
-func deepMergeInto(dst, src map[string]interface{}) {
+func deepMergeInto(dst, src map[string]any) {
 	for k, srcVal := range src {
 		dstVal, exists := dst[k]
 		if !exists {
@@ -20,8 +20,8 @@ func deepMergeInto(dst, src map[string]interface{}) {
 			continue
 		}
 
-		dstMap, dstOK := dstVal.(map[string]interface{})
-		srcMap, srcOK := srcVal.(map[string]interface{})
+		dstMap, dstOK := dstVal.(map[string]any)
+		srcMap, srcOK := srcVal.(map[string]any)
 		if dstOK && srcOK {
 			deepMergeInto(dstMap, srcMap)
 			continue

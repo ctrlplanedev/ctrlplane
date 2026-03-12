@@ -221,7 +221,6 @@ func TestToOapiPolicyWithRules_EnvironmentProgressionPlainCEL(t *testing.T) {
 	assert.Equal(t, celExpr, cs)
 }
 
-
 // ---------------------------------------------------------------------------
 // ToOapiDeploymentVariableValue — resource selector
 // ---------------------------------------------------------------------------
@@ -243,7 +242,6 @@ func TestToOapiDeploymentVariableValue_PlainCELSelector(t *testing.T) {
 	require.NotNil(t, v.ResourceSelector)
 	assert.Equal(t, celExpr, *v.ResourceSelector)
 }
-
 
 func TestToOapiDeploymentVariableValue_EmptySelector(t *testing.T) {
 	id := uuid.New()
