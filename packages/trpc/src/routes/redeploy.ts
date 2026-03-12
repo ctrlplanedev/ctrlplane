@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -37,7 +36,11 @@ const getLatestJobForTarget = (db: Tx, releaseTarget: ReleaseTarget) =>
     .orderBy(desc(schema.job.createdAt))
     .limit(1)
     .then(takeFirstOrNull)
-    .then((result) => result?.job ?? null);
+    .then((result) =>
+      result
+        ? { job: result.job, releaseId: result.release_job.releaseId }
+        : null,
+    );
 
 const getJobMetadata = (db: Tx, jobId: string) =>
   db
@@ -48,21 +51,13 @@ const getJobMetadata = (db: Tx, jobId: string) =>
       Object.fromEntries(rows.map((row) => [row.key, row.value])),
     );
 
-const getJobReleaseId = (db: Tx, jobId: string) =>
-  db
-    .select()
-    .from(schema.releaseJob)
-    .where(eq(schema.releaseJob.jobId, jobId))
-    .then(takeFirstOrNull)
-    .then((result) => result?.releaseId ?? null);
-
 const redeployReleaseTarget = async (
   db: Tx,
   workspaceId: string,
   releaseTarget: ReleaseTarget,
 ) => {
-  const job = await getLatestJobForTarget(db, releaseTarget);
-  if (job == null)
+  const result = await getLatestJobForTarget(db, releaseTarget);
+  if (result == null)
     return enqueueDesiredRelease(db, {
       workspaceId,
       deploymentId: releaseTarget.deploymentId,
@@ -70,13 +65,7 @@ const redeployReleaseTarget = async (
       resourceId: releaseTarget.resourceId,
     });
 
-  const releaseId = await getJobReleaseId(db, job.id);
-  if (releaseId == null)
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Job release not found",
-    });
-
+  const { job, releaseId } = result;
   const metadata = await getJobMetadata(db, job.id);
 
   const newJob = {
