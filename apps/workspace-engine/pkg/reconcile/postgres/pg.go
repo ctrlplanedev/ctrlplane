@@ -9,12 +9,11 @@ import (
 	"sort"
 	"time"
 
-	"workspace-engine/pkg/reconcile"
-	sqldb "workspace-engine/pkg/reconcile/postgres/db"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/reconcile"
+	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 )
 
 const defaultPriority int16 = 100
@@ -213,15 +212,18 @@ func (q *Queue) EnqueueMany(ctx context.Context, params []reconcile.EnqueueParam
 			notBefores[i] = pgtype.Timestamptz{Time: item.notBefore, Valid: true}
 		}
 
-		err := q.queries.BatchUpsertReconcileWorkScopes(ctx, sqldb.BatchUpsertReconcileWorkScopesParams{
-			WorkspaceIds: workspaceIDs,
-			Kinds:        kinds,
-			ScopeTypes:   scopeTypes,
-			ScopeIds:     scopeIDs,
-			EventTs:      eventTSs,
-			Priorities:   priorities,
-			NotBefores:   notBefores,
-		})
+		err := q.queries.BatchUpsertReconcileWorkScopes(
+			ctx,
+			sqldb.BatchUpsertReconcileWorkScopesParams{
+				WorkspaceIds: workspaceIDs,
+				Kinds:        kinds,
+				ScopeTypes:   scopeTypes,
+				ScopeIds:     scopeIDs,
+				EventTs:      eventTSs,
+				Priorities:   priorities,
+				NotBefores:   notBefores,
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("batch enqueue work items: %w", err)
 		}

@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 var policyRepoTracer = otel.Tracer("workspace/store/repository/db/policies")

@@ -4,11 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/dgraph-io/ristretto/v2"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/selector/langs/util"
-
-	"github.com/dgraph-io/ristretto/v2"
 )
 
 var matchCache, _ = ristretto.NewCache(&ristretto.Config[string, bool]{

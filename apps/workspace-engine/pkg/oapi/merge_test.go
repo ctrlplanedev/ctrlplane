@@ -24,13 +24,13 @@ func TestDeepMergeConfigs_Flat(t *testing.T) {
 func TestDeepMergeConfigs_Nested(t *testing.T) {
 	base := JobAgentConfig{
 		"top": "base",
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"keep": "yes",
 			"over": "old",
 		},
 	}
 	override := JobAgentConfig{
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"over": "new",
 			"add":  "extra",
 		},
@@ -41,7 +41,7 @@ func TestDeepMergeConfigs_Nested(t *testing.T) {
 	if got["top"] != "base" {
 		t.Errorf("expected top=base, got %v", got["top"])
 	}
-	nested := got["nested"].(map[string]interface{})
+	nested := got["nested"].(map[string]any)
 	if nested["keep"] != "yes" {
 		t.Errorf("expected nested.keep=yes, got %v", nested["keep"])
 	}

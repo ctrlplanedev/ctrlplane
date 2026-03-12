@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 )
 
 func createTestDeployment() (*oapi.Deployment, string) {

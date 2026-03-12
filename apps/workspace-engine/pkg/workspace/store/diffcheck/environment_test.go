@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestHasEnvironmentChanges_NoChanges(t *testing.T) {

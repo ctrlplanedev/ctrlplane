@@ -3,9 +3,8 @@ package diffcheck
 import (
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/stretchr/testify/assert"
+	"workspace-engine/pkg/oapi"
 )
 
 func TestHasDeploymentChanges_NoChanges(t *testing.T) {

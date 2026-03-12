@@ -278,8 +278,11 @@ func TestFilterResources_DateConditions(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:     "after operator filters resources created after date",
-			selector: fmt.Sprintf("resource.createdAt > timestamp('%s')", baseTime.Format(time.RFC3339)),
+			name: "after operator filters resources created after date",
+			selector: fmt.Sprintf(
+				"resource.createdAt > timestamp('%s')",
+				baseTime.Format(time.RFC3339),
+			),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -299,8 +302,11 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:     "before operator filters resources created before date",
-			selector: fmt.Sprintf("resource.createdAt < timestamp('%s')", baseTime.Format(time.RFC3339)),
+			name: "before operator filters resources created before date",
+			selector: fmt.Sprintf(
+				"resource.createdAt < timestamp('%s')",
+				baseTime.Format(time.RFC3339),
+			),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -320,8 +326,11 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:     "after-or-on operator includes exact match",
-			selector: fmt.Sprintf("resource.createdAt >= timestamp('%s')", baseTime.Format(time.RFC3339)),
+			name: "after-or-on operator includes exact match",
+			selector: fmt.Sprintf(
+				"resource.createdAt >= timestamp('%s')",
+				baseTime.Format(time.RFC3339),
+			),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
@@ -341,8 +350,11 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:     "before-or-on operator includes exact match",
-			selector: fmt.Sprintf("resource.createdAt <= timestamp('%s')", baseTime.Format(time.RFC3339)),
+			name: "before-or-on operator includes exact match",
+			selector: fmt.Sprintf(
+				"resource.createdAt <= timestamp('%s')",
+				baseTime.Format(time.RFC3339),
+			),
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",

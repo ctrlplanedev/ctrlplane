@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/google/uuid"
 )
 
 // Helper function to create a test store with a resource.
@@ -382,7 +381,13 @@ func TestVariableManager_FallbackToDefault(t *testing.T) {
 	varID := addDeploymentVariable(st, deploymentID, "config", defaultValue)
 
 	// Selector only matches prod resources
-	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'prod'", mustCreateValueFromLiteral("prod-config"))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		"resource.metadata.env == 'prod'",
+		mustCreateValueFromLiteral("prod-config"),
+	)
 
 	// Evaluate (resource has env=dev, so selector won't match)
 	mgr := New(st)
@@ -442,7 +447,13 @@ func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 	varID := addDeploymentVariable(st, deploymentID, "config", nil)
 
 	// Selector only matches prod resources
-	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'prod'", mustCreateValueFromLiteral("prod-config"))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		"resource.metadata.env == 'prod'",
+		mustCreateValueFromLiteral("prod-config"),
+	)
 
 	// Evaluate (resource has env=dev, so selector won't match)
 	mgr := New(st)
@@ -921,9 +932,21 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 	// Deployment variable with env-specific values
 	varID := addDeploymentVariable(st, deploymentID, "replicas", mustCreateLiteralValue(1))
 
-	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'production'", mustCreateValueFromLiteral(10))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		"resource.metadata.env == 'production'",
+		mustCreateValueFromLiteral(10),
+	)
 
-	addDeploymentVariableValue(st, varID, 10, "resource.metadata.env == 'staging'", mustCreateValueFromLiteral(3))
+	addDeploymentVariableValue(
+		st,
+		varID,
+		10,
+		"resource.metadata.env == 'staging'",
+		mustCreateValueFromLiteral(3),
+	)
 
 	mgr := New(st)
 
