@@ -86,6 +86,8 @@ interface EnqueueScopeParams {
   notBefore?: Date;
 }
 
+const ENQUEUE_MANY_BATCH_SIZE = 100;
+
 export async function enqueueMany(
   db: Tx,
   items: EnqueueScopeParams[],
@@ -102,11 +104,14 @@ export async function enqueueMany(
     notBefore: item.notBefore ?? now,
   }));
 
-  await db
-    .insert(reconcileWorkScope)
-    .values(values)
-    .onConflictDoUpdate({
-      target: scopeConflictTarget,
-      set: { eventTs: now, notBefore: now },
-    });
+  for (let i = 0; i < values.length; i += ENQUEUE_MANY_BATCH_SIZE) {
+    const batch = values.slice(i, i + ENQUEUE_MANY_BATCH_SIZE);
+    await db
+      .insert(reconcileWorkScope)
+      .values(batch)
+      .onConflictDoUpdate({
+        target: scopeConflictTarget,
+        set: { eventTs: now, notBefore: now },
+      });
+  }
 }
