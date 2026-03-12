@@ -54,11 +54,16 @@ func ToUpsertParams(e *oapi.Environment) (db.UpsertEnvironmentParams, error) {
 		createdAt = pgtype.Timestamptz{Time: e.CreatedAt, Valid: true}
 	}
 
+	resourceSelector := "false"
+	if e.ResourceSelector != nil && *e.ResourceSelector != "" {
+		resourceSelector = *e.ResourceSelector
+	}
+
 	return db.UpsertEnvironmentParams{
 		ID:               id,
 		Name:             e.Name,
 		Description:      description,
-		ResourceSelector: *e.ResourceSelector,
+		ResourceSelector: resourceSelector,
 		Metadata:         metadata,
 		WorkspaceID:      uuid.Nil, // set by caller
 		CreatedAt:        createdAt,

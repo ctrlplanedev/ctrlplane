@@ -91,9 +91,6 @@ export interface components {
         CelMatcher: {
             cel: string;
         };
-        CelSelector: {
-            cel: string;
-        };
         DatadogMetricProvider: {
             /**
              * @description Datadog aggregator
@@ -449,11 +446,6 @@ export interface components {
         JobWithVerifications: {
             job: components["schemas"]["Job"];
             verifications: components["schemas"]["JobVerification"][];
-        };
-        JsonSelector: {
-            json: {
-                [key: string]: unknown;
-            };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
@@ -814,7 +806,6 @@ export interface components {
              */
             satisfiedAt?: string;
         };
-        Selector: components["schemas"]["JsonSelector"] | components["schemas"]["CelSelector"];
         SensitiveValue: {
             valueHash: string;
         };
@@ -1109,7 +1100,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @description CEL expression to validate. */
-                    resourceSelector?: string;
+                    resourceSelector: string;
                 };
             };
         };
@@ -1203,7 +1194,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
-                    filter: string;
+                    filter?: string;
                 };
             };
         };

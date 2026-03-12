@@ -1410,7 +1410,7 @@ type WorkflowStringInputType string
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
 type ValidateResourceSelectorJSONBody struct {
 	// ResourceSelector CEL expression to validate.
-	ResourceSelector *string `json:"resourceSelector,omitempty"`
+	ResourceSelector string `json:"resourceSelector"`
 }
 
 // ComputeAggergateJSONBody defines parameters for ComputeAggergate.
@@ -1429,7 +1429,7 @@ type ComputeAggergateJSONBody struct {
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
 	// Filter CEL expression to filter resources. Defaults to "true" (all resources).
-	Filter string `json:"filter"`
+	Filter *string `json:"filter,omitempty"`
 }
 
 // QueryResourcesParams defines parameters for QueryResources.

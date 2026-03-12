@@ -25,9 +25,10 @@ function useResourcesSearch() {
   const [celDebounced, setCelDebounced] = useState(cel);
   useDebounce(() => setCelDebounced(cel), 1000, [cel]);
 
+  const escaped = celDebounced.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
   const { data, isLoading } = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
-    selector: `resource.name.contains('${celDebounced}') || resource.identifier.contains('${celDebounced}')`,
+    selector: `resource.name.contains('${escaped}') || resource.identifier.contains('${escaped}')`,
     limit: 20,
     offset: 0,
   });

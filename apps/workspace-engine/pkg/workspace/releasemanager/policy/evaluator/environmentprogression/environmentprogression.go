@@ -162,6 +162,10 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all environments: %w", err)
 	}
+	if e.rule.DependsOnEnvironmentSelector == "" {
+		return nil, fmt.Errorf("invalid rule: DependsOnEnvironmentSelector must be non-empty")
+	}
+
 	envSystemIDs := e.getters.GetSystemIDsForEnvironment(environment.Id)
 	for _, env := range envItems {
 		candidateSystemIDs := e.getters.GetSystemIDsForEnvironment(env.Id)

@@ -189,4 +189,3 @@ func (e *Evaluator) evaluateCEL(
 		WithDetail("version_id", scope.Version.Id).
 		WithDetail("version_tag", scope.Version.Tag)
 }
-

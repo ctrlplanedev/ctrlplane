@@ -28,9 +28,9 @@ func (r *Resources) QueryResources(
 	}
 
 	resourcesGetter := resources.PostgresGetResources{}
-	cel := body.Filter
-	if cel == "" {
-		cel = "true"
+	cel := "true"
+	if body.Filter != nil && *body.Filter != "" {
+		cel = *body.Filter
 	}
 	resources, err := resourcesGetter.GetResources(
 		c.Request.Context(),

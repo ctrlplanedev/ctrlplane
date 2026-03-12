@@ -76,7 +76,6 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': {
             schema: {
               type: 'object',
-              required: ['filter'],
               properties: {
                 filter: {
                   type: 'string',
