@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, key string) (uint64, error) {
@@ -44,13 +43,6 @@ type GradualRolloutEvaluator struct {
 	rule       *oapi.GradualRolloutRule
 	hashingFn  func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
 	timeGetter func() time.Time
-}
-
-func NewEvaluatorFromStore(store *store.Store, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {
-	if store == nil {
-		return nil
-	}
-	return NewEvaluator(NewStoreGetters(store), rolloutRule)
 }
 
 func NewEvaluator(getters Getters, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {

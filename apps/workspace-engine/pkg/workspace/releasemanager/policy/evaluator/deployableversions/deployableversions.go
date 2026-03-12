@@ -6,20 +6,12 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var _ evaluator.Evaluator = &DeployableVersionStatusEvaluator{}
 
 type DeployableVersionStatusEvaluator struct {
 	getters Getters
-}
-
-func NewEvaluatorFromStore(store *store.Store) evaluator.Evaluator {
-	if store == nil {
-		return nil
-	}
-	return NewEvaluator(&storeGetters{store: store})
 }
 
 func NewEvaluator(getters Getters) evaluator.Evaluator {

@@ -6,898 +6,465 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
 
-// setupStore creates a test store with approval records and a test environment.
-func setupStore(versionId string, environmentId string, approvers []string) *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-
-	// Create test environment
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(context.Background(), env)
-
-	for _, userId := range approvers {
-		record := &oapi.UserApprovalRecord{
-			VersionId:     versionId,
-			EnvironmentId: environmentId,
-			UserId:        userId,
-			Status:        oapi.ApprovalStatusApproved,
-		}
-		st.UserApprovalRecords.Upsert(context.Background(), record)
-	}
-
-	return st
+type mockGetters struct {
+	records []*oapi.UserApprovalRecord
+	err     error
 }
 
-func TestAnyApprovalEvaluator_EnoughApprovals(t *testing.T) {
-	// Setup: 3 approvers, need 2
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3"})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-	require.NotNil(t, eval, "evaluator should not be nil")
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed, got denied: %s", result.Message)
-	assert.Equal(t, 2, result.Details["min_approvals"], "expected min_approvals=2")
-
-	approvers, ok := result.Details["approvers"].([]string)
-	require.True(t, ok, "expected approvers to be []string")
-	assert.Len(t, approvers, 3, "expected 3 approvers")
+func (m *mockGetters) GetApprovalRecords(
+	_ context.Context, _, _ string,
+) ([]*oapi.UserApprovalRecord, error) {
+	return m.records, m.err
 }
 
-func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
-	// Setup: 1 approver, need 3
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{"user-1"})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
+func newScope(versionCreatedAt time.Time) evaluator.EvaluatorScope {
+	return evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{
+			Id:   uuid.New().String(),
+			Name: "test-env",
+		},
+		Version: &oapi.DeploymentVersion{
+			Id:        uuid.New().String(),
+			Name:      "v1",
+			CreatedAt: versionCreatedAt,
+		},
 	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	assert.False(t, result.Allowed, "expected denied, got allowed: %s", result.Message)
-	assert.Equal(t, 3, result.Details["min_approvals"], "expected min_approvals=3")
-
-	approvers, ok := result.Details["approvers"].([]string)
-	require.True(t, ok, "expected approvers to be []string")
-	assert.Len(t, approvers, 1, "expected 1 approver")
 }
 
-func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
-	// Setup: 2 approvers, need 2 (exact match)
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{"user-1", "user-2"})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
+func newPolicyRule(minApprovals int32, ruleCreatedAt string) *oapi.PolicyRule {
+	return &oapi.PolicyRule{
+		Id:        uuid.New().String(),
+		CreatedAt: ruleCreatedAt,
+		AnyApproval: &oapi.AnyApprovalRule{
+			MinApprovals: minApprovals,
+		},
 	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed when approvals exactly meet minimum")
-
-	approvers, ok := result.Details["approvers"].([]string)
-	require.True(t, ok, "expected approvers to be []string")
-	assert.Len(t, approvers, 2, "expected 2 approvers")
 }
 
-func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
-	// Setup: 0 approvals required (rule disabled)
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
+func record(userId string, createdAt time.Time) *oapi.UserApprovalRecord {
+	return &oapi.UserApprovalRecord{
+		UserId:    userId,
+		CreatedAt: createdAt.Format(time.RFC3339),
+		Status:    "approved",
 	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed when no approvals required")
-	assert.Equal(t, "No approvals required", result.Message)
 }
 
-func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
-	// Setup: 0 approvers, need 1
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	assert.False(t, result.Allowed, "expected denied when no approvals given")
-
-	approvers, ok := result.Details["approvers"].([]string)
-	require.True(t, ok, "expected approvers to be []string")
-	assert.Empty(t, approvers, "expected 0 approvers")
-}
-
-func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
-	// Setup: Different approval counts for different versions
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	environmentId := "env-1"
-	// Create test environment
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	// Version 1: 2 approvals
-	for _, userId := range []string{"user-1", "user-2"} {
-		st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-			VersionId:     "version-1",
-			EnvironmentId: environmentId,
-			UserId:        userId,
-			Status:        oapi.ApprovalStatusApproved,
-		})
-	}
-
-	// Version 2: 1 approval
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     "version-2",
-		EnvironmentId: environmentId,
-		UserId:        "user-3",
-		Status:        oapi.ApprovalStatusApproved,
-	})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Test version-1 (2 approvals, should pass)
-	scope1 := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     &oapi.DeploymentVersion{Id: "version-1"},
-	}
-	result1 := eval.Evaluate(ctx, scope1)
-	assert.True(t, result1.Allowed, "expected version-1 allowed (has 2 approvals)")
-
-	// Test version-2 (1 approval, should fail)
-	scope2 := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     &oapi.DeploymentVersion{Id: "version-2"},
-	}
-	result2 := eval.Evaluate(ctx, scope2)
-	assert.False(t, result2.Allowed, "expected version-2 denied (has 1 approval)")
-
-	// Verify approvers are version-specific
-	approvers1 := result1.Details["approvers"].([]string)
-	assert.Len(t, approvers1, 2, "expected 2 approvers for version-1")
-
-	approvers2 := result2.Details["approvers"].([]string)
-	assert.Len(t, approvers2, 1, "expected 1 approver for version-2")
-}
-
-func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
-	// Verify result has all expected fields and proper types
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(versionId, environmentId, []string{"user-1"})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	require.NotNil(t, result.Details, "expected Details to be initialized")
-	assert.Contains(
-		t,
-		result.Details,
-		"min_approvals",
-		"expected Details to contain 'min_approvals'",
-	)
-	assert.Contains(t, result.Details, "approvers", "expected Details to contain 'approvers'")
-	assert.NotEmpty(t, result.Message, "expected Message to be set")
-
-	// Verify approvers is correct type
-	approvers, ok := result.Details["approvers"].([]string)
-	require.True(t, ok, "expected approvers to be []string")
-	assert.Len(t, approvers, 1, "expected 1 approver")
-}
-
-func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
-	// Setup: More approvals than required
-	versionId := "version-1"
-	environmentId := "env-1"
-	st := setupStore(
-		versionId,
-		environmentId,
-		[]string{"user-1", "user-2", "user-3", "user-4", "user-5"},
-	)
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(context.Background(), scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed when approvals exceed minimum (5 > 2)")
-
-	approvers := result.Details["approvers"].([]string)
-	assert.Len(t, approvers, 5, "expected 5 approvers")
-}
-
-func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
-	// Test that satisfiedAt is set to the timestamp of the Nth approval (where N = minApprovals)
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	// Create test environment
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	// Create approval records with specific timestamps
-	// We need 2 approvals, so the 2nd approval (index 1) should be the satisfying one
-	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-
-	firstApprovalTime := baseTime.Add(5 * time.Minute)
-	secondApprovalTime := baseTime.Add(10 * time.Minute) // This should be the satisfiedAt timestamp
-	thirdApprovalTime := baseTime.Add(15 * time.Minute)
-
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-1",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     firstApprovalTime.Format(time.RFC3339),
-	})
-
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-2",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     secondApprovalTime.Format(time.RFC3339),
-	})
-
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-3",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     thirdApprovalTime.Format(time.RFC3339),
-	})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed")
-	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(
-		t,
-		secondApprovalTime,
-		*result.SatisfiedAt,
-		"satisfiedAt should be the timestamp of the 2nd approval (the one that satisfied the requirement)",
-	)
-}
-
-func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
-	// Test that satisfiedAt uses the Nth approval even when there are more approvals
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	// Create 5 approvals, but only need 2
-	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-
-	firstApprovalTime := baseTime.Add(5 * time.Minute)
-	secondApprovalTime := baseTime.Add(
-		10 * time.Minute,
-	) // This should be the satisfiedAt (2nd approval)
-	thirdApprovalTime := baseTime.Add(15 * time.Minute)
-	fourthApprovalTime := baseTime.Add(20 * time.Minute)
-	fifthApprovalTime := baseTime.Add(25 * time.Minute)
-
-	approvalTimes := []time.Time{
-		firstApprovalTime,
-		secondApprovalTime,
-		thirdApprovalTime,
-		fourthApprovalTime,
-		fifthApprovalTime,
-	}
-	for i, approvalTime := range approvalTimes {
-		st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-			VersionId:     versionId,
-			EnvironmentId: environmentId,
-			UserId:        fmt.Sprintf("user-%d", i+1),
-			Status:        oapi.ApprovalStatusApproved,
-			CreatedAt:     approvalTime.Format(time.RFC3339),
-		})
-	}
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed")
-	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(
-		t,
-		secondApprovalTime,
-		*result.SatisfiedAt,
-		"satisfiedAt should be the timestamp of the 2nd approval, not the 5th",
-	)
-}
-
-func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
-	// Test with minApprovals = 1, so the first approval should be the satisfying one
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	firstApprovalTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	secondApprovalTime := firstApprovalTime.Add(5 * time.Minute)
-
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-1",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     firstApprovalTime.Format(time.RFC3339),
-	})
-
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-2",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     secondApprovalTime.Format(time.RFC3339),
-	})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed")
-	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(
-		t,
-		firstApprovalTime,
-		*result.SatisfiedAt,
-		"satisfiedAt should be the timestamp of the 1st approval",
-	)
-}
-
-func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
-	// Test that satisfiedAt is nil when approvals are not satisfied
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	// Only 1 approval, but need 3
-	approvalTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-1",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     approvalTime.Format(time.RFC3339),
-	})
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert
-	assert.False(t, result.Allowed, "expected denied")
-	assert.Nil(t, result.SatisfiedAt, "satisfiedAt should be nil when approvals are not satisfied")
-}
-
-func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
-	// Test that satisfiedAt uses version.CreatedAt when no approvals are required
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	version := &oapi.DeploymentVersion{
-		Id:        versionId,
-		CreatedAt: versionCreatedAt,
-	}
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed")
-	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(
-		t,
-		versionCreatedAt,
-		*result.SatisfiedAt,
-		"satisfiedAt should be version.CreatedAt when no approvals required",
-	)
-}
-
-func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
-	// Test that satisfiedAt uses the correct approval even if approvals are created out of order
-	// The store sorts by CreatedAt, so we should get the Nth approval by creation time, not insertion order
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	env := &oapi.Environment{
-		Id:   environmentId,
-		Name: "test-env",
-	}
-	_ = st.Environments.Upsert(ctx, env)
-
-	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-
-	// Create approvals out of chronological order
-	// First approval (created later, but inserted first)
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-1",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     baseTime.Add(15 * time.Minute).Format(time.RFC3339),
-	})
-
-	// Second approval (created first, but inserted second)
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-2",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt: baseTime.Add(5 * time.Minute).
-			Format(time.RFC3339),
-		// This is the 2nd approval by creation time
-	})
-
-	// Third approval (created middle)
-	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId:     versionId,
-		EnvironmentId: environmentId,
-		UserId:        "user-3",
-		Status:        oapi.ApprovalStatusApproved,
-		CreatedAt:     baseTime.Add(10 * time.Minute).Format(time.RFC3339),
-	})
-
-	// Need 2 approvals, so the 2nd approval by creation time should be the satisfying one
-	expectedSatisfiedAt := baseTime.Add(
-		10 * time.Minute,
-	) // This is the 2nd approval chronologically
-
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
-	eval := NewEvaluatorFromStore(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: versionId}
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert
-	assert.True(t, result.Allowed, "expected allowed")
-	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(
-		t,
-		expectedSatisfiedAt,
-		*result.SatisfiedAt,
-		"satisfiedAt should be based on creation time order, not insertion order",
-	)
-}
-
-// TestAnyApprovalEvaluator_AlreadyDeployed tests that if a version has already been deployed
-// to an environment, it should be allowed without requiring new approvals.
-func TestAnyApprovalEvaluator_OlderVersionAllowed(t *testing.T) {
-	ctx := context.Background()
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	// Setup store with no approvals (should normally fail)
-	st := setupStore(versionId, environmentId, []string{})
-
-	// Create a deployment
-	jobAgentId := "agent-1"
-	deployment := &oapi.Deployment{
-		Id:         "deploy-1",
-		Name:       "my-app",
-		JobAgentId: &jobAgentId,
-	}
-	_ = st.Deployments.Upsert(ctx, deployment)
-
-	// Create version
-	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	version := &oapi.DeploymentVersion{
-		Id:           versionId,
-		Name:         "v1.0.0",
-		Tag:          "v1.0.0",
-		DeploymentId: "deploy-1",
-		Status:       oapi.DeploymentVersionStatusReady,
-		CreatedAt:    versionCreatedAt,
-	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
-
-	// Create a release target
-	rt := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: environmentId,
-		DeploymentId:  "deploy-1",
-	}
-
-	// Create a release showing this version was already deployed to this environment
-	release := &oapi.Release{
-		ReleaseTarget: *rt,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release)
-
-	// Rule requires 2 approvals, but we have none
-	rule := &oapi.PolicyRule{
-		Id:          "rule-1",
-		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
-		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
-	}
-	eval := NewEvaluatorFromStore(st, rule)
-	require.NotNil(t, eval, "evaluator should not be nil")
-
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	// Assert: Should be allowed because version was already deployed to this environment
-	assert.True(
-		t,
-		result.Allowed,
-		"expected allowed because version already deployed to this environment",
-	)
-	assert.Contains(t, result.Message, "Version was created before the policy was created.")
-	assert.Equal(t, versionId, result.Details["version_id"])
-	assert.Equal(t, environmentId, result.Details["environment_id"])
-	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
-	assert.Equal(
-		t,
-		versionCreatedAt,
-		*result.SatisfiedAt,
-		"satisfiedAt should be version creation time",
-	)
-}
-
-func TestAnyApprovalEvaluator_EmptyRuleCreatedAt(t *testing.T) {
-	ctx := context.Background()
-	versionId := "version-1"
-	environmentId := "env-1"
-
-	st := setupStore(versionId, environmentId, []string{})
-
-	versionCreatedAt := time.Now()
-	version := &oapi.DeploymentVersion{
-		Id:        versionId,
-		CreatedAt: versionCreatedAt,
-	}
-
-	rule := &oapi.PolicyRule{
-		Id:          "rule-1",
-		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
-		CreatedAt:   "",
-	}
-	eval := NewEvaluatorFromStore(st, rule)
-	require.NotNil(t, eval, "evaluator should not be nil")
-
-	environment, _ := st.Environments.Get(environmentId)
-
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-	result := eval.Evaluate(ctx, scope)
-
-	assert.False(t, result.Allowed, "expected denied because version needs approvals")
-	assert.NotContains(t, result.Message, "Failed to parse", "should not have a parse error")
-}
-
-// Tests for parseTimestamp function
-
-func TestParseTimestamp_EmptyString(t *testing.T) {
-	result, err := parseTimestamp("")
-	require.NoError(t, err, "empty string should not produce an error")
-	assert.True(t, result.IsZero(), "empty string should return zero time")
+// ---------- parseTimestamp ----------
+
+func TestParseTimestamp_Empty(t *testing.T) {
+	ts, err := parseTimestamp("")
+	require.NoError(t, err)
+	assert.True(t, ts.IsZero())
 }
 
 func TestParseTimestamp_RFC3339(t *testing.T) {
-	input := "2025-11-04T01:39:37Z"
-	result, err := parseTimestamp(input)
-	require.NoError(t, err, "RFC3339 format should parse successfully")
-	assert.Equal(t, 2025, result.Year())
-	assert.Equal(t, time.November, result.Month())
-	assert.Equal(t, 4, result.Day())
-	assert.Equal(t, 1, result.Hour())
-	assert.Equal(t, 39, result.Minute())
-	assert.Equal(t, 37, result.Second())
-}
-
-func TestParseTimestamp_RFC3339WithOffset(t *testing.T) {
-	input := "2025-11-04T01:39:37+05:30"
-	result, err := parseTimestamp(input)
-	require.NoError(t, err, "RFC3339 with timezone offset should parse successfully")
-	assert.Equal(t, 2025, result.Year())
-	assert.Equal(t, time.November, result.Month())
-	assert.Equal(t, 4, result.Day())
+	input := "2024-06-15T10:30:00Z"
+	ts, err := parseTimestamp(input)
+	require.NoError(t, err)
+	assert.Equal(t, 2024, ts.Year())
+	assert.Equal(t, time.Month(6), ts.Month())
+	assert.Equal(t, 15, ts.Day())
 }
 
 func TestParseTimestamp_RFC3339Nano(t *testing.T) {
-	input := "2025-11-04T01:39:37.123456789Z"
-	result, err := parseTimestamp(input)
-	require.NoError(t, err, "RFC3339Nano format should parse successfully")
-	assert.Equal(t, 2025, result.Year())
-	assert.Equal(t, 123456789, result.Nanosecond())
+	input := "2024-06-15T10:30:00.123456789Z"
+	ts, err := parseTimestamp(input)
+	require.NoError(t, err)
+	assert.Equal(t, 123456789, ts.Nanosecond())
 }
 
-func TestParseTimestamp_WithoutTimezone_Microseconds(t *testing.T) {
-	// This is the format that was causing the backwards compatibility issue
-	input := "2025-11-04T01:39:37.265927"
-	result, err := parseTimestamp(input)
-	require.NoError(t, err, "timestamp without timezone (microseconds) should parse successfully")
-	assert.Equal(t, 2025, result.Year())
-	assert.Equal(t, time.November, result.Month())
-	assert.Equal(t, 4, result.Day())
-	assert.Equal(t, 1, result.Hour())
-	assert.Equal(t, 39, result.Minute())
-	assert.Equal(t, 37, result.Second())
+func TestParseTimestamp_NoTimezone(t *testing.T) {
+	input := "2024-06-15T10:30:00"
+	ts, err := parseTimestamp(input)
+	require.NoError(t, err)
+	assert.Equal(t, 10, ts.Hour())
 }
 
-func TestParseTimestamp_WithoutTimezone_NoFractionalSeconds(t *testing.T) {
-	input := "2025-11-04T01:39:37"
-	result, err := parseTimestamp(input)
-	require.NoError(
-		t,
-		err,
-		"timestamp without timezone (no fractional seconds) should parse successfully",
-	)
-	assert.Equal(t, 2025, result.Year())
-	assert.Equal(t, time.November, result.Month())
-	assert.Equal(t, 4, result.Day())
+func TestParseTimestamp_MicrosecondNoTZ(t *testing.T) {
+	input := "2024-06-15T10:30:00.123456"
+	ts, err := parseTimestamp(input)
+	require.NoError(t, err)
+	assert.Equal(t, 123456000, ts.Nanosecond())
 }
 
-func TestParseTimestamp_WithoutTimezone_Nanoseconds(t *testing.T) {
-	input := "2025-11-04T01:39:37.123456789"
-	result, err := parseTimestamp(input)
-	require.NoError(t, err, "timestamp without timezone (nanoseconds) should parse successfully")
-	assert.Equal(t, 2025, result.Year())
-	assert.Equal(t, 123456789, result.Nanosecond())
+func TestParseTimestamp_Invalid(t *testing.T) {
+	_, err := parseTimestamp("not-a-timestamp")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse timestamp")
 }
 
-func TestParseTimestamp_InvalidFormat(t *testing.T) {
-	invalidInputs := []string{
-		"not-a-timestamp",
-		"2025/11/04",
-		"11-04-2025",
-		"2025-11-04 01:39:37", // space instead of T
-		"01:39:37",
-	}
+// ---------- NewEvaluator ----------
 
-	for _, input := range invalidInputs {
-		_, err := parseTimestamp(input)
-		require.Error(t, err, "invalid format %q should produce an error", input)
-	}
+func TestNewEvaluator_NilPolicyRule(t *testing.T) {
+	assert.Nil(t, NewEvaluator(&mockGetters{}, nil))
 }
 
-func TestParseTimestamp_BackwardsCompatibility_Integration(t *testing.T) {
-	// Test that the evaluator handles timestamps without timezone correctly
-	ctx := context.Background()
-	versionId := "version-1"
-	environmentId := "env-1"
+func TestNewEvaluator_NilAnyApproval(t *testing.T) {
+	rule := &oapi.PolicyRule{Id: "r1"}
+	assert.Nil(t, NewEvaluator(&mockGetters{}, rule))
+}
 
-	st := setupStore(versionId, environmentId, []string{})
+func TestNewEvaluator_NilGetters(t *testing.T) {
+	rule := newPolicyRule(1, time.Now().Format(time.RFC3339))
+	assert.Nil(t, NewEvaluator(nil, rule))
+}
 
-	// Version created BEFORE the rule (should be auto-approved)
-	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	version := &oapi.DeploymentVersion{
-		Id:        versionId,
-		CreatedAt: versionCreatedAt,
+func TestNewEvaluator_Valid(t *testing.T) {
+	rule := newPolicyRule(1, time.Now().Format(time.RFC3339))
+	eval := NewEvaluator(&mockGetters{}, rule)
+	require.NotNil(t, eval)
+}
+
+// ---------- ScopeFields / RuleType / RuleId / Complexity ----------
+
+func TestScopeFields(t *testing.T) {
+	e := &AnyApprovalEvaluator{}
+	assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion, e.ScopeFields())
+}
+
+func TestRuleType(t *testing.T) {
+	e := &AnyApprovalEvaluator{}
+	assert.Equal(t, evaluator.RuleTypeApproval, e.RuleType())
+}
+
+func TestRuleId(t *testing.T) {
+	e := &AnyApprovalEvaluator{ruleId: "rule-123"}
+	assert.Equal(t, "rule-123", e.RuleId())
+}
+
+func TestComplexity(t *testing.T) {
+	e := &AnyApprovalEvaluator{}
+	assert.Equal(t, 1, e.Complexity())
+}
+
+// ---------- Evaluate: MinApprovals <= 0 ----------
+
+func TestEvaluate_ZeroMinApprovals_Allowed(t *testing.T) {
+	scope := newScope(time.Now())
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 0},
+		ruleCreatedAt: time.Now().Format(time.RFC3339),
 	}
 
-	// Rule created AFTER the version, using timestamp format without timezone
-	// This is the format that was causing the backwards compatibility issue
-	rule := &oapi.PolicyRule{
-		Id:          "rule-1",
-		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
-		CreatedAt:   "2025-11-04T01:39:37.265927", // No timezone suffix
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	assert.Contains(t, result.Message, "No approvals required")
+	assert.NotNil(t, result.SatisfiedAt)
+	assert.Equal(t, scope.Version.Id, result.Details["version_id"])
+	assert.Equal(t, scope.Environment.Id, result.Details["environment_id"])
+	assert.Equal(t, int32(0), result.Details["min_approvals"])
+}
+
+func TestEvaluate_NegativeMinApprovals_Allowed(t *testing.T) {
+	scope := newScope(time.Now())
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: -5},
+		ruleCreatedAt: time.Now().Format(time.RFC3339),
 	}
-	eval := NewEvaluatorFromStore(st, rule)
-	require.NotNil(t, eval, "evaluator should not be nil")
 
-	environment, _ := st.Environments.Get(environmentId)
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	assert.Contains(t, result.Message, "No approvals required")
+}
 
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
+// ---------- Evaluate: getter error ----------
+
+func TestEvaluate_GetterError_Pending(t *testing.T) {
+	scope := newScope(time.Now())
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{err: fmt.Errorf("db connection lost")},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: time.Now().Format(time.RFC3339),
 	}
-	result := eval.Evaluate(ctx, scope)
 
-	// Should be allowed because version was created before the policy
-	assert.True(t, result.Allowed, "expected allowed because version predates policy")
-	assert.NotContains(t, result.Message, "Failed to parse", "should not have a parse error")
+	result := e.Evaluate(context.Background(), scope)
+	assert.False(t, result.Allowed)
+	assert.True(t, result.ActionRequired)
+	assert.Contains(t, result.Message, "Failed to get approval records")
+	assert.Contains(t, result.Message, "db connection lost")
+	assert.Equal(t, scope.Version.Id, result.Details["version_id"])
+	assert.Equal(t, scope.Environment.Id, result.Details["environment_id"])
+}
+
+// ---------- Evaluate: enough approvals ----------
+
+func TestEvaluate_ExactlyEnoughApprovals(t *testing.T) {
+	now := time.Now()
+	approvalTime := now.Add(-1 * time.Hour)
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters: &mockGetters{
+			records: []*oapi.UserApprovalRecord{
+				record("user-1", approvalTime),
+			},
+		},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: now.Add(-2 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	assert.Contains(t, result.Message, "All approvals met (1/1)")
+	require.NotNil(t, result.SatisfiedAt)
+	assert.WithinDuration(t, approvalTime, *result.SatisfiedAt, time.Second)
+}
+
+func TestEvaluate_MoreThanEnoughApprovals(t *testing.T) {
+	now := time.Now()
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters: &mockGetters{
+			records: []*oapi.UserApprovalRecord{
+				record("user-1", now.Add(-3*time.Hour)),
+				record("user-2", now.Add(-2*time.Hour)),
+				record("user-3", now.Add(-1*time.Hour)),
+			},
+		},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 2},
+		ruleCreatedAt: now.Add(-4 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	assert.Contains(t, result.Message, "All approvals met (3/2)")
+}
+
+func TestEvaluate_SatisfiedAtUsesNthApproval(t *testing.T) {
+	now := time.Now()
+	second := now.Add(-1 * time.Hour)
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters: &mockGetters{
+			records: []*oapi.UserApprovalRecord{
+				record("user-1", now.Add(-2*time.Hour)),
+				record("user-2", second),
+			},
+		},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 2},
+		ruleCreatedAt: now.Add(-3 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	require.NotNil(t, result.SatisfiedAt)
+	assert.WithinDuration(t, second, *result.SatisfiedAt, time.Second)
+}
+
+func TestEvaluate_ApproversDetail(t *testing.T) {
+	now := time.Now()
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters: &mockGetters{
+			records: []*oapi.UserApprovalRecord{
+				record("alice", now.Add(-1*time.Hour)),
+				record("bob", now.Add(-30*time.Minute)),
+			},
+		},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: now.Add(-2 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	approvers, ok := result.Details["approvers"]
+	require.True(t, ok)
+	assert.Contains(t, approvers, "alice")
+	assert.Contains(t, approvers, "bob")
+}
+
+// ---------- Evaluate: approval timestamp parse error ----------
+
+func TestEvaluate_ApprovalTimestampParseError_AllowedWithoutSatisfiedAt(t *testing.T) {
+	now := time.Now()
+	scope := newScope(now)
+
+	badRecord := &oapi.UserApprovalRecord{
+		UserId:    "user-1",
+		CreatedAt: "not-a-timestamp",
+		Status:    "approved",
+	}
+
+	e := &AnyApprovalEvaluator{
+		getters: &mockGetters{
+			records: []*oapi.UserApprovalRecord{badRecord},
+		},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: now.Add(-1 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	assert.Contains(t, result.Message, "All approvals met (1/1)")
+	assert.Nil(t, result.SatisfiedAt)
+}
+
+// ---------- Evaluate: not enough approvals, version before rule ----------
+
+func TestEvaluate_VersionBeforeRule_Allowed(t *testing.T) {
+	ruleCreated := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+	versionCreated := ruleCreated.Add(-24 * time.Hour)
+	scope := newScope(versionCreated)
+
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{records: []*oapi.UserApprovalRecord{}},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: ruleCreated.Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
 	assert.Contains(t, result.Message, "Version was created before the policy was created")
+	require.NotNil(t, result.SatisfiedAt)
+	assert.Equal(t, versionCreated, *result.SatisfiedAt)
+}
+
+// ---------- Evaluate: not enough approvals, version after rule ----------
+
+func TestEvaluate_NotEnoughApprovals_Pending(t *testing.T) {
+	now := time.Now()
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{records: []*oapi.UserApprovalRecord{}},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 2},
+		ruleCreatedAt: now.Add(-1 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.False(t, result.Allowed)
+	assert.True(t, result.ActionRequired)
+	assert.Contains(t, result.Message, "Not enough approvals (0/2)")
+	assert.Equal(t, 2, result.Details["min_approvals"])
+}
+
+func TestEvaluate_PartialApprovals_Pending(t *testing.T) {
+	now := time.Now()
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters: &mockGetters{
+			records: []*oapi.UserApprovalRecord{
+				record("user-1", now.Add(-30*time.Minute)),
+			},
+		},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 3},
+		ruleCreatedAt: now.Add(-1 * time.Hour).Format(time.RFC3339),
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.False(t, result.Allowed)
+	assert.True(t, result.ActionRequired)
+	assert.Contains(t, result.Message, "Not enough approvals (1/3)")
+	approvers := result.Details["approvers"].([]string)
+	assert.Equal(t, []string{"user-1"}, approvers)
+}
+
+// ---------- Evaluate: ruleCreatedAt parse error ----------
+
+func TestEvaluate_RuleCreatedAtParseError_Pending(t *testing.T) {
+	now := time.Now()
+	scope := newScope(now)
+
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{records: []*oapi.UserApprovalRecord{}},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: "garbage-timestamp",
+	}
+
+	result := e.Evaluate(context.Background(), scope)
+	assert.False(t, result.Allowed)
+	assert.True(t, result.ActionRequired)
+	assert.Contains(t, result.Message, "Failed to parse rule created_at")
+}
+
+// ---------- Evaluate: ruleCreatedAt empty string ----------
+
+func TestEvaluate_RuleCreatedAtEmpty_VersionAlwaysBefore(t *testing.T) {
+	scope := newScope(time.Now())
+
+	e := &AnyApprovalEvaluator{
+		getters:       &mockGetters{records: []*oapi.UserApprovalRecord{}},
+		rule:          &oapi.AnyApprovalRule{MinApprovals: 1},
+		ruleCreatedAt: "",
+	}
+
+	// parseTimestamp("") returns zero time; version.CreatedAt (now) is not before zero time
+	result := e.Evaluate(context.Background(), scope)
+	assert.False(t, result.Allowed)
+	assert.True(t, result.ActionRequired)
+	assert.Contains(t, result.Message, "Not enough approvals (0/1)")
+}
+
+// ---------- Integration: NewEvaluator through Evaluate ----------
+
+func TestNewEvaluator_FullRoundTrip_Allowed(t *testing.T) {
+	now := time.Now()
+	approvalTime := now.Add(-30 * time.Minute)
+
+	getter := &mockGetters{
+		records: []*oapi.UserApprovalRecord{
+			record("user-1", approvalTime),
+		},
+	}
+	rule := newPolicyRule(1, now.Add(-1*time.Hour).Format(time.RFC3339))
+
+	eval := NewEvaluator(getter, rule)
+	require.NotNil(t, eval)
+
+	scope := newScope(now)
+	result := eval.Evaluate(context.Background(), scope)
+	assert.True(t, result.Allowed)
+	assert.Contains(t, result.Message, "All approvals met (1/1)")
+}
+
+func TestNewEvaluator_FullRoundTrip_Pending(t *testing.T) {
+	now := time.Now()
+
+	getter := &mockGetters{records: []*oapi.UserApprovalRecord{}}
+	rule := newPolicyRule(2, now.Add(-1*time.Hour).Format(time.RFC3339))
+
+	eval := NewEvaluator(getter, rule)
+	require.NotNil(t, eval)
+
+	scope := newScope(now)
+	result := eval.Evaluate(context.Background(), scope)
+	assert.False(t, result.Allowed)
+	assert.True(t, result.ActionRequired)
+	assert.Contains(t, result.Message, "Not enough approvals (0/2)")
+}
+
+func TestNewEvaluator_FullRoundTrip_MemoizationCaches(t *testing.T) {
+	now := time.Now()
+	getter := &mockGetters{
+		records: []*oapi.UserApprovalRecord{
+			record("user-1", now.Add(-30*time.Minute)),
+		},
+	}
+	rule := newPolicyRule(1, now.Add(-1*time.Hour).Format(time.RFC3339))
+
+	eval := NewEvaluator(getter, rule)
+	require.NotNil(t, eval)
+
+	scope := newScope(now)
+
+	result1 := eval.Evaluate(context.Background(), scope)
+	// Change the getter to return an error — second call should still
+	// return the cached result since scope fields haven't changed.
+	getter.err = fmt.Errorf("should not be called")
+	result2 := eval.Evaluate(context.Background(), scope)
+
+	assert.Equal(t, result1.Allowed, result2.Allowed)
+	assert.Equal(t, result1.Message, result2.Message)
 }

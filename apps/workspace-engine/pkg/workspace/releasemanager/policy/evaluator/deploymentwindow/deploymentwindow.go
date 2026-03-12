@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/deploymentwindow")
@@ -25,14 +24,6 @@ type DeploymentWindowEvaluator struct {
 	rule     *oapi.DeploymentWindowRule
 	rrule    *rrule.RRule
 	location *time.Location
-}
-
-// NewEvaluatorFromStore creates a new DeploymentWindowEvaluator from a store and policy rule.
-func NewEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
-	if store == nil {
-		return nil
-	}
-	return NewEvaluator(&StoreGetters{store: store}, policyRule)
 }
 
 // NewEvaluator creates a new DeploymentWindowEvaluator from a policy rule.

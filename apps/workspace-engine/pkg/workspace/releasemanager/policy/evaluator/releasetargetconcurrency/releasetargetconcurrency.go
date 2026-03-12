@@ -7,7 +7,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var _ evaluator.JobEvaluator = &ReleaseTargetConcurrencyEvaluator{}
@@ -21,11 +20,6 @@ type Getters interface {
 
 type ReleaseTargetConcurrencyEvaluator struct {
 	getters Getters
-}
-
-// NewReleaseTargetConcurrencyEvaluator creates a concurrency evaluator backed by the in-memory store.
-func NewReleaseTargetConcurrencyEvaluator(s *store.Store) evaluator.JobEvaluator {
-	return NewEvaluator(&storeGetters{store: s})
 }
 
 // NewEvaluator creates a concurrency evaluator with the given getters interface.
@@ -55,17 +49,4 @@ func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(
 	}
 
 	return results.NewAllowedResult("Release target has no active jobs")
-}
-
-var _ Getters = (*storeGetters)(nil)
-
-type storeGetters struct {
-	store *store.Store
-}
-
-func (s *storeGetters) GetJobsInProcessingStateForReleaseTarget(
-	_ context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) map[string]*oapi.Job {
-	return s.store.Jobs.GetJobsInProcessingStateForReleaseTarget(releaseTarget)
 }

@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 func celToSelector(cel string) *oapi.Selector {
@@ -25,16 +24,6 @@ type DeploymentDependencyEvaluator struct {
 	getters Getters
 	ruleId  string
 	rule    *oapi.DeploymentDependencyRule
-}
-
-func NewEvaluatorFromStore(
-	store *store.Store,
-	dependencyRule *oapi.PolicyRule,
-) evaluator.Evaluator {
-	if dependencyRule == nil || dependencyRule.DeploymentDependency == nil || store == nil {
-		return nil
-	}
-	return NewEvaluator(NewStoreGetters(store), dependencyRule)
 }
 
 func NewEvaluator(getters Getters, dependencyRule *oapi.PolicyRule) evaluator.Evaluator {

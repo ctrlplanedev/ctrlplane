@@ -3,40 +3,24 @@ package releasetargetconcurrency
 import (
 	"context"
 	"testing"
-	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 )
 
-// Helper function to create a test store with a resource.
-func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
+type mockGetters struct {
+	processingJobs map[string]map[string]*oapi.Job // keyed by releaseTarget.Key()
+}
 
-	resource := &oapi.Resource{
-		Id:         resourceID,
-		Name:       "test-resource",
-		Kind:       "server",
-		Identifier: resourceID,
-		Config:     map[string]any{},
-		Metadata:   map[string]string{},
-		Version:    "v1",
-		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+func (m *mockGetters) GetJobsInProcessingStateForReleaseTarget(_ context.Context, rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+	if m.processingJobs == nil {
+		return nil
 	}
-
-	if _, err := st.Resources.Upsert(ctx, resource); err != nil {
-		t.Fatalf("Failed to upsert resource: %v", err)
-	}
-	return st
+	return m.processingJobs[rt.Key()]
 }
 
 func TestReleaseTargetConcurrencyEvaluator_NoActiveJobs(t *testing.T) {
-	// Setup: No jobs exist for this release target
-	st := setupStoreWithResource(t, "resource-1")
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	release := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -50,10 +34,8 @@ func TestReleaseTargetConcurrencyEvaluator_NoActiveJobs(t *testing.T) {
 		},
 	}
 
-	// Act
 	result := eval.Evaluate(context.Background(), release)
 
-	// Assert
 	if !result.Allowed {
 		t.Errorf("expected allowed when no active jobs, got denied: %s", result.Message)
 	}
@@ -64,38 +46,21 @@ func TestReleaseTargetConcurrencyEvaluator_NoActiveJobs(t *testing.T) {
 }
 
 func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
-	// Setup: One job in Pending state
-	st := setupStoreWithResource(t, "resource-1")
-	ctx := context.Background()
-
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	existingRelease := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-1",
-			Tag: "v1.0.0",
+	mock := &mockGetters{
+		processingJobs: map[string]map[string]*oapi.Job{
+			releaseTarget.Key(): {
+				"job-1": {Id: "job-1", Status: oapi.JobStatusPending},
+			},
 		},
 	}
+	eval := NewEvaluator(mock)
 
-	if err := st.Releases.Upsert(ctx, existingRelease); err != nil {
-		t.Fatalf("Failed to upsert existing release: %v", err)
-	}
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:        "job-1",
-		ReleaseId: existingRelease.Id.String(),
-		Status:    oapi.JobStatusPending,
-		CreatedAt: time.Now(),
-	})
-
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-	// Try to deploy a new release to the same target
 	newRelease := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
@@ -104,10 +69,8 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 		},
 	}
 
-	// Act
-	result := eval.Evaluate(ctx, newRelease)
+	result := eval.Evaluate(context.Background(), newRelease)
 
-	// Assert
 	if result.Allowed {
 		t.Errorf("expected denied when job is pending, got allowed: %s", result.Message)
 	}
@@ -134,38 +97,21 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 }
 
 func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
-	// Setup: One job in InProgress state
-	st := setupStoreWithResource(t, "resource-1")
-	ctx := context.Background()
-
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	existingRelease := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-1",
-			Tag: "v1.0.0",
+	mock := &mockGetters{
+		processingJobs: map[string]map[string]*oapi.Job{
+			releaseTarget.Key(): {
+				"job-1": {Id: "job-1", Status: oapi.JobStatusInProgress},
+			},
 		},
 	}
+	eval := NewEvaluator(mock)
 
-	if err := st.Releases.Upsert(ctx, existingRelease); err != nil {
-		t.Fatalf("Failed to upsert existing release: %v", err)
-	}
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:        "job-1",
-		ReleaseId: existingRelease.Id.String(),
-		Status:    oapi.JobStatusInProgress,
-		CreatedAt: time.Now(),
-	})
-
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-	// Try to deploy a new release to the same target
 	newRelease := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
@@ -174,10 +120,8 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 		},
 	}
 
-	// Act
-	result := eval.Evaluate(ctx, newRelease)
+	result := eval.Evaluate(context.Background(), newRelease)
 
-	// Assert
 	if result.Allowed {
 		t.Errorf("expected denied when job is in progress, got allowed: %s", result.Message)
 	}
@@ -192,38 +136,21 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 }
 
 func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T) {
-	// Setup: One job in ActionRequired state
-	st := setupStoreWithResource(t, "resource-1")
-	ctx := context.Background()
-
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	existingRelease := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-1",
-			Tag: "v1.0.0",
+	mock := &mockGetters{
+		processingJobs: map[string]map[string]*oapi.Job{
+			releaseTarget.Key(): {
+				"job-1": {Id: "job-1", Status: oapi.JobStatusActionRequired},
+			},
 		},
 	}
+	eval := NewEvaluator(mock)
 
-	if err := st.Releases.Upsert(ctx, existingRelease); err != nil {
-		t.Fatalf("Failed to upsert existing release: %v", err)
-	}
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:        "job-1",
-		ReleaseId: existingRelease.Id.String(),
-		Status:    oapi.JobStatusActionRequired,
-		CreatedAt: time.Now(),
-	})
-
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-	// Try to deploy a new release to the same target
 	newRelease := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
@@ -232,10 +159,8 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 		},
 	}
 
-	// Act
-	result := eval.Evaluate(ctx, newRelease)
+	result := eval.Evaluate(context.Background(), newRelease)
 
-	// Assert
 	if result.Allowed {
 		t.Errorf("expected denied when job requires action, got allowed: %s", result.Message)
 	}
@@ -250,57 +175,22 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 }
 
 func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
-	// Setup: Multiple jobs in processing state
-	st := setupStoreWithResource(t, "resource-1")
-	ctx := context.Background()
-
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	// Create multiple releases with active jobs
-	release1 := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-1",
-			Tag: "v1.0.0",
+	mock := &mockGetters{
+		processingJobs: map[string]map[string]*oapi.Job{
+			releaseTarget.Key(): {
+				"job-1": {Id: "job-1", Status: oapi.JobStatusPending},
+				"job-2": {Id: "job-2", Status: oapi.JobStatusInProgress},
+			},
 		},
 	}
+	eval := NewEvaluator(mock)
 
-	release2 := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-2",
-			Tag: "v2.0.0",
-		},
-	}
-
-	if err := st.Releases.Upsert(ctx, release1); err != nil {
-		t.Fatalf("Failed to upsert release1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, release2); err != nil {
-		t.Fatalf("Failed to upsert release2: %v", err)
-	}
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:        "job-1",
-		ReleaseId: release1.Id.String(),
-		Status:    oapi.JobStatusPending,
-		CreatedAt: time.Now().Add(-1 * time.Hour),
-	})
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:        "job-2",
-		ReleaseId: release2.Id.String(),
-		Status:    oapi.JobStatusInProgress,
-		CreatedAt: time.Now(),
-	})
-
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-	// Try to deploy a new release
 	newRelease := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
@@ -309,15 +199,12 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 		},
 	}
 
-	// Act
-	result := eval.Evaluate(ctx, newRelease)
+	result := eval.Evaluate(context.Background(), newRelease)
 
-	// Assert
 	if result.Allowed {
 		t.Errorf("expected denied when multiple jobs are active, got allowed: %s", result.Message)
 	}
 
-	// Both jobs should be in details
 	if result.Details["job_job-1"] != oapi.JobStatusPending {
 		t.Errorf(
 			"expected job_job-1=%s, got %v",
@@ -336,80 +223,20 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 }
 
 func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testing.T) {
-	// Setup: Jobs in terminal states (completed, failed, cancelled) should not block
-	st := setupStoreWithResource(t, "resource-1")
-	ctx := context.Background()
-
+	// Terminal-state jobs are NOT in processing state, so mock returns nil/empty.
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	// Create releases with terminal jobs
-	release1 := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-1",
-			Tag: "v1.0.0",
+	mock := &mockGetters{
+		processingJobs: map[string]map[string]*oapi.Job{
+			releaseTarget.Key(): {},
 		},
 	}
+	eval := NewEvaluator(mock)
 
-	release2 := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-2",
-			Tag: "v2.0.0",
-		},
-	}
-
-	release3 := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-3",
-			Tag: "v3.0.0",
-		},
-	}
-
-	if err := st.Releases.Upsert(ctx, release1); err != nil {
-		t.Fatalf("Failed to upsert release1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, release2); err != nil {
-		t.Fatalf("Failed to upsert release2: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, release3); err != nil {
-		t.Fatalf("Failed to upsert release3: %v", err)
-	}
-
-	completedAt := time.Now()
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-1",
-		ReleaseId:   release1.Id.String(),
-		Status:      oapi.JobStatusSuccessful,
-		CreatedAt:   time.Now().Add(-3 * time.Hour),
-		CompletedAt: &completedAt,
-	})
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-2",
-		ReleaseId:   release2.Id.String(),
-		Status:      oapi.JobStatusFailure,
-		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		CompletedAt: &completedAt,
-	})
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:          "job-3",
-		ReleaseId:   release3.Id.String(),
-		Status:      oapi.JobStatusCancelled,
-		CreatedAt:   time.Now().Add(-1 * time.Hour),
-		CompletedAt: &completedAt,
-	})
-
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-	// Try to deploy a new release
 	newRelease := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
 		Version: oapi.DeploymentVersion{
@@ -418,10 +245,8 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 		},
 	}
 
-	// Act
-	result := eval.Evaluate(ctx, newRelease)
+	result := eval.Evaluate(context.Background(), newRelease)
 
-	// Assert: Should ALLOW because terminal jobs don't block
 	if !result.Allowed {
 		t.Errorf("expected allowed when only terminal jobs exist, got denied: %s", result.Message)
 	}
@@ -432,25 +257,6 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 }
 
 func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere(t *testing.T) {
-	// Setup: Two different release targets with jobs
-	st := setupStoreWithResource(t, "resource-1")
-	ctx := context.Background()
-
-	// Also need resource-2
-	resource2 := &oapi.Resource{
-		Id:         "resource-2",
-		Name:       "test-resource-2",
-		Kind:       "server",
-		Identifier: "resource-2",
-		Config:     map[string]any{},
-		Metadata:   map[string]string{},
-		Version:    "v1",
-		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-	}
-	if _, err := st.Resources.Upsert(ctx, resource2); err != nil {
-		t.Fatalf("Failed to upsert resource2: %v", err)
-	}
-
 	releaseTarget1 := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
@@ -463,29 +269,16 @@ func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere
 		ResourceId:    "resource-2",
 	}
 
-	// Create a release with active job for target 1
-	release1 := &oapi.Release{
-		ReleaseTarget: *releaseTarget1,
-		Version: oapi.DeploymentVersion{
-			Id:  "version-1",
-			Tag: "v1.0.0",
+	// Only target 1 has active jobs; target 2 has none.
+	mock := &mockGetters{
+		processingJobs: map[string]map[string]*oapi.Job{
+			releaseTarget1.Key(): {
+				"job-1": {Id: "job-1", Status: oapi.JobStatusInProgress},
+			},
 		},
 	}
+	eval := NewEvaluator(mock)
 
-	if err := st.Releases.Upsert(ctx, release1); err != nil {
-		t.Fatalf("Failed to upsert release1: %v", err)
-	}
-
-	st.Jobs.Upsert(ctx, &oapi.Job{
-		Id:        "job-1",
-		ReleaseId: release1.Id.String(),
-		Status:    oapi.JobStatusInProgress,
-		CreatedAt: time.Now(),
-	})
-
-	eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-	// Try to deploy to target 2 (different resource)
 	release2 := &oapi.Release{
 		ReleaseTarget: *releaseTarget2,
 		Version: oapi.DeploymentVersion{
@@ -494,19 +287,14 @@ func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere
 		},
 	}
 
-	// Act
-	result := eval.Evaluate(ctx, release2)
+	result := eval.Evaluate(context.Background(), release2)
 
-	// Assert: Should ALLOW because it's a different release target
 	if !result.Allowed {
 		t.Errorf("expected allowed for different release target, got denied: %s", result.Message)
 	}
 }
 
 func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T) {
-	// Test that all processing states (Pending, InProgress, ActionRequired) block new jobs
-	ctx := context.Background()
-
 	processingStates := []oapi.JobStatus{
 		oapi.JobStatusPending,
 		oapi.JobStatusInProgress,
@@ -515,36 +303,21 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 
 	for _, status := range processingStates {
 		t.Run(string(status), func(t *testing.T) {
-			st := setupStoreWithResource(t, "resource-1")
-
 			releaseTarget := &oapi.ReleaseTarget{
 				DeploymentId:  "deployment-1",
 				EnvironmentId: "env-1",
 				ResourceId:    "resource-1",
 			}
 
-			existingRelease := &oapi.Release{
-				ReleaseTarget: *releaseTarget,
-				Version: oapi.DeploymentVersion{
-					Id:  "version-1",
-					Tag: "v1.0.0",
+			mock := &mockGetters{
+				processingJobs: map[string]map[string]*oapi.Job{
+					releaseTarget.Key(): {
+						"job-1": {Id: "job-1", Status: status},
+					},
 				},
 			}
+			eval := NewEvaluator(mock)
 
-			if err := st.Releases.Upsert(ctx, existingRelease); err != nil {
-				t.Fatalf("Failed to upsert existing release: %v", err)
-			}
-
-			st.Jobs.Upsert(ctx, &oapi.Job{
-				Id:        "job-1",
-				ReleaseId: existingRelease.Id.String(),
-				Status:    status,
-				CreatedAt: time.Now(),
-			})
-
-			eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-			// Try to deploy a new release
 			newRelease := &oapi.Release{
 				ReleaseTarget: *releaseTarget,
 				Version: oapi.DeploymentVersion{
@@ -553,10 +326,8 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 				},
 			}
 
-			// Act
-			result := eval.Evaluate(ctx, newRelease)
+			result := eval.Evaluate(context.Background(), newRelease)
 
-			// Assert: Should DENY
 			if result.Allowed {
 				t.Errorf("expected denied for status %s, got allowed: %s", status, result.Message)
 			}
@@ -573,9 +344,6 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 }
 
 func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) {
-	// Test that all terminal states allow new jobs
-	ctx := context.Background()
-
 	terminalStates := []oapi.JobStatus{
 		oapi.JobStatusSuccessful,
 		oapi.JobStatusFailure,
@@ -588,38 +356,20 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 
 	for _, status := range terminalStates {
 		t.Run(string(status), func(t *testing.T) {
-			st := setupStoreWithResource(t, "resource-1")
-
 			releaseTarget := &oapi.ReleaseTarget{
 				DeploymentId:  "deployment-1",
 				EnvironmentId: "env-1",
 				ResourceId:    "resource-1",
 			}
 
-			existingRelease := &oapi.Release{
-				ReleaseTarget: *releaseTarget,
-				Version: oapi.DeploymentVersion{
-					Id:  "version-1",
-					Tag: "v1.0.0",
+			// Terminal-state jobs are not in processing state, so mock returns empty.
+			mock := &mockGetters{
+				processingJobs: map[string]map[string]*oapi.Job{
+					releaseTarget.Key(): {},
 				},
 			}
+			eval := NewEvaluator(mock)
 
-			if err := st.Releases.Upsert(ctx, existingRelease); err != nil {
-				t.Fatalf("Failed to upsert existing release: %v", err)
-			}
-
-			completedAt := time.Now()
-			st.Jobs.Upsert(ctx, &oapi.Job{
-				Id:          "job-1",
-				ReleaseId:   existingRelease.Id.String(),
-				Status:      status,
-				CreatedAt:   time.Now(),
-				CompletedAt: &completedAt,
-			})
-
-			eval := NewReleaseTargetConcurrencyEvaluator(st)
-
-			// Try to deploy a new release
 			newRelease := &oapi.Release{
 				ReleaseTarget: *releaseTarget,
 				Version: oapi.DeploymentVersion{
@@ -628,10 +378,8 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 				},
 			}
 
-			// Act
-			result := eval.Evaluate(ctx, newRelease)
+			result := eval.Evaluate(context.Background(), newRelease)
 
-			// Assert: Should ALLOW
 			if !result.Allowed {
 				t.Errorf(
 					"expected allowed for terminal status %s, got denied: %s",

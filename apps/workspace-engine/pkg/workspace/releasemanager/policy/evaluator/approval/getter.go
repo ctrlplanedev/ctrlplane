@@ -3,10 +3,10 @@ package approval
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 type Getters interface {
@@ -14,24 +14,6 @@ type Getters interface {
 		ctx context.Context,
 		versionID, environmentID string,
 	) ([]*oapi.UserApprovalRecord, error)
-}
-
-var _ Getters = (*StoreGetters)(nil)
-
-func NewStoreGetters(store *store.Store) *StoreGetters {
-	return &StoreGetters{store: store}
-}
-
-type StoreGetters struct {
-	store *store.Store
-}
-
-func (s *StoreGetters) GetApprovalRecords(
-	ctx context.Context,
-	versionID, environmentID string,
-) ([]*oapi.UserApprovalRecord, error) {
-	records := s.store.UserApprovalRecords.GetApprovalRecords(versionID, environmentID)
-	return records, nil
 }
 
 var _ Getters = (*PostgresGetters)(nil)

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
-	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 type approvalGetters = approval.Getters
@@ -33,72 +33,6 @@ type Getters interface {
 		ctx context.Context,
 		deploymentID string,
 	) ([]*oapi.ReleaseTarget, error)
-}
-
-// ---------------------------------------------------------------------------
-// Store-backed implementation
-// ---------------------------------------------------------------------------
-
-type approvalStoreGetters = approval.StoreGetters
-type environmentProgressionStoreGetters = environmentprogression.StoreGetters
-
-var _ Getters = (*StoreGetters)(nil)
-
-type StoreGetters struct {
-	*approvalStoreGetters
-	*environmentProgressionStoreGetters
-	store *store.Store
-}
-
-func NewStoreGetters(store *store.Store) *StoreGetters {
-	return &StoreGetters{
-		approvalStoreGetters:               approval.NewStoreGetters(store),
-		environmentProgressionStoreGetters: environmentprogression.NewStoreGetters(store),
-		store:                              store,
-	}
-}
-
-func (s *StoreGetters) GetPoliciesForReleaseTarget(
-	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) ([]*oapi.Policy, error) {
-	return s.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
-}
-
-func (s *StoreGetters) GetPolicySkips(
-	ctx context.Context,
-	versionID, environmentID, resourceID string,
-) ([]*oapi.PolicySkip, error) {
-	ps := s.store.PolicySkips.GetAllForTarget(versionID, environmentID, resourceID)
-	return ps, nil
-}
-
-func (s *StoreGetters) HasCurrentRelease(
-	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) (bool, error) {
-	_, _, err := s.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (s *StoreGetters) GetReleaseTargetsForDeployment(
-	_ context.Context,
-	deploymentID string,
-) ([]*oapi.ReleaseTarget, error) {
-	items, err := s.store.ReleaseTargets.Items()
-	if err != nil {
-		return nil, err
-	}
-	targets := make([]*oapi.ReleaseTarget, 0, len(items))
-	for _, rt := range items {
-		if rt.DeploymentId == deploymentID {
-			targets = append(targets, rt)
-		}
-	}
-	return targets, nil
 }
 
 // ---------------------------------------------------------------------------

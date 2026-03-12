@@ -9,116 +9,87 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
 
-func setupTestStore(t *testing.T) (*store.Store, context.Context) {
-	t.Helper()
-	ctx := context.Background()
-	sc := statechange.NewChangeSet[any]()
-	s := store.New("test-workspace", sc)
-	return s, ctx
+type mockGetters struct {
+	environments   map[string]*oapi.Environment
+	deployments    map[string]*oapi.Deployment
+	releases       map[string]*oapi.Release
+	resources      map[string]*oapi.Resource
+	releaseTargets []*oapi.ReleaseTarget
+	jobs           map[string]map[string]*oapi.Job // releaseTargetKey -> jobID -> job
+	verifications  map[string]oapi.JobVerificationStatus
 }
 
-func createTestDeployment(ctx context.Context, s *store.Store) (*oapi.Deployment, string) {
-	systemID := uuid.New().String()
-	deployment := &oapi.Deployment{
-		Id:   uuid.New().String(),
-		Name: "test-deployment",
-		Slug: "test-deployment",
+func newMockGetters() *mockGetters {
+	return &mockGetters{
+		environments:   make(map[string]*oapi.Environment),
+		deployments:    make(map[string]*oapi.Deployment),
+		releases:       make(map[string]*oapi.Release),
+		resources:      make(map[string]*oapi.Resource),
+		releaseTargets: nil,
+		jobs:           make(map[string]map[string]*oapi.Job),
+		verifications:  make(map[string]oapi.JobVerificationStatus),
 	}
-	_ = s.Deployments.Upsert(ctx, deployment)
-	return deployment, systemID
 }
 
-func createTestEnvironment(ctx context.Context, s *store.Store, systemID string) *oapi.Environment {
-	env := &oapi.Environment{
-		Id:   uuid.New().String(),
-		Name: "staging",
-	}
-	_ = s.Environments.Upsert(ctx, env)
-	return env
+func (m *mockGetters) GetEnvironment(_ context.Context, id string) (*oapi.Environment, error) {
+	return m.environments[id], nil
 }
 
-func createTestResource(ctx context.Context, s *store.Store) *oapi.Resource {
-	resource := &oapi.Resource{
-		Id:         uuid.New().String(),
-		Identifier: "test-resource-1",
-		Kind:       "service",
-	}
-	_, _ = s.Resources.Upsert(ctx, resource)
-	return resource
+func (m *mockGetters) GetAllEnvironments(_ context.Context, _ string) (map[string]*oapi.Environment, error) {
+	return m.environments, nil
 }
 
-func createTestVersion(
-	ctx context.Context,
-	s *store.Store,
-	deploymentID string,
-	tag string,
-	createdAt time.Time,
-) *oapi.DeploymentVersion {
-	version := &oapi.DeploymentVersion{
-		Id:           uuid.New().String(),
-		DeploymentId: deploymentID,
-		Tag:          tag,
-		Name:         "Version " + tag,
-		CreatedAt:    createdAt,
-	}
-	s.DeploymentVersions.Upsert(ctx, version.Id, version)
-	return version
+func (m *mockGetters) GetDeployment(_ context.Context, id string) (*oapi.Deployment, error) {
+	return m.deployments[id], nil
 }
 
-func createTestReleaseTarget(
-	ctx context.Context,
-	s *store.Store,
-	deployment *oapi.Deployment,
-	environment *oapi.Environment,
-	resource *oapi.Resource,
-) *oapi.ReleaseTarget {
-	rt := &oapi.ReleaseTarget{
-		DeploymentId:  deployment.Id,
-		EnvironmentId: environment.Id,
-		ResourceId:    resource.Id,
-	}
-	s.ReleaseTargets.Upsert(ctx, rt)
-	return rt
+func (m *mockGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+	return m.deployments, nil
 }
 
-func createTestRelease(
-	ctx context.Context,
-	s *store.Store,
-	rt *oapi.ReleaseTarget,
-	version *oapi.DeploymentVersion,
-) *oapi.Release {
-	release := &oapi.Release{
-		ReleaseTarget: *rt,
-		Version:       *version,
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = s.Releases.Upsert(ctx, release)
-	return release
+func (m *mockGetters) GetRelease(_ context.Context, id string) (*oapi.Release, error) {
+	return m.releases[id], nil
 }
 
-func createSuccessfulJob(ctx context.Context, s *store.Store, release *oapi.Release) *oapi.Job {
-	completedAt := time.Now()
-	job := &oapi.Job{
-		Id:          uuid.New().String(),
-		ReleaseId:   release.Id.String(),
-		Status:      oapi.JobStatusSuccessful,
-		CompletedAt: &completedAt,
-		CreatedAt:   time.Now(),
+func (m *mockGetters) GetResource(_ context.Context, id string) (*oapi.Resource, error) {
+	return m.resources[id], nil
+}
+
+func (m *mockGetters) GetJobsForReleaseTarget(_ context.Context, rt *oapi.ReleaseTarget) map[string]*oapi.Job {
+	if rt == nil {
+		return nil
 	}
-	s.Jobs.Upsert(ctx, job)
-	return job
+	return m.jobs[rt.Key()]
+}
+
+func (m *mockGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
+	return m.verifications[jobID]
+}
+
+func (m *mockGetters) GetAllReleaseTargets(_ context.Context, _ string) ([]*oapi.ReleaseTarget, error) {
+	return m.releaseTargets, nil
+}
+
+func (m *mockGetters) addRelease(release *oapi.Release) {
+	m.releases[release.Id.String()] = release
+}
+
+func (m *mockGetters) addJob(rt *oapi.ReleaseTarget, job *oapi.Job) {
+	key := rt.Key()
+	if m.jobs[key] == nil {
+		m.jobs[key] = make(map[string]*oapi.Job)
+	}
+	m.jobs[key][job.Id] = job
 }
 
 func TestNewEvaluator(t *testing.T) {
-	s, _ := setupTestStore(t)
+	mock := newMockGetters()
 
 	t.Run("returns nil when policyRule is nil", func(t *testing.T) {
-		eval := NewEvaluatorFromStore(s, nil)
+		eval := NewEvaluator(mock, nil)
 		assert.Nil(t, eval)
 	})
 
@@ -126,7 +97,7 @@ func TestNewEvaluator(t *testing.T) {
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
 		}
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		assert.Nil(t, eval)
 	})
 
@@ -137,7 +108,7 @@ func TestNewEvaluator(t *testing.T) {
 				IntervalSeconds: 3600,
 			},
 		}
-		eval := NewEvaluatorFromStore(nil, rule)
+		eval := NewEvaluator(nil, rule)
 		assert.Nil(t, eval)
 	})
 
@@ -148,13 +119,13 @@ func TestNewEvaluator(t *testing.T) {
 				IntervalSeconds: 3600,
 			},
 		}
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		assert.NotNil(t, eval)
 	})
 }
 
 func TestVersionCooldownEvaluator_ScopeFields(t *testing.T) {
-	s, _ := setupTestStore(t)
+	mock := newMockGetters()
 	rule := &oapi.PolicyRule{
 		Id: "test-rule",
 		VersionCooldown: &oapi.VersionCooldownRule{
@@ -162,7 +133,7 @@ func TestVersionCooldownEvaluator_ScopeFields(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluatorFromStore(s, rule)
+	eval := NewEvaluator(mock, rule)
 	require.NotNil(t, eval)
 
 	// The evaluator needs Version and ReleaseTarget
@@ -171,7 +142,7 @@ func TestVersionCooldownEvaluator_ScopeFields(t *testing.T) {
 }
 
 func TestVersionCooldownEvaluator_RuleType(t *testing.T) {
-	s, _ := setupTestStore(t)
+	mock := newMockGetters()
 	rule := &oapi.PolicyRule{
 		Id: "test-rule",
 		VersionCooldown: &oapi.VersionCooldownRule{
@@ -179,20 +150,36 @@ func TestVersionCooldownEvaluator_RuleType(t *testing.T) {
 		},
 	}
 
-	eval := NewEvaluatorFromStore(s, rule)
+	eval := NewEvaluator(mock, rule)
 	require.NotNil(t, eval)
 	assert.Equal(t, evaluator.RuleTypeVersionCooldown, eval.RuleType())
 }
 
 func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	t.Run("allows first deployment when no previous release exists", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
-		version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", time.Now())
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
+
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
+
+		version := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    time.Now(),
+		}
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -201,7 +188,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -217,17 +204,46 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	})
 
 	t.Run("allows redeploy of the same version", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
 
-		// Create a version and deploy it
-		version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", time.Now())
-		release := createTestRelease(ctx, s, releaseTarget, version)
-		createSuccessfulJob(ctx, s, release)
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
+
+		version := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    time.Now(),
+		}
+
+		release := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *version,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release)
+
+		completedAt := time.Now()
+		job := &oapi.Job{
+			Id:          uuid.New().String(),
+			ReleaseId:   release.Id.String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			CreatedAt:   time.Now(),
+		}
+		mock.addJob(releaseTarget, job)
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -236,7 +252,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		// Try to deploy the same version again
@@ -255,21 +271,57 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	t.Run(
 		"denies version when not enough time has elapsed since current version",
 		func(t *testing.T) {
-			s, ctx := setupTestStore(t)
+			ctx := context.Background()
+			mock := newMockGetters()
 
-			deployment, systemID := createTestDeployment(ctx, s)
-			environment := createTestEnvironment(ctx, s, systemID)
-			resource := createTestResource(ctx, s)
-			releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+			deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+			environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+			resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+			mock.deployments[deployment.Id] = deployment
+			mock.environments[environment.Id] = environment
+			mock.resources[resource.Id] = resource
+
+			releaseTarget := &oapi.ReleaseTarget{
+				DeploymentId:  deployment.Id,
+				EnvironmentId: environment.Id,
+				ResourceId:    resource.Id,
+			}
 
 			// v1.0 created 30 minutes ago, deployed
 			baseTime := time.Now().Add(-30 * time.Minute)
-			v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-			release := createTestRelease(ctx, s, releaseTarget, v1)
-			createSuccessfulJob(ctx, s, release)
+			v1 := &oapi.DeploymentVersion{
+				Id:           uuid.New().String(),
+				DeploymentId: deployment.Id,
+				Tag:          "v1.0.0",
+				Name:         "Version v1.0.0",
+				CreatedAt:    baseTime,
+			}
+
+			release := &oapi.Release{
+				ReleaseTarget: *releaseTarget,
+				Version:       *v1,
+				CreatedAt:     time.Now().Format(time.RFC3339),
+			}
+			mock.addRelease(release)
+
+			completedAt := time.Now()
+			job := &oapi.Job{
+				Id:          uuid.New().String(),
+				ReleaseId:   release.Id.String(),
+				Status:      oapi.JobStatusSuccessful,
+				CompletedAt: &completedAt,
+				CreatedAt:   time.Now(),
+			}
+			mock.addJob(releaseTarget, job)
 
 			// v1.1 created 20 minutes after v1.0 (10 minutes ago)
-			v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(20*time.Minute))
+			v1_1 := &oapi.DeploymentVersion{
+				Id:           uuid.New().String(),
+				DeploymentId: deployment.Id,
+				Tag:          "v1.1.0",
+				Name:         "Version v1.1.0",
+				CreatedAt:    baseTime.Add(20 * time.Minute),
+			}
 
 			rule := &oapi.PolicyRule{
 				Id: "test-rule",
@@ -278,7 +330,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 				},
 			}
 
-			eval := NewEvaluatorFromStore(s, rule)
+			eval := NewEvaluator(mock, rule)
 			require.NotNil(t, eval)
 
 			scope := evaluator.EvaluatorScope{
@@ -300,22 +352,58 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	)
 
 	t.Run("allows version when enough time has elapsed since current version", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
+
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
 
 		// v1.0 created 2 hours ago, deployed
 		baseTime := time.Now().Add(-2 * time.Hour)
-		v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release := createTestRelease(ctx, s, releaseTarget, v1)
-		createSuccessfulJob(ctx, s, release)
+		v1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    baseTime,
+		}
+
+		release := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *v1,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release)
+
+		completedAt := time.Now()
+		job := &oapi.Job{
+			Id:          uuid.New().String(),
+			ReleaseId:   release.Id.String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			CreatedAt:   time.Now(),
+		}
+		mock.addJob(releaseTarget, job)
 
 		// v1.1 created 30 minutes after v1.0 (1.5 hours ago)
 		// Even though v1.1 was created soon after v1.0, enough time has elapsed since v1.0 was created
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(30*time.Minute))
+		v1_1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.1.0",
+			Name:         "Version v1.1.0",
+			CreatedAt:    baseTime.Add(30 * time.Minute),
+		}
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -324,7 +412,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -341,22 +429,58 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	})
 
 	t.Run("allows version created exactly at interval boundary", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
+
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
 
 		baseTime := time.Now().Add(-2 * time.Hour)
 
 		// v1.0 created at baseTime, deployed
-		v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release := createTestRelease(ctx, s, releaseTarget, v1)
-		createSuccessfulJob(ctx, s, release)
+		v1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    baseTime,
+		}
+
+		release := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *v1,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release)
+
+		completedAt := time.Now()
+		job := &oapi.Job{
+			Id:          uuid.New().String(),
+			ReleaseId:   release.Id.String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			CreatedAt:   time.Now(),
+		}
+		mock.addJob(releaseTarget, job)
 
 		// v1.1 created exactly 1 hour after v1.0
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(1*time.Hour))
+		v1_1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.1.0",
+			Name:         "Version v1.1.0",
+			CreatedAt:    baseTime.Add(1 * time.Hour),
+		}
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -365,7 +489,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -382,41 +506,71 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	t.Run("batches rapid releases correctly", func(t *testing.T) {
 		// Simulates the main use case: external app releases v1.1, v1.2, v1.3 rapidly
 		// All should be allowed once enough time has elapsed since v1.0 was created
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
+
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
 
 		// v1.0 deployed 2 hours ago
 		baseTime := time.Now().Add(-2 * time.Hour)
-		v1_0 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release := createTestRelease(ctx, s, releaseTarget, v1_0)
-		createSuccessfulJob(ctx, s, release)
+		v1_0 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    baseTime,
+		}
+
+		release := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *v1_0,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release)
+
+		completedAt := time.Now()
+		job := &oapi.Job{
+			Id:          uuid.New().String(),
+			ReleaseId:   release.Id.String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			CreatedAt:   time.Now(),
+		}
+		mock.addJob(releaseTarget, job)
 
 		// Rapid releases (all created within 70 minutes of v1.0)
-		v1_1 := createTestVersion(
-			ctx,
-			s,
-			deployment.Id,
-			"v1.1.0",
-			baseTime.Add(20*time.Minute),
-		) // +20min
-		v1_2 := createTestVersion(
-			ctx,
-			s,
-			deployment.Id,
-			"v1.2.0",
-			baseTime.Add(40*time.Minute),
-		) // +40min
-		v1_3 := createTestVersion(
-			ctx,
-			s,
-			deployment.Id,
-			"v1.3.0",
-			baseTime.Add(70*time.Minute),
-		) // +70min
+		v1_1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.1.0",
+			Name:         "Version v1.1.0",
+			CreatedAt:    baseTime.Add(20 * time.Minute),
+		} // +20min
+		v1_2 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.2.0",
+			Name:         "Version v1.2.0",
+			CreatedAt:    baseTime.Add(40 * time.Minute),
+		} // +40min
+		v1_3 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.3.0",
+			Name:         "Version v1.3.0",
+			CreatedAt:    baseTime.Add(70 * time.Minute),
+		} // +70min
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -425,7 +579,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		// All versions should be allowed since 2 hours have passed since v1.0 was created
@@ -449,33 +603,81 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	})
 
 	t.Run("uses in-progress deployment version for cooldown", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
+
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
 
 		// v1.0 successfully deployed 3 hours ago
 		baseTime := time.Now().Add(-3 * time.Hour)
-		v1_0 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release1 := createTestRelease(ctx, s, releaseTarget, v1_0)
-		createSuccessfulJob(ctx, s, release1)
+		v1_0 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    baseTime,
+		}
+
+		release1 := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *v1_0,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release1)
+
+		completedAt := time.Now().Add(-2 * time.Hour)
+		successJob := &oapi.Job{
+			Id:          uuid.New().String(),
+			ReleaseId:   release1.Id.String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			CreatedAt:   completedAt,
+		}
+		mock.addJob(releaseTarget, successJob)
 
 		// v1.1 is in progress (created 30min after v1.0, so 2.5 hours ago)
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(30*time.Minute))
-		release2 := createTestRelease(ctx, s, releaseTarget, v1_1)
-		// Create in-progress job (no completedAt)
+		v1_1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.1.0",
+			Name:         "Version v1.1.0",
+			CreatedAt:    baseTime.Add(30 * time.Minute),
+		}
+
+		release2 := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *v1_1,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release2)
+
 		inProgressJob := &oapi.Job{
 			Id:        uuid.New().String(),
 			ReleaseId: release2.Id.String(),
 			Status:    oapi.JobStatusInProgress,
 			CreatedAt: time.Now(),
 		}
-		s.Jobs.Upsert(ctx, inProgressJob)
+		mock.addJob(releaseTarget, inProgressJob)
 
 		// v1.2 created 40min after v1.0 (2h 20min ago, only 10min after v1.1)
-		v1_2 := createTestVersion(ctx, s, deployment.Id, "v1.2.0", baseTime.Add(40*time.Minute))
+		v1_2 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.2.0",
+			Name:         "Version v1.2.0",
+			CreatedAt:    baseTime.Add(40 * time.Minute),
+		}
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -484,7 +686,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
@@ -506,22 +708,58 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	})
 
 	t.Run("zero interval allows all versions", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
+		ctx := context.Background()
+		mock := newMockGetters()
 
-		deployment, systemID := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, systemID)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+		deployment := &oapi.Deployment{Id: uuid.New().String(), Name: "test-deployment", Slug: "test-deployment"}
+		environment := &oapi.Environment{Id: uuid.New().String(), Name: "staging"}
+		resource := &oapi.Resource{Id: uuid.New().String(), Identifier: "test-resource-1", Kind: "service"}
+		mock.deployments[deployment.Id] = deployment
+		mock.environments[environment.Id] = environment
+		mock.resources[resource.Id] = resource
+
+		releaseTarget := &oapi.ReleaseTarget{
+			DeploymentId:  deployment.Id,
+			EnvironmentId: environment.Id,
+			ResourceId:    resource.Id,
+		}
 
 		baseTime := time.Now()
 
 		// v1.0 deployed
-		v1_0 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release := createTestRelease(ctx, s, releaseTarget, v1_0)
-		createSuccessfulJob(ctx, s, release)
+		v1_0 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.0.0",
+			Name:         "Version v1.0.0",
+			CreatedAt:    baseTime,
+		}
+
+		release := &oapi.Release{
+			ReleaseTarget: *releaseTarget,
+			Version:       *v1_0,
+			CreatedAt:     time.Now().Format(time.RFC3339),
+		}
+		mock.addRelease(release)
+
+		completedAt := time.Now()
+		job := &oapi.Job{
+			Id:          uuid.New().String(),
+			ReleaseId:   release.Id.String(),
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+			CreatedAt:   time.Now(),
+		}
+		mock.addJob(releaseTarget, job)
 
 		// v1.1 created immediately after
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(1*time.Second))
+		v1_1 := &oapi.DeploymentVersion{
+			Id:           uuid.New().String(),
+			DeploymentId: deployment.Id,
+			Tag:          "v1.1.0",
+			Name:         "Version v1.1.0",
+			CreatedAt:    baseTime.Add(1 * time.Second),
+		}
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
@@ -530,7 +768,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 			},
 		}
 
-		eval := NewEvaluatorFromStore(s, rule)
+		eval := NewEvaluator(mock, rule)
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{

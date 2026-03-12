@@ -13,22 +13,15 @@ import (
 )
 
 func TestNewSummaryEvaluator_NilInputs(t *testing.T) {
-	st := setupStore()
-
 	// Nil rule
-	assert.Nil(t, NewSummaryEvaluatorFromStore(st, nil))
-
-	// Nil store
-	rule := &oapi.PolicyRule{Id: "r1", DeploymentWindow: &oapi.DeploymentWindowRule{}}
-	assert.Nil(t, NewSummaryEvaluatorFromStore(nil, rule))
+	assert.Nil(t, NewSummaryEvaluator(nil))
 
 	// No deployment window on rule
 	ruleNoWindow := &oapi.PolicyRule{Id: "r2"}
-	assert.Nil(t, NewSummaryEvaluatorFromStore(st, ruleNoWindow))
+	assert.Nil(t, NewSummaryEvaluator(ruleNoWindow))
 }
 
 func TestNewSummaryEvaluator_InvalidRRule(t *testing.T) {
-	st := setupStore()
 	rule := &oapi.PolicyRule{
 		Id: "r1",
 		DeploymentWindow: &oapi.DeploymentWindowRule{
@@ -36,17 +29,11 @@ func TestNewSummaryEvaluator_InvalidRRule(t *testing.T) {
 			DurationMinutes: 60,
 		},
 	}
-	// Invalid rrule should return nil
-	eval := NewSummaryEvaluatorFromStore(st, rule)
+	eval := NewSummaryEvaluator(rule)
 	assert.Nil(t, eval)
 }
 
 func TestSummaryEvaluator_AllowWindow_InsideWindow(t *testing.T) {
-	st := setupStore()
-	now := time.Now()
-
-	// Create an rrule that has an occurrence right now
-	// Use FREQ=MINUTELY with INTERVAL=1 to always have a recent occurrence
 	allowWindow := true
 	rule := &oapi.PolicyRule{
 		Id: "dw-summary-1",
@@ -57,7 +44,7 @@ func TestSummaryEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluatorFromStore(st, rule)
+	eval := NewSummaryEvaluator(rule)
 	require.NotNil(t, eval)
 
 	assert.Equal(t, evaluator.RuleTypeDeploymentWindow, eval.RuleType())
@@ -67,7 +54,7 @@ func TestSummaryEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 		Id:           uuid.New().String(),
 		DeploymentId: uuid.New().String(),
 		Tag:          "v1.0.0",
-		CreatedAt:    now,
+		CreatedAt:    time.Now(),
 	}
 	env := &oapi.Environment{
 		Id:   uuid.New().String(),
@@ -85,10 +72,6 @@ func TestSummaryEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 }
 
 func TestSummaryEvaluator_AllowWindow_OutsideWindow(t *testing.T) {
-	st := setupStore()
-
-	// Create an rrule in the far past that won't have an active window now
-	// Use a yearly occurrence set far in the future
 	allowWindow := true
 	rule := &oapi.PolicyRule{
 		Id: "dw-summary-2",
@@ -99,8 +82,7 @@ func TestSummaryEvaluator_AllowWindow_OutsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluatorFromStore(st, rule)
-	// This might be nil if current time happens to be in that window, but very unlikely
+	eval := NewSummaryEvaluator(rule)
 	if eval == nil {
 		t.Skip("rrule might not parse or window might match")
 	}
@@ -123,16 +105,10 @@ func TestSummaryEvaluator_AllowWindow_OutsideWindow(t *testing.T) {
 
 	result := eval.Evaluate(context.Background(), scope)
 	require.NotNil(t, result)
-	// In most cases, we'll be outside the window
-	// The result should be either blocked or allowed depending on timing
 	assert.NotNil(t, result)
 }
 
 func TestSummaryEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
-	st := setupStore()
-
-	// Use a deny window that occurs yearly on Jan 1 at 3am for 1 minute
-	// Very unlikely to be in that window now
 	allowWindow := false
 	rule := &oapi.PolicyRule{
 		Id: "dw-summary-3",
@@ -143,7 +119,7 @@ func TestSummaryEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluatorFromStore(st, rule)
+	eval := NewSummaryEvaluator(rule)
 	if eval == nil {
 		t.Skip("rrule might not parse")
 	}
@@ -166,14 +142,10 @@ func TestSummaryEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 
 	result := eval.Evaluate(context.Background(), scope)
 	require.NotNil(t, result)
-	// Outside deny window should be allowed
 	assert.True(t, result.Allowed, "Should be allowed outside deny window")
 }
 
 func TestSummaryEvaluator_DenyWindow_InsideWindow(t *testing.T) {
-	st := setupStore()
-
-	// Create a deny window that occurs every minute for 5 minutes
 	allowWindow := false
 	rule := &oapi.PolicyRule{
 		Id: "dw-summary-4",
@@ -184,7 +156,7 @@ func TestSummaryEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluatorFromStore(st, rule)
+	eval := NewSummaryEvaluator(rule)
 	require.NotNil(t, eval)
 
 	version := &oapi.DeploymentVersion{
@@ -209,8 +181,6 @@ func TestSummaryEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 }
 
 func TestSummaryEvaluator_WithTimezone(t *testing.T) {
-	st := setupStore()
-
 	tz := "America/New_York"
 	allowWindow := true
 	rule := &oapi.PolicyRule{
@@ -223,7 +193,7 @@ func TestSummaryEvaluator_WithTimezone(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluatorFromStore(st, rule)
+	eval := NewSummaryEvaluator(rule)
 	require.NotNil(t, eval)
 
 	version := &oapi.DeploymentVersion{
@@ -244,14 +214,10 @@ func TestSummaryEvaluator_WithTimezone(t *testing.T) {
 
 	result := eval.Evaluate(context.Background(), scope)
 	require.NotNil(t, result)
-	// Inside a minutely window - should be allowed
 	assert.True(t, result.Allowed)
 }
 
 func TestSummaryEvaluator_DefaultAllowWindow(t *testing.T) {
-	st := setupStore()
-
-	// AllowWindow is nil - defaults to true (allow window)
 	rule := &oapi.PolicyRule{
 		Id: "dw-default",
 		DeploymentWindow: &oapi.DeploymentWindowRule{
@@ -261,7 +227,7 @@ func TestSummaryEvaluator_DefaultAllowWindow(t *testing.T) {
 		},
 	}
 
-	eval := NewSummaryEvaluatorFromStore(st, rule)
+	eval := NewSummaryEvaluator(rule)
 	require.NotNil(t, eval)
 
 	version := &oapi.DeploymentVersion{

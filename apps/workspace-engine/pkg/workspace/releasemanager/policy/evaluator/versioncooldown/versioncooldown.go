@@ -12,7 +12,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versioncooldown")
@@ -46,15 +45,6 @@ type VersionCooldownEvaluator struct {
 type referenceResult struct {
 	version *oapi.DeploymentVersion
 	source  string // "in_progress" or "deployed"
-}
-
-// NewEvaluator creates a new VersionCooldownEvaluator from a policy rule.
-// Returns nil if the rule doesn't contain a version cooldown configuration.
-func NewEvaluatorFromStore(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
-	if store == nil {
-		return nil
-	}
-	return NewEvaluator(NewStoreGetters(store), policyRule)
 }
 
 func NewEvaluator(getters Getters, policyRule *oapi.PolicyRule) evaluator.Evaluator {

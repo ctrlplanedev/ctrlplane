@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/approval")
@@ -46,14 +46,6 @@ type AnyApprovalEvaluator struct {
 	ruleId        string
 	ruleCreatedAt string
 	rule          *oapi.AnyApprovalRule
-}
-
-func NewEvaluatorFromStore(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
-	if approvalRule == nil || approvalRule.AnyApproval == nil || store == nil {
-		return nil
-	}
-
-	return NewEvaluator(NewStoreGetters(store), approvalRule)
 }
 
 func NewEvaluator(getters Getters, approvalRule *oapi.PolicyRule) evaluator.Evaluator {

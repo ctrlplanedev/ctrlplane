@@ -3,22 +3,15 @@ package policy
 import (
 	"context"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deployableversions"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policymanager")
@@ -40,21 +33,11 @@ func New(store *store.Store) *Manager {
 }
 
 func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
-	return evaluator.CollectEvaluators(
-		approval.NewEvaluatorFromStore(m.store, rule),
-		environmentprogression.NewEvaluatorFromStore(m.store, rule),
-		gradualrollout.NewEvaluatorFromStore(m.store, rule),
-		versionselector.NewEvaluator(rule),
-		deploymentdependency.NewEvaluatorFromStore(m.store, rule),
-		deploymentwindow.NewEvaluatorFromStore(m.store, rule),
-		versioncooldown.NewEvaluatorFromStore(m.store, rule),
-	)
+	return evaluator.CollectEvaluators()
 }
 
 func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
-	return evaluator.CollectEvaluators(
-		deployableversions.NewEvaluatorFromStore(m.store),
-	)
+	return evaluator.CollectEvaluators()
 }
 
 func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {

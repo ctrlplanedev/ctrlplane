@@ -9,8 +9,6 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	legacystore "workspace-engine/pkg/workspace/store"
 )
 
 type environmentGetter = store.EnvironmentGetter
@@ -30,57 +28,6 @@ type Getters interface {
 	) map[string]*oapi.Job
 	GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus
 	GetAllReleaseTargets(ctx context.Context, workspaceID string) ([]*oapi.ReleaseTarget, error)
-}
-
-var _ Getters = (*storeGetters)(nil)
-
-func NewStoreGetters(ls *legacystore.Store) *storeGetters {
-	return &storeGetters{
-		environmentGetter: store.NewStoreEnvironmentGetter(ls),
-		deploymentGetter:  store.NewStoreDeploymentGetter(ls),
-		releaseGetter:     store.NewStoreReleaseGetter(ls),
-		resourceGetter:    store.NewStoreResourceGetter(ls),
-		store:             ls,
-	}
-}
-
-type storeGetters struct {
-	environmentGetter
-	deploymentGetter
-	releaseGetter
-	resourceGetter
-
-	store *legacystore.Store
-}
-
-func (s *storeGetters) GetJobsForReleaseTarget(
-	_ context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) map[string]*oapi.Job {
-	return s.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
-}
-
-func (s *storeGetters) GetJobVerificationStatus(jobID string) oapi.JobVerificationStatus {
-	return s.store.JobVerifications.GetJobVerificationStatus(jobID)
-}
-
-func (s *storeGetters) GetAllReleaseTargets(
-	_ context.Context,
-	_ string,
-) ([]*oapi.ReleaseTarget, error) {
-	items, err := s.store.ReleaseTargets.Items()
-	if err != nil {
-		return nil, err
-	}
-	targets := make([]*oapi.ReleaseTarget, 0, len(items))
-	for _, rt := range items {
-		targets = append(targets, rt)
-	}
-	return targets, nil
-}
-
-func (s *storeGetters) NewVersionCooldownEvaluator(rule *oapi.PolicyRule) evaluator.Evaluator {
-	return NewEvaluatorFromStore(s.store, rule)
 }
 
 var _ Getters = (*PostgresGetters)(nil)

@@ -2,25 +2,29 @@ package deployableversions
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
 
-// setupStore creates a test store.
-func setupStore() *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	return store.New("test-workspace", sc)
+type mockGetters struct {
+	releases map[string]*oapi.Release
+}
+
+func (m *mockGetters) GetReleases() map[string]*oapi.Release {
+	if m.releases == nil {
+		return map[string]*oapi.Release{}
+	}
+	return m.releases
 }
 
 func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	version := &oapi.DeploymentVersion{
@@ -42,7 +46,6 @@ func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert
 	assert.True(t, result.Allowed, "expected allowed for ready version")
 	assert.Equal(t, "Version is ready", result.Message)
 	assert.Equal(t, "version-1", result.Details["version_id"])
@@ -50,8 +53,8 @@ func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_PausedVersionWithoutRelease(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-2",
@@ -72,7 +75,6 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithoutRelease(t *testing
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert - paused without existing release should be denied
 	assert.False(t, result.Allowed, "expected denied for paused version without existing release")
 	assert.Equal(t, "Version is paused and has no active release for this target", result.Message)
 	assert.Equal(t, "version-2", result.Details["version_id"])
@@ -80,9 +82,6 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithoutRelease(t *testing
 }
 
 func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T) {
-	st := setupStore()
-	ctx := context.Background()
-
 	version := &oapi.DeploymentVersion{
 		Id:     "version-3",
 		Status: oapi.DeploymentVersionStatusPaused,
@@ -94,14 +93,16 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 		DeploymentId:  "deployment-1",
 	}
 
-	// Create an existing release for this paused version
 	release := &oapi.Release{
 		Version:       *version,
 		ReleaseTarget: *releaseTarget,
 	}
-	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{
+		releases: map[string]*oapi.Release{"r0": release},
+	}
+
+	eval := NewEvaluator(mock)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     version,
@@ -111,7 +112,6 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert - paused with existing release should be allowed (grandfathered in)
 	assert.True(t, result.Allowed, "expected allowed for paused version with existing release")
 	assert.Equal(t, "Version is paused but has an active release for this target", result.Message)
 	assert.Equal(t, "version-3", result.Details["version_id"])
@@ -119,8 +119,8 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 }
 
 func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-4",
@@ -141,7 +141,6 @@ func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert
 	assert.False(t, result.Allowed, "expected denied for building version")
 	assert.Equal(t, "Version is not ready", result.Message)
 	assert.Equal(t, "version-4", result.Details["version_id"])
@@ -149,8 +148,8 @@ func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-5",
@@ -171,7 +170,6 @@ func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert
 	assert.False(t, result.Allowed, "expected denied for failed version")
 	assert.Equal(t, "Version is not ready", result.Message)
 	assert.Equal(t, "version-5", result.Details["version_id"])
@@ -179,8 +177,8 @@ func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-6",
@@ -201,7 +199,6 @@ func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert
 	assert.False(t, result.Allowed, "expected denied for rejected version")
 	assert.Equal(t, "Version is not ready", result.Message)
 	assert.Equal(t, "version-6", result.Details["version_id"])
@@ -209,8 +206,8 @@ func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-7",
@@ -231,7 +228,6 @@ func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
-	// Assert
 	assert.False(t, result.Allowed, "expected denied for unspecified version")
 	assert.Equal(t, "Version is not ready", result.Message)
 	assert.Equal(t, "version-7", result.Details["version_id"])
@@ -239,15 +235,14 @@ func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
 		Status: oapi.DeploymentVersionStatusReady,
 	}
 
-	// Create different scopes with the same version and target
 	releaseTarget := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-1",
@@ -277,8 +272,8 @@ func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	readyVersion := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -318,8 +313,8 @@ func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.
 }
 
 func TestDeployableVersionStatusEvaluator_MissingFields(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	// Scope without version - should be denied by memoization wrapper
 	rt := &oapi.ReleaseTarget{
@@ -340,8 +335,8 @@ func TestDeployableVersionStatusEvaluator_MissingFields(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_ScopeFields(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	// Verify that the evaluator declares it needs Version and ReleaseTarget
 	scopeFields := eval.ScopeFields()
@@ -350,8 +345,8 @@ func TestDeployableVersionStatusEvaluator_ScopeFields(t *testing.T) {
 }
 
 func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
-	st := setupStore()
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -379,12 +374,7 @@ func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
 	assert.NotEmpty(t, result.Message, "message should be set")
 }
 
-// TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets tests that a paused
-// version is allowed on targets where it has releases, but denied on others.
 func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testing.T) {
-	st := setupStore()
-	ctx := context.Background()
-
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
 		Status: oapi.DeploymentVersionStatusPaused,
@@ -407,9 +397,11 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 		Version:       *version,
 		ReleaseTarget: *target1,
 	}
-	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{
+		releases: map[string]*oapi.Release{"r0": release},
+	}
+	eval := NewEvaluator(mock)
 
 	// Test target1 (has release) - should be allowed
 	scope1 := evaluator.EvaluatorScope{
@@ -418,7 +410,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 		Resource:    &oapi.Resource{Id: target1.ResourceId},
 		Deployment:  &oapi.Deployment{Id: target1.DeploymentId},
 	}
-	result1 := eval.Evaluate(ctx, scope1)
+	result1 := eval.Evaluate(context.Background(), scope1)
 	assert.True(t, result1.Allowed, "paused version with release should be allowed on target1")
 
 	// Test target2 (no release) - should be denied
@@ -428,13 +420,11 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 		Resource:    &oapi.Resource{Id: target2.ResourceId},
 		Deployment:  &oapi.Deployment{Id: target2.DeploymentId},
 	}
-	result2 := eval.Evaluate(ctx, scope2)
+	result2 := eval.Evaluate(context.Background(), scope2)
 	assert.False(t, result2.Allowed, "paused version without release should be denied on target2")
 }
 
-// TestDeployableVersionStatusEvaluator_StatusTransitions tests various status transitions.
 func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
-	st := setupStore()
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -449,7 +439,8 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 		Status: oapi.DeploymentVersionStatusReady,
 	}
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	scope1 := evaluator.EvaluatorScope{
 		Version:     version1,
@@ -479,10 +470,12 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 		Version:       *version2,
 		ReleaseTarget: *releaseTarget,
 	}
-	_ = st.Releases.Upsert(ctx, release)
+	mock = &mockGetters{
+		releases: map[string]*oapi.Release{"r0": release},
+	}
 
 	// Need fresh evaluator due to memoization
-	eval = NewEvaluatorFromStore(st)
+	eval = NewEvaluator(mock)
 	result = eval.Evaluate(ctx, scope2)
 	assert.True(t, result.Allowed, "paused version with release should be allowed")
 
@@ -501,12 +494,7 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 	assert.True(t, result.Allowed, "ready version should always be allowed")
 }
 
-// TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases tests that paused
-// versions work correctly when there are multiple releases in the system.
 func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.T) {
-	st := setupStore()
-	ctx := context.Background()
-
 	pausedVersion := &oapi.DeploymentVersion{
 		Id:     "paused-version",
 		Status: oapi.DeploymentVersionStatusPaused,
@@ -538,10 +526,16 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 		Version:       *readyVersion,
 		ReleaseTarget: *target2,
 	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{
+		releases: map[string]*oapi.Release{
+			"r0": release1,
+			"r1": release2,
+		},
+	}
+	eval := NewEvaluator(mock)
+
+	ctx := context.Background()
 
 	// Paused version on target1 (has release) - allowed
 	scope1 := evaluator.EvaluatorScope{
@@ -578,12 +572,7 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 	assert.True(t, result3.Allowed, "ready version should always be allowed")
 }
 
-// TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments tests
-// paused versions across multiple environments.
 func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *testing.T) {
-	st := setupStore()
-	ctx := context.Background()
-
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
 		Status: oapi.DeploymentVersionStatusPaused,
@@ -606,9 +595,13 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 		Version:       *version,
 		ReleaseTarget: *devTarget,
 	}
-	_ = st.Releases.Upsert(ctx, devRelease)
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{
+		releases: map[string]*oapi.Release{"r0": devRelease},
+	}
+	eval := NewEvaluator(mock)
+
+	ctx := context.Background()
 
 	// Dev environment (has release) - allowed
 	devScope := evaluator.EvaluatorScope{
@@ -631,10 +624,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 	assert.False(t, prodResult.Allowed, "paused version should be denied in prod (no release)")
 }
 
-// TestDeployableVersionStatusEvaluator_EmptyStoreHandling tests that paused versions
-// work correctly when the store has no releases.
 func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
-	st := setupStore()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -648,8 +638,8 @@ func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
 		DeploymentId:  "deployment-1",
 	}
 
-	// Store is empty (no releases)
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     version,
@@ -669,12 +659,7 @@ func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
 	)
 }
 
-// TestDeployableVersionStatusEvaluator_WrongVersionRelease tests that a paused version
-// is denied even when releases exist for other versions.
 func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
-	st := setupStore()
-	ctx := context.Background()
-
 	pausedVersion := &oapi.DeploymentVersion{
 		Id:     "paused-version",
 		Status: oapi.DeploymentVersionStatusPaused,
@@ -696,9 +681,11 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 		Version:       *otherVersion,
 		ReleaseTarget: *target,
 	}
-	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{
+		releases: map[string]*oapi.Release{"r0": release},
+	}
+	eval := NewEvaluator(mock)
 
 	scope := evaluator.EvaluatorScope{
 		Version:     pausedVersion,
@@ -706,7 +693,7 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 		Resource:    &oapi.Resource{Id: target.ResourceId},
 		Deployment:  &oapi.Deployment{Id: target.DeploymentId},
 	}
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Should be denied (no release for THIS version)
 	assert.False(
@@ -722,12 +709,7 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 	)
 }
 
-// TestDeployableVersionStatusEvaluator_PausedVersionCaching tests that caching
-// works correctly for paused versions with different targets.
 func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
-	st := setupStore()
-	ctx := context.Background()
-
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
 		Status: oapi.DeploymentVersionStatusPaused,
@@ -750,9 +732,13 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 		Version:       *version,
 		ReleaseTarget: *target1,
 	}
-	_ = st.Releases.Upsert(ctx, release)
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{
+		releases: map[string]*oapi.Release{"r0": release},
+	}
+	eval := NewEvaluator(mock)
+
+	ctx := context.Background()
 
 	// Evaluate for target1 twice - should be cached
 	scope1a := evaluator.EvaluatorScope{
@@ -793,10 +779,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 	)
 }
 
-// TestDeployableVersionStatusEvaluator_AllStatusesComprehensive tests all possible
-// version statuses with and without releases.
 func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T) {
-	st := setupStore()
 	ctx := context.Background()
 
 	target := &oapi.ReleaseTarget{
@@ -818,7 +801,8 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 		{oapi.DeploymentVersionStatusPaused, false, "paused without release should be denied"},
 	}
 
-	eval := NewEvaluatorFromStore(st)
+	mock := &mockGetters{}
+	eval := NewEvaluator(mock)
 
 	for i, tc := range statuses {
 		t.Run(string(tc.status), func(t *testing.T) {
@@ -843,16 +827,17 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 					Version:       *version,
 					ReleaseTarget: *target,
 				}
-				_ = st.Releases.Upsert(ctx, release)
+				mockWithRelease := &mockGetters{
+					releases: map[string]*oapi.Release{"r0": release},
+				}
 
-				// Need fresh evaluator due to memoization
-				evalWithRelease := NewEvaluatorFromStore(st)
+				evalWithRelease := NewEvaluator(mockWithRelease)
 				resultWithRelease := evalWithRelease.Evaluate(ctx, scope)
 				assert.True(t, resultWithRelease.Allowed, "paused with release should be allowed")
 
-				// Clean up for next iteration
-				st = setupStore()
-				eval = NewEvaluatorFromStore(st)
+				// Reset for next iteration
+				mock = &mockGetters{}
+				eval = NewEvaluator(mock)
 			}
 
 			// Verify all results have proper details
@@ -860,17 +845,21 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 				t,
 				result.Details,
 				"version_id",
-				"result should contain version_id for status %s (iteration %d)",
-				tc.status,
-				i,
+				fmt.Sprintf(
+					"result should contain version_id for status %s (iteration %d)",
+					tc.status,
+					i,
+				),
 			)
 			assert.Contains(
 				t,
 				result.Details,
 				"version_status",
-				"result should contain version_status for status %s (iteration %d)",
-				tc.status,
-				i,
+				fmt.Sprintf(
+					"result should contain version_status for status %s (iteration %d)",
+					tc.status,
+					i,
+				),
 			)
 		})
 	}

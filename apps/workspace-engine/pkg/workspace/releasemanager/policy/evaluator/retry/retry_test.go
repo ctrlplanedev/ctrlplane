@@ -8,35 +8,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store"
 )
 
-// Helper function to create a test store with a resource.
-func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
+type mockGetters struct {
+	jobs map[string]*oapi.Job
+}
 
-	resource := &oapi.Resource{
-		Id:         resourceID,
-		Name:       "test-resource",
-		Kind:       "server",
-		Identifier: resourceID,
-		Config:     map[string]any{},
-		Metadata:   map[string]string{},
-		Version:    "v1",
-		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+func (m *mockGetters) GetJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) map[string]*oapi.Job {
+	result := make(map[string]*oapi.Job)
+	for id, job := range m.jobs {
+		result[id] = job
 	}
-
-	if _, err := st.Resources.Upsert(ctx, resource); err != nil {
-		t.Fatalf("Failed to upsert resource: %v", err)
-	}
-	return st
+	return result
 }
 
 func createRelease(deploymentID, envID, resourceID, versionID, tag string) *oapi.Release {
-	return &oapi.Release{
+	r := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
 			EnvironmentId: envID,
@@ -47,6 +34,8 @@ func createRelease(deploymentID, envID, resourceID, versionID, tag string) *oapi
 			Tag: tag,
 		},
 	}
+	r.Id = r.UUID()
+	return r
 }
 
 // =============================================================================
@@ -54,17 +43,12 @@ func createRelease(deploymentID, envID, resourceID, versionID, tag string) *oapi
 // =============================================================================
 
 func TestRetryEvaluator_DefaultBehavior_FirstAttempt(t *testing.T) {
-	// Default: maxRetries=0, no backoff, count all statuses
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
-	// Nil rule = default behavior
-	eval := NewEvaluatorFromStore(st, nil)
+	eval := NewEvaluator(mock, nil)
 	result := eval.Evaluate(ctx, release)
 
 	assert.True(t, result.Allowed, "First attempt should be allowed")
@@ -73,26 +57,21 @@ func TestRetryEvaluator_DefaultBehavior_FirstAttempt(t *testing.T) {
 }
 
 func TestRetryEvaluator_DefaultBehavior_SecondAttemptDenied(t *testing.T) {
-	// Default behavior: maxRetries=0, no retries allowed
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
-	// Create a job for this release
 	completedAt := time.Now().Add(-1 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
-	})
+	}
 
-	eval := NewEvaluatorFromStore(st, nil)
+	eval := NewEvaluator(mock, nil)
 	result := eval.Evaluate(ctx, release)
 
 	assert.False(t, result.Allowed, "Second attempt should be denied with default behavior")
@@ -102,26 +81,21 @@ func TestRetryEvaluator_DefaultBehavior_SecondAttemptDenied(t *testing.T) {
 }
 
 func TestRetryEvaluator_DefaultBehavior_AllStatusesCount(t *testing.T) {
-	// Default (nil rule): ALL statuses count including cancelled/skipped (strict mode)
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
-	// Create job with successful status
 	completedAt := time.Now().Add(-1 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-success"] = &oapi.Job{
 		Id:          "job-success",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
-	})
+	}
 
-	eval := NewEvaluatorFromStore(st, nil)
+	eval := NewEvaluator(mock, nil)
 	result := eval.Evaluate(ctx, release)
 
 	// Successful jobs count with default behavior (maxRetries=0, no policy)
@@ -137,19 +111,15 @@ func TestRetryEvaluator_DefaultBehavior_AllStatusesCount(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_MaxRetries_Zero(t *testing.T) {
-	// maxRetries=0 means 1 attempt total (no retries)
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	rule := &oapi.RetryRule{
 		MaxRetries: 0,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// First attempt allowed
 	result := eval.Evaluate(ctx, release)
@@ -157,13 +127,13 @@ func TestRetryEvaluator_MaxRetries_Zero(t *testing.T) {
 
 	// Add a failed job
 	completedAt := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	// Second attempt denied
 	result = eval.Evaluate(ctx, release)
@@ -172,30 +142,26 @@ func TestRetryEvaluator_MaxRetries_Zero(t *testing.T) {
 }
 
 func TestRetryEvaluator_MaxRetries_Three(t *testing.T) {
-	// maxRetries=3 means 4 attempts total (1 initial + 3 retries)
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	rule := &oapi.RetryRule{
 		MaxRetries: 3,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Simulate 3 attempts
 	for i := 1; i <= 3; i++ {
 		completedAt := time.Now()
-		st.Jobs.Upsert(ctx, &oapi.Job{
+		mock.jobs["job-"+string(rune(i))] = &oapi.Job{
 			Id:          "job-" + string(rune(i)),
 			ReleaseId:   release.Id.String(),
 			Status:      oapi.JobStatusFailure,
 			CreatedAt:   time.Now(),
 			CompletedAt: &completedAt,
-		})
+		}
 
 		result := eval.Evaluate(ctx, release)
 		assert.True(t, result.Allowed, "Attempt %d should be allowed", i+1)
@@ -204,13 +170,13 @@ func TestRetryEvaluator_MaxRetries_Three(t *testing.T) {
 
 	// Add 4th failed job
 	completedAt := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-4"] = &oapi.Job{
 		Id:          "job-4",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	// 5th attempt should be denied
 	result := eval.Evaluate(ctx, release)
@@ -225,40 +191,37 @@ func TestRetryEvaluator_MaxRetries_Three(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	retryOnStatuses := []oapi.JobStatus{oapi.JobStatusFailure}
 	rule := &oapi.RetryRule{
 		MaxRetries:      1,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add successful job - should NOT count
 	completedAt1 := time.Now().Add(-2 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-success"] = &oapi.Job{
 		Id:          "job-success",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-3 * time.Hour),
 		CompletedAt: &completedAt1,
-	})
+	}
 
 	// Add cancelled job - should NOT count
 	completedAt2 := time.Now().Add(-1 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-cancelled"] = &oapi.Job{
 		Id:          "job-cancelled",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-90 * time.Minute),
 		CompletedAt: &completedAt2,
-	})
+	}
 
 	// Should still be allowed (no failures yet)
 	result := eval.Evaluate(ctx, release)
@@ -267,13 +230,13 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 
 	// Add failed job - should count
 	completedAt3 := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-failed"] = &oapi.Job{
 		Id:          "job-failed",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt3,
-	})
+	}
 
 	// Should still allow one more retry
 	result = eval.Evaluate(ctx, release)
@@ -282,13 +245,13 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 
 	// Add second failed job
 	completedAt4 := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-failed-2"] = &oapi.Job{
 		Id:          "job-failed-2",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt4,
-	})
+	}
 
 	// Now should deny (2 failures > maxRetries of 1)
 	result = eval.Evaluate(ctx, release)
@@ -297,13 +260,10 @@ func TestRetryEvaluator_RetryOnStatuses_OnlyCountsFailures(t *testing.T) {
 }
 
 func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	retryOnStatuses := []oapi.JobStatus{
 		oapi.JobStatusFailure,
@@ -314,26 +274,26 @@ func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
 		MaxRetries:      2,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add jobs with different retryable statuses
 	completedAt1 := time.Now().Add(-3 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-4 * time.Hour),
 		CompletedAt: &completedAt1,
-	})
+	}
 
 	completedAt2 := time.Now().Add(-2 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-2"] = &oapi.Job{
 		Id:          "job-2",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusInvalidJobAgent,
 		CreatedAt:   time.Now().Add(-150 * time.Minute),
 		CompletedAt: &completedAt2,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 	assert.True(t, result.Allowed, "Should allow (2 attempts <= 2 max retries)")
@@ -341,13 +301,13 @@ func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
 
 	// Add third retryable status job
 	completedAt3 := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-3"] = &oapi.Job{
 		Id:          "job-3",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusExternalRunNotFound,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt3,
-	})
+	}
 
 	result = eval.Evaluate(ctx, release)
 	assert.False(t, result.Allowed, "Should deny (3 attempts > 2 max retries)")
@@ -363,33 +323,26 @@ func TestRetryEvaluator_RetryOnStatuses_MultipleStatuses(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_DifferentReleasesIndependent(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
 	release2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
 
-	if err := st.Releases.Upsert(ctx, release1); err != nil {
-		t.Fatalf("Failed to upsert release1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, release2); err != nil {
-		t.Fatalf("Failed to upsert release2: %v", err)
-	}
-
 	rule := &oapi.RetryRule{
 		MaxRetries: 0, // No retries
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add failed job for release1
 	completedAt := time.Now()
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-r1"] = &oapi.Job{
 		Id:          "job-r1",
 		ReleaseId:   release1.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now(),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	// Release2 should still be allowed (different release)
 	result := eval.Evaluate(ctx, release2)
@@ -402,13 +355,10 @@ func TestRetryEvaluator_DifferentReleasesIndependent(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_LinearBackoff_StillWaiting(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(60)
 	backoffStrategy := oapi.RetryRuleBackoffStrategyLinear
@@ -417,17 +367,17 @@ func TestRetryEvaluator_LinearBackoff_StillWaiting(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add job that completed 30 seconds ago
 	completedAt := time.Now().Add(-30 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 
@@ -445,13 +395,10 @@ func TestRetryEvaluator_LinearBackoff_StillWaiting(t *testing.T) {
 }
 
 func TestRetryEvaluator_LinearBackoff_BackoffElapsed(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(60)
 	backoffStrategy := oapi.RetryRuleBackoffStrategyLinear
@@ -460,17 +407,17 @@ func TestRetryEvaluator_LinearBackoff_BackoffElapsed(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add job that completed 90 seconds ago (backoff elapsed)
 	completedAt := time.Now().Add(-90 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-2 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 
@@ -481,13 +428,10 @@ func TestRetryEvaluator_LinearBackoff_BackoffElapsed(t *testing.T) {
 }
 
 func TestRetryEvaluator_LinearBackoff_ConstantDelay(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(30)
 	backoffStrategy := oapi.RetryRuleBackoffStrategyLinear
@@ -496,18 +440,18 @@ func TestRetryEvaluator_LinearBackoff_ConstantDelay(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Simulate multiple retries with linear backoff
 	for i := 1; i <= 3; i++ {
 		completedAt := time.Now().Add(-20 * time.Second)
-		st.Jobs.Upsert(ctx, &oapi.Job{
+		mock.jobs["job-"+string(rune(i))] = &oapi.Job{
 			Id:          "job-" + string(rune(i)),
 			ReleaseId:   release.Id.String(),
 			Status:      oapi.JobStatusFailure,
 			CreatedAt:   time.Now().Add(-1 * time.Minute),
 			CompletedAt: &completedAt,
-		})
+		}
 
 		result := eval.Evaluate(ctx, release)
 
@@ -528,13 +472,10 @@ func TestRetryEvaluator_LinearBackoff_ConstantDelay(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_ExponentialBackoff_DoublesEachRetry(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(30)
 	backoffStrategy := oapi.RetryRuleBackoffStrategyExponential
@@ -543,7 +484,7 @@ func TestRetryEvaluator_ExponentialBackoff_DoublesEachRetry(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		BackoffStrategy: &backoffStrategy,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	expectedBackoffs := map[int]int{
 		1: 30,  // 30 * 2^0
@@ -556,13 +497,13 @@ func TestRetryEvaluator_ExponentialBackoff_DoublesEachRetry(t *testing.T) {
 		// Create attemptCount jobs
 		for i := 1; i <= attemptCount; i++ {
 			completedAt := time.Now().Add(-10 * time.Second)
-			st.Jobs.Upsert(ctx, &oapi.Job{
+			mock.jobs["job-"+string(rune(i))] = &oapi.Job{
 				Id:          "job-" + string(rune(i)),
 				ReleaseId:   release.Id.String(),
 				Status:      oapi.JobStatusFailure,
 				CreatedAt:   time.Now().Add(-1 * time.Minute),
 				CompletedAt: &completedAt,
-			})
+			}
 		}
 
 		result := eval.Evaluate(ctx, release)
@@ -579,19 +520,16 @@ func TestRetryEvaluator_ExponentialBackoff_DoublesEachRetry(t *testing.T) {
 
 		// Clear jobs for next iteration
 		for i := 1; i <= attemptCount; i++ {
-			delete(st.Jobs.Items(), "job-"+string(rune(i)))
+			delete(mock.jobs, "job-"+string(rune(i)))
 		}
 	}
 }
 
 func TestRetryEvaluator_ExponentialBackoff_WithCap(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(30)
 	maxBackoffSeconds := int32(100)
@@ -602,18 +540,18 @@ func TestRetryEvaluator_ExponentialBackoff_WithCap(t *testing.T) {
 		BackoffStrategy:   &backoffStrategy,
 		MaxBackoffSeconds: &maxBackoffSeconds,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Create 4 attempts: 30, 60, 120, 240 -> but 240 should be capped at 100
 	for i := 1; i <= 4; i++ {
 		completedAt := time.Now().Add(-5 * time.Second)
-		st.Jobs.Upsert(ctx, &oapi.Job{
+		mock.jobs["job-"+string(rune(i))] = &oapi.Job{
 			Id:          "job-" + string(rune(i)),
 			ReleaseId:   release.Id.String(),
 			Status:      oapi.JobStatusFailure,
 			CreatedAt:   time.Now().Add(-1 * time.Minute),
 			CompletedAt: &completedAt,
-		})
+		}
 	}
 
 	result := eval.Evaluate(ctx, release)
@@ -628,29 +566,26 @@ func TestRetryEvaluator_ExponentialBackoff_WithCap(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_NoBackoff_ImmediateRetry(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	rule := &oapi.RetryRule{
 		MaxRetries:     3,
 		BackoffSeconds: nil, // No backoff
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add job that just completed
 	completedAt := time.Now().Add(-1 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 
@@ -664,30 +599,27 @@ func TestRetryEvaluator_NoBackoff_ImmediateRetry(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_Backoff_UsesCompletedAt(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(60)
 	rule := &oapi.RetryRule{
 		MaxRetries:     3,
 		BackoffSeconds: &backoffSeconds,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Job created 2 hours ago but completed 30 seconds ago
 	completedAt := time.Now().Add(-30 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 
@@ -698,13 +630,10 @@ func TestRetryEvaluator_Backoff_UsesCompletedAt(t *testing.T) {
 }
 
 func TestRetryEvaluator_Backoff_FallsBackToCreatedAt(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(60)
 	retryOnStatuses := []oapi.JobStatus{oapi.JobStatusInProgress, oapi.JobStatusFailure}
@@ -713,16 +642,16 @@ func TestRetryEvaluator_Backoff_FallsBackToCreatedAt(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		RetryOnStatuses: &retryOnStatuses, // Explicitly include InProgress to test backoff fallback logic
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Job with no completedAt (still running)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusInProgress,
 		CreatedAt:   time.Now().Add(-30 * time.Second),
 		CompletedAt: nil, // No completion time
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 
@@ -732,29 +661,26 @@ func TestRetryEvaluator_Backoff_FallsBackToCreatedAt(t *testing.T) {
 }
 
 func TestRetryEvaluator_Backoff_NextEvaluationTime(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(120)
 	rule := &oapi.RetryRule{
 		MaxRetries:     3,
 		BackoffSeconds: &backoffSeconds,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	completedAt := time.Now().Add(-60 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1"] = &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-2 * time.Minute),
 		CompletedAt: &completedAt,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 
@@ -779,13 +705,10 @@ func TestRetryEvaluator_Backoff_NextEvaluationTime(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(60)
 	retryOnStatuses := []oapi.JobStatus{oapi.JobStatusFailure}
@@ -794,17 +717,17 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 		BackoffSeconds:  &backoffSeconds,
 		RetryOnStatuses: &retryOnStatuses,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add successful job (not retryable)
 	completedAt1 := time.Now().Add(-5 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-success"] = &oapi.Job{
 		Id:          "job-success",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt1,
-	})
+	}
 
 	// Should be allowed immediately (successful job doesn't count)
 	result := eval.Evaluate(ctx, release)
@@ -812,13 +735,13 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 
 	// Add failed job (retryable)
 	completedAt2 := time.Now().Add(-5 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-failed"] = &oapi.Job{
 		Id:          "job-failed",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-10 * time.Second),
 		CompletedAt: &completedAt2,
-	})
+	}
 
 	// Now should be in backoff (failed job counts)
 	result = eval.Evaluate(ctx, release)
@@ -832,43 +755,33 @@ func TestRetryEvaluator_Backoff_OnlyForRetryableStatuses(t *testing.T) {
 // =============================================================================
 
 func TestRetryEvaluator_VersionFlip_AllowsRedeployAfterDifferentRelease(t *testing.T) {
-	// When versions flip (v1 → v2 → v1), the retry evaluator must only count
-	// consecutive jobs for the CURRENT release from newest to oldest.
-	// Jobs for other releases in between should break the streak, resetting the count.
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
 	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
 
-	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
-		t.Fatalf("Failed to upsert releaseV1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
-		t.Fatalf("Failed to upsert releaseV2: %v", err)
-	}
-
-	eval := NewEvaluatorFromStore(st, nil)
+	eval := NewEvaluator(mock, nil)
 
 	// Job 1: v1 deployed successfully (oldest)
 	completedAt1 := time.Now().Add(-3 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v1-first"] = &oapi.Job{
 		Id:          "job-v1-first",
 		ReleaseId:   releaseV1.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-4 * time.Hour),
 		CompletedAt: &completedAt1,
-	})
+	}
 
 	// Job 2: v2 deployed successfully (middle)
 	completedAt2 := time.Now().Add(-2 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v2"] = &oapi.Job{
 		Id:          "job-v2",
 		ReleaseId:   releaseV2.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-150 * time.Minute),
 		CompletedAt: &completedAt2,
-	})
+	}
 
 	// Now we want to redeploy v1: the most recent job is for v2,
 	// so the consecutive count for v1 should be 0 → first attempt → allowed
@@ -878,54 +791,44 @@ func TestRetryEvaluator_VersionFlip_AllowsRedeployAfterDifferentRelease(t *testi
 }
 
 func TestRetryEvaluator_VersionFlip_CountsOnlyLatestConsecutiveJobs(t *testing.T) {
-	// Verifies that with maxRetries=2, only the most recent consecutive jobs
-	// for the current release are counted, ignoring older jobs separated by
-	// a different release.
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
 	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
 
-	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
-		t.Fatalf("Failed to upsert releaseV1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
-		t.Fatalf("Failed to upsert releaseV2: %v", err)
-	}
-
 	rule := &oapi.RetryRule{MaxRetries: 2}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Old v1 job (should be ignored because v2 job separates it)
 	completedAt1 := time.Now().Add(-5 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v1-old"] = &oapi.Job{
 		Id:          "job-v1-old",
 		ReleaseId:   releaseV1.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-6 * time.Hour),
 		CompletedAt: &completedAt1,
-	})
+	}
 
 	// v2 job in between
 	completedAt2 := time.Now().Add(-3 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v2"] = &oapi.Job{
 		Id:          "job-v2",
 		ReleaseId:   releaseV2.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-4 * time.Hour),
 		CompletedAt: &completedAt2,
-	})
+	}
 
 	// Recent v1 job (only this one should count)
 	completedAt3 := time.Now().Add(-1 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v1-recent"] = &oapi.Job{
 		Id:          "job-v1-recent",
 		ReleaseId:   releaseV1.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt3,
-	})
+	}
 
 	result := eval.Evaluate(ctx, releaseV1)
 	assert.True(t, result.Allowed, "Should allow retry (only 1 consecutive attempt, max is 2)")
@@ -933,52 +836,43 @@ func TestRetryEvaluator_VersionFlip_CountsOnlyLatestConsecutiveJobs(t *testing.T
 }
 
 func TestRetryEvaluator_VersionFlip_DeniesWhenConsecutiveExceedsLimit(t *testing.T) {
-	// After flipping back to v1, if consecutive v1 jobs exceed the retry limit,
-	// it should be denied.
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
 	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
 
-	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
-		t.Fatalf("Failed to upsert releaseV1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
-		t.Fatalf("Failed to upsert releaseV2: %v", err)
-	}
-
 	rule := &oapi.RetryRule{MaxRetries: 1}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// v2 job (old, will be skipped because newer v1 jobs come after)
 	completedAt1 := time.Now().Add(-5 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v2"] = &oapi.Job{
 		Id:          "job-v2",
 		ReleaseId:   releaseV2.Id.String(),
 		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-6 * time.Hour),
 		CompletedAt: &completedAt1,
-	})
+	}
 
 	// Two consecutive v1 jobs (most recent)
 	completedAt2 := time.Now().Add(-2 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v1-a"] = &oapi.Job{
 		Id:          "job-v1-a",
 		ReleaseId:   releaseV1.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-3 * time.Hour),
 		CompletedAt: &completedAt2,
-	})
+	}
 
 	completedAt3 := time.Now().Add(-1 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-v1-b"] = &oapi.Job{
 		Id:          "job-v1-b",
 		ReleaseId:   releaseV1.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-90 * time.Minute),
 		CompletedAt: &completedAt3,
-	})
+	}
 
 	result := eval.Evaluate(ctx, releaseV1)
 	assert.False(t, result.Allowed, "Should deny (2 consecutive v1 attempts > maxRetries=1)")
@@ -987,44 +881,35 @@ func TestRetryEvaluator_VersionFlip_DeniesWhenConsecutiveExceedsLimit(t *testing
 }
 
 func TestRetryEvaluator_VersionFlip_MultipleFlips(t *testing.T) {
-	// Simulate multiple version flips: v1 → v2 → v1 → v2
-	// Each flip should reset the consecutive count.
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	releaseV1 := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
 	releaseV2 := createRelease("dep-1", "env-1", "resource-1", "v2", "v2.0.0")
 
-	if err := st.Releases.Upsert(ctx, releaseV1); err != nil {
-		t.Fatalf("Failed to upsert releaseV1: %v", err)
-	}
-	if err := st.Releases.Upsert(ctx, releaseV2); err != nil {
-		t.Fatalf("Failed to upsert releaseV2: %v", err)
-	}
-
-	eval := NewEvaluatorFromStore(st, nil)
+	eval := NewEvaluator(mock, nil)
 
 	// v1 → v2 → v1 → v2 (each successful)
 	completedAt1 := time.Now().Add(-4 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-1-v1"] = &oapi.Job{
 		Id: "job-1-v1", ReleaseId: releaseV1.Id.String(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-5 * time.Hour), CompletedAt: &completedAt1,
-	})
+	}
 	completedAt2 := time.Now().Add(-3 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-2-v2"] = &oapi.Job{
 		Id: "job-2-v2", ReleaseId: releaseV2.Id.String(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-210 * time.Minute), CompletedAt: &completedAt2,
-	})
+	}
 	completedAt3 := time.Now().Add(-2 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-3-v1"] = &oapi.Job{
 		Id: "job-3-v1", ReleaseId: releaseV1.Id.String(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-150 * time.Minute), CompletedAt: &completedAt3,
-	})
+	}
 	completedAt4 := time.Now().Add(-1 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-4-v2"] = &oapi.Job{
 		Id: "job-4-v2", ReleaseId: releaseV2.Id.String(), Status: oapi.JobStatusSuccessful,
 		CreatedAt: time.Now().Add(-90 * time.Minute), CompletedAt: &completedAt4,
-	})
+	}
 
 	// Most recent is v2 → evaluating v1 should see 0 consecutive → first attempt
 	resultV1 := eval.Evaluate(ctx, releaseV1)
@@ -1040,49 +925,46 @@ func TestRetryEvaluator_VersionFlip_MultipleFlips(t *testing.T) {
 // Edge Cases
 // =============================================================================
 
-func TestRetryEvaluator_NilStore_ReturnsNil(t *testing.T) {
+func TestRetryEvaluator_NilGetters_ReturnsNil(t *testing.T) {
 	rule := &oapi.RetryRule{
 		MaxRetries: 3,
 	}
-	eval := NewEvaluatorFromStore(nil, rule)
-	assert.Nil(t, eval, "Should return nil for nil store")
+	eval := NewEvaluator(nil, rule)
+	assert.Nil(t, eval, "Should return nil for nil getters")
 }
 
 func TestRetryEvaluator_MultipleJobsSameRelease_FindsMostRecent(t *testing.T) {
-	st := setupStoreWithResource(t, "resource-1")
+	mock := &mockGetters{jobs: map[string]*oapi.Job{}}
 	ctx := context.Background()
 
 	release := createRelease("dep-1", "env-1", "resource-1", "v1", "v1.0.0")
-	if err := st.Releases.Upsert(ctx, release); err != nil {
-		t.Fatalf("Failed to upsert release: %v", err)
-	}
 
 	backoffSeconds := int32(60)
 	rule := &oapi.RetryRule{
 		MaxRetries:     3,
 		BackoffSeconds: &backoffSeconds,
 	}
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	// Add older job
 	oldCompletedAt := time.Now().Add(-2 * time.Hour)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-old"] = &oapi.Job{
 		Id:          "job-old",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-3 * time.Hour),
 		CompletedAt: &oldCompletedAt,
-	})
+	}
 
 	// Add recent job (30s ago)
 	recentCompletedAt := time.Now().Add(-30 * time.Second)
-	st.Jobs.Upsert(ctx, &oapi.Job{
+	mock.jobs["job-recent"] = &oapi.Job{
 		Id:          "job-recent",
 		ReleaseId:   release.Id.String(),
 		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Minute),
 		CompletedAt: &recentCompletedAt,
-	})
+	}
 
 	result := eval.Evaluate(ctx, release)
 

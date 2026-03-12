@@ -7,32 +7,10 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
 )
 
 type Getters interface {
 	HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error)
-}
-
-var _ Getters = (*StoreGetters)(nil)
-
-func NewStoreGetters(store *store.Store) *StoreGetters {
-	return &StoreGetters{store: store}
-}
-
-type StoreGetters struct {
-	store *store.Store
-}
-
-func (s *StoreGetters) HasCurrentRelease(
-	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) (bool, error) {
-	_, _, err := s.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
 }
 
 var _ Getters = (*PostgresGetters)(nil)

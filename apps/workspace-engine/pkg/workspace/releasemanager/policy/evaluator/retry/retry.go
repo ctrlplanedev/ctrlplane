@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var _ evaluator.JobEvaluator = &RetryEvaluator{}
@@ -24,18 +23,6 @@ var _ evaluator.JobEvaluator = &RetryEvaluator{}
 type RetryEvaluator struct {
 	getters Getters
 	rule    *oapi.RetryRule
-}
-
-// NewEvaluator creates a new retry evaluator.
-// Returns nil if the store is nil.
-//
-// If rule is nil, uses default behavior: maxRetries=0 (one attempt only),
-// counting all job statuses toward the limit.
-func NewEvaluatorFromStore(store *store.Store, rule *oapi.RetryRule) evaluator.JobEvaluator {
-	if store == nil {
-		return nil
-	}
-	return NewEvaluator(&storeGetters{store: store}, rule)
 }
 
 func NewEvaluator(getters Getters, rule *oapi.RetryRule) evaluator.JobEvaluator {

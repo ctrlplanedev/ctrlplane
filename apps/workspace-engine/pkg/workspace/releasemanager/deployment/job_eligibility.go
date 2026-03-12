@@ -19,6 +19,28 @@ import (
 
 var jobEligibilityTracer = otel.Tracer("workspace/releasemanager/deployment/jobeligibility")
 
+type storeRetryGetters struct {
+	store *store.Store
+}
+
+func (g *storeRetryGetters) GetJobsForReleaseTarget(
+	_ context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
+	return g.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+}
+
+type storeConcurrencyGetters struct {
+	store *store.Store
+}
+
+func (g *storeConcurrencyGetters) GetJobsInProcessingStateForReleaseTarget(
+	_ context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+) map[string]*oapi.Job {
+	return g.store.Jobs.GetJobsInProcessingStateForReleaseTarget(releaseTarget)
+}
+
 // JobEligibilityChecker determines whether a job should be created for a release.
 // This handles release-level job creation rules like:
 //   - Retry logic (how many times can a failed release be retried? - policy-based)
@@ -41,9 +63,7 @@ func NewJobEligibilityChecker(store *store.Store) *JobEligibilityChecker {
 	return &JobEligibilityChecker{
 		store: store,
 		staticEvaluators: []evaluator.JobEvaluator{
-			// Concurrency check remains as static evaluator
-			releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(store),
-			// Retry logic moved to dynamic policy-based evaluators
+			releasetargetconcurrency.NewEvaluator(&storeConcurrencyGetters{store: store}),
 		},
 	}
 }
@@ -234,13 +254,16 @@ func (c *JobEligibilityChecker) buildRetryEvaluators(
 		span.AddEvent("Failed to get retry rules",
 			oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		// On error, use default retry evaluator
-		retryEvaluators = append(retryEvaluators, retry.NewEvaluatorFromStore(c.store, nil))
+		retryGetters := &storeRetryGetters{store: c.store}
+		retryEvaluators = append(retryEvaluators, retry.NewEvaluator(retryGetters, nil))
 		return retryEvaluators
 	}
 
+	retryGetters := &storeRetryGetters{store: c.store}
+
 	// Create evaluators from extracted retry rules
 	for _, ruleWithPolicy := range retryRules {
-		eval := retry.NewEvaluatorFromStore(c.store, ruleWithPolicy.Rule)
+		eval := retry.NewEvaluator(retryGetters, ruleWithPolicy.Rule)
 		if eval != nil {
 			retryEvaluators = append(retryEvaluators, eval)
 			span.AddEvent("Added retry evaluator from policy",
@@ -256,7 +279,7 @@ func (c *JobEligibilityChecker) buildRetryEvaluators(
 	// If no retry rules found, use default (maxRetries=0, no retries allowed)
 	if len(retryRules) == 0 {
 		span.AddEvent("No retry policy found, using default (maxRetries=0)")
-		retryEvaluators = append(retryEvaluators, retry.NewEvaluatorFromStore(c.store, nil))
+		retryEvaluators = append(retryEvaluators, retry.NewEvaluator(retryGetters, nil))
 	}
 
 	return retryEvaluators

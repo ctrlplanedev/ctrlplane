@@ -9,65 +9,35 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
 
-func generateMatchAllSelector() *oapi.Selector {
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: "true",
-	})
-	return selector
+type mockGetters struct {
+	deployments    map[string]*oapi.Deployment
+	releaseTargets map[string][]*oapi.ReleaseTarget
+	latestJobs     map[string]*oapi.Job
 }
 
-func generateEnvironment(
-	ctx context.Context,
-	systemID string,
-	store *store.Store,
-) *oapi.Environment {
-	environment := &oapi.Environment{
-		Id:               uuid.New().String(),
-		ResourceSelector: generateMatchAllSelector(),
+func (m *mockGetters) GetDeployment(_ context.Context, id string) (*oapi.Deployment, error) {
+	if d, ok := m.deployments[id]; ok {
+		return d, nil
 	}
-	_ = store.Environments.Upsert(ctx, environment)
-	return environment
+	return nil, fmt.Errorf("not found")
 }
 
-func generateDeployment(ctx context.Context, systemID string, store *store.Store) *oapi.Deployment {
-	deployment := &oapi.Deployment{
-		Id:               uuid.New().String(),
-		ResourceSelector: generateMatchAllSelector(),
-	}
-	_ = store.Deployments.Upsert(ctx, deployment)
-	return deployment
+func (m *mockGetters) GetAllDeployments(_ context.Context, _ string) (map[string]*oapi.Deployment, error) {
+	return m.deployments, nil
 }
 
-func generateResource(ctx context.Context, store *store.Store) *oapi.Resource {
-	resource := &oapi.Resource{
-		Id:         uuid.New().String(),
-		Identifier: "test-resource",
-		Kind:       "service",
-	}
-	_, _ = store.Resources.Upsert(ctx, resource)
-	return resource
+func (m *mockGetters) GetReleaseTargetsForResource(_ context.Context, resourceID string) []*oapi.ReleaseTarget {
+	return m.releaseTargets[resourceID]
 }
 
-func generateReleaseTarget(
-	ctx context.Context,
-	resource *oapi.Resource,
-	environment *oapi.Environment,
-	deployment *oapi.Deployment,
-	store *store.Store,
-) *oapi.ReleaseTarget {
-	releaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    resource.Id,
-		EnvironmentId: environment.Id,
-		DeploymentId:  deployment.Id,
+func (m *mockGetters) GetLatestCompletedJobForReleaseTarget(rt *oapi.ReleaseTarget) *oapi.Job {
+	if m.latestJobs == nil || rt == nil {
+		return nil
 	}
-	_ = store.ReleaseTargets.Upsert(ctx, releaseTarget)
-	return releaseTarget
+	return m.latestJobs[rt.Key()]
 }
 
 func generateDependencyRule(cel string) *oapi.PolicyRule {
@@ -79,69 +49,66 @@ func generateDependencyRule(cel string) *oapi.PolicyRule {
 	}
 }
 
-func generateReleaseAndJob(
-	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-	jobStatus oapi.JobStatus,
-	st *store.Store,
-) *oapi.Job {
+func makeDeployment() *oapi.Deployment {
+	return &oapi.Deployment{Id: uuid.New().String()}
+}
+
+func makeReleaseTarget(resourceID, envID, deploymentID string) *oapi.ReleaseTarget {
+	return &oapi.ReleaseTarget{
+		ResourceId:    resourceID,
+		EnvironmentId: envID,
+		DeploymentId:  deploymentID,
+	}
+}
+
+func successfulJob() *oapi.Job {
 	now := time.Now()
-	release := &oapi.Release{
-		ReleaseTarget: *releaseTarget,
-		Version: oapi.DeploymentVersion{
-			Id:           uuid.New().String(),
-			Tag:          "v1.0.0",
-			DeploymentId: releaseTarget.DeploymentId,
-			Status:       oapi.DeploymentVersionStatusReady,
-			CreatedAt:    now,
-		},
-	}
-
-	_ = st.Releases.Upsert(ctx, release)
-
-	var completedAt *time.Time
-	if jobStatus != oapi.JobStatusPending && jobStatus != oapi.JobStatusInProgress {
-		completedAt = &now
-	}
-
-	job := &oapi.Job{
+	return &oapi.Job{
 		Id:          uuid.New().String(),
-		ReleaseId:   release.Id.String(),
-		Status:      jobStatus,
-		CreatedAt:   now,
-		CompletedAt: completedAt,
+		Status:      oapi.JobStatusSuccessful,
+		CompletedAt: &now,
 	}
-	st.Jobs.Upsert(ctx, job)
+}
 
-	return job
+func failedJob() *oapi.Job {
+	now := time.Now()
+	return &oapi.Job{
+		Id:          uuid.New().String(),
+		Status:      oapi.JobStatusFailure,
+		CompletedAt: &now,
+	}
 }
 
 func TestDeploymentDependencyEvaluator_UnsatisfiedDependencyFails(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	resource := generateResource(ctx, st)
-
-	generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	releaseTarget := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2},
+		},
+		latestJobs: map[string]*oapi.Job{},
+	}
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+		Environment: &oapi.Environment{Id: rt2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt2.DeploymentId},
 	})
 	assert.False(t, result.Allowed, "expected denied when dependency is not satisfied")
 }
@@ -149,31 +116,35 @@ func TestDeploymentDependencyEvaluator_UnsatisfiedDependencyFails(t *testing.T) 
 func TestDeploymentDependencyEvaluator_SatisfiedDependencyPasses(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	resource := generateResource(ctx, st)
-
-	releaseTarget1 := generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
-
-	generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusSuccessful, st)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2},
+		},
+		latestJobs: map[string]*oapi.Job{
+			rt1.Key(): successfulJob(),
+		},
+	}
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+		Environment: &oapi.Environment{Id: rt2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt2.DeploymentId},
 	})
 
 	assert.True(t, result.Allowed, "expected allowed when dependency is satisfied")
@@ -182,38 +153,41 @@ func TestDeploymentDependencyEvaluator_SatisfiedDependencyPasses(t *testing.T) {
 func TestDeploymentDependencyEvaluator_MixedSatisfactionsFails(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	deployment3 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
+	env3ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
+	rt3 := makeReleaseTarget(resourceID, env3ID, deployment3.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	system3ID := "system-3"
-	environment3 := generateEnvironment(ctx, system3ID, st)
-	deployment3 := generateDeployment(ctx, system3ID, st)
-
-	resource := generateResource(ctx, st)
-
-	releaseTarget1 := generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	generateReleaseTarget(ctx, resource, environment2, deployment2, st)
-	releaseTarget3 := generateReleaseTarget(ctx, resource, environment3, deployment3, st)
-
-	generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusSuccessful, st)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+			deployment3.Id: deployment3,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2, rt3},
+		},
+		latestJobs: map[string]*oapi.Job{
+			rt1.Key(): successfulJob(),
+		},
+	}
 
 	cel := fmt.Sprintf("deployment.id != '%s'", deployment3.Id)
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget3.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget3.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget3.DeploymentId},
+		Environment: &oapi.Environment{Id: rt3.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt3.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt3.DeploymentId},
 	})
 	assert.False(
 		t,
@@ -225,39 +199,42 @@ func TestDeploymentDependencyEvaluator_MixedSatisfactionsFails(t *testing.T) {
 func TestDeploymentDependencyEvaluator_FailedJobsFails(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	deployment3 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
+	env3ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
+	rt3 := makeReleaseTarget(resourceID, env3ID, deployment3.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	system3ID := "system-3"
-	environment3 := generateEnvironment(ctx, system3ID, st)
-	deployment3 := generateDeployment(ctx, system3ID, st)
-
-	resource := generateResource(ctx, st)
-
-	releaseTarget1 := generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
-	releaseTarget3 := generateReleaseTarget(ctx, resource, environment3, deployment3, st)
-
-	generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusSuccessful, st)
-	generateReleaseAndJob(ctx, releaseTarget2, oapi.JobStatusFailure, st)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+			deployment3.Id: deployment3,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2, rt3},
+		},
+		latestJobs: map[string]*oapi.Job{
+			rt1.Key(): successfulJob(),
+			rt2.Key(): failedJob(),
+		},
+	}
 
 	cel := fmt.Sprintf("deployment.id != '%s'", deployment3.Id)
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget3.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget3.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget3.DeploymentId},
+		Environment: &oapi.Environment{Id: rt3.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt3.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt3.DeploymentId},
 	})
 	assert.False(
 		t,
@@ -269,38 +246,35 @@ func TestDeploymentDependencyEvaluator_FailedJobsFails(t *testing.T) {
 func TestDeploymentDependencyEvaluator_FailsIfLatestJobIsNotSuccessful(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	resource := generateResource(ctx, st)
-
-	releaseTarget1 := generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
-
-	job1 := generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusSuccessful, st)
-	generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusFailure, st)
-
-	now := time.Now()
-	oneHourAgo := now.Add(-1 * time.Hour)
-	job1.CompletedAt = &oneHourAgo
-
-	st.Jobs.Upsert(ctx, job1)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2},
+		},
+		latestJobs: map[string]*oapi.Job{
+			rt1.Key(): failedJob(),
+		},
+	}
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+		Environment: &oapi.Environment{Id: rt2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt2.DeploymentId},
 	})
 	assert.False(t, result.Allowed, "expected denied when latest job is not successful")
 }
@@ -310,38 +284,35 @@ func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJob
 ) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	resource := generateResource(ctx, st)
-
-	releaseTarget1 := generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
-
-	job1 := generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusSuccessful, st)
-	generateReleaseAndJob(ctx, releaseTarget1, oapi.JobStatusInProgress, st)
-
-	now := time.Now()
-	oneHourAgo := now.Add(-1 * time.Hour)
-	job1.CompletedAt = &oneHourAgo
-
-	st.Jobs.Upsert(ctx, job1)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2},
+		},
+		latestJobs: map[string]*oapi.Job{
+			rt1.Key(): successfulJob(),
+		},
+	}
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+		Environment: &oapi.Environment{Id: rt2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt2.DeploymentId},
 	})
 	assert.True(
 		t,
@@ -353,31 +324,35 @@ func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJob
 func TestDeploymentDependencyEvaluator_NoMatchingDeploymentsFails(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	resourceID := uuid.New().String()
+	env1ID := uuid.New().String()
+	env2ID := uuid.New().String()
 
-	system1ID := "system-1"
-	environment1 := generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt1 := makeReleaseTarget(resourceID, env1ID, deployment1.Id)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	resource := generateResource(ctx, st)
-
-	generateReleaseTarget(ctx, resource, environment1, deployment1, st)
-	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt1, rt2},
+		},
+		latestJobs: map[string]*oapi.Job{},
+	}
 
 	cel := "deployment.id == 'non-existing-deployment'"
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+		Environment: &oapi.Environment{Id: rt2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt2.DeploymentId},
 	})
 	assert.False(t, result.Allowed, "expected denied when no matching deployments are found")
 }
@@ -385,30 +360,33 @@ func TestDeploymentDependencyEvaluator_NoMatchingDeploymentsFails(t *testing.T) 
 func TestDeploymentDependencyEvaluator_NotEnoughUpstreamReleaseTargetsFails(t *testing.T) {
 	ctx := context.Background()
 
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
+	deployment1 := makeDeployment()
+	deployment2 := makeDeployment()
+	resourceID := uuid.New().String()
+	env2ID := uuid.New().String()
 
-	system1ID := "system-1"
-	generateEnvironment(ctx, system1ID, st)
-	deployment1 := generateDeployment(ctx, system1ID, st)
+	rt2 := makeReleaseTarget(resourceID, env2ID, deployment2.Id)
 
-	system2ID := "system-2"
-	environment2 := generateEnvironment(ctx, system2ID, st)
-	deployment2 := generateDeployment(ctx, system2ID, st)
-
-	resource := generateResource(ctx, st)
-
-	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
+	mock := &mockGetters{
+		deployments: map[string]*oapi.Deployment{
+			deployment1.Id: deployment1,
+			deployment2.Id: deployment2,
+		},
+		releaseTargets: map[string][]*oapi.ReleaseTarget{
+			resourceID: {rt2},
+		},
+		latestJobs: map[string]*oapi.Job{},
+	}
 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
 
-	eval := NewEvaluatorFromStore(st, rule)
+	eval := NewEvaluator(mock, rule)
 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
-		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
-		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+		Environment: &oapi.Environment{Id: rt2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt2.DeploymentId},
 	})
 	assert.False(
 		t,

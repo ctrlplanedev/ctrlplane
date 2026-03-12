@@ -8,21 +8,25 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
-type RollbackEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.RollbackRule
+type Getters interface {
+	GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job
+	GetJobVerificationsByJobId(jobId string) []*oapi.JobVerification
 }
 
-func NewEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
-	if rule == nil || rule.Rollback == nil || store == nil {
+type RollbackEvaluator struct {
+	getters Getters
+	ruleId  string
+	rule    *oapi.RollbackRule
+}
+
+func NewEvaluator(getters Getters, rule *oapi.PolicyRule) evaluator.Evaluator {
+	if rule == nil || rule.Rollback == nil || getters == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(
-		&RollbackEvaluator{store: store, ruleId: rule.Id, rule: rule.Rollback},
+		&RollbackEvaluator{getters: getters, ruleId: rule.Id, rule: rule.Rollback},
 	)
 }
 
@@ -45,7 +49,7 @@ func (e *RollbackEvaluator) Complexity() int {
 func (e *RollbackEvaluator) getLatestJobForReleaseTarget(
 	releaseTarget *oapi.ReleaseTarget,
 ) *oapi.Job {
-	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	jobs := e.getters.GetJobsForReleaseTarget(releaseTarget)
 	jobsSlice := make([]*oapi.Job, 0, len(jobs))
 	for _, job := range jobs {
 		jobsSlice = append(jobsSlice, job)
@@ -80,7 +84,7 @@ func (e *RollbackEvaluator) Evaluate(
 			WithDetail("job", latestJob)
 	}
 
-	verifications := e.store.JobVerifications.GetByJobId(latestJob.Id)
+	verifications := e.getters.GetJobVerificationsByJobId(latestJob.Id)
 
 	for _, verification := range verifications {
 		verificationStatus := verification.Status()

@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
-	"workspace-engine/pkg/workspace/store"
 )
 
 type VersionCooldownVersionSummaryEvaluator struct {
@@ -16,13 +15,6 @@ type VersionCooldownVersionSummaryEvaluator struct {
 	ruleId  string
 	rule    *oapi.VersionCooldownRule
 	wsId    string
-}
-
-func NewSummaryEvaluatorFromStore(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
-	if store == nil {
-		return nil
-	}
-	return NewSummaryEvaluator(NewStoreGetters(store), store.ID(), rule)
 }
 
 func NewSummaryEvaluator(getters Getters, wsId string, rule *oapi.PolicyRule) evaluator.Evaluator {

@@ -8,62 +8,39 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
 
-func setupTestStore(t *testing.T) (*store.Store, context.Context) {
-	t.Helper()
-	ctx := context.Background()
-	sc := statechange.NewChangeSet[any]()
-	s := store.New("test-workspace", sc)
-	return s, ctx
-}
-
-func createTestDeployment(ctx context.Context, s *store.Store) (*oapi.Deployment, string) {
-	systemID := uuid.New().String()
-	deployment := &oapi.Deployment{
+func createTestDeployment() (*oapi.Deployment, string) {
+	return &oapi.Deployment{
 		Id:   uuid.New().String(),
 		Name: "test-deployment",
 		Slug: "test-deployment",
-	}
-	_ = s.Deployments.Upsert(ctx, deployment)
-	return deployment, systemID
+	}, uuid.New().String()
 }
 
-func createTestEnvironment(ctx context.Context, s *store.Store, systemID string) *oapi.Environment {
-	env := &oapi.Environment{
+func createTestEnvironment() *oapi.Environment {
+	return &oapi.Environment{
 		Id:   uuid.New().String(),
 		Name: "staging",
 	}
-	_ = s.Environments.Upsert(ctx, env)
-	return env
 }
 
-func createTestResource(
-	ctx context.Context,
-	s *store.Store,
-	metadata map[string]string,
-) *oapi.Resource {
-	resource := &oapi.Resource{
+func createTestResource(metadata map[string]string) *oapi.Resource {
+	return &oapi.Resource{
 		Id:         uuid.New().String(),
 		Identifier: "test-resource-1",
 		Kind:       "service",
 		Metadata:   metadata,
 	}
-	_, _ = s.Resources.Upsert(ctx, resource)
-	return resource
 }
 
 func createTestVersion(
-	ctx context.Context,
-	s *store.Store,
 	deploymentID string,
 	tag string,
 	metadata map[string]string,
 ) *oapi.DeploymentVersion {
-	version := &oapi.DeploymentVersion{
+	return &oapi.DeploymentVersion{
 		Id:           uuid.New().String(),
 		DeploymentId: deploymentID,
 		Tag:          tag,
@@ -71,8 +48,6 @@ func createTestVersion(
 		CreatedAt:    time.Now(),
 		Metadata:     metadata,
 	}
-	s.DeploymentVersions.Upsert(ctx, version.Id, version)
-	return version
 }
 
 func TestNewEvaluator(t *testing.T) {
@@ -123,14 +98,14 @@ func TestScopeFields(t *testing.T) {
 }
 
 func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
-	s, ctx := setupTestStore(t)
+	ctx := context.Background()
 
-	deployment, systemID := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, systemID)
-	resource := createTestResource(ctx, s, map[string]string{"tier": "staging"})
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
+	resource := createTestResource(map[string]string{"tier": "staging"})
 
 	t.Run("allows version when CEL expression matches", func(t *testing.T) {
-		version := createTestVersion(ctx, s, deployment.Id, "v2.1.0", nil)
+		version := createTestVersion(deployment.Id, "v2.1.0", nil)
 
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{
@@ -161,7 +136,7 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 	})
 
 	t.Run("blocks version when CEL expression does not match", func(t *testing.T) {
-		version := createTestVersion(ctx, s, deployment.Id, "v1.5.0", nil)
+		version := createTestVersion(deployment.Id, "v1.5.0", nil)
 
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{
@@ -192,12 +167,12 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 }
 
 func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
-	s, ctx := setupTestStore(t)
+	ctx := context.Background()
 
-	deployment, systemID := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, systemID)
-	resource := createTestResource(ctx, s, nil)
-	version := createTestVersion(ctx, s, deployment.Id, "v2.0.0", nil)
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
+	resource := createTestResource(nil)
+	version := createTestVersion(deployment.Id, "v2.0.0", nil)
 
 	t.Run("allows version for matching environment", func(t *testing.T) {
 		selector := &oapi.Selector{}
@@ -255,16 +230,14 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 }
 
 func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
-	s, ctx := setupTestStore(t)
+	ctx := context.Background()
 
-	deployment, systemID := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, systemID)
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
 	resource := createTestResource(
-		ctx,
-		s,
 		map[string]string{"tier": "production", "region": "us-west"},
 	)
-	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
+	version := createTestVersion(deployment.Id, "v1.0.0", nil)
 
 	t.Run("allows version when resource metadata matches", func(t *testing.T) {
 		selector := &oapi.Selector{}
@@ -322,14 +295,12 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 }
 
 func TestEvaluateCEL_CombinedConditions(t *testing.T) {
-	s, ctx := setupTestStore(t)
+	ctx := context.Background()
 
-	deployment, systemID := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, systemID)
-	resource := createTestResource(ctx, s, map[string]string{"canary": "true"})
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
+	resource := createTestResource(map[string]string{"canary": "true"})
 	version := createTestVersion(
-		ctx,
-		s,
 		deployment.Id,
 		"v2.5.0-canary",
 		map[string]string{"channel": "beta"},
@@ -391,12 +362,12 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 }
 
 func TestEvaluate_InvalidCEL(t *testing.T) {
-	s, ctx := setupTestStore(t)
+	ctx := context.Background()
 
-	deployment, systemID := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, systemID)
-	resource := createTestResource(ctx, s, nil)
-	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
+	resource := createTestResource(nil)
+	version := createTestVersion(deployment.Id, "v1.0.0", nil)
 
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{
@@ -426,12 +397,12 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 }
 
 func TestEvaluate_WithDescription(t *testing.T) {
-	s, ctx := setupTestStore(t)
+	ctx := context.Background()
 
-	deployment, systemID := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, systemID)
-	resource := createTestResource(ctx, s, nil)
-	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
+	resource := createTestResource(nil)
+	version := createTestVersion(deployment.Id, "v1.0.0", nil)
 
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{
