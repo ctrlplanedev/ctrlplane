@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/store/policies"
-
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/policies"
 )
 
 var _ Getter = (*PostgresGetter)(nil)

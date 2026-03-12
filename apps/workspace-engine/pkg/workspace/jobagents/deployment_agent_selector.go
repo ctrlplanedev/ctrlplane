@@ -6,7 +6,6 @@ import (
 
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/jobagents/configs"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -43,22 +42,10 @@ func (s *DeploymentAgentsSelector) getLegacyJobAgent() ([]*oapi.JobAgent, error)
 }
 
 func (s *DeploymentAgentsSelector) withResolvedConfig(
-	jobAgent *oapi.JobAgent,
-	deploymentJobAgentConfig oapi.JobAgentConfig,
+	_ *oapi.JobAgent,
+	_ oapi.JobAgentConfig,
 ) (*oapi.JobAgent, error) {
-	mergedConfig, err := configs.Merge(
-		jobAgent.Config,
-		s.deployment.JobAgentConfig,
-		deploymentJobAgentConfig,
-		s.release.Version.JobAgentConfig,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	jobAgentWithConfig := *jobAgent
-	jobAgentWithConfig.Config = mergedConfig
-	return &jobAgentWithConfig, nil
+	return nil, nil
 }
 
 func (s *DeploymentAgentsSelector) buildCelContext() (map[string]any, error) {

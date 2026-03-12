@@ -4,11 +4,10 @@ import (
 	"net/http"
 	"sort"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/store/resources"
-
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/resources"
 )
 
 type Resources struct{}
@@ -114,10 +113,15 @@ func (r *Resources) ComputeAggergate(
 		groupBy[i] = Grouping{Name: g.Name, Property: g.Property}
 	}
 
-	result, err := ComputeAggregate(ctx, &resources.PostgresGetResources{}, workspaceId, AggregateRequest{
-		Filter:  body.Filter,
-		GroupBy: groupBy,
-	})
+	result, err := ComputeAggregate(
+		ctx,
+		&resources.PostgresGetResources{},
+		workspaceId,
+		AggregateRequest{
+			Filter:  body.Filter,
+			GroupBy: groupBy,
+		},
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to compute aggregate: " + err.Error(),

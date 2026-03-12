@@ -7,11 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	storeresources "workspace-engine/pkg/store/resources"
-
-	"github.com/google/cel-go/cel"
 )
 
 // AggregateRequest is the parsed input for computing a resource aggregate.

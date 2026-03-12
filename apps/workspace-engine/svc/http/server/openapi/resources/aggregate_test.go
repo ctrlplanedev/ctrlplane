@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	storeresources "workspace-engine/pkg/store/resources"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	storeresources "workspace-engine/pkg/store/resources"
 )
 
 func makeResource(name, kind string, metadata map[string]string) *oapi.Resource {

@@ -10,10 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/workspace/jobagents/argo"
-	"workspace-engine/pkg/workspace/jobagents/github"
-	"workspace-engine/pkg/workspace/jobagents/terraformcloud"
-	"workspace-engine/pkg/workspace/jobagents/testrunner"
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
@@ -34,11 +30,6 @@ func NewRegistry(
 	r.dispatchers = make(map[string]types.Dispatchable)
 	r.store = store
 	r.queue = queue
-
-	r.Register(testrunner.New(store))
-	r.Register(argo.NewArgoApplication(store, verifications))
-	r.Register(terraformcloud.NewTFE(store))
-	r.Register(github.NewGithubAction(store))
 
 	return r
 }

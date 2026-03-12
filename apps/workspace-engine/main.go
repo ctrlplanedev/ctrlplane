@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/messaging"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
@@ -20,7 +19,6 @@ import (
 	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
-	"workspace-engine/svc/workspaceconsumer/kafka"
 )
 
 var (
@@ -36,14 +34,6 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	producer, err := kafka.NewProducer(kafka.Brokers)
-	if err != nil {
-		log.Error("Failed to create Kafka producer", "error", err)
-		return
-	}
-	messaging.InitProducer(producer)
-	defer messaging.CloseProducer()
 
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
