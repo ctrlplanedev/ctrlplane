@@ -86,7 +86,31 @@ interface EnqueueScopeParams {
   notBefore?: Date;
 }
 
-const ENQUEUE_MANY_BATCH_SIZE = 100;
+const ENQUEUE_MANY_BATCH_SIZE = 25;
+
+/**
+ * Sort by the conflict key so concurrent batch upserts/processes are more likely
+ * to touch the same logical rows in a consistent order. This can reduce
+ * deadlock risk when multiple transactions operate on overlapping keys, but it
+ * does not guarantee lock ordering or eliminate all deadlocks.
+ */
+function sortByScopeKey<
+  T extends {
+    workspaceId: string;
+    kind: string;
+    scopeType: string;
+    scopeId: string;
+  },
+>(values: T[]): T[] {
+  return [...values].sort((a, b) => {
+    return (
+      a.workspaceId.localeCompare(b.workspaceId) ||
+      a.kind.localeCompare(b.kind) ||
+      a.scopeType.localeCompare(b.scopeType) ||
+      a.scopeId.localeCompare(b.scopeId)
+    );
+  });
+}
 
 export async function enqueueMany(
   db: Tx,
@@ -95,14 +119,16 @@ export async function enqueueMany(
   if (items.length === 0) return;
 
   const now = new Date();
-  const values = items.map((item) => ({
-    workspaceId: item.workspaceId,
-    kind: item.kind,
-    scopeType: item.scopeType ?? "",
-    scopeId: item.scopeId ?? "",
-    priority: item.priority ?? 100,
-    notBefore: item.notBefore ?? now,
-  }));
+  const values = sortByScopeKey(
+    items.map((item) => ({
+      workspaceId: item.workspaceId,
+      kind: item.kind,
+      scopeType: item.scopeType ?? "",
+      scopeId: item.scopeId ?? "",
+      priority: item.priority ?? 100,
+      notBefore: item.notBefore ?? now,
+    })),
+  );
 
   for (let i = 0; i < values.length; i += ENQUEUE_MANY_BATCH_SIZE) {
     const batch = values.slice(i, i + ENQUEUE_MANY_BATCH_SIZE);

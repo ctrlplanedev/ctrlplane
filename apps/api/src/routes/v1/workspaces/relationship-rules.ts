@@ -44,10 +44,10 @@ const enqueueRelationshipReconciliation = async (workspaceId: string) => {
     })),
   ];
 
-  await Promise.all([
+  Promise.all([
     enqueueManyRelationshipEval(db, evalItems),
     enqueueAllReleaseTargetsDesiredVersion(db, workspaceId),
-  ]);
+  ]).catch(console.error);
 };
 
 const toRuleResponse = (r: typeof schema.relationshipRule.$inferSelect) => ({
