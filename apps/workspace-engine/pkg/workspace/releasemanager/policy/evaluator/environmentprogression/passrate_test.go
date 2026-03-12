@@ -8,62 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
-
-// setupTestStoreForPassRate creates a minimal test store for pass rate evaluator tests.
-func setupTestStoreForPassRate() *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	// Create system
-	system := &oapi.System{
-		Id:          "system-1",
-		Name:        "test-system",
-		WorkspaceId: "workspace-1",
-	}
-	_ = st.Systems.Upsert(ctx, system)
-
-	// Create resource selector that matches all resources
-	resourceSelector := &oapi.Selector{}
-	_ = resourceSelector.FromCelSelector(oapi.CelSelector{
-		Cel: "true",
-	})
-
-	// Create environment
-	env := &oapi.Environment{
-		Id:               "env-staging",
-		Name:             "staging",
-		ResourceSelector: resourceSelector,
-	}
-	_ = st.Environments.Upsert(ctx, env)
-	_ = st.SystemEnvironments.Link("system-1", "env-staging")
-
-	// Create deployment
-	jobAgentId := "agent-1"
-	description := "Test deployment"
-	deployment := &oapi.Deployment{
-		Id:               "deploy-1",
-		Name:             "my-app",
-		Slug:             "my-app",
-		JobAgentId:       &jobAgentId,
-		Description:      &description,
-		JobAgentConfig:   oapi.JobAgentConfig{},
-		ResourceSelector: resourceSelector,
-	}
-	_ = st.Deployments.Upsert(ctx, deployment)
-	_ = st.SystemDeployments.Link("system-1", "deploy-1")
-
-	return st
-}
 
 // TestPassRateEvaluator_MeetsMinimumRequirement tests that the evaluator allows progression
 // when the success percentage meets or exceeds the minimum requirement.
 func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
-	st := setupTestStoreForPassRate()
+	mock := setupMockForPassRate()
 	ctx := context.Background()
 
 	// Create version
@@ -75,7 +26,6 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create 3 release targets
 	rt1 := &oapi.ReleaseTarget{
@@ -83,21 +33,41 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt2)
+	mock.addReleaseTarget(rt2)
 
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt3)
+	mock.addReleaseTarget(rt3)
+
+	// Create resources for release targets
+	mock.resources["resource-2"] = &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	mock.resources["resource-3"] = &oapi.Resource{
+		Id:          "resource-3",
+		Identifier:  "test-resource-3",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -112,45 +82,11 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	release3 := &oapi.Release{
-		ReleaseTarget: *rt3,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
-	_ = st.Releases.Upsert(ctx, release3)
-
-	// Create resources for release targets
-	resource2 := &oapi.Resource{
-		Id:          "resource-2",
-		Identifier:  "test-resource-2",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	resource3 := &oapi.Resource{
-		Id:          "resource-3",
-		Identifier:  "test-resource-3",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource2)
-	_, _ = st.Resources.Upsert(ctx, resource3)
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err)
 
 	// Create 2 successful jobs out of 3 targets (66.67% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -161,7 +97,6 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
@@ -169,13 +104,13 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		CompletedAt:    &completedAt2,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
-	st.Jobs.Upsert(ctx, job2)
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt2, job2, release2)
 
 	// Test with 50% minimum requirement (66.67% > 50%, should pass)
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(NewStoreGetters(st), minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(mock, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -200,7 +135,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 // TestPassRateEvaluator_BelowMinimumRequirement tests that the evaluator denies progression
 // when the success percentage is below the minimum requirement.
 func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
-	st := setupTestStoreForPassRate()
+	mock := setupMockForPassRate()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -211,7 +146,6 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create 3 release targets
 	rt1 := &oapi.ReleaseTarget{
@@ -219,45 +153,23 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt2)
+	mock.addReleaseTarget(rt2)
 
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt3)
+	mock.addReleaseTarget(rt3)
 
-	release1 := &oapi.Release{
-		ReleaseTarget: *rt1,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	release2 := &oapi.Release{
-		ReleaseTarget: *rt2,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	release3 := &oapi.Release{
-		ReleaseTarget: *rt3,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
-	_ = st.Releases.Upsert(ctx, release3)
-
-	resource2 := &oapi.Resource{
+	mock.resources["resource-2"] = &oapi.Resource{
 		Id:          "resource-2",
 		Identifier:  "test-resource-2",
 		Kind:        "service",
@@ -266,7 +178,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	resource3 := &oapi.Resource{
+	mock.resources["resource-3"] = &oapi.Resource{
 		Id:          "resource-3",
 		Identifier:  "test-resource-3",
 		Kind:        "service",
@@ -275,16 +187,18 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	_, _ = st.Resources.Upsert(ctx, resource2)
-	_, _ = st.Resources.Upsert(ctx, resource3)
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
 
 	// Create only 1 successful job out of 3 targets (33.33% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
@@ -292,12 +206,12 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		CompletedAt:    &completedAt1,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
 	// Test with 50% minimum requirement (33.33% < 50%, should fail)
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(NewStoreGetters(st), minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(mock, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -317,7 +231,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 // TestPassRateEvaluator_SatisfiedAt_ExactThreshold tests that satisfiedAt is set to the timestamp
 // of the job that exactly met the minimum requirement.
 func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
-	st := setupTestStoreForPassRate()
+	mock := setupMockForPassRate()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -328,120 +242,40 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	// Create 3 release targets
-	rt1 := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-staging",
-		DeploymentId:  "deploy-1",
-	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	mock.addReleaseTarget(rt1)
+	rt2 := &oapi.ReleaseTarget{ResourceId: "resource-2", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	mock.addReleaseTarget(rt2)
+	rt3 := &oapi.ReleaseTarget{ResourceId: "resource-3", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	mock.addReleaseTarget(rt3)
 
-	rt2 := &oapi.ReleaseTarget{
-		ResourceId:    "resource-2",
-		EnvironmentId: "env-staging",
-		DeploymentId:  "deploy-1",
-	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt2)
+	mock.resources["resource-2"] = &oapi.Resource{Id: "resource-2", Identifier: "test-resource-2", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
+	mock.resources["resource-3"] = &oapi.Resource{Id: "resource-3", Identifier: "test-resource-3", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
 
-	rt3 := &oapi.ReleaseTarget{
-		ResourceId:    "resource-3",
-		EnvironmentId: "env-staging",
-		DeploymentId:  "deploy-1",
-	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt3)
-
-	release1 := &oapi.Release{
-		ReleaseTarget: *rt1,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	release2 := &oapi.Release{
-		ReleaseTarget: *rt2,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	release3 := &oapi.Release{
-		ReleaseTarget: *rt3,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release1)
-	_ = st.Releases.Upsert(ctx, release2)
-	_ = st.Releases.Upsert(ctx, release3)
-
-	resource2 := &oapi.Resource{
-		Id:          "resource-2",
-		Identifier:  "test-resource-2",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	resource3 := &oapi.Resource{
-		Id:          "resource-3",
-		Identifier:  "test-resource-3",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource2)
-	_, _ = st.Resources.Upsert(ctx, resource3)
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err)
+	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release2 := &oapi.Release{ReleaseTarget: *rt2, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
+	release3 := &oapi.Release{ReleaseTarget: *rt3, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
 
 	// Create jobs with specific timestamps
 	// Job 1: 10:05 (33% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{
-		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
-		JobAgentId:     "agent-1",
-		Status:         oapi.JobStatusSuccessful,
-		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
-		UpdatedAt:      completedAt1,
-		CompletedAt:    &completedAt1,
-		JobAgentConfig: oapi.JobAgentConfig{},
-	}
+	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt1, CompletedAt: &completedAt1, JobAgentConfig: oapi.JobAgentConfig{}}
 	// Job 2: 10:10 (66% success - meets 50% requirement, this should be satisfiedAt)
 	satisfiedAtTime := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	completedAt2 := satisfiedAtTime
-	job2 := &oapi.Job{
-		Id:             "job-2",
-		ReleaseId:      release2.Id.String(),
-		JobAgentId:     "agent-1",
-		Status:         oapi.JobStatusSuccessful,
-		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
-		UpdatedAt:      completedAt2,
-		CompletedAt:    &completedAt2,
-		JobAgentConfig: oapi.JobAgentConfig{},
-	}
+	job2 := &oapi.Job{Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC), UpdatedAt: completedAt2, CompletedAt: &completedAt2, JobAgentConfig: oapi.JobAgentConfig{}}
 	// Job 3: 10:15 (100% success)
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
-	job3 := &oapi.Job{
-		Id:             "job-3",
-		ReleaseId:      release3.Id.String(),
-		JobAgentId:     "agent-1",
-		Status:         oapi.JobStatusSuccessful,
-		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
-		UpdatedAt:      completedAt3,
-		CompletedAt:    &completedAt3,
-		JobAgentConfig: oapi.JobAgentConfig{},
-	}
-	st.Jobs.Upsert(ctx, job1)
-	st.Jobs.Upsert(ctx, job2)
-	st.Jobs.Upsert(ctx, job3)
+	job3 := &oapi.Job{Id: "job-3", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC), UpdatedAt: completedAt3, CompletedAt: &completedAt3, JobAgentConfig: oapi.JobAgentConfig{}}
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt2, job2, release2)
+	mock.addJob(rt3, job3, release3)
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(NewStoreGetters(st), minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(mock, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -462,7 +296,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 // TestPassRateEvaluator_ZeroMinimumPercentage tests the special case where minimumSuccessPercentage is 0,
 // which should require at least one successful job (not 0%).
 func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
-	st := setupTestStoreForPassRate()
+	mock := setupMockForPassRate()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -473,56 +307,23 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
-	rt1 := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-staging",
-		DeploymentId:  "deploy-1",
-	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	mock.addReleaseTarget(rt1)
 
-	release1 := &oapi.Release{
-		ReleaseTarget: *rt1,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release1)
+	mock.resources["resource-1"] = &oapi.Resource{Id: "resource-1", Identifier: "test-resource-1", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
 
-	// Create resource for release target
-	resource1 := &oapi.Resource{
-		Id:          "resource-1",
-		Identifier:  "test-resource-1",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource1)
-	// Ensure ReleaseTargets are computed after adding resource
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err, "failed to get release targets")
+	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 
 	// Create successful job before testing
 	completedAt := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	job1 := &oapi.Job{
-		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
-		JobAgentId:     "agent-1",
-		Status:         oapi.JobStatusSuccessful,
-		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
-		UpdatedAt:      completedAt,
-		CompletedAt:    &completedAt,
-		JobAgentConfig: oapi.JobAgentConfig{},
-	}
-	st.Jobs.Upsert(ctx, job1)
+	job1 := &oapi.Job{Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful, CreatedAt: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC), UpdatedAt: completedAt, CompletedAt: &completedAt, JobAgentConfig: oapi.JobAgentConfig{}}
+	mock.addJob(rt1, job1, release1)
 
 	// Test with one successful job - should be allowed
-	evalZero := NewPassRateEvaluator(NewStoreGetters(st), 0.0, nil)
+	evalZero := NewPassRateEvaluator(mock, 0.0, nil)
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
 		Version:     version,
@@ -546,7 +347,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 
 // TestPassRateEvaluator_NoReleaseTargets tests the edge case where there are no release targets.
 func TestPassRateEvaluator_NoReleaseTargets(t *testing.T) {
-	st := setupTestStoreForPassRate()
+	mock := setupMockForPassRate()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -557,11 +358,10 @@ func TestPassRateEvaluator_NoReleaseTargets(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	minSuccessPercentage := float32(50.0)
-	eval := NewPassRateEvaluator(NewStoreGetters(st), minSuccessPercentage, nil)
+	eval := NewPassRateEvaluator(mock, minSuccessPercentage, nil)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,
@@ -576,7 +376,7 @@ func TestPassRateEvaluator_NoReleaseTargets(t *testing.T) {
 
 // TestPassRateEvaluator_CustomSuccessStatuses tests that custom success statuses can be used.
 func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
-	st := setupTestStoreForPassRate()
+	mock := setupMockForPassRate()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -587,42 +387,18 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
-	rt1 := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-staging",
-		DeploymentId:  "deploy-1",
-	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	rt1 := &oapi.ReleaseTarget{ResourceId: "resource-1", EnvironmentId: "env-staging", DeploymentId: "deploy-1"}
+	mock.addReleaseTarget(rt1)
 
-	release1 := &oapi.Release{
-		ReleaseTarget: *rt1,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release1)
+	mock.resources["resource-1"] = &oapi.Resource{Id: "resource-1", Identifier: "test-resource-1", Kind: "service", WorkspaceId: "workspace-1", Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now()}
 
-	// Create resource for release target
-	resource1 := &oapi.Resource{
-		Id:          "resource-1",
-		Identifier:  "test-resource-1",
-		Kind:        "service",
-		WorkspaceId: "workspace-1",
-		Config:      map[string]any{},
-		Metadata:    map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-	_, _ = st.Resources.Upsert(ctx, resource1)
-	_, err := st.ReleaseTargets.Items()
-	require.NoError(t, err, "failed to get release targets")
+	release1 := &oapi.Release{ReleaseTarget: *rt1, Version: *version, Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339)}
 
 	// Create a job with InProgress status (which we'll treat as successful)
 	completedAt := time.Now().Add(-5 * time.Minute)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusInProgress,
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
@@ -630,15 +406,15 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	// Use custom success statuses that include InProgress
 	customSuccessStatuses := map[oapi.JobStatus]bool{
 		oapi.JobStatusInProgress: true,
 	}
 	minSuccessPercentage := float32(0.0) // Require at least one "successful" job
-	eval := NewPassRateEvaluator(NewStoreGetters(st), minSuccessPercentage, customSuccessStatuses)
+	eval := NewPassRateEvaluator(mock, minSuccessPercentage, customSuccessStatuses)
 
 	scope := evaluator.EvaluatorScope{
 		Environment: env,

@@ -8,62 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/store"
 )
-
-// setupTestStoreForSoakTime creates a minimal test store for soak time evaluator tests.
-func setupTestStoreForSoakTime() *store.Store {
-	sc := statechange.NewChangeSet[any]()
-	st := store.New("test-workspace", sc)
-	ctx := context.Background()
-
-	// Create system
-	system := &oapi.System{
-		Id:          "system-1",
-		Name:        "test-system",
-		WorkspaceId: "workspace-1",
-	}
-	_ = st.Systems.Upsert(ctx, system)
-
-	// Create resource selector that matches all resources
-	resourceSelector := &oapi.Selector{}
-	_ = resourceSelector.FromCelSelector(oapi.CelSelector{
-		Cel: "true",
-	})
-
-	// Create environment
-	env := &oapi.Environment{
-		Id:               "env-staging",
-		Name:             "staging",
-		ResourceSelector: resourceSelector,
-	}
-	_ = st.Environments.Upsert(ctx, env)
-	_ = st.SystemEnvironments.Link("system-1", "env-staging")
-
-	// Create deployment
-	jobAgentId := "agent-1"
-	description := "Test deployment"
-	deployment := &oapi.Deployment{
-		Id:               "deploy-1",
-		Name:             "my-app",
-		Slug:             "my-app",
-		JobAgentId:       &jobAgentId,
-		Description:      &description,
-		JobAgentConfig:   oapi.JobAgentConfig{},
-		ResourceSelector: resourceSelector,
-	}
-	_ = st.Deployments.Upsert(ctx, deployment)
-	_ = st.SystemDeployments.Link("system-1", "deploy-1")
-
-	return st
-}
 
 // TestSoakTimeEvaluator_SoakTimeMet tests that the evaluator allows progression when the soak
 // time requirement has been met (most recent success completed more than soakDuration ago).
 func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -74,21 +25,19 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a successful job that completed 40 minutes ago
 	// With 30 minute soak time, this should be satisfied
@@ -97,7 +46,6 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -105,10 +53,10 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -133,7 +81,7 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 // TestSoakTimeEvaluator_SoakTimeNotMet tests that the evaluator returns a pending result when
 // the soak time requirement has not been met (most recent success completed less than soakDuration ago).
 func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -144,21 +92,19 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a successful job that completed only 10 minutes ago
 	// With 30 minute soak time, this should not be satisfied
@@ -167,7 +113,6 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -175,10 +120,10 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -197,7 +142,7 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 
 // TestSoakTimeEvaluator_NoSuccessfulJobs tests that the evaluator denies when there are no successful jobs.
 func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -208,37 +153,34 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a pending job (not successful)
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	soakMinutes := int32(30)
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -256,7 +198,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 // TestSoakTimeEvaluator_SatisfiedAt_Calculation tests that satisfiedAt is correctly calculated
 // as mostRecentSuccess + soakDuration when the requirement is met.
 func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -267,21 +209,19 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	// Use fixed time for predictable results
 	soakMinutes := int32(15)
@@ -289,7 +229,6 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -297,10 +236,10 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -325,7 +264,7 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 // TestSoakTimeEvaluator_MultipleJobs_UseMostRecent tests that the evaluator uses the most recent
 // successful job completion time for soak time calculation.
 func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -336,21 +275,19 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 
@@ -360,7 +297,6 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	completedAt1 := oldSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      oldSuccess.Add(-5 * time.Minute),
@@ -368,7 +304,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		CompletedAt:    &completedAt1,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
 	// Create a more recent successful job (20 minutes after the old one)
 	// This is still in the past, so soak time won't be met
@@ -376,7 +312,6 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	completedAt2 := mostRecentSuccess
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -384,10 +319,10 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		CompletedAt:    &completedAt2,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job2)
+	mock.addJob(rt1, job2, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -422,20 +357,20 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 // TestSoakTimeEvaluator_ZeroOrNegativeSoakMinutes tests that NewSoakTimeEvaluator returns nil
 // when soakMinutes is zero or negative.
 func TestSoakTimeEvaluator_ZeroOrNegativeSoakMinutes(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 
 	// Test with zero minutes
-	eval1 := NewSoakTimeEvaluator(NewStoreGetters(st), 0, nil)
+	eval1 := NewSoakTimeEvaluator(mock, 0, nil)
 	assert.Nil(t, eval1, "expected nil evaluator when soakMinutes is 0")
 
 	// Test with negative minutes
-	eval2 := NewSoakTimeEvaluator(NewStoreGetters(st), -10, nil)
+	eval2 := NewSoakTimeEvaluator(mock, -10, nil)
 	assert.Nil(t, eval2, "expected nil evaluator when soakMinutes is negative")
 }
 
 // TestSoakTimeEvaluator_CustomSuccessStatuses tests that custom success statuses can be used.
 func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -446,21 +381,19 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a job with InProgress status (which we'll treat as successful)
 	soakMinutes := int32(30)
@@ -468,7 +401,6 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusInProgress,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -476,14 +408,14 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	// Use custom success statuses that include InProgress
 	customSuccessStatuses := map[oapi.JobStatus]bool{
 		oapi.JobStatusInProgress: true,
 	}
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, customSuccessStatuses)
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, customSuccessStatuses)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -504,7 +436,7 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 // TestSoakTimeEvaluator_ExactlyAtThreshold tests the edge case where the most recent success
 // completed exactly at the soak time threshold.
 func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -515,21 +447,19 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 	// Create a job that completed exactly 30 minutes ago
@@ -537,7 +467,6 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -545,10 +474,10 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -577,7 +506,7 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 // TestSoakTimeEvaluator_NextEvaluationTime_WhenPending tests that NextEvaluationTime is properly set
 // when soak time is still pending (not yet met).
 func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -588,21 +517,19 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 	// Job completed 10 minutes ago - soak time of 30 minutes NOT met yet
@@ -610,7 +537,6 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -618,10 +544,10 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -648,7 +574,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 // TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied tests that NextEvaluationTime is nil
 // when soak time is already satisfied.
 func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -659,21 +585,19 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 	rt1 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	mock.addReleaseTarget(rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 	// Job completed 40 minutes ago - soak time of 30 minutes IS met
@@ -681,7 +605,6 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 	completedAt := mostRecentSuccess
 	job1 := &oapi.Job{
 		Id:             "job-1",
-		ReleaseId:      release1.Id.String(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
@@ -689,10 +612,10 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 		CompletedAt:    &completedAt,
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
-	st.Jobs.Upsert(ctx, job1)
+	mock.addJob(rt1, job1, release1)
 
-	env, _ := st.Environments.Get("env-staging")
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	env := mock.environments["env-staging"]
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
@@ -716,7 +639,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 // TestSoakTimeEvaluator_NextEvaluationTime_NoJobs tests that NextEvaluationTime is nil
 // when there are no successful jobs (policy is denied, not pending).
 func TestSoakTimeEvaluator_NextEvaluationTime_NoJobs(t *testing.T) {
-	st := setupTestStoreForSoakTime()
+	mock := setupMockForSoakTime()
 	ctx := context.Background()
 
 	version := &oapi.DeploymentVersion{
@@ -727,11 +650,10 @@ func TestSoakTimeEvaluator_NextEvaluationTime_NoJobs(t *testing.T) {
 		Status:       oapi.DeploymentVersionStatusReady,
 		CreatedAt:    time.Now(),
 	}
-	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
-	env, _ := st.Environments.Get("env-staging")
+	env := mock.environments["env-staging"]
 	soakMinutes := int32(30)
-	eval := NewSoakTimeEvaluator(NewStoreGetters(st), soakMinutes, nil)
+	eval := NewSoakTimeEvaluator(mock, soakMinutes, nil)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	scope := evaluator.EvaluatorScope{
