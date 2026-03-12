@@ -502,6 +502,12 @@ func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 		}
 	}
 	j.Metadata = parseJobMetadata(row.Metadata)
+	if len(row.DispatchContext) > 0 {
+		var dc oapi.DispatchContext
+		if err := json.Unmarshal(row.DispatchContext, &dc); err == nil {
+			j.DispatchContext = &dc
+		}
+	}
 	return j
 }
 
