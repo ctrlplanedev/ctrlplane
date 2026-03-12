@@ -76,19 +76,17 @@ func (e *Evaluator) Evaluate(
 	// Try to extract CEL selector first
 	celSelector := e.rule.Selector
 	if celSelector != "" {
-		return e.evaluateCEL(ctx, scope, deployment, resource, celSelector, span)
+		return e.evaluateCEL(scope, deployment, resource, celSelector, span)
 	}
 
-	// Failed to parse selector
 	return results.NewDeniedResult(
-		fmt.Sprintf("Version selector: failed to parse selector: %v", celSelector),
+		"Version selector: selector is required but was empty",
 	).
 		WithDetail("selector", celSelector)
 }
 
 // evaluateCEL evaluates a CEL-based selector.
 func (e *Evaluator) evaluateCEL(
-	ctx context.Context,
 	scope evaluator.EvaluatorScope,
 	deployment *oapi.Deployment,
 	resource *oapi.Resource,

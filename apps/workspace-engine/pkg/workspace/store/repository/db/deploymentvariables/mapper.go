@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func VariableToOapi(row db.DeploymentVariable) *oapi.DeploymentVariable {
@@ -102,7 +102,7 @@ func ToValueUpsertParams(
 	}
 
 	var resourceSelector pgtype.Text
-	if e.ResourceSelector != nil {
+	if e.ResourceSelector != nil && *e.ResourceSelector != "" {
 		resourceSelector = pgtype.Text{String: *e.ResourceSelector, Valid: true}
 	}
 
