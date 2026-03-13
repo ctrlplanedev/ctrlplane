@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var _ Getter = (*PostgresGetter)(nil)
@@ -187,233 +188,150 @@ func (g *PostgresGetter) LoadCandidates(
 	workspaceID uuid.UUID,
 	entityType string,
 ) ([]eval.EntityData, error) {
-	pool := db.GetPool(ctx)
+	q := db.GetQueries(ctx)
 
-	var query string
-	var buildMap func(values []any) map[string]any
 	switch entityType {
 	case "resource":
-		query = listResourcesSQL
-		buildMap = rowToResourceMap
+		rows, err := q.ListActiveResourcesByWorkspace(ctx, workspaceID)
+		if err != nil {
+			return nil, fmt.Errorf("list resources for workspace %s: %w", workspaceID, err)
+		}
+		candidates := make([]eval.EntityData, 0, len(rows))
+		for _, r := range rows {
+			candidates = append(candidates, eval.EntityData{
+				ID:          r.ID,
+				WorkspaceID: r.WorkspaceID,
+				EntityType:  "resource",
+				Raw:         resourceRowToMap(r),
+			})
+		}
+		return candidates, nil
+
 	case "deployment":
-		query = listDeploymentsSQL
-		buildMap = rowToDeploymentMap
+		rows, err := q.ListDeploymentsByWorkspace(ctx, workspaceID)
+		if err != nil {
+			return nil, fmt.Errorf("list deployments for workspace %s: %w", workspaceID, err)
+		}
+		candidates := make([]eval.EntityData, 0, len(rows))
+		for _, r := range rows {
+			candidates = append(candidates, eval.EntityData{
+				ID:          r.ID,
+				WorkspaceID: r.WorkspaceID,
+				EntityType:  "deployment",
+				Raw:         deploymentRowToMap(r),
+			})
+		}
+		return candidates, nil
+
 	case "environment":
-		query = listEnvironmentsSQL
-		buildMap = rowToEnvironmentMap
+		rows, err := q.ListEnvironmentsByWorkspace(ctx, workspaceID)
+		if err != nil {
+			return nil, fmt.Errorf("list environments for workspace %s: %w", workspaceID, err)
+		}
+		candidates := make([]eval.EntityData, 0, len(rows))
+		for _, r := range rows {
+			candidates = append(candidates, eval.EntityData{
+				ID:          r.ID,
+				WorkspaceID: r.WorkspaceID,
+				EntityType:  "environment",
+				Raw:         environmentRowToMap(r),
+			})
+		}
+		return candidates, nil
+
 	default:
 		return nil, fmt.Errorf("unknown entity type: %s", entityType)
 	}
-
-	rows, err := pool.Query(ctx, query, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"query %s entities for workspace %s: %w",
-			entityType,
-			workspaceID,
-			err,
-		)
-	}
-	defer rows.Close()
-
-	var candidates []eval.EntityData
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return nil, fmt.Errorf("scan %s row: %w", entityType, err)
-		}
-
-		id, ok := values[0].([16]byte)
-		if !ok {
-			continue
-		}
-		entityID := uuid.UUID(id)
-
-		wsID, ok := values[1].([16]byte)
-		if !ok {
-			continue
-		}
-
-		candidates = append(candidates, eval.EntityData{
-			ID:          entityID,
-			WorkspaceID: uuid.UUID(wsID),
-			EntityType:  entityType,
-			Raw:         buildMap(values),
-		})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate %s entities: %w", entityType, err)
-	}
-
-	return candidates, nil
 }
-
-const listResourcesSQL = `
-SELECT id, workspace_id, name, kind, version, identifier,
-       provider_id, config, metadata, created_at, updated_at
-FROM resource
-WHERE workspace_id = $1 AND deleted_at IS NULL
-`
-
-const listDeploymentsSQL = `
-SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
-FROM deployment
-WHERE workspace_id = $1
-`
-
-const listEnvironmentsSQL = `
-SELECT id, workspace_id, name, description, metadata, created_at
-FROM environment
-WHERE workspace_id = $1
-`
-
-const getResourceByIDSQL = `
-SELECT id, workspace_id, name, kind, version, identifier,
-       provider_id, config, metadata, created_at, updated_at
-FROM resource
-WHERE id = $1 AND deleted_at IS NULL
-`
-
-const getDeploymentByIDSQL = `
-SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
-FROM deployment
-WHERE id = $1
-`
-
-const getEnvironmentByIDSQL = `
-SELECT id, workspace_id, name, description, metadata, created_at
-FROM environment
-WHERE id = $1
-`
 
 func (g *PostgresGetter) GetEntityByID(
 	ctx context.Context,
 	entityID uuid.UUID,
 	entityType string,
 ) (*eval.EntityData, error) {
-	pool := db.GetPool(ctx)
+	q := db.GetQueries(ctx)
 
-	var query string
-	var buildMap func(values []any) map[string]any
 	switch entityType {
 	case "resource":
-		query = getResourceByIDSQL
-		buildMap = rowToResourceMap
+		r, err := q.GetActiveResourceByID(ctx, entityID)
+		if err != nil {
+			return nil, fmt.Errorf("get resource %s: %w", entityID, err)
+		}
+		return &eval.EntityData{
+			ID:          r.ID,
+			WorkspaceID: r.WorkspaceID,
+			EntityType:  "resource",
+			Raw:         resourceRowToMap(db.ListActiveResourcesByWorkspaceRow(r)),
+		}, nil
+
 	case "deployment":
-		query = getDeploymentByIDSQL
-		buildMap = rowToDeploymentMap
+		r, err := q.GetDeploymentForRelEval(ctx, entityID)
+		if err != nil {
+			return nil, fmt.Errorf("get deployment %s: %w", entityID, err)
+		}
+		return &eval.EntityData{
+			ID:          r.ID,
+			WorkspaceID: r.WorkspaceID,
+			EntityType:  "deployment",
+			Raw:         deploymentRowToMap(db.ListDeploymentsByWorkspaceRow(r)),
+		}, nil
+
 	case "environment":
-		query = getEnvironmentByIDSQL
-		buildMap = rowToEnvironmentMap
+		r, err := q.GetEnvironmentForRelEval(ctx, entityID)
+		if err != nil {
+			return nil, fmt.Errorf("get environment %s: %w", entityID, err)
+		}
+		return &eval.EntityData{
+			ID:          r.ID,
+			WorkspaceID: r.WorkspaceID,
+			EntityType:  "environment",
+			Raw:         environmentRowToMap(db.ListEnvironmentsByWorkspaceRow(r)),
+		}, nil
+
 	default:
 		return nil, fmt.Errorf("unknown entity type: %s", entityType)
 	}
-
-	rows, err := pool.Query(ctx, query, entityID)
-	if err != nil {
-		return nil, fmt.Errorf("query %s by id %s: %w", entityType, entityID, err)
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return nil, fmt.Errorf("iterate %s row: %w", entityType, err)
-		}
-		return nil, fmt.Errorf("%s with id %s not found", entityType, entityID)
-	}
-
-	values, err := rows.Values()
-	if err != nil {
-		return nil, fmt.Errorf("scan %s row: %w", entityType, err)
-	}
-
-	id, ok := values[0].([16]byte)
-	if !ok {
-		return nil, fmt.Errorf("invalid id type for %s %s", entityType, entityID)
-	}
-
-	wsID, ok := values[1].([16]byte)
-	if !ok {
-		return nil, fmt.Errorf("invalid workspace_id type for %s %s", entityType, entityID)
-	}
-
-	return &eval.EntityData{
-		ID:          uuid.UUID(id),
-		WorkspaceID: uuid.UUID(wsID),
-		EntityType:  entityType,
-		Raw:         buildMap(values),
-	}, nil
 }
 
-func rowToResourceMap(values []any) map[string]any {
-	m := map[string]any{"type": "resource"}
-	if len(values) > 0 {
-		if id, ok := values[0].([16]byte); ok {
-			m["id"] = uuid.UUID(id).String()
-		}
+func resourceRowToMap(r db.ListActiveResourcesByWorkspaceRow) map[string]any {
+	m := map[string]any{
+		"type":       "resource",
+		"id":         r.ID.String(),
+		"name":       r.Name,
+		"kind":       r.Kind,
+		"version":    r.Version,
+		"identifier": r.Identifier,
+		"config":     r.Config,
+		"metadata":   stringMapToAnyMap(r.Metadata),
 	}
-	if len(values) > 2 {
-		m["name"] = values[2]
-	}
-	if len(values) > 3 {
-		m["kind"] = values[3]
-	}
-	if len(values) > 4 {
-		m["version"] = values[4]
-	}
-	if len(values) > 5 {
-		m["identifier"] = values[5]
-	}
-	if len(values) > 7 {
-		m["config"] = values[7]
-	}
-	if len(values) > 8 {
-		if md, ok := values[8].(map[string]string); ok {
-			m["metadata"] = stringMapToAnyMap(md)
-		}
+	if r.ProviderID != uuid.Nil {
+		m["providerId"] = r.ProviderID.String()
 	}
 	return m
 }
 
-func rowToDeploymentMap(values []any) map[string]any {
-	m := map[string]any{"type": "deployment"}
-	if len(values) > 0 {
-		if id, ok := values[0].([16]byte); ok {
-			m["id"] = uuid.UUID(id).String()
-		}
+func deploymentRowToMap(r db.ListDeploymentsByWorkspaceRow) map[string]any {
+	m := map[string]any{
+		"type":     "deployment",
+		"id":       r.ID.String(),
+		"name":     r.Name,
+		"metadata": stringMapToAnyMap(r.Metadata),
 	}
-	if len(values) > 2 {
-		m["name"] = values[2]
-	}
-	if len(values) > 3 {
-		m["description"] = values[3]
-	}
-	if len(values) > 6 {
-		if md, ok := values[6].(map[string]string); ok {
-			m["metadata"] = stringMapToAnyMap(md)
-		}
+	if r.Description != "" {
+		m["description"] = r.Description
 	}
 	return m
 }
 
-func rowToEnvironmentMap(values []any) map[string]any {
-	m := map[string]any{"type": "environment"}
-	if len(values) > 0 {
-		if id, ok := values[0].([16]byte); ok {
-			m["id"] = uuid.UUID(id).String()
-		}
+func environmentRowToMap(r db.ListEnvironmentsByWorkspaceRow) map[string]any {
+	m := map[string]any{
+		"type":     "environment",
+		"id":       r.ID.String(),
+		"name":     r.Name,
+		"metadata": stringMapToAnyMap(r.Metadata),
 	}
-	if len(values) > 2 {
-		m["name"] = values[2]
-	}
-	if len(values) > 3 {
-		m["description"] = values[3]
-	}
-	if len(values) > 4 {
-		if md, ok := values[4].(map[string]string); ok {
-			m["metadata"] = stringMapToAnyMap(md)
-		}
+	if r.Description.Valid {
+		m["description"] = r.Description.String
 	}
 	return m
 }
