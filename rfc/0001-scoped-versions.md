@@ -1,6 +1,7 @@
 # RFC 0001: Scoped Versions
 
 **Status:** Draft
+
 **Created:** 2026-03-13
 
 ## Summary

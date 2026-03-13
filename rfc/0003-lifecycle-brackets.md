@@ -1,0 +1,760 @@
+# RFC 0003: Lifecycle Brackets
+
+**Status:** Draft
+
+**Created:** 2026-03-05
+
+## Summary
+
+Add two new policy rule types — **deployment bracket** and **resource
+concurrency** — that together enable coordinated multi-deployment rollouts with
+cluster-wide capacity limits. Deployment brackets group related deployments so
+they execute as a unit against each resource (drain a node once, apply all
+upgrades, uncordon). Resource concurrency limits how many resources in a group
+can be simultaneously undergoing deployment (only 20% of nodes offline at a
+time).
+
+Both are policy rules, not new entity types. They slot into the existing
+evaluator pipeline alongside gradual rollout, deployment dependency, and the
+other rule types.
+
+## Motivation
+
+When deploying software to Kubernetes nodes, two operational constraints exist
+that ctrlplane's current policy engine cannot express:
+
+### Drain cost amortization
+
+Deploying to a node requires draining pods first — evicting workloads,
+respecting PodDisruptionBudgets, waiting for graceful termination. This is slow
+(minutes to tens of minutes) and disruptive. If multiple deployments target the
+same node (kubelet upgrade, containerd upgrade, OS patch), each deployment today
+triggers its own independent drain/uncordon cycle because each release target is
+evaluated independently.
+
+For 3 deployments across 10 nodes, this means 30 drain cycles instead of 10.
+The overhead scales linearly with the number of bracketed deployments.
+
+### Cluster-wide concurrency limits
+
+Only a percentage of nodes in a cluster can be offline simultaneously. If 20%
+of a 10-node cluster goes down, the remaining 8 nodes must absorb all workloads.
+Exceeding this threshold risks cascading failures.
+
+The existing concurrency control (`ReleaseTargetConcurrencyEvaluator`) enforces
+a hard limit of 1 active job per release target:
+
+```go
+// releasetargetconcurrency.go
+func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(
+    ctx context.Context, release *oapi.Release,
+) *oapi.RuleEvaluation {
+    processingJobs := e.store.Jobs.GetJobsInProcessingStateForReleaseTarget(
+        &release.ReleaseTarget,
+    )
+    if len(processingJobs) != 0 {
+        return results.NewDeniedResult("Release target has an active job")
+    }
+    return results.NewAllowedResult("Release target has no active jobs")
+}
+```
+
+This prevents overlapping jobs on the _same_ release target but provides no
+cross-resource limit. There is no way to say "at most 2 of these 10 nodes can
+be draining at once."
+
+### Why existing rules are insufficient
+
+**Gradual rollout** staggers deployments over time using hash-based position
+ordering. It controls _when_ each target's turn arrives but not _how many_ can
+be active simultaneously. If multiple targets' rollout times pass while earlier
+targets are still executing (e.g., a slow drain), all of them proceed at once.
+
+**Deployment dependency** checks whether an upstream deployment has succeeded for
+the same resource. It controls _ordering_ (drain before upgrade, upgrade before
+uncordon) but not _grouping_. Each deployment's policy pipeline runs
+independently — there is no mechanism to hold all deployments for a resource
+until a collection of new versions is ready.
+
+**Version cooldown** batches frequent releases for a _single_ deployment. It
+does not coordinate across deployments.
+
+These three rules address different dimensions (time, order, frequency) but none
+addresses the two missing dimensions: cross-deployment grouping and
+cross-resource capacity limits.
+
+## Proposal
+
+### New policy rule: deployment bracket
+
+A deployment bracket groups deployments that should execute as a coordinated
+unit per resource. The bracket rule gates deployment until all member
+deployments have versions ready, using a configurable collection window.
+
+#### Schema
+
+```sql
+CREATE TABLE policy_rule_deployment_bracket (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    policy_id UUID NOT NULL REFERENCES policy(id) ON DELETE CASCADE,
+
+    -- CEL selector defining which deployments are co-bracketed.
+    -- Evaluated against deployment context.
+    deployment_selector TEXT NOT NULL,
+
+    -- How to batch versions across the bracket group.
+    readiness_mode TEXT NOT NULL DEFAULT 'collection_window',
+
+    -- Duration of collection/wait window in seconds (e.g., 86400 = 24h).
+    readiness_window_seconds INTEGER,
+
+    -- What to do with members that have no new version during window.
+    unchanged_member_strategy TEXT NOT NULL DEFAULT 'skip_unchanged',
+
+    -- What to do when a new version group is ready while a previous one
+    -- is still executing on a resource.
+    overlap_strategy TEXT NOT NULL DEFAULT 'queue',
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+**`readiness_mode`** controls when a bracket starts executing:
+
+| Mode | Behavior |
+|---|---|
+| `collection_window` | Wait `readiness_window_seconds` after the first member version is published. Take the latest version of each member at window close. |
+| `wait_for_all` | Wait until every member deployment has a new version. Fall back to `unchanged_member_strategy` after `readiness_window_seconds` timeout. |
+| `immediate` | Proceed as soon as any member has a new version. Use latest available version for all members. |
+
+**`unchanged_member_strategy`** controls members with no new version when the
+window closes:
+
+| Strategy | Behavior |
+|---|---|
+| `skip_unchanged` | Only deploy members that have new versions. Others are no-ops. |
+| `redeploy_current` | Re-deploy the currently running version for all members. Useful when hooks have side effects. |
+| `require_all` | Don't close the window until all members have a new version. Fall back to `skip_unchanged` after timeout. |
+
+**`overlap_strategy`** controls what happens when a new version group becomes
+ready while a previous group is still executing on a resource:
+
+| Strategy | Behavior |
+|---|---|
+| `queue` | Wait for the active group to fully complete (including post-hooks), then start a fresh cycle. Safe default. |
+| `merge` | If the resource is already in a pre-hook state (e.g., drained), deploy the new group's versions before running post-hooks. Avoids double drain cycles. |
+
+#### Version group state
+
+The bracket evaluator needs to track which versions belong to an active
+collection window or executing group. A lightweight state table supports this:
+
+```sql
+CREATE TABLE bracket_version_group (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bracket_rule_id UUID NOT NULL
+        REFERENCES policy_rule_deployment_bracket(id) ON DELETE CASCADE,
+    resource_id UUID NOT NULL,
+    environment_id UUID NOT NULL,
+
+    -- When collection started (first triggering version)
+    collection_started_at TIMESTAMPTZ NOT NULL,
+    -- When collection should end
+    collection_ends_at TIMESTAMPTZ NOT NULL,
+
+    -- collecting | ready | executing | completed | failed
+    status TEXT NOT NULL DEFAULT 'collecting',
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE bracket_version_group_member (
+    group_id UUID NOT NULL
+        REFERENCES bracket_version_group(id) ON DELETE CASCADE,
+    deployment_id UUID NOT NULL,
+    -- NULL while still collecting, set when window closes
+    version_id UUID,
+    -- When this member's version was locked
+    locked_at TIMESTAMPTZ,
+    PRIMARY KEY (group_id, deployment_id)
+);
+```
+
+#### Evaluator
+
+The bracket evaluator implements the standard `Evaluator` interface:
+
+```go
+type DeploymentBracketEvaluator struct {
+    getters   Getters
+    ruleId    string
+    rule      *oapi.DeploymentBracketRule
+    timeGetter func() time.Time
+}
+
+func (e *DeploymentBracketEvaluator) ScopeFields() evaluator.ScopeFields {
+    return evaluator.ScopeDeployment | evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
+}
+
+func (e *DeploymentBracketEvaluator) RuleType() string {
+    return evaluator.RuleTypeDeploymentBracket
+}
+```
+
+The `Evaluate` method performs three checks:
+
+1. **Overlap check** — if a version group is executing for this bracket +
+   resource, and the candidate version is not part of that group, return
+   `Pending` (for `queue` strategy) or `Allowed` (for `merge`, if pre-hooks
+   are complete).
+
+2. **Collection window check** — if no active group exists, find or create a
+   `bracket_version_group`. If the window hasn't closed, return `Pending` with
+   `NextEvaluationTime` set to `collection_ends_at`.
+
+3. **Readiness check** — if the window has closed, verify the candidate version
+   matches the locked version for this deployment in the version group. If so,
+   return `Allowed`.
+
+```go
+func (e *DeploymentBracketEvaluator) Evaluate(
+    ctx context.Context,
+    scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+    resourceId := scope.ReleaseTarget().ResourceId
+    now := e.timeGetter()
+
+    // 1. Check for active executing group
+    activeGroup := e.getters.GetActiveVersionGroup(e.ruleId, resourceId)
+    if activeGroup != nil && activeGroup.Status == "executing" {
+        lockedVersion := activeGroup.GetLockedVersion(scope.Deployment.Id)
+        if lockedVersion != nil && lockedVersion.Id == scope.Version.Id {
+            return results.NewAllowedResult(
+                "Version is part of active bracket group")
+        }
+
+        if e.rule.OverlapStrategy == "merge" {
+            if e.getters.IsPreHookComplete(activeGroup.Id, resourceId) {
+                return results.NewAllowedResult(
+                    "Merging into active bracket — resource already prepared")
+            }
+        }
+
+        return results.NewPendingResult(results.ActionTypeWait,
+            fmt.Sprintf("Bracket group %s executing on this resource",
+                activeGroup.Id))
+    }
+
+    // 2. Find or create collection window
+    group := e.getters.GetOrCreateVersionGroup(
+        e.ruleId, resourceId, scope.ReleaseTarget().EnvironmentId,
+        e.rule.ReadinessWindowSeconds, now,
+    )
+
+    if now.Before(group.CollectionEndsAt) {
+        return results.NewPendingResult(results.ActionTypeWait,
+            fmt.Sprintf("Collection window closes at %s",
+                group.CollectionEndsAt.Format(time.RFC3339)),
+        ).WithNextEvaluationTime(group.CollectionEndsAt)
+    }
+
+    // 3. Window closed — check version lock
+    lockedVersion := group.GetLockedVersion(scope.Deployment.Id)
+    if lockedVersion == nil {
+        switch e.rule.UnchangedMemberStrategy {
+        case "skip_unchanged":
+            return results.NewAllowedResult(
+                "No new version for this member — skipping")
+        case "redeploy_current":
+            return results.NewAllowedResult(
+                "Redeploying current version as part of bracket")
+        default:
+            return results.NewDeniedResult(
+                "No version available for this bracket member")
+        }
+    }
+
+    if lockedVersion.Id != scope.Version.Id {
+        return results.NewDeniedResult(
+            "Version does not match locked bracket version")
+    }
+
+    return results.NewAllowedResult(
+        fmt.Sprintf("Bracket ready — version locked at window close"))
+}
+```
+
+### New policy rule: resource concurrency
+
+A resource concurrency rule limits how many resources in a group can
+simultaneously be undergoing deployment. The group is defined by a CEL selector,
+and the limit can be a percentage or absolute count.
+
+#### Schema
+
+```sql
+CREATE TABLE policy_rule_resource_concurrency (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    policy_id UUID NOT NULL REFERENCES policy(id) ON DELETE CASCADE,
+
+    -- CEL selector defining the concurrency group.
+    -- e.g., "resource.metadata['cluster'] == 'prod-east'"
+    group_selector TEXT NOT NULL,
+
+    -- 'percentage' or 'count'
+    limit_type TEXT NOT NULL,
+
+    -- The limit value (e.g., 20 for 20% or 5 for 5 nodes)
+    limit_value INTEGER NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+#### Evaluator
+
+```go
+type ResourceConcurrencyEvaluator struct {
+    getters       Getters
+    ruleId        string
+    rule          *oapi.ResourceConcurrencyRule
+}
+
+func (e *ResourceConcurrencyEvaluator) ScopeFields() evaluator.ScopeFields {
+    return evaluator.ScopeResource | evaluator.ScopeReleaseTarget
+}
+
+func (e *ResourceConcurrencyEvaluator) Evaluate(
+    ctx context.Context,
+    scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+    groupResources := e.getters.GetResourcesBySelector(ctx, e.rule.GroupSelector)
+    totalInGroup := len(groupResources)
+
+    activeCount := e.getters.CountResourcesWithActiveJobs(ctx, groupResources)
+
+    var maxConcurrent int
+    if e.rule.LimitType == "percentage" {
+        maxConcurrent = int(math.Ceil(
+            float64(totalInGroup) * float64(e.rule.LimitValue) / 100.0,
+        ))
+    } else {
+        maxConcurrent = int(e.rule.LimitValue)
+    }
+
+    if activeCount >= maxConcurrent {
+        return results.NewPendingResult(results.ActionTypeWait,
+            fmt.Sprintf("Concurrency limit reached: %d/%d resources active (max %d)",
+                activeCount, maxConcurrent, maxConcurrent))
+    }
+
+    return results.NewAllowedResult(
+        fmt.Sprintf("Within concurrency limit: %d/%d active (max %d)",
+            activeCount, maxConcurrent, maxConcurrent))
+}
+```
+
+The "active" count includes any resource that has at least one job in a
+processing state across any deployment matched by the parent policy's selector.
+For brackets, this means a resource in any phase (pre-hook, deploying,
+post-hook) counts against the limit.
+
+### Enhancement: scoped deployment dependencies
+
+Today, a deployment dependency rule on a policy applies to every release target
+matched by the policy's `selector`. This forces separate policies for each
+ordering constraint in a bracket. Adding an optional `applies_to` field lets
+multiple dependency rules coexist on one policy:
+
+```sql
+ALTER TABLE policy_rule_deployment_dependency
+  ADD COLUMN applies_to TEXT;
+```
+
+When `NULL`, the rule applies to all matched release targets (current behavior).
+When set, the rule is only evaluated for release targets whose deployment
+matches the CEL expression:
+
+```go
+func (e *DeploymentDependencyEvaluator) Evaluate(
+    ctx context.Context, scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+    if e.rule.AppliesTo != nil {
+        matched, err := selector.Match(ctx,
+            celToSelector(*e.rule.AppliesTo), scope.Deployment)
+        if err != nil || !matched {
+            return results.NewAllowedResult(
+                "Dependency rule does not apply to this deployment")
+        }
+    }
+
+    // ...existing evaluation logic unchanged...
+}
+```
+
+### Bracket-aware gradual rollout
+
+When a bracket rule exists on the same policy as a gradual rollout rule, the
+rollout evaluator should hash on `resourceId + bracketRuleId` instead of the
+individual release target key. This ensures all deployments in a bracket for a
+given resource receive the same rollout position.
+
+The gradual rollout evaluator already receives the full policy context through
+the store. The change is in the hash input for rollout position calculation:
+
+```go
+func (e *GradualRolloutEvaluator) getHashKey(
+    releaseTarget *oapi.ReleaseTarget,
+    versionId string,
+) string {
+    if e.bracketRuleId != "" {
+        // All bracket members for this resource get the same position
+        return releaseTarget.ResourceId + e.bracketRuleId
+    }
+    return releaseTarget.Key() + versionId
+}
+```
+
+Without this, kubelet-upgrade and containerd-upgrade on the same node would get
+different rollout positions and arrive at different times, defeating the purpose
+of bracketing.
+
+### Evaluator chain integration
+
+Both new evaluators slot into the existing factory:
+
+```go
+func EvaluatorsForPolicy(store *store.Store, rule *oapi.PolicyRule) []evaluator.Evaluator {
+    return evaluator.CollectEvaluators(
+        deployableversions.NewEvaluatorFromStore(store),
+        approval.NewEvaluatorFromStore(store, rule),
+        environmentprogression.NewEvaluatorFromStore(store, rule),
+        deploymentbracket.NewEvaluatorFromStore(store, rule),
+        resourceconcurrency.NewEvaluatorFromStore(store, rule),
+        gradualrollout.NewEvaluatorFromStore(store, rule),
+        versionselector.NewEvaluator(rule),
+        deploymentdependency.NewEvaluator(store, rule),
+        deploymentwindow.NewEvaluatorFromStore(store, rule),
+        versioncooldown.NewEvaluatorFromStore(store, rule),
+    )
+}
+```
+
+For any release target, all evaluators must return `Allowed` for a job to be
+created. The evaluators gate at different levels:
+
+| Evaluator | Gates at | Question it answers |
+|---|---|---|
+| Deployment bracket | Version group | Are all sibling deployments ready? |
+| Gradual rollout | Resource ordering | Is it this resource's turn? |
+| Resource concurrency | Cluster capacity | Is there a concurrency slot? |
+| Deployment dependency | Execution ordering | Have upstream deployments succeeded? |
+
+### Pre/post hooks as deployments
+
+Rather than introducing a separate hook mechanism, lifecycle hooks (drain,
+uncordon) are modeled as regular deployments that are bracket members with
+dependency ordering. A "drain" deployment's job agent runs `kubectl drain`. An
+"uncordon" deployment's job agent runs `kubectl uncordon`. Deployment dependency
+rules control execution order within the bracket.
+
+This reuses the existing job agent, job dispatch, retry, rollback, and
+verification infrastructure. Hooks get observability (traces, job status) and
+policy controls (retry on failure, rollback) for free.
+
+## Examples
+
+### Node upgrade with ordered bracket
+
+A cluster has 10 nodes. Three workload deployments (kubelet, containerd,
+os-patch) plus two lifecycle deployments (drain, uncordon) are tagged with
+`metadata.layer = "node"`.
+
+os-patch must run before kubelet and containerd. All five share a 24-hour
+collection window and a 20% concurrency limit.
+
+**Policy configuration:**
+
+```json
+{
+  "name": "Node Lifecycle",
+  "selector": "deployment.metadata['layer'] == 'node'",
+  "rules": [
+    {
+      "deploymentBracket": {
+        "deploymentSelector": "deployment.metadata['layer'] == 'node'",
+        "readinessMode": "collection_window",
+        "readinessWindowSeconds": 86400,
+        "unchangedMemberStrategy": "skip_unchanged",
+        "overlapStrategy": "queue"
+      }
+    },
+    {
+      "resourceConcurrency": {
+        "groupSelector": "resource.metadata['cluster'] == 'prod-east'",
+        "limitType": "percentage",
+        "limitValue": 20
+      }
+    },
+    {
+      "gradualRollout": {
+        "rolloutType": "linear",
+        "timeScaleInterval": 300
+      }
+    },
+    {
+      "deploymentDependency": {
+        "dependsOn": "deployment.name == 'node-drain'",
+        "appliesTo": "deployment.name in ['os-patch', 'kubelet-upgrade', 'containerd-upgrade']"
+      }
+    },
+    {
+      "deploymentDependency": {
+        "dependsOn": "deployment.name == 'os-patch'",
+        "appliesTo": "deployment.name in ['kubelet-upgrade', 'containerd-upgrade']"
+      }
+    },
+    {
+      "deploymentDependency": {
+        "dependsOn": "deployment.name in ['kubelet-upgrade', 'containerd-upgrade']",
+        "appliesTo": "deployment.name == 'node-uncordon'"
+      }
+    }
+  ]
+}
+```
+
+This expresses the execution DAG:
+
+```
+node-drain
+    │
+    ▼
+os-patch
+    │
+    ├──────────┐
+    ▼          ▼
+kubelet    containerd     (parallel)
+    │          │
+    └────┬─────┘
+         ▼
+   node-uncordon
+```
+
+**Execution trace for node-3 (position 1 in rollout):**
+
+```
+Day 1, 09:00   kubelet v1.29.2 published
+               Collection window opens, closes Day 2 09:00
+
+Day 1, 14:00   containerd v1.7.3 published
+Day 1, 22:00   os-patch 2026-03 published
+
+Day 2, 09:00   Collection window closes. Versions locked.
+               Gradual rollout: node-3 is position 1, offset 300s.
+               Resource concurrency: 0/2 active.
+
+Day 2, 09:05   node-3's rollout position reached. Concurrency slot available.
+               5 release targets evaluated:
+
+               node-drain:       bracket ✓  rollout ✓  concurrency ✓  deps: none ✓
+                 → JOB CREATED: kubectl drain node-3
+
+               os-patch:         bracket ✓  rollout ✓  concurrency ✓  deps: drain? ✗
+                 → Pending
+
+               kubelet-upgrade:  deps: os-patch? ✗ → Pending
+               containerd:       deps: os-patch? ✗ → Pending
+               node-uncordon:    deps: kubelet+containerd? ✗ → Pending
+
+Day 2, 09:13   node-drain succeeds. Reconciliation triggers.
+               os-patch: deps: drain ✓ → JOB CREATED
+
+Day 2, 09:16   os-patch succeeds.
+               kubelet:    deps: drain ✓, os-patch ✓ → JOB CREATED
+               containerd: deps: drain ✓, os-patch ✓ → JOB CREATED
+               (parallel execution)
+
+Day 2, 09:19   kubelet + containerd succeed.
+               node-uncordon: deps: kubelet ✓, containerd ✓ → JOB CREATED
+
+Day 2, 09:20   node-uncordon succeeds. node-3 complete. Concurrency slot freed.
+```
+
+### Different clusters, different policies
+
+The same deployments can have different bracket configurations per cluster by
+using the policy selector to scope rules:
+
+```json
+[
+  {
+    "name": "Staging Node Lifecycle",
+    "selector": "deployment.metadata['layer'] == 'node' AND resource.metadata['cluster'] == 'staging'",
+    "rules": [
+      {
+        "deploymentBracket": {
+          "readinessMode": "immediate",
+          "deploymentSelector": "deployment.metadata['layer'] == 'node'"
+        }
+      },
+      {
+        "resourceConcurrency": {
+          "groupSelector": "resource.metadata['cluster'] == 'staging'",
+          "limitType": "percentage",
+          "limitValue": 50
+        }
+      }
+    ]
+  },
+  {
+    "name": "Prod Node Lifecycle",
+    "selector": "deployment.metadata['layer'] == 'node' AND resource.metadata['cluster'] == 'prod-east'",
+    "rules": [
+      {
+        "deploymentBracket": {
+          "readinessMode": "collection_window",
+          "readinessWindowSeconds": 86400,
+          "deploymentSelector": "deployment.metadata['layer'] == 'node'"
+        }
+      },
+      {
+        "resourceConcurrency": {
+          "groupSelector": "resource.metadata['cluster'] == 'prod-east'",
+          "limitType": "percentage",
+          "limitValue": 20
+        }
+      }
+    ]
+  }
+]
+```
+
+Staging deploys immediately with 50% concurrency. Production waits 24 hours
+and limits to 20%. Same deployments, different operational posture.
+
+### Partial readiness
+
+Only kubelet gets a new version within the 24-hour window. containerd and
+os-patch have no updates.
+
+```
+Day 1, 09:00   kubelet v1.29.2 published. Window opens.
+Day 2, 09:00   Window closes. Only kubelet has a new version.
+
+               unchangedMemberStrategy = "skip_unchanged":
+                 kubelet-upgrade → deploys v1.29.2
+                 containerd, os-patch → desired version = current version → no-op
+                 node-drain → runs (prepares the node)
+                 node-uncordon → runs (restores the node)
+
+               Net effect: one drain cycle for one deployment upgrade.
+```
+
+### Overlapping version groups
+
+A new version group becomes ready while the previous group is still executing.
+
+```
+Day 2, 09:00   Group A starts executing on node-3.
+               [drain → os-patch → kubelet v1.29.2 + containerd v1.7.3 → uncordon]
+
+Day 2, 09:10   Group B collection window closes (new versions ready).
+               kubelet v1.29.3, containerd v1.7.4, os-patch 2026-04.
+
+               overlapStrategy = "queue":
+                 Group B status for node-3: "queued"
+                 Bracket evaluator: "Group A executing → Pending"
+                 Group B CAN proceed on nodes that finished Group A.
+
+Day 2, 09:20   Group A completes on node-3.
+               Group B promoted to "ready".
+               node-3 starts a fresh bracket cycle with Group B versions:
+               [drain → os-patch 2026-04 → kubelet v1.29.3 + containerd v1.7.4 → uncordon]
+
+               overlapStrategy = "merge":
+                 Node is already drained from Group A.
+                 Group B skips drain, deploys new versions, then uncordons.
+                 One drain cycle covers both groups.
+```
+
+### Failure mid-bracket
+
+kubelet fails on node-3 while containerd succeeds.
+
+```
+Day 2, 09:16   kubelet-upgrade FAILS on node-3.
+               containerd-upgrade succeeds.
+
+               node-uncordon: deps = kubelet + containerd
+                 kubelet failed → dependency not met → Pending
+
+               With retry rule on the same policy:
+                 kubelet retries with backoff → succeeds on retry 2
+                 node-uncordon: all deps met → uncordons
+
+               Without retry rule:
+                 node-3 stays drained. Concurrency slot held.
+                 Remaining nodes blocked behind concurrency limit.
+                 Operator must intervene (policy skip, manual fix).
+```
+
+This is why retry and/or rollback rules should always accompany bracket
+policies. A stuck resource holds a concurrency slot indefinitely.
+
+## Migration
+
+- The `policy_rule_deployment_bracket` and `policy_rule_resource_concurrency`
+  tables are new. No data migration required.
+- The `bracket_version_group` and `bracket_version_group_member` tables are new.
+- The `applies_to` column on `policy_rule_deployment_dependency` is additive
+  and nullable. Existing rules have `applies_to = NULL`, preserving current
+  behavior (rule applies to all matched release targets).
+- The new evaluators return `nil` from their factory functions when the policy
+  rule does not contain the relevant configuration, following the same pattern
+  as all existing evaluators.
+- Agents that execute lifecycle hooks (drain, uncordon) are standard job agents.
+  No new agent interfaces are needed.
+
+## Open Questions
+
+1. **Collection window trigger semantics.** Should the collection window start
+   when the first member's version is _published_ or when the first member's
+   version _passes other policy rules_ (approval, version selector)? Starting
+   at publication is simpler but means the window runs concurrently with
+   approval — a 24h window with a 20h approval process only leaves 4h of actual
+   collection time.
+
+2. **Resource concurrency counting.** Should the concurrency limit count
+   resources across all deployment phases equally? A node in the uncordon phase
+   is nearly available. Counting it against the limit is conservative; excluding
+   it would allow higher throughput at the cost of brief over-subscription.
+
+3. **Gradual rollout interaction.** The proposal changes the hash input when a
+   bracket rule is present. This means adding or removing a bracket rule changes
+   the rollout order for all targets. Should the bracket-aware hashing be opt-in
+   to avoid surprising rollout order changes?
+
+4. **Bracket membership dynamism.** The `deploymentSelector` on the bracket rule
+   is evaluated dynamically. If a new deployment is added mid-rollout that
+   matches the selector, should in-progress version groups absorb it? The
+   simplest behavior is to only affect future version groups.
+
+5. **Merge strategy completeness.** The `merge` overlap strategy avoids double
+   drain cycles but requires the dependency evaluator to distinguish between
+   "upstream succeeded with Group A's version" and "upstream succeeded with
+   Group B's version." The current evaluator checks success status but not which
+   version succeeded. This may need a version-aware dependency check for
+   merge to work correctly.
+
+6. **Failure blast radius.** A bracket failure on one resource holds a
+   concurrency slot. With 20% concurrency on a 10-node cluster, 2 stuck nodes
+   block the entire rollout. Should there be a configurable timeout that
+   auto-releases concurrency slots after a bracket has been stuck for too long,
+   even if the resource is in an unknown state?
+
+7. **Hook idempotency.** The `queue` overlap strategy runs drain → uncordon →
+   drain → uncordon for consecutive groups. This assumes drain and uncordon are
+   idempotent. The `merge` strategy assumes the resource remains in a drained
+   state between groups. Should the bracket rule have an explicit field declaring
+   whether hooks are idempotent and/or whether the prepared state persists?

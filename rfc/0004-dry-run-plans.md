@@ -1,0 +1,740 @@
+# RFC 0004: Dry-Run Deployment Plans
+
+**Status:** Draft
+
+**Created:** 2026-03-13
+
+## Summary
+
+Add an ephemeral plan API that CI pipelines call on pull requests to compute
+**full rendered diffs** for each release target — showing exactly what
+Kubernetes manifests, Terraform resources, or other deployed artifacts would
+change, like `terraform plan` output. Results can optionally be posted back to
+GitHub as PR comments or check runs. No version is created; the plan is
+computed on the fly and returned to the caller.
+
+## Motivation
+
+When a developer opens a pull request that will eventually become a new
+deployment version, two questions arise before merging:
+
+1. **Which release targets will this version affect?**
+2. **What exactly will change on each affected target?**
+
+Today, neither question can be answered without merging the PR, creating the
+version, and letting the full promotion lifecycle run. The deployer may have
+intuition about the impact, but there is no way to get a concrete, rendered
+diff — the kind of output `terraform plan` provides — before committing to a
+deployment.
+
+RFC 0002 introduces the `Plannable` interface on job agents, which can compute
+rendered output without dispatching a job. But RFC 0002 focuses on the
+reconciler: plans are computed during the promotion lifecycle to detect no-diff
+targets and fast-track them. There is no way to trigger a plan _before_ a
+version exists.
+
+### The PR workflow gap
+
+The typical CI workflow for ctrlplane today:
+
+```text
+Developer opens PR
+  → CI builds artifact
+  → PR is reviewed and merged
+  → CI creates version (POST /v1/.../versions, status: ready)
+  → ctrlplane creates releases for ALL release targets
+  → full promotion lifecycle runs (staging → verification → approval → production)
+  → deployer discovers which targets were actually affected
+```
+
+The deployer only learns what changed _after_ committing to deployment. For
+large deployments with tens or hundreds of release targets, this is a
+significant blind spot. A PR that changes a single Helm values file for one
+service triggers releases across every cluster, and the deployer won't know
+which clusters are truly impacted until the pipeline is running.
+
+`terraform plan` solved this for infrastructure: before applying, you see the
+full execution plan with resource-level diffs. The same pattern should exist
+for ctrlplane deployments.
+
+### What "plan" means in this context
+
+A dry-run plan computes, for each release target, the **full rendered output**
+that the external system (ArgoCD, Terraform Cloud, etc.) would produce for the
+proposed version — then diffs it against the current deployed state. This is
+not a hash comparison (RFC 0002) or an affected/unaffected classification. It
+is the actual diff content:
+
+- For **ArgoCD**: the per-resource Kubernetes manifest diff (like `argocd app
+diff`)
+- For **Terraform Cloud**: the resource-level before/after diff (like
+  `terraform plan`)
+- For **Helm**: the rendered template diff (like `helm diff upgrade`)
+
+The diff is what the deployer reviews on the PR, the same way they review
+`terraform plan` output today.
+
+### Relationship to prior RFCs
+
+- **RFC 0001 (Scoped Versions)** — The deployer declares which targets a
+  version affects. Dry-run plans can inform that decision: review the plan on
+  the PR, then create the version with a `targetSelector` that matches only the
+  affected targets.
+- **RFC 0002 (Plan-Based Diff Detection)** — Provides the `Plannable` interface
+  and agent implementations that this RFC consumes. RFC 0002 runs plans inside
+  the reconciler; this RFC exposes plans via an API endpoint before any version
+  exists.
+
+## Proposal
+
+### API
+
+Add a new endpoint that accepts proposed version data and returns rendered diffs
+per release target. Nothing is persisted — the plan is ephemeral.
+
+**Endpoint:**
+
+```text
+POST /v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan
+```
+
+**Request body:**
+
+```json
+{
+  "tag": "pr-123-abc123",
+  "config": {},
+  "jobAgentConfig": {},
+  "metadata": {
+    "pr": "123",
+    "commit": "abc123"
+  }
+}
+```
+
+The fields mirror the version creation endpoint but no version row is inserted.
+The API constructs a transient version object in memory and uses it to build
+dispatch contexts.
+
+**Synchronous response** (when all agents complete quickly):
+
+```json
+{
+  "id": "plan_abc123",
+  "status": "completed",
+  "summary": {
+    "total": 50,
+    "changed": 3,
+    "unchanged": 47,
+    "errored": 0,
+    "resourceChanges": {
+      "add": 1,
+      "modify": 4,
+      "delete": 0
+    }
+  },
+  "targets": [
+    {
+      "environmentId": "env_prod",
+      "environmentName": "production",
+      "resourceId": "res_use1",
+      "resourceName": "us-east-1-cluster",
+      "hasChanges": true,
+      "diff": {
+        "raw": "--- current\n+++ proposed\n@@ -12,3 +12,3 @@\n-  image: payments:v1.2.3\n+  image: payments:v1.2.4\n",
+        "resources": [
+          {
+            "kind": "Deployment",
+            "name": "payment-api",
+            "namespace": "payments",
+            "action": "modify",
+            "diff": "--- current\n+++ proposed\n@@ -12,3 +12,3 @@\n-  image: payments:v1.2.3\n+  image: payments:v1.2.4\n"
+          }
+        ]
+      }
+    },
+    {
+      "environmentId": "env_prod",
+      "environmentName": "production",
+      "resourceId": "res_euw1",
+      "resourceName": "eu-west-1-cluster",
+      "hasChanges": false,
+      "diff": null
+    }
+  ]
+}
+```
+
+Each target in the response includes:
+
+- `hasChanges` — whether the rendered output differs from the current state
+- `diff.raw` — human-readable unified diff of the full rendered output
+- `diff.resources` — structured breakdown of per-resource changes with `kind`,
+  `name`, `namespace`, `action` (add/modify/delete), and a per-resource `diff`
+
+**Async response** (when agents require slow external calls):
+
+```json
+{
+  "id": "plan_abc123",
+  "status": "computing",
+  "summary": null,
+  "targets": []
+}
+```
+
+The CI polls `GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}`
+until `status` transitions to `completed` or `failed`.
+
+### Extended `PlanResult` type
+
+RFC 0002 defines `PlanResult` with `ContentHash`, `HasChanges`, and a simple
+`Diff` string. The dry-run plan requires richer diff data. The type is extended:
+
+```go
+type PlanResult struct {
+    ContentHash    string
+    HasChanges     bool
+    RenderedOutput string
+    Diff           *PlanDiff
+}
+
+type PlanDiff struct {
+    Raw       string
+    Resources []ResourceChange
+}
+
+type ResourceChange struct {
+    Kind      string // "Deployment", "Service", "aws_iam_policy"
+    Name      string // "payment-api", "module.vpc.aws_subnet"
+    Namespace string // Kubernetes namespace, empty for non-k8s
+    Action    string // "add", "modify", "delete", "no-op"
+    Before    string // Rendered YAML/JSON before (empty for adds)
+    After     string // Rendered YAML/JSON after (empty for deletes)
+    Diff      string // Unified diff for this resource
+}
+```
+
+RFC 0002's reconciler integration only uses `ContentHash` and `HasChanges`.
+The additional fields (`RenderedOutput`, `Diff`) are populated by agents when
+called through the dry-run plan API and ignored by the reconciler path.
+
+### How agents produce diffs
+
+The `Plannable` interface from RFC 0002 is unchanged — agents return a
+`PlanResult`. The difference is what the caller does with it:
+
+- **Reconciler (RFC 0002):** Only inspects `ContentHash` and `HasChanges`.
+- **Dry-run plan API (this RFC):** Inspects the full `PlanDiff` and returns it
+  to the caller.
+
+Agents that want to participate in dry-run plans must populate the `Diff` field.
+Agents that only implement hash-based comparison (no diff capability) can still
+participate — the API response will show `hasChanges: true/false` but `diff`
+will be null.
+
+#### ArgoCD
+
+The ArgoCD agent calls the ArgoCD API to produce a real diff. The in-process
+`TemplateApplication` function only renders the Application CRD (which always
+differs because `targetRevision` changes). The actual diff lives in the
+Kubernetes manifests that ArgoCD produces after fetching the git repo and
+rendering the Helm chart or kustomize overlay.
+
+The `Plan` implementation:
+
+1. Renders the Application CRD from the dispatch context (same as dispatch
+   time).
+2. Calls ArgoCD's `GetManifests` API with the proposed `targetRevision` to get
+   the fully rendered Kubernetes manifests.
+3. Calls ArgoCD's `GetManifests` API for the currently deployed revision (or
+   reads the live manifest set from the existing Application).
+4. Computes a per-resource unified diff between the two manifest sets.
+
+```go
+func (a *ArgoApplication) Plan(
+    ctx context.Context,
+    dispatchCtx *oapi.DispatchContext,
+) (*types.PlanResult, error) {
+    serverAddr, apiKey, template, err := ParseJobAgentConfig(
+        dispatchCtx.JobAgentConfig,
+    )
+    if err != nil {
+        return nil, err
+    }
+
+    app, err := TemplateApplication(dispatchCtx, template)
+    if err != nil {
+        return nil, err
+    }
+    MakeApplicationK8sCompatible(app)
+
+    client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
+        ServerAddr: serverAddr,
+        AuthToken:  apiKey,
+    })
+    if err != nil {
+        return nil, fmt.Errorf("create ArgoCD client: %w", err)
+    }
+    ioCloser, appClient, err := client.NewApplicationClient()
+    if err != nil {
+        return nil, fmt.Errorf("create application client: %w", err)
+    }
+    defer ioCloser.Close()
+
+    proposedRevision := app.Spec.Source.TargetRevision
+
+    // Get proposed manifests (ArgoCD fetches git, renders Helm/kustomize)
+    proposedManifests, err := appClient.GetManifests(ctx,
+        &argocdapplication.ApplicationManifestQuery{
+            Name:     &app.Name,
+            Revision: &proposedRevision,
+        },
+    )
+    if err != nil {
+        return nil, fmt.Errorf("get proposed manifests: %w", err)
+    }
+
+    // Get current manifests (what is currently deployed/desired)
+    currentManifests, err := appClient.GetManifests(ctx,
+        &argocdapplication.ApplicationManifestQuery{
+            Name: &app.Name,
+        },
+    )
+    if err != nil {
+        // First deploy — no current state, everything is an add
+        return buildAddAllResult(proposedManifests)
+    }
+
+    return diffManifestSets(currentManifests.Manifests, proposedManifests.Manifests)
+}
+```
+
+The `diffManifestSets` function parses each manifest as a Kubernetes resource,
+matches resources by `apiVersion/kind/namespace/name`, and produces a
+`ResourceChange` for each:
+
+- Resources in proposed but not current → `action: "add"`
+- Resources in current but not proposed → `action: "delete"`
+- Resources in both with different content → `action: "modify"` with unified
+  diff
+- Resources in both with identical content → omitted (no-op)
+
+#### Terraform Cloud
+
+Terraform Cloud speculative plans already produce structured diff output. The
+`Plan` implementation triggers a speculative plan run and maps the result:
+
+```go
+func (t *TerraformCloud) Plan(
+    ctx context.Context,
+    dispatchCtx *oapi.DispatchContext,
+) (*types.PlanResult, error) {
+    run, err := t.client.CreateRun(ctx, RunConfig{
+        IsDestroy: false,
+        PlanOnly:  true,
+        Variables: dispatchCtx.Variables,
+    })
+    if err != nil {
+        return nil, err
+    }
+
+    plan, err := t.client.WaitForPlan(ctx, run.ID)
+    if err != nil {
+        return nil, err
+    }
+
+    resources := make([]types.ResourceChange, 0, len(plan.ResourceChanges))
+    for _, rc := range plan.ResourceChanges {
+        resources = append(resources, types.ResourceChange{
+            Kind:   rc.Type,
+            Name:   rc.Address,
+            Action: mapTerraformAction(rc.Change.Actions),
+            Before: rc.Change.Before,
+            After:  rc.Change.After,
+            Diff:   rc.Change.Diff,
+        })
+    }
+
+    hasChanges := plan.ResourceAdditions > 0 ||
+        plan.ResourceChanges > 0 ||
+        plan.ResourceDestructions > 0
+
+    return &types.PlanResult{
+        ContentHash: plan.StateHash,
+        HasChanges:  hasChanges,
+        Diff: &types.PlanDiff{
+            Raw:       plan.HumanReadableOutput,
+            Resources: resources,
+        },
+    }, nil
+}
+```
+
+#### GitHub Actions / unsupported agents
+
+Agents that do not implement `Plannable` return nil from the registry's `Plan`
+method. The dry-run plan endpoint reports these targets as:
+
+```json
+{
+  "resourceName": "some-target",
+  "hasChanges": null,
+  "diff": null,
+  "status": "unsupported"
+}
+```
+
+The CI can still post a PR comment noting that some targets could not be
+planned.
+
+### Plan execution flow
+
+The plan endpoint does not create a version or trigger the reconciler. It
+constructs the necessary context in-memory and calls agents directly:
+
+```text
+1. Parse request body into transient version object
+2. Look up deployment and its job agents
+3. Find all release targets for this deployment
+    (same query as enqueueReleaseTargetsForDeployment)
+4. For each release target:
+    a. Resolve variables (reuse variableresolver.Resolve)
+    b. Build DispatchContext (reuse jobs.Factory.BuildDispatchContext)
+    c. Call registry.Plan(agentType, dispatchCtx)
+    d. Collect PlanResult
+5. Aggregate results into response
+6. If github field present, post results to PR
+```
+
+For agents with fast plan steps (ArgoCD with cached manifests), the endpoint
+can complete synchronously. For slow agents (Terraform Cloud speculative plans
+taking minutes), the endpoint:
+
+1. Creates a plan record in a lightweight `deployment_plan` table with
+   `status: "computing"`.
+2. Enqueues plan computation as background work.
+3. Returns the plan ID immediately.
+4. The CI polls `GET .../plan/{planId}` until status is `completed`.
+
+```sql
+CREATE TABLE deployment_plan (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'computing',
+    request JSONB NOT NULL,
+    result JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 hour'
+);
+```
+
+Plans are ephemeral — the `expires_at` column enables periodic cleanup. No
+long-term storage is needed.
+
+### GitHub integration
+
+When the plan request includes a `github` field, ctrlplane posts results back
+to the PR using the GitHub App that is already configured for workflow dispatch:
+
+**Request with GitHub integration:**
+
+```json
+{
+  "tag": "pr-123-abc123",
+  "config": {},
+  "metadata": { "pr": "123", "commit": "abc123" },
+  "github": {
+    "owner": "org",
+    "repo": "myapp",
+    "sha": "abc123def456",
+    "prNumber": 123
+  }
+}
+```
+
+**PR comment format:**
+
+The comment follows the pattern established by Atlantis and Terraform Cloud,
+adapted for ctrlplane's multi-target model:
+
+````markdown
+### Ctrlplane Deployment Plan
+
+**Deployment:** API Service
+**Version:** pr-123-abc123
+
+| Environment | Resource           | Changes    | Details                  |
+| ----------- | ------------------ | ---------- | ------------------------ |
+| production  | us-east-1-cluster  | 1 modified | `Deployment/payment-api` |
+| production  | eu-west-1-cluster  | No changes | —                        |
+| production  | ap-south-1-cluster | No changes | —                        |
+| staging     | staging-cluster    | 1 modified | `Deployment/payment-api` |
+
+**Summary:** 2 of 4 targets affected (1 resource modified)
+
+<details>
+<summary>us-east-1-cluster diff</summary>
+
+\```diff
+--- Deployment/payments/payment-api (current)
++++ Deployment/payments/payment-api (proposed)
+@@ -15,3 +15,3 @@
+containers: - name: payment-api
+
+-        image: payments:v1.2.3
+
+*        image: payments:v1.2.4
+  \```
+
+</details>
+````
+
+**GitHub Check Run** (alternative or complement to PR comment):
+
+The plan can also be reported as a GitHub Check Run with status
+`success`/`neutral`/`failure` and structured annotations per changed resource.
+Check runs integrate with branch protection rules, allowing teams to require a
+passing plan before merge.
+
+**Implementation:** The existing GitHub App integration in the workspace engine
+uses the ArgoCD Go client pattern for API calls. The PR comment/check run
+posting uses the GitHub App's installation token (the same token acquisition
+flow used by `GoGitHubWorkflowDispatcher` in
+`apps/workspace-engine/svc/controllers/jobdispatch/jobagents/github/`).
+
+### Optional: `pull_request` webhook handler
+
+As a convenience layer, ctrlplane can optionally react to GitHub `pull_request`
+webhook events to auto-trigger plans without CI changes.
+
+The GitHub webhook handler in `apps/api/src/routes/github/index.ts` currently
+only handles `workflow_run` events:
+
+```typescript
+if (eventType === "workflow_run")
+  await handleWorkflowRunEvent(req.body as WorkflowRunEvent);
+```
+
+Adding a `pull_request` handler:
+
+```typescript
+if (eventType === "workflow_run")
+  await handleWorkflowRunEvent(req.body as WorkflowRunEvent);
+else if (eventType === "pull_request")
+  await handlePullRequestEvent(req.body as PullRequestEvent);
+```
+
+The PR metadata types already exist in `packages/validators/src/github/index.ts`
+(`GithubPullRequestVersion`, `PullRequestMetadataKey`, `PullRequestConfigKey`)
+but are not wired up to any handler.
+
+The `handlePullRequestEvent` function would:
+
+1. Extract the repo owner/name and head SHA from the event payload.
+2. Find deployments whose job agent config references this repo (by matching
+   `owner` and `repo` fields in the GitHub job agent config).
+3. For each matching deployment, trigger a plan using the head SHA as the
+   proposed version tag.
+4. Post results back as a PR comment or check run.
+
+This is optional — the CI-triggered API is the primary integration path. The
+webhook handler is a convenience for teams that want automatic plans without
+modifying their CI pipelines.
+
+## Examples
+
+### ArgoCD: Helm chart change on a PR
+
+A deployment manages 20 clusters across 4 environments using ArgoCD with a
+monorepo Helm chart. A developer opens a PR that modifies
+`charts/payment/values.yaml`.
+
+```bash
+# In the CI pipeline triggered by the PR:
+curl -X POST \
+  "https://api.ctrlplane.dev/v1/workspaces/$WS/deployments/$DEPLOY/plan" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "tag": "pr-456-'$(git rev-parse --short HEAD)'",
+    "config": {},
+    "metadata": {
+      "commit": "'$(git rev-parse HEAD)'",
+      "pr": "456",
+      "branch": "'$(git branch --show-current)'"
+    },
+    "github": {
+      "owner": "myorg",
+      "repo": "platform",
+      "sha": "'$(git rev-parse HEAD)'",
+      "prNumber": 456
+    }
+  }'
+```
+
+ctrlplane:
+
+1. Builds a transient version with the PR's head commit.
+2. For each of the 20 release targets, calls ArgoCD's `GetManifests` API with
+   the PR commit as the target revision.
+3. Diffs the proposed manifests against the currently deployed manifests.
+4. Returns: 4 targets show changes (the clusters running the payment service),
+   16 show no changes.
+5. Posts a PR comment showing the diff table with expandable per-target diffs.
+
+The developer sees exactly which clusters are affected and what Kubernetes
+resources change — before merging.
+
+### Terraform Cloud: Infrastructure PR
+
+A deployment manages Terraform infrastructure across 3 regions. A PR changes
+an IAM policy module.
+
+```bash
+curl -X POST \
+  "https://api.ctrlplane.dev/v1/workspaces/$WS/deployments/$DEPLOY/plan" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "tag": "pr-789-abc123",
+    "config": {},
+    "metadata": { "pr": "789" }
+  }'
+```
+
+Response (after async completion):
+
+```json
+{
+  "id": "plan_xyz",
+  "status": "completed",
+  "summary": {
+    "total": 3,
+    "changed": 1,
+    "unchanged": 2,
+    "errored": 0,
+    "resourceChanges": { "add": 0, "modify": 2, "delete": 0 }
+  },
+  "targets": [
+    {
+      "environmentName": "production",
+      "resourceName": "us-east-1",
+      "hasChanges": true,
+      "diff": {
+        "raw": "Terraform will perform the following actions:\n\n  # aws_iam_policy.service_policy will be updated in-place\n  ~ resource \"aws_iam_policy\" \"service_policy\" {\n      ~ policy = jsonencode(\n          ~ {\n              ~ Statement = [\n                  ~ {\n                      ~ Action = [\n                          + \"s3:GetObject\",\n                        ]\n                    },\n                ]\n            }\n        )\n    }\n\nPlan: 0 to add, 2 to change, 0 to destroy.",
+        "resources": [
+          {
+            "kind": "aws_iam_policy",
+            "name": "module.auth.aws_iam_policy.service_policy",
+            "action": "modify",
+            "diff": "..."
+          },
+          {
+            "kind": "aws_iam_role_policy_attachment",
+            "name": "module.auth.aws_iam_role_policy_attachment.service",
+            "action": "modify",
+            "diff": "..."
+          }
+        ]
+      }
+    },
+    {
+      "environmentName": "production",
+      "resourceName": "eu-west-1",
+      "hasChanges": false,
+      "diff": null
+    },
+    {
+      "environmentName": "production",
+      "resourceName": "ap-south-1",
+      "hasChanges": false,
+      "diff": null
+    }
+  ]
+}
+```
+
+The PR shows that only us-east-1 is affected, with exactly 2 IAM resources
+changing.
+
+### GitHub Actions: Unsupported agent
+
+A deployment uses GitHub Actions (no `Plannable` implementation). The plan
+endpoint still runs but cannot produce diffs:
+
+```json
+{
+  "id": "plan_def",
+  "status": "completed",
+  "summary": {
+    "total": 5,
+    "changed": 0,
+    "unchanged": 0,
+    "errored": 0,
+    "unsupported": 5
+  },
+  "targets": [
+    {
+      "environmentName": "production",
+      "resourceName": "cluster-1",
+      "hasChanges": null,
+      "diff": null,
+      "status": "unsupported"
+    }
+  ]
+}
+```
+
+The CI can still post a PR comment noting that plan output is not available for
+this deployment type.
+
+## Migration
+
+- The `deployment_plan` table is new and requires no data migration.
+- Plans are ephemeral with a 1-hour TTL by default. No long-term storage
+  concerns.
+- The `Plannable` interface (RFC 0002) is unchanged. Agents that already
+  implement it gain dry-run plan support automatically; they only need to
+  populate the `Diff` field for rich output.
+- The `pull_request` webhook handler is additive. The existing `workflow_run`
+  handler is unchanged.
+- No changes to the version creation flow, reconciler, or promotion lifecycle.
+
+## Open Questions
+
+1. **Rate limiting.** Plans involve external API calls (ArgoCD manifest
+   rendering, Terraform speculative plans). For deployments with many release
+   targets, a single PR could trigger hundreds of external calls. Should there
+   be a per-deployment or per-workspace rate limit on plan requests? Should
+   callers be able to scope the plan to specific environments or resources?
+
+2. **Plan caching.** If a PR is updated (new commit pushed), should the previous
+   plan results be invalidated, or should they be cached by commit SHA? Caching
+   avoids redundant external calls but risks stale results if the external state
+   changed.
+
+3. **Partial plans.** When some targets succeed and others error (e.g., ArgoCD
+   is unreachable for one cluster), should the API return partial results with
+   per-target error messages, or fail the entire plan?
+
+4. **Plan scope.** The proposal plans against all release targets. For large
+   deployments, the caller may want to plan only for specific environments or
+   resources. Should the request body accept an optional filter
+   (`environmentSelector`, `resourceSelector`) to narrow the plan scope?
+
+5. **Webhook auto-trigger mapping.** The optional `pull_request` webhook handler
+   needs to map a repo to deployments. This mapping is implicit in the job agent
+   config (ArgoCD templates reference repos, GitHub Actions configs specify
+   owner/repo). Should there be an explicit deployment-to-repo mapping, or
+   should the handler infer it from agent config?
+
+6. **Diff format standardization.** ArgoCD produces YAML diffs, Terraform
+   produces HCL-style diffs. Should the `raw` field in `PlanDiff` be
+   agent-specific (each agent returns its native format), or should ctrlplane
+   normalize to a common diff format?
+
+7. **Cost of Terraform speculative plans.** Each plan consumes Terraform Cloud
+   compute resources. For deployments with many targets across many PRs, this
+   could become expensive. Should Terraform plans require explicit opt-in per
+   deployment?

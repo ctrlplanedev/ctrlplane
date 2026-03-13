@@ -1,6 +1,7 @@
 # RFC 0002: Plan-Based Diff Detection
 
 **Status:** Draft
+
 **Created:** 2026-03-13
 
 ## Summary
@@ -411,7 +412,7 @@ Kubernetes resources. A template like:
 spec:
   source:
     repoURL: https://github.com/org/charts
-    targetRevision: {{ .release.version.tag }}
+    targetRevisicon: "{{ .release.version.tag }}"
     helm:
       values: |
         replicas: {{ .release.variables.REPLICA_COUNT }}
