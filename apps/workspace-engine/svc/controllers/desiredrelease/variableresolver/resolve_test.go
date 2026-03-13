@@ -621,14 +621,8 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 	resourceID := uuid.MustParse(scope.Resource.Id)
 	relatedResourceID := uuid.New()
 	relatedResource := &oapi.Resource{
-		Id:          relatedResourceID.String(),
-		Name:        "db-server",
-		Kind:        "Database",
-		Version:     "v1",
-		Identifier:  "db-server",
-		WorkspaceId: scope.Resource.WorkspaceId,
-		Metadata:    map[string]string{"host": "db.internal"},
-		Config:      map[string]any{},
+		Name: "db-server",
+		Kind: "Database",
 	}
 
 	ruleID := uuid.New()
