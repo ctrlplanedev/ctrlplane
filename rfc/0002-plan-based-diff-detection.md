@@ -54,19 +54,26 @@ same deployed state?"
 
 ### Why rendering is the right level to compare
 
-The rendered output is what actually gets applied to the target system. It is
-the function of all inputs that matter:
+The rendered output is what actually gets applied to the target system. Crucially,
+this is not the intermediate representation ctrlplane produces (like an ArgoCD
+Application CRD or a Terraform variable file) — it is the _final_ output that
+the external system produces after it processes that intermediate input. For
+ArgoCD, this means the Kubernetes manifests after fetching the git repo and
+rendering the Helm chart. For Terraform, this means the execution plan after
+evaluating all modules and state.
 
-```text
-rendered_output = f(version.config, version.jobAgentConfig, resolvedVariables,
-                    resource.config, deployment.config, template)
-```
+ctrlplane's in-process template rendering (e.g., `TemplateApplication`) produces
+the _input_ to the external system, not the deployed output. A version change
+almost always changes this input (the `targetRevision`, the image tag in Helm
+values, etc.). But the external system may still produce identical output — for
+example, when a git commit only modifies files for a different service than the
+one this Helm chart deploys.
 
-Two versions that produce identical rendered output for a target are
-operationally equivalent for that target. No manifest changes, no Terraform
-resource diffs, no Helm value differences — nothing would change if the job
-ran. This is the same insight that `terraform plan` and `argocd app diff`
-provide, brought into ctrlplane's promotion lifecycle.
+The only way to know whether the deployed state would actually change is to ask
+the external system to render the final output. This is what `terraform plan`,
+`argocd app diff`, and `helm template` do. Plan-based diff detection brings this
+capability into ctrlplane's promotion lifecycle by delegating the rendering to
+the system that owns it.
 
 ### Relationship to RFC 0001
 
@@ -303,53 +310,117 @@ func RuleTypes() []string {
 
 #### ArgoCD
 
-The ArgoCD agent already renders Application manifests in-process using Go
-templates:
+The ArgoCD agent's in-process `TemplateApplication` function renders a Go
+template into an ArgoCD Application CRD. This is **not** the right level to
+diff. The Application spec contains fields like `targetRevision` and
+`helm.values` that reference `version.tag` — so the rendered Application CRD
+will always differ between versions, even when the final deployed manifests are
+identical.
 
-```go
-func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*v1alpha1.Application, error) {
-    t, err := templatefuncs.Parse("argoCDAgentConfig", tmpl)
-    // ...
-    var buf bytes.Buffer
-    if err := t.Execute(&buf, ctx.Map()); err != nil { ... }
-    // ...
-}
-```
+The actual deployed state is what ArgoCD produces _from_ the Application spec:
+it fetches the git repo at the specified revision, renders the Helm chart (or
+kustomize overlay, or plain manifests), and produces the final Kubernetes
+manifests that get applied to the cluster. Two different git revisions can
+produce identical rendered manifests if the files that changed in the commit are
+irrelevant to the chart or overlay being used.
 
-The `Plan` implementation renders the template and hashes the output:
+To compute a real diff, the `Plan` implementation must call the ArgoCD API to
+get the fully rendered manifests. The ArgoCD Go client already used by the agent
+(`ApplicationServiceClient`) exposes `GetManifests` for exactly this:
 
 ```go
 func (a *ArgoApplication) Plan(
     ctx context.Context,
     dispatchCtx *oapi.DispatchContext,
 ) (*types.PlanResult, error) {
-    _, _, template, err := ParseJobAgentConfig(dispatchCtx.JobAgentConfig)
+    serverAddr, apiKey, template, err := ParseJobAgentConfig(
+        dispatchCtx.JobAgentConfig,
+    )
     if err != nil {
         return nil, err
     }
 
+    // First, render the Application CRD from the dispatch context
+    // (same as dispatch time)
     app, err := TemplateApplication(dispatchCtx, template)
     if err != nil {
         return nil, err
     }
-
     MakeApplicationK8sCompatible(app)
 
-    rendered, err := yaml.Marshal(app)
+    // Connect to ArgoCD
+    client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
+        ServerAddr: serverAddr,
+        AuthToken:  apiKey,
+    })
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("create ArgoCD client: %w", err)
+    }
+    ioCloser, appClient, err := client.NewApplicationClient()
+    if err != nil {
+        return nil, fmt.Errorf("create application client: %w", err)
+    }
+    defer ioCloser.Close()
+
+    // Get the fully rendered manifests that ArgoCD would produce
+    // for this Application spec. ArgoCD fetches the git repo,
+    // renders Helm/kustomize/plain manifests, and returns the
+    // final Kubernetes resources.
+    manifests, err := appClient.GetManifests(ctx,
+        &argocdapplication.ApplicationManifestQuery{
+            Name:     &app.Name,
+            Revision: &app.Spec.Source.TargetRevision,
+        },
+    )
+    if err != nil {
+        return nil, fmt.Errorf("get manifests from ArgoCD: %w", err)
     }
 
-    hash := sha256.Sum256(rendered)
+    // Hash the rendered manifests (sorted for determinism)
+    rendered := sortAndJoinManifests(manifests.Manifests)
+    hash := sha256.Sum256([]byte(rendered))
+
     return &types.PlanResult{
         ContentHash: hex.EncodeToString(hash[:]),
         HasChanges:  true, // caller compares against stored hash
     }, nil
 }
+
+func sortAndJoinManifests(manifests []string) string {
+    sorted := make([]string, len(manifests))
+    copy(sorted, manifests)
+    sort.Strings(sorted)
+    return strings.Join(sorted, "\n---\n")
+}
 ```
 
-This is fast — no network calls, pure in-process rendering. The same template
-execution that happens at dispatch time is reused at plan time.
+This requires a network call to the ArgoCD server, which in turn fetches the
+git repo and renders the chart. The latency depends on the size of the repo and
+chart complexity, but is typically 1-10 seconds. ArgoCD caches rendered
+manifests aggressively, so repeated plans for the same revision are fast.
+
+For applications that don't yet exist in ArgoCD (first deploy), the plan step
+can use ArgoCD's dry-run create or fall back to treating the version as changed.
+
+**Why in-process rendering is insufficient:** The Go template in the job agent
+config produces the Application CRD — it defines _where_ to look for manifests
+(which repo, which revision, which Helm values). It does not produce the actual
+Kubernetes resources. A template like:
+
+```yaml
+spec:
+  source:
+    repoURL: https://github.com/org/charts
+    targetRevision: {{ .release.version.tag }}
+    helm:
+      values: |
+        replicas: {{ .release.variables.REPLICA_COUNT }}
+```
+
+will always produce a different Application CRD when `version.tag` changes. But
+if the Helm chart at the new tag only changed a values file for a different
+service, the rendered Kubernetes manifests for _this_ resource may be identical.
+Only ArgoCD — which actually fetches and renders the chart — can tell you that.
 
 #### Terraform Cloud
 
@@ -436,38 +507,45 @@ For the initial deployment (no previous hash), `HasChanges` defaults to true.
 
 ### Async plan execution
 
-For agents where planning involves network calls (Terraform Cloud, external Helm
-renderers), the plan should run asynchronously:
+All `Plannable` agents involve network calls — ArgoCD must fetch the git repo
+and render charts, Terraform Cloud must run a speculative plan. Plans should
+run asynchronously:
 
 1. The reconciler enqueues a plan request when it encounters a new candidate
-   version.
+   version for a release target.
 2. A plan worker processes the request, calls the agent's `Plan` method, and
-   stores the result.
+   stores the result in `release_target_plan`.
 3. On the next reconciliation pass, the stored plan result is available and the
    reconciler uses it to determine diff status.
 
-For agents where planning is in-process (ArgoCD template rendering), the plan
-can run synchronously within the reconciler.
+This follows the same async pattern used by verification metrics, which also
+enqueue work items and store results that the reconciler picks up on subsequent
+passes.
 
 ## Examples
 
 ### ArgoCD: Helm chart change affecting one service
 
-A deployment manages 20 clusters across 4 environments. A new version updates
-Helm values for the payment service. The ArgoCD template references
-`{{ .release.variables.PAYMENT_IMAGE }}` only for clusters that run the payment
-service.
+A deployment manages 20 clusters across 4 environments. A new version points
+to a new git commit that updates the Helm chart's `values.yaml` for the payment
+service. The ArgoCD Application template sets `targetRevision` to the version
+tag.
 
-1. Version `v3.1.0` is created with updated `config.paymentImage`.
-2. The reconciler computes a plan for each release target by rendering the
-   ArgoCD Application template.
-3. For the 4 clusters running the payment service, the rendered manifest
-   differs from the stored hash — `HasChanges = true`.
-4. For the 16 other clusters, the rendered manifest is identical —
-   `HasChanges = false`.
-5. The `diffCheck` policy auto-satisfies environment progression and approval
+1. Version `v3.1.0` is created. The git commit behind this tag only modifies
+   `charts/payment/values.yaml`.
+2. The reconciler enqueues a plan for each release target.
+3. For each target, the plan worker renders the ArgoCD Application CRD (which
+   differs for every target because `targetRevision` changed), then calls
+   ArgoCD's `GetManifests` API to get the fully rendered Kubernetes manifests
+   at that revision.
+4. For the 4 clusters that deploy the payment chart, ArgoCD's rendered manifests
+   differ from the stored hash — `HasChanges = true`.
+5. For the 16 clusters that deploy other charts from the same repo, ArgoCD
+   renders the same manifests as the previous version (the files that changed
+   are irrelevant to their charts) — `HasChanges = false`.
+6. The `diffCheck` policy auto-satisfies environment progression and approval
    for the 16 unaffected clusters.
-6. The 4 affected clusters go through the full promotion lifecycle.
+7. The 4 affected clusters go through the full promotion lifecycle.
 
 ### Terraform Cloud: Infrastructure change scoped to one region
 
