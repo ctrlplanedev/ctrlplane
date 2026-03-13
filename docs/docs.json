@@ -153,7 +153,9 @@
               "rfc/0003-lifecycle-brackets",
               "rfc/0004-dry-run-plans",
               "rfc/0005-argo-workflows-job-agent",
-              "rfc/0006-secret-provider-integration"
+              "rfc/0006-secret-provider-integration",
+              "rfc/0007-manual-action-job-agent",
+              "rfc/0008-deployment-freeze"
             ]
           }
         ]

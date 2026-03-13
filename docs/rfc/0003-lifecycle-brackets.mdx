@@ -756,3 +756,25 @@ policies. A stuck resource holds a concurrency slot indefinitely.
    state between groups. Should the bracket rule have an explicit field
    declaring whether hooks are idempotent and/or whether the prepared state
    persists?
+
+7. **Auto rollback interaction.** If a rollback policy triggers for one member
+   deployment mid-bracket (e.g., kubelet fails health checks and auto-rolls
+   back to v1.28.x), the resource is in a partially-upgraded state — some
+   bracket members succeeded with new versions, others rolled back. Several
+   sub-questions arise:
+   - Should a rollback of any bracket member trigger a rollback of _all_
+     bracket members on that resource to restore a consistent version set?
+     This is the safe default for tightly coupled components (kubelet +
+     containerd), but overly aggressive for loosely coupled ones.
+   - If only the failed member rolls back, do post-hooks (uncordon) still
+     run? The dependency graph may be satisfied (kubelet "completed" via
+     rollback, containerd succeeded), but the resource is in a mixed state
+     that the operator may not have intended to uncordon.
+   - Should the bracket rule have a `rollback_strategy` field (e.g.,
+     `individual`, `all_members`, `halt_and_notify`) that controls whether
+     rollback is scoped to the failing member, cascaded to the full bracket,
+     or paused for manual intervention?
+   - How does a bracket-wide rollback interact with the concurrency limit?
+     Rolling back N members on a resource means N additional jobs — does
+     each count against the concurrency slot, or does the resource's
+     existing slot cover the rollback work?

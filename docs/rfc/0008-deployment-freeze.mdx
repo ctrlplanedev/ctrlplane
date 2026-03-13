@@ -1,0 +1,817 @@
+---
+title: "RFC 0008: Deployment Freeze / Emergency Lock"
+---
+
+| Category   | Status                            | Created    | Author        |
+| ---------- | --------------------------------- | ---------- | ------------- |
+| Operations | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
+
+## Summary
+
+Add a first-class deployment freeze primitive that instantly halts all
+deployments within a configurable scope (workspace, system, environment, or
+deployment). Freezes are imperative operations — created and lifted via API or
+UI — with an audit trail recording who activated the freeze, why, and when it
+was lifted. An optional TTL auto-thaws the freeze after a configurable duration
+to prevent forgotten freezes from blocking deployments indefinitely.
+
+## Motivation
+
+### No emergency halt exists
+
+Ctrlplane's deployment window evaluator (`policy_rule_deployment_window`)
+provides scheduled allow/deny windows using rrule patterns. This covers planned
+maintenance windows and business-hours-only deployment policies. But there is no
+mechanism for an operator to say "stop everything now" during an incident.
+
+When a production incident occurs, the response today requires one of:
+
+1. **Disabling policies.** Setting `enabled = false` on every relevant policy.
+   This stops deployments but also disables approval requirements, version
+   selectors, and every other policy rule. Re-enabling them requires remembering
+   which policies were active. There is no audit trail of the freeze itself.
+
+2. **Creating deny windows.** Adding a `policy_rule_deployment_window` with
+   `allow_window = false` that covers the incident duration. This requires
+   knowing the duration in advance, does not surface clearly as an emergency
+   action in the UI, and leaves orphan policy rules that must be cleaned up.
+
+3. **Manual intervention.** Telling the team on Slack to stop pushing versions
+   and hoping no automation triggers. This provides no system-level enforcement.
+
+None of these are satisfactory for incident response. The operator needs a
+single action that:
+
+- Takes effect immediately across the target scope.
+- Does not disable other policy rules (approval, verification, etc. remain
+  configured for when the freeze lifts).
+- Records who activated it, why, and links to an incident.
+- Automatically lifts after a TTL if not manually thawed.
+- Notifies relevant stakeholders when activated and when lifted.
+
+### Deployment windows are the wrong abstraction
+
+Deployment windows are **scheduled, recurring patterns** — "deploy only on
+weekdays 9am–5pm." They are defined ahead of time and repeat on a cadence. An
+emergency freeze is an **imperative, one-shot action** — "stop deploying right
+now because production is on fire." Overloading the window concept for emergency
+freezes creates several problems:
+
+- **Discoverability.** An emergency freeze buried in policy rules is hard to
+  find. Operators need a top-level indicator — a banner in the UI, a status
+  endpoint — that shows whether a freeze is active.
+- **Audit semantics.** A deployment window rule has no concept of "who activated
+  this" or "why." It's a configuration, not an action.
+- **Scope mismatch.** Deployment windows are scoped to policies, which are
+  scoped by selector. An emergency freeze often needs to cover an entire
+  workspace or environment regardless of which policies are configured.
+- **Lifecycle mismatch.** Windows are permanent configuration. Freezes are
+  transient — they are created and destroyed. TTL-based auto-expiry makes no
+  sense for a recurring window rule.
+
+### RFC 0003 does not address this
+
+RFC 0003 introduces resource concurrency limits that cap how many resources can
+be simultaneously undergoing deployment. This addresses capacity concerns (don't
+overwhelm the cluster) but not the "stop everything" incident response case.
+Concurrency limits still allow deployments — just fewer at a time. A freeze
+allows zero.
+
+## Proposal
+
+### Deployment freeze as a standalone entity
+
+A deployment freeze is not a policy rule. It is a workspace-level entity with
+its own lifecycle (create, extend, thaw), its own API surface, and its own
+audit trail. The workspace-engine checks for active freezes early in the
+evaluator pipeline and denies all matching deployments while a freeze is active.
+
+This separation means:
+
+- Freezes can be managed by anyone with the appropriate permission without
+  touching policy configuration.
+- The policy configuration remains unchanged during a freeze — approval rules,
+  gradual rollout settings, deployment windows, etc. are all preserved.
+- When the freeze lifts, deployments resume exactly where they left off in the
+  policy pipeline.
+
+### Schema
+
+```sql
+CREATE TYPE deployment_freeze_scope AS ENUM (
+    'workspace',
+    'system',
+    'environment',
+    'deployment'
+);
+
+CREATE TABLE deployment_freeze (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+
+    -- What scope this freeze covers.
+    scope deployment_freeze_scope NOT NULL,
+
+    -- The specific entity ID for non-workspace scopes.
+    -- NULL when scope = 'workspace' (the workspace_id is the scope).
+    scope_entity_id UUID,
+
+    -- Human-readable reason for the freeze.
+    reason TEXT NOT NULL,
+
+    -- Optional link to an incident tracker (PagerDuty, Jira, etc.)
+    incident_url TEXT,
+
+    -- Who activated the freeze.
+    created_by UUID NOT NULL REFERENCES "user"(id),
+
+    -- When the freeze was activated.
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    -- When the freeze should auto-thaw (NULL = no auto-thaw).
+    expires_at TIMESTAMPTZ,
+
+    -- When the freeze was manually thawed (NULL = still active or expired).
+    thawed_at TIMESTAMPTZ,
+
+    -- Who manually thawed the freeze (NULL if auto-expired or still active).
+    thawed_by UUID REFERENCES "user"(id),
+
+    -- Optional note when thawing (e.g., "Incident resolved, RCA pending").
+    thaw_reason TEXT,
+
+    -- CEL selector to further narrow the freeze within the scope.
+    -- e.g., within an environment scope, only freeze deployments matching
+    -- "deployment.metadata['tier'] == 'critical'"
+    selector TEXT,
+
+    CONSTRAINT valid_scope_entity CHECK (
+        (scope = 'workspace' AND scope_entity_id IS NULL) OR
+        (scope != 'workspace' AND scope_entity_id IS NOT NULL)
+    )
+);
+
+CREATE INDEX idx_deployment_freeze_workspace
+    ON deployment_freeze (workspace_id);
+CREATE INDEX idx_deployment_freeze_active
+    ON deployment_freeze (workspace_id)
+    WHERE thawed_at IS NULL;
+```
+
+A freeze is **active** when:
+- `thawed_at IS NULL` (not manually thawed), AND
+- `expires_at IS NULL OR expires_at > now()` (no TTL, or TTL not yet reached).
+
+The `selector` field is optional and allows narrowing within a scope. A
+workspace-wide freeze with `selector = "deployment.metadata['tier'] == 'critical'"`
+freezes only critical-tier deployments across the workspace, leaving non-critical
+deployments unaffected.
+
+### Freeze audit log
+
+Every state change is recorded in a dedicated audit table:
+
+```sql
+CREATE TYPE deployment_freeze_action AS ENUM (
+    'activated',
+    'extended',
+    'thawed',
+    'expired'
+);
+
+CREATE TABLE deployment_freeze_event (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    freeze_id UUID NOT NULL
+        REFERENCES deployment_freeze(id) ON DELETE CASCADE,
+    action deployment_freeze_action NOT NULL,
+    actor_id UUID REFERENCES "user"(id),
+    note TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_deployment_freeze_event_freeze
+    ON deployment_freeze_event (freeze_id, created_at);
+```
+
+The `expired` action is written by the workspace-engine when it detects a freeze
+past its `expires_at`. The `actor_id` is NULL for system-initiated actions
+(auto-expiry).
+
+### API
+
+#### REST
+
+```
+POST   /v1/workspaces/{workspaceId}/freezes          Create a freeze
+GET    /v1/workspaces/{workspaceId}/freezes          List freezes (active + recent)
+GET    /v1/workspaces/{workspaceId}/freezes/active    List only active freezes
+GET    /v1/workspaces/{workspaceId}/freezes/{id}      Get freeze details + events
+PATCH  /v1/workspaces/{workspaceId}/freezes/{id}      Extend or modify a freeze
+POST   /v1/workspaces/{workspaceId}/freezes/{id}/thaw Thaw a freeze
+```
+
+**Create:**
+
+```json
+POST /v1/workspaces/{workspaceId}/freezes
+
+{
+  "scope": "environment",
+  "scopeEntityId": "<environment-uuid>",
+  "reason": "Production incident INC-4521 — elevated error rates on payment service",
+  "incidentUrl": "https://pagerduty.com/incidents/INC-4521",
+  "expiresIn": "PT4H",
+  "selector": null
+}
+```
+
+`expiresIn` is an ISO 8601 duration. The server computes `expires_at = now() +
+duration`. If omitted, the freeze has no auto-thaw and must be manually lifted.
+
+**Thaw:**
+
+```json
+POST /v1/workspaces/{workspaceId}/freezes/{id}/thaw
+
+{
+  "reason": "Incident resolved. RCA scheduled for Monday."
+}
+```
+
+**Extend:**
+
+```json
+PATCH /v1/workspaces/{workspaceId}/freezes/{id}
+
+{
+  "expiresIn": "PT8H",
+  "reason": "Extending freeze — incident still under investigation"
+}
+```
+
+Extending resets the TTL from `now()`, not from the original `created_at`.
+
+#### tRPC
+
+```typescript
+deploymentFreeze.create
+deploymentFreeze.list
+deploymentFreeze.listActive
+deploymentFreeze.get
+deploymentFreeze.extend
+deploymentFreeze.thaw
+```
+
+### Evaluator integration
+
+A `DeploymentFreezeEvaluator` is added to the evaluator pipeline with
+`Complexity() = 0` (cheapest possible) so it runs before all other evaluators.
+If a matching freeze is active, it short-circuits with a `Denied` result — the
+remaining evaluators are never called.
+
+```go
+type DeploymentFreezeEvaluator struct {
+    getters Getters
+    ruleId  string
+}
+
+func (e *DeploymentFreezeEvaluator) ScopeFields() evaluator.ScopeFields {
+    return evaluator.ScopeReleaseTarget
+}
+
+func (e *DeploymentFreezeEvaluator) RuleType() string {
+    return evaluator.RuleTypeDeploymentFreeze
+}
+
+func (e *DeploymentFreezeEvaluator) Complexity() int {
+    return 0
+}
+```
+
+The `Evaluate` method checks for any active freeze matching the release
+target's workspace, system, environment, and deployment:
+
+```go
+func (e *DeploymentFreezeEvaluator) Evaluate(
+    ctx context.Context,
+    scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+    freezes := e.getters.GetActiveFreezes(ctx, scope)
+    if len(freezes) == 0 {
+        return results.NewAllowedResult("No active deployment freeze")
+    }
+
+    freeze := freezes[0] // Most specific or most recent
+    result := results.NewDeniedResult(
+        fmt.Sprintf("Deployment frozen: %s", freeze.Reason),
+    ).
+        WithDetail("freeze_id", freeze.Id).
+        WithDetail("frozen_by", freeze.CreatedBy).
+        WithDetail("frozen_at", freeze.CreatedAt.Format(time.RFC3339)).
+        WithDetail("scope", string(freeze.Scope)).
+        WithDetail("reason", freeze.Reason)
+
+    if freeze.IncidentUrl != "" {
+        result = result.WithDetail("incident_url", freeze.IncidentUrl)
+    }
+
+    if freeze.ExpiresAt != nil {
+        result = result.
+            WithDetail("expires_at", freeze.ExpiresAt.Format(time.RFC3339)).
+            WithNextEvaluationTime(*freeze.ExpiresAt)
+    }
+
+    return result
+}
+```
+
+The `GetActiveFreezes` query checks all scopes that could apply to the release
+target:
+
+```sql
+SELECT * FROM deployment_freeze
+WHERE workspace_id = $1
+  AND thawed_at IS NULL
+  AND (expires_at IS NULL OR expires_at > now())
+  AND (
+    scope = 'workspace'
+    OR (scope = 'system' AND scope_entity_id = $2)
+    OR (scope = 'environment' AND scope_entity_id = $3)
+    OR (scope = 'deployment' AND scope_entity_id = $4)
+  )
+ORDER BY created_at DESC;
+```
+
+After fetching candidate freezes, those with a non-null `selector` are
+post-filtered by evaluating the CEL expression against the release target
+context. This keeps the SQL query simple while supporting fine-grained
+filtering.
+
+### Evaluator pipeline placement
+
+The freeze evaluator does not originate from a policy rule — it is injected
+unconditionally for every evaluation:
+
+```go
+func CollectEvaluators(
+    ctx context.Context,
+    getter Getter,
+    workspaceId string,
+    policies []*oapi.PolicyWithRules,
+) []evaluator.Evaluator {
+    evals := []evaluator.Evaluator{
+        deploymentfreeze.NewEvaluator(getter, workspaceId),
+    }
+
+    for _, policy := range policies {
+        for _, rule := range policy.Rules {
+            evals = append(evals, ruleEvaluators(ctx, getter, rule)...)
+        }
+    }
+
+    slices.SortFunc(evals, func(a, b evaluator.Evaluator) int {
+        return cmp.Compare(a.Complexity(), b.Complexity())
+    })
+
+    return evals
+}
+```
+
+Because it has `Complexity() = 0` and the evaluators are sorted cheapest-first,
+the freeze check always runs first. If a freeze is active, the `Denied` result
+prevents job creation without evaluating any policy rules.
+
+### Override mechanism
+
+Some deployments must proceed even during a freeze — a hotfix for the very
+incident that caused the freeze, or a rollback to a known-good version. The
+freeze supports an explicit override via a `bypass_freeze` field on the version
+or a policy skip:
+
+```sql
+ALTER TABLE deployment_version
+    ADD COLUMN bypass_freeze BOOLEAN NOT NULL DEFAULT FALSE;
+```
+
+When `bypass_freeze = true`, the freeze evaluator returns `Allowed` with a
+detail noting the bypass:
+
+```go
+if scope.Version != nil && scope.Version.BypassFreeze {
+    return results.NewAllowedResult(
+        "Deployment freeze bypassed for this version",
+    ).
+        WithDetail("freeze_id", freeze.Id).
+        WithDetail("bypass_reason", "version marked bypass_freeze=true")
+}
+```
+
+Creating a version with `bypass_freeze = true` requires a specific permission
+(`deployment_freeze.bypass`) and is recorded in the freeze event log.
+
+### Auto-thaw
+
+The workspace-engine runs a periodic check (every 60 seconds) for freezes past
+their `expires_at`:
+
+```go
+func (w *Worker) expireFreezes(ctx context.Context) error {
+    expired, err := w.store.ExpireActiveFreezes(ctx)
+    if err != nil {
+        return err
+    }
+
+    for _, freeze := range expired {
+        w.store.CreateFreezeEvent(ctx, FreezeEvent{
+            FreezeId: freeze.Id,
+            Action:   "expired",
+            Note:     fmt.Sprintf("Auto-expired after TTL (%s)",
+                freeze.ExpiresAt.Sub(freeze.CreatedAt).String()),
+        })
+
+        w.notifications.Send(ctx, FreezeExpiredNotification{
+            Freeze:    freeze,
+            Workspace: w.workspace,
+        })
+    }
+
+    return nil
+}
+```
+
+The `ExpireActiveFreezes` query atomically sets `thawed_at = now()` on all
+freezes where `expires_at <= now() AND thawed_at IS NULL`:
+
+```sql
+UPDATE deployment_freeze
+SET thawed_at = now()
+WHERE expires_at IS NOT NULL
+  AND expires_at <= now()
+  AND thawed_at IS NULL
+RETURNING *;
+```
+
+After auto-thaw, the workspace-engine triggers a reconciliation cycle for all
+release targets in the affected scope so that pending deployments resume
+immediately.
+
+### UI
+
+#### Freeze banner
+
+When any freeze is active in the current workspace, a persistent banner appears
+at the top of the workspace layout:
+
+```
+⚠ Deployment freeze active — "Production incident INC-4521" — Expires in 3h 22m
+  [View details]  [Thaw now]
+```
+
+The banner is dismissible per-session but reappears on page refresh if the
+freeze is still active. Multiple active freezes show as a count with a dropdown.
+
+#### Freeze management page
+
+A new page at `/workspaces/{id}/freezes` shows:
+
+- **Active freezes** — scope, reason, who activated, when, TTL remaining, thaw
+  button.
+- **Recent freezes** — last 30 days, with full event history (activated,
+  extended, thawed/expired).
+- **Create freeze** button — opens a form with scope picker, reason, incident
+  URL, TTL selector, and optional CEL selector.
+
+#### Environment and deployment views
+
+The environment detail page and deployment detail page show a freeze indicator
+when a freeze is active that covers them. Frozen release targets display the
+freeze reason in their status column instead of the normal policy evaluation
+status.
+
+### Notifications
+
+Freeze lifecycle events trigger notifications through the existing notification
+system:
+
+| Event     | Recipients                                      | Content                                           |
+| --------- | ----------------------------------------------- | ------------------------------------------------- |
+| Activated | Workspace members with deploy permission        | Scope, reason, incident URL, TTL, who activated   |
+| Extended  | Same as activated                               | New TTL, extension reason                         |
+| Thawed    | Same as activated                               | Who thawed, thaw reason, duration                 |
+| Expired   | Same as activated                               | Original TTL, total duration                      |
+| Bypassed  | Workspace admins                                | Which version bypassed, who created the version   |
+
+Notifications are sent via configured channels (Slack, webhook, email) based on
+workspace notification settings.
+
+## Examples
+
+### Workspace-wide emergency freeze
+
+An SRE detects elevated error rates across all services:
+
+```bash
+curl -X POST ".../workspaces/{id}/freezes" \
+  -d '{
+    "scope": "workspace",
+    "reason": "Elevated 5xx rates across all services — investigating root cause",
+    "incidentUrl": "https://pagerduty.com/incidents/INC-4521",
+    "expiresIn": "PT2H"
+  }'
+```
+
+All deployments in the workspace are frozen. The evaluator denies every release
+target evaluation with the freeze reason. After 2 hours, the freeze auto-thaws
+and pending deployments resume.
+
+### Environment-scoped freeze during rollback
+
+A bad deployment reaches production. The operator freezes production while
+rolling back:
+
+```bash
+# Freeze production
+curl -X POST ".../workspaces/{id}/freezes" \
+  -d '{
+    "scope": "environment",
+    "scopeEntityId": "<prod-env-id>",
+    "reason": "Rolling back payment-service v2.3.1 — customer-facing errors",
+    "expiresIn": "PT1H"
+  }'
+
+# Push rollback version with bypass
+curl -X POST ".../deployments/{id}/versions" \
+  -d '{
+    "tag": "v2.3.0-rollback",
+    "status": "ready",
+    "bypassFreeze": true
+  }'
+```
+
+The rollback version proceeds through the policy pipeline normally. All other
+deployments to production are blocked until the freeze is lifted.
+
+### Freeze with selector
+
+A database migration is running and only deployments that write to the database
+should be frozen:
+
+```bash
+curl -X POST ".../workspaces/{id}/freezes" \
+  -d '{
+    "scope": "workspace",
+    "reason": "Database migration in progress — freezing DB-dependent services",
+    "selector": "deployment.metadata[\"depends_on_db\"] == \"true\"",
+    "expiresIn": "PT30M"
+  }'
+```
+
+Deployments without `depends_on_db: true` in their metadata continue
+unaffected.
+
+### Extending a freeze
+
+The incident is taking longer than expected:
+
+```bash
+curl -X PATCH ".../workspaces/{id}/freezes/{freezeId}" \
+  -d '{
+    "expiresIn": "PT6H",
+    "reason": "Root cause identified but fix requires database migration — extending freeze"
+  }'
+```
+
+The TTL resets to 6 hours from now. An `extended` event is recorded.
+
+### Manual thaw
+
+The incident is resolved:
+
+```bash
+curl -X POST ".../workspaces/{id}/freezes/{freezeId}/thaw" \
+  -d '{
+    "reason": "Incident resolved. Payment service stable at v2.3.2. RCA: https://wiki/RCA-4521"
+  }'
+```
+
+The freeze is lifted immediately. The workspace-engine triggers reconciliation
+and pending deployments resume.
+
+### Multiple overlapping freezes
+
+A workspace freeze is active when an environment-specific freeze is also
+created:
+
+```
+Active freezes:
+  1. Workspace — "Company-wide change freeze for Q1 close" (expires in 47h)
+  2. Environment (prod) — "Hotfix in progress" (expires in 1h)
+
+Release target evaluation:
+  - Staging deployment → Denied by freeze #1 (workspace scope)
+  - Prod deployment → Denied by freeze #1 AND #2
+  - Prod deployment with bypass_freeze version → Denied by freeze #1
+    (workspace freeze still applies; bypass only exempts the version
+     from freeze evaluation, not from workspace-level freezes)
+```
+
+The `bypass_freeze` field on a version exempts it from **all** matching
+freezes. If the operator intends for the bypass to respect workspace-level
+freezes, they should scope the bypass to a specific freeze via metadata
+convention (see Open Questions).
+
+## Migration
+
+- The `deployment_freeze` and `deployment_freeze_event` tables are new. No data
+  migration required.
+- The `bypass_freeze` column on `deployment_version` is additive with a default
+  of `false`. Existing versions are unaffected.
+- The `deployment_freeze_scope` and `deployment_freeze_action` enum types are
+  new.
+- The freeze evaluator is injected unconditionally and returns `Allowed` when
+  no freezes are active. Existing behavior is preserved.
+- No changes to existing policy rules or evaluators.
+
+## Open Questions
+
+1. **Bypass granularity.** The current proposal has a boolean `bypass_freeze` on
+   the version that bypasses all matching freezes. Should bypass be scoped to a
+   specific freeze ID instead? This would allow a version to bypass an
+   environment freeze but still respect a workspace freeze. The trade-off is
+   complexity — the deployer must know the freeze ID at version creation time.
+
+2. **Freeze inheritance.** If a workspace freeze is active, should an
+   environment-level thaw override it for that environment? The current proposal
+   says no — a workspace freeze blocks everything regardless of
+   environment-level freeze state. This is the safe default but may be too
+   rigid for organizations that want hierarchical freeze management.
+
+3. **In-flight jobs.** A freeze prevents new jobs from being created. Should it
+   also cancel or pause jobs that are already running? Cancellation is
+   destructive and may leave resources in an inconsistent state. The safe
+   default is to let in-flight jobs complete but prevent new ones. However, for
+   severe incidents, the operator may want to stop everything including
+   in-flight work.
+
+4. **Freeze permissions.** Who can create and thaw freezes? The proposal assumes
+   a `deployment_freeze.create` and `deployment_freeze.thaw` permission. Should
+   thawing require higher privileges than freezing (to prevent accidental
+   thaws)? Should there be a "break glass" thaw that requires admin approval?
+
+5. **Notification timing.** Should the system send warning notifications before
+   a freeze auto-expires (e.g., "Freeze expires in 30 minutes — extend or thaw
+   manually")? This prevents surprise resumption of deployments if the operator
+   intended to extend.
+
+6. **Interaction with deployment windows.** If a freeze is active during a
+   deployment window's allow period, the freeze takes precedence (denied). When
+   the freeze lifts, should the system check if the deployment window is still
+   open? The evaluator pipeline handles this naturally — after the freeze
+   evaluator allows, the deployment window evaluator runs next and checks the
+   current time. But this means a freeze that lifts 5 minutes before a window
+   closes gives only 5 minutes of deployment time. Should the window be
+   extended to compensate?
+
+7. **Terraform / IaC representation.** Should freezes be expressible as
+   Terraform resources? Freezes are inherently imperative and transient, which
+   maps poorly to Terraform's declarative model. A `ctrlplane_deployment_freeze`
+   resource would be created on `apply` and destroyed on `destroy`, which
+   technically works but feels semantically odd for an incident response action.
+
+8. **Cascading thaw.** When a workspace freeze is thawed, should all
+   narrower-scope freezes within that workspace also be thawed? Or should they
+   remain active independently? The current proposal treats each freeze as
+   independent — thawing the workspace freeze does not affect the environment
+   freeze.
+
+## Future Considerations
+
+### PagerDuty integration
+
+The most natural extension of deployment freezes is automatic activation from an
+incident management system. PagerDuty is the primary target, with the pattern
+generalizing to Opsgenie, Grafana OnCall, and similar tools.
+
+**Auto-freeze on incident creation.** A PagerDuty webhook listener receives
+incident events and creates a deployment freeze when an incident is triggered.
+The mapping from incident to freeze scope could be configured per-service:
+
+```json
+{
+  "pagerduty": {
+    "serviceMapping": [
+      {
+        "pdServiceId": "PABC123",
+        "freezeScope": "environment",
+        "scopeEntityId": "<prod-env-id>",
+        "minSeverity": "P1"
+      },
+      {
+        "pdServiceId": "PXYZ789",
+        "freezeScope": "deployment",
+        "scopeEntityId": "<payment-deployment-id>",
+        "minSeverity": "P2"
+      }
+    ],
+    "defaultTtl": "PT4H",
+    "defaultScope": "workspace",
+    "minSeverity": "P1"
+  }
+}
+```
+
+A `minSeverity` threshold prevents low-priority alerts from triggering freezes.
+P1 incidents could freeze the workspace, P2 freeze the affected environment,
+P3/P4 are informational only.
+
+The freeze's `reason` and `incident_url` are populated automatically from the
+PagerDuty incident title and URL. The `created_by` is set to a service account
+representing the PagerDuty integration, with the PagerDuty incident responder
+recorded in event metadata.
+
+**Auto-thaw on incident resolution.** When PagerDuty sends a `resolved` webhook,
+the integration finds freezes linked to that incident (via `incident_url` or a
+`pagerduty_incident_id` metadata field) and thaws them. The thaw reason is
+populated from the PagerDuty resolution note.
+
+A configurable `thaw_delay` (e.g., 15 minutes after resolution) provides a
+buffer — the incident may be resolved in PagerDuty before the system is fully
+stable. During the delay, the freeze remains active but a notification warns
+that auto-thaw is imminent.
+
+**Bidirectional timeline.** The PagerDuty integration posts timeline entries on
+the incident when freezes are activated, extended, or thawed. This gives
+incident responders visibility into deployment state directly from their
+incident management tool:
+
+```
+10:03 AM — Deployment freeze activated (scope: production)
+10:45 AM — Freeze extended to 6 hours
+11:30 AM — Hotfix v2.3.2 bypassed freeze
+ 1:15 PM — Deployment freeze thawed (incident resolved)
+```
+
+### Slack integration
+
+Beyond notifications (covered in the main proposal), Slack could provide
+interactive freeze management:
+
+- **Slash commands.** `/ctrlplane freeze production "Payment service incident"`
+  creates a freeze. `/ctrlplane thaw <freeze-id>` lifts one. Useful during
+  incident response when switching to the ctrlplane UI is a context switch.
+- **Interactive messages.** Freeze notifications include "Extend" and "Thaw"
+  buttons that trigger API calls directly from Slack.
+- **Incident channel binding.** When a freeze is created with an incident URL
+  that maps to a Slack channel (e.g., `#inc-4521`), freeze lifecycle
+  notifications are posted to that channel specifically, not just the default
+  notification channel.
+
+### Statuspage integration
+
+Active workspace-wide or environment-wide freezes could automatically update an
+external status page (Atlassian Statuspage, Instatus, etc.) to reflect that
+deployments are paused. This is relevant for platform teams that publish
+deployment status to internal consumers:
+
+- Freeze activated → status component set to "Degraded Performance" or
+  "Maintenance" with the freeze reason.
+- Freeze thawed → status component restored to "Operational."
+
+### CI/CD pipeline gating
+
+Freezes could be exposed as a check endpoint that CI/CD systems query before
+proceeding with deployment steps:
+
+```
+GET /v1/workspaces/{id}/freezes/check?scope=environment&entityId={envId}
+
+200 OK: { "frozen": false }
+200 OK: { "frozen": true, "freezeId": "...", "reason": "..." }
+```
+
+GitHub Actions, GitLab CI, and Jenkins pipelines could poll this endpoint as a
+gate step, failing the pipeline early rather than pushing a version that the
+evaluator will deny. This provides faster feedback to developers.
+
+### Calendar-based planned freezes
+
+While the current proposal focuses on emergency freezes, the same primitive
+could support planned change freezes (e.g., end-of-quarter code freezes, holiday
+freezes). These would be created ahead of time with a future `created_at`
+(or a separate `effective_at` field) and a known `expires_at`. The integration
+with Google Calendar or Outlook could auto-create freezes from calendar events
+tagged with a specific label.
+
+### Incident management post-mortem
+
+On freeze thaw, the system could auto-create a post-mortem template in the
+configured project management tool (Jira, Linear, etc.) pre-populated with:
+
+- Freeze duration and scope.
+- Which deployments were blocked and for how long.
+- Which versions bypassed the freeze.
+- Timeline of freeze events.
+
+This reduces the manual effort of gathering deployment context for incident
+retrospectives.

@@ -1,0 +1,1221 @@
+---
+title: "RFC 0009: Manual Action Job Agent"
+---
+
+| Category   | Status                            | Created    | Author        |
+| ---------- | --------------------------------- | ---------- | ------------- |
+| Job Agents | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
+
+## Summary
+
+Add a `manual-action` job agent type that represents a human task within a
+deployment pipeline. When dispatched, the agent transitions the job to an
+"action required" state, notifies assignees through configured channels (Slack,
+email, webhook), and waits indefinitely until a human explicitly marks the task
+as completed. This enables teams to embed manual operational steps — hardware
+swaps, vendor coordination, compliance sign-offs, manual DNS changes — directly
+into ctrlplane's promotion lifecycle, ensuring downstream deployments do not
+proceed until the manual work is confirmed done.
+
+## Motivation
+
+### Automated agents assume automated execution
+
+Ctrlplane's job agent model is built around dispatching work to external
+systems that execute autonomously: ArgoCD syncs an Application, GitHub Actions
+runs a workflow, Terraform Cloud applies a plan, Argo Workflows orchestrates a
+DAG. In each case, ctrlplane sends a dispatch, the external system does the
+work, and the agent reports back when it finishes.
+
+But not every step in a deployment pipeline can be automated. Real-world
+deployment procedures frequently include steps that require a human to
+physically do something:
+
+- **Hardware provisioning** — rack and cable a new server before software
+  deployment can target it.
+- **Manual DNS changes** — update DNS records in a provider that lacks API
+  access or is managed by a different team.
+- **Vendor coordination** — contact a third-party provider to enable a feature
+  flag, update a firewall rule, or rotate a certificate.
+- **Compliance checkpoints** — obtain a sign-off from a security or compliance
+  officer that a change has been reviewed and meets regulatory requirements.
+- **Customer communication** — notify a customer before a maintenance window
+  begins, and confirm they have acknowledged.
+- **Manual database operations** — run a migration in a restricted production
+  environment where automated access is prohibited by policy.
+- **Physical verification** — inspect that a deployment to an edge device or
+  kiosk is functioning correctly before proceeding to the next location.
+
+Today, teams handle these steps outside of ctrlplane — a Slack message, a Jira
+ticket, a verbal confirmation — and then manually advance the pipeline by
+updating the job status via the API or UI. This works but has three problems:
+
+1. **No orchestration signal.** Ctrlplane does not know that a manual step
+   exists. The pipeline appears stalled with no indication of what is being
+   waited on or who is responsible.
+2. **No notification routing.** There is no mechanism to automatically notify
+   the right person when a manual step is ready. The deployer must remember to
+   ping someone.
+3. **No audit trail.** There is no record of who completed the manual step,
+   when, or what evidence they provided. The job status update only records that
+   the job transitioned to success.
+
+### Distinct from the approval policy
+
+The existing approval policy (see `policies/approval`) gates whether a release
+_should proceed_ — it is a governance checkpoint. A user reviews the proposed
+change and approves or rejects it. The release itself has not started executing;
+the approval decides whether it will.
+
+A manual action is different. It represents _work that must be performed_ as
+part of the deployment execution. The deployment has already been approved and
+is in progress. The manual action is a step within that execution that happens
+to require a human instead of a machine:
+
+```text
+Approval policy                Manual action agent
+─────────────────              ────────────────────
+"Should we deploy v2.3.1       "Swap the failed disk in
+ to production?"                rack-7-slot-3 before we
+                                deploy to this node."
+
+Gate before execution.          Step during execution.
+Evaluator in policy pipeline.   Job agent in dispatch pipeline.
+Blocks job creation.            Blocks job completion.
+```
+
+Conflating the two creates semantic confusion. An approval is a policy decision.
+A manual action is an execution step. They have different lifecycles, different
+actors, different notification requirements, and different audit semantics.
+
+### Why not use an external ticketing system?
+
+Teams could model manual steps as GitHub Actions workflows that create a Jira
+ticket and poll for its resolution. But this requires:
+
+- A CI runner continuously polling an external system.
+- Credential management for the ticketing system API.
+- Custom logic to map ticket state transitions to ctrlplane job status updates.
+- No native integration with ctrlplane's notification system, audit log, or UI.
+
+The manual action agent keeps the orchestration within ctrlplane. The external
+integration is limited to notification delivery (Slack, email, webhook) rather
+than execution tracking.
+
+## Proposal
+
+### Agent type and config
+
+Register a new agent type `manual-action` in the workspace engine's job agent
+registry. The job agent config describes what the human needs to do and who
+should be notified:
+
+```json
+{
+  "type": "manual-action",
+  "name": "Swap failed disk",
+  "description": "Replace the failed disk in {[.resource.name]} before deployment proceeds.",
+  "assignees": ["ops-team"],
+  "channels": [
+    {
+      "type": "slack",
+      "channelId": "C04XXXXXX"
+    }
+  ],
+  "timeout": "PT24H",
+  "requireEvidence": true
+}
+```
+
+| Field             | Required | Description                                                                                                  |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| `name`            | Yes      | Short name for the manual task, displayed in the UI and notifications.                                       |
+| `description`     | Yes      | Go template string describing what the human needs to do. Receives the dispatch context.                     |
+| `assignees`       | No       | List of team slugs or user emails to notify. If omitted, the notification goes to the configured channel.    |
+| `channels`        | No       | Notification channels for this task. Falls back to workspace notification defaults if omitted.                |
+| `timeout`         | No       | ISO 8601 duration after which the job is marked as failed if not completed. Default: no timeout.             |
+| `requireEvidence` | No       | If true, the completion request must include an `evidence` field (URL, description, or attachment reference). |
+
+The `description` field is a Go template rendered with `{[ ]}` delimiters
+(matching the convention from RFC 0005). This allows the task description to
+include deployment-specific context:
+
+```text
+Replace the failed disk in {[.resource.name]} (rack {[.resource.metadata.rack]},
+slot {[.resource.metadata.slot]}). After replacement, verify the disk is online
+with `lsblk` and confirm the RAID array is rebuilding.
+
+Deployment: {[.deployment.slug]}
+Environment: {[.environment.name]}
+Version: {[.release.version.tag]}
+```
+
+### Dispatch lifecycle
+
+When the workspace engine dispatches a job to the `manual-action` agent, the
+following sequence occurs:
+
+```text
+┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
+│ workspace-engine│     │ manual-action│     │  notification   │
+│   (dispatch)    │     │    agent     │     │    system       │
+└────────┬────────┘     └──────┬───────┘     └────────┬────────┘
+         │  Dispatch(job)      │                      │
+         │────────────────────►│                      │
+         │                     │  render description  │
+         │                     │  from template       │
+         │                     │                      │
+         │                     │  UpdateJob(           │
+         │                     │    action_required)   │
+         │                     │                      │
+         │                     │  Send notifications  │
+         │                     │─────────────────────►│
+         │                     │                      │  Slack message
+         │                     │                      │  with action button
+         │                     │                      │
+         │                     │        (waiting for human)
+         │                     │                      │
+         │                     │  ◄── human clicks    │
+         │                     │      "Complete" in   │
+         │                     │      Slack / UI / API│
+         │                     │                      │
+         │                     │  UpdateJob(successful)│
+         │                     │                      │
+         ▼                     ▼                      ▼
+```
+
+The key difference from other agents: after dispatch, there is no polling loop.
+The agent transitions the job to `action_required` and returns. The job remains
+in this state until an external signal (API call, Slack interaction, UI button)
+advances it. There is no background goroutine watching an external system.
+
+### Job status: `action_required`
+
+A new job status `action_required` is added to the `JobStatus` enum. This
+status indicates that the job has been dispatched and is waiting for a human to
+complete a task. It is semantically distinct from:
+
+- `pending` — job has not been dispatched yet.
+- `in_progress` — job has been dispatched and an external system is actively
+  executing it.
+- `action_required` — job has been dispatched but requires a human to do
+  something before it can complete.
+
+The workspace engine treats `action_required` the same as `in_progress` for
+promotion lifecycle purposes: downstream deployments wait for the job to reach
+a terminal state (`successful` or `failure`).
+
+```sql
+ALTER TYPE job_status ADD VALUE 'action_required' AFTER 'in_progress';
+```
+
+The UI renders `action_required` jobs with a distinct visual treatment — an
+amber indicator with a call-to-action button — to differentiate them from
+automated jobs that are still running.
+
+### Implementation
+
+#### Go types
+
+```go
+package manualaction
+
+type ManualAction struct {
+    setter   Setter
+    notifier Notifier
+}
+
+type Setter interface {
+    UpdateJob(
+        ctx context.Context,
+        jobID string,
+        status oapi.JobStatus,
+        message string,
+        metadata map[string]string,
+    ) error
+}
+
+type Notifier interface {
+    SendManualActionNotification(
+        ctx context.Context,
+        notification ManualActionNotification,
+    ) error
+}
+
+type ManualActionNotification struct {
+    JobID         string
+    WorkspaceID   string
+    Name          string
+    Description   string
+    Assignees     []string
+    Channels      []NotificationChannel
+    DeploymentCtx *oapi.DispatchContext
+    CallbackURL   string
+}
+
+type NotificationChannel struct {
+    Type      string // "slack", "email", "webhook"
+    ChannelID string
+}
+```
+
+#### Dispatchable implementation
+
+```go
+var _ types.Dispatchable = &ManualAction{}
+
+func New(setter Setter, notifier Notifier) *ManualAction {
+    return &ManualAction{setter: setter, notifier: notifier}
+}
+
+func (a *ManualAction) Type() string {
+    return "manual-action"
+}
+
+func (a *ManualAction) Dispatch(ctx context.Context, job *oapi.Job) error {
+    dispatchCtx := job.DispatchContext
+    if dispatchCtx == nil {
+        return fmt.Errorf("job %s has no dispatch context", job.Id)
+    }
+
+    cfg, err := ParseConfig(dispatchCtx.JobAgentConfig)
+    if err != nil {
+        return fmt.Errorf("parse manual-action config: %w", err)
+    }
+
+    description, err := RenderDescription(cfg.Description, dispatchCtx, job)
+    if err != nil {
+        return fmt.Errorf("render description: %w", err)
+    }
+
+    metadata := map[string]string{
+        "manual-action/name":        cfg.Name,
+        "manual-action/description": description,
+    }
+    if cfg.RequireEvidence {
+        metadata["manual-action/require-evidence"] = "true"
+    }
+
+    if err := a.setter.UpdateJob(
+        ctx, job.Id, oapi.JobStatusActionRequired, "", metadata,
+    ); err != nil {
+        return fmt.Errorf("update job to action_required: %w", err)
+    }
+
+    callbackURL := fmt.Sprintf(
+        "/api/v1/jobs/%s/complete",
+        job.Id,
+    )
+
+    notification := ManualActionNotification{
+        JobID:         job.Id,
+        WorkspaceID:   dispatchCtx.WorkspaceId,
+        Name:          cfg.Name,
+        Description:   description,
+        Assignees:     cfg.Assignees,
+        Channels:      cfg.Channels,
+        DeploymentCtx: dispatchCtx,
+        CallbackURL:   callbackURL,
+    }
+
+    go func() {
+        asyncCtx := context.WithoutCancel(ctx)
+        if err := a.notifier.SendManualActionNotification(
+            asyncCtx, notification,
+        ); err != nil {
+            _ = a.setter.UpdateJob(
+                asyncCtx, job.Id, oapi.JobStatusActionRequired,
+                fmt.Sprintf("notification delivery failed: %s", err.Error()),
+                nil,
+            )
+        }
+    }()
+
+    if cfg.Timeout != "" {
+        go a.enforceTimeout(context.WithoutCancel(ctx), job.Id, cfg.Timeout)
+    }
+
+    return nil
+}
+```
+
+#### Timeout enforcement
+
+If a timeout is configured, a background goroutine waits for the duration and
+then checks whether the job is still in `action_required` state. If so, it
+transitions the job to `failure`:
+
+```go
+func (a *ManualAction) enforceTimeout(
+    ctx context.Context,
+    jobID string,
+    timeoutStr string,
+) {
+    duration, err := iso8601.ParseDuration(timeoutStr)
+    if err != nil {
+        return
+    }
+
+    select {
+    case <-ctx.Done():
+        return
+    case <-time.After(duration):
+    }
+
+    job, err := a.getter.GetJob(ctx, uuid.MustParse(jobID))
+    if err != nil {
+        return
+    }
+
+    if job.Status == oapi.JobStatusActionRequired {
+        _ = a.setter.UpdateJob(
+            ctx, jobID, oapi.JobStatusFailure,
+            fmt.Sprintf("manual action timed out after %s", timeoutStr),
+            nil,
+        )
+    }
+}
+```
+
+#### Description rendering
+
+The description template is rendered using the same `templatefuncs` pipeline
+as other job agents, with `{[` / `]}` delimiters:
+
+```go
+func RenderDescription(
+    tmpl string,
+    dispatchCtx *oapi.DispatchContext,
+    job *oapi.Job,
+) (string, error) {
+    t, err := templatefuncs.NewWithDelims("manualActionDescription").Parse(tmpl)
+    if err != nil {
+        return "", fmt.Errorf("parse template: %w", err)
+    }
+
+    data := dispatchCtx.Map()
+    data["job"] = structToMap(job)
+
+    var buf bytes.Buffer
+    if err := t.Execute(&buf, data); err != nil {
+        return "", fmt.Errorf("execute template: %w", err)
+    }
+
+    return buf.String(), nil
+}
+```
+
+### Completion API
+
+A new endpoint allows humans (or integrations) to mark a manual action job as
+completed:
+
+```
+POST /v1/jobs/{jobId}/complete
+```
+
+**Request body:**
+
+```json
+{
+  "status": "successful",
+  "message": "Disk replaced and RAID rebuild verified.",
+  "evidence": "https://runbook.internal/disk-swap/RUN-4521"
+}
+```
+
+| Field      | Required | Description                                                                         |
+| ---------- | -------- | ----------------------------------------------------------------------------------- |
+| `status`   | No       | `successful` (default) or `failure`. Allows the human to report that the task failed. |
+| `message`  | No       | Free-text message describing what was done or why it failed.                        |
+| `evidence` | Conditional | Required if `requireEvidence = true` in the agent config. URL or description.    |
+
+The endpoint validates:
+
+1. The job exists and is in `action_required` status.
+2. The caller has permission to complete jobs in this workspace.
+3. If `requireEvidence` is configured, the `evidence` field is present and
+   non-empty.
+
+On success, the job transitions to the requested terminal status and the
+promotion lifecycle advances.
+
+```go
+func (h *Handler) CompleteJob(w http.ResponseWriter, r *http.Request) {
+    jobID := chi.URLParam(r, "jobId")
+
+    var req CompleteJobRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "invalid request body", http.StatusBadRequest)
+        return
+    }
+
+    job, err := h.getter.GetJob(r.Context(), uuid.MustParse(jobID))
+    if err != nil {
+        http.Error(w, "job not found", http.StatusNotFound)
+        return
+    }
+
+    if job.Status != oapi.JobStatusActionRequired {
+        http.Error(w,
+            fmt.Sprintf("job is in %s status, expected action_required", job.Status),
+            http.StatusConflict,
+        )
+        return
+    }
+
+    requireEvidence := job.Metadata["manual-action/require-evidence"] == "true"
+    if requireEvidence && req.Evidence == "" {
+        http.Error(w, "evidence is required for this manual action", http.StatusBadRequest)
+        return
+    }
+
+    status := oapi.JobStatusSuccessful
+    if req.Status == "failure" {
+        status = oapi.JobStatusFailure
+    }
+
+    metadata := map[string]string{
+        "manual-action/completed-by": r.Context().Value(ctxUserID).(string),
+        "manual-action/completed-at": time.Now().UTC().Format(time.RFC3339),
+    }
+    if req.Evidence != "" {
+        metadata["manual-action/evidence"] = req.Evidence
+    }
+
+    if err := h.setter.UpdateJob(
+        r.Context(), jobID, status, req.Message, metadata,
+    ); err != nil {
+        http.Error(w, "failed to update job", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{
+        "jobId":  jobID,
+        "status": string(status),
+    })
+}
+```
+
+### Slack integration
+
+The Slack integration is the primary notification channel for manual actions.
+When a manual action job is dispatched, a Slack message is sent to the
+configured channel with an interactive Block Kit layout:
+
+#### Message format
+
+```json
+{
+  "channel": "C04XXXXXX",
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "🔧 Manual Action Required"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Swap failed disk*\n\nReplace the failed disk in us-east-1-node-7 (rack 7, slot 3). After replacement, verify the disk is online with `lsblk` and confirm the RAID array is rebuilding."
+      }
+    },
+    {
+      "type": "section",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*Deployment:*\ninfra-rollout"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Environment:*\nproduction"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Resource:*\nus-east-1-node-7"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Version:*\nv1.4.2"
+        }
+      ]
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "✅ Mark as Completed"
+          },
+          "style": "primary",
+          "action_id": "manual_action_complete",
+          "value": "<job-id>"
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "❌ Report Failure"
+          },
+          "style": "danger",
+          "action_id": "manual_action_fail",
+          "value": "<job-id>"
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "View in Ctrlplane"
+          },
+          "url": "https://app.ctrlplane.dev/workspaces/.../jobs/<job-id>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Interaction handler
+
+When a user clicks a button in Slack, the Slack API sends an interaction
+payload to ctrlplane's Slack integration endpoint. The handler:
+
+1. Verifies the Slack request signature.
+2. Extracts the `action_id` and `value` (job ID).
+3. Resolves the Slack user to a ctrlplane user via the workspace's Slack
+   integration mapping.
+4. Calls the completion API internally.
+5. Updates the original Slack message to reflect the new status.
+
+```go
+func (h *SlackInteractionHandler) HandleInteraction(
+    ctx context.Context,
+    payload slack.InteractionCallback,
+) error {
+    action := payload.ActionCallback.BlockActions[0]
+    jobID := action.Value
+    slackUserID := payload.User.ID
+
+    ctrlplaneUser, err := h.userMapper.ResolveSlackUser(ctx, slackUserID)
+    if err != nil {
+        return fmt.Errorf("resolve slack user %s: %w", slackUserID, err)
+    }
+
+    var status oapi.JobStatus
+    var message string
+
+    switch action.ActionID {
+    case "manual_action_complete":
+        status = oapi.JobStatusSuccessful
+        message = fmt.Sprintf(
+            "Completed by %s via Slack", ctrlplaneUser.Name,
+        )
+    case "manual_action_fail":
+        status = oapi.JobStatusFailure
+        message = fmt.Sprintf(
+            "Reported as failed by %s via Slack", ctrlplaneUser.Name,
+        )
+    default:
+        return fmt.Errorf("unknown action: %s", action.ActionID)
+    }
+
+    metadata := map[string]string{
+        "manual-action/completed-by":     ctrlplaneUser.Id,
+        "manual-action/completed-at":     time.Now().UTC().Format(time.RFC3339),
+        "manual-action/completed-via":    "slack",
+        "manual-action/slack-user-id":    slackUserID,
+        "manual-action/slack-channel-id": payload.Channel.ID,
+    }
+
+    if err := h.setter.UpdateJob(
+        ctx, jobID, status, message, metadata,
+    ); err != nil {
+        return fmt.Errorf("update job: %w", err)
+    }
+
+    return h.updateSlackMessage(ctx, payload, status, ctrlplaneUser.Name)
+}
+```
+
+#### Message update on completion
+
+After the job is completed (via Slack or any other method), the original Slack
+message is updated to show the resolved state. The action buttons are removed
+and replaced with a status block:
+
+```json
+{
+  "type": "context",
+  "elements": [
+    {
+      "type": "mrkdwn",
+      "text": "✅ Completed by @jane.doe at 2026-03-13 14:32 UTC"
+    }
+  ]
+}
+```
+
+This prevents double-completion and provides an at-a-glance record in the Slack
+channel.
+
+#### Evidence collection via Slack modal
+
+When `requireEvidence = true`, clicking "Mark as Completed" opens a Slack modal
+instead of immediately completing the job. The modal prompts for:
+
+- A text description of what was done.
+- An optional URL to supporting evidence (runbook, screenshot, monitoring
+  dashboard).
+
+```json
+{
+  "type": "modal",
+  "title": {
+    "type": "plain_text",
+    "text": "Complete Manual Action"
+  },
+  "submit": {
+    "type": "plain_text",
+    "text": "Complete"
+  },
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Swap failed disk*\nReplace the failed disk in us-east-1-node-7..."
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "evidence_message",
+      "label": {
+        "type": "plain_text",
+        "text": "What was done?"
+      },
+      "element": {
+        "type": "plain_text_input",
+        "action_id": "evidence_message_input",
+        "multiline": true,
+        "placeholder": {
+          "type": "plain_text",
+          "text": "Describe the action taken..."
+        }
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "evidence_url",
+      "optional": true,
+      "label": {
+        "type": "plain_text",
+        "text": "Evidence URL"
+      },
+      "element": {
+        "type": "url_text_input",
+        "action_id": "evidence_url_input",
+        "placeholder": {
+          "type": "plain_text",
+          "text": "https://..."
+        }
+      }
+    }
+  ],
+  "private_metadata": "{\"job_id\": \"<job-id>\"}"
+}
+```
+
+The modal submission handler extracts the evidence, calls the completion API
+with the evidence payload, and updates the Slack message.
+
+### Notification channels
+
+The manual action agent supports multiple notification channels through the
+existing notification system. Each channel type has a specific renderer:
+
+| Channel   | Behavior                                                                          |
+| --------- | --------------------------------------------------------------------------------- |
+| `slack`   | Sends a Block Kit message with interactive buttons. Supports completion via Slack. |
+| `email`   | Sends an email with task description and a deep link to the ctrlplane UI.         |
+| `webhook` | POSTs a JSON payload to a configured URL. Used for custom integrations.           |
+
+The notification is sent once at dispatch time. Reminders can be configured to
+re-send the notification at intervals while the job remains in
+`action_required`:
+
+```json
+{
+  "type": "manual-action",
+  "name": "Update DNS records",
+  "description": "...",
+  "channels": [
+    {
+      "type": "slack",
+      "channelId": "C04XXXXXX"
+    }
+  ],
+  "reminder": {
+    "interval": "PT1H",
+    "maxReminders": 3
+  }
+}
+```
+
+| Field                  | Description                                                    |
+| ---------------------- | -------------------------------------------------------------- |
+| `reminder.interval`    | ISO 8601 duration between reminders.                           |
+| `reminder.maxReminders`| Maximum number of reminders to send before stopping. Default 0 (no reminders). |
+
+### Registry registration
+
+```go
+func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
+    // ...existing setup...
+
+    dispatcher := jobagents.NewRegistry(&PostgresGetter{})
+    dispatcher.Register(
+        argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{Queue: enqueueQueue}),
+    )
+    dispatcher.Register(testrunner.New(&PostgresSetter{Queue: enqueueQueue}))
+    dispatcher.Register(
+        github.New(
+            &github.GoGitHubWorkflowDispatcher{},
+            &PostgresSetter{Queue: enqueueQueue},
+        ),
+    )
+    dispatcher.Register(
+        manualaction.New(
+            &PostgresSetter{Queue: enqueueQueue},
+            &NotificationSender{},
+        ),
+    )
+
+    // ...rest unchanged...
+}
+```
+
+### TRPC and UI integration
+
+#### Job agent config type
+
+```typescript
+const jobAgentConfig = z.discriminatedUnion("type", [
+  // ...existing types...
+  z.object({
+    type: z.literal("manual-action"),
+    name: z.string(),
+    description: z.string(),
+    assignees: z.array(z.string()).optional(),
+    channels: z
+      .array(
+        z.object({
+          type: z.enum(["slack", "email", "webhook"]),
+          channelId: z.string(),
+        }),
+      )
+      .optional(),
+    timeout: z.string().optional(),
+    requireEvidence: z.boolean().optional(),
+    reminder: z
+      .object({
+        interval: z.string(),
+        maxReminders: z.number().int().min(0).optional(),
+      })
+      .optional(),
+  }),
+]);
+```
+
+#### Job completion tRPC route
+
+```typescript
+job.complete: protectedProcedure
+  .input(
+    z.object({
+      jobId: z.string().uuid(),
+      status: z.enum(["successful", "failure"]).default("successful"),
+      message: z.string().optional(),
+      evidence: z.string().optional(),
+    }),
+  )
+  .mutation(async ({ ctx, input }) => {
+    const job = await ctx.db
+      .select()
+      .from(schema.job)
+      .where(eq(schema.job.id, input.jobId))
+      .then(takeFirstOrNull);
+
+    if (job == null)
+      throw new TRPCError({ code: "NOT_FOUND" });
+
+    if (job.status !== "action_required")
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: `Job is ${job.status}, expected action_required`,
+      });
+
+    const requireEvidence =
+      job.metadata?.["manual-action/require-evidence"] === "true";
+    if (requireEvidence && !input.evidence)
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Evidence is required for this manual action",
+      });
+
+    await ctx.db
+      .update(schema.job)
+      .set({
+        status: input.status,
+        message: input.message ?? "",
+        metadata: {
+          ...job.metadata,
+          "manual-action/completed-by": ctx.session.user.id,
+          "manual-action/completed-at": new Date().toISOString(),
+          "manual-action/completed-via": "ui",
+          ...(input.evidence
+            ? { "manual-action/evidence": input.evidence }
+            : {}),
+        },
+      })
+      .where(eq(schema.job.id, input.jobId));
+
+    await enqueuePolicyEval(ctx.db, job.releaseTargetId);
+  })
+```
+
+#### UI: job detail view
+
+When a job has status `action_required`, the job detail view displays:
+
+1. **Task description** — the rendered description from the agent config,
+   formatted as markdown.
+2. **Assignees** — who is responsible for completing the task.
+3. **Status timeline** — when the job was dispatched, when notifications were
+   sent, when reminders were sent.
+4. **Action buttons** — "Mark as Completed" and "Report Failure" buttons.
+5. **Evidence field** — if `requireEvidence` is true, a text input and URL
+   field that must be filled before completion.
+6. **Timeout indicator** — if a timeout is configured, a countdown showing
+   remaining time.
+
+The release target overview shows `action_required` jobs with an amber badge
+and the task name, making it immediately visible which deployments are waiting
+on human action.
+
+### Deployment configuration
+
+#### Terraform
+
+```hcl
+resource "ctrlplane_deployment" "infra_rollout" {
+  name = "Infrastructure Rollout"
+  slug = "infra-rollout"
+
+  job_agent {
+    id = ctrlplane_job_agent.manual.id
+
+    manual_action {
+      name        = "Hardware verification"
+      description = <<-EOT
+        Verify that node {[.resource.name]} has been physically
+        provisioned and is network-reachable.
+
+        1. Confirm the node is racked and cabled.
+        2. Verify IPMI connectivity: ping {[.resource.metadata.ipmi_ip]}
+        3. Confirm the node appears in the inventory system.
+      EOT
+
+      assignees = ["platform-ops"]
+
+      channel {
+        type       = "slack"
+        channel_id = "C04XXXXXX"
+      }
+
+      timeout          = "PT8H"
+      require_evidence = true
+    }
+  }
+}
+```
+
+#### CLI YAML
+
+```yaml
+type: Deployment
+name: Infrastructure Rollout
+slug: infra-rollout
+jobAgent:
+  ref: manual-action-agent
+jobAgentConfig:
+  name: Hardware verification
+  description: |
+    Verify that node {[.resource.name]} has been physically
+    provisioned and is network-reachable.
+  assignees:
+    - platform-ops
+  channels:
+    - type: slack
+      channelId: C04XXXXXX
+  timeout: PT8H
+  requireEvidence: true
+```
+
+## Examples
+
+### Multi-step deployment with manual checkpoint
+
+A system has three deployments in sequence: database migration (automated),
+hardware verification (manual), and application deploy (automated). The manual
+step ensures a human confirms the target node is ready before the application
+is deployed to it:
+
+```yaml
+# System: edge-rollout
+# Environment: production
+# Deployments (ordered by dependency):
+
+# 1. Automated — runs database migration via Argo Workflows
+type: Deployment
+name: Database Migration
+slug: db-migration
+jobAgent:
+  ref: argo-workflows
+jobAgentConfig:
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    metadata:
+      generateName: migrate-
+    spec:
+      entrypoint: migrate
+      templates:
+        - name: migrate
+          container:
+            image: "db-migrator:{[.release.version.tag]}"
+
+---
+
+# 2. Manual — human verifies the edge device
+type: Deployment
+name: Device Verification
+slug: device-verification
+jobAgent:
+  ref: manual-action
+jobAgentConfig:
+  name: "Verify edge device {[.resource.name]}"
+  description: |
+    The edge device {[.resource.name]} at location
+    {[.resource.metadata.location]} needs physical verification
+    before the v{[.release.version.tag]} firmware is deployed.
+
+    Checklist:
+    - Device is powered on and network-reachable
+    - Current firmware version matches expected baseline
+    - No hardware alerts in the device management console
+    - Device storage has >20% free space
+  assignees:
+    - field-ops
+  channels:
+    - type: slack
+      channelId: C04FIELD_OPS
+  timeout: PT48H
+  requireEvidence: true
+  reminder:
+    interval: PT4H
+    maxReminders: 3
+
+---
+
+# 3. Automated — deploys firmware via ArgoCD
+type: Deployment
+name: Firmware Deploy
+slug: firmware-deploy
+jobAgent:
+  ref: argo-cd
+jobAgentConfig:
+  # ...standard ArgoCD config...
+```
+
+The deployment dependency policy ensures these run in order. When the database
+migration completes, ctrlplane dispatches the device verification job. A Slack
+message appears in `#field-ops`:
+
+```
+🔧 Manual Action Required
+
+Verify edge device us-west-2-kiosk-14
+
+The edge device us-west-2-kiosk-14 at location "Portland Store #42"
+needs physical verification before the v3.1.0 firmware is deployed.
+
+Checklist:
+- Device is powered on and network-reachable
+- Current firmware version matches expected baseline
+- No hardware alerts in the device management console
+- Device storage has >20% free space
+
+Deployment: device-verification
+Environment: production
+Resource: us-west-2-kiosk-14
+Version: v3.1.0
+
+[✅ Mark as Completed]  [❌ Report Failure]  [View in Ctrlplane]
+```
+
+A field technician visits the kiosk, verifies the checklist, clicks "Mark as
+Completed" in Slack, enters "All checks passed. Device firmware at v3.0.2
+baseline. 45% storage free." as evidence, and the firmware deploy proceeds
+automatically.
+
+### Customer notification gate
+
+Before deploying a breaking API change to a customer's dedicated environment,
+the account team must confirm the customer has been notified and has
+acknowledged the maintenance window:
+
+```yaml
+type: Deployment
+name: Customer Notification
+slug: customer-notification
+jobAgent:
+  ref: manual-action
+jobAgentConfig:
+  name: "Notify customer for {[.environment.name]}"
+  description: |
+    Contact the customer for environment {[.environment.name]}
+    regarding the upcoming v{[.release.version.tag]} deployment.
+
+    This version includes breaking API changes documented at:
+    https://docs.example.com/changelog/{[.release.version.tag]}
+
+    Steps:
+    1. Send the maintenance notification email using the template
+       in the runbook.
+    2. Wait for customer acknowledgment (email reply or portal
+       confirmation).
+    3. Mark as completed only after receiving acknowledgment.
+  assignees:
+    - account-management
+  channels:
+    - type: slack
+      channelId: C04ACCOUNTS
+    - type: email
+      channelId: account-team@example.com
+  timeout: PT72H
+  requireEvidence: true
+```
+
+### Compliance sign-off
+
+A regulated deployment requires a compliance officer to review and sign off
+before proceeding:
+
+```yaml
+type: Deployment
+name: Compliance Review
+slug: compliance-review
+jobAgent:
+  ref: manual-action
+jobAgentConfig:
+  name: "Compliance review for {[.deployment.slug]} v{[.release.version.tag]}"
+  description: |
+    Review the deployment of {[.deployment.slug]} version
+    {[.release.version.tag]} to {[.environment.name]} for
+    compliance with SOC 2 change management requirements.
+
+    Review items:
+    - Change request ticket has been approved
+    - Rollback plan is documented
+    - Monitoring alerts are configured
+    - Change window is within approved schedule
+
+    Provide the change request ticket URL as evidence.
+  assignees:
+    - compliance-team
+  timeout: PT24H
+  requireEvidence: true
+```
+
+## Migration
+
+- The `action_required` value is added to the `job_status` enum. This is an
+  additive change — existing jobs are unaffected.
+- No schema changes to existing tables. The manual action metadata is stored
+  in the job's existing `metadata` JSONB column.
+- The completion API endpoint is new. No changes to existing endpoints.
+- The Slack interaction handler is new. It is registered alongside the existing
+  Slack integration webhook handlers.
+- The `manual-action` agent type is registered in the workspace engine's
+  controller. No changes to the reconciler or promotion lifecycle beyond
+  recognizing the new `action_required` status.
+- The notification system must support the `SendManualActionNotification`
+  method. This extends the existing `Notifier` interface. If the notification
+  system is not configured, the agent still transitions the job to
+  `action_required` — the task is visible in the UI but no external
+  notification is sent.
+
+## Open Questions
+
+1. **Reassignment.** The initial proposal assigns the task at dispatch time via
+   the `assignees` field in the agent config. Should the UI and API support
+   reassigning a manual action to a different user or team after dispatch? This
+   is useful when the original assignee is unavailable, but adds complexity to
+   the notification flow (the new assignee needs to be notified, the original
+   assignee's notification should be updated).
+
+2. **Escalation.** If a manual action is not completed within a configurable
+   period (shorter than the timeout), should the system escalate to a different
+   set of assignees? For example, after 2 hours notify the team lead, after 4
+   hours notify the on-call manager. This is a common pattern in incident
+   management tools but adds significant complexity.
+
+3. **Partial completion.** Some manual tasks have multiple steps (a checklist).
+   Should the agent support partial completion where each checklist item is
+   tracked independently, or is a single "completed/failed" status sufficient?
+   Partial completion provides better visibility but the checklist structure
+   must be defined in the agent config and rendered in both the UI and Slack.
+
+4. **Restorable semantics.** After a workspace-engine restart, `action_required`
+   jobs with configured timeouts need their timeout goroutines restarted. The
+   agent should implement `Restorable` to query for `action_required` jobs on
+   startup and re-establish timeout enforcement. Should the initial
+   implementation include restore support, or is it acceptable to lose timeout
+   enforcement on restart (the job remains in `action_required` indefinitely
+   until manually completed or failed)?
+
+5. **Slack app permissions.** The interactive Slack integration requires the
+   ctrlplane Slack app to have `chat:write`, `commands`, and
+   `interactions` scopes. If the workspace does not have a Slack integration
+   configured, should the agent fall back to a non-interactive notification
+   (plain message without buttons), or should it fail at dispatch time with a
+   configuration error?
+
+6. **Idempotent completion.** If multiple people click "Complete" in Slack
+   simultaneously, the second request should be a no-op (the job is already in
+   a terminal state). The current proposal handles this via the status check in
+   the completion endpoint. Should the UI also show who else attempted to
+   complete the task, or is the first completion sufficient?
+
+7. **Webhook completion.** The `webhook` notification channel sends a JSON
+   payload with the task details. Should the webhook payload include a callback
+   URL and a signed token that allows the external system to call the
+   completion API without separate authentication? This enables "complete via
+   webhook callback" for systems that can process and respond programmatically
+   (e.g., a ServiceNow integration that auto-completes the ctrlplane job when
+   a change request is approved).
+
+8. **Interaction with deployment freeze.** If a deployment freeze (RFC 0008) is
+   activated while a manual action job is in `action_required` state, should
+   the freeze prevent the job from being completed? The freeze blocks new job
+   creation, but an `action_required` job has already been dispatched. The
+   safe default is to allow completion (the freeze prevents downstream jobs,
+   not in-flight ones), but some organizations may want the freeze to also
+   prevent manual action completion.
