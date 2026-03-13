@@ -144,6 +144,15 @@
           {
             "group": "Concepts",
             "pages": ["reference/glossary", "reference/cel"]
+          },
+          {
+            "group": "RFCs",
+            "pages": [
+              "rfc/0001-scoped-versions",
+              "rfc/0002-plan-based-diff-detection",
+              "rfc/0003-lifecycle-brackets",
+              "rfc/0004-dry-run-plans"
+            ]
           }
         ]
       }

@@ -1,8 +1,10 @@
-# RFC 0004: Dry-Run Deployment Plans
+---
+title: "RFC 0004: Dry-Run Deployment Plans"
+---
 
-**Status:** Draft
-
-**Created:** 2026-03-13
+| Category | Status                            | Created    | Author        |
+| -------- | --------------------------------- | ---------- | ------------- |
+| Policies | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
 
 ## Summary
 
@@ -10,8 +12,8 @@ Add an ephemeral plan API that CI pipelines call on pull requests to compute
 **full rendered diffs** for each release target — showing exactly what
 Kubernetes manifests, Terraform resources, or other deployed artifacts would
 change, like `terraform plan` output. Results can optionally be posted back to
-GitHub as PR comments or check runs. No version is created; the plan is
-computed on the fly and returned to the caller.
+GitHub as PR comments or check runs. No version is created; the plan is computed
+on the fly and returned to the caller.
 
 ## Motivation
 
@@ -23,8 +25,8 @@ deployment version, two questions arise before merging:
 
 Today, neither question can be answered without merging the PR, creating the
 version, and letting the full promotion lifecycle run. The deployer may have
-intuition about the impact, but there is no way to get a concrete, rendered
-diff — the kind of output `terraform plan` provides — before committing to a
+intuition about the impact, but there is no way to get a concrete, rendered diff
+— the kind of output `terraform plan` provides — before committing to a
 deployment.
 
 RFC 0002 introduces the `Plannable` interface on job agents, which can compute
@@ -54,19 +56,19 @@ service triggers releases across every cluster, and the deployer won't know
 which clusters are truly impacted until the pipeline is running.
 
 `terraform plan` solved this for infrastructure: before applying, you see the
-full execution plan with resource-level diffs. The same pattern should exist
-for ctrlplane deployments.
+full execution plan with resource-level diffs. The same pattern should exist for
+ctrlplane deployments.
 
 ### What "plan" means in this context
 
 A dry-run plan computes, for each release target, the **full rendered output**
 that the external system (ArgoCD, Terraform Cloud, etc.) would produce for the
-proposed version — then diffs it against the current deployed state. This is
-not a hash comparison (RFC 0002) or an affected/unaffected classification. It
-is the actual diff content:
+proposed version — then diffs it against the current deployed state. This is not
+a hash comparison (RFC 0002) or an affected/unaffected classification. It is the
+actual diff content:
 
-- For **ArgoCD**: the per-resource Kubernetes manifest diff (like `argocd app
-diff`)
+- For **ArgoCD**: the per-resource Kubernetes manifest diff (like
+  `argocd app diff`)
 - For **Terraform Cloud**: the resource-level before/after diff (like
   `terraform plan`)
 - For **Helm**: the rendered template diff (like `helm diff upgrade`)
@@ -76,10 +78,10 @@ The diff is what the deployer reviews on the PR, the same way they review
 
 ### Relationship to prior RFCs
 
-- **RFC 0001 (Scoped Versions)** — The deployer declares which targets a
-  version affects. Dry-run plans can inform that decision: review the plan on
-  the PR, then create the version with a `targetSelector` that matches only the
-  affected targets.
+- **RFC 0001 (Scoped Versions)** — The deployer declares which targets a version
+  affects. Dry-run plans can inform that decision: review the plan on the PR,
+  then create the version with a `targetSelector` that matches only the affected
+  targets.
 - **RFC 0002 (Plan-Based Diff Detection)** — Provides the `Plannable` interface
   and agent implementations that this RFC consumes. RFC 0002 runs plans inside
   the reconciler; this RFC exposes plans via an API endpoint before any version
@@ -183,7 +185,8 @@ Each target in the response includes:
 }
 ```
 
-The CI polls `GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}`
+The CI polls
+`GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}`
 until `status` transitions to `completed` or `failed`.
 
 ### Extended `PlanResult` type
@@ -215,9 +218,9 @@ type ResourceChange struct {
 }
 ```
 
-RFC 0002's reconciler integration only uses `ContentHash` and `HasChanges`.
-The additional fields (`RenderedOutput`, `Diff`) are populated by agents when
-called through the dry-run plan API and ignored by the reconciler path.
+RFC 0002's reconciler integration only uses `ContentHash` and `HasChanges`. The
+additional fields (`RenderedOutput`, `Diff`) are populated by agents when called
+through the dry-run plan API and ignored by the reconciler path.
 
 ### How agents produce diffs
 
@@ -407,8 +410,8 @@ constructs the necessary context in-memory and calls agents directly:
 6. If github field present, post results to PR
 ```
 
-For agents with fast plan steps (ArgoCD with cached manifests), the endpoint
-can complete synchronously. For slow agents (Terraform Cloud speculative plans
+For agents with fast plan steps (ArgoCD with cached manifests), the endpoint can
+complete synchronously. For slow agents (Terraform Cloud speculative plans
 taking minutes), the endpoint:
 
 1. Creates a plan record in a lightweight `deployment_plan` table with
@@ -436,8 +439,8 @@ long-term storage is needed.
 
 ### GitHub integration
 
-When the plan request includes a `github` field, ctrlplane posts results back
-to the PR using the GitHub App that is already configured for workflow dispatch:
+When the plan request includes a `github` field, ctrlplane posts results back to
+the PR using the GitHub App that is already configured for workflow dispatch:
 
 **Request with GitHub integration:**
 
@@ -463,8 +466,7 @@ adapted for ctrlplane's multi-target model:
 ````markdown
 ### Ctrlplane Deployment Plan
 
-**Deployment:** API Service
-**Version:** pr-123-abc123
+**Deployment:** API Service **Version:** pr-123-abc123
 
 | Environment | Resource           | Changes    | Details                  |
 | ----------- | ------------------ | ---------- | ------------------------ |
@@ -478,11 +480,9 @@ adapted for ctrlplane's multi-target model:
 <details>
 <summary>us-east-1-cluster diff</summary>
 
-\```diff
---- Deployment/payments/payment-api (current)
-+++ Deployment/payments/payment-api (proposed)
-@@ -15,3 +15,3 @@
-containers: - name: payment-api
+\```diff --- Deployment/payments/payment-api (current) +++
+Deployment/payments/payment-api (proposed) @@ -15,3 +15,3 @@ containers: - name:
+payment-api
 
 -        image: payments:v1.2.3
 
@@ -589,8 +589,8 @@ resources change — before merging.
 
 ### Terraform Cloud: Infrastructure PR
 
-A deployment manages Terraform infrastructure across 3 regions. A PR changes
-an IAM policy module.
+A deployment manages Terraform infrastructure across 3 regions. A PR changes an
+IAM policy module.
 
 ```bash
 curl -X POST \

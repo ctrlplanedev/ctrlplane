@@ -1,8 +1,10 @@
-# RFC 0001: Scoped Versions
+---
+title: "RFC 0001: Scoped Versions"
+---
 
-**Status:** Draft
-
-**Created:** 2026-03-13
+| Category | Status                            | Created    | Author        |
+| -------- | --------------------------------- | ---------- | ------------- |
+| Policies | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
 
 ## Summary
 
@@ -15,12 +17,12 @@ so unaffected targets skip the full policy pipeline entirely.
 
 Ctrlplane already handles two kinds of changes differently:
 
-- **Variable changes** roll out instantly. When a deployment variable or resource
-  variable is updated, the affected release targets are re-reconciled with the
-  new variable values. The version hasn't changed, so policies that already
-  passed (approval, environment progression, verification) remain satisfied. The
-  new release is created with updated variables and a job is dispatched
-  immediately.
+- **Variable changes** roll out instantly. When a deployment variable or
+  resource variable is updated, the affected release targets are re-reconciled
+  with the new variable values. The version hasn't changed, so policies that
+  already passed (approval, environment progression, verification) remain
+  satisfied. The new release is created with updated variables and a job is
+  dispatched immediately.
 
 - **Version changes** go through the full promotion lifecycle. When a new
   deployment version is created with `status: ready`, ctrlplane creates releases
@@ -29,16 +31,16 @@ Ctrlplane already handles two kinds of changes differently:
   approval gates, verification, gradual rollout, and cooldown before a job is
   created.
 
-The problem is that many version changes only affect a subset of release targets.
-A hotfix for a single region, a config embedded in the version for one service
-variant, a change to a Helm chart that only impacts certain clusters — all of
-these trigger the full promotion lifecycle across **all** targets.
+The problem is that many version changes only affect a subset of release
+targets. A hotfix for a single region, a config embedded in the version for one
+service variant, a change to a Helm chart that only impacts certain clusters —
+all of these trigger the full promotion lifecycle across **all** targets.
 
 This creates unnecessary latency. A deployer who knows their change only impacts
 3 out of 50 clusters must still wait for staging verification, production
-approval, and gradual rollout to complete across all 50. Unlike variable changes,
-there is no way to express "this version change is narrow" — every version is
-treated as a full rollout.
+approval, and gradual rollout to complete across all 50. Unlike variable
+changes, there is no way to express "this version change is narrow" — every
+version is treated as a full rollout.
 
 ### Why ctrlplane cannot derive version impact automatically
 
@@ -51,8 +53,8 @@ Version changes are fundamentally different. A release is defined as
 `Version + Environment + Resource + Resolved Variables`. When a new version is
 created, the version component is always new — that is the entire reason the
 release exists. Even if every resolved variable is identical across targets, the
-version ID differs, so every release is "different" from ctrlplane's perspective.
-You cannot diff away the version itself.
+version ID differs, so every release is "different" from ctrlplane's
+perspective. You cannot diff away the version itself.
 
 The knowledge of which targets are truly impacted by a version change comes from
 the deployer's understanding of what the change _means_ — which config files
@@ -65,9 +67,9 @@ clusters running the old schema."
 
 Scoped versions acknowledge this reality by giving the deployer a structured way
 to express their knowledge, rather than trying to derive it mechanically. The
-same way ctrlplane already trusts that variable selectors correctly express which
-targets a variable value applies to, scoped versions let the deployer express
-which targets a version applies to.
+same way ctrlplane already trusts that variable selectors correctly express
+which targets a variable value applies to, scoped versions let the deployer
+express which targets a version applies to.
 
 ### Comparison with existing mechanisms
 
@@ -80,15 +82,16 @@ exempt matching targets from other policy rules — a version that passes the
 selector still goes through the full promotion chain.
 
 **Policy Skips** allow bypassing individual policy rules for a version +
-environment. They work today, but require the deployer to know specific rule IDs,
-create skips per-rule per-environment, and the version still appears in the
+environment. They work today, but require the deployer to know specific rule
+IDs, create skips per-rule per-environment, and the version still appears in the
 evaluation pipeline for every target. They are an escape hatch, not a
 first-class workflow.
 
 **Scoped Versions** operate _before_ the policy pipeline. The reconciler skips
 the version entirely for non-matching targets — no releases created, no policy
 evaluations run, no "denied" entries in the UI. The intent ("this version is for
-these targets") lives on the version itself, making it auditable and declarative.
+these targets") lives on the version itself, making it auditable and
+declarative.
 
 ## Proposal
 
@@ -143,10 +146,10 @@ The CEL expression has access to the same variables as version selectors:
 
 ### Reconciler changes
 
-In the desired release reconciler, the `findDeployableVersion` function
-iterates candidate versions newest-first and evaluates policy rules. The target
-selector check should be inserted **before** policy evaluation, as a pre-filter
-on the candidate version list:
+In the desired release reconciler, the `findDeployableVersion` function iterates
+candidate versions newest-first and evaluates policy rules. The target selector
+check should be inserted **before** policy evaluation, as a pre-filter on the
+candidate version list:
 
 ```
 loadInput
@@ -202,8 +205,8 @@ The web UI should surface scoped versions in a few places:
 2. **Release target view** — When a version is scoped and doesn't match a
    target, it should not appear in that target's version evaluation list at all
    (as opposed to appearing as "denied").
-3. **Version creation** — Optionally expose the `targetSelector` field in
-   the UI when creating versions manually.
+3. **Version creation** — Optionally expose the `targetSelector` field in the UI
+   when creating versions manually.
 
 ### Behavior with other policy rules
 
@@ -277,21 +280,21 @@ behavior.
   migration.
 - Existing versions have `target_selector = NULL`, preserving current behavior.
 - No changes to existing policies or release targets are needed.
-- The reconciler change is backwards-compatible: versions without a selector pass
-  through the filter unchanged.
+- The reconciler change is backwards-compatible: versions without a selector
+  pass through the filter unchanged.
 
 ## Open Questions
 
-1. **Should scoped versions interact with environment progression?** If a version
-   scopes to production only, should environment progression rules block it
-   (staging hasn't seen it) or should the scope be treated as an explicit
+1. **Should scoped versions interact with environment progression?** If a
+   version scopes to production only, should environment progression rules block
+   it (staging hasn't seen it) or should the scope be treated as an explicit
    override of progression? The current proposal lets the deployer handle this —
    they can combine the scope with policy skips if needed.
 
 2. **Should there be a permission or policy guard on scoping?** Scoped versions
-   let deployers bypass the normal promotion surface area. Organizations may want
-   to restrict who can create scoped versions, or require that scoped versions
-   still pass through certain gates.
+   let deployers bypass the normal promotion surface area. Organizations may
+   want to restrict who can create scoped versions, or require that scoped
+   versions still pass through certain gates.
 
 3. **Should the selector support resource-only, or also environment and
    deployment fields?** The proposal includes all three for flexibility, but

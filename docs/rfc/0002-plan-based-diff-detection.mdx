@@ -1,17 +1,19 @@
-# RFC 0002: Plan-Based Diff Detection
+---
+title: "RFC 0002: Plan-Based Diff Detection"
+---
 
-**Status:** Draft
-
-**Created:** 2026-03-13
+| Category | Status                            | Created    | Author        |
+| -------- | --------------------------------- | ---------- | ------------- |
+| Policies | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
 
 ## Summary
 
 Add a `Plannable` interface to job agents that lets ctrlplane compute the
-rendered deployment output for a release target _without_ dispatching a job.
-By comparing the rendered output hash of a proposed version against the hash of
-the currently deployed release, ctrlplane can mechanically determine which
-release targets are actually affected by a version change. Unaffected targets
-can then be fast-tracked through the promotion lifecycle.
+rendered deployment output for a release target _without_ dispatching a job. By
+comparing the rendered output hash of a proposed version against the hash of the
+currently deployed release, ctrlplane can mechanically determine which release
+targets are actually affected by a version change. Unaffected targets can then
+be fast-tracked through the promotion lifecycle.
 
 ## Motivation
 
@@ -55,13 +57,13 @@ same deployed state?"
 
 ### Why rendering is the right level to compare
 
-The rendered output is what actually gets applied to the target system. Crucially,
-this is not the intermediate representation ctrlplane produces (like an ArgoCD
-Application CRD or a Terraform variable file) — it is the _final_ output that
-the external system produces after it processes that intermediate input. For
-ArgoCD, this means the Kubernetes manifests after fetching the git repo and
-rendering the Helm chart. For Terraform, this means the execution plan after
-evaluating all modules and state.
+The rendered output is what actually gets applied to the target system.
+Crucially, this is not the intermediate representation ctrlplane produces (like
+an ArgoCD Application CRD or a Terraform variable file) — it is the _final_
+output that the external system produces after it processes that intermediate
+input. For ArgoCD, this means the Kubernetes manifests after fetching the git
+repo and rendering the Helm chart. For Terraform, this means the execution plan
+after evaluating all modules and state.
 
 ctrlplane's in-process template rendering (e.g., `TemplateApplication`) produces
 the _input_ to the external system, not the deployed output. A version change
@@ -395,8 +397,8 @@ func sortAndJoinManifests(manifests []string) string {
 }
 ```
 
-This requires a network call to the ArgoCD server, which in turn fetches the
-git repo and renders the chart. The latency depends on the size of the repo and
+This requires a network call to the ArgoCD server, which in turn fetches the git
+repo and renders the chart. The latency depends on the size of the repo and
 chart complexity, but is typically 1-10 seconds. ArgoCD caches rendered
 manifests aggressively, so repeated plans for the same revision are fast.
 
@@ -468,8 +470,8 @@ reconciler should handle this asynchronously.
 #### GitHub Actions
 
 GitHub Actions does not have a native plan/dry-run concept. The agent would not
-implement `Plannable`, and the registry returns nil. Targets using GitHub Actions
-fall back to current behavior — every version is treated as a change.
+implement `Plannable`, and the registry returns nil. Targets using GitHub
+Actions fall back to current behavior — every version is treated as a change.
 
 ### Storing the deployed hash
 
@@ -498,8 +500,8 @@ For the initial deployment (no previous hash), `HasChanges` defaults to true.
 
 1. **Release target view** — When a plan result exists, show a "No changes
    detected" or "Changes detected" indicator alongside the version evaluation.
-   For targets with no changes, display a muted state to signal the version
-   is advancing without operational impact.
+   For targets with no changes, display a muted state to signal the version is
+   advancing without operational impact.
 2. **Diff viewer** — When `Diff` is populated, provide an expandable panel
    showing the human-readable diff (YAML diff for ArgoCD, resource summary for
    Terraform).
@@ -509,8 +511,8 @@ For the initial deployment (no previous hash), `HasChanges` defaults to true.
 ### Async plan execution
 
 All `Plannable` agents involve network calls — ArgoCD must fetch the git repo
-and render charts, Terraform Cloud must run a speculative plan. Plans should
-run asynchronously:
+and render charts, Terraform Cloud must run a speculative plan. Plans should run
+asynchronously:
 
 1. The reconciler enqueues a plan request when it encounters a new candidate
    version for a release target.
@@ -527,8 +529,8 @@ passes.
 
 ### ArgoCD: Helm chart change affecting one service
 
-A deployment manages 20 clusters across 4 environments. A new version points
-to a new git commit that updates the Helm chart's `values.yaml` for the payment
+A deployment manages 20 clusters across 4 environments. A new version points to
+a new git commit that updates the Helm chart's `values.yaml` for the payment
 service. The ArgoCD Application template sets `targetRevision` to the version
 tag.
 
@@ -537,8 +539,8 @@ tag.
 2. The reconciler enqueues a plan for each release target.
 3. For each target, the plan worker renders the ArgoCD Application CRD (which
    differs for every target because `targetRevision` changed), then calls
-   ArgoCD's `GetManifests` API to get the fully rendered Kubernetes manifests
-   at that revision.
+   ArgoCD's `GetManifests` API to get the fully rendered Kubernetes manifests at
+   that revision.
 4. For the 4 clusters that deploy the payment chart, ArgoCD's rendered manifests
    differ from the stored hash — `HasChanges = true`.
 5. For the 16 clusters that deploy other charts from the same repo, ArgoCD
@@ -550,8 +552,8 @@ tag.
 
 ### Terraform Cloud: Infrastructure change scoped to one region
 
-A Terraform deployment manages infrastructure in 3 regions. A version changes
-an IAM policy that only applies to us-east-1.
+A Terraform deployment manages infrastructure in 3 regions. A version changes an
+IAM policy that only applies to us-east-1.
 
 1. Version `v1.5.0` is created.
 2. The reconciler triggers speculative plans for each region's release target.

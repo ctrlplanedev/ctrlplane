@@ -1,8 +1,10 @@
-# RFC 0003: Lifecycle Brackets
+---
+title: "RFC 0003: Lifecycle Brackets"
+---
 
-**Status:** Draft
-
-**Created:** 2026-03-05
+| Category | Status                            | Created    | Author        |
+| -------- | --------------------------------- | ---------- | ------------- |
+| Policies | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
 
 ## Summary
 
@@ -32,13 +34,13 @@ same node (kubelet upgrade, containerd upgrade, OS patch), each deployment today
 triggers its own independent drain/uncordon cycle because each release target is
 evaluated independently.
 
-For 3 deployments across 10 nodes, this means 30 drain cycles instead of 10.
-The overhead scales linearly with the number of bracketed deployments.
+For 3 deployments across 10 nodes, this means 30 drain cycles instead of 10. The
+overhead scales linearly with the number of bracketed deployments.
 
 ### Cluster-wide concurrency limits
 
-Only a percentage of nodes in a cluster can be offline simultaneously. If 20%
-of a 10-node cluster goes down, the remaining 8 nodes must absorb all workloads.
+Only a percentage of nodes in a cluster can be offline simultaneously. If 20% of
+a 10-node cluster goes down, the remaining 8 nodes must absorb all workloads.
 Exceeding this threshold risks cascading failures.
 
 The existing concurrency control (`ReleaseTargetConcurrencyEvaluator`) enforces
@@ -60,8 +62,8 @@ func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(
 ```
 
 This prevents overlapping jobs on the _same_ release target but provides no
-cross-resource limit. There is no way to say "at most 2 of these 10 nodes can
-be draining at once."
+cross-resource limit. There is no way to say "at most 2 of these 10 nodes can be
+draining at once."
 
 ### Why existing rules are insufficient
 
@@ -70,9 +72,9 @@ ordering. It controls _when_ each target's turn arrives but not _how many_ can
 be active simultaneously. If multiple targets' rollout times pass while earlier
 targets are still executing (e.g., a slow drain), all of them proceed at once.
 
-**Deployment dependency** checks whether an upstream deployment has succeeded for
-the same resource. It controls _ordering_ (drain before upgrade, upgrade before
-uncordon) but not _grouping_. Each deployment's policy pipeline runs
+**Deployment dependency** checks whether an upstream deployment has succeeded
+for the same resource. It controls _ordering_ (drain before upgrade, upgrade
+before uncordon) but not _grouping_. Each deployment's policy pipeline runs
 independently — there is no mechanism to hold all deployments for a resource
 until a collection of new versions is ready.
 
@@ -121,28 +123,28 @@ CREATE TABLE policy_rule_deployment_bracket (
 
 **`readiness_mode`** controls when a bracket starts executing:
 
-| Mode | Behavior |
-|---|---|
-| `collection_window` | Wait `readiness_window_seconds` after the first member version is published. Take the latest version of each member at window close. |
-| `wait_for_all` | Wait until every member deployment has a new version. Fall back to `unchanged_member_strategy` after `readiness_window_seconds` timeout. |
-| `immediate` | Proceed as soon as any member has a new version. Use latest available version for all members. |
+| Mode                | Behavior                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `collection_window` | Wait `readiness_window_seconds` after the first member version is published. Take the latest version of each member at window close.     |
+| `wait_for_all`      | Wait until every member deployment has a new version. Fall back to `unchanged_member_strategy` after `readiness_window_seconds` timeout. |
+| `immediate`         | Proceed as soon as any member has a new version. Use latest available version for all members.                                           |
 
 **`unchanged_member_strategy`** controls members with no new version when the
 window closes:
 
-| Strategy | Behavior |
-|---|---|
-| `skip_unchanged` | Only deploy members that have new versions. Others are no-ops. |
-| `redeploy_current` | Re-deploy the currently running version for all members. Useful when hooks have side effects. |
-| `require_all` | Don't close the window until all members have a new version. Fall back to `skip_unchanged` after timeout. |
+| Strategy           | Behavior                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `skip_unchanged`   | Only deploy members that have new versions. Others are no-ops.                                            |
+| `redeploy_current` | Re-deploy the currently running version for all members. Useful when hooks have side effects.             |
+| `require_all`      | Don't close the window until all members have a new version. Fall back to `skip_unchanged` after timeout. |
 
 **`overlap_strategy`** controls what happens when a new version group becomes
 ready while a previous group is still executing on a resource:
 
-| Strategy | Behavior |
-|---|---|
-| `queue` | Wait for the active group to fully complete (including post-hooks), then start a fresh cycle. Safe default. |
-| `merge` | If the resource is already in a pre-hook state (e.g., drained), deploy the new group's versions before running post-hooks. Avoids double drain cycles. |
+| Strategy | Behavior                                                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `queue`  | Wait for the active group to fully complete (including post-hooks), then start a fresh cycle. Safe default.                                            |
+| `merge`  | If the resource is already in a pre-hook state (e.g., drained), deploy the new group's versions before running post-hooks. Avoids double drain cycles. |
 
 #### Version group state
 
@@ -205,8 +207,8 @@ The `Evaluate` method performs three checks:
 
 1. **Overlap check** — if a version group is executing for this bracket +
    resource, and the candidate version is not part of that group, return
-   `Pending` (for `queue` strategy) or `Allowed` (for `merge`, if pre-hooks
-   are complete).
+   `Pending` (for `queue` strategy) or `Allowed` (for `merge`, if pre-hooks are
+   complete).
 
 2. **Collection window check** — if no active group exists, find or create a
    `bracket_version_group`. If the window hasn't closed, return `Pending` with
@@ -443,11 +445,11 @@ func EvaluatorsForPolicy(store *store.Store, rule *oapi.PolicyRule) []evaluator.
 For any release target, all evaluators must return `Allowed` for a job to be
 created. The evaluators gate at different levels:
 
-| Evaluator | Gates at | Question it answers |
-|---|---|---|
-| Deployment bracket | Version group | Are all sibling deployments ready? |
-| Gradual rollout | Resource ordering | Is it this resource's turn? |
-| Resource concurrency | Cluster capacity | Is there a concurrency slot? |
+| Evaluator             | Gates at           | Question it answers                  |
+| --------------------- | ------------------ | ------------------------------------ |
+| Deployment bracket    | Version group      | Are all sibling deployments ready?   |
+| Gradual rollout       | Resource ordering  | Is it this resource's turn?          |
+| Resource concurrency  | Cluster capacity   | Is there a concurrency slot?         |
 | Deployment dependency | Execution ordering | Have upstream deployments succeeded? |
 
 ### Pre/post hooks as deployments
@@ -630,8 +632,8 @@ using the policy selector to scope rules:
 ]
 ```
 
-Staging deploys immediately with 50% concurrency. Production waits 24 hours
-and limits to 20%. Same deployments, different operational posture.
+Staging deploys immediately with 50% concurrency. Production waits 24 hours and
+limits to 20%. Same deployments, different operational posture.
 
 ### Partial readiness
 
@@ -707,9 +709,9 @@ policies. A stuck resource holds a concurrency slot indefinitely.
 - The `policy_rule_deployment_bracket` and `policy_rule_resource_concurrency`
   tables are new. No data migration required.
 - The `bracket_version_group` and `bracket_version_group_member` tables are new.
-- The `applies_to` column on `policy_rule_deployment_dependency` is additive
-  and nullable. Existing rules have `applies_to = NULL`, preserving current
-  behavior (rule applies to all matched release targets).
+- The `applies_to` column on `policy_rule_deployment_dependency` is additive and
+  nullable. Existing rules have `applies_to = NULL`, preserving current behavior
+  (rule applies to all matched release targets).
 - The new evaluators return `nil` from their factory functions when the policy
   rule does not contain the relevant configuration, following the same pattern
   as all existing evaluators.
@@ -720,10 +722,10 @@ policies. A stuck resource holds a concurrency slot indefinitely.
 
 1. **Collection window trigger semantics.** Should the collection window start
    when the first member's version is _published_ or when the first member's
-   version _passes other policy rules_ (approval, version selector)? Starting
-   at publication is simpler but means the window runs concurrently with
-   approval — a 24h window with a 20h approval process only leaves 4h of actual
-   collection time.
+   version _passes other policy rules_ (approval, version selector)? Starting at
+   publication is simpler but means the window runs concurrently with approval —
+   a 24h window with a 20h approval process only leaves 4h of actual collection
+   time.
 
 2. **Resource concurrency counting.** Should the concurrency limit count
    resources across all deployment phases equally? A node in the uncordon phase
@@ -744,8 +746,8 @@ policies. A stuck resource holds a concurrency slot indefinitely.
    drain cycles but requires the dependency evaluator to distinguish between
    "upstream succeeded with Group A's version" and "upstream succeeded with
    Group B's version." The current evaluator checks success status but not which
-   version succeeded. This may need a version-aware dependency check for
-   merge to work correctly.
+   version succeeded. This may need a version-aware dependency check for merge
+   to work correctly.
 
 6. **Failure blast radius.** A bracket failure on one resource holds a
    concurrency slot. With 20% concurrency on a 10-node cluster, 2 stuck nodes
@@ -756,5 +758,6 @@ policies. A stuck resource holds a concurrency slot indefinitely.
 7. **Hook idempotency.** The `queue` overlap strategy runs drain → uncordon →
    drain → uncordon for consecutive groups. This assumes drain and uncordon are
    idempotent. The `merge` strategy assumes the resource remains in a drained
-   state between groups. Should the bracket rule have an explicit field declaring
-   whether hooks are idempotent and/or whether the prepared state persists?
+   state between groups. Should the bracket rule have an explicit field
+   declaring whether hooks are idempotent and/or whether the prepared state
+   persists?
