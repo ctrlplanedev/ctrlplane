@@ -727,35 +727,30 @@ policies. A stuck resource holds a concurrency slot indefinitely.
    a 24h window with a 20h approval process only leaves 4h of actual collection
    time.
 
-2. **Resource concurrency counting.** Should the concurrency limit count
-   resources across all deployment phases equally? A node in the uncordon phase
-   is nearly available. Counting it against the limit is conservative; excluding
-   it would allow higher throughput at the cost of brief over-subscription.
-
-3. **Gradual rollout interaction.** The proposal changes the hash input when a
+2. **Gradual rollout interaction.** The proposal changes the hash input when a
    bracket rule is present. This means adding or removing a bracket rule changes
    the rollout order for all targets. Should the bracket-aware hashing be opt-in
    to avoid surprising rollout order changes?
 
-4. **Bracket membership dynamism.** The `deploymentSelector` on the bracket rule
+3. **Bracket membership dynamism.** The `deploymentSelector` on the bracket rule
    is evaluated dynamically. If a new deployment is added mid-rollout that
    matches the selector, should in-progress version groups absorb it? The
    simplest behavior is to only affect future version groups.
 
-5. **Merge strategy completeness.** The `merge` overlap strategy avoids double
+4. **Merge strategy completeness.** The `merge` overlap strategy avoids double
    drain cycles but requires the dependency evaluator to distinguish between
    "upstream succeeded with Group A's version" and "upstream succeeded with
    Group B's version." The current evaluator checks success status but not which
    version succeeded. This may need a version-aware dependency check for merge
    to work correctly.
 
-6. **Failure blast radius.** A bracket failure on one resource holds a
+5. **Failure blast radius.** A bracket failure on one resource holds a
    concurrency slot. With 20% concurrency on a 10-node cluster, 2 stuck nodes
    block the entire rollout. Should there be a configurable timeout that
    auto-releases concurrency slots after a bracket has been stuck for too long,
    even if the resource is in an unknown state?
 
-7. **Hook idempotency.** The `queue` overlap strategy runs drain → uncordon →
+6. **Hook idempotency.** The `queue` overlap strategy runs drain → uncordon →
    drain → uncordon for consecutive groups. This assumes drain and uncordon are
    idempotent. The `merge` strategy assumes the resource remains in a drained
    state between groups. Should the bracket rule have an explicit field

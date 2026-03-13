@@ -1,0 +1,989 @@
+---
+title: "RFC 0005: Argo Workflows Job Agent"
+---
+
+| Category   | Status                            | Created    | Author        |
+| ---------- | --------------------------------- | ---------- | ------------- |
+| Job Agents | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
+
+## Summary
+
+Add a new `argo-workflows` job agent type that submits Argo Workflow CRDs to
+Kubernetes, templates workflow specs from the dispatch context, and monitors
+workflow execution to completion. This enables teams to use Argo Workflows as a
+native deployment execution engine within ctrlplane's promotion lifecycle.
+
+## Motivation
+
+Ctrlplane's job agent model today covers three execution patterns:
+
+- **ArgoCD** — declarative GitOps sync of Kubernetes Applications
+- **GitHub Actions** — CI-triggered workflow dispatch via the GitHub API
+- **Terraform Cloud** — speculative and apply runs via the TFC API
+
+These patterns share a common shape: ctrlplane constructs a dispatch context,
+the agent translates it into an external system call, and the external system
+reports back when done. But a significant class of deployment operations does
+not fit neatly into any of them.
+
+### The gap: orchestrated multi-step deployments
+
+Many deployment procedures involve multiple steps that must execute in sequence
+or in a DAG structure on a Kubernetes cluster:
+
+- **Database migrations** before application rollout
+- **Canary analysis** with traffic splitting, metric collection, and rollback
+- **Blue/green cutover** with health checks between steps
+- **Infrastructure provisioning** (create namespace, install CRDs, deploy app)
+- **Integration test suites** that run against a freshly deployed environment
+- **Custom scripts** (data backfixes, cache warming, feature flag toggling)
+
+Today, teams using these patterns have two options:
+
+1. **GitHub Actions** — The workflow runs outside the cluster, requiring
+   kubeconfig secrets, network access to the cluster API, and manual status
+   reporting back to ctrlplane. Multi-cluster deployments need per-cluster
+   credentials. The workflow has no native access to in-cluster resources.
+
+2. **ArgoCD sync hooks** — ArgoCD supports PreSync/Sync/PostSync hooks, but
+   these are limited to single Jobs or Pods with linear ordering. Complex DAGs,
+   conditional branching, retries with backoff, artifact passing between steps,
+   and parameterized templates are not expressible.
+
+Argo Workflows fills this gap. It is a Kubernetes-native workflow engine that
+runs inside the cluster, supports DAG and step-based orchestration, has
+first-class retry/backoff semantics, handles artifact passing between steps, and
+is already widely deployed alongside ArgoCD in GitOps environments.
+
+### Why not use GitHub Actions for everything?
+
+GitHub Actions can technically orchestrate any deployment, but it operates
+outside the cluster boundary:
+
+```text
+GitHub Actions (external)          Kubernetes cluster
+┌──────────────────────┐           ┌──────────────────────┐
+│ deploy.yml           │           │                      │
+│  step 1: migrate db ─┼──kubectl──┼─→ run migration pod  │
+│  step 2: deploy app ─┼──kubectl──┼─→ update deployment  │
+│  step 3: run tests  ─┼──kubectl──┼─→ create test pod    │
+│  step 4: report     ─┼──api─────┼─→ ctrlplane callback │
+└──────────────────────┘           └──────────────────────┘
+```
+
+Every step crosses the network boundary. This requires:
+
+- Kubeconfig or service account token stored as GitHub secrets
+- Network connectivity from GitHub's runners to the cluster API
+- Per-cluster credential management for multi-cluster deployments
+- Manual status reporting back to ctrlplane's API
+
+With Argo Workflows, the entire execution stays in-cluster:
+
+```text
+Kubernetes cluster
+┌────────────────────────────────────────┐
+│ Argo Workflow (submitted by ctrlplane) │
+│  step 1: migrate db → migration pod   │
+│  step 2: deploy app → kubectl apply   │
+│  step 3: run tests  → test pod        │
+│  status: reported via workflow CRD     │
+└────────────────────────────────────────┘
+```
+
+No external credentials. No network boundary crossings. Native access to
+in-cluster resources. Status is read from the Workflow CRD status field.
+
+### Why not extend the ArgoCD agent?
+
+ArgoCD and Argo Workflows are separate projects with different APIs, CRDs, and
+operational models:
+
+- **ArgoCD** is declarative: you describe a desired state (Application CRD) and
+  ArgoCD continuously reconciles toward it. The agent upserts an Application and
+  verifies it reaches Healthy+Synced.
+- **Argo Workflows** is imperative: you submit a workflow (Workflow CRD) and it
+  runs to completion. Each submission is a discrete execution with a start and
+  end.
+
+The dispatch lifecycle is fundamentally different. ArgoCD's `UpsertApplication`
+→ poll health model does not map to Argo Workflows' submit → watch completion
+model. Combining them in one agent would conflate two distinct execution
+semantics behind a single `argo-cd` type, making configuration confusing and
+error handling ambiguous.
+
+## Proposal
+
+### Agent type and config
+
+Register a new agent type `argo-workflows` in the workspace engine's job agent
+registry. The job agent config provides cluster access and a workflow template:
+
+```json
+{
+  "type": "argo-workflows",
+  "serverUrl": "https://argo-workflows.example.com",
+  "token": "argo-token-or-service-account",
+  "namespace": "argo",
+  "template": "apiVersion: argoproj.io/v1alpha1\nkind: Workflow\n..."
+}
+```
+
+| Field       | Required | Description                                                 |
+| ----------- | -------- | ----------------------------------------------------------- |
+| `serverUrl` | Yes      | Argo Workflows server URL (API endpoint)                    |
+| `token`     | Yes      | Bearer token or service account token for authentication    |
+| `namespace` | No       | Default namespace for workflow submission (default: `argo`) |
+| `template`  | Yes      | Go template rendering an Argo Workflow YAML                 |
+
+The `template` field follows the same pattern as the ArgoCD agent's template: a
+Go template string that receives the dispatch context and produces a valid Argo
+Workflow CRD. This is rendered at dispatch time using the `templatefuncs`
+pipeline with custom delimiters `{[` / `]}` instead of Go's default `{{` / `}}`
+(see "Template delimiters" below).
+
+### Workflow template
+
+The template renders a complete Argo Workflow spec from the dispatch context.
+The dispatch context provides deployment, environment, resource, version, and
+variable data — the same data available to all job agent templates.
+
+**Example template for a database migration + deploy workflow:**
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: deploy-{[.deployment.slug]}-
+  namespace: { [.resource.config.namespace | default "argo"] }
+  labels:
+    ctrlplane.dev/job-id: "{[.job.id]}"
+    ctrlplane.dev/deployment: "{[.deployment.slug]}"
+    ctrlplane.dev/environment: "{[.environment.name]}"
+spec:
+  entrypoint: deploy
+  serviceAccountName: argo-deployer
+  arguments:
+    parameters:
+      - name: image-tag
+        value: "{[.release.version.tag]}"
+      - name: target-namespace
+        value: "{[.resource.config.namespace]}"
+      - name: replica-count
+        value: "{[.release.variables.REPLICA_COUNT]}"
+  templates:
+    - name: deploy
+      dag:
+        tasks:
+          - name: migrate-db
+            template: run-migration
+          - name: deploy-app
+            template: apply-manifests
+            dependencies: [migrate-db]
+          - name: smoke-test
+            template: run-tests
+            dependencies: [deploy-app]
+
+    - name: run-migration
+      container:
+        image: "{[.release.variables.MIGRATION_IMAGE]}:{[.release.version.tag]}"
+        command: ["/migrate", "--target", "latest"]
+
+    - name: apply-manifests
+      container:
+        image: bitnami/kubectl:latest
+        command:
+          - kubectl
+          - set
+          - image
+          - "deployment/{[.deployment.slug]}"
+          - "app={[.release.variables.APP_IMAGE]}:{[.release.version.tag]}"
+          - "-n"
+          - "{{workflow.parameters.target-namespace}}"
+
+    - name: run-tests
+      container:
+        image: "{[.release.variables.TEST_IMAGE]}:latest"
+        command:
+          [
+            "/run-tests",
+            "--endpoint",
+            "http://{[.deployment.slug]}.{{workflow.parameters.target-namespace}}.svc",
+          ]
+      retryStrategy:
+        limit: 3
+        backoff:
+          duration: "10s"
+          factor: 2
+```
+
+### Template delimiters
+
+Argo Workflows uses `{{` / `}}` for its own parameter substitution at runtime
+(e.g., `{{workflow.parameters.target-namespace}}`). Go's `text/template` uses
+the same delimiters by default. With standard Go templates, users must escape
+every Argo expression — an error-prone and unreadable approach.
+
+Instead, ctrlplane templates use **`{[` / `]}`** as delimiters. This is a clean
+separation: `{[ ]}` is ctrlplane's template language, `{{ }}` is Argo's. Both
+coexist in the same YAML file without escaping:
+
+```yaml
+# {[ ]} — resolved by ctrlplane at dispatch time
+image: "{[.release.version.tag]}"
+
+# {{ }} — resolved by Argo Workflows at workflow runtime
+namespace: "{{workflow.parameters.target-namespace}}"
+```
+
+The `templatefuncs` package already provides a `New` function that configures
+template options. The custom delimiters are set via Go's `Delims` method:
+
+```go
+func NewWithDelims(name string) *template.Template {
+    return template.New(name).
+        Delims("{[", "]}").
+        Funcs(funcs).
+        Option("missingkey=zero")
+}
+```
+
+This delimiter change applies to **all** ctrlplane job agent templates, not just
+Argo Workflows. The ArgoCD agent benefits too — ArgoCD Application specs that
+embed Helm value overrides containing `{{ }}` expressions currently require
+escaping, and custom delimiters eliminate that. Existing templates using `{{` /
+`}}` would be migrated to `{[` / `]}` as part of this change.
+
+### Implementation
+
+#### Go types
+
+```go
+package argoworkflows
+
+type ArgoWorkflows struct {
+    setter   Setter
+    submitter WorkflowSubmitter
+}
+
+// WorkflowSubmitter submits and monitors Argo Workflows.
+type WorkflowSubmitter interface {
+    SubmitWorkflow(
+        ctx context.Context,
+        serverAddr, token, namespace string,
+        workflow *unstructured.Unstructured,
+    ) (workflowName string, err error)
+
+    GetWorkflowStatus(
+        ctx context.Context,
+        serverAddr, token, namespace, name string,
+    ) (*WorkflowStatus, error)
+}
+
+type WorkflowStatus struct {
+    Phase      string // Pending, Running, Succeeded, Failed, Error
+    Message    string
+    StartedAt  *time.Time
+    FinishedAt *time.Time
+    Nodes      map[string]NodeStatus
+}
+
+type NodeStatus struct {
+    Name      string
+    Phase     string
+    Message   string
+    StartedAt *time.Time
+    FinishedAt *time.Time
+}
+```
+
+#### Dispatchable implementation
+
+```go
+var (
+    _ types.Dispatchable = &ArgoWorkflows{}
+    _ types.Verifiable   = &ArgoWorkflows{}
+)
+
+func (a *ArgoWorkflows) Type() string {
+    return "argo-workflows"
+}
+
+func (a *ArgoWorkflows) Dispatch(ctx context.Context, job *oapi.Job) error {
+    dispatchCtx := job.DispatchContext
+    if dispatchCtx == nil {
+        return fmt.Errorf("job %s has no dispatch context", job.Id)
+    }
+
+    serverAddr, token, namespace, template, err := ParseJobAgentConfig(
+        dispatchCtx.JobAgentConfig,
+    )
+    if err != nil {
+        return fmt.Errorf("parse job agent config: %w", err)
+    }
+
+    wf, err := TemplateWorkflow(dispatchCtx, job, template)
+    if err != nil {
+        return fmt.Errorf("template workflow: %w", err)
+    }
+
+    EnsureLabels(wf, job)
+
+    go func() {
+        parentSpanCtx := trace.SpanContextFromContext(ctx)
+        asyncCtx, span := tracer.Start(context.Background(),
+            "ArgoWorkflows.AsyncDispatch",
+            trace.WithLinks(trace.Link{SpanContext: parentSpanCtx}),
+        )
+        defer span.End()
+
+        name, err := a.submitter.SubmitWorkflow(
+            asyncCtx, serverAddr, token, namespace, wf,
+        )
+        if err != nil {
+            _ = a.setter.UpdateJob(asyncCtx, job.Id,
+                oapi.JobStatusFailure,
+                fmt.Sprintf("failed to submit workflow: %s", err.Error()),
+                nil,
+            )
+            return
+        }
+
+        metadata := map[string]string{
+            "ctrlplane/links": fmt.Sprintf(
+                `{"Argo Workflow":"%s/workflows/%s/%s"}`,
+                serverAddr, namespace, name,
+            ),
+            "argo-workflows/name":      name,
+            "argo-workflows/namespace": namespace,
+        }
+        _ = a.setter.UpdateJob(asyncCtx, job.Id,
+            oapi.JobStatusInProgress, "", metadata,
+        )
+
+        a.pollUntilComplete(asyncCtx, job.Id, serverAddr, token, namespace, name)
+    }()
+
+    return nil
+}
+```
+
+#### Workflow templating
+
+The template rendering follows the same pattern as ArgoCD but uses `{[` / `]}`
+delimiters and produces an unstructured Kubernetes object instead of a typed
+Application CRD. This avoids importing Argo Workflows' full type system as a
+dependency:
+
+```go
+func TemplateWorkflow(
+    dispatchCtx *oapi.DispatchContext,
+    job *oapi.Job,
+    tmpl string,
+) (*unstructured.Unstructured, error) {
+    t, err := templatefuncs.NewWithDelims("argoWorkflowsAgentConfig").Parse(tmpl)
+    if err != nil {
+        return nil, fmt.Errorf("parse template: %w", err)
+    }
+
+    data := dispatchCtx.Map()
+    data["job"] = structToMap(job)
+
+    var buf bytes.Buffer
+    if err := t.Execute(&buf, data); err != nil {
+        return nil, fmt.Errorf("execute template: %w", err)
+    }
+
+    obj := &unstructured.Unstructured{}
+    if err := yaml.Unmarshal(buf.Bytes(), &obj.Object); err != nil {
+        return nil, fmt.Errorf("unmarshal workflow: %w", err)
+    }
+
+    if obj.GetAPIVersion() != "argoproj.io/v1alpha1" {
+        return nil, fmt.Errorf(
+            "expected apiVersion argoproj.io/v1alpha1, got %s",
+            obj.GetAPIVersion(),
+        )
+    }
+    if obj.GetKind() != "Workflow" {
+        return nil, fmt.Errorf("expected kind Workflow, got %s", obj.GetKind())
+    }
+
+    return obj, nil
+}
+
+func EnsureLabels(wf *unstructured.Unstructured, job *oapi.Job) {
+    labels := wf.GetLabels()
+    if labels == nil {
+        labels = make(map[string]string)
+    }
+    labels["ctrlplane.dev/job-id"] = job.Id
+    labels["ctrlplane.dev/managed-by"] = "ctrlplane"
+    wf.SetLabels(labels)
+}
+```
+
+#### Completion polling
+
+After submission, the agent polls the Argo Workflows API for workflow status.
+The polling follows an exponential backoff pattern capped at 30 seconds:
+
+```go
+func (a *ArgoWorkflows) pollUntilComplete(
+    ctx context.Context,
+    jobID, serverAddr, token, namespace, name string,
+) {
+    backoff := 2 * time.Second
+    maxBackoff := 30 * time.Second
+    timeout := 2 * time.Hour
+
+    deadline := time.Now().Add(timeout)
+    for time.Now().Before(deadline) {
+        select {
+        case <-ctx.Done():
+            return
+        case <-time.After(backoff):
+        }
+
+        status, err := a.submitter.GetWorkflowStatus(
+            ctx, serverAddr, token, namespace, name,
+        )
+        if err != nil {
+            backoff = min(backoff*2, maxBackoff)
+            continue
+        }
+
+        switch status.Phase {
+        case "Succeeded":
+            _ = a.setter.UpdateJob(ctx, jobID,
+                oapi.JobStatusSuccessful, "", nil)
+            return
+        case "Failed", "Error":
+            _ = a.setter.UpdateJob(ctx, jobID,
+                oapi.JobStatusFailure, status.Message, nil)
+            return
+        }
+
+        backoff = min(backoff*2, maxBackoff)
+    }
+
+    _ = a.setter.UpdateJob(ctx, jobID,
+        oapi.JobStatusFailure, "workflow timed out", nil)
+}
+```
+
+#### Verification
+
+The agent implements `Verifiable` to provide a health check that monitors the
+Workflow CRD's status. Unlike ArgoCD's continuous health check (which polls
+indefinitely because ArgoCD applications are long-lived), the Argo Workflows
+verification checks that the workflow reaches a terminal state:
+
+```go
+func (a *ArgoWorkflows) Verifications(
+    config oapi.JobAgentConfig,
+) ([]oapi.VerificationMetricSpec, error) {
+    serverAddr, ok := config["serverUrl"].(string)
+    if !ok || serverAddr == "" {
+        return nil, nil
+    }
+    token, ok := config["token"].(string)
+    if !ok || token == "" {
+        return nil, nil
+    }
+
+    baseURL := serverAddr
+    if !strings.HasPrefix(baseURL, "https://") {
+        baseURL = "https://" + baseURL
+    }
+    workflowURL := fmt.Sprintf("%s/api/v1/workflows", baseURL)
+
+    method := oapi.GET
+    timeout := "10s"
+    headers := map[string]string{
+        "Authorization": fmt.Sprintf("Bearer %s", token),
+    }
+    var provider oapi.MetricProvider
+    if err := provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+        Url:     workflowURL,
+        Method:  &method,
+        Timeout: &timeout,
+        Headers: &headers,
+        Type:    oapi.Http,
+    }); err != nil {
+        return nil, fmt.Errorf("build argo workflows health check provider: %w", err)
+    }
+
+    successThreshold := 1
+    failureCondition := "result.statusCode != 200 || result.json.status.phase == 'Failed' || result.json.status.phase == 'Error'"
+    spec := oapi.VerificationMetricSpec{
+        Name:             "argo-workflow-status",
+        IntervalSeconds:  30,
+        Count:            120,
+        SuccessThreshold: &successThreshold,
+        SuccessCondition: "result.statusCode == 200 && result.json.status.phase == 'Succeeded'",
+        FailureCondition: &failureCondition,
+        Provider:         provider,
+    }
+    return []oapi.VerificationMetricSpec{spec}, nil
+}
+```
+
+#### Cancellation
+
+When ctrlplane cancels a job, the agent should stop the Argo Workflow. The
+`WorkflowSubmitter` interface includes a stop method:
+
+```go
+type WorkflowSubmitter interface {
+    SubmitWorkflow(...) (string, error)
+    GetWorkflowStatus(...) (*WorkflowStatus, error)
+    StopWorkflow(
+        ctx context.Context,
+        serverAddr, token, namespace, name string,
+    ) error
+}
+```
+
+The stop call uses Argo Workflows'
+`PUT /api/v1/workflows/{namespace}/{name}/stop` endpoint, which terminates
+running nodes and marks the workflow as failed. This integrates with the
+existing job cancellation flow — when the reconciler transitions a job to
+`cancelled`, the agent's poll loop detects this and calls `StopWorkflow`.
+
+### Registry registration
+
+The agent is registered alongside the existing agents in the job dispatch
+controller:
+
+```go
+func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
+    // ...existing setup...
+
+    dispatcher := jobagents.NewRegistry(&PostgresGetter{})
+    dispatcher.Register(
+        argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{Queue: enqueueQueue}),
+    )
+    dispatcher.Register(testrunner.New(&PostgresSetter{Queue: enqueueQueue}))
+    dispatcher.Register(
+        github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{Queue: enqueueQueue}),
+    )
+    dispatcher.Register(
+        argoworkflows.New(
+            &argoworkflows.HTTPWorkflowSubmitter{},
+            &PostgresSetter{Queue: enqueueQueue},
+        ),
+    )
+
+    // ...rest unchanged...
+}
+```
+
+### API communication
+
+The agent communicates with Argo Workflows via its REST API rather than
+Kubernetes client-go. This matches the pattern established by the ArgoCD agent
+(which uses the ArgoCD API, not the Kubernetes API) and avoids requiring
+in-cluster access from the workspace engine:
+
+| Operation       | Method | Endpoint                                    |
+| --------------- | ------ | ------------------------------------------- |
+| Submit workflow | POST   | `/api/v1/workflows/{namespace}`             |
+| Get status      | GET    | `/api/v1/workflows/{namespace}/{name}`      |
+| Stop workflow   | PUT    | `/api/v1/workflows/{namespace}/{name}/stop` |
+| Get logs        | GET    | `/api/v1/workflows/{namespace}/{name}/log`  |
+
+The `HTTPWorkflowSubmitter` implementation makes standard HTTP calls with the
+bearer token:
+
+```go
+type HTTPWorkflowSubmitter struct{}
+
+func (s *HTTPWorkflowSubmitter) SubmitWorkflow(
+    ctx context.Context,
+    serverAddr, token, namespace string,
+    workflow *unstructured.Unstructured,
+) (string, error) {
+    body, err := json.Marshal(map[string]any{
+        "workflow": workflow.Object,
+    })
+    if err != nil {
+        return "", fmt.Errorf("marshal workflow: %w", err)
+    }
+
+    url := fmt.Sprintf("%s/api/v1/workflows/%s", serverAddr, namespace)
+    req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+    if err != nil {
+        return "", err
+    }
+    req.Header.Set("Authorization", "Bearer "+token)
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return "", fmt.Errorf("submit workflow: %w", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        respBody, _ := io.ReadAll(resp.Body)
+        return "", fmt.Errorf("submit workflow: status %d: %s",
+            resp.StatusCode, string(respBody))
+    }
+
+    var result struct {
+        Metadata struct {
+            Name string `json:"name"`
+        } `json:"metadata"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return "", fmt.Errorf("decode response: %w", err)
+    }
+
+    return result.Metadata.Name, nil
+}
+```
+
+### TRPC and UI integration
+
+#### Job agent config type
+
+Add the `argo-workflows` type to the job agent config discriminated union in the
+TRPC router:
+
+```typescript
+const jobAgentConfig = z.discriminatedUnion("type", [
+  // ...existing types...
+  z.object({
+    type: z.literal("argo-workflows"),
+    serverUrl: z.string().url(),
+    token: z.string(),
+    namespace: z.string().optional(),
+    template: z.string(),
+  }),
+]);
+```
+
+#### Deployment configuration
+
+In the Terraform provider and CLI:
+
+```hcl
+resource "ctrlplane_deployment" "api" {
+  name = "API Service"
+  slug = "api-service"
+
+  job_agent {
+    id = ctrlplane_job_agent.argo_wf.id
+
+    argo_workflows {
+      server_url = "https://argo-workflows.prod.example.com"
+      token      = var.argo_workflows_token
+      namespace  = "deployments"
+      template   = file("${path.module}/deploy-workflow.yaml")
+    }
+  }
+}
+```
+
+```yaml
+# CLI
+type: Deployment
+name: API Service
+slug: api-service
+jobAgent:
+  ref: argo-workflows-agent
+jobAgentConfig:
+  serverUrl: https://argo-workflows.prod.example.com
+  token: "${ARGO_WORKFLOWS_TOKEN}"
+  namespace: deployments
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    ...
+```
+
+### Plannable implementation (RFC 0002 integration)
+
+The Argo Workflows agent can optionally implement `Plannable` by performing a
+dry-run submission. Argo Workflows supports `--dry-run` and `--server-dry-run`
+flags that validate and render the workflow without executing it. The rendered
+output includes the fully resolved template with all parameter substitutions
+applied:
+
+```go
+func (a *ArgoWorkflows) Plan(
+    ctx context.Context,
+    dispatchCtx *oapi.DispatchContext,
+) (*types.PlanResult, error) {
+    serverAddr, token, namespace, template, err := ParseJobAgentConfig(
+        dispatchCtx.JobAgentConfig,
+    )
+    if err != nil {
+        return nil, err
+    }
+
+    wf, err := TemplateWorkflow(dispatchCtx, nil, template)
+    if err != nil {
+        return nil, err
+    }
+
+    rendered, err := json.Marshal(wf.Object)
+    if err != nil {
+        return nil, err
+    }
+
+    hash := sha256.Sum256(rendered)
+    return &types.PlanResult{
+        ContentHash: hex.EncodeToString(hash[:]),
+        HasChanges:  true,
+    }, nil
+}
+```
+
+This enables plan-based diff detection (RFC 0002) and dry-run deployment plans
+(RFC 0004) for Argo Workflows deployments. The hash comparison detects when a
+version change produces an identical workflow spec — for example, when a
+monorepo version bump only affects files unrelated to this deployment's workflow
+template.
+
+## Examples
+
+### Database migration + application deploy
+
+A deployment uses Argo Workflows to run a database migration before updating the
+application. The workflow has a DAG structure: migrate → deploy → smoke test.
+
+```yaml
+# Deployment config
+type: Deployment
+name: Payment Service
+slug: payment-service
+jobAgent:
+  ref: argo-workflows
+jobAgentConfig:
+  serverUrl: https://argo.internal.example.com
+  token: "${ARGO_TOKEN}"
+  namespace: deploy-workflows
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    metadata:
+      generateName: payment-deploy-
+      labels:
+        ctrlplane.dev/job-id: "{[.job.id]}"
+    spec:
+      entrypoint: deploy-pipeline
+      serviceAccountName: deploy-sa
+      templates:
+        - name: deploy-pipeline
+          dag:
+            tasks:
+              - name: migrate
+                template: db-migrate
+              - name: deploy
+                template: rolling-update
+                dependencies: [migrate]
+              - name: verify
+                template: smoke-test
+                dependencies: [deploy]
+
+        - name: db-migrate
+          container:
+            image: "payment-service/migrator:{[.release.version.tag]}"
+            command: ["/migrate", "up"]
+            env:
+              - name: DATABASE_URL
+                value: "{[.release.variables.DATABASE_URL]}"
+
+        - name: rolling-update
+          container:
+            image: bitnami/kubectl:latest
+            command:
+              - sh
+              - -c
+              - |
+                kubectl set image deployment/payment-service \
+                  app=payment-service:{[.release.version.tag]} \
+                  -n {[.resource.config.namespace]} \
+                  --record
+                kubectl rollout status deployment/payment-service \
+                  -n {[.resource.config.namespace]} \
+                  --timeout=300s
+
+        - name: smoke-test
+          container:
+            image: payment-service/tests:latest
+            command: ["/run-smoke-tests"]
+          retryStrategy:
+            limit: 3
+            backoff:
+              duration: "5s"
+              factor: 2
+```
+
+When version `v2.3.1` is deployed to the `us-east-1-cluster` resource in the
+`production` environment:
+
+1. Ctrlplane creates a job and dispatches to the `argo-workflows` agent.
+2. The agent renders the template with the dispatch context (version tag
+   `v2.3.1`, resource config, environment, variables).
+3. The rendered Workflow CRD is submitted to Argo Workflows at
+   `https://argo.internal.example.com`.
+4. Argo Workflows executes: migrate → deploy → smoke test.
+5. The agent polls workflow status. On `Succeeded`, it marks the ctrlplane job
+   as successful.
+6. Ctrlplane's promotion lifecycle advances to the next resource.
+
+### Canary deployment with traffic splitting
+
+A more complex workflow that performs a canary rollout with metric-based
+validation:
+
+```yaml
+# template (abbreviated)
+spec:
+  entrypoint: canary-rollout
+  templates:
+    - name: canary-rollout
+      steps:
+        - - name: deploy-canary
+            template: deploy
+            arguments:
+              parameters:
+                - name: variant
+                  value: canary
+                - name: replicas
+                  value: "1"
+        - - name: shift-traffic
+            template: traffic-split
+            arguments:
+              parameters:
+                - name: canary-weight
+                  value: "10"
+        - - name: validate-metrics
+            template: check-metrics
+        - - name: promote
+            template: deploy
+            arguments:
+              parameters:
+                - name: variant
+                  value: stable
+                - name: replicas
+                  value: "{[.release.variables.REPLICA_COUNT]}"
+        - - name: full-traffic
+            template: traffic-split
+            arguments:
+              parameters:
+                - name: canary-weight
+                  value: "0"
+```
+
+This pattern is not expressible with ArgoCD sync hooks or GitHub Actions without
+significant external tooling. Argo Workflows handles it natively.
+
+### Lifecycle bracket hooks (RFC 0003 integration)
+
+Argo Workflows is well-suited for the lifecycle hook deployments described in
+RFC 0003. A "drain" deployment can use an Argo Workflow that runs
+`kubectl drain` with proper PDB handling and timeout logic:
+
+```yaml
+# drain deployment's job agent config
+type: Deployment
+name: node-drain
+jobAgent:
+  ref: argo-workflows
+jobAgentConfig:
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    metadata:
+      generateName: drain-{[.resource.name]}-
+    spec:
+      entrypoint: drain
+      templates:
+        - name: drain
+          container:
+            image: bitnami/kubectl:latest
+            command:
+              - kubectl
+              - drain
+              - "{[.resource.name]}"
+              - --ignore-daemonsets
+              - --delete-emptydir-data
+              - --timeout=600s
+          activeDeadlineSeconds: 900
+```
+
+This gives the drain operation full workflow semantics: timeout handling, retry
+on transient failure, observable status via the Argo Workflows UI, and job
+metadata linking back to ctrlplane.
+
+## Migration
+
+- No schema changes required. The `job_agent` table already supports arbitrary
+  agent types via the `type` column.
+- The new agent type is registered in the workspace engine's controller. No
+  changes to the API, reconciler, or promotion lifecycle.
+- The `argo-workflows` type is added to the TRPC job agent config union. This is
+  an additive change — existing types are unaffected.
+- No dependency on the Argo Workflows Go SDK. The agent uses the REST API via
+  standard `net/http` and `k8s.io/apimachinery/pkg/apis/meta/v1/unstructured`
+  for CRD manipulation.
+- Existing deployments using ArgoCD are unaffected. The `argo-cd` and
+  `argo-workflows` types are fully independent.
+- **Template delimiter migration.** Changing from `{{ }}` to `{[ ]}` delimiters
+  affects all existing job agent templates. Existing ArgoCD and GitHub Actions
+  deployment configs that use `{{ }}` must be updated to `{[ ]}`. This can be
+  done in two phases: (1) add `{[ ]}` support alongside `{{ }}` with
+  auto-detection of which delimiter style is present, (2) deprecate `{{ }}`
+  after a migration window. The auto-detection checks whether the template
+  contains `{[` — if so, use `{[ ]}` delimiters; otherwise fall back to `{{ }}`.
+
+## Open Questions
+
+1. **Authentication model.** The proposal uses a bearer token for Argo Workflows
+   API access. In production, teams often use Kubernetes service account tokens
+   with RBAC, OIDC tokens via Dex, or SSO. Should the agent support multiple
+   auth methods (bearer token, kubeconfig, OIDC client credentials), or is
+   bearer token sufficient as the initial implementation with others added
+   later?
+
+2. **Workflow cleanup.** Argo Workflows supports TTL-based cleanup
+   (`ttlStrategy`) on the Workflow CRD. Should ctrlplane set a default TTL on
+   submitted workflows to prevent accumulation, or leave this to the user's
+   template? A sensible default (e.g., 24 hours) prevents resource leaks but may
+   surprise users who want to inspect completed workflows.
+
+3. **Log streaming.** The Argo Workflows API supports streaming logs from
+   individual workflow nodes. Should the agent capture and surface step-level
+   logs in ctrlplane's job detail view, or is linking to the Argo Workflows UI
+   sufficient? Log streaming adds complexity but improves observability for
+   teams that don't have direct access to the Argo Workflows dashboard.
+
+4. **Restorable semantics.** The workspace engine supports `Restorable` agents
+   that can re-establish in-flight jobs after a process restart. The Argo
+   Workflows agent should implement this by querying workflow status on restore
+   and resuming the poll loop. Should the initial implementation include restore
+   support, or is it acceptable to mark orphaned jobs as failed on restart?
+
+5. **Template validation.** The ArgoCD agent validates templates at dispatch
+   time. Should the Argo Workflows agent provide pre-submission validation
+   (e.g., via Argo's `--dry-run` API) to catch template errors before
+   submission, or is post-submission error handling sufficient?
+
+6. **Cluster-scoped vs namespaced Workflows.** Argo Workflows supports both
+   `Workflow` (namespaced) and `ClusterWorkflowTemplate` (cluster-scoped)
+   resources. The proposal only supports `Workflow`. Should `WorkflowTemplate`
+   references be supported, where the template field specifies a
+   `workflowTemplateRef` instead of inline specs? This would enable reuse of
+   pre-defined cluster workflow templates.
+
+7. **Template delimiter migration scope.** The `{[` / `]}` delimiter change
+   benefits all agents but requires migrating every existing template. Should
+   this be scoped to the Argo Workflows agent only (using a per-agent delimiter
+   config), or applied globally across all agents? A global change is cleaner
+   long-term but has a larger migration surface. The auto-detection fallback
+   mitigates breakage, but dual-delimiter support adds complexity to the
+   template engine.

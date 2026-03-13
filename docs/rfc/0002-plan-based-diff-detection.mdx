@@ -589,22 +589,13 @@ implement `Plannable`.
    to how scoped versions filter candidates. The risk is that a plan bug could
    prevent legitimate deployments.
 
-2. **How to handle plan staleness?** A plan result is a point-in-time snapshot.
-   If a resource's config changes between the plan and the actual dispatch, the
-   plan may be stale. Should plans have a TTL? Should the reconciler re-plan
-   periodically?
+2. **Cost of Plans.** Each plan consumes resources. For deployments with many
+   release targets, the plan step could generate significant API load. Should
+   planning be opt-in per deployment, or rate-limited? For deployments with many
+   release targets, the plan step could generate significant API load. Should
+   planning be opt-in per deployment, or rate-limited?
 
-3. **Cost of Terraform Cloud speculative plans.** Each plan consumes Terraform
-   Cloud resources. For deployments with many release targets, the plan step
-   could generate significant API load. Should planning be opt-in per
-   deployment, or rate-limited?
-
-4. **Should the plan run before or after variable resolution?** The current
-   proposal runs the plan after variable resolution (since the dispatch context
-   needs resolved variables). This means the plan captures variable changes too,
-   which is correct but means the plan step depends on the variable resolver.
-
-5. **Interaction with RFC 0001.** If a version has a `targetSelector` (RFC 0001)
+3. **Interaction with RFC 0001.** If a version has a `targetSelector` (RFC 0001)
    that excludes a target, should the plan still run for that target? The
    proposed order (filter by target selector, then plan) means excluded targets
    are never planned, which is efficient but means you cannot use plan results

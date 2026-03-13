@@ -709,32 +709,16 @@ this deployment type.
    be a per-deployment or per-workspace rate limit on plan requests? Should
    callers be able to scope the plan to specific environments or resources?
 
-2. **Plan caching.** If a PR is updated (new commit pushed), should the previous
-   plan results be invalidated, or should they be cached by commit SHA? Caching
-   avoids redundant external calls but risks stale results if the external state
-   changed.
-
-3. **Partial plans.** When some targets succeed and others error (e.g., ArgoCD
-   is unreachable for one cluster), should the API return partial results with
-   per-target error messages, or fail the entire plan?
-
-4. **Plan scope.** The proposal plans against all release targets. For large
+2. **Plan scope.** The proposal plans against all release targets. For large
    deployments, the caller may want to plan only for specific environments or
    resources. Should the request body accept an optional filter
    (`environmentSelector`, `resourceSelector`) to narrow the plan scope?
 
-5. **Webhook auto-trigger mapping.** The optional `pull_request` webhook handler
-   needs to map a repo to deployments. This mapping is implicit in the job agent
-   config (ArgoCD templates reference repos, GitHub Actions configs specify
-   owner/repo). Should there be an explicit deployment-to-repo mapping, or
-   should the handler infer it from agent config?
-
-6. **Diff format standardization.** ArgoCD produces YAML diffs, Terraform
+3. **Diff format standardization.** ArgoCD produces YAML diffs, Terraform
    produces HCL-style diffs. Should the `raw` field in `PlanDiff` be
    agent-specific (each agent returns its native format), or should ctrlplane
    normalize to a common diff format?
 
-7. **Cost of Terraform speculative plans.** Each plan consumes Terraform Cloud
-   compute resources. For deployments with many targets across many PRs, this
-   could become expensive. Should Terraform plans require explicit opt-in per
-   deployment?
+4. **Cost of plans.** Each plan consumes Terraform Cloud compute resources. For
+   deployments with many targets across many PRs, this could become expensive.
+   Should Terraform plans require explicit opt-in per deployment?
