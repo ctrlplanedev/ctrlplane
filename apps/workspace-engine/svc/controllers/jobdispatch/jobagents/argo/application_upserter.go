@@ -26,6 +26,7 @@ func (u *GoApplicationUpserter) UpsertApplication(
 		ServerAddr: serverAddr,
 		AuthToken:  apiKey,
 	})
+
 	if err != nil {
 		return fmt.Errorf("create ArgoCD client: %w", err)
 	}

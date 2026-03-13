@@ -1,0 +1,747 @@
+---
+title: "RFC 0009: Global Variable Sets"
+---
+
+| Category  | Status                            | Created    | Author        |
+| --------- | --------------------------------- | ---------- | ------------- |
+| Variables | <Badge color="gray">Draft</Badge> | 2026-03-13 | Justin Brooks |
+
+## Summary
+
+Add global variable sets — named, reusable collections of key-value pairs that
+can be scoped to a workspace, system, or environment and are automatically
+injected into deployment variable resolution. Variable sets eliminate the need
+to duplicate shared configuration across deployments and provide a single place
+to manage cross-cutting variables like database endpoints, feature flags, region
+metadata, and shared credentials references.
+
+## Motivation
+
+### Shared configuration is duplicated across deployments
+
+A typical workspace has configuration that spans many deployments: database
+connection strings, message queue endpoints, feature flags, regional settings,
+cloud account IDs, and API keys. Today, each deployment must define its own
+deployment variable for each of these values.
+
+Consider a workspace with 15 deployments that all need `DATABASE_URL`,
+`REDIS_URL`, `LOG_LEVEL`, and `REGION`. The operator must:
+
+1. Create 4 deployment variables on each of the 15 deployments (60 variables).
+2. For each variable, create deployment variable values with the correct
+   resource selectors to differentiate production from staging.
+3. When the staging database endpoint rotates, update the value across all 15
+   deployments individually.
+
+This is tedious, error-prone, and scales poorly. A forgotten update leaves one
+deployment pointing at a stale endpoint. There is no mechanism to express "these
+variables are the same across all deployments in this system."
+
+### No hierarchy for variable inheritance
+
+The current variable model is flat. Deployment variables live on deployments.
+Resource variables live on resources. There is no intermediate layer where an
+operator can say "all deployments in this system inherit these variables" or
+"all deployments in this workspace get these defaults unless overridden."
+
+Other deployment platforms solve this with variable groups (Azure DevOps),
+variable sets (Terraform Cloud), environment variables (Vercel), or config maps
+(Kubernetes). Ctrlplane's closest analog is resource variables, but those are
+scoped to the resource — they express "this resource has this property," not
+"this configuration should flow to all deployments targeting this resource."
+
+### Variable changes need consistent rollout
+
+When a shared value changes, the operator wants all affected deployments to
+pick up the change atomically. Today, updating 15 deployment variables is 15
+separate mutations, each triggering its own release reconciliation. There is no
+way to batch the update and have all affected release targets reconcile with the
+new values simultaneously.
+
+### The deployment variable model is the wrong abstraction for shared config
+
+Deployment variables answer the question "what configuration does this
+deployment need?" They are owned by the deployment and vary per deployment.
+Shared configuration answers a different question: "what configuration exists
+in this environment/system/workspace that multiple deployments consume?"
+
+Overloading deployment variables for shared config creates problems:
+
+- **Ownership ambiguity.** Who owns the `DATABASE_URL` deployment variable — the
+  deployment owner or the platform team that manages the database? When it lives
+  on every deployment, there is no single owner.
+- **Drift.** Without a single source of truth, values drift between deployments.
+  Deployment A gets updated, deployment B does not.
+- **Onboarding cost.** Adding a new deployment requires copying all shared
+  variables from an existing deployment. There is no template or inheritance.
+- **Audit difficulty.** Answering "which deployments use this database endpoint?"
+  requires scanning every deployment's variables.
+
+## Proposal
+
+### Variable sets as a first-class entity
+
+A **variable set** is a named collection of key-value pairs with a scope
+(workspace, system, or environment) and an optional selector that further
+narrows which release targets receive the variables. Variable sets are resolved
+during the variable evaluation phase alongside deployment variables and resource
+variables.
+
+Variable sets are **not** deployment variables. They are a separate entity with
+their own lifecycle, ownership, and API surface. They are injected into the
+variable resolution pipeline as an additional source of values, sitting between
+deployment variable defaults and deployment variable values in the resolution
+priority chain.
+
+### Schema
+
+```sql
+CREATE TABLE variable_set (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+
+    name TEXT NOT NULL,
+    description TEXT,
+
+    -- Scope determines at which level this set applies.
+    -- 'workspace' = all deployments in the workspace.
+    -- 'system' = all deployments in a specific system.
+    -- 'environment' = all deployments targeting a specific environment.
+    scope TEXT NOT NULL CHECK (scope IN ('workspace', 'system', 'environment')),
+
+    -- The entity ID for system/environment scopes. NULL for workspace scope.
+    scope_entity_id UUID,
+
+    -- Optional CEL selector for fine-grained filtering within the scope.
+    -- Evaluated against the release target context (resource, deployment,
+    -- environment metadata).
+    selector TEXT,
+
+    -- Priority for ordering when multiple sets define the same key.
+    -- Higher priority wins. Default 0.
+    priority INTEGER NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT valid_scope_entity CHECK (
+        (scope = 'workspace' AND scope_entity_id IS NULL) OR
+        (scope != 'workspace' AND scope_entity_id IS NOT NULL)
+    ),
+    CONSTRAINT unique_name_per_workspace UNIQUE (workspace_id, name)
+);
+
+CREATE INDEX idx_variable_set_workspace ON variable_set (workspace_id);
+CREATE INDEX idx_variable_set_scope ON variable_set (workspace_id, scope);
+```
+
+Each variable set contains variables:
+
+```sql
+CREATE TABLE variable_set_variable (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    variable_set_id UUID NOT NULL
+        REFERENCES variable_set(id) ON DELETE CASCADE,
+
+    key TEXT NOT NULL,
+    value JSONB NOT NULL,
+
+    -- Whether this variable is sensitive (masked in UI and API responses).
+    sensitive BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT unique_key_per_set UNIQUE (variable_set_id, key)
+);
+
+CREATE INDEX idx_variable_set_variable_set
+    ON variable_set_variable (variable_set_id);
+```
+
+The `value` column uses the same JSONB format as existing deployment variable
+values, supporting both literal values and reference values:
+
+```json
+// Literal string
+"us-east-1"
+
+// Literal number
+42
+
+// Literal boolean
+true
+
+// Reference value
+{
+    "reference": "workspace",
+    "path": ["metadata", "database_url"]
+}
+```
+
+### Resolution priority
+
+The variable resolution priority is extended to include variable sets. The
+full priority chain, from highest to lowest:
+
+1. **Resource variable** — a variable defined directly on the resource with a
+   matching key. This is the most specific override and always wins.
+2. **Deployment variable value** — a deployment variable value whose resource
+   selector matches the target resource, sorted by priority (highest first).
+3. **Variable set (environment scope)** — a variable set scoped to the
+   specific environment in the release target, sorted by set priority.
+4. **Variable set (system scope)** — a variable set scoped to the system
+   containing the deployment, sorted by set priority.
+5. **Variable set (workspace scope)** — a variable set scoped to the
+   workspace, sorted by set priority.
+6. **Deployment variable default** — the default value defined on the
+   deployment variable.
+
+This ordering follows the principle of specificity: the most specific source
+wins. Resource variables are the most specific (set on the exact resource),
+variable sets widen from environment to system to workspace, and deployment
+variable defaults are the fallback.
+
+Within the same scope level, multiple variable sets may define the same key.
+The set with the highest `priority` value wins. If two sets at the same scope
+have the same priority, the one created most recently wins (deterministic
+tiebreaker).
+
+**Only keys declared as deployment variables are resolved.** Variable sets do
+not introduce new keys into the release — they provide values for keys that
+the deployment has declared via deployment variables. A variable set with
+`DATABASE_URL = "postgres://..."` has no effect on a deployment that does not
+declare a `DATABASE_URL` deployment variable. This preserves the deployment's
+contract: the deployment declares what variables it needs, and variable sets
+(along with other sources) provide the values.
+
+### Variable manager changes
+
+The `Manager.Evaluate` method in the workspace-engine is extended to query
+variable sets after deployment variable values and before deployment variable
+defaults:
+
+```go
+func (m *Manager) Evaluate(
+    ctx context.Context,
+    releaseTarget *oapi.ReleaseTarget,
+    relatedEntities map[string][]*oapi.EntityRelation,
+) (map[string]*oapi.LiteralValue, error) {
+    ctx, span := tracer.Start(ctx, "VariableManager.Evaluate")
+    defer span.End()
+
+    resolvedVariables := make(map[string]*oapi.LiteralValue)
+
+    resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
+    if !exists {
+        return nil, fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
+    }
+    entity := relationships.NewResourceEntity(resource)
+
+    resourceVariables := m.store.Resources.Variables(releaseTarget.ResourceId)
+    deploymentVariables := m.store.Deployments.Variables(releaseTarget.DeploymentId)
+
+    // Load variable sets in scope order (environment > system > workspace).
+    variableSets := m.store.VariableSets.ForReleaseTarget(ctx, releaseTarget)
+
+    for key, deploymentVar := range deploymentVariables {
+        // 1. Resource variable
+        resolved := m.tryResolveResourceVariable(
+            ctx, key, resourceVariables, entity, relatedEntities,
+        )
+        if resolved != nil {
+            resolvedVariables[key] = resolved
+            continue
+        }
+
+        // 2. Deployment variable value (selector + priority)
+        resolved = m.tryResolveDeploymentVariableValue(
+            ctx, deploymentVar, resource, entity, relatedEntities,
+        )
+        if resolved != nil {
+            resolvedVariables[key] = resolved
+            continue
+        }
+
+        // 3. Variable sets (environment > system > workspace)
+        resolved = m.tryResolveFromVariableSets(
+            ctx, key, variableSets, entity, relatedEntities,
+        )
+        if resolved != nil {
+            resolvedVariables[key] = resolved
+            continue
+        }
+
+        // 4. Deployment variable default
+        if deploymentVar.DefaultValue != nil {
+            resolvedVariables[key] = deploymentVar.DefaultValue
+        }
+    }
+
+    return resolvedVariables, nil
+}
+```
+
+The `tryResolveFromVariableSets` method iterates through variable sets in
+scope order. Sets are pre-sorted: environment-scoped first, then system-scoped,
+then workspace-scoped. Within each scope level, sets are sorted by priority
+(descending), then by `created_at` (descending):
+
+```go
+func (m *Manager) tryResolveFromVariableSets(
+    ctx context.Context,
+    key string,
+    variableSets []*VariableSetWithVariables,
+    entity *oapi.RelatableEntity,
+    relatedEntities map[string][]*oapi.EntityRelation,
+) *oapi.LiteralValue {
+    for _, vs := range variableSets {
+        variable, exists := vs.Variables[key]
+        if !exists {
+            continue
+        }
+
+        result, err := m.store.Variables.ResolveValue(
+            ctx, entity, &variable.Value, relatedEntities,
+        )
+        if err != nil {
+            continue
+        }
+
+        return result
+    }
+
+    return nil
+}
+```
+
+### Reconciliation on variable set changes
+
+When a variable set is created, updated, or deleted, the system must
+re-evaluate all release targets that could be affected. The scope determines
+the blast radius:
+
+- **Workspace scope**: all release targets in the workspace.
+- **System scope**: all release targets for deployments in the system.
+- **Environment scope**: all release targets in the environment.
+
+If the variable set has a `selector`, only release targets matching the
+selector are re-evaluated. This is the same reconciliation pattern used when
+deployment variables change — the workspace-engine detects that variable
+inputs have changed, computes the new resolved variables, and creates a new
+release if the resolved values differ from the current release.
+
+```go
+func (w *Worker) handleVariableSetChange(
+    ctx context.Context,
+    event VariableSetChangeEvent,
+) error {
+    affectedTargets := w.store.ReleaseTargets.InScope(
+        ctx,
+        event.VariableSet.WorkspaceId,
+        event.VariableSet.Scope,
+        event.VariableSet.ScopeEntityId,
+        event.VariableSet.Selector,
+    )
+
+    for _, target := range affectedTargets {
+        w.enqueueReleaseTargetEvaluation(ctx, target)
+    }
+
+    return nil
+}
+```
+
+### API
+
+#### REST
+
+```
+POST   /v1/workspaces/{workspaceId}/variable-sets                Create a variable set
+GET    /v1/workspaces/{workspaceId}/variable-sets                List variable sets
+GET    /v1/workspaces/{workspaceId}/variable-sets/{id}           Get variable set with variables
+PATCH  /v1/workspaces/{workspaceId}/variable-sets/{id}           Update variable set metadata
+DELETE /v1/workspaces/{workspaceId}/variable-sets/{id}           Delete a variable set
+
+PUT    /v1/workspaces/{workspaceId}/variable-sets/{id}/variables Upsert variables (bulk)
+DELETE /v1/workspaces/{workspaceId}/variable-sets/{id}/variables/{key} Delete a variable
+```
+
+**Create:**
+
+```json
+POST /v1/workspaces/{workspaceId}/variable-sets
+
+{
+  "name": "production-database",
+  "description": "Database connection details for production",
+  "scope": "environment",
+  "scopeEntityId": "<prod-env-id>",
+  "priority": 10,
+  "variables": [
+    {
+      "key": "DATABASE_URL",
+      "value": "postgres://prod-db.internal:5432/app",
+      "sensitive": true
+    },
+    {
+      "key": "DATABASE_POOL_SIZE",
+      "value": 20
+    },
+    {
+      "key": "DATABASE_SSL_MODE",
+      "value": "verify-full"
+    }
+  ]
+}
+```
+
+**Upsert variables:**
+
+```json
+PUT /v1/workspaces/{workspaceId}/variable-sets/{id}/variables
+
+{
+  "variables": [
+    { "key": "DATABASE_URL", "value": "postgres://new-db.internal:5432/app", "sensitive": true },
+    { "key": "DATABASE_POOL_SIZE", "value": 25 }
+  ]
+}
+```
+
+This is a partial upsert — keys included in the request are created or updated,
+keys not included are left unchanged. To remove a key, use the DELETE endpoint.
+
+**List with scope filtering:**
+
+```
+GET /v1/workspaces/{workspaceId}/variable-sets?scope=environment&scopeEntityId=<env-id>
+```
+
+Returns all variable sets that apply to the given scope, including
+workspace-scoped sets that apply everywhere.
+
+#### tRPC
+
+```typescript
+variableSet.create
+variableSet.list
+variableSet.get
+variableSet.update
+variableSet.delete
+variableSet.upsertVariables
+variableSet.deleteVariable
+```
+
+### Terraform provider
+
+```hcl
+resource "ctrlplane_variable_set" "production_db" {
+  workspace_id = ctrlplane_workspace.main.id
+  name         = "production-database"
+  description  = "Database connection details for production"
+  scope        = "environment"
+  scope_entity_id = ctrlplane_environment.production.id
+  priority     = 10
+}
+
+resource "ctrlplane_variable_set_variable" "db_url" {
+  variable_set_id = ctrlplane_variable_set.production_db.id
+  key             = "DATABASE_URL"
+  literal_value   = "postgres://prod-db.internal:5432/app"
+  sensitive       = true
+}
+
+resource "ctrlplane_variable_set_variable" "db_pool" {
+  variable_set_id = ctrlplane_variable_set.production_db.id
+  key             = "DATABASE_POOL_SIZE"
+  literal_value   = "20"
+}
+```
+
+### UI
+
+#### Variable sets management page
+
+A new page at `/workspaces/{id}/settings/variable-sets` lists all variable sets
+in the workspace:
+
+| Name                 | Scope       | Target          | Variables | Priority |
+| -------------------- | ----------- | --------------- | --------- | -------- |
+| production-database  | Environment | production      | 3         | 10       |
+| staging-database     | Environment | staging         | 3         | 10       |
+| shared-feature-flags | Workspace   | All deployments | 8         | 0        |
+| payment-system-config| System      | payment         | 5         | 5        |
+
+Clicking a variable set opens an editor showing:
+
+- Name, description, scope, priority.
+- A table of variables with key, value (masked if sensitive), and actions.
+- An "Add variable" form.
+- A "Used by" section showing which deployments declare variables with matching
+  keys and would receive values from this set.
+
+#### Variable resolution preview
+
+The deployment detail page gains a "Variable Resolution" panel that shows, for
+each deployment variable, where its value comes from for a selected resource:
+
+| Variable         | Value                                | Source                      |
+| ---------------- | ------------------------------------ | --------------------------- |
+| DATABASE_URL     | `postgres://prod-db.internal:5432/…` | Variable Set: production-db |
+| REPLICA_COUNT    | `5`                                  | Deployment Variable Value   |
+| LOG_LEVEL        | `info`                               | Variable Set: defaults      |
+| FEATURE_NEW_UI   | `true`                               | Resource Variable           |
+| CACHE_TTL        | `300`                                | Deployment Variable Default |
+
+This makes the resolution chain visible and debuggable. Each source is a link
+to the entity that provided the value.
+
+#### System and environment detail pages
+
+The system detail page and environment detail page show variable sets scoped
+to them, with a quick-add button to create a new set at that scope.
+
+## Examples
+
+### Shared database configuration
+
+A platform team manages database endpoints. They create variable sets per
+environment:
+
+```bash
+# Production database config
+curl -X POST ".../workspaces/{id}/variable-sets" \
+  -d '{
+    "name": "production-database",
+    "scope": "environment",
+    "scopeEntityId": "<prod-env-id>",
+    "priority": 10,
+    "variables": [
+      { "key": "DATABASE_URL", "value": "postgres://prod-db:5432/app", "sensitive": true },
+      { "key": "DATABASE_POOL_SIZE", "value": 20 },
+      { "key": "DATABASE_SSL_MODE", "value": "verify-full" }
+    ]
+  }'
+
+# Staging database config
+curl -X POST ".../workspaces/{id}/variable-sets" \
+  -d '{
+    "name": "staging-database",
+    "scope": "environment",
+    "scopeEntityId": "<staging-env-id>",
+    "priority": 10,
+    "variables": [
+      { "key": "DATABASE_URL", "value": "postgres://staging-db:5432/app", "sensitive": true },
+      { "key": "DATABASE_POOL_SIZE", "value": 5 },
+      { "key": "DATABASE_SSL_MODE", "value": "prefer" }
+    ]
+  }'
+```
+
+Every deployment that declares a `DATABASE_URL` deployment variable
+automatically receives the correct value based on which environment the
+release target is in. When the production database endpoint changes, the
+operator updates one variable set and all deployments pick up the change.
+
+### Workspace-wide defaults
+
+A workspace admin sets sensible defaults that apply everywhere:
+
+```bash
+curl -X POST ".../workspaces/{id}/variable-sets" \
+  -d '{
+    "name": "workspace-defaults",
+    "scope": "workspace",
+    "priority": 0,
+    "variables": [
+      { "key": "LOG_LEVEL", "value": "info" },
+      { "key": "METRICS_ENABLED", "value": true },
+      { "key": "OTEL_EXPORTER_ENDPOINT", "value": "https://otel.internal:4317" }
+    ]
+  }'
+```
+
+Individual deployments can override these by setting deployment variable values
+or deployment variable defaults, which have higher priority. A deployment that
+needs `LOG_LEVEL=debug` sets its own deployment variable value — the
+workspace-wide default is ignored for that deployment.
+
+### System-specific configuration
+
+A payment system has configuration shared across its deployments (payment-api,
+payment-worker, payment-webhook):
+
+```bash
+curl -X POST ".../workspaces/{id}/variable-sets" \
+  -d '{
+    "name": "payment-system-config",
+    "scope": "system",
+    "scopeEntityId": "<payment-system-id>",
+    "priority": 5,
+    "variables": [
+      { "key": "STRIPE_API_VERSION", "value": "2025-12-01" },
+      { "key": "PAYMENT_TIMEOUT_MS", "value": 30000 },
+      { "key": "IDEMPOTENCY_KEY_TTL", "value": 86400 }
+    ]
+  }'
+```
+
+All three deployments in the payment system receive these variables without
+any per-deployment configuration.
+
+### Layered overrides
+
+Multiple variable sets at different scopes can coexist. The resolution
+chain handles precedence naturally:
+
+```
+Workspace set (priority 0):   LOG_LEVEL = "warn"
+System set (priority 5):      LOG_LEVEL = "info"
+Environment set (priority 10): LOG_LEVEL = "debug"
+```
+
+For a release target in the matching environment, the environment-scoped set
+wins (it is more specific). For a release target in a different environment
+within the same system, the system-scoped set provides `LOG_LEVEL = "info"`.
+For a release target in a different system entirely, the workspace-scoped set
+provides `LOG_LEVEL = "warn"`.
+
+If a resource has a resource variable `LOG_LEVEL = "trace"`, that overrides
+everything — resource variables are always the highest priority.
+
+### Variable set with selector
+
+A variable set can be further narrowed with a CEL selector:
+
+```bash
+curl -X POST ".../workspaces/{id}/variable-sets" \
+  -d '{
+    "name": "gpu-cluster-config",
+    "scope": "workspace",
+    "selector": "resource.metadata[\"gpu_enabled\"] == \"true\"",
+    "priority": 10,
+    "variables": [
+      { "key": "GPU_MEMORY_LIMIT", "value": "16Gi" },
+      { "key": "CUDA_VERSION", "value": "12.4" }
+    ]
+  }'
+```
+
+Only release targets whose resource has `gpu_enabled: true` in metadata
+receive these variables. Other release targets are unaffected.
+
+## Migration
+
+- The `variable_set` and `variable_set_variable` tables are new. No data
+  migration required.
+- Existing deployment variables, resource variables, and their resolution logic
+  are unchanged. The variable set layer is additive.
+- The workspace-engine's variable manager gains a new resolution step between
+  deployment variable values and deployment variable defaults. Existing
+  resolution behavior is preserved — variable sets only provide values when
+  higher-priority sources (resource variables, deployment variable values) do
+  not.
+- No changes to existing API endpoints. New endpoints are additive.
+
+## Open Questions
+
+1. **Variable set assignment vs. scope-based matching.** The current proposal
+   uses scope-based matching: a variable set with `scope = environment` and
+   `scope_entity_id = <prod>` automatically applies to all release targets in
+   production. An alternative is explicit assignment: the operator attaches
+   variable sets to deployments, systems, or environments manually. Assignment
+   gives more control but requires more configuration. Scope-based matching is
+   simpler but less flexible. Should we support both?
+
+2. **Key collision across sets.** When two variable sets at the same scope level
+   define the same key, priority determines the winner. Should collisions be
+   surfaced as warnings in the UI? Should there be a strict mode that rejects
+   ambiguous resolutions?
+
+3. **Sensitive variable handling.** The `sensitive` flag masks values in the UI
+   and API list responses. Should sensitive variables also be excluded from
+   audit logs? Should they require a separate permission to read the plaintext
+   value? How does this interact with the secret provider integration from
+   RFC 0006?
+
+4. **Variable set versioning.** Should variable sets support versioning or
+   change history? When a variable is updated, should the system record the
+   previous value for audit purposes? This adds complexity but is valuable
+   for debugging "what changed."
+
+5. **Bulk update atomicity.** When updating multiple variables in a set, should
+   the operation be atomic (all-or-nothing)? The current proposal uses upsert
+   semantics where each key is updated independently. An atomic bulk update
+   would prevent partial updates but requires transactional semantics.
+
+6. **Cross-workspace variable sets.** Should variable sets be shareable across
+   workspaces? This is relevant for organizations with multiple workspaces that
+   share infrastructure. The current proposal scopes sets to a single workspace.
+
+7. **Interaction with variable set selectors and deployment variable
+   selectors.** A variable set with a selector and a deployment variable value
+   with a resource selector are conceptually similar. Should we unify the
+   filtering mechanism or keep them separate?
+
+## Future Considerations
+
+### Variable set templates
+
+Pre-built variable set templates for common patterns:
+
+- **Cloud provider defaults**: AWS region, account ID, VPC settings.
+- **Observability stack**: OTEL endpoints, log levels, metrics configuration.
+- **Database connection**: URL, pool size, SSL mode, timeout.
+
+Templates could be shared across workspaces or published as community
+templates.
+
+### Environment cloning
+
+When creating a new environment (e.g., a new staging environment for a feature
+branch), variable sets scoped to a reference environment could be cloned
+automatically with modified values. This supports dynamic environment workflows
+where environments are created and destroyed frequently.
+
+### Secret provider integration
+
+RFC 0006 proposes secret provider integration for resolving secrets from
+external stores (Vault, AWS Secrets Manager, etc.). Variable sets are a natural
+place to reference external secrets:
+
+```json
+{
+  "key": "DATABASE_PASSWORD",
+  "value": {
+    "secretRef": {
+      "provider": "vault",
+      "path": "secret/data/production/database",
+      "key": "password"
+    }
+  },
+  "sensitive": true
+}
+```
+
+The variable resolution pipeline would resolve the secret reference at
+evaluation time, fetching the current value from the secret provider. This
+keeps secrets out of the database while allowing variable sets to manage
+which secrets each deployment receives.
+
+### Variable set policies
+
+Policies could enforce rules on variable sets:
+
+- **Required variables**: a policy that denies deployment if certain keys are
+  not provided by any variable set (e.g., "all deployments must have
+  `LOG_LEVEL` defined").
+- **Value constraints**: a policy that validates variable values against a
+  schema (e.g., "`DATABASE_POOL_SIZE` must be between 1 and 100").
+- **Sensitive enforcement**: a policy that requires certain keys to be marked
+  sensitive (e.g., any key containing `PASSWORD`, `SECRET`, or `TOKEN`).
+
+### Variable set drift detection
+
+Detect and alert when variable sets that should be consistent across
+environments have diverged. For example, if the staging and production database
+variable sets should have the same keys (but different values), drift detection
+would flag when production has a key that staging does not. This prevents
+configuration gaps from reaching production.

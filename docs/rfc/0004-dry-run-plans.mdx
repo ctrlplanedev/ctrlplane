@@ -244,17 +244,71 @@ differs because `targetRevision` changes). The actual diff lives in the
 Kubernetes manifests that ArgoCD produces after fetching the git repo and
 rendering the Helm chart or kustomize overlay.
 
-The `Plan` implementation:
+The `Plan` implementation uses a **temporary Application** strategy. Calling
+`GetManifests` on the existing Application only overrides the revision — it does
+not pick up changes to Helm values, parameters, kustomize patches, or any other
+spec field derived from deployment variables. To get a fully accurate manifest
+diff for _any_ kind of change (revision, variables, config), the agent creates a
+short-lived Application with auto-sync disabled, waits for ArgoCD to render
+manifests for it, fetches those manifests, then cleans it up.
 
-1. Renders the Application CRD from the dispatch context (same as dispatch
-   time).
-2. Calls ArgoCD's `GetManifests` API with the proposed `targetRevision` to get
-   the fully rendered Kubernetes manifests.
-3. Calls ArgoCD's `GetManifests` API for the currently deployed revision (or
-   reads the live manifest set from the existing Application).
-4. Computes a per-resource unified diff between the two manifest sets.
+The flow:
+
+1. Renders the proposed Application CRD from the dispatch context (same as
+   dispatch time). This CRD reflects all variable and config changes.
+2. Strips any auto-sync policy and sets the sync policy to manual, so the
+   temporary Application will never deploy to the cluster.
+3. Creates the temporary Application in ArgoCD with a deterministic plan-scoped
+   name (e.g., `<original-name>-plan-<short-hash>`).
+4. Waits for ArgoCD to compute the desired manifests for the temporary
+   Application. ArgoCD fetches the git repo, renders Helm/kustomize with the
+   full proposed spec (including new values, parameters, revisions), and
+   populates the manifest cache.
+5. Calls `GetManifests` on the temporary Application to retrieve the fully
+   rendered proposed manifests.
+6. Calls `GetManifests` on the original Application to retrieve the current
+   manifests.
+7. Deletes the temporary Application.
+8. Computes a per-resource unified diff between the two manifest sets.
+
+**Multi-source Applications.** ArgoCD v2.6+ supports `spec.sources` (plural) for
+Applications that pull from multiple Git repos or Helm charts (e.g., a chart
+from one repo and values from another). Because the temporary Application is
+created from the full rendered spec, multi-source applications are handled
+naturally — the proposed spec's `sources` list (with all target revisions) is
+preserved as-is.
 
 ```go
+const (
+    planLabelKey      = "ctrlplane.dev/plan"
+    planCreatedAtKey  = "ctrlplane.dev/plan-created-at"
+    planTTL           = 10 * time.Minute
+)
+
+func planAppName(originalName string) string {
+    h := sha256.Sum256([]byte(originalName + time.Now().String()))
+    return fmt.Sprintf("%s-plan-%s", originalName, hex.EncodeToString(h[:4]))
+}
+
+func prepareTmpApp(app *v1alpha1.Application, tmpName string) *v1alpha1.Application {
+    tmp := app.DeepCopy()
+    tmp.Name = tmpName
+    tmp.ResourceVersion = ""
+
+    if tmp.Labels == nil {
+        tmp.Labels = map[string]string{}
+    }
+    tmp.Labels[planLabelKey] = "true"
+    if tmp.Annotations == nil {
+        tmp.Annotations = map[string]string{}
+    }
+    tmp.Annotations[planCreatedAtKey] = time.Now().UTC().Format(time.RFC3339)
+
+    tmp.Spec.SyncPolicy = &v1alpha1.SyncPolicy{Automated: nil}
+    tmp.Operation = nil
+    return tmp
+}
+
 func (a *ArgoApplication) Plan(
     ctx context.Context,
     dispatchCtx *oapi.DispatchContext,
@@ -266,11 +320,11 @@ func (a *ArgoApplication) Plan(
         return nil, err
     }
 
-    app, err := TemplateApplication(dispatchCtx, template)
+    proposedApp, err := TemplateApplication(dispatchCtx, template)
     if err != nil {
         return nil, err
     }
-    MakeApplicationK8sCompatible(app)
+    MakeApplicationK8sCompatible(proposedApp)
 
     client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
         ServerAddr: serverAddr,
@@ -285,33 +339,132 @@ func (a *ArgoApplication) Plan(
     }
     defer ioCloser.Close()
 
-    proposedRevision := app.Spec.Source.TargetRevision
+    originalName := proposedApp.Name
+    tmpName := planAppName(originalName)
+    tmpApp := prepareTmpApp(proposedApp, tmpName)
 
-    // Get proposed manifests (ArgoCD fetches git, renders Helm/kustomize)
+    upsert := true
+    _, err = appClient.Create(ctx, &argocdapplication.ApplicationCreateRequest{
+        Application: tmpApp,
+        Upsert:      &upsert,
+    })
+    if err != nil {
+        return nil, fmt.Errorf("create temporary plan application: %w", err)
+    }
+    defer func() {
+        cascade := false
+        _, _ = appClient.Delete(ctx, &argocdapplication.ApplicationDeleteRequest{
+            Name:    &tmpName,
+            Cascade: &cascade,
+        })
+    }()
+
+    if err := waitForManifests(ctx, appClient, tmpName); err != nil {
+        return nil, fmt.Errorf("wait for temporary app manifests: %w", err)
+    }
+
     proposedManifests, err := appClient.GetManifests(ctx,
-        &argocdapplication.ApplicationManifestQuery{
-            Name:     &app.Name,
-            Revision: &proposedRevision,
-        },
+        &argocdapplication.ApplicationManifestQuery{Name: &tmpName},
     )
     if err != nil {
         return nil, fmt.Errorf("get proposed manifests: %w", err)
     }
 
-    // Get current manifests (what is currently deployed/desired)
     currentManifests, err := appClient.GetManifests(ctx,
-        &argocdapplication.ApplicationManifestQuery{
-            Name: &app.Name,
-        },
+        &argocdapplication.ApplicationManifestQuery{Name: &originalName},
     )
     if err != nil {
-        // First deploy — no current state, everything is an add
         return buildAddAllResult(proposedManifests)
     }
 
     return diffManifestSets(currentManifests.Manifests, proposedManifests.Manifests)
 }
 ```
+
+The `waitForManifests` helper polls the temporary Application until ArgoCD
+reports a non-empty manifest set or the context deadline expires:
+
+```go
+func waitForManifests(
+    ctx context.Context,
+    appClient argocdapplication.ApplicationServiceClient,
+    name string,
+) error {
+    ticker := time.NewTicker(2 * time.Second)
+    defer ticker.Stop()
+    for {
+        select {
+        case <-ctx.Done():
+            return ctx.Err()
+        case <-ticker.C:
+            resp, err := appClient.GetManifests(ctx,
+                &argocdapplication.ApplicationManifestQuery{Name: &name},
+            )
+            if err != nil {
+                continue
+            }
+            if len(resp.Manifests) > 0 {
+                return nil
+            }
+        }
+    }
+}
+```
+
+**Cleanup guarantees.** The temporary Application is deleted in a `defer` with
+`cascade: false` (the Application never synced, so there are no cluster
+resources to remove). If the agent crashes before cleanup, orphaned Applications
+remain in ArgoCD. ArgoCD has no native TTL mechanism for Applications — cleanup
+of orphans is ctrlplane's responsibility.
+
+Every temporary Application is labelled `ctrlplane.dev/plan: "true"` and
+annotated with `ctrlplane.dev/plan-created-at: <RFC3339 timestamp>`. A
+background goroutine in the workspace engine periodically lists Applications
+matching the plan label, parses the created-at annotation, and deletes any older
+than `planTTL` (default 10 minutes):
+
+```go
+func (gc *PlanAppGC) Run(ctx context.Context) {
+    ticker := time.NewTicker(1 * time.Minute)
+    defer ticker.Stop()
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            gc.cleanup(ctx)
+        }
+    }
+}
+
+func (gc *PlanAppGC) cleanup(ctx context.Context) {
+    selector := fmt.Sprintf("%s=true", planLabelKey)
+    apps, err := gc.appClient.List(ctx, &argocdapplication.ApplicationQuery{
+        Selector: &selector,
+    })
+    if err != nil {
+        log.Warn("plan GC: list failed", "error", err)
+        return
+    }
+    for _, app := range apps.Items {
+        createdAt, err := time.Parse(time.RFC3339, app.Annotations[planCreatedAtKey])
+        if err != nil || time.Since(createdAt) < planTTL {
+            continue
+        }
+        cascade := false
+        name := app.Name
+        _, _ = gc.appClient.Delete(ctx, &argocdapplication.ApplicationDeleteRequest{
+            Name:    &name,
+            Cascade: &cascade,
+        })
+        log.Info("plan GC: deleted orphaned plan app", "name", name,
+            "age", time.Since(createdAt))
+    }
+}
+```
+
+The GC runs per ArgoCD server. When the workspace engine starts, it registers a
+`PlanAppGC` instance for each configured ArgoCD connection.
 
 The `diffManifestSets` function parses each manifest as a Kubernetes resource,
 matches resources by `apiVersion/kind/namespace/name`, and produces a
@@ -722,3 +875,16 @@ this deployment type.
 4. **Cost of plans.** Each plan consumes Terraform Cloud compute resources. For
    deployments with many targets across many PRs, this could become expensive.
    Should Terraform plans require explicit opt-in per deployment?
+
+5. **Temporary Application permissions.** Creating and deleting Applications
+   requires write access to the ArgoCD API. Some teams restrict Application
+   creation to specific ArgoCD projects or RBAC roles. Should the plan
+   Application be created in a dedicated ArgoCD project (e.g.,
+   `ctrlplane-plans`) with limited permissions, or inherit the project from the
+   original Application?
+
+6. **ArgoCD rendering latency.** After creating the temporary Application, the
+   agent polls until ArgoCD renders manifests. For large Helm charts or slow git
+   repos this could take significant time. Should there be a configurable
+   timeout per agent, and how should the plan endpoint report rendering timeouts
+   vs. real errors?
