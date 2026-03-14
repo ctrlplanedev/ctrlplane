@@ -65,6 +65,30 @@ func (m *mockUpserter) UpsertApplication(
 	return m.err
 }
 
+type mockDeleter struct {
+	mu    sync.Mutex
+	calls []string
+	err   error
+}
+
+func (m *mockDeleter) DeleteApplication(
+	_ context.Context,
+	_, _, name string,
+) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.calls = append(m.calls, name)
+	return m.err
+}
+
+func (m *mockDeleter) getCalls() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]string, len(m.calls))
+	copy(out, m.calls)
+	return out
+}
+
 type mockManifestGetter struct {
 	fn func(ctx context.Context, serverAddr, apiKey, appName string) ([]string, error)
 }
@@ -102,14 +126,14 @@ func testJob() *oapi.Job {
 // --- tests ---
 
 func TestType(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
 	assert.Equal(t, "argo-cd", a.Type())
 }
 
 func TestDispatch_Success(t *testing.T) {
 	setter := &mockSetter{}
 	upserter := &mockUpserter{}
-	a := New(upserter, setter, &mockManifestGetter{})
+	a := New(upserter, &mockDeleter{}, setter, &mockManifestGetter{})
 
 	err := a.Dispatch(context.Background(), testJob())
 	require.NoError(t, err)
@@ -127,7 +151,7 @@ func TestDispatch_Success(t *testing.T) {
 func TestDispatch_UpsertFailure(t *testing.T) {
 	setter := &mockSetter{}
 	upserter := &mockUpserter{err: fmt.Errorf("connection refused")}
-	a := New(upserter, setter, &mockManifestGetter{})
+	a := New(upserter, &mockDeleter{}, setter, &mockManifestGetter{})
 
 	err := a.Dispatch(context.Background(), testJob())
 	require.NoError(t, err)
@@ -142,7 +166,7 @@ func TestDispatch_UpsertFailure(t *testing.T) {
 }
 
 func TestDispatch_BadConfig(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
 	job := testJob()
 	job.DispatchContext.JobAgentConfig = oapi.JobAgentConfig{}
 
@@ -252,7 +276,7 @@ func TestBuildArgoLinks(t *testing.T) {
 }
 
 func TestVerifications_ValidConfig(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
 	config := oapi.JobAgentConfig{
 		"serverUrl": "argocd.example.com",
 		"apiKey":    "test-token",
@@ -267,14 +291,14 @@ func TestVerifications_ValidConfig(t *testing.T) {
 }
 
 func TestVerifications_MissingServerUrl(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
 	specs, err := a.Verifications(oapi.JobAgentConfig{"apiKey": "token"})
 	require.NoError(t, err)
 	assert.Nil(t, specs)
 }
 
 func TestVerifications_MissingApiKey(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
 	specs, err := a.Verifications(oapi.JobAgentConfig{"serverUrl": "addr"})
 	require.NoError(t, err)
 	assert.Nil(t, specs)
@@ -303,6 +327,7 @@ func TestPlan_HasChanges(t *testing.T) {
 
 	a := New(
 		&mockUpserter{},
+		&mockDeleter{},
 		&mockSetter{},
 		planManifestGetter(current, proposed),
 	)
@@ -320,6 +345,7 @@ func TestPlan_NoChanges(t *testing.T) {
 
 	a := New(
 		&mockUpserter{},
+		&mockDeleter{},
 		&mockSetter{},
 		planManifestGetter(manifests, manifests),
 	)
@@ -343,6 +369,7 @@ func TestPlan_MultipleManifests(t *testing.T) {
 
 	a := New(
 		&mockUpserter{},
+		&mockDeleter{},
 		&mockSetter{},
 		planManifestGetter(current, proposed),
 	)
@@ -360,6 +387,7 @@ func TestPlan_ContentHashDeterministic(t *testing.T) {
 
 	a := New(
 		&mockUpserter{},
+		&mockDeleter{},
 		&mockSetter{},
 		planManifestGetter(current, proposed),
 	)
@@ -374,7 +402,7 @@ func TestPlan_ContentHashDeterministic(t *testing.T) {
 }
 
 func TestPlan_BadConfig(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
 	dctx := testDispatchCtx()
 	dctx.JobAgentConfig = oapi.JobAgentConfig{}
 
@@ -385,6 +413,7 @@ func TestPlan_BadConfig(t *testing.T) {
 func TestPlan_UpsertFailure(t *testing.T) {
 	a := New(
 		&mockUpserter{err: fmt.Errorf("conflict")},
+		&mockDeleter{},
 		&mockSetter{},
 		&mockManifestGetter{},
 	)
@@ -403,7 +432,7 @@ func TestPlan_GetProposedManifestsFailure(t *testing.T) {
 			return []string{"manifest"}, nil
 		},
 	}
-	a := New(&mockUpserter{}, &mockSetter{}, getter)
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -423,7 +452,7 @@ func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
 			return nil, fmt.Errorf("current app not found")
 		},
 	}
-	a := New(&mockUpserter{}, &mockSetter{}, getter)
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
 
 	_, err := a.Plan(context.Background(), testDispatchCtx())
 	require.Error(t, err)
@@ -436,7 +465,7 @@ func TestPlan_WaitForManifestsTimeout(t *testing.T) {
 			return nil, nil
 		},
 	}
-	a := New(&mockUpserter{}, &mockSetter{}, getter)
+	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -444,4 +473,86 @@ func TestPlan_WaitForManifestsTimeout(t *testing.T) {
 	_, err := a.Plan(ctx, testDispatchCtx())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "wait for temporary app manifests")
+}
+
+func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {
+	current := []string{`{"kind":"Deployment"}`}
+	proposed := []string{`{"kind":"Deployment","spec":{"replicas":2}}`}
+	deleter := &mockDeleter{}
+
+	a := New(
+		&mockUpserter{},
+		deleter,
+		&mockSetter{},
+		planManifestGetter(current, proposed),
+	)
+
+	_, err := a.Plan(context.Background(), testDispatchCtx())
+	require.NoError(t, err)
+
+	calls := deleter.getCalls()
+	require.Len(t, calls, 1)
+	assert.Contains(t, calls[0], "-plan-")
+}
+
+func TestPlan_DeletesTemporaryAppOnManifestError(t *testing.T) {
+	deleter := &mockDeleter{}
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
+			if strings.Contains(appName, "-plan-") {
+				return []string{"proposed"}, nil
+			}
+			return nil, fmt.Errorf("current app not found")
+		},
+	}
+
+	a := New(&mockUpserter{}, deleter, &mockSetter{}, getter)
+
+	_, err := a.Plan(context.Background(), testDispatchCtx())
+	require.Error(t, err)
+
+	calls := deleter.getCalls()
+	require.Len(t, calls, 1)
+	assert.Contains(t, calls[0], "-plan-")
+}
+
+func TestPlan_DeleteNotCalledOnUpsertFailure(t *testing.T) {
+	deleter := &mockDeleter{}
+	a := New(
+		&mockUpserter{err: fmt.Errorf("conflict")},
+		deleter,
+		&mockSetter{},
+		&mockManifestGetter{},
+	)
+
+	_, err := a.Plan(context.Background(), testDispatchCtx())
+	require.Error(t, err)
+	assert.Empty(t, deleter.getCalls())
+}
+
+func TestIsRetryableError(t *testing.T) {
+	tests := []struct {
+		name      string
+		err       error
+		retryable bool
+	}{
+		{"nil error", nil, false},
+		{"502", fmt.Errorf("server returned 502"), true},
+		{"503", fmt.Errorf("503 Service Unavailable"), true},
+		{"504", fmt.Errorf("504 Gateway Timeout"), true},
+		{"connection refused", fmt.Errorf("connection refused"), true},
+		{"connection reset", fmt.Errorf("connection reset by peer"), true},
+		{"timeout", fmt.Errorf("request timeout"), true},
+		{"temporarily unavailable", fmt.Errorf("service temporarily unavailable"), true},
+		{"EOF", fmt.Errorf("unexpected EOF"), true},
+		{"Unavailable", fmt.Errorf("Unavailable"), true},
+		{"not found", fmt.Errorf("application not found"), false},
+		{"permission denied", fmt.Errorf("permission denied"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.retryable, isRetryableError(tt.err))
+		})
+	}
 }

@@ -88,6 +88,35 @@ func isRetryableError(err error) bool {
 		strings.Contains(errStr, "Unavailable")
 }
 
+// GoApplicationDeleter is the production implementation of
+// ApplicationDeleter that calls the ArgoCD API.
+type GoApplicationDeleter struct{}
+
+func (d *GoApplicationDeleter) DeleteApplication(
+	ctx context.Context,
+	serverAddr, apiKey, name string,
+) error {
+	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
+		ServerAddr: serverAddr,
+		AuthToken:  apiKey,
+	})
+	if err != nil {
+		return fmt.Errorf("create ArgoCD client: %w", err)
+	}
+	ioCloser, appClient, err := client.NewApplicationClient()
+	if err != nil {
+		return fmt.Errorf("create ArgoCD application client: %w", err)
+	}
+	defer ioCloser.Close()
+
+	cascade := true
+	_, err = appClient.Delete(ctx, &argocdapplication.ApplicationDeleteRequest{
+		Name:    &name,
+		Cascade: &cascade,
+	})
+	return err
+}
+
 // GoManifestGetter is the production implementation of ManifestGetter
 // that calls the ArgoCD API.
 type GoManifestGetter struct{}

@@ -5,12 +5,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	"github.com/avast/retry-go"
+	"github.com/charmbracelet/log"
 )
 
 const (
@@ -58,6 +61,7 @@ func (a *ArgoApplication) Plan(
 	if err != nil {
 		return nil, err
 	}
+
 	MakeApplicationK8sCompatible(proposedApp)
 
 	originalName := proposedApp.Name
@@ -67,6 +71,11 @@ func (a *ArgoApplication) Plan(
 	if err := a.upserter.UpsertApplication(ctx, serverAddr, apiKey, tmpApp); err != nil {
 		return nil, fmt.Errorf("create temporary plan application: %w", err)
 	}
+	defer func() {
+		if err := a.deleter.DeleteApplication(context.Background(), serverAddr, apiKey, tmpName); err != nil {
+			log.Warn("Failed to delete temporary plan application", "app", tmpName, "error", err)
+		}
+	}()
 
 	if err := a.waitForManifests(ctx, serverAddr, apiKey, tmpName); err != nil {
 		return nil, fmt.Errorf("wait for temporary app manifests: %w", err)
@@ -82,8 +91,12 @@ func (a *ArgoApplication) Plan(
 		return nil, fmt.Errorf("get current manifests: %w", err)
 	}
 
+	sort.Strings(currentManifests)
+	sort.Strings(proposedManifests)
+
 	current := strings.Join(currentManifests, "---\n")
 	proposed := strings.Join(proposedManifests, "---\n")
+
 	hasChanges := current != proposed
 	contentHash := sha256.Sum256([]byte(current + proposed))
 
@@ -99,20 +112,27 @@ func (a *ArgoApplication) waitForManifests(
 	ctx context.Context,
 	serverAddr, apiKey, name string,
 ) error {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
+	return retry.Do(
+		func() error {
 			manifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, name)
 			if err != nil {
-				continue
+				return err
 			}
-			if len(manifests) > 0 {
-				return nil
+			if len(manifests) == 0 {
+				return fmt.Errorf("no manifests available yet for %s", name)
 			}
-		}
-	}
+			return nil
+		},
+		retry.Attempts(15),
+		retry.Delay(2*time.Second),
+		retry.MaxDelay(10*time.Second),
+		retry.DelayType(retry.BackOffDelay),
+		retry.OnRetry(func(n uint, err error) {
+			log.Warn("Waiting for plan manifests",
+				"app", name,
+				"attempt", n+1,
+				"error", err)
+		}),
+		retry.Context(ctx),
+	)
 }

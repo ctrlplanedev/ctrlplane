@@ -43,6 +43,11 @@ type ApplicationUpserter interface {
 	) error
 }
 
+// ApplicationDeleter deletes an ArgoCD Application resource.
+type ApplicationDeleter interface {
+	DeleteApplication(ctx context.Context, serverAddr, apiKey, name string) error
+}
+
 // ManifestGetter retrieves rendered manifests for an ArgoCD application.
 type ManifestGetter interface {
 	GetManifests(ctx context.Context, serverAddr, apiKey, appName string) ([]string, error)
@@ -57,11 +62,12 @@ var (
 type ArgoApplication struct {
 	setter         Setter
 	upserter       ApplicationUpserter
+	deleter        ApplicationDeleter
 	manifestGetter ManifestGetter
 }
 
-func New(upserter ApplicationUpserter, setter Setter, manifestGetter ManifestGetter) *ArgoApplication {
-	return &ArgoApplication{upserter: upserter, setter: setter, manifestGetter: manifestGetter}
+func New(upserter ApplicationUpserter, deleter ApplicationDeleter, setter Setter, manifestGetter ManifestGetter) *ArgoApplication {
+	return &ArgoApplication{upserter: upserter, deleter: deleter, setter: setter, manifestGetter: manifestGetter}
 }
 
 func (a *ArgoApplication) Type() string {
