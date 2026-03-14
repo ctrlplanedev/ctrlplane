@@ -2,12 +2,11 @@ package store
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	legacystore "workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 type EnvironmentGetter interface {
@@ -57,33 +56,4 @@ func (g *PostgresEnvironmentGetter) GetAllEnvironments(
 		result[env.ID.String()] = db.ToOapiEnvironment(env)
 	}
 	return result, nil
-}
-
-var _ EnvironmentGetter = (*StoreEnvironmentGetter)(nil)
-
-type StoreEnvironmentGetter struct {
-	store *legacystore.Store
-}
-
-func NewStoreEnvironmentGetter(store *legacystore.Store) EnvironmentGetter {
-	return &StoreEnvironmentGetter{store: store}
-}
-
-func (s *StoreEnvironmentGetter) GetEnvironment(
-	ctx context.Context,
-	environmentID string,
-) (*oapi.Environment, error) {
-	env, ok := s.store.Environments.Get(environmentID)
-	if !ok {
-		return nil, fmt.Errorf("environment not found")
-	}
-	return env, nil
-}
-
-func (s *StoreEnvironmentGetter) GetAllEnvironments(
-	ctx context.Context,
-	_ string,
-) (map[string]*oapi.Environment, error) {
-	envs := s.store.Environments.Items()
-	return envs, nil
 }

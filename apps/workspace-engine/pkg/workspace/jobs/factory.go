@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
+
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
-	"workspace-engine/pkg/workspace/store"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/jobs")
@@ -26,13 +26,6 @@ type Getters interface {
 // Factory creates jobs for releases.
 type Factory struct {
 	getters Getters
-}
-
-// NewFactory creates a new job factory.
-func NewFactory(store *store.Store) *Factory {
-	return &Factory{
-		getters: NewStoreGetters(store),
-	}
 }
 
 func NewFactoryFromGetters(getters Getters) *Factory {

@@ -3,9 +3,10 @@ package store
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/google/uuid"
 )
 
 type SystemGetter interface {

@@ -2,16 +2,15 @@ package environmentprogression
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	"workspace-engine/pkg/store/releasetargets"
-	legacystore "workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var gettersTracer = otel.Tracer(
@@ -213,127 +212,4 @@ func (p *PostgresGetters) GetReleaseByJobID(
 	release.Version = *db.ToOapiDeploymentVersion(versionRow)
 
 	return release, nil
-}
-
-// ---------------------------------------------------------------------------
-// In-memory store adapter (used by workspace-engine runtime)
-// ---------------------------------------------------------------------------
-
-var _ Getters = (*StoreGetters)(nil)
-
-type StoreGetters struct {
-	store *legacystore.Store
-}
-
-func NewStoreGetters(s *legacystore.Store) *StoreGetters {
-	return &StoreGetters{store: s}
-}
-
-func (g *StoreGetters) GetEnvironment(_ context.Context, id string) (*oapi.Environment, error) {
-	env, ok := g.store.Environments.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("environment %s not found", id)
-	}
-	return env, nil
-}
-
-func (g *StoreGetters) GetAllEnvironments(
-	_ context.Context,
-	_ string,
-) (map[string]*oapi.Environment, error) {
-	return g.store.Environments.Items(), nil
-}
-
-func (g *StoreGetters) GetDeployment(_ context.Context, id string) (*oapi.Deployment, error) {
-	d, ok := g.store.Deployments.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("deployment %s not found", id)
-	}
-	return d, nil
-}
-
-func (g *StoreGetters) GetAllDeployments(
-	_ context.Context,
-	_ string,
-) (map[string]*oapi.Deployment, error) {
-	return g.store.Deployments.Items(), nil
-}
-
-func (g *StoreGetters) GetResource(_ context.Context, id string) (*oapi.Resource, error) {
-	r, ok := g.store.Resources.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("resource %s not found", id)
-	}
-	return r, nil
-}
-
-func (g *StoreGetters) GetRelease(_ context.Context, id string) (*oapi.Release, error) {
-	r, ok := g.store.Releases.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("release %s not found", id)
-	}
-	return r, nil
-}
-
-func (g *StoreGetters) GetReleaseTargetsForDeploymentAndEnvironment(
-	_ context.Context,
-	deploymentID string,
-	environmentID string,
-) ([]oapi.ReleaseTarget, error) {
-	allTargets, err := g.store.ReleaseTargets.Items()
-	if err != nil {
-		return nil, err
-	}
-	var result []oapi.ReleaseTarget
-	for _, rt := range allTargets {
-		if rt.DeploymentId == deploymentID && rt.EnvironmentId == environmentID {
-			result = append(result, *rt)
-		}
-	}
-	return result, nil
-}
-
-func (g *StoreGetters) GetSystemIDsForEnvironment(environmentID string) []string {
-	return g.store.SystemEnvironments.GetSystemIDsForEnvironment(environmentID)
-}
-
-func (g *StoreGetters) GetReleaseTargetsForDeployment(
-	_ context.Context,
-	deploymentID string,
-) ([]*oapi.ReleaseTarget, error) {
-	allTargets, err := g.store.ReleaseTargets.Items()
-	if err != nil {
-		return nil, err
-	}
-	var result []*oapi.ReleaseTarget
-	for _, rt := range allTargets {
-		if rt.DeploymentId == deploymentID {
-			result = append(result, rt)
-		}
-	}
-	return result, nil
-}
-
-func (g *StoreGetters) GetJobsForReleaseTarget(
-	_ context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) map[string]*oapi.Job {
-	return g.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
-}
-
-func (g *StoreGetters) GetAllPolicies(
-	_ context.Context,
-	_ string,
-) (map[string]*oapi.Policy, error) {
-	return g.store.Policies.Items(), nil
-}
-
-func (g *StoreGetters) GetReleaseByJobID(_ context.Context, jobID string) (*oapi.Release, error) {
-	for _, release := range g.store.Releases.Items() {
-		jobs := g.store.Jobs.GetJobsForReleaseTarget(&release.ReleaseTarget)
-		if _, ok := jobs[jobID]; ok {
-			return release, nil
-		}
-	}
-	return nil, fmt.Errorf("release not found for job %s", jobID)
 }

@@ -189,4 +189,3 @@ func (g *PostgresGetter) GetCurrentRelease(
 		CreatedAt:          createdAt,
 	}, nil
 }
-
