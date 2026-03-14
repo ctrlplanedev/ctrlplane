@@ -87,3 +87,33 @@ func isRetryableError(err error) bool {
 		strings.Contains(errStr, "EOF") ||
 		strings.Contains(errStr, "Unavailable")
 }
+
+// GoManifestGetter is the production implementation of ManifestGetter
+// that calls the ArgoCD API.
+type GoManifestGetter struct{}
+
+func (g *GoManifestGetter) GetManifests(
+	ctx context.Context,
+	serverAddr, apiKey, appName string,
+) ([]string, error) {
+	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
+		ServerAddr: serverAddr,
+		AuthToken:  apiKey,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create ArgoCD client: %w", err)
+	}
+	ioCloser, appClient, err := client.NewApplicationClient()
+	if err != nil {
+		return nil, fmt.Errorf("create application client: %w", err)
+	}
+	defer ioCloser.Close()
+
+	resp, err := appClient.GetManifests(ctx,
+		&argocdapplication.ApplicationManifestQuery{Name: &appName},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Manifests, nil
+}

@@ -3,6 +3,7 @@ package argo
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -64,6 +65,20 @@ func (m *mockUpserter) UpsertApplication(
 	return m.err
 }
 
+type mockManifestGetter struct {
+	fn func(ctx context.Context, serverAddr, apiKey, appName string) ([]string, error)
+}
+
+func (m *mockManifestGetter) GetManifests(
+	ctx context.Context,
+	serverAddr, apiKey, appName string,
+) ([]string, error) {
+	if m.fn != nil {
+		return m.fn(ctx, serverAddr, apiKey, appName)
+	}
+	return nil, nil
+}
+
 // --- helpers ---
 
 func testJob() *oapi.Job {
@@ -87,14 +102,14 @@ func testJob() *oapi.Job {
 // --- tests ---
 
 func TestType(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{})
+	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
 	assert.Equal(t, "argo-cd", a.Type())
 }
 
 func TestDispatch_Success(t *testing.T) {
 	setter := &mockSetter{}
 	upserter := &mockUpserter{}
-	a := New(upserter, setter)
+	a := New(upserter, setter, &mockManifestGetter{})
 
 	err := a.Dispatch(context.Background(), testJob())
 	require.NoError(t, err)
@@ -112,7 +127,7 @@ func TestDispatch_Success(t *testing.T) {
 func TestDispatch_UpsertFailure(t *testing.T) {
 	setter := &mockSetter{}
 	upserter := &mockUpserter{err: fmt.Errorf("connection refused")}
-	a := New(upserter, setter)
+	a := New(upserter, setter, &mockManifestGetter{})
 
 	err := a.Dispatch(context.Background(), testJob())
 	require.NoError(t, err)
@@ -127,7 +142,7 @@ func TestDispatch_UpsertFailure(t *testing.T) {
 }
 
 func TestDispatch_BadConfig(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{})
+	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
 	job := testJob()
 	job.DispatchContext.JobAgentConfig = oapi.JobAgentConfig{}
 
@@ -237,7 +252,7 @@ func TestBuildArgoLinks(t *testing.T) {
 }
 
 func TestVerifications_ValidConfig(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{})
+	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
 	config := oapi.JobAgentConfig{
 		"serverUrl": "argocd.example.com",
 		"apiKey":    "test-token",
@@ -252,15 +267,181 @@ func TestVerifications_ValidConfig(t *testing.T) {
 }
 
 func TestVerifications_MissingServerUrl(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{})
+	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
 	specs, err := a.Verifications(oapi.JobAgentConfig{"apiKey": "token"})
 	require.NoError(t, err)
 	assert.Nil(t, specs)
 }
 
 func TestVerifications_MissingApiKey(t *testing.T) {
-	a := New(&mockUpserter{}, &mockSetter{})
+	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
 	specs, err := a.Verifications(oapi.JobAgentConfig{"serverUrl": "addr"})
 	require.NoError(t, err)
 	assert.Nil(t, specs)
+}
+
+// --- plan / diff tests ---
+
+func testDispatchCtx() *oapi.DispatchContext {
+	return testJob().DispatchContext
+}
+
+func planManifestGetter(current, proposed []string) *mockManifestGetter {
+	return &mockManifestGetter{
+		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
+			if strings.Contains(appName, "-plan-") {
+				return proposed, nil
+			}
+			return current, nil
+		},
+	}
+}
+
+func TestPlan_HasChanges(t *testing.T) {
+	current := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
+	proposed := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":3}}`}
+
+	a := New(
+		&mockUpserter{},
+		&mockSetter{},
+		planManifestGetter(current, proposed),
+	)
+
+	result, err := a.Plan(context.Background(), testDispatchCtx())
+	require.NoError(t, err)
+	assert.True(t, result.HasChanges)
+	assert.NotEmpty(t, result.ContentHash)
+	assert.Equal(t, current[0], result.Current)
+	assert.Equal(t, proposed[0], result.Proposed)
+}
+
+func TestPlan_NoChanges(t *testing.T) {
+	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
+
+	a := New(
+		&mockUpserter{},
+		&mockSetter{},
+		planManifestGetter(manifests, manifests),
+	)
+
+	result, err := a.Plan(context.Background(), testDispatchCtx())
+	require.NoError(t, err)
+	assert.False(t, result.HasChanges)
+	assert.NotEmpty(t, result.ContentHash)
+	assert.Equal(t, result.Current, result.Proposed)
+}
+
+func TestPlan_MultipleManifests(t *testing.T) {
+	current := []string{
+		`{"kind":"Deployment","metadata":{"name":"web"}}`,
+		`{"kind":"Service","metadata":{"name":"web"}}`,
+	}
+	proposed := []string{
+		`{"kind":"Deployment","metadata":{"name":"web"},"spec":{"replicas":2}}`,
+		`{"kind":"Service","metadata":{"name":"web"}}`,
+	}
+
+	a := New(
+		&mockUpserter{},
+		&mockSetter{},
+		planManifestGetter(current, proposed),
+	)
+
+	result, err := a.Plan(context.Background(), testDispatchCtx())
+	require.NoError(t, err)
+	assert.True(t, result.HasChanges)
+	assert.Contains(t, result.Current, "---\n")
+	assert.Contains(t, result.Proposed, "---\n")
+}
+
+func TestPlan_ContentHashDeterministic(t *testing.T) {
+	current := []string{`{"kind":"ConfigMap","metadata":{"name":"cfg"}}`}
+	proposed := []string{`{"kind":"ConfigMap","metadata":{"name":"cfg"},"data":{"k":"v"}}`}
+
+	a := New(
+		&mockUpserter{},
+		&mockSetter{},
+		planManifestGetter(current, proposed),
+	)
+
+	r1, err := a.Plan(context.Background(), testDispatchCtx())
+	require.NoError(t, err)
+
+	r2, err := a.Plan(context.Background(), testDispatchCtx())
+	require.NoError(t, err)
+
+	assert.Equal(t, r1.ContentHash, r2.ContentHash)
+}
+
+func TestPlan_BadConfig(t *testing.T) {
+	a := New(&mockUpserter{}, &mockSetter{}, &mockManifestGetter{})
+	dctx := testDispatchCtx()
+	dctx.JobAgentConfig = oapi.JobAgentConfig{}
+
+	_, err := a.Plan(context.Background(), dctx)
+	require.Error(t, err)
+}
+
+func TestPlan_UpsertFailure(t *testing.T) {
+	a := New(
+		&mockUpserter{err: fmt.Errorf("conflict")},
+		&mockSetter{},
+		&mockManifestGetter{},
+	)
+
+	_, err := a.Plan(context.Background(), testDispatchCtx())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "create temporary plan application")
+}
+
+func TestPlan_GetProposedManifestsFailure(t *testing.T) {
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
+			if strings.Contains(appName, "-plan-") {
+				return nil, fmt.Errorf("not found")
+			}
+			return []string{"manifest"}, nil
+		},
+	}
+	a := New(&mockUpserter{}, &mockSetter{}, getter)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := a.Plan(ctx, testDispatchCtx())
+	require.Error(t, err)
+}
+
+func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
+	calls := 0
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
+			if strings.Contains(appName, "-plan-") {
+				calls++
+				return []string{"proposed"}, nil
+			}
+			return nil, fmt.Errorf("current app not found")
+		},
+	}
+	a := New(&mockUpserter{}, &mockSetter{}, getter)
+
+	_, err := a.Plan(context.Background(), testDispatchCtx())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get current manifests")
+}
+
+func TestPlan_WaitForManifestsTimeout(t *testing.T) {
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, _ string) ([]string, error) {
+			return nil, nil
+		},
+	}
+	a := New(&mockUpserter{}, &mockSetter{}, getter)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := a.Plan(ctx, testDispatchCtx())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "wait for temporary app manifests")
 }

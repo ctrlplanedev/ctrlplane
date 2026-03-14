@@ -6,12 +6,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -19,6 +13,13 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/jobdispatch")
@@ -101,13 +102,14 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	queue := postgres.NewForKinds(pgxPool, kind)
 	enqueueQueue := postgres.New(pgxPool)
 
+	pgSetter := &PostgresSetter{Queue: enqueueQueue}
 	dispatcher := jobagents.NewRegistry(&PostgresGetter{})
 	dispatcher.Register(
-		argo.New(&argo.GoApplicationUpserter{}, &PostgresSetter{Queue: enqueueQueue}),
+		argo.New(&argo.GoApplicationUpserter{}, pgSetter, &argo.GoManifestGetter{}),
 	)
-	dispatcher.Register(testrunner.New(&PostgresSetter{Queue: enqueueQueue}))
+	dispatcher.Register(testrunner.New(pgSetter))
 	dispatcher.Register(
-		github.New(&github.GoGitHubWorkflowDispatcher{}, &PostgresSetter{Queue: enqueueQueue}),
+		github.New(&github.GoGitHubWorkflowDispatcher{}, pgSetter),
 	)
 
 	log.Debug(

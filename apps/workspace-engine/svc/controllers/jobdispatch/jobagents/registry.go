@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+
+	"github.com/google/uuid"
 )
 
 type Getter interface {
@@ -61,4 +62,22 @@ func (r *Registry) AgentVerifications(
 	}
 
 	return v.Verifications(config)
+}
+
+func (r *Registry) Plan(
+	ctx context.Context,
+	agentType string,
+	dispatchCtx *oapi.DispatchContext,
+) (*types.PlanResult, error) {
+	dispatcher, ok := r.dispatchers[agentType]
+	if !ok {
+		return nil, nil
+	}
+
+	p, ok := dispatcher.(types.Plannable)
+	if !ok {
+		return nil, nil
+	}
+
+	return p.Plan(ctx, dispatchCtx)
 }
