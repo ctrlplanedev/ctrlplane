@@ -5,16 +5,22 @@ import (
 	"fmt"
 	"sort"
 
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/relationships/eval"
+
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/relationships/eval"
 )
+
+func NewResourceEntity(resource *oapi.Resource) *oapi.RelatableEntity {
+	entity := &oapi.RelatableEntity{}
+	_ = entity.FromResource(*resource)
+	return entity
+}
 
 var tracer = otel.Tracer("desiredrelease/variableresolver")
 
@@ -82,7 +88,7 @@ func Resolve(
 
 	resolver := newRealtimeResolver(getter, scope.Resource, wsID, rules)
 
-	entity := relationships.NewResourceEntity(scope.Resource)
+	entity := NewResourceEntity(scope.Resource)
 
 	resolved := make(map[string]oapi.LiteralValue, len(deploymentVars))
 	var fromResource, fromValue, fromDefault int
