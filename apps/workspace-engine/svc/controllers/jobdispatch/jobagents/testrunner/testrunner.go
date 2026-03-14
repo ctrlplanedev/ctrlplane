@@ -10,6 +10,7 @@ import (
 )
 
 var _ types.Dispatchable = &TestRunner{}
+var _ types.Plannable = &TestRunner{}
 
 type TestRunner struct {
 	timeFunc func(d time.Duration) <-chan time.Time
@@ -93,4 +94,18 @@ func (t *TestRunner) resolveJobAfterDelay(
 	}
 
 	t.setter.UpdateJob(ctx, jobID, status, finalMessage, nil)
+}
+
+func (t *TestRunner) Plan(ctx context.Context, dispatchCtx *oapi.DispatchContext) (*types.PlanResult, error) {
+	hasChanges, ok := dispatchCtx.JobAgentConfig["hasChanges"].(bool)
+	if !ok {
+		hasChanges = false
+	}
+	return &types.PlanResult{
+		ContentHash: "test-runner",
+		HasChanges:  hasChanges,
+		Diff:        "",
+		Current:     "",
+		Proposed:    "",
+	}, nil
 }
