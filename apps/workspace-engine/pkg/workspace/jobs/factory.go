@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -31,78 +30,6 @@ type Factory struct {
 func NewFactoryFromGetters(getters Getters) *Factory {
 	return &Factory{
 		getters: getters,
-	}
-}
-
-// NoAgentConfiguredJob creates a job for a release with no job agent configured.
-func (f *Factory) NoAgentConfiguredJob(
-	releaseID, jobAgentID, deploymentName string,
-	action *trace.Action,
-) *oapi.Job {
-	message := fmt.Sprintf("No job agent configured for deployment '%s'", deploymentName)
-	if action != nil {
-		action.AddStep(
-			"Create InvalidJobAgent job",
-			trace.StepResultPass,
-			fmt.Sprintf(
-				"Created InvalidJobAgent job for release %s with job agent %s",
-				releaseID,
-				jobAgentID,
-			),
-		).
-			AddMetadata("release_id", releaseID).
-			AddMetadata("job_agent_id", jobAgentID).
-			AddMetadata("message", message)
-	}
-
-	now := time.Now()
-	return &oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      releaseID,
-		JobAgentId:     jobAgentID,
-		JobAgentConfig: oapi.JobAgentConfig{},
-		Status:         oapi.JobStatusInvalidJobAgent,
-		Message:        &message,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		CompletedAt:    &now,
-		Metadata:       make(map[string]string),
-	}
-}
-
-// InvalidDeploymentAgentsJob creates a job for a release with invalid deployment agents.
-func (f *Factory) InvalidDeploymentAgentsJob(
-	releaseID, deploymentName string,
-	action *trace.Action,
-) *oapi.Job {
-	message := fmt.Sprintf("Invalid deployment agents for deployment '%s'", deploymentName)
-	if action != nil {
-		action.AddStep(
-			"Create InvalidDeploymentAgentsJob job",
-			trace.StepResultPass,
-			fmt.Sprintf(
-				"Created InvalidDeploymentAgentsJob job for release %s with deployment %s",
-				releaseID,
-				deploymentName,
-			),
-		).
-			AddMetadata("release_id", releaseID).
-			AddMetadata("deployment_name", deploymentName).
-			AddMetadata("message", message)
-	}
-
-	now := time.Now()
-	return &oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      releaseID,
-		JobAgentId:     "",
-		JobAgentConfig: oapi.JobAgentConfig{},
-		Status:         oapi.JobStatusInvalidJobAgent,
-		Message:        &message,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		CompletedAt:    &now,
-		Metadata:       make(map[string]string),
 	}
 }
 
