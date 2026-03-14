@@ -192,6 +192,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a deployment plan
+         * @description Compute a dry-run plan showing rendered diffs for each release target without creating a version.
+         */
+        post: operations["createDeploymentPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get deployment plan
+         * @description Retrieve the status and results of a previously created deployment plan.
+         */
+        get: operations["getDeploymentPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables": {
         parameters: {
             query?: never;
@@ -915,6 +955,13 @@ export interface components {
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
         BooleanValue: boolean;
+        CreateDeploymentPlanRequest: {
+            /** @description Arbitrary key-value metadata for the plan (e.g. GitHub PR links, CI run URLs) */
+            metadata?: {
+                [key: string]: string;
+            };
+            version: components["schemas"]["DeploymentPlanVersion"];
+        };
         CreateDeploymentRequest: {
             description?: string;
             jobAgentConfig?: {
@@ -1092,6 +1139,50 @@ export interface components {
             ref: string;
             /** @description CEL expression to determine if the job agent should be used */
             selector: string;
+        };
+        DeploymentPlan: {
+            id: string;
+            /** @enum {string} */
+            status: "computing" | "completed" | "failed";
+            summary?: components["schemas"]["DeploymentPlanSummary"];
+            targets: components["schemas"]["DeploymentPlanTarget"][];
+        };
+        DeploymentPlanSummary: {
+            changed: number;
+            errored: number;
+            total: number;
+            unchanged: number;
+            unsupported?: number;
+        };
+        DeploymentPlanTarget: {
+            /** @description Hash of the rendered output for change detection */
+            contentHash?: string;
+            /** @description Full rendered output of the currently deployed state */
+            current?: string;
+            environmentId: string;
+            environmentName: string;
+            hasChanges?: boolean | null;
+            /** @description Full rendered output of the proposed version */
+            proposed?: string;
+            resourceId: string;
+            resourceName: string;
+            /** @enum {string} */
+            status: "computing" | "completed" | "errored" | "unsupported";
+        };
+        DeploymentPlanVersion: {
+            config?: {
+                [key: string]: unknown;
+            };
+            jobAgentConfig?: {
+                [key: string]: unknown;
+            };
+            metadata?: {
+                [key: string]: string;
+            };
+            /** @description Display name for the proposed version (defaults to tag if omitted) */
+            name?: string;
+            /** @description Version tag for the proposed deployment (e.g. pr-123-abc123) */
+            tag: string;
         };
         DeploymentRequestAccepted: {
             id: string;
@@ -2840,6 +2931,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeploymentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createDeploymentPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeploymentPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentPlan"];
+                };
+            };
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentPlan"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getDeploymentPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+                /** @description ID of the deployment plan */
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentPlan"];
                 };
             };
             /** @description Invalid request */

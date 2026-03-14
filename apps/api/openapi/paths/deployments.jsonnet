@@ -70,4 +70,42 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan': {
+    post: {
+      summary: 'Create a deployment plan',
+      description: 'Compute a dry-run plan showing rendered diffs for each release target without creating a version.',
+      operationId: 'createDeploymentPlan',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('CreateDeploymentPlanRequest'),
+          },
+        },
+      },
+      responses: openapi.okResponse(openapi.schemaRef('DeploymentPlan'))
+                 + openapi.acceptedResponse(openapi.schemaRef('DeploymentPlan'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}': {
+    get: {
+      summary: 'Get deployment plan',
+      description: 'Retrieve the status and results of a previously created deployment plan.',
+      operationId: 'getDeploymentPlan',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+        openapi.stringParam('planId', 'ID of the deployment plan'),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('DeploymentPlan'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

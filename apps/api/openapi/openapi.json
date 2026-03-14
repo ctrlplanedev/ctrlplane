@@ -24,6 +24,24 @@
          "BooleanValue": {
             "type": "boolean"
          },
+         "CreateDeploymentPlanRequest": {
+            "properties": {
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "Arbitrary key-value metadata for the plan (e.g. GitHub PR links, CI run URLs)",
+                  "type": "object"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentPlanVersion"
+               }
+            },
+            "required": [
+               "version"
+            ],
+            "type": "object"
+         },
          "CreateDeploymentRequest": {
             "properties": {
                "description": {
@@ -486,6 +504,142 @@
                "ref",
                "config",
                "selector"
+            ],
+            "type": "object"
+         },
+         "DeploymentPlan": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "status": {
+                  "enum": [
+                     "computing",
+                     "completed",
+                     "failed"
+                  ],
+                  "type": "string"
+               },
+               "summary": {
+                  "$ref": "#/components/schemas/DeploymentPlanSummary",
+                  "nullable": true
+               },
+               "targets": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentPlanTarget"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "id",
+               "status",
+               "targets"
+            ],
+            "type": "object"
+         },
+         "DeploymentPlanSummary": {
+            "properties": {
+               "changed": {
+                  "type": "integer"
+               },
+               "errored": {
+                  "type": "integer"
+               },
+               "total": {
+                  "type": "integer"
+               },
+               "unchanged": {
+                  "type": "integer"
+               },
+               "unsupported": {
+                  "type": "integer"
+               }
+            },
+            "required": [
+               "total",
+               "changed",
+               "unchanged",
+               "errored"
+            ],
+            "type": "object"
+         },
+         "DeploymentPlanTarget": {
+            "properties": {
+               "contentHash": {
+                  "description": "Hash of the rendered output for change detection",
+                  "type": "string"
+               },
+               "current": {
+                  "description": "Full rendered output of the currently deployed state",
+                  "type": "string"
+               },
+               "environmentId": {
+                  "type": "string"
+               },
+               "environmentName": {
+                  "type": "string"
+               },
+               "hasChanges": {
+                  "nullable": true,
+                  "type": "boolean"
+               },
+               "proposed": {
+                  "description": "Full rendered output of the proposed version",
+                  "type": "string"
+               },
+               "resourceId": {
+                  "type": "string"
+               },
+               "resourceName": {
+                  "type": "string"
+               },
+               "status": {
+                  "enum": [
+                     "computing",
+                     "completed",
+                     "errored",
+                     "unsupported"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "environmentId",
+               "environmentName",
+               "resourceId",
+               "resourceName",
+               "status"
+            ],
+            "type": "object"
+         },
+         "DeploymentPlanVersion": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "description": "Display name for the proposed version (defaults to tag if omitted)",
+                  "type": "string"
+               },
+               "tag": {
+                  "description": "Version tag for the proposed deployment (e.g. pr-123-abc123)",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "tag"
             ],
             "type": "object"
          },
@@ -4292,6 +4446,153 @@
                }
             },
             "summary": "Upsert deployment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan": {
+         "post": {
+            "description": "Compute a dry-run plan showing rendered diffs for each release target without creating a version.",
+            "operationId": "createDeploymentPlan",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateDeploymentPlanRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentPlan"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentPlan"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Create a deployment plan"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}": {
+         "get": {
+            "description": "Retrieve the status and results of a previously created deployment plan.",
+            "operationId": "getDeploymentPlan",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment plan",
+                  "in": "path",
+                  "name": "planId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentPlan"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment plan"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables": {

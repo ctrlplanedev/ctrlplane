@@ -2,6 +2,7 @@ export * from "./auth.js";
 export * from "./resource.js";
 export * from "./resource-provider.js";
 export * from "./deployment.js";
+export * from "./deployment-plan.js";
 export * from "./environment.js";
 export * from "./deployment-version.js";
 export * from "./system.js";

@@ -11,6 +11,8 @@ import {
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
+const PLAN_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 import { validResourceSelector } from "../valid-selector.js";
 import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
 
@@ -347,6 +349,100 @@ const createDeploymentVersion: AsyncTypedHandler<
   res.status(200).json(formatDeploymentVersion(version));
 };
 
+const createDeploymentPlan: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan",
+  "post"
+> = async (req, res) => {
+  const { workspaceId, deploymentId } = req.params;
+  const { body } = req;
+
+  const dep = await db.query.deployment.findFirst({
+    where: and(
+      eq(schema.deployment.id, deploymentId),
+      eq(schema.deployment.workspaceId, workspaceId),
+    ),
+  });
+
+  if (dep == null) throw new ApiError("Deployment not found", 404);
+
+  const planId = uuidv4();
+  const expiresAt = new Date(Date.now() + PLAN_TTL_MS);
+
+  const { version } = body;
+
+  await db.insert(schema.deploymentPlan).values({
+    id: planId,
+    workspaceId,
+    deploymentId,
+    versionTag: version.tag,
+    versionName: version.name ?? version.tag,
+    versionConfig: version.config ?? {},
+    versionJobAgentConfig: version.jobAgentConfig ?? {},
+    versionMetadata: version.metadata ?? {},
+    metadata: body.metadata ?? {},
+    status: "computing",
+    expiresAt,
+  });
+
+  res.status(202).json({
+    id: planId,
+    status: "computing",
+    summary: null,
+    targets: [],
+  });
+};
+
+const getDeploymentPlan: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan/{planId}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, deploymentId, planId } = req.params;
+
+  const plan = await db.query.deploymentPlan.findFirst({
+    where: and(
+      eq(schema.deploymentPlan.id, planId),
+      eq(schema.deploymentPlan.workspaceId, workspaceId),
+      eq(schema.deploymentPlan.deploymentId, deploymentId),
+    ),
+    with: {
+      targets: {
+        with: { environment: true, resource: true },
+      },
+    },
+  });
+
+  if (plan == null) throw new ApiError("Deployment plan not found", 404);
+
+  const targets = plan.targets.map((t) => ({
+    environmentId: t.environmentId,
+    environmentName: t.environment.name,
+    resourceId: t.resourceId,
+    resourceName: t.resource.name,
+    hasChanges: t.hasChanges,
+    current: t.current,
+    proposed: t.proposed,
+    contentHash: t.contentHash,
+    status: t.status,
+  }));
+
+  const changed = targets.filter((t) => t.hasChanges === true).length;
+  const unchanged = targets.filter((t) => t.hasChanges === false).length;
+  const errored = targets.filter((t) => t.status === "errored").length;
+  const unsupported = targets.filter((t) => t.status === "unsupported").length;
+
+  const summary =
+    plan.status === "computing"
+      ? null
+      : { total: targets.length, changed, unchanged, errored, unsupported };
+
+  res.status(200).json({
+    id: plan.id,
+    status: plan.status,
+    summary,
+    targets,
+  });
+};
+
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
   .post("/", asyncHandler(postDeployment))
@@ -355,4 +451,6 @@ export const deploymentsRouter = Router({ mergeParams: true })
   .delete("/:deploymentId", asyncHandler(deleteDeployment))
   .get("/:deploymentId/versions", asyncHandler(listDeploymentVersions))
   .post("/:deploymentId/versions", asyncHandler(createDeploymentVersion))
+  .post("/:deploymentId/plan", asyncHandler(createDeploymentPlan))
+  .get("/:deploymentId/plan/:planId", asyncHandler(getDeploymentPlan))
   .use("/:deploymentId/variables", listDeploymentVariablesByDeploymentRouter);
