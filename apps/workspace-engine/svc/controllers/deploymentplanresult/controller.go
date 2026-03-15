@@ -14,9 +14,6 @@ import (
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -34,29 +31,17 @@ const (
 	requeueDelay = 5 * time.Second
 )
 
-// Planner dispatches a plan request to the appropriate agent by type.
-type Planner interface {
-	Plan(ctx context.Context, agentType string, dispatchCtx *oapi.DispatchContext, state json.RawMessage) (*types.PlanResult, error)
-}
-
-// Store abstracts the database operations used by the controller.
-type Store interface {
-	GetDeploymentPlanTargetResult(ctx context.Context, id uuid.UUID) (db.DeploymentPlanTargetResult, error)
-	UpdateDeploymentPlanTargetResultCompleted(ctx context.Context, arg db.UpdateDeploymentPlanTargetResultCompletedParams) error
-	UpdateDeploymentPlanTargetResultState(ctx context.Context, arg db.UpdateDeploymentPlanTargetResultStateParams) error
-}
-
 var _ reconcile.Processor = (*Controller)(nil)
 
 type Controller struct {
-	planner Planner
-	store   Store
+	registry *jobagents.Registry
+	getter   Getter
+	setter   Setter
 }
 
 // NewController creates a Controller with injected dependencies.
-// Use this constructor in tests to inject mock implementations.
-func NewController(planner Planner, store Store) *Controller {
-	return &Controller{planner: planner, store: store}
+func NewController(registry *jobagents.Registry, getter Getter, setter Setter) *Controller {
+	return &Controller{registry: registry, getter: getter, setter: setter}
 }
 
 // Process executes a single plan-result work item by calling the appropriate
@@ -77,7 +62,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("parse result id: %w", err)
 	}
 
-	result, err := c.store.GetDeploymentPlanTargetResult(ctx, resultID)
+	result, err := c.getter.GetDeploymentPlanTargetResult(ctx, resultID)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("get plan target result: %w", err)
 	}
@@ -93,13 +78,17 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	planCtx, cancel := context.WithTimeout(ctx, planTimeout)
 	defer cancel()
 
-	planResult, err := c.planner.Plan(planCtx, agentType, &dispatchCtx, result.AgentState)
+	planResult, err := c.registry.Plan(planCtx, agentType, &dispatchCtx, result.AgentState)
 
 	if planResult == nil && err == nil {
 		span.AddEvent("agent does not implement Plannable")
-		if updateErr := c.store.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
+		if updateErr := c.setter.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
 			ID:     resultID,
 			Status: db.DeploymentPlanTargetStatusUnsupported,
+			Message: pgtype.Text{
+				String: fmt.Sprintf("Agent %q does not support plan operations", agentType),
+				Valid:  true,
+			},
 		}); updateErr != nil {
 			return reconcile.Result{}, fmt.Errorf("mark result unsupported: %w", updateErr)
 		}
@@ -109,9 +98,13 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if updateErr := c.store.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
+		if updateErr := c.setter.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
 			ID:     resultID,
 			Status: db.DeploymentPlanTargetStatusErrored,
+			Message: pgtype.Text{
+				String: err.Error(),
+				Valid:  true,
+			},
 		}); updateErr != nil {
 			return reconcile.Result{}, fmt.Errorf("mark result errored: %w (original: %w)", updateErr, err)
 		}
@@ -120,7 +113,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	if planResult.CompletedAt == nil {
 		span.AddEvent("agent needs more time, saving state and requeuing")
-		if err := c.store.UpdateDeploymentPlanTargetResultState(ctx, db.UpdateDeploymentPlanTargetResultStateParams{
+		if err := c.setter.UpdateDeploymentPlanTargetResultState(ctx, db.UpdateDeploymentPlanTargetResultStateParams{
 			ID:         resultID,
 			AgentState: planResult.State,
 		}); err != nil {
@@ -132,7 +125,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	span.SetAttributes(attribute.Bool("result.has_changes", planResult.HasChanges))
 	span.AddEvent("agent completed")
 
-	if err := c.store.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
+	if err := c.setter.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
 		ID:     resultID,
 		Status: db.DeploymentPlanTargetStatusCompleted,
 		HasChanges: pgtype.Bool{
@@ -151,40 +144,15 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			String: planResult.Proposed,
 			Valid:  true,
 		},
+		Message: pgtype.Text{
+			String: planResult.Message,
+			Valid:  planResult.Message != "",
+		},
 	}); err != nil {
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
 	}
 
 	return reconcile.Result{}, nil
-}
-
-// postgresStore implements Store using the sqlc-generated queries.
-type postgresStore struct{}
-
-func (s *postgresStore) GetDeploymentPlanTargetResult(ctx context.Context, id uuid.UUID) (db.DeploymentPlanTargetResult, error) {
-	return db.GetQueries(ctx).GetDeploymentPlanTargetResult(ctx, id)
-}
-
-func (s *postgresStore) UpdateDeploymentPlanTargetResultCompleted(ctx context.Context, arg db.UpdateDeploymentPlanTargetResultCompletedParams) error {
-	return db.GetQueries(ctx).UpdateDeploymentPlanTargetResultCompleted(ctx, arg)
-}
-
-func (s *postgresStore) UpdateDeploymentPlanTargetResultState(ctx context.Context, arg db.UpdateDeploymentPlanTargetResultStateParams) error {
-	return db.GetQueries(ctx).UpdateDeploymentPlanTargetResultState(ctx, arg)
-}
-
-func newRegistry() *jobagents.Registry {
-	registry := jobagents.NewRegistry(nil)
-	registry.Register(
-		argo.New(
-			&argo.GoApplicationUpserter{},
-			&argo.GoApplicationDeleter{},
-			nil,
-			&argo.GoManifestGetter{},
-		),
-	)
-	registry.Register(testrunner.New(nil))
-	return registry
 }
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
@@ -212,8 +180,9 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	queue := postgres.NewForKinds(pgxPool, kind)
 
 	controller := &Controller{
-		planner: newRegistry(),
-		store:   &postgresStore{},
+		registry: newRegistry(),
+		getter:   &PostgresGetter{},
+		setter:   &PostgresSetter{},
 	}
 
 	worker, err := reconcile.NewWorker(

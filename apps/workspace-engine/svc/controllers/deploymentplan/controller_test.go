@@ -161,8 +161,8 @@ func (m *mockVarResolver) Resolve(_ context.Context, _ *variableresolver.Scope, 
 
 // --- helpers ---
 
-func testPlanID() uuid.UUID    { return uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000001") }
-func testWorkspaceID() uuid.UUID { return uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000002") }
+func testPlanID() uuid.UUID       { return uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000001") }
+func testWorkspaceID() uuid.UUID  { return uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000002") }
 func testDeploymentID() uuid.UUID { return uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000003") }
 
 func testPlan() db.DeploymentPlan {

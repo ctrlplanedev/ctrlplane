@@ -22,6 +22,38 @@ const (
 	planTTL          = 30 * time.Minute
 )
 
+var _ types.Plannable = (*ArgoCDPlanner)(nil)
+
+// ArgoCDPlanner computes a dry-run diff by creating a temporary ArgoCD
+// application, comparing its rendered manifests to the current application,
+// and cleaning up. It implements [types.Plannable].
+type ArgoCDPlanner struct {
+	upserter       ApplicationUpserter
+	deleter        ApplicationDeleter
+	manifestGetter ManifestGetter
+}
+
+// NewArgoCDPlanner creates an ArgoCDPlanner with the given dependencies.
+func NewArgoCDPlanner(
+	upserter ApplicationUpserter,
+	deleter ApplicationDeleter,
+	manifestGetter ManifestGetter,
+) *ArgoCDPlanner {
+	return &ArgoCDPlanner{
+		upserter:       upserter,
+		deleter:        deleter,
+		manifestGetter: manifestGetter,
+	}
+}
+
+func (p *ArgoCDPlanner) Type() string {
+	return "argo-cd"
+}
+
+type argoPlanState struct {
+	TmpAppName string `json:"tmpAppName"`
+}
+
 func planAppName(originalName string) string {
 	h := sha256.Sum256([]byte(originalName + time.Now().String()))
 	return fmt.Sprintf("%s-plan-%s", originalName, hex.EncodeToString(h[:4]))
@@ -46,17 +78,13 @@ func prepareTmpApp(app *v1alpha1.Application, tmpName string) *v1alpha1.Applicat
 	return tmp
 }
 
-type argoPlanState struct {
-	TmpAppName string `json:"tmpAppName"`
-}
-
-func (a *ArgoApplication) deleteTmpApp(ctx context.Context, serverAddr, apiKey, name string) {
-	if err := a.deleter.DeleteApplication(ctx, serverAddr, apiKey, name); err != nil {
+func (p *ArgoCDPlanner) deleteTmpApp(ctx context.Context, serverAddr, apiKey, name string) {
+	if err := p.deleter.DeleteApplication(ctx, serverAddr, apiKey, name); err != nil {
 		log.Warn("Failed to delete temporary plan application", "app", name, "error", err)
 	}
 }
 
-func (a *ArgoApplication) Plan(
+func (p *ArgoCDPlanner) Plan(
 	ctx context.Context,
 	dispatchCtx *oapi.DispatchContext,
 	state json.RawMessage,
@@ -92,20 +120,20 @@ func (a *ArgoApplication) Plan(
 	}
 
 	tmpApp := prepareTmpApp(proposedApp, s.TmpAppName)
-	if err := a.upserter.UpsertApplication(ctx, serverAddr, apiKey, tmpApp); err != nil {
+	if err := p.upserter.UpsertApplication(ctx, serverAddr, apiKey, tmpApp); err != nil {
 		return nil, fmt.Errorf("upsert temporary plan application: %w", err)
 	}
 
-	proposedManifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, s.TmpAppName)
+	proposedManifests, err := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, s.TmpAppName)
 	if err != nil || len(proposedManifests) == 0 {
 		return &types.PlanResult{
 			State: stateJSON,
 		}, nil
 	}
 
-	currentManifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, originalName)
+	currentManifests, err := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, originalName)
 	if err != nil {
-		a.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
+		p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 		return nil, fmt.Errorf("get current manifests: %w", err)
 	}
 
@@ -118,7 +146,7 @@ func (a *ArgoApplication) Plan(
 	hasChanges := current != proposed
 	contentHash := sha256.Sum256([]byte(current + proposed))
 
-	a.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
+	p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 
 	now := time.Now()
 	return &types.PlanResult{

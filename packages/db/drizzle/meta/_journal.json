@@ -1205,6 +1205,13 @@
       "when": 1773531801623,
       "tag": "0171_loud_captain_america",
       "breakpoints": true
+    },
+    {
+      "idx": 172,
+      "version": "7",
+      "when": 1773541311642,
+      "tag": "0172_pale_glorian",
+      "breakpoints": true
     }
   ]
 }

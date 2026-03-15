@@ -10,7 +10,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -25,39 +24,6 @@ import (
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentplan")
-
-// ErrTargetExists is returned by Setter.InsertTarget when the
-// (planID, environmentID, resourceID) triple already exists.
-var ErrTargetExists = errors.New("target already exists")
-
-// Getter abstracts read operations needed by the plan controller.
-type Getter interface {
-	GetDeploymentPlan(ctx context.Context, id uuid.UUID) (db.DeploymentPlan, error)
-	GetDeployment(ctx context.Context, id uuid.UUID) (*oapi.Deployment, error)
-	GetReleaseTargets(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error)
-	GetEnvironment(ctx context.Context, id uuid.UUID) (*oapi.Environment, error)
-	GetResource(ctx context.Context, id uuid.UUID) (*oapi.Resource, error)
-	GetJobAgent(ctx context.Context, id uuid.UUID) (*oapi.JobAgent, error)
-}
-
-// ReleaseTarget identifies a single (environment, resource) pair.
-type ReleaseTarget struct {
-	EnvironmentID uuid.UUID
-	ResourceID    uuid.UUID
-}
-
-// Setter abstracts write and enqueue operations.
-type Setter interface {
-	CompletePlan(ctx context.Context, planID uuid.UUID) error
-	InsertTarget(ctx context.Context, planID, envID, resourceID uuid.UUID) (uuid.UUID, error)
-	InsertResult(ctx context.Context, targetID uuid.UUID, dispatchContext []byte) (uuid.UUID, error)
-	EnqueueResult(ctx context.Context, workspaceID, resultID string) error
-}
-
-// VarResolver resolves deployment variables for a release target.
-type VarResolver interface {
-	Resolve(ctx context.Context, scope *variableresolver.Scope, deploymentID, resourceID string) (map[string]oapi.LiteralValue, error)
-}
 
 var _ reconcile.Processor = (*Controller)(nil)
 
@@ -225,111 +191,6 @@ func (c *Controller) processTarget(
 	return nil
 }
 
-// --- Postgres implementations ---
-
-type postgresGetter struct{}
-
-func (g *postgresGetter) GetDeploymentPlan(ctx context.Context, id uuid.UUID) (db.DeploymentPlan, error) {
-	return db.GetQueries(ctx).GetDeploymentPlan(ctx, id)
-}
-
-func (g *postgresGetter) GetDeployment(ctx context.Context, id uuid.UUID) (*oapi.Deployment, error) {
-	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return db.ToOapiDeployment(row), nil
-}
-
-func (g *postgresGetter) GetReleaseTargets(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error) {
-	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeployment(ctx, deploymentID)
-	if err != nil {
-		return nil, err
-	}
-	targets := make([]ReleaseTarget, len(rows))
-	for i, r := range rows {
-		targets[i] = ReleaseTarget{EnvironmentID: r.EnvironmentID, ResourceID: r.ResourceID}
-	}
-	return targets, nil
-}
-
-func (g *postgresGetter) GetEnvironment(ctx context.Context, id uuid.UUID) (*oapi.Environment, error) {
-	row, err := db.GetQueries(ctx).GetEnvironmentByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return db.ToOapiEnvironment(row), nil
-}
-
-func (g *postgresGetter) GetResource(ctx context.Context, id uuid.UUID) (*oapi.Resource, error) {
-	row, err := db.GetQueries(ctx).GetResourceByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return db.ToOapiResource(row), nil
-}
-
-func (g *postgresGetter) GetJobAgent(ctx context.Context, id uuid.UUID) (*oapi.JobAgent, error) {
-	row, err := db.GetQueries(ctx).GetJobAgentByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return db.ToOapiJobAgent(row), nil
-}
-
-type postgresSetter struct {
-	queue reconcile.Queue
-}
-
-func (s *postgresSetter) CompletePlan(ctx context.Context, planID uuid.UUID) error {
-	return db.GetQueries(ctx).UpdateDeploymentPlanCompleted(ctx, planID)
-}
-
-func (s *postgresSetter) InsertTarget(ctx context.Context, planID, envID, resourceID uuid.UUID) (uuid.UUID, error) {
-	targetID := uuid.New()
-	_, err := db.GetQueries(ctx).InsertDeploymentPlanTarget(ctx, db.InsertDeploymentPlanTargetParams{
-		ID:            targetID,
-		PlanID:        planID,
-		EnvironmentID: envID,
-		ResourceID:    resourceID,
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return uuid.UUID{}, ErrTargetExists
-	}
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-	return targetID, nil
-}
-
-func (s *postgresSetter) InsertResult(ctx context.Context, targetID uuid.UUID, dispatchContext []byte) (uuid.UUID, error) {
-	resultID := uuid.New()
-	err := db.GetQueries(ctx).InsertDeploymentPlanTargetResult(ctx, db.InsertDeploymentPlanTargetResultParams{
-		ID:              resultID,
-		TargetID:        targetID,
-		DispatchContext: dispatchContext,
-	})
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-	return resultID, nil
-}
-
-func (s *postgresSetter) EnqueueResult(ctx context.Context, workspaceID, resultID string) error {
-	return events.EnqueueDeploymentPlanTargetResult(s.queue, ctx, events.DeploymentPlanTargetResultParams{
-		WorkspaceID: workspaceID,
-		ResultID:    resultID,
-	})
-}
-
-type postgresVarResolver struct {
-	getter variableresolver.Getter
-}
-
-func (r *postgresVarResolver) Resolve(ctx context.Context, scope *variableresolver.Scope, deploymentID, resourceID string) (map[string]oapi.LiteralValue, error) {
-	return variableresolver.Resolve(ctx, r.getter, scope, deploymentID, resourceID)
-}
-
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
 		log.Fatal("Failed to get pgx pool")
@@ -357,9 +218,9 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 
 	q := db.GetQueries(context.Background())
 	controller := &Controller{
-		getter:      &postgresGetter{},
-		setter:      &postgresSetter{queue: enqueueQueue},
-		varResolver: &postgresVarResolver{getter: variableresolver.NewPostgresGetter(q)},
+		getter:      &PostgresGetter{},
+		setter:      &PostgresSetter{queue: enqueueQueue},
+		varResolver: NewPostgresVarResolver(variableresolver.NewPostgresGetter(q)),
 	}
 
 	worker, err := reconcile.NewWorker(

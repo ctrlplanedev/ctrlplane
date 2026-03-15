@@ -61,6 +61,7 @@ SELECT
   r.content_hash,
   r.current,
   r.proposed,
+  r.message,
   r.started_at,
   r.completed_at
 FROM deployment_plan_target_result r
@@ -80,6 +81,7 @@ func (q *Queries) GetDeploymentPlanTargetResult(ctx context.Context, id uuid.UUI
 		&i.ContentHash,
 		&i.Current,
 		&i.Proposed,
+		&i.Message,
 		&i.StartedAt,
 		&i.CompletedAt,
 	)
@@ -146,6 +148,7 @@ SET status = $2,
     content_hash = $4,
     current = $5,
     proposed = $6,
+    message = $7,
     completed_at = NOW()
 WHERE id = $1
 `
@@ -157,6 +160,7 @@ type UpdateDeploymentPlanTargetResultCompletedParams struct {
 	ContentHash pgtype.Text
 	Current     pgtype.Text
 	Proposed    pgtype.Text
+	Message     pgtype.Text
 }
 
 func (q *Queries) UpdateDeploymentPlanTargetResultCompleted(ctx context.Context, arg UpdateDeploymentPlanTargetResultCompletedParams) error {
@@ -167,6 +171,7 @@ func (q *Queries) UpdateDeploymentPlanTargetResultCompleted(ctx context.Context,
 		arg.ContentHash,
 		arg.Current,
 		arg.Proposed,
+		arg.Message,
 	)
 	return err
 }

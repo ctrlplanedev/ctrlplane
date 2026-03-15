@@ -1,0 +1,1 @@
+ALTER TABLE "deployment_plan_target_result" ADD COLUMN "message" text;

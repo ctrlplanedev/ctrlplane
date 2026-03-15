@@ -36,6 +36,7 @@ SELECT
   r.content_hash,
   r.current,
   r.proposed,
+  r.message,
   r.started_at,
   r.completed_at
 FROM deployment_plan_target_result r
@@ -53,6 +54,7 @@ SET status = $2,
     content_hash = $4,
     current = $5,
     proposed = $6,
+    message = $7,
     completed_at = NOW()
 WHERE id = $1;
 

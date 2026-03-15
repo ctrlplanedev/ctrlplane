@@ -18,6 +18,7 @@ type Dispatchable interface {
 // job creation so that verification records are persisted atomically with
 // the job.
 type Verifiable interface {
+	Type() string
 	Verifications(config oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error)
 }
 
@@ -26,6 +27,7 @@ type Verifiable interface {
 // multiple calls to complete (e.g. waiting for manifests to render).
 // Between calls the reconciler persists State so the agent can resume.
 type Plannable interface {
+	Type() string
 	Plan(ctx context.Context, dispatchCtx *oapi.DispatchContext, state json.RawMessage) (*PlanResult, error)
 }
 
@@ -34,6 +36,10 @@ type PlanResult struct {
 	HasChanges  bool
 	Current     string
 	Proposed    string
+
+	// Message is an optional user-facing description of the result,
+	// e.g. a summary of what changed or an error explanation.
+	Message string
 
 	// CompletedAt is nil while the agent still needs more calls.
 	// The reconciler persists State and requeues when nil, and

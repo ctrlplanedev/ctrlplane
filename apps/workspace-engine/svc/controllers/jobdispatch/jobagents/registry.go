@@ -17,19 +17,31 @@ type Getter interface {
 
 type Registry struct {
 	dispatchers map[string]types.Dispatchable
+	planners    map[string]types.Plannable
+	verifiers   map[string]types.Verifiable
 	getter      Getter
 }
 
 func NewRegistry(getter Getter) *Registry {
 	r := &Registry{}
 	r.dispatchers = make(map[string]types.Dispatchable)
+	r.planners = make(map[string]types.Plannable)
+	r.verifiers = make(map[string]types.Verifiable)
 	r.getter = getter
 	return r
 }
 
-// Register adds a dispatcher to the registry.
-func (r *Registry) Register(dispatcher types.Dispatchable) {
-	r.dispatchers[dispatcher.Type()] = dispatcher
+// Register adds the agent to every capability map it qualifies for.
+func (r *Registry) Register(agent interface{ Type() string }) {
+	if d, ok := agent.(types.Dispatchable); ok {
+		r.dispatchers[d.Type()] = d
+	}
+	if p, ok := agent.(types.Plannable); ok {
+		r.planners[p.Type()] = p
+	}
+	if v, ok := agent.(types.Verifiable); ok {
+		r.verifiers[v.Type()] = v
+	}
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
@@ -71,12 +83,7 @@ func (r *Registry) Plan(
 	dispatchCtx *oapi.DispatchContext,
 	state json.RawMessage,
 ) (*types.PlanResult, error) {
-	dispatcher, ok := r.dispatchers[agentType]
-	if !ok {
-		return nil, nil
-	}
-
-	p, ok := dispatcher.(types.Plannable)
+	p, ok := r.planners[agentType]
 	if !ok {
 		return nil, nil
 	}

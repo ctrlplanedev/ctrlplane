@@ -503,6 +503,7 @@ CREATE TABLE deployment_plan_target_result (
     content_hash TEXT,
     current TEXT,
     proposed TEXT,
+    message TEXT,
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );

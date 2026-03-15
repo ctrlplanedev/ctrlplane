@@ -434,6 +434,7 @@ const getDeploymentPlan: AsyncTypedHandler<
       current: r.current,
       proposed: r.proposed,
       contentHash: r.contentHash,
+      message: r.message,
     })),
   }));
 

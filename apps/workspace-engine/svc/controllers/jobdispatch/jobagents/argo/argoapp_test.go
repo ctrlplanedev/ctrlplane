@@ -326,14 +326,9 @@ func TestPlan_HasChanges(t *testing.T) {
 	current := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
 	proposed := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":3}}`}
 
-	a := New(
-		&mockUpserter{},
-		&mockDeleter{},
-		&mockSetter{},
-		planManifestGetter(current, proposed),
-	)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
 
-	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.True(t, result.HasChanges)
 	assert.NotEmpty(t, result.ContentHash)
@@ -344,14 +339,9 @@ func TestPlan_HasChanges(t *testing.T) {
 func TestPlan_NoChanges(t *testing.T) {
 	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
 
-	a := New(
-		&mockUpserter{},
-		&mockDeleter{},
-		&mockSetter{},
-		planManifestGetter(manifests, manifests),
-	)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(manifests, manifests))
 
-	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.False(t, result.HasChanges)
 	assert.NotEmpty(t, result.ContentHash)
@@ -368,14 +358,9 @@ func TestPlan_MultipleManifests(t *testing.T) {
 		`{"kind":"Service","metadata":{"name":"web"}}`,
 	}
 
-	a := New(
-		&mockUpserter{},
-		&mockDeleter{},
-		&mockSetter{},
-		planManifestGetter(current, proposed),
-	)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
 
-	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.True(t, result.HasChanges)
 	assert.Contains(t, result.Current, "---\n")
@@ -386,40 +371,34 @@ func TestPlan_ContentHashDeterministic(t *testing.T) {
 	current := []string{`{"kind":"ConfigMap","metadata":{"name":"cfg"}}`}
 	proposed := []string{`{"kind":"ConfigMap","metadata":{"name":"cfg"},"data":{"k":"v"}}`}
 
-	a := New(
-		&mockUpserter{},
-		&mockDeleter{},
-		&mockSetter{},
-		planManifestGetter(current, proposed),
-	)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
 
-	r1, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	r1, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 
-	r2, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	r2, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, r1.ContentHash, r2.ContentHash)
 }
 
 func TestPlan_BadConfig(t *testing.T) {
-	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, &mockManifestGetter{})
 	dctx := testDispatchCtx()
 	dctx.JobAgentConfig = oapi.JobAgentConfig{}
 
-	_, err := a.Plan(context.Background(), dctx, nil)
+	_, err := p.Plan(context.Background(), dctx, nil)
 	require.Error(t, err)
 }
 
 func TestPlan_UpsertFailure(t *testing.T) {
-	a := New(
+	p := NewArgoCDPlanner(
 		&mockUpserter{err: fmt.Errorf("conflict")},
 		&mockDeleter{},
-		&mockSetter{},
 		&mockManifestGetter{},
 	)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "upsert temporary plan application")
 }
@@ -433,9 +412,9 @@ func TestPlan_GetProposedManifestsFailure_ReturnsIncomplete(t *testing.T) {
 			return []string{"manifest"}, nil
 		},
 	}
-	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter)
 
-	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.Nil(t, result.CompletedAt)
 	assert.NotEmpty(t, result.State)
@@ -452,9 +431,9 @@ func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
 			return nil, fmt.Errorf("current app not found")
 		},
 	}
-	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get current manifests")
 }
@@ -465,9 +444,9 @@ func TestPlan_EmptyManifests_ReturnsIncomplete(t *testing.T) {
 			return nil, nil
 		},
 	}
-	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter)
 
-	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.Nil(t, result.CompletedAt)
 	assert.NotEmpty(t, result.State)
@@ -478,14 +457,9 @@ func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {
 	proposed := []string{`{"kind":"Deployment","spec":{"replicas":2}}`}
 	deleter := &mockDeleter{}
 
-	a := New(
-		&mockUpserter{},
-		deleter,
-		&mockSetter{},
-		planManifestGetter(current, proposed),
-	)
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, planManifestGetter(current, proposed))
 
-	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 
 	calls := deleter.getCalls()
@@ -504,9 +478,9 @@ func TestPlan_CurrentManifestError_DeletesTmpApp(t *testing.T) {
 		},
 	}
 
-	a := New(&mockUpserter{}, deleter, &mockSetter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get current manifests")
 
@@ -517,14 +491,13 @@ func TestPlan_CurrentManifestError_DeletesTmpApp(t *testing.T) {
 
 func TestPlan_DeleteNotCalledOnUpsertFailure(t *testing.T) {
 	deleter := &mockDeleter{}
-	a := New(
+	p := NewArgoCDPlanner(
 		&mockUpserter{err: fmt.Errorf("conflict")},
 		deleter,
-		&mockSetter{},
 		&mockManifestGetter{},
 	)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
 	assert.Empty(t, deleter.getCalls())
 }

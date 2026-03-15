@@ -368,6 +368,7 @@ type DeploymentPlanTargetResult struct {
 	ContentHash     pgtype.Text
 	Current         pgtype.Text
 	Proposed        pgtype.Text
+	Message         pgtype.Text
 	StartedAt       pgtype.Timestamptz
 	CompletedAt     pgtype.Timestamptz
 }

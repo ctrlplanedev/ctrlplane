@@ -56,18 +56,18 @@ type ManifestGetter interface {
 var (
 	_ types.Dispatchable = &ArgoApplication{}
 	_ types.Verifiable   = &ArgoApplication{}
-	_ types.Plannable    = &ArgoApplication{}
 )
 
 type ArgoApplication struct {
-	setter         Setter
-	upserter       ApplicationUpserter
-	deleter        ApplicationDeleter
-	manifestGetter ManifestGetter
+	setter   Setter
+	upserter ApplicationUpserter
 }
 
 func New(upserter ApplicationUpserter, deleter ApplicationDeleter, setter Setter, manifestGetter ManifestGetter) *ArgoApplication {
-	return &ArgoApplication{upserter: upserter, deleter: deleter, setter: setter, manifestGetter: manifestGetter}
+	return &ArgoApplication{
+		setter:   setter,
+		upserter: upserter,
+	}
 }
 
 func (a *ArgoApplication) Type() string {
