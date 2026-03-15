@@ -2,6 +2,7 @@ package testrunner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -96,16 +97,17 @@ func (t *TestRunner) resolveJobAfterDelay(
 	t.setter.UpdateJob(ctx, jobID, status, finalMessage, nil)
 }
 
-func (t *TestRunner) Plan(ctx context.Context, dispatchCtx *oapi.DispatchContext) (*types.PlanResult, error) {
+func (t *TestRunner) Plan(_ context.Context, dispatchCtx *oapi.DispatchContext, _ json.RawMessage) (*types.PlanResult, error) {
 	hasChanges, ok := dispatchCtx.JobAgentConfig["hasChanges"].(bool)
 	if !ok {
 		hasChanges = false
 	}
+	now := time.Now()
 	return &types.PlanResult{
 		ContentHash: "test-runner",
 		HasChanges:  hasChanges,
-		Diff:        "",
 		Current:     "",
 		Proposed:    "",
+		CompletedAt: &now,
 	}, nil
 }

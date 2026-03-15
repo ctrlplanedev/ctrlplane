@@ -464,3 +464,45 @@ CREATE TABLE "computed_policy_release_target" (
 	"resource_id" uuid NOT NULL,
 	"computed_at" timestamp with time zone DEFAULT now() NOT NULL
 );
+
+CREATE TYPE deployment_plan_target_status AS ENUM ('computing', 'completed', 'errored', 'unsupported');
+
+CREATE TABLE deployment_plan (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    version_tag TEXT NOT NULL,
+    version_name TEXT NOT NULL,
+    version_config JSONB NOT NULL DEFAULT '{}',
+    version_job_agent_config JSONB NOT NULL DEFAULT '{}',
+    version_metadata JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE deployment_plan_target (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plan_id UUID NOT NULL REFERENCES deployment_plan(id) ON DELETE CASCADE,
+    environment_id UUID NOT NULL REFERENCES environment(id) ON DELETE CASCADE,
+    resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
+    current_release_id UUID
+);
+
+CREATE UNIQUE INDEX deployment_plan_target_plan_env_resource_idx
+    ON deployment_plan_target (plan_id, environment_id, resource_id);
+
+CREATE TABLE deployment_plan_target_result (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    target_id UUID NOT NULL REFERENCES deployment_plan_target(id) ON DELETE CASCADE,
+    dispatch_context JSONB NOT NULL,
+    agent_state JSONB,
+    status deployment_plan_target_status NOT NULL DEFAULT 'computing',
+    has_changes BOOLEAN,
+    content_hash TEXT,
+    current TEXT,
+    proposed TEXT,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);

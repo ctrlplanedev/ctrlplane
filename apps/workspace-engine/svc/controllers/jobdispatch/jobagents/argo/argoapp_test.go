@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"workspace-engine/pkg/oapi"
 )
 
 // --- mocks ---
@@ -332,7 +333,7 @@ func TestPlan_HasChanges(t *testing.T) {
 		planManifestGetter(current, proposed),
 	)
 
-	result, err := a.Plan(context.Background(), testDispatchCtx())
+	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.True(t, result.HasChanges)
 	assert.NotEmpty(t, result.ContentHash)
@@ -350,7 +351,7 @@ func TestPlan_NoChanges(t *testing.T) {
 		planManifestGetter(manifests, manifests),
 	)
 
-	result, err := a.Plan(context.Background(), testDispatchCtx())
+	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.False(t, result.HasChanges)
 	assert.NotEmpty(t, result.ContentHash)
@@ -374,7 +375,7 @@ func TestPlan_MultipleManifests(t *testing.T) {
 		planManifestGetter(current, proposed),
 	)
 
-	result, err := a.Plan(context.Background(), testDispatchCtx())
+	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 	assert.True(t, result.HasChanges)
 	assert.Contains(t, result.Current, "---\n")
@@ -392,10 +393,10 @@ func TestPlan_ContentHashDeterministic(t *testing.T) {
 		planManifestGetter(current, proposed),
 	)
 
-	r1, err := a.Plan(context.Background(), testDispatchCtx())
+	r1, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 
-	r2, err := a.Plan(context.Background(), testDispatchCtx())
+	r2, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, r1.ContentHash, r2.ContentHash)
@@ -406,7 +407,7 @@ func TestPlan_BadConfig(t *testing.T) {
 	dctx := testDispatchCtx()
 	dctx.JobAgentConfig = oapi.JobAgentConfig{}
 
-	_, err := a.Plan(context.Background(), dctx)
+	_, err := a.Plan(context.Background(), dctx, nil)
 	require.Error(t, err)
 }
 
@@ -418,12 +419,12 @@ func TestPlan_UpsertFailure(t *testing.T) {
 		&mockManifestGetter{},
 	)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx())
+	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "create temporary plan application")
+	assert.Contains(t, err.Error(), "upsert temporary plan application")
 }
 
-func TestPlan_GetProposedManifestsFailure(t *testing.T) {
+func TestPlan_GetProposedManifestsFailure_ReturnsIncomplete(t *testing.T) {
 	getter := &mockManifestGetter{
 		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
 			if strings.Contains(appName, "-plan-") {
@@ -434,11 +435,10 @@ func TestPlan_GetProposedManifestsFailure(t *testing.T) {
 	}
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := a.Plan(ctx, testDispatchCtx())
-	require.Error(t, err)
+	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	assert.Nil(t, result.CompletedAt)
+	assert.NotEmpty(t, result.State)
 }
 
 func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
@@ -454,12 +454,12 @@ func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
 	}
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx())
+	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get current manifests")
 }
 
-func TestPlan_WaitForManifestsTimeout(t *testing.T) {
+func TestPlan_EmptyManifests_ReturnsIncomplete(t *testing.T) {
 	getter := &mockManifestGetter{
 		fn: func(_ context.Context, _, _, _ string) ([]string, error) {
 			return nil, nil
@@ -467,12 +467,10 @@ func TestPlan_WaitForManifestsTimeout(t *testing.T) {
 	}
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, getter)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	_, err := a.Plan(ctx, testDispatchCtx())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wait for temporary app manifests")
+	result, err := a.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	assert.Nil(t, result.CompletedAt)
+	assert.NotEmpty(t, result.State)
 }
 
 func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {
@@ -487,7 +485,7 @@ func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {
 		planManifestGetter(current, proposed),
 	)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx())
+	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
 
 	calls := deleter.getCalls()
@@ -495,7 +493,7 @@ func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {
 	assert.Contains(t, calls[0], "-plan-")
 }
 
-func TestPlan_DeletesTemporaryAppOnManifestError(t *testing.T) {
+func TestPlan_CurrentManifestError_DeletesTmpApp(t *testing.T) {
 	deleter := &mockDeleter{}
 	getter := &mockManifestGetter{
 		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
@@ -508,8 +506,9 @@ func TestPlan_DeletesTemporaryAppOnManifestError(t *testing.T) {
 
 	a := New(&mockUpserter{}, deleter, &mockSetter{}, getter)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx())
+	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get current manifests")
 
 	calls := deleter.getCalls()
 	require.Len(t, calls, 1)
@@ -525,7 +524,7 @@ func TestPlan_DeleteNotCalledOnUpsertFailure(t *testing.T) {
 		&mockManifestGetter{},
 	)
 
-	_, err := a.Plan(context.Background(), testDispatchCtx())
+	_, err := a.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
 	assert.Empty(t, deleter.getCalls())
 }

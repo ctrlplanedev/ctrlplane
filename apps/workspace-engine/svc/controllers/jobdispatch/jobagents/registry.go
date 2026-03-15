@@ -2,6 +2,7 @@ package jobagents
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"workspace-engine/pkg/oapi"
@@ -68,6 +69,7 @@ func (r *Registry) Plan(
 	ctx context.Context,
 	agentType string,
 	dispatchCtx *oapi.DispatchContext,
+	state json.RawMessage,
 ) (*types.PlanResult, error) {
 	dispatcher, ok := r.dispatchers[agentType]
 	if !ok {
@@ -79,5 +81,5 @@ func (r *Registry) Plan(
 		return nil, nil
 	}
 
-	return p.Plan(ctx, dispatchCtx)
+	return p.Plan(ctx, dispatchCtx, state)
 }

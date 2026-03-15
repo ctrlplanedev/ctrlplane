@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/svc"
+	"workspace-engine/svc/controllers/deploymentplan"
+	"workspace-engine/svc/controllers/deploymentplanresult"
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/environmentresourceselectoreval"
@@ -19,6 +19,9 @@ import (
 	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 )
 
 var (
@@ -39,6 +42,8 @@ func main() {
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global),
 
+		deploymentplan.New(WorkerID, db.GetPool(ctx)),
+		deploymentplanresult.New(WorkerID, db.GetPool(ctx)),
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		jobdispatch.New(WorkerID, db.GetPool(ctx)),

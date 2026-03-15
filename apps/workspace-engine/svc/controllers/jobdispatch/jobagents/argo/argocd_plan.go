@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
 )
 
@@ -46,9 +46,20 @@ func prepareTmpApp(app *v1alpha1.Application, tmpName string) *v1alpha1.Applicat
 	return tmp
 }
 
+type argoPlanState struct {
+	TmpAppName string `json:"tmpAppName"`
+}
+
+func (a *ArgoApplication) deleteTmpApp(ctx context.Context, serverAddr, apiKey, name string) {
+	if err := a.deleter.DeleteApplication(ctx, serverAddr, apiKey, name); err != nil {
+		log.Warn("Failed to delete temporary plan application", "app", name, "error", err)
+	}
+}
+
 func (a *ArgoApplication) Plan(
 	ctx context.Context,
 	dispatchCtx *oapi.DispatchContext,
+	state json.RawMessage,
 ) (*types.PlanResult, error) {
 	serverAddr, apiKey, template, err := ParseJobAgentConfig(
 		dispatchCtx.JobAgentConfig,
@@ -63,31 +74,38 @@ func (a *ArgoApplication) Plan(
 	}
 
 	MakeApplicationK8sCompatible(proposedApp)
-
 	originalName := proposedApp.Name
-	tmpName := planAppName(originalName)
-	tmpApp := prepareTmpApp(proposedApp, tmpName)
 
-	if err := a.upserter.UpsertApplication(ctx, serverAddr, apiKey, tmpApp); err != nil {
-		return nil, fmt.Errorf("create temporary plan application: %w", err)
-	}
-	defer func() {
-		if err := a.deleter.DeleteApplication(context.Background(), serverAddr, apiKey, tmpName); err != nil {
-			log.Warn("Failed to delete temporary plan application", "app", tmpName, "error", err)
+	var s argoPlanState
+	if state != nil {
+		if err := json.Unmarshal(state, &s); err != nil {
+			return nil, fmt.Errorf("unmarshal plan state: %w", err)
 		}
-	}()
-
-	if err := a.waitForManifests(ctx, serverAddr, apiKey, tmpName); err != nil {
-		return nil, fmt.Errorf("wait for temporary app manifests: %w", err)
+	}
+	if s.TmpAppName == "" {
+		s.TmpAppName = planAppName(originalName)
 	}
 
-	proposedManifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, tmpName)
+	stateJSON, err := json.Marshal(s)
 	if err != nil {
-		return nil, fmt.Errorf("get proposed manifests: %w", err)
+		return nil, fmt.Errorf("marshal plan state: %w", err)
+	}
+
+	tmpApp := prepareTmpApp(proposedApp, s.TmpAppName)
+	if err := a.upserter.UpsertApplication(ctx, serverAddr, apiKey, tmpApp); err != nil {
+		return nil, fmt.Errorf("upsert temporary plan application: %w", err)
+	}
+
+	proposedManifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, s.TmpAppName)
+	if err != nil || len(proposedManifests) == 0 {
+		return &types.PlanResult{
+			State: stateJSON,
+		}, nil
 	}
 
 	currentManifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, originalName)
 	if err != nil {
+		a.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 		return nil, fmt.Errorf("get current manifests: %w", err)
 	}
 
@@ -100,39 +118,14 @@ func (a *ArgoApplication) Plan(
 	hasChanges := current != proposed
 	contentHash := sha256.Sum256([]byte(current + proposed))
 
+	a.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
+
+	now := time.Now()
 	return &types.PlanResult{
 		ContentHash: hex.EncodeToString(contentHash[:]),
 		Current:     current,
 		Proposed:    proposed,
 		HasChanges:  hasChanges,
+		CompletedAt: &now,
 	}, nil
-}
-
-func (a *ArgoApplication) waitForManifests(
-	ctx context.Context,
-	serverAddr, apiKey, name string,
-) error {
-	return retry.Do(
-		func() error {
-			manifests, err := a.manifestGetter.GetManifests(ctx, serverAddr, apiKey, name)
-			if err != nil {
-				return err
-			}
-			if len(manifests) == 0 {
-				return fmt.Errorf("no manifests available yet for %s", name)
-			}
-			return nil
-		},
-		retry.Attempts(15),
-		retry.Delay(2*time.Second),
-		retry.MaxDelay(10*time.Second),
-		retry.DelayType(retry.BackOffDelay),
-		retry.OnRetry(func(n uint, err error) {
-			log.Warn("Waiting for plan manifests",
-				"app", name,
-				"attempt", n+1,
-				"error", err)
-		}),
-		retry.Context(ctx),
-	)
 }

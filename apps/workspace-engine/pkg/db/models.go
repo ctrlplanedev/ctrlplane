@@ -12,6 +12,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type DeploymentPlanTargetStatus string
+
+const (
+	DeploymentPlanTargetStatusComputing   DeploymentPlanTargetStatus = "computing"
+	DeploymentPlanTargetStatusCompleted   DeploymentPlanTargetStatus = "completed"
+	DeploymentPlanTargetStatusErrored     DeploymentPlanTargetStatus = "errored"
+	DeploymentPlanTargetStatusUnsupported DeploymentPlanTargetStatus = "unsupported"
+)
+
+func (e *DeploymentPlanTargetStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = DeploymentPlanTargetStatus(s)
+	case string:
+		*e = DeploymentPlanTargetStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for DeploymentPlanTargetStatus: %T", src)
+	}
+	return nil
+}
+
+type NullDeploymentPlanTargetStatus struct {
+	DeploymentPlanTargetStatus DeploymentPlanTargetStatus
+	Valid                      bool // Valid is true if DeploymentPlanTargetStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullDeploymentPlanTargetStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.DeploymentPlanTargetStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.DeploymentPlanTargetStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullDeploymentPlanTargetStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.DeploymentPlanTargetStatus), nil
+}
+
 type DeploymentVersionStatus string
 
 const (
@@ -289,6 +333,43 @@ type Deployment struct {
 	ResourceSelector pgtype.Text
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
+}
+
+type DeploymentPlan struct {
+	ID                    uuid.UUID
+	WorkspaceID           uuid.UUID
+	DeploymentID          uuid.UUID
+	VersionTag            string
+	VersionName           string
+	VersionConfig         map[string]any
+	VersionJobAgentConfig map[string]any
+	VersionMetadata       map[string]string
+	Metadata              map[string]string
+	CreatedAt             pgtype.Timestamptz
+	CompletedAt           pgtype.Timestamptz
+	ExpiresAt             pgtype.Timestamptz
+}
+
+type DeploymentPlanTarget struct {
+	ID               uuid.UUID
+	PlanID           uuid.UUID
+	EnvironmentID    uuid.UUID
+	ResourceID       uuid.UUID
+	CurrentReleaseID uuid.UUID
+}
+
+type DeploymentPlanTargetResult struct {
+	ID              uuid.UUID
+	TargetID        uuid.UUID
+	DispatchContext []byte
+	AgentState      []byte
+	Status          DeploymentPlanTargetStatus
+	HasChanges      pgtype.Bool
+	ContentHash     pgtype.Text
+	Current         pgtype.Text
+	Proposed        pgtype.Text
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
 }
 
 type DeploymentVariable struct {

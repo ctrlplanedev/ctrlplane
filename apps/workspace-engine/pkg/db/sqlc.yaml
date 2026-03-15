@@ -30,6 +30,7 @@ sql:
       - queries/computed_relationships.sql
       - queries/relationship_rules.sql
       - queries/policy_rule_evaluation.sql
+      - queries/deployment_plan.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -175,3 +176,25 @@ sql:
           - column: "workflow_job.config"
             go_type:
               type: "map[string]any"
+
+          # DeploymentPlan
+          - column: "deployment_plan.version_config"
+            go_type:
+              type: "map[string]any"
+          - column: "deployment_plan.version_job_agent_config"
+            go_type:
+              type: "map[string]any"
+          - column: "deployment_plan.version_metadata"
+            go_type:
+              type: "map[string]string"
+          - column: "deployment_plan.metadata"
+            go_type:
+              type: "map[string]string"
+
+          # DeploymentPlanTargetResult
+          - column: "deployment_plan_target_result.dispatch_context"
+            go_type:
+              type: "[]byte"
+          - column: "deployment_plan_target_result.agent_state"
+            go_type:
+              type: "[]byte"

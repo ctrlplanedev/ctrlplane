@@ -90,28 +90,13 @@ export const deploymentPlanTarget = pgTable(
     resourceId: uuid("resource_id")
       .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
-
     currentReleaseId: uuid("current_release_id").references(() => release.id, {
       onDelete: "set null",
     }),
-
-    status: deploymentPlanTargetStatus("status").default("computing").notNull(),
-
-    hasChanges: boolean("has_changes"),
-    contentHash: text("content_hash"),
-
-    current: text("current"),
-    proposed: text("proposed"),
-
-    startedAt: timestamp("started_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => [
     index().on(t.planId),
-    index().on(t.environmentId),
-    index().on(t.resourceId),
+    uniqueIndex().on(t.planId, t.environmentId, t.resourceId),
   ],
 );
 
@@ -135,6 +120,45 @@ export const deploymentPlanTargetRelations = relations(
       references: [release.id],
     }),
     variables: many(deploymentPlanTargetVariable),
+    results: many(deploymentPlanTargetResult),
+  }),
+);
+
+export const deploymentPlanTargetResult = pgTable(
+  "deployment_plan_target_result",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    targetId: uuid("target_id")
+      .references(() => deploymentPlanTarget.id, { onDelete: "cascade" })
+      .notNull(),
+
+    dispatchContext: jsonb("dispatch_context")
+      .$type<Record<string, any>>()
+      .notNull(),
+    agentState: jsonb("agent_state").$type<Record<string, any>>(),
+
+    status: deploymentPlanTargetStatus("status").default("computing").notNull(),
+    hasChanges: boolean("has_changes"),
+    contentHash: text("content_hash"),
+    current: text("current"),
+    proposed: text("proposed"),
+    message: text("message"),
+
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index().on(t.targetId)],
+);
+
+export const deploymentPlanTargetResultRelations = relations(
+  deploymentPlanTargetResult,
+  ({ one }) => ({
+    target: one(deploymentPlanTarget, {
+      fields: [deploymentPlanTargetResult.targetId],
+      references: [deploymentPlanTarget.id],
+    }),
   }),
 );
 

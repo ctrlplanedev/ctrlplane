@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
+  enqueueDeploymentPlan,
   enqueuePolicyEval,
   enqueueReleaseTargetsForDeployment,
 } from "@ctrlplane/db/reconcilers";
@@ -86,16 +87,16 @@ const listDeployments: AsyncTypedHandler<
   const systemLinks =
     deploymentIds.length > 0
       ? await db
-          .select({
-            deploymentId: schema.systemDeployment.deploymentId,
-            system: schema.system,
-          })
-          .from(schema.systemDeployment)
-          .innerJoin(
-            schema.system,
-            eq(schema.systemDeployment.systemId, schema.system.id),
-          )
-          .where(inArray(schema.systemDeployment.deploymentId, deploymentIds))
+        .select({
+          deploymentId: schema.systemDeployment.deploymentId,
+          system: schema.system,
+        })
+        .from(schema.systemDeployment)
+        .innerJoin(
+          schema.system,
+          eq(schema.systemDeployment.systemId, schema.system.id),
+        )
+        .where(inArray(schema.systemDeployment.deploymentId, deploymentIds))
       : [];
 
   const systemsByDeploymentId = new Map<
@@ -149,14 +150,14 @@ const getDeployment: AsyncTypedHandler<
   const variableValues =
     variableIds.length > 0
       ? await db
-          .select()
-          .from(schema.deploymentVariableValue)
-          .where(
-            inArray(
-              schema.deploymentVariableValue.deploymentVariableId,
-              variableIds,
-            ),
-          )
+        .select()
+        .from(schema.deploymentVariableValue)
+        .where(
+          inArray(
+            schema.deploymentVariableValue.deploymentVariableId,
+            variableIds,
+          ),
+        )
       : [];
 
   const valuesByVariableId = new Map<
@@ -380,9 +381,10 @@ const createDeploymentPlan: AsyncTypedHandler<
     versionJobAgentConfig: version.jobAgentConfig ?? {},
     versionMetadata: version.metadata ?? {},
     metadata: body.metadata ?? {},
-    status: "computing",
     expiresAt,
   });
+
+  await enqueueDeploymentPlan(db, workspaceId, planId);
 
   res.status(202).json({
     id: planId,
@@ -406,38 +408,59 @@ const getDeploymentPlan: AsyncTypedHandler<
     ),
     with: {
       targets: {
-        with: { environment: true, resource: true },
+        with: {
+          environment: true,
+          resource: true,
+          results: true,
+        },
       },
     },
   });
 
   if (plan == null) throw new ApiError("Deployment plan not found", 404);
 
+  const allResults = plan.targets.flatMap((t) => t.results);
+
   const targets = plan.targets.map((t) => ({
     environmentId: t.environmentId,
     environmentName: t.environment.name,
     resourceId: t.resourceId,
     resourceName: t.resource.name,
-    hasChanges: t.hasChanges,
-    current: t.current,
-    proposed: t.proposed,
-    contentHash: t.contentHash,
-    status: t.status,
+    hasChanges: t.results.some((r) => r.hasChanges === true),
+    results: t.results.map((r) => ({
+      id: r.id,
+      status: r.status,
+      hasChanges: r.hasChanges,
+      current: r.current,
+      proposed: r.proposed,
+      contentHash: r.contentHash,
+    })),
   }));
 
-  const changed = targets.filter((t) => t.hasChanges === true).length;
-  const unchanged = targets.filter((t) => t.hasChanges === false).length;
-  const errored = targets.filter((t) => t.status === "errored").length;
-  const unsupported = targets.filter((t) => t.status === "unsupported").length;
+  const computing = allResults.filter((r) => r.status === "computing").length;
+  const changed = allResults.filter((r) => r.hasChanges === true).length;
+  const unchanged = allResults.filter((r) => r.hasChanges === false).length;
+  const errored = allResults.filter((r) => r.status === "errored").length;
+  const unsupported = allResults.filter(
+    (r) => r.status === "unsupported",
+  ).length;
 
+  const status =
+    computing > 0 ? "computing" : errored > 0 ? "failed" : "completed";
   const summary =
-    plan.status === "computing"
+    status === "computing"
       ? null
-      : { total: targets.length, changed, unchanged, errored, unsupported };
+      : {
+        total: allResults.length,
+        changed,
+        unchanged,
+        errored,
+        unsupported,
+      };
 
   res.status(200).json({
     id: plan.id,
-    status: plan.status,
+    status,
     summary,
     targets,
   });
