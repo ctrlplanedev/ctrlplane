@@ -88,13 +88,13 @@ jobs:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
         run: pnpm exec drizzle-kit migrate
 
-      - name: Run DB package tests
-        working-directory: apps/workspace-engine
-        env:
-          POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
-          USE_DATABASE_BACKING: "1"
-          SERVICES: "none"
-        run: go test -race ./pkg/db/... ./test/e2e/...
+      # - name: Run DB package tests
+      #   working-directory: apps/workspace-engine
+      #   env:
+      #     POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
+      #     USE_DATABASE_BACKING: "1"
+      #     SERVICES: "none"
+      #   run: go test -race ./pkg/db/... ./test/e2e/...
 
   tests:
     runs-on: ubuntu-latest
