@@ -2,6 +2,7 @@ package argo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -418,6 +419,13 @@ func TestPlan_GetProposedManifestsFailure_ReturnsIncomplete(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, result.CompletedAt)
 	assert.NotEmpty(t, result.State)
+	assert.Contains(t, result.Message, "Retrying manifest fetch")
+
+	var s argoPlanState
+	require.NoError(t, json.Unmarshal(result.State, &s))
+	assert.Equal(t, 1, s.ManifestChecks)
+	assert.NotNil(t, s.FirstCheckedAt)
+	assert.NotNil(t, s.LastCheckedAt)
 }
 
 func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
@@ -450,6 +458,80 @@ func TestPlan_EmptyManifests_ReturnsIncomplete(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, result.CompletedAt)
 	assert.NotEmpty(t, result.State)
+	assert.Contains(t, result.Message, "Waiting for manifests to render")
+
+	var s argoPlanState
+	require.NoError(t, json.Unmarshal(result.State, &s))
+	assert.Equal(t, 1, s.ManifestChecks)
+	assert.NotNil(t, s.FirstCheckedAt)
+	assert.NotNil(t, s.LastCheckedAt)
+}
+
+func TestPlan_ManifestTimeout_Exhausted_WithError(t *testing.T) {
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
+			if strings.Contains(appName, "-plan-") {
+				return nil, fmt.Errorf("not found")
+			}
+			return []string{"manifest"}, nil
+		},
+	}
+	deleter := &mockDeleter{}
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+
+	expired := time.Now().Add(-manifestTimeout - time.Second)
+	state, _ := json.Marshal(argoPlanState{
+		TmpAppName:     "test-app-plan-abc",
+		ManifestChecks: 5,
+		FirstCheckedAt: &expired,
+	})
+
+	_, err := p.Plan(context.Background(), testDispatchCtx(), state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+	assert.Contains(t, err.Error(), "6 checks")
+	require.Len(t, deleter.getCalls(), 1, "should delete tmp app on timeout")
+}
+
+func TestPlan_ManifestTimeout_Exhausted_EmptyManifests(t *testing.T) {
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, _ string) ([]string, error) {
+			return nil, nil
+		},
+	}
+	deleter := &mockDeleter{}
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+
+	expired := time.Now().Add(-manifestTimeout - time.Second)
+	state, _ := json.Marshal(argoPlanState{
+		TmpAppName:     "test-app-plan-abc",
+		ManifestChecks: 5,
+		FirstCheckedAt: &expired,
+	})
+
+	_, err := p.Plan(context.Background(), testDispatchCtx(), state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no manifests found after")
+	assert.Contains(t, err.Error(), "6 checks")
+	require.Len(t, deleter.getCalls(), 1, "should delete tmp app on timeout")
+}
+
+func TestPlan_ManifestTimeout_SucceedsBeforeExpiry(t *testing.T) {
+	current := []string{`{"kind":"Deployment"}`}
+	proposed := []string{`{"kind":"Deployment","spec":{"replicas":2}}`}
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
+
+	recent := time.Now().Add(-30 * time.Second)
+	state, _ := json.Marshal(argoPlanState{
+		TmpAppName:     "test-app-plan-abc",
+		ManifestChecks: 3,
+		FirstCheckedAt: &recent,
+	})
+
+	result, err := p.Plan(context.Background(), testDispatchCtx(), state)
+	require.NoError(t, err)
+	require.NotNil(t, result.CompletedAt, "should complete when manifests are found")
+	assert.True(t, result.HasChanges)
 }
 
 func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {

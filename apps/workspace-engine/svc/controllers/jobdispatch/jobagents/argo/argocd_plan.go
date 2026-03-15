@@ -50,8 +50,13 @@ func (p *ArgoCDPlanner) Type() string {
 	return "argo-cd"
 }
 
+const manifestTimeout = 60 * time.Second
+
 type argoPlanState struct {
-	TmpAppName string `json:"tmpAppName"`
+	TmpAppName     string     `json:"tmpAppName"`
+	ManifestChecks int        `json:"manifestChecks"`
+	FirstCheckedAt *time.Time `json:"firstCheckedAt,omitempty"`
+	LastCheckedAt  *time.Time `json:"lastCheckedAt,omitempty"`
 }
 
 func planAppName(originalName string) string {
@@ -114,20 +119,42 @@ func (p *ArgoCDPlanner) Plan(
 		s.TmpAppName = planAppName(originalName)
 	}
 
-	stateJSON, err := json.Marshal(s)
-	if err != nil {
-		return nil, fmt.Errorf("marshal plan state: %w", err)
-	}
-
 	tmpApp := prepareTmpApp(proposedApp, s.TmpAppName)
 	if err := p.upserter.UpsertApplication(ctx, serverAddr, apiKey, tmpApp); err != nil {
 		return nil, fmt.Errorf("upsert temporary plan application: %w", err)
 	}
 
-	proposedManifests, err := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, s.TmpAppName)
-	if err != nil || len(proposedManifests) == 0 {
+	now := time.Now()
+
+	proposedManifests, manifestErr := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, s.TmpAppName)
+	if manifestErr != nil || len(proposedManifests) == 0 {
+		if s.FirstCheckedAt == nil {
+			s.FirstCheckedAt = &now
+		}
+		s.LastCheckedAt = &now
+		s.ManifestChecks++
+
+		elapsed := now.Sub(*s.FirstCheckedAt)
+		if elapsed >= manifestTimeout {
+			p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
+			if manifestErr != nil {
+				return nil, fmt.Errorf("get proposed manifests after %s (%d checks): %w", elapsed.Round(time.Second), s.ManifestChecks, manifestErr)
+			}
+			return nil, fmt.Errorf("no manifests found after %s (%d checks)", elapsed.Round(time.Second), s.ManifestChecks)
+		}
+
+		retryState, err := json.Marshal(s)
+		if err != nil {
+			return nil, fmt.Errorf("marshal plan state: %w", err)
+		}
+
+		msg := fmt.Sprintf("Waiting for manifests to render (check %d, %s elapsed)", s.ManifestChecks, elapsed.Round(time.Second))
+		if manifestErr != nil {
+			msg = fmt.Sprintf("Retrying manifest fetch (check %d, %s elapsed): %s", s.ManifestChecks, elapsed.Round(time.Second), manifestErr.Error())
+		}
 		return &types.PlanResult{
-			State: stateJSON,
+			State:   retryState,
+			Message: msg,
 		}, nil
 	}
 
@@ -148,12 +175,12 @@ func (p *ArgoCDPlanner) Plan(
 
 	p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 
-	now := time.Now()
+	completedAt := time.Now()
 	return &types.PlanResult{
 		ContentHash: hex.EncodeToString(contentHash[:]),
 		Current:     current,
 		Proposed:    proposed,
 		HasChanges:  hasChanges,
-		CompletedAt: &now,
+		CompletedAt: &completedAt,
 	}, nil
 }
