@@ -157,10 +157,10 @@ func (p *ArgoCDPlanner) Plan(
 			Message: msg,
 		}, nil
 	}
+	defer p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 
 	currentManifests, err := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, originalName)
 	if err != nil {
-		p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 		return nil, fmt.Errorf("get current manifests: %w", err)
 	}
 
@@ -172,8 +172,6 @@ func (p *ArgoCDPlanner) Plan(
 
 	hasChanges := current != proposed
 	contentHash := sha256.Sum256([]byte(current + proposed))
-
-	p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 
 	completedAt := time.Now()
 	return &types.PlanResult{
