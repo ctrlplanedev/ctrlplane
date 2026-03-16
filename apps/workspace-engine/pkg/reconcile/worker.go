@@ -7,8 +7,27 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"workspace-engine/svc"
 )
+
+var meter = otel.Meter("workspace-engine/reconcile")
+
+var claimWaitHistogram metric.Float64Histogram
+
+func init() {
+	var err error
+	claimWaitHistogram, err = meter.Float64Histogram(
+		"reconcile.claim_wait_seconds",
+		metric.WithDescription("Time between an item becoming eligible (not_before) and being claimed"),
+		metric.WithUnit("s"),
+	)
+	if err != nil {
+		panic(err)
+	}
+}
 
 const (
 	defaultRetryBackoffCap = 5 * time.Minute
@@ -162,7 +181,16 @@ func (w *Worker) startItems(
 	sem chan struct{},
 	doneCh chan struct{},
 ) {
+	now := time.Now()
 	for _, item := range items {
+		claimWait := now.Sub(item.NotBefore).Seconds()
+		if claimWait < 0 {
+			claimWait = 0
+		}
+		claimWaitHistogram.Record(ctx, claimWait,
+			metric.WithAttributes(attribute.String("kind", item.Kind)),
+		)
+
 		if w.cfg.Hooks.OnClaimed != nil {
 			w.cfg.Hooks.OnClaimed(item)
 		}
