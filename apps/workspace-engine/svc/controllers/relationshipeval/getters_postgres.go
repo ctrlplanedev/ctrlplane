@@ -169,9 +169,11 @@ func (g *PostgresGetter) GetExistingRelationships(
 	rels := make([]ExistingRelationship, 0, len(rows))
 	for _, row := range rows {
 		rels = append(rels, ExistingRelationship{
-			RuleID:       row.RuleID,
-			FromEntityID: row.FromEntityID,
-			ToEntityID:   row.ToEntityID,
+			RuleID:         row.RuleID,
+			FromEntityType: row.FromEntityType,
+			FromEntityID:   row.FromEntityID,
+			ToEntityType:   row.ToEntityType,
+			ToEntityID:     row.ToEntityID,
 		})
 	}
 	return rels, nil

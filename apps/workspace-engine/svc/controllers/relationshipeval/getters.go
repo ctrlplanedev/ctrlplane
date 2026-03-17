@@ -26,9 +26,11 @@ type RuleInfo struct {
 
 // ExistingRelationship represents a currently stored relationship for an entity.
 type ExistingRelationship struct {
-	RuleID       uuid.UUID
-	FromEntityID uuid.UUID
-	ToEntityID   uuid.UUID
+	RuleID         uuid.UUID
+	FromEntityType string
+	FromEntityID   uuid.UUID
+	ToEntityType   string
+	ToEntityID     uuid.UUID
 }
 
 type Getter interface {

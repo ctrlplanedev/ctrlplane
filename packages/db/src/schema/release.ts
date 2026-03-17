@@ -56,7 +56,10 @@ export const release = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index().on(t.resourceId, t.environmentId, t.deploymentId)],
+  (t) => [
+    index().on(t.resourceId, t.environmentId, t.deploymentId),
+    index("release_deployment_id_index").on(t.deploymentId),
+  ],
 );
 
 export const releaseJob = pgTable(
@@ -72,7 +75,7 @@ export const releaseJob = pgTable(
   },
   (t) => [
     uniqueIndex().on(t.releaseId, t.jobId),
-    index("release_id_job_id_index").on(t.releaseId, t.jobId),
+    index("release_job_job_id_index").on(t.jobId),
   ],
 );
 

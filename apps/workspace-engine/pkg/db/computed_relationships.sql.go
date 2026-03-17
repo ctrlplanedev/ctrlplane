@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -109,7 +110,7 @@ func (q *Queries) GetEnvironmentForRelEval(ctx context.Context, id uuid.UUID) (G
 }
 
 const getExistingRelationshipsForEntity = `-- name: GetExistingRelationshipsForEntity :many
-SELECT rule_id, from_entity_id, to_entity_id
+SELECT rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id
 FROM computed_entity_relationship
 WHERE (from_entity_type = $1 AND from_entity_id = $2)
    OR (to_entity_type = $1 AND to_entity_id = $2)
@@ -121,9 +122,11 @@ type GetExistingRelationshipsForEntityParams struct {
 }
 
 type GetExistingRelationshipsForEntityRow struct {
-	RuleID       uuid.UUID
-	FromEntityID uuid.UUID
-	ToEntityID   uuid.UUID
+	RuleID         uuid.UUID
+	FromEntityType string
+	FromEntityID   uuid.UUID
+	ToEntityType   string
+	ToEntityID     uuid.UUID
 }
 
 // Returns all computed relationships where the given entity appears
@@ -137,7 +140,7 @@ func (q *Queries) GetExistingRelationshipsForEntity(ctx context.Context, arg Get
 	var items []GetExistingRelationshipsForEntityRow
 	for rows.Next() {
 		var i GetExistingRelationshipsForEntityRow
-		if err := rows.Scan(&i.RuleID, &i.FromEntityID, &i.ToEntityID); err != nil {
+		if err := rows.Scan(&i.RuleID, &i.FromEntityType, &i.FromEntityID, &i.ToEntityType, &i.ToEntityID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -316,58 +319,122 @@ func (q *Queries) ListEnvironmentsByWorkspace(ctx context.Context, workspaceID u
 	return items, nil
 }
 
-const setComputedEntityRelationships = `-- name: SetComputedEntityRelationships :exec
-WITH desired AS (
-    SELECT
-        unnest($1::uuid[]) AS rule_id,
-        unnest($2::text[]) AS from_entity_type,
-        unnest($3::uuid[]) AS from_entity_id,
-        unnest($4::text[]) AS to_entity_type,
-        unnest($5::uuid[]) AS to_entity_id
-),
-deleted AS (
-    DELETE FROM computed_entity_relationship cer
-    WHERE ((cer.from_entity_type = $6 AND cer.from_entity_id = $7)
-        OR (cer.to_entity_type = $6 AND cer.to_entity_id = $7))
-      AND NOT EXISTS (
-          SELECT 1 FROM desired d
-          WHERE d.rule_id = cer.rule_id
-            AND d.from_entity_type = cer.from_entity_type
-            AND d.from_entity_id = cer.from_entity_id
-            AND d.to_entity_type = cer.to_entity_type
-            AND d.to_entity_id = cer.to_entity_id
-      )
-)
+const batchDeleteComputedEntityRelationshipByPK = `-- name: BatchDeleteComputedEntityRelationshipByPK :batchexec
+DELETE FROM computed_entity_relationship
+WHERE rule_id = $1
+  AND from_entity_type = $2
+  AND from_entity_id = $3
+  AND to_entity_type = $4
+  AND to_entity_id = $5
+`
+
+type BatchDeleteComputedEntityRelationshipByPKBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type BatchDeleteComputedEntityRelationshipByPKParams struct {
+	RuleID         uuid.UUID
+	FromEntityType string
+	FromEntityID   uuid.UUID
+	ToEntityType   string
+	ToEntityID     uuid.UUID
+}
+
+func (q *Queries) BatchDeleteComputedEntityRelationshipByPK(ctx context.Context, arg []BatchDeleteComputedEntityRelationshipByPKParams) *BatchDeleteComputedEntityRelationshipByPKBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.RuleID,
+			a.FromEntityType,
+			a.FromEntityID,
+			a.ToEntityType,
+			a.ToEntityID,
+		}
+		batch.Queue(batchDeleteComputedEntityRelationshipByPK, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &BatchDeleteComputedEntityRelationshipByPKBatchResults{br, len(arg), false}
+}
+
+func (b *BatchDeleteComputedEntityRelationshipByPKBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *BatchDeleteComputedEntityRelationshipByPKBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const batchUpsertComputedEntityRelationship = `-- name: BatchUpsertComputedEntityRelationship :batchexec
 INSERT INTO computed_entity_relationship (
     rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
 )
-SELECT rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, NOW()
-FROM desired
+VALUES ($1, $2, $3, $4, $5, NOW())
 ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO UPDATE
 SET last_evaluated_at = NOW()
 `
 
-type SetComputedEntityRelationshipsParams struct {
-	RuleIds         []uuid.UUID
-	FromEntityTypes []string
-	FromEntityIds   []uuid.UUID
-	ToEntityTypes   []string
-	ToEntityIds     []uuid.UUID
-	EntityType      string
-	EntityID        uuid.UUID
+type BatchUpsertComputedEntityRelationshipBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
 }
 
-// Replaces computed relationships for an entity, only deleting stale rows.
-// Follows the same CTE pattern as SetComputedDeploymentResources.
-func (q *Queries) SetComputedEntityRelationships(ctx context.Context, arg SetComputedEntityRelationshipsParams) error {
-	_, err := q.db.Exec(ctx, setComputedEntityRelationships,
-		arg.RuleIds,
-		arg.FromEntityTypes,
-		arg.FromEntityIds,
-		arg.ToEntityTypes,
-		arg.ToEntityIds,
-		arg.EntityType,
-		arg.EntityID,
-	)
-	return err
+type BatchUpsertComputedEntityRelationshipParams struct {
+	RuleID         uuid.UUID
+	FromEntityType string
+	FromEntityID   uuid.UUID
+	ToEntityType   string
+	ToEntityID     uuid.UUID
+}
+
+func (q *Queries) BatchUpsertComputedEntityRelationship(ctx context.Context, arg []BatchUpsertComputedEntityRelationshipParams) *BatchUpsertComputedEntityRelationshipBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.RuleID,
+			a.FromEntityType,
+			a.FromEntityID,
+			a.ToEntityType,
+			a.ToEntityID,
+		}
+		batch.Queue(batchUpsertComputedEntityRelationship, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &BatchUpsertComputedEntityRelationshipBatchResults{br, len(arg), false}
+}
+
+func (b *BatchUpsertComputedEntityRelationshipBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *BatchUpsertComputedEntityRelationshipBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
 }
