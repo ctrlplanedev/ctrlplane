@@ -136,9 +136,7 @@ export const enqueueReleaseTargetsForEnvironment = async (
         eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
       ),
     )
-    .where(
-      eq(schema.computedEnvironmentResource.environmentId, environmentId),
-    );
+    .where(eq(schema.computedEnvironmentResource.environmentId, environmentId));
 
   return enqueueManyDesiredRelease(
     db,

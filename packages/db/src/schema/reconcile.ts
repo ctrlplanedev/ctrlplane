@@ -1,5 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   bigint,
   index,
@@ -42,7 +42,9 @@ export const reconcileWorkScope = pgTable(
   },
   (t) => [
     uniqueIndex().on(t.workspaceId, t.kind, t.scopeType, t.scopeId),
-    index().on(t.kind, t.notBefore, t.priority, t.eventTs, t.claimedUntil),
+    index("reconcile_work_scope_unclaimed_idx")
+      .on(t.kind, t.priority, t.eventTs, t.id)
+      .where(sql`${t.claimedUntil} is null`),
   ],
 );
 

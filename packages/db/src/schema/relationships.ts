@@ -53,5 +53,13 @@ export const computedEntityRelationship = pgTable(
         table.toEntityId,
       ],
     }),
+    index("computed_entity_relationship_from_idx").on(
+      table.fromEntityType,
+      table.fromEntityId,
+    ),
+    index("computed_entity_relationship_to_idx").on(
+      table.toEntityType,
+      table.toEntityId,
+    ),
   ],
 );

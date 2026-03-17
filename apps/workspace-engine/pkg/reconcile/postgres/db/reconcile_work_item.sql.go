@@ -80,7 +80,7 @@ WITH candidate_scopes AS (
   SELECT s.id
   FROM reconcile_work_scope AS s
   WHERE s.not_before <= now()
-    AND (s.claimed_until IS NULL OR s.claimed_until < now())
+    AND s.claimed_until IS NULL
   ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
   LIMIT $1
   FOR UPDATE OF s SKIP LOCKED
@@ -202,7 +202,7 @@ WITH candidate_scopes AS (
   SELECT s.id
   FROM reconcile_work_scope AS s
   WHERE s.not_before <= now()
-    AND (s.claimed_until IS NULL OR s.claimed_until < now())
+    AND s.claimed_until IS NULL
     AND s.kind = ANY($1::text[])
   ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
   LIMIT $2
@@ -323,6 +323,26 @@ func (q *Queries) ClaimReconcileWorkItemsByKinds(ctx context.Context, arg ClaimR
 		return nil, err
 	}
 	return items, nil
+}
+
+const cleanupExpiredClaims = `-- name: CleanupExpiredClaims :execrows
+UPDATE reconcile_work_scope
+SET
+  claimed_by = NULL,
+  claimed_until = NULL,
+  updated_at = now()
+WHERE claimed_until IS NOT NULL
+  AND claimed_until < now()
+`
+
+// Release scopes whose lease has expired so they become claimable again.
+// A background ticker should call this periodically.
+func (q *Queries) CleanupExpiredClaims(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, cleanupExpiredClaims)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deleteClaimedReconcileWorkItemIfUnchanged = `-- name: DeleteClaimedReconcileWorkItemIfUnchanged :one

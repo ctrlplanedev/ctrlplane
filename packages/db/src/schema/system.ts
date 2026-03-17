@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  index,
   jsonb,
   pgTable,
   primaryKey,
@@ -13,19 +14,23 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { workspace } from "./workspace.js";
 
-export const system = pgTable("system", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description").notNull().default(""),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspace.id, { onDelete: "cascade" }),
+export const system = pgTable(
+  "system",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
 
-  metadata: jsonb("metadata")
-    .notNull()
-    .default("{}")
-    .$type<Record<string, string>>(),
-});
+    metadata: jsonb("metadata")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, string>>(),
+  },
+  (t) => [index().on(t.workspaceId)],
+);
 
 export const systemRelations = relations(system, ({ many }) => ({
   systemDeployments: many(systemDeployment),

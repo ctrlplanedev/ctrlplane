@@ -9,11 +9,12 @@ import (
 	"sort"
 	"time"
 
+	"workspace-engine/pkg/reconcile"
+	sqldb "workspace-engine/pkg/reconcile/postgres/db"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"workspace-engine/pkg/reconcile"
-	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 )
 
 const defaultPriority int16 = 100
@@ -459,6 +460,10 @@ func (q *Queue) AckSuccess(
 	return reconcile.AckSuccessResult{
 		Deleted: result.DeletedPayloadCount > 0 || result.ScopeDeleted,
 	}, nil
+}
+
+func (q *Queue) CleanupExpiredClaims(ctx context.Context) (int64, error) {
+	return q.queries.CleanupExpiredClaims(ctx)
 }
 
 func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {

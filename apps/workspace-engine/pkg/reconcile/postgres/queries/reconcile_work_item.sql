@@ -95,7 +95,7 @@ WITH candidate_scopes AS (
   SELECT s.id
   FROM reconcile_work_scope AS s
   WHERE s.not_before <= now()
-    AND (s.claimed_until IS NULL OR s.claimed_until < now())
+    AND s.claimed_until IS NULL
   ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
   LIMIT sqlc.arg(batch_size)
   FOR UPDATE OF s SKIP LOCKED
@@ -157,7 +157,7 @@ WITH candidate_scopes AS (
   SELECT s.id
   FROM reconcile_work_scope AS s
   WHERE s.not_before <= now()
-    AND (s.claimed_until IS NULL OR s.claimed_until < now())
+    AND s.claimed_until IS NULL
     AND s.kind = ANY(sqlc.arg(kinds)::text[])
   ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
   LIMIT sqlc.arg(batch_size)
@@ -284,6 +284,17 @@ SET
   updated_at = now()
 WHERE id = sqlc.arg(id)
   AND claimed_by = sqlc.arg(claimed_by);
+
+-- name: CleanupExpiredClaims :execrows
+-- Release scopes whose lease has expired so they become claimable again.
+-- A background ticker should call this periodically.
+UPDATE reconcile_work_scope
+SET
+  claimed_by = NULL,
+  claimed_until = NULL,
+  updated_at = now()
+WHERE claimed_until IS NOT NULL
+  AND claimed_until < now();
 
 -- name: RetryReconcileWorkItem :one
 -- Retry only payloads that were part of the claimed snapshot, then set

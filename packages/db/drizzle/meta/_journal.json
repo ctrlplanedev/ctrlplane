@@ -1212,6 +1212,13 @@
       "when": 1773541311642,
       "tag": "0172_pale_glorian",
       "breakpoints": true
+    },
+    {
+      "idx": 173,
+      "version": "7",
+      "when": 1773723551995,
+      "tag": "0173_jittery_inertia",
+      "breakpoints": true
     }
   ]
 }

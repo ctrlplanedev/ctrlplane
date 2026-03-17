@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"strings"
+	"time"
 
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/svc"
+	"workspace-engine/svc/claimcleanup"
 	"workspace-engine/svc/controllers/deploymentplan"
 	"workspace-engine/svc/controllers/deploymentplanresult"
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
@@ -41,6 +43,7 @@ func main() {
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global),
+		claimcleanup.New(db.GetPool(ctx), 30*time.Second),
 
 		deploymentplan.New(WorkerID, db.GetPool(ctx)),
 		deploymentplanresult.New(WorkerID, db.GetPool(ctx)),
