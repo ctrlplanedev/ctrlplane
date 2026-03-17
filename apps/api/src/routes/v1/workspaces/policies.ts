@@ -323,7 +323,7 @@ const deletePolicy: AsyncTypedHandler<
 
   if (!deleted) throw new ApiError("Policy not found", 404);
 
-  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   res.status(202).json({
     id: deleted.id,
@@ -397,7 +397,7 @@ const upsertPolicy: AsyncTypedHandler<
     await insertPolicyRules(tx, policyId, rules);
   });
 
-  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   res.status(202).json({
     id: policyId,
@@ -466,7 +466,7 @@ const createPolicy: AsyncTypedHandler<
     await insertPolicyRules(tx, policyId, rules);
   });
 
-  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   res.status(202).json({
     id: policyId,

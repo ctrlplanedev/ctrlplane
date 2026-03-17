@@ -104,5 +104,5 @@ export const handleWorkflowRunEvent = async (event: WorkflowRunEvent) => {
     .then(takeFirstOrNull);
 
   if (result?.workspaceId == null) return;
-  await enqueueAllReleaseTargetsDesiredVersion(db, result.workspaceId);
+  enqueueAllReleaseTargetsDesiredVersion(db, result.workspaceId);
 };

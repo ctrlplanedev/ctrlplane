@@ -136,7 +136,7 @@ const upsertDeploymentVariable: AsyncTypedHandler<
       },
     });
 
-  await enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 
   res.status(202).json({
     id: variableId,
@@ -172,7 +172,7 @@ const deleteDeploymentVariable: AsyncTypedHandler<
     .delete(deploymentVariable)
     .where(eq(deploymentVariable.id, variableId));
 
-  await enqueueReleaseTargetsForDeployment(
+  enqueueReleaseTargetsForDeployment(
     db,
     workspaceId,
     variable.deploymentId,
@@ -257,7 +257,7 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
       },
     });
 
-  await enqueueReleaseTargetsForDeployment(
+  enqueueReleaseTargetsForDeployment(
     db,
     workspaceId,
     variable.deploymentId,
@@ -302,7 +302,7 @@ const deleteDeploymentVariableValue: AsyncTypedHandler<
     .delete(deploymentVariableValue)
     .where(eq(deploymentVariableValue.id, valueId));
 
-  await enqueueReleaseTargetsForDeployment(db, workspaceId, dep.id);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, dep.id);
 
   res.status(202).json({
     id: valueId,

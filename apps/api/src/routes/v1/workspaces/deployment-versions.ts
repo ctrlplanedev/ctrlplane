@@ -65,7 +65,7 @@ const upsertUserApprovalRecord: AsyncTypedHandler<
     .values(records)
     .onConflictDoNothing();
 
-  await enqueueReleaseTargetsForDeployment(db, workspaceId, deployment.id);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, deployment.id);
 
   res.status(202).json({
     id: deploymentVersionId,
@@ -100,7 +100,7 @@ const updateDeploymentVersion: AsyncTypedHandler<
     return { ...existingVersion, ...setValues };
   });
 
-  await enqueueReleaseTargetsForDeployment(
+  enqueueReleaseTargetsForDeployment(
     db,
     workspaceId,
     updatedVersion.deploymentId,

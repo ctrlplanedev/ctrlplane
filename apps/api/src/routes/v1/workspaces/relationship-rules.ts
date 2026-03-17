@@ -113,7 +113,7 @@ const createRelationshipRule: AsyncTypedHandler<
 
   if (inserted == null) throw new ApiError("Failed to create rule", 500);
 
-  await enqueueRelationshipReconciliation(workspaceId);
+  enqueueRelationshipReconciliation(workspaceId);
 
   res.status(201).json(toRuleResponse(inserted));
 };
@@ -163,7 +163,7 @@ const deleteRelationshipRule: AsyncTypedHandler<
     .delete(schema.relationshipRule)
     .where(eq(schema.relationshipRule.id, relationshipRuleId));
 
-  await enqueueRelationshipReconciliation(workspaceId);
+  enqueueRelationshipReconciliation(workspaceId);
 
   res.status(200).json({ id: relationshipRuleId });
 };
@@ -200,7 +200,7 @@ const upsertRelationshipRule: AsyncTypedHandler<
 
   if (upserted == null) throw new ApiError("Failed to upsert rule", 500);
 
-  await enqueueRelationshipReconciliation(workspaceId);
+  enqueueRelationshipReconciliation(workspaceId);
 
   res.status(200).json(toRuleResponse(upserted));
 };

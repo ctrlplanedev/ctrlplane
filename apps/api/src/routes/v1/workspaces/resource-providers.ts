@@ -201,12 +201,12 @@ const setResourceProviderResources: AsyncTypedHandler<
     .from(environment)
     .where(eq(environment.workspaceId, workspaceId));
 
-  await enqueueManyDeploymentSelectorEval(
+  enqueueManyDeploymentSelectorEval(
     db,
     deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
   );
 
-  await enqueueManyEnvironmentSelectorEval(
+  enqueueManyEnvironmentSelectorEval(
     db,
     environments.map((e) => ({ workspaceId, environmentId: e.id })),
   );

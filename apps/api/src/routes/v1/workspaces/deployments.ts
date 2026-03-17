@@ -215,7 +215,7 @@ const postDeployment: AsyncTypedHandler<
     workspaceId,
   });
 
-  await enqueueReleaseTargetsForDeployment(db, workspaceId, id);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, id);
 
   res.status(202).json({ id, message: "Deployment creation requested" });
 };
@@ -254,7 +254,7 @@ const upsertDeployment: AsyncTypedHandler<
       },
     });
 
-  await enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 
   res
     .status(202)
@@ -344,8 +344,8 @@ const createDeploymentVersion: AsyncTypedHandler<
     return version;
   });
 
-  await enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
-  await enqueuePolicyEval(db, workspaceId, version.id);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
+  enqueuePolicyEval(db, workspaceId, version.id);
 
   res.status(200).json(formatDeploymentVersion(version));
 };
@@ -384,7 +384,7 @@ const createDeploymentPlan: AsyncTypedHandler<
     expiresAt,
   });
 
-  await enqueueDeploymentPlan(db, workspaceId, planId);
+  enqueueDeploymentPlan(db, workspaceId, planId);
 
   res.status(202).json({
     id: planId,

@@ -112,7 +112,7 @@ const deleteEnvironment: AsyncTypedHandler<
 
   if (deleted == null) throw new ApiError("Environment not found", 404);
 
-  await enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   res
     .status(202)
@@ -140,7 +140,7 @@ const createEnvironment: AsyncTypedHandler<
     })
     .returning();
 
-  await enqueueReleaseTargetsForEnvironment(db, workspaceId, created!.id);
+  enqueueReleaseTargetsForEnvironment(db, workspaceId, created!.id);
 
   res
     .status(202)
@@ -177,7 +177,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
       },
     });
 
-  await enqueueReleaseTargetsForEnvironment(db, workspaceId, environmentId);
+  enqueueReleaseTargetsForEnvironment(db, workspaceId, environmentId);
 
   res
     .status(202)

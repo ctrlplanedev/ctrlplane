@@ -301,7 +301,7 @@ const updateJobStatus: AsyncTypedHandler<
     })
     .where(eq(schema.job.id, jobId));
 
-  await enqueueDesiredRelease(db, {
+  enqueueDesiredRelease(db, {
     workspaceId,
     deploymentId: existing.deploymentId,
     environmentId: existing.environmentId,
