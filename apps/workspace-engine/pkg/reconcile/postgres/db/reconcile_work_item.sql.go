@@ -433,6 +433,7 @@ DO UPDATE SET
   not_before = LEAST(reconcile_work_scope.not_before, EXCLUDED.not_before),
   updated_at = now()
 WHERE reconcile_work_scope.claimed_until IS NULL
+   OR reconcile_work_scope.claimed_until < now()
 `
 
 type UpsertReconcileWorkItemParams struct {
