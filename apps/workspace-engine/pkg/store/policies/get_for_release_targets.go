@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/store/policies")
@@ -108,14 +109,21 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 		"resource_id",
 		resourceID,
 	)
-	setPoliciesSpanCtx, setPoliciesSpan := tracer.Start(ctx, "SetPoliciesForReleaseTarget")
-	db.GetQueries(setPoliciesSpanCtx).SetPoliciesForReleaseTarget(setPoliciesSpanCtx, db.SetPoliciesForReleaseTargetParams{
-		PolicyIds:     policyIDs,
-		EnvironmentID: environmentID,
-		DeploymentID:  deploymentID,
-		ResourceID:    resourceID,
-	})
-	setPoliciesSpan.End()
+	go func() {
+		noCancelCtx := context.WithoutCancel(ctx)
+		setPoliciesSpanCtx, setPoliciesSpan := tracer.Start(noCancelCtx, "SetPoliciesForReleaseTarget")
+		if err := db.GetQueries(setPoliciesSpanCtx).SetPoliciesForReleaseTarget(setPoliciesSpanCtx, db.SetPoliciesForReleaseTargetParams{
+			PolicyIds:     policyIDs,
+			EnvironmentID: environmentID,
+			DeploymentID:  deploymentID,
+			ResourceID:    resourceID,
+		}); err != nil {
+			setPoliciesSpan.RecordError(err)
+			setPoliciesSpan.SetStatus(codes.Error, "failed to set policies for release target")
+			log.Error("failed to set policies for release target", "error", err)
+		}
+		setPoliciesSpan.End()
+	}()
 
 	return policies, nil
 }
