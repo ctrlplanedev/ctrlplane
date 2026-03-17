@@ -54,8 +54,13 @@ SET last_evaluated_at = NOW();
 
 -- name: GetExistingRelationshipsForEntity :many
 -- Returns all computed relationships where the given entity appears
--- as either the "from" or "to" side.
+-- as either the "from" or "to" side. Uses UNION ALL instead of OR
+-- so PostgreSQL can use separate index scans on each leg.
 SELECT rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id
 FROM computed_entity_relationship
-WHERE (from_entity_type = @entity_type AND from_entity_id = @entity_id)
-   OR (to_entity_type = @entity_type AND to_entity_id = @entity_id);
+WHERE from_entity_type = @entity_type AND from_entity_id = @entity_id
+UNION ALL
+SELECT rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id
+FROM computed_entity_relationship
+WHERE to_entity_type = @entity_type AND to_entity_id = @entity_id
+  AND NOT (from_entity_type = @entity_type AND from_entity_id = @entity_id);

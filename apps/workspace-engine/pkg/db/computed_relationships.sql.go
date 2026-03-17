@@ -112,8 +112,12 @@ func (q *Queries) GetEnvironmentForRelEval(ctx context.Context, id uuid.UUID) (G
 const getExistingRelationshipsForEntity = `-- name: GetExistingRelationshipsForEntity :many
 SELECT rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id
 FROM computed_entity_relationship
-WHERE (from_entity_type = $1 AND from_entity_id = $2)
-   OR (to_entity_type = $1 AND to_entity_id = $2)
+WHERE from_entity_type = $1 AND from_entity_id = $2
+UNION ALL
+SELECT rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id
+FROM computed_entity_relationship
+WHERE to_entity_type = $1 AND to_entity_id = $2
+  AND NOT (from_entity_type = $1 AND from_entity_id = $2)
 `
 
 type GetExistingRelationshipsForEntityParams struct {

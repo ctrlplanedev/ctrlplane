@@ -35,6 +35,7 @@ export const computedPolicyReleaseTarget = pgTable(
   (t) => [
     uniqueIndex().on(t.policyId, t.environmentId, t.deploymentId, t.resourceId),
     index().on(t.policyId),
+    index().on(t.resourceId, t.environmentId, t.deploymentId),
   ],
 );
 
