@@ -231,6 +231,9 @@ func evaluateVersion(
 				ruleType:       eval.RuleType(),
 				RuleEvaluation: result,
 			})
+			if !result.Allowed {
+				return evaluations, nil
+			}
 		}
 	}
 	return evaluations, nil

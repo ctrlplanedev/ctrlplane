@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -82,9 +83,9 @@ func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 
 	r.version = result.Version
 
-	if err := r.upsertEvaluations(ctx, oapiRT, result.Evaluations); err != nil {
-		log.Error("upsert rule evaluations", "error", err)
-	}
+	// if err := r.upsertEvaluations(ctx, oapiRT, result.Evaluations); err != nil {
+	// 	log.Error("upsert rule evaluations", "error", err)
+	// }
 
 	return result.NextTime
 }
