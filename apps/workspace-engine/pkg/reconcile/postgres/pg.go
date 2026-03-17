@@ -357,7 +357,18 @@ func (q *Queue) AckSuccess(
 }
 
 func (q *Queue) CleanupExpiredClaims(ctx context.Context) (int64, error) {
-	return q.queries.CleanupExpiredClaims(ctx)
+	var total int64
+	for {
+		n, err := q.queries.CleanupExpiredClaims(ctx)
+		if err != nil {
+			return total, fmt.Errorf("cleanup expired claims: %w", err)
+		}
+		total += n
+		if n == 0 {
+			break
+		}
+	}
+	return total, nil
 }
 
 func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {

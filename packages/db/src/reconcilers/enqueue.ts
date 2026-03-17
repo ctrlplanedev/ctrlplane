@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+
 import type { Tx } from "../common.js";
 import type { ReconcileWorkScope } from "../schema/reconcile.js";
 import { reconcileWorkScope } from "../schema/reconcile.js";
@@ -23,22 +25,28 @@ export async function enqueue(
   params: EnqueueParams,
 ): Promise<ReconcileWorkScope> {
   const now = new Date();
+  const scopeType = params.scopeType ?? "";
+  const scopeId = params.scopeId ?? "";
+  const priority = params.priority ?? 100;
+  const notBefore = params.notBefore ?? now;
+
   const [scope] = await db
     .insert(reconcileWorkScope)
     .values({
       workspaceId: params.workspaceId,
       kind: params.kind,
-      scopeType: params.scopeType ?? "",
-      scopeId: params.scopeId ?? "",
-      priority: params.priority ?? 100,
-      notBefore: params.notBefore ?? now,
+      scopeType,
+      scopeId,
+      priority,
+      notBefore,
     })
     .onConflictDoUpdate({
       target: scopeConflictTarget,
       set: {
-        eventTs: now,
-        priority: params.priority ?? 100,
-        notBefore: params.notBefore ?? now,
+        eventTs: sql`GREATEST(${reconcileWorkScope.eventTs}, now())`,
+        priority: sql`LEAST(${reconcileWorkScope.priority}, ${priority})`,
+        notBefore: sql`LEAST(${reconcileWorkScope.notBefore}, ${notBefore})`,
+        updatedAt: now,
       },
     })
     .returning();
@@ -106,7 +114,12 @@ export async function enqueueMany(
       .values(batch)
       .onConflictDoUpdate({
         target: scopeConflictTarget,
-        set: { eventTs: now, notBefore: now, updatedAt: now },
+        set: {
+          eventTs: sql`GREATEST(${reconcileWorkScope.eventTs}, EXCLUDED."event_ts")`,
+          priority: sql`LEAST(${reconcileWorkScope.priority}, EXCLUDED."priority")`,
+          notBefore: sql`LEAST(${reconcileWorkScope.notBefore}, EXCLUDED."not_before")`,
+          updatedAt: now,
+        },
       });
   }
 }

@@ -154,14 +154,23 @@ WHERE id = sqlc.arg(id)
   AND claimed_by = sqlc.arg(claimed_by);
 
 -- name: CleanupExpiredClaims :execrows
--- Release scopes whose lease has expired so they become claimable again.
-UPDATE reconcile_work_scope
+-- Release a batch of scopes whose lease has expired so they become claimable
+-- again. Uses LIMIT + FOR UPDATE SKIP LOCKED to cap lock contention.
+WITH expired AS (
+  SELECT id
+  FROM reconcile_work_scope
+  WHERE claimed_until IS NOT NULL
+    AND claimed_until < now()
+  LIMIT 500
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE reconcile_work_scope AS s
 SET
   claimed_by = NULL,
   claimed_until = NULL,
   updated_at = now()
-WHERE claimed_until IS NOT NULL
-  AND claimed_until < now();
+FROM expired AS e
+WHERE s.id = e.id;
 
 -- name: RetryReconcileWorkItem :one
 -- Increment attempt count, record error, set backoff, and release claim.

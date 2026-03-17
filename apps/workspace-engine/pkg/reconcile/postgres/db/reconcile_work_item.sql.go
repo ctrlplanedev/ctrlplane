@@ -258,16 +258,25 @@ func (q *Queries) ClaimReconcileWorkItemsByKinds(ctx context.Context, arg ClaimR
 }
 
 const cleanupExpiredClaims = `-- name: CleanupExpiredClaims :execrows
-UPDATE reconcile_work_scope
+WITH expired AS (
+  SELECT id
+  FROM reconcile_work_scope
+  WHERE claimed_until IS NOT NULL
+    AND claimed_until < now()
+  LIMIT 500
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE reconcile_work_scope AS s
 SET
   claimed_by = NULL,
   claimed_until = NULL,
   updated_at = now()
-WHERE claimed_until IS NOT NULL
-  AND claimed_until < now()
+FROM expired AS e
+WHERE s.id = e.id
 `
 
-// Release scopes whose lease has expired so they become claimable again.
+// Release a batch of scopes whose lease has expired so they become claimable
+// again. Uses LIMIT + FOR UPDATE SKIP LOCKED to cap lock contention.
 func (q *Queries) CleanupExpiredClaims(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, cleanupExpiredClaims)
 	if err != nil {
