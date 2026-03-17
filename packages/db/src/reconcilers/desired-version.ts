@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { Tx } from "../common.js";
 import type { ReconcileWorkScope } from "../schema/reconcile.js";
@@ -7,43 +7,41 @@ import { enqueue, enqueueMany } from "./enqueue.js";
 
 const getAllReleaseTargets = async (db: Tx, workspaceId: string) => {
   const releaseTargets = await db
-    .selectDistinctOn(
-      [schema.deployment.id, schema.resource.id, schema.environment.id],
-      {
-        deploymentId: schema.deployment.id,
-        resourceId: schema.resource.id,
-        environmentId: schema.environment.id,
-      },
-    )
-    .from(schema.system)
-    .innerJoin(
-      schema.systemDeployment,
-      eq(schema.system.id, schema.systemDeployment.systemId),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.systemDeployment.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(
-      schema.systemEnvironment,
-      eq(schema.system.id, schema.systemEnvironment.systemId),
-    )
-    .innerJoin(
-      schema.environment,
-      eq(schema.systemEnvironment.environmentId, schema.environment.id),
-    )
+    .selectDistinct({
+      deploymentId: schema.computedDeploymentResource.deploymentId,
+      environmentId: schema.computedEnvironmentResource.environmentId,
+      resourceId: schema.computedDeploymentResource.resourceId,
+    })
+    .from(schema.computedDeploymentResource)
     .innerJoin(
       schema.computedEnvironmentResource,
       eq(
-        schema.environment.id,
-        schema.computedEnvironmentResource.environmentId,
+        schema.computedDeploymentResource.resourceId,
+        schema.computedEnvironmentResource.resourceId,
       ),
     )
     .innerJoin(
-      schema.resource,
-      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+      schema.systemDeployment,
+      eq(
+        schema.computedDeploymentResource.deploymentId,
+        schema.systemDeployment.deploymentId,
+      ),
     )
-    .where(eq(schema.system.workspaceId, workspaceId));
+    .innerJoin(
+      schema.systemEnvironment,
+      and(
+        eq(
+          schema.computedEnvironmentResource.environmentId,
+          schema.systemEnvironment.environmentId,
+        ),
+        eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
+      ),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.computedDeploymentResource.deploymentId, schema.deployment.id),
+    )
+    .where(eq(schema.deployment.workspaceId, workspaceId));
 
   return releaseTargets;
 };
@@ -109,31 +107,38 @@ export const enqueueReleaseTargetsForEnvironment = async (
   environmentId: string,
 ) => {
   const releaseTargets = await db
-    .selectDistinctOn([schema.deployment.id, schema.resource.id], {
-      deploymentId: schema.deployment.id,
-      resourceId: schema.resource.id,
+    .selectDistinct({
+      deploymentId: schema.computedDeploymentResource.deploymentId,
+      resourceId: schema.computedDeploymentResource.resourceId,
     })
-    .from(schema.systemEnvironment)
-    .innerJoin(
-      schema.systemDeployment,
-      eq(schema.systemEnvironment.systemId, schema.systemDeployment.systemId),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.systemDeployment.deploymentId, schema.deployment.id),
-    )
+    .from(schema.computedDeploymentResource)
     .innerJoin(
       schema.computedEnvironmentResource,
       eq(
-        schema.systemEnvironment.environmentId,
-        schema.computedEnvironmentResource.environmentId,
+        schema.computedDeploymentResource.resourceId,
+        schema.computedEnvironmentResource.resourceId,
       ),
     )
     .innerJoin(
-      schema.resource,
-      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+      schema.systemDeployment,
+      eq(
+        schema.computedDeploymentResource.deploymentId,
+        schema.systemDeployment.deploymentId,
+      ),
     )
-    .where(eq(schema.systemEnvironment.environmentId, environmentId));
+    .innerJoin(
+      schema.systemEnvironment,
+      and(
+        eq(
+          schema.computedEnvironmentResource.environmentId,
+          schema.systemEnvironment.environmentId,
+        ),
+        eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
+      ),
+    )
+    .where(
+      eq(schema.computedEnvironmentResource.environmentId, environmentId),
+    );
 
   return enqueueManyDesiredRelease(
     db,
@@ -152,31 +157,36 @@ export const enqueueReleaseTargetsForDeployment = async (
   deploymentId: string,
 ) => {
   const releaseTargets = await db
-    .selectDistinctOn([schema.resource.id, schema.environment.id], {
-      resourceId: schema.resource.id,
-      environmentId: schema.environment.id,
+    .selectDistinct({
+      resourceId: schema.computedDeploymentResource.resourceId,
+      environmentId: schema.computedEnvironmentResource.environmentId,
     })
-    .from(schema.systemDeployment)
-    .innerJoin(
-      schema.systemEnvironment,
-      eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
-    )
-    .innerJoin(
-      schema.environment,
-      eq(schema.systemEnvironment.environmentId, schema.environment.id),
-    )
+    .from(schema.computedDeploymentResource)
     .innerJoin(
       schema.computedEnvironmentResource,
       eq(
-        schema.environment.id,
-        schema.computedEnvironmentResource.environmentId,
+        schema.computedDeploymentResource.resourceId,
+        schema.computedEnvironmentResource.resourceId,
       ),
     )
     .innerJoin(
-      schema.resource,
-      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+      schema.systemDeployment,
+      eq(
+        schema.computedDeploymentResource.deploymentId,
+        schema.systemDeployment.deploymentId,
+      ),
     )
-    .where(eq(schema.systemDeployment.deploymentId, deploymentId));
+    .innerJoin(
+      schema.systemEnvironment,
+      and(
+        eq(
+          schema.computedEnvironmentResource.environmentId,
+          schema.systemEnvironment.environmentId,
+        ),
+        eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
+      ),
+    )
+    .where(eq(schema.computedDeploymentResource.deploymentId, deploymentId));
 
   return enqueueManyDesiredRelease(
     db,
@@ -195,31 +205,36 @@ export const enqueueReleaseTargetsForResource = async (
   resourceId: string,
 ) => {
   const releaseTargets = await db
-    .selectDistinctOn([schema.deployment.id, schema.environment.id], {
-      deploymentId: schema.deployment.id,
-      environmentId: schema.environment.id,
+    .selectDistinct({
+      deploymentId: schema.computedDeploymentResource.deploymentId,
+      environmentId: schema.computedEnvironmentResource.environmentId,
     })
-    .from(schema.computedEnvironmentResource)
+    .from(schema.computedDeploymentResource)
     .innerJoin(
-      schema.environment,
+      schema.computedEnvironmentResource,
       eq(
-        schema.computedEnvironmentResource.environmentId,
-        schema.environment.id,
+        schema.computedDeploymentResource.resourceId,
+        schema.computedEnvironmentResource.resourceId,
+      ),
+    )
+    .innerJoin(
+      schema.systemDeployment,
+      eq(
+        schema.computedDeploymentResource.deploymentId,
+        schema.systemDeployment.deploymentId,
       ),
     )
     .innerJoin(
       schema.systemEnvironment,
-      eq(schema.environment.id, schema.systemEnvironment.environmentId),
+      and(
+        eq(
+          schema.computedEnvironmentResource.environmentId,
+          schema.systemEnvironment.environmentId,
+        ),
+        eq(schema.systemDeployment.systemId, schema.systemEnvironment.systemId),
+      ),
     )
-    .innerJoin(
-      schema.systemDeployment,
-      eq(schema.systemEnvironment.systemId, schema.systemDeployment.systemId),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.systemDeployment.deploymentId, schema.deployment.id),
-    )
-    .where(eq(schema.computedEnvironmentResource.resourceId, resourceId));
+    .where(eq(schema.computedDeploymentResource.resourceId, resourceId));
 
   return enqueueManyDesiredRelease(
     db,
