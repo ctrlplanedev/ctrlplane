@@ -154,7 +154,7 @@ local jobAgentConfig = {
     properties: {
       id: { type: 'string' },
       status: { type: 'string', enum: ['computing', 'completed', 'failed'] },
-      summary: openapi.schemaRef('DeploymentPlanSummary', nullable=true),
+      summary: openapi.schemaRef('DeploymentPlanSummary'),
       targets: {
         type: 'array',
         items: openapi.schemaRef('DeploymentPlanTarget'),

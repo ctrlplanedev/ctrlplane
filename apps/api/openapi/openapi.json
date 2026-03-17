@@ -521,8 +521,7 @@
                   "type": "string"
                },
                "summary": {
-                  "$ref": "#/components/schemas/DeploymentPlanSummary",
-                  "nullable": true
+                  "$ref": "#/components/schemas/DeploymentPlanSummary"
                },
                "targets": {
                   "items": {
