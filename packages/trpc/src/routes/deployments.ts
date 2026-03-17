@@ -608,14 +608,15 @@ export const deploymentsRouter = router({
           .onConflictDoNothing()
           .returning()
           .then(takeFirst);
-        await enqueueReleaseTargetsForDeployment(
-          tx,
-          workspaceId,
-          insertedVersion.deploymentId,
-        );
-        await enqueuePolicyEval(tx, workspaceId, insertedVersion.id);
         return insertedVersion;
       });
+
+      await enqueueReleaseTargetsForDeployment(
+        ctx.db,
+        workspaceId,
+        insertedVersion.deploymentId,
+      );
+      await enqueuePolicyEval(ctx.db, workspaceId, insertedVersion.id);
 
       return insertedVersion;
     }),

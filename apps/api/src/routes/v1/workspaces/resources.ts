@@ -169,8 +169,9 @@ const updateVariablesForResource: AsyncTypedHandler<
         value,
       })),
     );
-    await enqueueReleaseTargetsForResource(tx, workspaceId, resourceId);
   });
+
+  await enqueueReleaseTargetsForResource(db, workspaceId, resourceId);
 
   res.status(202).json({
     id: resource.id,

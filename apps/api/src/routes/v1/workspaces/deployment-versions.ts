@@ -97,13 +97,14 @@ const updateDeploymentVersion: AsyncTypedHandler<
       .update(schema.deploymentVersion)
       .set(setValues)
       .where(eq(schema.deploymentVersion.id, deploymentVersionId));
-    await enqueueReleaseTargetsForDeployment(
-      tx,
-      workspaceId,
-      existingVersion.deploymentId,
-    );
     return { ...existingVersion, ...setValues };
   });
+
+  await enqueueReleaseTargetsForDeployment(
+    db,
+    workspaceId,
+    updatedVersion.deploymentId,
+  );
 
   res.status(200).json(updatedVersion);
 };

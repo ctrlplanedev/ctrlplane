@@ -341,11 +341,11 @@ const createDeploymentVersion: AsyncTypedHandler<
       .returning()
       .then(takeFirst);
 
-    await enqueueReleaseTargetsForDeployment(tx, workspaceId, deploymentId);
-    await enqueuePolicyEval(tx, workspaceId, version.id);
-
     return version;
   });
+
+  await enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
+  await enqueuePolicyEval(db, workspaceId, version.id);
 
   res.status(200).json(formatDeploymentVersion(version));
 };
