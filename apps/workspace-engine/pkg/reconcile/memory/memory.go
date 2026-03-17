@@ -2,8 +2,6 @@ package memory
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"sync"
@@ -38,19 +36,10 @@ type scope struct {
 	EventTS      time.Time
 	Priority     int16
 	NotBefore    time.Time
-	ClaimedBy    string
-	ClaimedUntil *time.Time
-	UpdatedAt    time.Time
-	Payloads     map[string]*payload
-}
-
-type payload struct {
-	Type         string
-	Key          string
-	Value        []byte
 	AttemptCount int32
 	LastError    string
-	CreatedAt    time.Time
+	ClaimedBy    string
+	ClaimedUntil *time.Time
 	UpdatedAt    time.Time
 }
 
@@ -109,15 +98,6 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 		priority = defaultPriority
 	}
 
-	rawPayload, payloadKey, hasPayload, err := normalizePayload(
-		params.PayloadType,
-		params.PayloadKey,
-		params.Payload,
-	)
-	if err != nil {
-		return fmt.Errorf("normalize payload: %w", err)
-	}
-
 	q.backend.mu.Lock()
 	defer q.backend.mu.Unlock()
 
@@ -137,12 +117,18 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 			Priority:    priority,
 			NotBefore:   notBefore,
 			UpdatedAt:   now,
-			Payloads:    map[string]*payload{},
 		}
 		q.backend.scopeIndex[scopeKey] = scopeID
+		return nil
 	}
 
 	s := q.backend.scopes[scopeID]
+
+	// Skip update if currently claimed (mirrors the Postgres WHERE clause).
+	if s.ClaimedUntil != nil && s.ClaimedUntil.After(now) {
+		return nil
+	}
+
 	if eventTS.After(s.EventTS) {
 		s.EventTS = eventTS
 	}
@@ -157,26 +143,7 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 		s.ClaimedBy = ""
 		s.ClaimedUntil = nil
 	}
-	if s.ClaimedUntil == nil || !s.ClaimedUntil.After(now) {
-		s.UpdatedAt = now
-	}
-
-	if hasPayload {
-		payloadID := makePayloadKey(params.PayloadType, payloadKey)
-		p, ok := s.Payloads[payloadID]
-		if !ok {
-			p = &payload{
-				Type:      params.PayloadType,
-				Key:       payloadKey,
-				CreatedAt: now,
-			}
-			s.Payloads[payloadID] = p
-		} else {
-			p.CreatedAt = now
-		}
-		p.Value = slices.Clone(rawPayload)
-		p.UpdatedAt = now
-	}
+	s.UpdatedAt = now
 	return nil
 }
 
@@ -301,26 +268,9 @@ func (q *Queue) AckSuccess(
 		return reconcile.AckSuccessResult{}, reconcile.ErrClaimNotOwned
 	}
 
-	cutoff := s.UpdatedAt
-	deletedPayloads := 0
-	for key, p := range s.Payloads {
-		if p.CreatedAt.After(cutoff) {
-			continue
-		}
-		delete(s.Payloads, key)
-		deletedPayloads++
-	}
-
-	if len(s.Payloads) == 0 {
-		delete(q.backend.scopes, s.ID)
-		delete(q.backend.scopeIndex, makeScopeKey(s.WorkspaceID, s.Kind, s.ScopeType, s.ScopeID))
-		return reconcile.AckSuccessResult{Deleted: true}, nil
-	}
-
-	s.ClaimedBy = ""
-	s.ClaimedUntil = nil
-	s.UpdatedAt = time.Now()
-	return reconcile.AckSuccessResult{Deleted: deletedPayloads > 0}, nil
+	delete(q.backend.scopes, s.ID)
+	delete(q.backend.scopeIndex, makeScopeKey(s.WorkspaceID, s.Kind, s.ScopeType, s.ScopeID))
+	return reconcile.AckSuccessResult{Deleted: true}, nil
 }
 
 func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
@@ -342,17 +292,9 @@ func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 		return reconcile.ErrClaimNotOwned
 	}
 
-	cutoff := s.UpdatedAt
 	now := time.Now()
-	for _, p := range s.Payloads {
-		if p.CreatedAt.After(cutoff) {
-			continue
-		}
-		p.AttemptCount++
-		p.LastError = params.LastError
-		p.UpdatedAt = now
-	}
-
+	s.AttemptCount++
+	s.LastError = params.LastError
 	s.NotBefore = now.Add(params.RetryBackoff)
 	s.ClaimedBy = ""
 	s.ClaimedUntil = nil
@@ -360,73 +302,7 @@ func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 	return nil
 }
 
-func normalizePayload(
-	payloadType, payloadKey string,
-	payloadData any,
-) ([]byte, string, bool, error) {
-	if payloadData == nil {
-		return nil, "", false, nil
-	}
-
-	rawPayload, err := json.Marshal(payloadData)
-	if err != nil {
-		return nil, "", false, err
-	}
-
-	var decoded any
-	if err := json.Unmarshal(rawPayload, &decoded); err != nil {
-		return nil, "", false, err
-	}
-
-	normalized, err := json.Marshal(decoded)
-	if err != nil {
-		return nil, "", false, err
-	}
-	if payloadKey == "" {
-		sum := sha256.Sum256(append([]byte(payloadType+":"), normalized...))
-		payloadKey = fmt.Sprintf("%x", sum[:])
-	}
-	return normalized, payloadKey, true, nil
-}
-
 func toItem(s *scope) reconcile.Item {
-	payloads := make([]*payload, 0, len(s.Payloads))
-	for _, p := range s.Payloads {
-		payloads = append(payloads, p)
-	}
-	slices.SortFunc(payloads, func(a, b *payload) int {
-		if !a.CreatedAt.Equal(b.CreatedAt) {
-			if a.CreatedAt.Before(b.CreatedAt) {
-				return -1
-			}
-			return 1
-		}
-		if a.Key < b.Key {
-			return -1
-		}
-		if a.Key > b.Key {
-			return 1
-		}
-		return 0
-	})
-
-	outPayloads := make([]reconcile.Payload, 0, len(payloads))
-	var attemptCount int32
-	lastError := ""
-	for _, p := range payloads {
-		if p.AttemptCount > attemptCount {
-			attemptCount = p.AttemptCount
-		}
-		if p.LastError > lastError {
-			lastError = p.LastError
-		}
-		outPayloads = append(outPayloads, reconcile.Payload{
-			Type:  p.Type,
-			Key:   p.Key,
-			Value: slices.Clone(p.Value),
-		})
-	}
-
 	var claimedUntil *time.Time
 	if s.ClaimedUntil != nil {
 		t := *s.ClaimedUntil
@@ -439,12 +315,11 @@ func toItem(s *scope) reconcile.Item {
 		Kind:         s.Kind,
 		ScopeType:    s.ScopeType,
 		ScopeID:      s.ScopeID,
-		Payloads:     outPayloads,
 		EventTS:      s.EventTS,
 		Priority:     s.Priority,
 		NotBefore:    s.NotBefore,
-		AttemptCount: attemptCount,
-		LastError:    lastError,
+		AttemptCount: s.AttemptCount,
+		LastError:    s.LastError,
 		ClaimedBy:    s.ClaimedBy,
 		ClaimedUntil: claimedUntil,
 		UpdatedAt:    s.UpdatedAt,
@@ -453,8 +328,4 @@ func toItem(s *scope) reconcile.Item {
 
 func makeScopeKey(workspaceID, kind, scopeType, scopeID string) string {
 	return workspaceID + "\x00" + kind + "\x00" + scopeType + "\x00" + scopeID
-}
-
-func makePayloadKey(payloadType, payloadKey string) string {
-	return payloadType + "\x00" + payloadKey
 }

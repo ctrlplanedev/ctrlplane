@@ -3,8 +3,6 @@ package postgres
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
@@ -23,9 +21,6 @@ const enqueueManyBatchSize = 50
 
 var _ reconcile.Queue = (*Queue)(nil)
 
-// Queue implements reconcile.Queue using a two-table PostgreSQL model:
-// - reconcile_work_scope: leasing and scheduling per logical scope key
-// - reconcile_work_payload: payload variants attached to a scope.
 type Queue struct {
 	queries    *sqldb.Queries
 	claimKinds []string
@@ -65,7 +60,6 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 
 	notBefore := params.NotBefore
 	if notBefore.IsZero() {
-		// Default to immediately claimable even when app/db clocks differ slightly.
 		notBefore = time.Now().Add(-1 * time.Second)
 	}
 
@@ -79,24 +73,11 @@ func (q *Queue) Enqueue(ctx context.Context, params reconcile.EnqueueParams) err
 		return fmt.Errorf("parse workspace_id as uuid: %w", err)
 	}
 
-	payload, payloadKey, hasPayload, err := normalizePayload(
-		params.PayloadType,
-		params.PayloadKey,
-		params.Payload,
-	)
-	if err != nil {
-		return fmt.Errorf("normalize payload: %w", err)
-	}
-
 	err = q.queries.UpsertReconcileWorkItem(ctx, sqldb.UpsertReconcileWorkItemParams{
 		WorkspaceID: workspaceID,
 		Kind:        params.Kind,
 		ScopeType:   params.ScopeType,
 		ScopeID:     params.ScopeID,
-		HasPayload:  hasPayload,
-		PayloadType: params.PayloadType,
-		PayloadKey:  payloadKey,
-		Payload:     payload,
 		EventTs:     pgtype.Timestamptz{Time: eventTS, Valid: true},
 		Priority:    priority,
 		NotBefore:   pgtype.Timestamptz{Time: notBefore, Valid: true},
@@ -255,26 +236,12 @@ func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reco
 			return nil, fmt.Errorf("claim work items: %w", err)
 		}
 		for _, row := range rows {
-			item, err := toClaimedItem(
-				row.ID,
-				row.WorkspaceID.String(),
-				row.Kind,
-				row.ScopeType,
-				row.ScopeID,
-				row.EventTs,
-				row.Priority,
-				row.NotBefore,
-				row.AttemptCount,
-				row.LastError,
-				row.ClaimedBy,
-				row.ClaimedUntil,
-				row.UpdatedAt,
-				row.Payloads,
-			)
-			if err != nil {
-				return nil, fmt.Errorf("decode claimed payloads: %w", err)
-			}
-			items = append(items, item)
+			items = append(items, rowToItem(
+				row.ID, row.WorkspaceID, row.Kind, row.ScopeType, row.ScopeID,
+				row.EventTs, row.Priority, row.NotBefore,
+				row.AttemptCount, row.LastError, row.ClaimedBy,
+				row.ClaimedUntil, row.UpdatedAt,
+			))
 		}
 	} else {
 		rows, err := q.queries.ClaimReconcileWorkItemsByKinds(
@@ -290,26 +257,12 @@ func (q *Queue) Claim(ctx context.Context, params reconcile.ClaimParams) ([]reco
 			return nil, fmt.Errorf("claim work items: %w", err)
 		}
 		for _, row := range rows {
-			item, err := toClaimedItem(
-				row.ID,
-				row.WorkspaceID.String(),
-				row.Kind,
-				row.ScopeType,
-				row.ScopeID,
-				row.EventTs,
-				row.Priority,
-				row.NotBefore,
-				row.AttemptCount,
-				row.LastError,
-				row.ClaimedBy,
-				row.ClaimedUntil,
-				row.UpdatedAt,
-				row.Payloads,
-			)
-			if err != nil {
-				return nil, fmt.Errorf("decode claimed payloads: %w", err)
-			}
-			items = append(items, item)
+			items = append(items, rowToItem(
+				row.ID, row.WorkspaceID, row.Kind, row.ScopeType, row.ScopeID,
+				row.EventTs, row.Priority, row.NotBefore,
+				row.AttemptCount, row.LastError, row.ClaimedBy,
+				row.ClaimedUntil, row.UpdatedAt,
+			))
 		}
 	}
 	return items, nil
@@ -340,40 +293,9 @@ func (q *Queue) ExtendLease(ctx context.Context, params reconcile.ExtendLeasePar
 	return nil
 }
 
-type claimedPayload struct {
-	Type    string          `json:"type"`
-	Key     string          `json:"key"`
-	Payload json.RawMessage `json:"payload"`
-}
-
-func normalizePayload(payloadType, payloadKey string, payload any) ([]byte, string, bool, error) {
-	if payload == nil {
-		return nil, "", false, nil
-	}
-
-	rawPayload, err := json.Marshal(payload)
-	if err != nil {
-		return nil, "", false, err
-	}
-
-	var decoded any
-	if err := json.Unmarshal(rawPayload, &decoded); err != nil {
-		return nil, "", false, err
-	}
-	normalized, err := json.Marshal(decoded)
-	if err != nil {
-		return nil, "", false, err
-	}
-	if payloadKey == "" {
-		sum := sha256.Sum256(append([]byte(payloadType+":"), normalized...))
-		payloadKey = fmt.Sprintf("%x", sum[:])
-	}
-	return normalized, payloadKey, true, nil
-}
-
-func toClaimedItem(
+func rowToItem(
 	id int64,
-	workspaceID string,
+	workspaceID uuid.UUID,
 	kind string,
 	scopeType string,
 	scopeID string,
@@ -385,20 +307,13 @@ func toClaimedItem(
 	claimedBy string,
 	claimedUntil pgtype.Timestamptz,
 	updatedAt pgtype.Timestamptz,
-	rawPayloads []byte,
-) (reconcile.Item, error) {
-	payloads, err := decodeClaimedPayloads(rawPayloads)
-	if err != nil {
-		return reconcile.Item{}, err
-	}
-
+) reconcile.Item {
 	item := reconcile.Item{
 		ID:           id,
-		WorkspaceID:  workspaceID,
+		WorkspaceID:  workspaceID.String(),
 		Kind:         kind,
 		ScopeType:    scopeType,
 		ScopeID:      scopeID,
-		Payloads:     payloads,
 		EventTS:      eventTS.Time,
 		Priority:     priority,
 		NotBefore:    notBefore.Time,
@@ -411,28 +326,7 @@ func toClaimedItem(
 		t := claimedUntil.Time
 		item.ClaimedUntil = &t
 	}
-	return item, nil
-}
-
-func decodeClaimedPayloads(rawPayloads []byte) ([]reconcile.Payload, error) {
-	if len(rawPayloads) == 0 {
-		return nil, nil
-	}
-
-	var claimedPayloads []claimedPayload
-	if err := json.Unmarshal(rawPayloads, &claimedPayloads); err != nil {
-		return nil, err
-	}
-
-	payloads := make([]reconcile.Payload, 0, len(claimedPayloads))
-	for _, payload := range claimedPayloads {
-		payloads = append(payloads, reconcile.Payload{
-			Type:  payload.Type,
-			Key:   payload.Key,
-			Value: payload.Payload,
-		})
-	}
-	return payloads, nil
+	return item
 }
 
 func (q *Queue) AckSuccess(
@@ -443,22 +337,22 @@ func (q *Queue) AckSuccess(
 		return reconcile.AckSuccessResult{}, reconcile.ErrMissingWorkerID
 	}
 
-	result, err := q.queries.DeleteClaimedReconcileWorkItemIfUnchanged(
+	result, err := q.queries.DeleteClaimedReconcileWorkItem(
 		ctx,
-		sqldb.DeleteClaimedReconcileWorkItemIfUnchangedParams{
+		sqldb.DeleteClaimedReconcileWorkItemParams{
 			ID:        params.ItemID,
 			ClaimedBy: pgtype.Text{String: params.WorkerID, Valid: true},
 			UpdatedAt: pgtype.Timestamptz{Time: params.ClaimedUpdatedAt, Valid: true},
 		},
 	)
 	if err != nil {
-		return reconcile.AckSuccessResult{}, fmt.Errorf("ack success delete claimed item: %w", err)
+		return reconcile.AckSuccessResult{}, fmt.Errorf("ack success: %w", err)
 	}
 	if !result.Owned {
 		return reconcile.AckSuccessResult{}, reconcile.ErrClaimNotOwned
 	}
 	return reconcile.AckSuccessResult{
-		Deleted: result.DeletedPayloadCount > 0 || result.ScopeDeleted,
+		Deleted: result.Deleted,
 	}, nil
 }
 

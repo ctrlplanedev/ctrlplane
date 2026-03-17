@@ -33,13 +33,6 @@ export const reconcileRouter = router({
         scopeId: z.string().default(""),
         priority: z.number().int().min(0).max(32767).default(100),
         notBefore: z.coerce.date().optional(),
-        payload: z
-          .object({
-            payloadType: z.string().default(""),
-            payloadKey: z.string().default(""),
-            payload: z.record(z.string(), z.any()).default({}),
-          })
-          .optional(),
       }),
     )
     .mutation(({ ctx, input }) => enqueue(ctx.db, input)),
@@ -202,26 +195,6 @@ export const reconcileRouter = router({
       return { items, total: total?.count ?? 0 };
     }),
 
-  listWorkPayloads: protectedProcedure
-    .input(
-      z.object({
-        scopeId: z.number(),
-        limit: z.number().min(1).max(500).default(100),
-        offset: z.number().min(0).default(0),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const items = await ctx.db
-        .select()
-        .from(schema.reconcileWorkPayload)
-        .where(eq(schema.reconcileWorkPayload.scopeRef, input.scopeId))
-        .orderBy(desc(schema.reconcileWorkPayload.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      return items;
-    }),
-
   stats: protectedProcedure
     .input(z.object({ workspaceId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
@@ -284,103 +257,84 @@ export const reconcileRouter = router({
         input.workspaceId,
       );
 
-      const [
-        byPriority,
-        byClaimStatus,
-        byKind,
-        payloadErrors,
-        payloadAttempts,
-      ] = await Promise.all([
-        ctx.db
-          .select({
-            priority: schema.reconcileWorkScope.priority,
-            count: count(),
-          })
-          .from(schema.reconcileWorkScope)
-          .where(wsFilter)
-          .groupBy(schema.reconcileWorkScope.priority)
-          .orderBy(schema.reconcileWorkScope.priority),
+      const [byPriority, byClaimStatus, byKind, scopeErrors, scopeAttempts] =
+        await Promise.all([
+          ctx.db
+            .select({
+              priority: schema.reconcileWorkScope.priority,
+              count: count(),
+            })
+            .from(schema.reconcileWorkScope)
+            .where(wsFilter)
+            .groupBy(schema.reconcileWorkScope.priority)
+            .orderBy(schema.reconcileWorkScope.priority),
 
-        ctx.db
-          .select({
-            status: sql<string>`
-              CASE
-                WHEN ${schema.reconcileWorkScope.claimedBy} IS NOT NULL
-                     AND ${schema.reconcileWorkScope.claimedUntil} > ${now}
-                  THEN 'claimed'
-                WHEN ${schema.reconcileWorkScope.claimedBy} IS NOT NULL
-                     AND ${schema.reconcileWorkScope.claimedUntil} <= ${now}
-                  THEN 'expired'
-                WHEN ${schema.reconcileWorkScope.claimedBy} IS NULL
-                     AND ${schema.reconcileWorkScope.notBefore} <= ${now}
-                  THEN 'pending'
-                ELSE 'scheduled'
-              END
-            `.as("status"),
-            count: count(),
-          })
-          .from(schema.reconcileWorkScope)
-          .where(wsFilter)
-          .groupBy(sql`status`),
+          ctx.db
+            .select({
+              status: sql<string>`
+                CASE
+                  WHEN ${schema.reconcileWorkScope.claimedBy} IS NOT NULL
+                       AND ${schema.reconcileWorkScope.claimedUntil} > ${now}
+                    THEN 'claimed'
+                  WHEN ${schema.reconcileWorkScope.claimedBy} IS NOT NULL
+                       AND ${schema.reconcileWorkScope.claimedUntil} <= ${now}
+                    THEN 'expired'
+                  WHEN ${schema.reconcileWorkScope.claimedBy} IS NULL
+                       AND ${schema.reconcileWorkScope.notBefore} <= ${now}
+                    THEN 'pending'
+                  ELSE 'scheduled'
+                END
+              `.as("status"),
+              count: count(),
+            })
+            .from(schema.reconcileWorkScope)
+            .where(wsFilter)
+            .groupBy(sql`status`),
 
-        ctx.db
-          .select({
-            kind: schema.reconcileWorkScope.kind,
-            count: count(),
-          })
-          .from(schema.reconcileWorkScope)
-          .where(wsFilter)
-          .groupBy(schema.reconcileWorkScope.kind),
+          ctx.db
+            .select({
+              kind: schema.reconcileWorkScope.kind,
+              count: count(),
+            })
+            .from(schema.reconcileWorkScope)
+            .where(wsFilter)
+            .groupBy(schema.reconcileWorkScope.kind),
 
-        ctx.db
-          .select({
-            hasError:
-              sql<boolean>`${schema.reconcileWorkPayload.lastError} IS NOT NULL`.as(
-                "has_error",
-              ),
-            count: count(),
-          })
-          .from(schema.reconcileWorkPayload)
-          .innerJoin(
-            schema.reconcileWorkScope,
-            eq(
-              schema.reconcileWorkPayload.scopeRef,
-              schema.reconcileWorkScope.id,
-            ),
-          )
-          .where(wsFilter)
-          .groupBy(sql`has_error`),
+          ctx.db
+            .select({
+              hasError:
+                sql<boolean>`${schema.reconcileWorkScope.lastError} IS NOT NULL`.as(
+                  "has_error",
+                ),
+              count: count(),
+            })
+            .from(schema.reconcileWorkScope)
+            .where(wsFilter)
+            .groupBy(sql`has_error`),
 
-        ctx.db
-          .select({
-            bucket: sql<string>`
-              CASE
-                WHEN ${schema.reconcileWorkPayload.attemptCount} = 0 THEN '0'
-                WHEN ${schema.reconcileWorkPayload.attemptCount} = 1 THEN '1'
-                WHEN ${schema.reconcileWorkPayload.attemptCount} BETWEEN 2 AND 5 THEN '2-5'
-                ELSE '6+'
-              END
-            `.as("bucket"),
-            count: count(),
-          })
-          .from(schema.reconcileWorkPayload)
-          .innerJoin(
-            schema.reconcileWorkScope,
-            eq(
-              schema.reconcileWorkPayload.scopeRef,
-              schema.reconcileWorkScope.id,
-            ),
-          )
-          .where(wsFilter)
-          .groupBy(sql`bucket`),
-      ]);
+          ctx.db
+            .select({
+              bucket: sql<string>`
+                CASE
+                  WHEN ${schema.reconcileWorkScope.attemptCount} = 0 THEN '0'
+                  WHEN ${schema.reconcileWorkScope.attemptCount} = 1 THEN '1'
+                  WHEN ${schema.reconcileWorkScope.attemptCount} BETWEEN 2 AND 5 THEN '2-5'
+                  ELSE '6+'
+                END
+              `.as("bucket"),
+              count: count(),
+            })
+            .from(schema.reconcileWorkScope)
+            .where(wsFilter)
+            .groupBy(sql`bucket`),
+        ]);
 
       return {
         byPriority,
         byClaimStatus,
         byKind,
-        payloadErrors,
-        payloadAttempts,
+        scopeErrors,
+        scopeAttempts,
       };
     }),
 });

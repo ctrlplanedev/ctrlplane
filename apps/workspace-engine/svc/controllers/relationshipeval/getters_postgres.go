@@ -153,13 +153,17 @@ func (g *PostgresGetter) StreamCandidateEntities(
 
 func (g *PostgresGetter) GetExistingRelationships(
 	ctx context.Context,
+	entityType string,
 	entityID uuid.UUID,
 ) ([]ExistingRelationship, error) {
 	q := db.GetQueries(ctx)
 
-	rows, err := q.GetExistingRelationshipsForEntity(ctx, entityID)
+	rows, err := q.GetExistingRelationshipsForEntity(ctx, db.GetExistingRelationshipsForEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get existing relationships for entity %s: %w", entityID, err)
+		return nil, fmt.Errorf("get existing relationships for %s/%s: %w", entityType, entityID, err)
 	}
 
 	rels := make([]ExistingRelationship, 0, len(rows))

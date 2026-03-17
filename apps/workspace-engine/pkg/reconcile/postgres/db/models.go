@@ -9,18 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type ReconcileWorkPayload struct {
-	ID           int64
-	ScopeRef     int64
-	PayloadType  string
-	PayloadKey   string
-	Payload      []byte
-	AttemptCount int32
-	LastError    pgtype.Text
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-}
-
 type ReconcileWorkScope struct {
 	ID           int64
 	WorkspaceID  uuid.UUID
@@ -30,6 +18,8 @@ type ReconcileWorkScope struct {
 	EventTs      pgtype.Timestamptz
 	Priority     int16
 	NotBefore    pgtype.Timestamptz
+	AttemptCount int32
+	LastError    pgtype.Text
 	ClaimedBy    pgtype.Text
 	ClaimedUntil pgtype.Timestamptz
 	CreatedAt    pgtype.Timestamptz

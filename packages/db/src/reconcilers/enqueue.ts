@@ -1,9 +1,6 @@
 import type { Tx } from "../common.js";
 import type { ReconcileWorkScope } from "../schema/reconcile.js";
-import {
-  reconcileWorkPayload,
-  reconcileWorkScope,
-} from "../schema/reconcile.js";
+import { reconcileWorkScope } from "../schema/reconcile.js";
 
 const scopeConflictTarget = [
   reconcileWorkScope.workspaceId,
@@ -12,18 +9,6 @@ const scopeConflictTarget = [
   reconcileWorkScope.scopeId,
 ];
 
-const payloadConflictTarget = [
-  reconcileWorkPayload.scopeRef,
-  reconcileWorkPayload.payloadType,
-  reconcileWorkPayload.payloadKey,
-];
-
-interface EnqueuePayload {
-  payloadType?: string;
-  payloadKey?: string;
-  payload?: Record<string, any>;
-}
-
 interface EnqueueParams {
   workspaceId: string;
   kind: string;
@@ -31,7 +16,6 @@ interface EnqueueParams {
   scopeId?: string;
   priority?: number;
   notBefore?: Date;
-  payload?: EnqueuePayload;
 }
 
 export async function enqueue(
@@ -58,21 +42,6 @@ export async function enqueue(
       },
     })
     .returning();
-
-  if (params.payload && scope) {
-    await db
-      .insert(reconcileWorkPayload)
-      .values({
-        scopeRef: scope.id,
-        payloadType: params.payload.payloadType ?? "",
-        payloadKey: params.payload.payloadKey ?? "",
-        payload: params.payload.payload ?? {},
-      })
-      .onConflictDoUpdate({
-        target: payloadConflictTarget,
-        set: { payload: params.payload.payload ?? {} },
-      });
-  }
 
   return scope!;
 }
@@ -137,7 +106,7 @@ export async function enqueueMany(
       .values(batch)
       .onConflictDoUpdate({
         target: scopeConflictTarget,
-        set: { eventTs: now, notBefore: now },
+        set: { eventTs: now, notBefore: now, updatedAt: now },
       });
   }
 }

@@ -1,10 +1,9 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   bigint,
   index,
   integer,
-  jsonb,
   pgTable,
   smallint,
   text,
@@ -30,6 +29,8 @@ export const reconcileWorkScope = pgTable(
     notBefore: timestamp("not_before", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    lastError: text("last_error"),
     claimedBy: text("claimed_by"),
     claimedUntil: timestamp("claimed_until", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -45,64 +46,13 @@ export const reconcileWorkScope = pgTable(
     index("reconcile_work_scope_unclaimed_idx")
       .on(t.kind, t.priority, t.eventTs, t.id)
       .where(sql`${t.claimedUntil} is null`),
+    index("reconcile_work_scope_expired_claims_idx")
+      .on(t.claimedUntil)
+      .where(sql`${t.claimedUntil} is not null`),
   ],
-);
-
-export const reconcileWorkPayload = pgTable(
-  "reconcile_work_payload",
-  {
-    id: bigint("id", { mode: "number" })
-      .primaryKey()
-      .generatedByDefaultAsIdentity(),
-    scopeRef: bigint("scope_ref", { mode: "number" })
-      .notNull()
-      .references(() => reconcileWorkScope.id, { onDelete: "cascade" }),
-    payloadType: text("payload_type").notNull().default(""),
-    payloadKey: text("payload_key").notNull().default(""),
-    payload: jsonb("payload")
-      .notNull()
-      .$type<Record<string, any>>()
-      .default({}),
-    attemptCount: integer("attempt_count").notNull().default(0),
-    lastError: text("last_error"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (t) => [
-    uniqueIndex().on(t.scopeRef, t.payloadType, t.payloadKey),
-    index().on(t.scopeRef),
-  ],
-);
-
-export const reconcileWorkScopeRelations = relations(
-  reconcileWorkScope,
-  ({ many }) => ({
-    payloads: many(reconcileWorkPayload),
-  }),
-);
-
-export const reconcileWorkPayloadRelations = relations(
-  reconcileWorkPayload,
-  ({ one }) => ({
-    scope: one(reconcileWorkScope, {
-      fields: [reconcileWorkPayload.scopeRef],
-      references: [reconcileWorkScope.id],
-    }),
-  }),
 );
 
 export type ReconcileWorkScope = InferSelectModel<typeof reconcileWorkScope>;
 export type CreateReconcileWorkScope = InferInsertModel<
   typeof reconcileWorkScope
->;
-export type ReconcileWorkPayload = InferSelectModel<
-  typeof reconcileWorkPayload
->;
-export type CreateReconcileWorkPayload = InferInsertModel<
-  typeof reconcileWorkPayload
 >;

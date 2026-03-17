@@ -52,6 +52,7 @@ type Getter interface {
 	// where the given entity is either the "from" or "to" side.
 	GetExistingRelationships(
 		ctx context.Context,
+		entityType string,
 		entityID uuid.UUID,
 	) ([]ExistingRelationship, error)
 }

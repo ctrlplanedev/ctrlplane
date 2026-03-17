@@ -22,7 +22,6 @@ import {
 } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { CreateWorkItemDialog } from "./_components/work-queue/CreateWorkItemDialog";
-import { WorkPayloadDrawer } from "./_components/work-queue/WorkPayloadDrawer";
 import { WorkQueueCharts } from "./_components/work-queue/WorkQueueCharts";
 
 const ITEMS_PER_PAGE = 50;
@@ -91,8 +90,6 @@ function WorkScopeTable() {
   const [claimedFilter, setClaimedFilter] = useState<
     "all" | "claimed" | "unclaimed"
   >("all");
-  const [selectedScopeId, setSelectedScopeId] = useState<number | null>(null);
-
   const statsQuery = trpc.reconcile.stats.useQuery({
     workspaceId: workspace.id,
   });
@@ -209,11 +206,7 @@ function WorkScopeTable() {
             )}
 
             {scopes.map((scope) => (
-              <TableRow
-                key={scope.id}
-                className="cursor-pointer"
-                onClick={() => setSelectedScopeId(scope.id)}
-              >
+              <TableRow key={scope.id}>
                 <TableCell>
                   <Badge
                     variant="outline"
@@ -283,10 +276,6 @@ function WorkScopeTable() {
         </div>
       </div>
 
-      <WorkPayloadDrawer
-        scopeId={selectedScopeId}
-        onClose={() => setSelectedScopeId(null)}
-      />
     </div>
   );
 }
@@ -300,8 +289,8 @@ export default function WorkQueuePage() {
         <div>
           <h1 className="text-2xl font-bold">Work Queue</h1>
           <p className="text-sm text-muted-foreground">
-            View reconcile work scope items and their payloads to understand the
-            current state of the workspace engine.
+            View reconcile work scope items to understand the current state of
+            the workspace engine.
           </p>
         </div>
         <CreateWorkItemDialog workspaceId={workspace.id} />

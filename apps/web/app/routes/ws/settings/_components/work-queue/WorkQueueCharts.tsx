@@ -54,8 +54,8 @@ interface ChartData {
   byPriority: { priority: number; count: number }[];
   byClaimStatus: { status: string; count: number }[];
   byKind: { kind: string; count: number }[];
-  payloadErrors: { hasError: boolean; count: number }[];
-  payloadAttempts: { bucket: string; count: number }[];
+  scopeErrors: { hasError: boolean; count: number }[];
+  scopeAttempts: { bucket: string; count: number }[];
 }
 
 function ChartSkeleton() {
@@ -74,7 +74,10 @@ function ClaimStatusChart({ data }: { data: ChartData["byClaimStatus"] }) {
       Object.fromEntries(
         data.map((d) => [
           d.status,
-          { label: d.status.charAt(0).toUpperCase() + d.status.slice(1), color: STATUS_COLORS[d.status] ?? "hsl(0,0%,50%)" },
+          {
+            label: d.status.charAt(0).toUpperCase() + d.status.slice(1),
+            color: STATUS_COLORS[d.status] ?? "hsl(0,0%,50%)",
+          },
         ]),
       ),
     [data],
@@ -85,22 +88,50 @@ function ClaimStatusChart({ data }: { data: ChartData["byClaimStatus"] }) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <p className="mb-2 text-sm font-medium">Claim Status</p>
-      <ChartContainer config={config} className="mx-auto aspect-square max-h-[220px]">
+      <ChartContainer
+        config={config}
+        className="mx-auto aspect-square max-h-[220px]"
+      >
         <PieChart>
-          <ChartTooltip content={<ChartTooltipContent nameKey="status" hideLabel />} />
-          <Pie data={data} dataKey="count" nameKey="status" innerRadius={50} outerRadius={80} strokeWidth={2}>
+          <ChartTooltip
+            content={<ChartTooltipContent nameKey="status" hideLabel />}
+          />
+          <Pie
+            data={data}
+            dataKey="count"
+            nameKey="status"
+            innerRadius={50}
+            outerRadius={80}
+            strokeWidth={2}
+          >
             {data.map((d) => (
-              <Cell key={d.status} fill={STATUS_COLORS[d.status] ?? "hsl(0,0%,50%)"} />
+              <Cell
+                key={d.status}
+                fill={STATUS_COLORS[d.status] ?? "hsl(0,0%,50%)"}
+              />
             ))}
             <Label
               content={({ viewBox }) => {
                 if (viewBox && "cx" in viewBox && "cy" in viewBox)
                   return (
-                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                      <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
+                    <text
+                      x={viewBox.cx}
+                      y={viewBox.cy}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      <tspan
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        className="fill-foreground text-2xl font-bold"
+                      >
                         {total}
                       </tspan>
-                      <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 20} className="fill-muted-foreground text-xs">
+                      <tspan
+                        x={viewBox.cx}
+                        y={(viewBox.cy ?? 0) + 20}
+                        className="fill-muted-foreground text-xs"
+                      >
                         scopes
                       </tspan>
                     </text>
@@ -134,22 +165,50 @@ function KindDistributionChart({ data }: { data: ChartData["byKind"] }) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <p className="mb-2 text-sm font-medium">By Kind</p>
-      <ChartContainer config={config} className="mx-auto aspect-square max-h-[220px]">
+      <ChartContainer
+        config={config}
+        className="mx-auto aspect-square max-h-[220px]"
+      >
         <PieChart>
-          <ChartTooltip content={<ChartTooltipContent nameKey="kind" hideLabel />} />
-          <Pie data={data} dataKey="count" nameKey="kind" innerRadius={50} outerRadius={80} strokeWidth={2}>
+          <ChartTooltip
+            content={<ChartTooltipContent nameKey="kind" hideLabel />}
+          />
+          <Pie
+            data={data}
+            dataKey="count"
+            nameKey="kind"
+            innerRadius={50}
+            outerRadius={80}
+            strokeWidth={2}
+          >
             {data.map((d, i) => (
-              <Cell key={d.kind} fill={KIND_PALETTE[i % KIND_PALETTE.length]!} />
+              <Cell
+                key={d.kind}
+                fill={KIND_PALETTE[i % KIND_PALETTE.length]!}
+              />
             ))}
             <Label
               content={({ viewBox }) => {
                 if (viewBox && "cx" in viewBox && "cy" in viewBox)
                   return (
-                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                      <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
+                    <text
+                      x={viewBox.cx}
+                      y={viewBox.cy}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      <tspan
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        className="fill-foreground text-2xl font-bold"
+                      >
                         {data.length}
                       </tspan>
-                      <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 20} className="fill-muted-foreground text-xs">
+                      <tspan
+                        x={viewBox.cx}
+                        y={(viewBox.cy ?? 0) + 20}
+                        className="fill-muted-foreground text-xs"
+                      >
                         kinds
                       </tspan>
                     </text>
@@ -184,19 +243,23 @@ function PriorityChart({ data }: { data: ChartData["byPriority"] }) {
           <XAxis dataKey="priority" tickLine={false} axisLine={false} />
           <YAxis tickLine={false} axisLine={false} allowDecimals={false} />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+          <Bar
+            dataKey="count"
+            fill="var(--color-count)"
+            radius={[4, 4, 0, 0]}
+          />
         </BarChart>
       </ChartContainer>
     </div>
   );
 }
 
-function PayloadHealthChart({
+function ScopeHealthChart({
   errors,
   attempts,
 }: {
-  errors: ChartData["payloadErrors"];
-  attempts: ChartData["payloadAttempts"];
+  errors: ChartData["scopeErrors"];
+  attempts: ChartData["scopeAttempts"];
 }) {
   const errorData = useMemo(
     () =>
@@ -235,9 +298,9 @@ function PayloadHealthChart({
     [attempts],
   );
 
-  const totalPayloads = errorData.reduce((sum, d) => sum + d.count, 0);
+  const totalScopes = errorData.reduce((sum, d) => sum + d.count, 0);
 
-  if (totalPayloads === 0) return <EmptyChart label="Payload Health" />;
+  if (totalScopes === 0) return <EmptyChart label="Scope Health" />;
 
   const attemptData = attempts.map((d) => ({
     bucket: d.bucket,
@@ -246,27 +309,56 @@ function PayloadHealthChart({
 
   return (
     <div className="rounded-lg border bg-card p-4">
-      <p className="mb-2 text-sm font-medium">Payload Health</p>
+      <p className="mb-2 text-sm font-medium">Scope Health</p>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <p className="mb-1 text-center text-xs text-muted-foreground">
             Error Rate
           </p>
-          <ChartContainer config={errorConfig} className="mx-auto aspect-square max-h-[180px]">
+          <ChartContainer
+            config={errorConfig}
+            className="mx-auto aspect-square max-h-[180px]"
+          >
             <PieChart>
-              <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
-              <Pie data={errorData} dataKey="count" nameKey="label" innerRadius={35} outerRadius={60} strokeWidth={2}>
+              <ChartTooltip
+                content={<ChartTooltipContent nameKey="label" hideLabel />}
+              />
+              <Pie
+                data={errorData}
+                dataKey="count"
+                nameKey="label"
+                innerRadius={35}
+                outerRadius={60}
+                strokeWidth={2}
+              >
                 {errorData.map((d) => (
-                  <Cell key={d.label} fill={ERROR_COLORS[d.label] ?? "hsl(0,0%,50%)"} />
+                  <Cell
+                    key={d.label}
+                    fill={ERROR_COLORS[d.label] ?? "hsl(0,0%,50%)"}
+                  />
                 ))}
                 <Label
                   content={({ viewBox }) => {
                     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                      const errorCount = errorData.find((d) => d.label === "errored")?.count ?? 0;
-                      const pct = totalPayloads > 0 ? Math.round((errorCount / totalPayloads) * 100) : 0;
+                      const errorCount =
+                        errorData.find((d) => d.label === "errored")?.count ??
+                        0;
+                      const pct =
+                        totalScopes > 0
+                          ? Math.round((errorCount / totalScopes) * 100)
+                          : 0;
                       return (
-                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                          <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-lg font-bold">
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-lg font-bold"
+                          >
                             {pct}%
                           </tspan>
                         </text>
@@ -290,7 +382,10 @@ function PayloadHealthChart({
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {attemptData.map((d) => (
-                  <Cell key={d.bucket} fill={ATTEMPT_COLORS[d.bucket] ?? "hsl(0,0%,50%)"} />
+                  <Cell
+                    key={d.bucket}
+                    fill={ATTEMPT_COLORS[d.bucket] ?? "hsl(0,0%,50%)"}
+                  />
                 ))}
               </Bar>
             </BarChart>
@@ -335,7 +430,10 @@ export function WorkQueueCharts({
       <ClaimStatusChart data={data.byClaimStatus} />
       <KindDistributionChart data={data.byKind} />
       <PriorityChart data={data.byPriority} />
-      <PayloadHealthChart errors={data.payloadErrors} attempts={data.payloadAttempts} />
+      <ScopeHealthChart
+        errors={data.scopeErrors}
+        attempts={data.scopeAttempts}
+      />
     </div>
   );
 }

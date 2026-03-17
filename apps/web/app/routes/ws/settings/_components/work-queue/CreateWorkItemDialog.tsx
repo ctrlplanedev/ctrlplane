@@ -22,8 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Textarea } from "~/components/ui/textarea";
-
 import { trpc } from "~/api/trpc";
 
 type Template =
@@ -459,14 +457,9 @@ function AdvancedForm({
     scopeId: "",
     priority: "100",
     notBefore: "",
-    includePayload: false,
-    payloadType: "",
-    payloadKey: "",
-    payloadJson: "{}",
   };
 
   const [form, setForm] = useState(defaultForm);
-  const [jsonError, setJsonError] = useState<string | null>(null);
   const invalidate = useInvalidateAll();
 
   const mutation = trpc.reconcile.create.useMutation({
@@ -476,25 +469,11 @@ function AdvancedForm({
     },
   });
 
-  const update = (field: keyof typeof form, value: string | boolean) =>
+  const update = (field: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    let parsedPayload: Record<string, unknown> = {};
-    if (form.includePayload) {
-      try {
-        parsedPayload = JSON.parse(form.payloadJson) as Record<
-          string,
-          unknown
-        >;
-        setJsonError(null);
-      } catch {
-        setJsonError("Invalid JSON");
-        return;
-      }
-    }
-
     mutation.mutate({
       workspaceId,
       kind: form.kind,
@@ -502,13 +481,6 @@ function AdvancedForm({
       scopeId: form.scopeId,
       priority: Number(form.priority),
       notBefore: form.notBefore ? new Date(form.notBefore) : undefined,
-      payload: form.includePayload
-        ? {
-            payloadType: form.payloadType,
-            payloadKey: form.payloadKey,
-            payload: parsedPayload,
-          }
-        : undefined,
     });
   };
 
@@ -578,59 +550,6 @@ function AdvancedForm({
           Leave empty for immediate processing.
         </p>
       </div>
-
-      <div className="flex items-center gap-2 border-t pt-4">
-        <input
-          id="includePayload"
-          type="checkbox"
-          className="h-4 w-4 rounded border-input"
-          checked={form.includePayload}
-          onChange={(e) => update("includePayload", e.target.checked)}
-        />
-        <Label htmlFor="includePayload" className="font-normal">
-          Include a payload
-        </Label>
-      </div>
-
-      {form.includePayload && (
-        <div className="flex flex-col gap-4 rounded-md border bg-muted/30 p-3">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="payloadType">Payload Type</Label>
-              <Input
-                id="payloadType"
-                placeholder="e.g. trigger"
-                value={form.payloadType}
-                onChange={(e) => update("payloadType", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="payloadKey">Payload Key</Label>
-              <Input
-                id="payloadKey"
-                placeholder="e.g. unique-key"
-                value={form.payloadKey}
-                onChange={(e) => update("payloadKey", e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="payloadJson">Payload JSON</Label>
-            <Textarea
-              id="payloadJson"
-              className="min-h-[100px] font-mono text-xs"
-              value={form.payloadJson}
-              onChange={(e) => {
-                update("payloadJson", e.target.value);
-                setJsonError(null);
-              }}
-            />
-            {jsonError && (
-              <p className="text-xs text-destructive">{jsonError}</p>
-            )}
-          </div>
-        </div>
-      )}
 
       <DialogFooter>
         <Button type="submit" disabled={mutation.isPending}>

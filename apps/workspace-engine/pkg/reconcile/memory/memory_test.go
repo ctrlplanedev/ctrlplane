@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -81,9 +80,6 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		Kind:        "deploymentresourceselectoreval",
 		ScopeType:   "deployment",
 		ScopeID:     uuid.NewString(),
-		PayloadType: "selector_eval",
-		PayloadKey:  "retry-a",
-		Payload:     json.RawMessage(`{"selector":"retry-a"}`),
 	})
 	if err != nil {
 		t.Fatalf("enqueue kind A failed: %v", err)
@@ -94,9 +90,6 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 		Kind:        "otherkind",
 		ScopeType:   "deployment",
 		ScopeID:     uuid.NewString(),
-		PayloadType: "selector_eval",
-		PayloadKey:  "retry-b",
-		Payload:     json.RawMessage(`{"selector":"retry-b"}`),
 	})
 	if err != nil {
 		t.Fatalf("enqueue kind B failed: %v", err)
@@ -156,75 +149,6 @@ func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	}
 }
 
-func TestQueue_AckLeavesNewerPayload(t *testing.T) {
-	queue := New()
-	ctx := context.Background()
-	workspaceID := uuid.NewString()
-	scopeID := uuid.NewString()
-
-	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
-		WorkspaceID: workspaceID,
-		Kind:        "deploymentresourceselectoreval",
-		ScopeType:   "deployment",
-		ScopeID:     scopeID,
-		PayloadType: "selector_eval",
-		PayloadKey:  "stable",
-		Payload:     json.RawMessage(`{"v":1}`),
-	})
-	if err != nil {
-		t.Fatalf("enqueue failed: %v", err)
-	}
-
-	items, err := queue.Claim(ctx, reconcile.ClaimParams{
-		BatchSize:     1,
-		WorkerID:      "worker-a",
-		LeaseDuration: time.Second,
-	})
-	if err != nil {
-		t.Fatalf("claim failed: %v", err)
-	}
-	if len(items) != 1 {
-		t.Fatalf("expected one claimed item, got %d", len(items))
-	}
-
-	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
-		WorkspaceID: workspaceID,
-		Kind:        "deploymentresourceselectoreval",
-		ScopeType:   "deployment",
-		ScopeID:     scopeID,
-		PayloadType: "selector_eval",
-		PayloadKey:  "stable",
-		Payload:     json.RawMessage(`{"v":2}`),
-	})
-	if err != nil {
-		t.Fatalf("re-enqueue failed: %v", err)
-	}
-
-	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-		ItemID:           items[0].ID,
-		WorkerID:         "worker-a",
-		ClaimedUpdatedAt: items[0].UpdatedAt,
-	})
-	if err != nil {
-		t.Fatalf("ack failed: %v", err)
-	}
-	if ack.Deleted {
-		t.Fatal("expected deleted=false when only newer payload exists")
-	}
-
-	remaining, err := queue.Claim(ctx, reconcile.ClaimParams{
-		BatchSize:     1,
-		WorkerID:      "worker-b",
-		LeaseDuration: time.Second,
-	})
-	if err != nil {
-		t.Fatalf("claim after ack failed: %v", err)
-	}
-	if len(remaining) != 1 || len(remaining[0].Payloads) != 1 {
-		t.Fatalf("expected one remaining payload item, got %+v", remaining)
-	}
-}
-
 func TestQueue_ValidationErrors(t *testing.T) {
 	queue := New()
 	ctx := context.Background()
@@ -280,5 +204,47 @@ func TestQueue_ValidationErrors(t *testing.T) {
 		reconcile.ErrMissingWorkerID,
 	) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
+	}
+}
+
+func TestQueue_EnqueueSkipsClaimedScope(t *testing.T) {
+	queue := New()
+	ctx := context.Background()
+	workspaceID := uuid.NewString()
+	scopeID := uuid.NewString()
+
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
+		WorkspaceID: workspaceID,
+		Kind:        "eval",
+		ScopeType:   "deployment",
+		ScopeID:     scopeID,
+		Priority:    50,
+	})
+	if err != nil {
+		t.Fatalf("enqueue failed: %v", err)
+	}
+
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     1,
+		WorkerID:      "worker-a",
+		LeaseDuration: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("claim failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+
+	// Enqueue for the same scope while claimed should be silently skipped.
+	err = queue.Enqueue(ctx, reconcile.EnqueueParams{
+		WorkspaceID: workspaceID,
+		Kind:        "eval",
+		ScopeType:   "deployment",
+		ScopeID:     scopeID,
+		Priority:    10,
+	})
+	if err != nil {
+		t.Fatalf("enqueue during claim failed: %v", err)
 	}
 }

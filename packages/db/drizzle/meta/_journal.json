@@ -1219,6 +1219,13 @@
       "when": 1773723551995,
       "tag": "0173_jittery_inertia",
       "breakpoints": true
+    },
+    {
+      "idx": 174,
+      "version": "7",
+      "when": 1773772140720,
+      "tag": "0174_salty_strong_guy",
+      "breakpoints": true
     }
   ]
 }

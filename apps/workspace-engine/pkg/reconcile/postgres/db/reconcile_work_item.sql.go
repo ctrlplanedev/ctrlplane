@@ -31,24 +31,9 @@ DO UPDATE SET
   event_ts   = GREATEST(reconcile_work_scope.event_ts, EXCLUDED.event_ts),
   priority   = LEAST(reconcile_work_scope.priority, EXCLUDED.priority),
   not_before = LEAST(reconcile_work_scope.not_before, EXCLUDED.not_before),
-  updated_at = CASE
-    WHEN reconcile_work_scope.claimed_until IS NOT NULL
-      AND reconcile_work_scope.claimed_until >= now()
-    THEN reconcile_work_scope.updated_at
-    ELSE now()
-  END,
-  claimed_by = CASE
-    WHEN reconcile_work_scope.claimed_until IS NOT NULL
-      AND reconcile_work_scope.claimed_until < now()
-    THEN NULL
-    ELSE reconcile_work_scope.claimed_by
-  END,
-  claimed_until = CASE
-    WHEN reconcile_work_scope.claimed_until IS NOT NULL
-      AND reconcile_work_scope.claimed_until < now()
-    THEN NULL
-    ELSE reconcile_work_scope.claimed_until
-  END
+  updated_at = now()
+WHERE reconcile_work_scope.claimed_until IS NULL
+   OR reconcile_work_scope.claimed_until < now()
 `
 
 type BatchUpsertReconcileWorkScopesParams struct {
@@ -62,6 +47,8 @@ type BatchUpsertReconcileWorkScopesParams struct {
 }
 
 // Batch upsert scope rows for multiple work items in a single round-trip.
+// Rows that are currently claimed (being processed) are skipped entirely to
+// avoid row-lock contention with the claim holder.
 func (q *Queries) BatchUpsertReconcileWorkScopes(ctx context.Context, arg BatchUpsertReconcileWorkScopesParams) error {
 	_, err := q.db.Exec(ctx, batchUpsertReconcileWorkScopes,
 		arg.WorkspaceIds,
@@ -92,7 +79,7 @@ WITH candidate_scopes AS (
     updated_at = now()
   FROM candidate_scopes AS c
   WHERE s.id = c.id
-  RETURNING s.id, s.workspace_id, s.kind, s.scope_type, s.scope_id, s.event_ts, s.priority, s.not_before, s.claimed_by, s.claimed_until, s.created_at, s.updated_at
+  RETURNING s.id, s.workspace_id, s.kind, s.scope_type, s.scope_id, s.event_ts, s.priority, s.not_before, s.attempt_count, s.last_error, s.claimed_by, s.claimed_until, s.created_at, s.updated_at
 )
 SELECT
   s.id,
@@ -103,37 +90,12 @@ SELECT
   s.event_ts,
   s.priority,
   s.not_before,
-  COALESCE(MAX(p.attempt_count), 0)::int AS attempt_count,
-  COALESCE(MAX(p.last_error), '')::text AS last_error,
+  s.attempt_count,
+  COALESCE(s.last_error, '')::text AS last_error,
   COALESCE(s.claimed_by, '')::text AS claimed_by,
   s.claimed_until,
-  s.updated_at,
-  COALESCE(
-    jsonb_agg(
-      jsonb_build_object(
-        'type', p.payload_type,
-        'key', p.payload_key,
-        'payload', p.payload
-      )
-      ORDER BY p.created_at ASC, p.id ASC
-    ) FILTER (WHERE p.id IS NOT NULL),
-    '[]'::jsonb
-  )::jsonb AS payloads
-FROM claimed_scopes AS s
-LEFT JOIN reconcile_work_payload AS p
-  ON p.scope_ref = s.id
-GROUP BY
-  s.id,
-  s.workspace_id,
-  s.kind,
-  s.scope_type,
-  s.scope_id,
-  s.event_ts,
-  s.priority,
-  s.not_before,
-  s.claimed_by,
-  s.claimed_until,
   s.updated_at
+FROM claimed_scopes AS s
 ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
 `
 
@@ -157,11 +119,9 @@ type ClaimReconcileWorkItemsRow struct {
 	ClaimedBy    string
 	ClaimedUntil pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
-	Payloads     []byte
 }
 
-// Claim scope rows (single-flight by unique scope key), then return all payloads
-// currently attached to each claimed scope as one aggregated item.
+// Claim unclaimed scope rows, ordered by priority then event time.
 func (q *Queries) ClaimReconcileWorkItems(ctx context.Context, arg ClaimReconcileWorkItemsParams) ([]ClaimReconcileWorkItemsRow, error) {
 	rows, err := q.db.Query(ctx, claimReconcileWorkItems, arg.BatchSize, arg.ClaimedBy, arg.LeaseSeconds)
 	if err != nil {
@@ -185,7 +145,6 @@ func (q *Queries) ClaimReconcileWorkItems(ctx context.Context, arg ClaimReconcil
 			&i.ClaimedBy,
 			&i.ClaimedUntil,
 			&i.UpdatedAt,
-			&i.Payloads,
 		); err != nil {
 			return nil, err
 		}
@@ -215,7 +174,7 @@ WITH candidate_scopes AS (
     updated_at = now()
   FROM candidate_scopes AS c
   WHERE s.id = c.id
-  RETURNING s.id, s.workspace_id, s.kind, s.scope_type, s.scope_id, s.event_ts, s.priority, s.not_before, s.claimed_by, s.claimed_until, s.created_at, s.updated_at
+  RETURNING s.id, s.workspace_id, s.kind, s.scope_type, s.scope_id, s.event_ts, s.priority, s.not_before, s.attempt_count, s.last_error, s.claimed_by, s.claimed_until, s.created_at, s.updated_at
 )
 SELECT
   s.id,
@@ -226,37 +185,12 @@ SELECT
   s.event_ts,
   s.priority,
   s.not_before,
-  COALESCE(MAX(p.attempt_count), 0)::int AS attempt_count,
-  COALESCE(MAX(p.last_error), '')::text AS last_error,
+  s.attempt_count,
+  COALESCE(s.last_error, '')::text AS last_error,
   COALESCE(s.claimed_by, '')::text AS claimed_by,
   s.claimed_until,
-  s.updated_at,
-  COALESCE(
-    jsonb_agg(
-      jsonb_build_object(
-        'type', p.payload_type,
-        'key', p.payload_key,
-        'payload', p.payload
-      )
-      ORDER BY p.created_at ASC, p.id ASC
-    ) FILTER (WHERE p.id IS NOT NULL),
-    '[]'::jsonb
-  )::jsonb AS payloads
-FROM claimed_scopes AS s
-LEFT JOIN reconcile_work_payload AS p
-  ON p.scope_ref = s.id
-GROUP BY
-  s.id,
-  s.workspace_id,
-  s.kind,
-  s.scope_type,
-  s.scope_id,
-  s.event_ts,
-  s.priority,
-  s.not_before,
-  s.claimed_by,
-  s.claimed_until,
   s.updated_at
+FROM claimed_scopes AS s
 ORDER BY s.priority ASC, s.event_ts ASC, s.id ASC
 `
 
@@ -281,7 +215,6 @@ type ClaimReconcileWorkItemsByKindsRow struct {
 	ClaimedBy    string
 	ClaimedUntil pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
-	Payloads     []byte
 }
 
 // Same as ClaimReconcileWorkItems, but constrained to selected kinds.
@@ -313,7 +246,6 @@ func (q *Queries) ClaimReconcileWorkItemsByKinds(ctx context.Context, arg ClaimR
 			&i.ClaimedBy,
 			&i.ClaimedUntil,
 			&i.UpdatedAt,
-			&i.Payloads,
 		); err != nil {
 			return nil, err
 		}
@@ -336,7 +268,6 @@ WHERE claimed_until IS NOT NULL
 `
 
 // Release scopes whose lease has expired so they become claimable again.
-// A background ticker should call this periodically.
 func (q *Queries) CleanupExpiredClaims(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, cleanupExpiredClaims)
 	if err != nil {
@@ -345,75 +276,41 @@ func (q *Queries) CleanupExpiredClaims(ctx context.Context) (int64, error) {
 	return result.RowsAffected(), nil
 }
 
-const deleteClaimedReconcileWorkItemIfUnchanged = `-- name: DeleteClaimedReconcileWorkItemIfUnchanged :one
+const deleteClaimedReconcileWorkItem = `-- name: DeleteClaimedReconcileWorkItem :one
 WITH target_scope AS (
-  SELECT s.id, s.updated_at
+  SELECT s.id
   FROM reconcile_work_scope AS s
   WHERE s.id = $1
     AND s.claimed_by = $2
-    AND s.updated_at <= $3
-), deleted_payloads AS (
-  DELETE FROM reconcile_work_payload AS p
-  USING target_scope AS t
-  WHERE p.scope_ref = t.id
-    AND p.created_at <= t.updated_at
-  RETURNING p.id
-), remaining_payloads AS (
-  SELECT
-    t.id AS scope_ref,
-    EXISTS (
-      SELECT 1
-      FROM reconcile_work_payload AS p
-      WHERE p.scope_ref = t.id
-        AND NOT EXISTS (
-          SELECT 1
-          FROM deleted_payloads AS d
-          WHERE d.id = p.id
-        )
-    ) AS has_remaining
-  FROM target_scope AS t
-), dropped_scope AS (
+), deleted_scope AS (
   DELETE FROM reconcile_work_scope AS s
-  USING remaining_payloads AS r
-  WHERE s.id = r.scope_ref
-    AND NOT r.has_remaining
-  RETURNING s.id
-), released_scope AS (
-  UPDATE reconcile_work_scope AS s
-  SET
-    claimed_by = NULL,
-    claimed_until = NULL,
-    updated_at = now()
-  FROM remaining_payloads AS r
-  WHERE s.id = r.scope_ref
-    AND r.has_remaining
+  USING target_scope AS t
+  WHERE s.id = t.id
+    AND s.updated_at <= $3
   RETURNING s.id
 )
 SELECT
-  COUNT(*)::int AS deleted_payload_count,
   EXISTS (SELECT 1 FROM target_scope) AS owned,
-  EXISTS (SELECT 1 FROM dropped_scope) AS scope_deleted
-FROM deleted_payloads
+  EXISTS (SELECT 1 FROM deleted_scope) AS deleted
 `
 
-type DeleteClaimedReconcileWorkItemIfUnchangedParams struct {
+type DeleteClaimedReconcileWorkItemParams struct {
 	ID        int64
 	ClaimedBy pgtype.Text
 	UpdatedAt pgtype.Timestamptz
 }
 
-type DeleteClaimedReconcileWorkItemIfUnchangedRow struct {
-	DeletedPayloadCount int32
-	Owned               bool
-	ScopeDeleted        bool
+type DeleteClaimedReconcileWorkItemRow struct {
+	Owned   bool
+	Deleted bool
 }
 
-// Delete payloads that existed when the worker claimed this scope
-// (p.created_at <= claimed scope updated_at). Newer payload upserts are preserved.
-func (q *Queries) DeleteClaimedReconcileWorkItemIfUnchanged(ctx context.Context, arg DeleteClaimedReconcileWorkItemIfUnchangedParams) (DeleteClaimedReconcileWorkItemIfUnchangedRow, error) {
-	row := q.db.QueryRow(ctx, deleteClaimedReconcileWorkItemIfUnchanged, arg.ID, arg.ClaimedBy, arg.UpdatedAt)
-	var i DeleteClaimedReconcileWorkItemIfUnchangedRow
-	err := row.Scan(&i.DeletedPayloadCount, &i.Owned, &i.ScopeDeleted)
+// Delete the scope row if it is still owned by the caller and unchanged since
+// the claim snapshot. Returns ownership and deletion status.
+func (q *Queries) DeleteClaimedReconcileWorkItem(ctx context.Context, arg DeleteClaimedReconcileWorkItemParams) (DeleteClaimedReconcileWorkItemRow, error) {
+	row := q.db.QueryRow(ctx, deleteClaimedReconcileWorkItem, arg.ID, arg.ClaimedBy, arg.UpdatedAt)
+	var i DeleteClaimedReconcileWorkItemRow
+	err := row.Scan(&i.Owned, &i.Deleted)
 	return i, err
 }
 
@@ -432,7 +329,6 @@ type ExtendReconcileWorkItemLeaseParams struct {
 	ClaimedBy    pgtype.Text
 }
 
-// Lease extension is scope-level in the two-table design.
 func (q *Queries) ExtendReconcileWorkItemLease(ctx context.Context, arg ExtendReconcileWorkItemLeaseParams) (int64, error) {
 	result, err := q.db.Exec(ctx, extendReconcileWorkItemLease, arg.LeaseSeconds, arg.ID, arg.ClaimedBy)
 	if err != nil {
@@ -456,7 +352,6 @@ type ReleaseReconcileWorkItemClaimParams struct {
 	ClaimedBy pgtype.Text
 }
 
-// Release the scope claim without deleting payloads.
 func (q *Queries) ReleaseReconcileWorkItemClaim(ctx context.Context, arg ReleaseReconcileWorkItemClaimParams) (int64, error) {
 	result, err := q.db.Exec(ctx, releaseReconcileWorkItemClaim, arg.ID, arg.ClaimedBy)
 	if err != nil {
@@ -467,23 +362,15 @@ func (q *Queries) ReleaseReconcileWorkItemClaim(ctx context.Context, arg Release
 
 const retryReconcileWorkItem = `-- name: RetryReconcileWorkItem :one
 WITH target_scope AS (
-  SELECT s.id, s.updated_at
+  SELECT s.id
   FROM reconcile_work_scope AS s
   WHERE s.id = $1
     AND s.claimed_by = $2
-), updated_payloads AS (
-  UPDATE reconcile_work_payload AS p
-  SET
-    attempt_count = p.attempt_count + 1,
-    last_error = $3,
-    updated_at = now()
-  FROM target_scope AS t
-  WHERE p.scope_ref = t.id
-    AND p.created_at <= t.updated_at
-  RETURNING p.id
 ), released_scope AS (
   UPDATE reconcile_work_scope AS s
   SET
+    attempt_count = s.attempt_count + 1,
+    last_error = $3,
     not_before = now() + make_interval(secs => $4::int),
     claimed_by = NULL,
     claimed_until = NULL,
@@ -493,10 +380,8 @@ WITH target_scope AS (
   RETURNING s.id
 )
 SELECT
-  COUNT(*)::int AS retried_payload_count,
   EXISTS (SELECT 1 FROM target_scope) AS owned,
-  EXISTS (SELECT 1 FROM released_scope) AS scope_released
-FROM updated_payloads
+  EXISTS (SELECT 1 FROM released_scope) AS released
 `
 
 type RetryReconcileWorkItemParams struct {
@@ -507,13 +392,11 @@ type RetryReconcileWorkItemParams struct {
 }
 
 type RetryReconcileWorkItemRow struct {
-	RetriedPayloadCount int32
-	Owned               bool
-	ScopeReleased       bool
+	Owned    bool
+	Released bool
 }
 
-// Retry only payloads that were part of the claimed snapshot, then set
-// scope backoff and release claim.
+// Increment attempt count, record error, set backoff, and release claim.
 func (q *Queries) RetryReconcileWorkItem(ctx context.Context, arg RetryReconcileWorkItemParams) (RetryReconcileWorkItemRow, error) {
 	row := q.db.QueryRow(ctx, retryReconcileWorkItem,
 		arg.ID,
@@ -522,66 +405,28 @@ func (q *Queries) RetryReconcileWorkItem(ctx context.Context, arg RetryReconcile
 		arg.RetryBackoffSeconds,
 	)
 	var i RetryReconcileWorkItemRow
-	err := row.Scan(&i.RetriedPayloadCount, &i.Owned, &i.ScopeReleased)
+	err := row.Scan(&i.Owned, &i.Released)
 	return i, err
 }
 
 const upsertReconcileWorkItem = `-- name: UpsertReconcileWorkItem :exec
-WITH upsert_scope AS (
-  INSERT INTO reconcile_work_scope (
-    workspace_id, kind, scope_type, scope_id, event_ts, priority, not_before,
-    claimed_by, claimed_until, created_at, updated_at
-  ) VALUES (
-    $5, $6, $7, $8, $9, $10, $11,
-    NULL, NULL, now(), now()
-  )
-  ON CONFLICT (workspace_id, kind, scope_type, scope_id)
-  DO UPDATE SET
-    event_ts = GREATEST(reconcile_work_scope.event_ts, EXCLUDED.event_ts),
-    priority = LEAST(reconcile_work_scope.priority, EXCLUDED.priority),
-    not_before = LEAST(reconcile_work_scope.not_before, EXCLUDED.not_before),
-    -- Keep claim timestamp stable while a lease is active so ack/retry can
-    -- separate payloads claimed at lease-time from payloads added later.
-    updated_at = CASE
-      WHEN reconcile_work_scope.claimed_until IS NOT NULL
-        AND reconcile_work_scope.claimed_until >= now()
-      THEN reconcile_work_scope.updated_at
-      ELSE now()
-    END,
-    claimed_by = CASE
-      WHEN reconcile_work_scope.claimed_until IS NOT NULL
-        AND reconcile_work_scope.claimed_until < now()
-      THEN NULL
-      ELSE reconcile_work_scope.claimed_by
-    END,
-    claimed_until = CASE
-      WHEN reconcile_work_scope.claimed_until IS NOT NULL
-        AND reconcile_work_scope.claimed_until < now()
-      THEN NULL
-      ELSE reconcile_work_scope.claimed_until
-    END
-  RETURNING id
+INSERT INTO reconcile_work_scope (
+  workspace_id, kind, scope_type, scope_id, event_ts, priority, not_before,
+  claimed_by, claimed_until, created_at, updated_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6, $7,
+  NULL, NULL, now(), now()
 )
-INSERT INTO reconcile_work_payload (
-  scope_ref, payload_type, payload_key, payload, attempt_count, last_error, created_at, updated_at
-)
-SELECT
-  id, $1, $2, $3, 0, NULL, now(), now()
-FROM upsert_scope
-WHERE $4::bool
-ON CONFLICT (scope_ref, payload_type, payload_key)
+ON CONFLICT (workspace_id, kind, scope_type, scope_id)
 DO UPDATE SET
-  payload = EXCLUDED.payload,
-  -- Treat payload updates as a new unit of work for claim-snapshot cutoffs.
-  created_at = now(),
+  event_ts   = GREATEST(reconcile_work_scope.event_ts, EXCLUDED.event_ts),
+  priority   = LEAST(reconcile_work_scope.priority, EXCLUDED.priority),
+  not_before = LEAST(reconcile_work_scope.not_before, EXCLUDED.not_before),
   updated_at = now()
+WHERE reconcile_work_scope.claimed_until IS NULL
 `
 
 type UpsertReconcileWorkItemParams struct {
-	PayloadType string
-	PayloadKey  string
-	Payload     []byte
-	HasPayload  bool
 	WorkspaceID uuid.UUID
 	Kind        string
 	ScopeType   string
@@ -591,13 +436,10 @@ type UpsertReconcileWorkItemParams struct {
 	NotBefore   pgtype.Timestamptz
 }
 
-// Upsert scope scheduling metadata, then upsert payload variant under that scope.
+// Upsert scope scheduling metadata. Skips rows that are currently claimed
+// to avoid row-lock contention with the claim holder.
 func (q *Queries) UpsertReconcileWorkItem(ctx context.Context, arg UpsertReconcileWorkItemParams) error {
 	_, err := q.db.Exec(ctx, upsertReconcileWorkItem,
-		arg.PayloadType,
-		arg.PayloadKey,
-		arg.Payload,
-		arg.HasPayload,
 		arg.WorkspaceID,
 		arg.Kind,
 		arg.ScopeType,
