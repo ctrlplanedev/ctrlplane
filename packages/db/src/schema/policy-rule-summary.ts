@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  index,
   jsonb,
   pgTable,
   text,
@@ -44,6 +45,7 @@ export const policyRuleEvaluation = pgTable(
   },
   (t) => [
     uniqueIndex().on(t.ruleId, t.environmentId, t.versionId, t.resourceId),
+    index().on(t.environmentId, t.versionId, t.resourceId, t.ruleType),
   ],
 );
 

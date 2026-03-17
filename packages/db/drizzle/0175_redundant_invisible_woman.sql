@@ -1,0 +1,1 @@
+CREATE INDEX "policy_rule_evaluation_environment_id_version_id_resource_id_rule_type_index" ON "policy_rule_evaluation" USING btree ("environment_id","version_id","resource_id","rule_type");
