@@ -154,7 +154,7 @@ function KindDistributionChart({ data }: { data: ChartData["byKind"] }) {
       Object.fromEntries(
         data.map((d, i) => [
           d.kind,
-          { label: d.kind, color: KIND_PALETTE[i % KIND_PALETTE.length]! },
+          { label: d.kind, color: KIND_PALETTE[i % KIND_PALETTE.length] },
         ]),
       ),
     [data],
@@ -184,7 +184,7 @@ function KindDistributionChart({ data }: { data: ChartData["byKind"] }) {
             {data.map((d, i) => (
               <Cell
                 key={d.kind}
-                fill={KIND_PALETTE[i % KIND_PALETTE.length]!}
+                fill={KIND_PALETTE[i % KIND_PALETTE.length]}
               />
             ))}
             <Label
