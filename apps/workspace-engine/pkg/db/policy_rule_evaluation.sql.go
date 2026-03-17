@@ -4,37 +4,3 @@
 // source: policy_rule_evaluation.sql
 
 package db
-
-import (
-	"context"
-
-	"github.com/google/uuid"
-)
-
-const deleteStalePolicyRuleEvaluations = `-- name: DeleteStalePolicyRuleEvaluations :exec
-DELETE FROM policy_rule_evaluation
-WHERE environment_id = $1
-  AND version_id = $2
-  AND resource_id = $3
-  AND rule_type = ANY($4::text[])
-  AND rule_id != ALL($5::uuid[])
-`
-
-type DeleteStalePolicyRuleEvaluationsParams struct {
-	EnvironmentID uuid.UUID
-	VersionID     uuid.UUID
-	ResourceID    uuid.UUID
-	RuleTypes     []string
-	KeepRuleIds   []uuid.UUID
-}
-
-func (q *Queries) DeleteStalePolicyRuleEvaluations(ctx context.Context, arg DeleteStalePolicyRuleEvaluationsParams) error {
-	_, err := q.db.Exec(ctx, deleteStalePolicyRuleEvaluations,
-		arg.EnvironmentID,
-		arg.VersionID,
-		arg.ResourceID,
-		arg.RuleTypes,
-		arg.KeepRuleIds,
-	)
-	return err
-}

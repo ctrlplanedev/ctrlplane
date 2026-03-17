@@ -18,6 +18,66 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const batchDeleteStalePolicyRuleEvaluations = `-- name: BatchDeleteStalePolicyRuleEvaluations :batchexec
+DELETE FROM policy_rule_evaluation
+WHERE environment_id = $1
+  AND version_id = $2
+  AND resource_id = $3
+  AND rule_type = ANY($4::text[])
+  AND rule_id != ALL($5::uuid[])
+`
+
+type BatchDeleteStalePolicyRuleEvaluationsBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type BatchDeleteStalePolicyRuleEvaluationsParams struct {
+	EnvironmentID uuid.UUID
+	VersionID     uuid.UUID
+	ResourceID    uuid.UUID
+	RuleTypes     []string
+	KeepRuleIds   []uuid.UUID
+}
+
+func (q *Queries) BatchDeleteStalePolicyRuleEvaluations(ctx context.Context, arg []BatchDeleteStalePolicyRuleEvaluationsParams) *BatchDeleteStalePolicyRuleEvaluationsBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.EnvironmentID,
+			a.VersionID,
+			a.ResourceID,
+			a.RuleTypes,
+			a.KeepRuleIds,
+		}
+		batch.Queue(batchDeleteStalePolicyRuleEvaluations, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &BatchDeleteStalePolicyRuleEvaluationsBatchResults{br, len(arg), false}
+}
+
+func (b *BatchDeleteStalePolicyRuleEvaluationsBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *BatchDeleteStalePolicyRuleEvaluationsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const batchUpsertPolicyRuleEvaluation = `-- name: BatchUpsertPolicyRuleEvaluation :batchexec
 INSERT INTO policy_rule_evaluation (
     rule_type, rule_id, environment_id, version_id, resource_id,

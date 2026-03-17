@@ -81,18 +81,26 @@ func (p *PostgresUpsertRuleEvaluations) UpsertRuleEvaluations(
 		return batchErr
 	}
 
-	q := db.GetQueries(ctx)
+	deleteParams := make([]db.BatchDeleteStalePolicyRuleEvaluationsParams, 0, len(ruleIDsByScope))
 	for scope, ruleIDs := range ruleIDsByScope {
-		err := q.DeleteStalePolicyRuleEvaluations(ctx, db.DeleteStalePolicyRuleEvaluationsParams{
+		deleteParams = append(deleteParams, db.BatchDeleteStalePolicyRuleEvaluationsParams{
 			EnvironmentID: scope.EnvironmentID,
 			VersionID:     scope.VersionID,
 			ResourceID:    scope.ResourceID,
 			RuleTypes:     p.ruleTypes,
 			KeepRuleIds:   ruleIDs,
 		})
-		if err != nil {
-			return fmt.Errorf("delete stale policy rule evaluations: %w", err)
+	}
+
+	deleteResults := db.GetQueries(ctx).BatchDeleteStalePolicyRuleEvaluations(ctx, deleteParams)
+	var deleteErr error
+	deleteResults.Exec(func(i int, err error) {
+		if err != nil && deleteErr == nil {
+			deleteErr = fmt.Errorf("batch delete stale policy rule evaluation %d: %w", i, err)
 		}
+	})
+	if deleteErr != nil {
+		return deleteErr
 	}
 
 	return nil

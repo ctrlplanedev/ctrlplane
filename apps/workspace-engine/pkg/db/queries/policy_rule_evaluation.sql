@@ -16,7 +16,7 @@ SET rule_type          = EXCLUDED.rule_type,
     next_evaluation_at = EXCLUDED.next_evaluation_at,
     evaluated_at       = EXCLUDED.evaluated_at;
 
--- name: DeleteStalePolicyRuleEvaluations :exec
+-- name: BatchDeleteStalePolicyRuleEvaluations :batchexec
 DELETE FROM policy_rule_evaluation
 WHERE environment_id = @environment_id
   AND version_id = @version_id
