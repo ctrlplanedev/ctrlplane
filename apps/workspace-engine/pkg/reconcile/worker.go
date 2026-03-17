@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/svc"
+
+	"github.com/charmbracelet/log"
 )
 
 const (
@@ -119,6 +120,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	sem := make(chan struct{}, w.cfg.MaxConcurrency)
 	doneCh := make(chan struct{}, w.cfg.MaxConcurrency)
+	currentPoll := w.cfg.PollInterval
+	maxPoll := maxPollBackoff(w.cfg.PollInterval)
 	for {
 		availableSlots := w.cfg.MaxConcurrency - len(sem)
 		if availableSlots > 0 {
@@ -132,28 +135,35 @@ func (w *Worker) Run(ctx context.Context) error {
 				log.Error("error claiming items", "error", err)
 			}
 			if err == nil && len(items) > 0 {
+				currentPoll = w.cfg.PollInterval
 				w.startItems(ctx, items, sem, doneCh)
-				// If we filled all currently available slots, immediately loop to try
-				// to top up remaining capacity instead of sleeping.
 				if len(items) == claimSize {
 					continue
 				}
+			} else {
+				currentPoll = min(currentPoll*2, maxPoll)
 			}
 		}
 
 		select {
 		case <-ctx.Done():
-			// Drain in-flight workers on shutdown.
 			for len(sem) > 0 {
 				<-doneCh
 			}
 			return ctx.Err()
 		case <-doneCh:
-			// A worker finished; loop will attempt to claim more work immediately.
-		case <-time.After(w.cfg.PollInterval):
-			// No completed workers and no immediate work; poll again.
+			currentPoll = w.cfg.PollInterval
+		case <-time.After(currentPoll):
 		}
 	}
+}
+
+func maxPollBackoff(base time.Duration) time.Duration {
+	cap := base * 32
+	if cap > 30*time.Second {
+		return 30 * time.Second
+	}
+	return cap
 }
 
 func (w *Worker) startItems(

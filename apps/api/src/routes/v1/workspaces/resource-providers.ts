@@ -144,37 +144,38 @@ const setResourceProviderResources: AsyncTypedHandler<
         existing.map((r) => [r.identifier, r]),
       );
 
-      for (const r of incoming as any[]) {
+      const toUpsert = incoming.filter((r) => {
         const match = existingByIdentifier.get(r.identifier);
+        return match?.providerId == null || match.providerId === providerId;
+      });
 
-        if (match?.providerId != null && match.providerId !== providerId)
-          continue;
-
+      if (toUpsert.length > 0)
         await tx
           .insert(resource)
-          .values({
-            identifier: r.identifier,
-            name: r.name,
-            version: r.version,
-            kind: r.kind,
-            workspaceId,
-            providerId,
-            config: r.config ?? {},
-            metadata: r.metadata ?? {},
-          })
-          .onConflictDoUpdate({
-            target: [resource.identifier, resource.workspaceId],
-            set: {
+          .values(
+            toUpsert.map((r) => ({
+              identifier: r.identifier,
               name: r.name,
               version: r.version,
               kind: r.kind,
-              config: r.config ?? {},
-              metadata: r.metadata ?? {},
+              workspaceId,
+              providerId,
+              config: r.config,
+              metadata: r.metadata,
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [resource.identifier, resource.workspaceId],
+            set: {
+              name: sql`excluded.name`,
+              version: sql`excluded.version`,
+              kind: sql`excluded.kind`,
+              config: sql`excluded.config`,
+              metadata: sql`excluded.metadata`,
               providerId,
               updatedAt: sql`now()`,
             },
           });
-      }
     }
 
     await tx
@@ -188,27 +189,27 @@ const setResourceProviderResources: AsyncTypedHandler<
             : undefined,
         ),
       );
-
-    const deployments = await tx
-      .select({ id: deployment.id })
-      .from(deployment)
-      .where(eq(deployment.workspaceId, workspaceId));
-
-    const environments = await tx
-      .select({ id: environment.id })
-      .from(environment)
-      .where(eq(environment.workspaceId, workspaceId));
-
-    await enqueueManyDeploymentSelectorEval(
-      tx,
-      deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
-    );
-
-    await enqueueManyEnvironmentSelectorEval(
-      tx,
-      environments.map((e) => ({ workspaceId, environmentId: e.id })),
-    );
   });
+
+  const deployments = await db
+    .select({ id: deployment.id })
+    .from(deployment)
+    .where(eq(deployment.workspaceId, workspaceId));
+
+  const environments = await db
+    .select({ id: environment.id })
+    .from(environment)
+    .where(eq(environment.workspaceId, workspaceId));
+
+  await enqueueManyDeploymentSelectorEval(
+    db,
+    deployments.map((d) => ({ workspaceId, deploymentId: d.id })),
+  );
+
+  await enqueueManyEnvironmentSelectorEval(
+    db,
+    environments.map((e) => ({ workspaceId, environmentId: e.id })),
+  );
 
   res.status(202).json({ ok: true, method: "direct" });
 };
