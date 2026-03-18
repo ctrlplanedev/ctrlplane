@@ -10,6 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const batchSize = 100
+
 type PostgresSetter struct{}
 
 type relKey struct {
@@ -89,12 +91,17 @@ func (s *PostgresSetter) SetComputedRelationships(
 		}
 	}
 
-	if len(toDelete) > 0 {
-		delResults := q.BatchDeleteComputedEntityRelationshipByPK(ctx, toDelete)
+	for i := 0; i < len(toDelete); i += batchSize {
+		end := i + batchSize
+		if end > len(toDelete) {
+			end = len(toDelete)
+		}
+		chunk := toDelete[i:end]
+		delResults := q.BatchDeleteComputedEntityRelationshipByPK(ctx, chunk)
 		var delErr error
-		delResults.Exec(func(i int, err error) {
+		delResults.Exec(func(j int, err error) {
 			if err != nil && delErr == nil {
-				delErr = fmt.Errorf("batch delete relationship %d: %w", i, err)
+				delErr = fmt.Errorf("batch delete relationship %d: %w", i+j, err)
 			}
 		})
 		if delErr != nil {
@@ -102,12 +109,17 @@ func (s *PostgresSetter) SetComputedRelationships(
 		}
 	}
 
-	if len(toUpsert) > 0 {
-		upsertResults := q.BatchUpsertComputedEntityRelationship(ctx, toUpsert)
+	for i := 0; i < len(toUpsert); i += batchSize {
+		end := i + batchSize
+		if end > len(toUpsert) {
+			end = len(toUpsert)
+		}
+		chunk := toUpsert[i:end]
+		upsertResults := q.BatchUpsertComputedEntityRelationship(ctx, chunk)
 		var upsertErr error
-		upsertResults.Exec(func(i int, err error) {
+		upsertResults.Exec(func(j int, err error) {
 			if err != nil && upsertErr == nil {
-				upsertErr = fmt.Errorf("batch upsert relationship %d: %w", i, err)
+				upsertErr = fmt.Errorf("batch upsert relationship %d: %w", i+j, err)
 			}
 		})
 		if upsertErr != nil {
