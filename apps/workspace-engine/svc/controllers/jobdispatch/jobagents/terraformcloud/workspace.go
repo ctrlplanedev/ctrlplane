@@ -109,7 +109,9 @@ func syncVariables(
 		existingByKey[v.Key] = v
 	}
 
+	desiredKeys := make(map[string]bool, len(desiredVars))
 	for _, desired := range desiredVars {
+		desiredKeys[desired.Key] = true
 		if _, err := desired.categoryType(); err != nil {
 			return err
 		}
@@ -127,6 +129,14 @@ func syncVariables(
 			_, err := client.Variables.Create(ctx, workspaceID, desired.toCreateOptions())
 			if err != nil {
 				return fmt.Errorf("failed to create variable %s: %w", desired.Key, err)
+			}
+		}
+	}
+
+	for key, existing := range existingByKey {
+		if !desiredKeys[key] {
+			if err := client.Variables.Delete(ctx, workspaceID, existing.ID); err != nil {
+				return fmt.Errorf("failed to delete variable %s: %w", key, err)
 			}
 		}
 	}
