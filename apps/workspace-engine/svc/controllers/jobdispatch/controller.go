@@ -12,6 +12,7 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/terraformcloud"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
 
 	"github.com/charmbracelet/log"
@@ -111,6 +112,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	dispatcher.Register(
 		github.New(&github.GoGitHubWorkflowDispatcher{}, pgSetter),
 	)
+	dispatcher.Register(terraformcloud.New(pgSetter))
 
 	log.Debug(
 		"Creating job dispatch reconcile worker",
