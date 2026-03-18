@@ -3,7 +3,6 @@ package jobverificationmetric
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -11,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
 )
@@ -65,9 +65,10 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		panic("failed to get pgx pool")
 	}
 
+	maxConcurrency := config.GetMaxConcurrency(JobVerificationMetricKind)
 	log.Debug(
 		"Creating job verification metric reconcile worker",
-		"maxConcurrency", runtime.GOMAXPROCS(0),
+		"maxConcurrency", maxConcurrency,
 	)
 
 	nodeConfig := reconcile.NodeConfig{
@@ -76,7 +77,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		PollInterval:    1 * time.Second,
 		LeaseDuration:   30 * time.Second,
 		LeaseHeartbeat:  10 * time.Second,
-		MaxConcurrency:  runtime.GOMAXPROCS(0),
+		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 30 * time.Second,
 	}
 

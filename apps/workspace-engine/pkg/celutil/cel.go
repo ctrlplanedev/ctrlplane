@@ -132,6 +132,13 @@ func EvalBool(prg cel.Program, vars map[string]any) (bool, error) {
 		return false, err
 	}
 
+	if errVal, ok := val.Value().(error); ok {
+		if strings.Contains(errVal.Error(), "no such key:") {
+			return false, nil
+		}
+		return false, errVal
+	}
+
 	result := val.ConvertToType(cel.BoolType)
 	boolVal, ok := result.Value().(bool)
 	if !ok {

@@ -185,9 +185,10 @@ func deploymentToMap(d *oapi.Deployment) map[string]any {
 }
 
 func environmentToMap(e *oapi.Environment) map[string]any {
-	m := make(map[string]any, 6)
+	m := make(map[string]any, 7)
 	m["id"] = e.Id
 	m["name"] = e.Name
+	m["workspaceId"] = e.WorkspaceId
 	m["createdAt"] = e.CreatedAt
 	m["metadata"] = e.Metadata
 	if e.Metadata == nil {

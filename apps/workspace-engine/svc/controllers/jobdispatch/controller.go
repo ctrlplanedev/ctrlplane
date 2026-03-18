@@ -3,9 +3,9 @@ package jobdispatch
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -114,9 +114,10 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	)
 	dispatcher.Register(terraformcloud.New(pgSetter))
 
+	maxConcurrency := config.GetMaxConcurrency(kind)
 	log.Debug(
 		"Creating job dispatch reconcile worker",
-		"maxConcurrency", runtime.GOMAXPROCS(0),
+		"maxConcurrency", maxConcurrency,
 	)
 
 	nodeConfig := reconcile.NodeConfig{
@@ -125,7 +126,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		PollInterval:    1 * time.Second,
 		LeaseDuration:   10 * time.Second,
 		LeaseHeartbeat:  5 * time.Second,
-		MaxConcurrency:  runtime.GOMAXPROCS(0),
+		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
 	}
 	controller := &Controller{

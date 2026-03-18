@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"time"
 
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
@@ -161,9 +161,11 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		panic("failed to get pgx pool")
 	}
 
+	kind := events.DeploymentPlanTargetResultKind
+	maxConcurrency := config.GetMaxConcurrency(kind)
 	log.Debug(
 		"Creating deployment plan result reconcile worker",
-		"maxConcurrency", runtime.GOMAXPROCS(0),
+		"maxConcurrency", maxConcurrency,
 	)
 
 	nodeConfig := reconcile.NodeConfig{
@@ -172,11 +174,9 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		PollInterval:    1 * time.Second,
 		LeaseDuration:   30 * time.Second,
 		LeaseHeartbeat:  15 * time.Second,
-		MaxConcurrency:  runtime.GOMAXPROCS(0),
+		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
 	}
-
-	kind := events.DeploymentPlanTargetResultKind
 	queue := postgres.NewForKinds(pgxPool, kind)
 
 	controller := &Controller{

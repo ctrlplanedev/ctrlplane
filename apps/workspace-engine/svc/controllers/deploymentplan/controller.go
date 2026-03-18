@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
@@ -197,9 +197,11 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		panic("failed to get pgx pool")
 	}
 
+	kind := events.DeploymentPlanKind
+	maxConcurrency := config.GetMaxConcurrency(kind)
 	log.Debug(
 		"Creating deployment plan reconcile worker",
-		"maxConcurrency", runtime.GOMAXPROCS(0),
+		"maxConcurrency", maxConcurrency,
 	)
 
 	nodeConfig := reconcile.NodeConfig{
@@ -208,11 +210,9 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		PollInterval:    1 * time.Second,
 		LeaseDuration:   30 * time.Second,
 		LeaseHeartbeat:  15 * time.Second,
-		MaxConcurrency:  runtime.GOMAXPROCS(0),
+		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
 	}
-
-	kind := events.DeploymentPlanKind
 	queue := postgres.NewForKinds(pgxPool, kind)
 	enqueueQueue := postgres.New(pgxPool)
 

@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"context"
+	"runtime"
 	"time"
 )
 
@@ -49,6 +50,13 @@ type NodeConfig struct {
 	MaxConcurrency  int
 	MaxRetryBackoff time.Duration
 	Hooks           Hooks
+}
+
+func (c NodeConfig) Concurrency() int {
+	if c.MaxConcurrency > 0 {
+		return c.MaxConcurrency
+	}
+	return runtime.GOMAXPROCS(0)
 }
 
 // Validate returns an error if the config is incomplete or inconsistent.
