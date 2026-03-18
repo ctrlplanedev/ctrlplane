@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
@@ -83,34 +82,7 @@ func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 
 	r.version = result.Version
 
-	// if err := r.upsertEvaluations(ctx, oapiRT, result.Evaluations); err != nil {
-	// 	log.Error("upsert rule evaluations", "error", err)
-	// }
-
 	return result.NextTime
-}
-
-func (r *reconciler) upsertEvaluations(
-	ctx context.Context,
-	rt *oapi.ReleaseTarget,
-	evals []policyeval.VersionedEvaluation,
-) error {
-	if len(evals) == 0 {
-		return nil
-	}
-
-	params := make([]policies.RuleEvaluationParams, 0, len(evals))
-	for _, e := range evals {
-		params = append(params, policies.RuleEvaluationParams{
-			RuleType:      e.RuleType,
-			RuleID:        e.RuleId,
-			EnvironmentID: rt.EnvironmentId,
-			VersionID:     e.VersionID,
-			ResourceID:    rt.ResourceId,
-			Evaluation:    e.RuleEvaluation,
-		})
-	}
-	return r.setter.UpsertRuleEvaluations(ctx, params)
 }
 
 func (r *reconciler) resolveVariables(ctx context.Context) error {

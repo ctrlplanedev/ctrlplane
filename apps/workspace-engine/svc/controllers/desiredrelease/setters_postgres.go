@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/store/policies"
-	"workspace-engine/svc/controllers/desiredrelease/policyeval"
+
+	"github.com/google/uuid"
 )
 
 type PostgresSetter struct {
-	upsertRuleEvaluationsSetter
 	Queue reconcile.Queue
 }
 
@@ -23,9 +21,6 @@ var _ Setter = (*PostgresSetter)(nil)
 
 func NewPostgresSetter(queue reconcile.Queue) *PostgresSetter {
 	return &PostgresSetter{
-		upsertRuleEvaluationsSetter: policies.NewPostgresUpsertRuleEvaluations(
-			policyeval.RuleTypes(),
-		),
 		Queue: queue,
 	}
 }
