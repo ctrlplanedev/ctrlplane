@@ -118,12 +118,12 @@ func (w *Worker) Run(ctx context.Context) error {
 		}
 	}()
 
-	sem := make(chan struct{}, w.cfg.MaxConcurrency)
-	doneCh := make(chan struct{}, w.cfg.MaxConcurrency)
+	sem := make(chan struct{}, w.cfg.Concurrency())
+	doneCh := make(chan struct{}, w.cfg.Concurrency())
 	currentPoll := w.cfg.PollInterval
 	maxPoll := maxPollBackoff(w.cfg.PollInterval)
 	for {
-		availableSlots := w.cfg.MaxConcurrency - len(sem)
+		availableSlots := w.cfg.Concurrency() - len(sem)
 		if availableSlots > 0 {
 			claimSize := min(w.cfg.BatchSize, availableSlots)
 			items, err := w.queue.Claim(ctx, ClaimParams{

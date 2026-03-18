@@ -3,7 +3,6 @@ package jobeligibility
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -11,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
@@ -82,9 +82,11 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		log.Fatal("Failed to get pgx pool")
 		panic("failed to get pgx pool")
 	}
+	kind := events.JobEligibilityKind
+	maxConcurrency := config.GetMaxConcurrency(kind)
 	log.Debug(
 		"Creating job eligibility reconcile worker",
-		"maxConcurrency", runtime.GOMAXPROCS(0),
+		"maxConcurrency", maxConcurrency,
 	)
 
 	nodeConfig := reconcile.NodeConfig{
@@ -93,12 +95,11 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		PollInterval:    1 * time.Second,
 		LeaseDuration:   10 * time.Second,
 		LeaseHeartbeat:  5 * time.Second,
-		MaxConcurrency:  runtime.GOMAXPROCS(0),
+		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
 	}
 
 	ctx := context.Background()
-	kind := events.JobEligibilityKind
 	queue := postgres.NewForKinds(pgxPool, kind)
 	enqueueQueue := postgres.New(pgxPool)
 	controller := &Controller{

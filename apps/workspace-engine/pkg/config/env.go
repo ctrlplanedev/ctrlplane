@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
@@ -41,6 +43,28 @@ type Config struct {
 
 	// Comma-separated list of services to run (empty means all).
 	Services string `default:"" envconfig:"SERVICES"`
+
+	ReconcileMaxConcurrency          int    `default:"0" envconfig:"RECONCILE_MAX_CONCURRENCY"`
+	ReconcileMaxConcurrencyOverrides string `default:"" envconfig:"RECONCILE_MAX_CONCURRENCY_OVERRIDES"`
+}
+
+// GetMaxConcurrency returns the max concurrency for a given service kind.
+// Checks per-service overrides first, then the global setting, then GOMAXPROCS.
+func GetMaxConcurrency(kind string) int {
+	if overrides := strings.TrimSpace(Global.ReconcileMaxConcurrencyOverrides); overrides != "" {
+		for entry := range strings.SplitSeq(overrides, ",") {
+			k, v, ok := strings.Cut(strings.TrimSpace(entry), "=")
+			if ok && strings.TrimSpace(k) == kind {
+				if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
+					return n
+				}
+			}
+		}
+	}
+	if Global.ReconcileMaxConcurrency > 0 {
+		return Global.ReconcileMaxConcurrency
+	}
+	return runtime.GOMAXPROCS(0)
 }
 
 // IsServiceEnabled reports whether kind appears in the SERVICES list.
