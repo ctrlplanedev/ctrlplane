@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/sync/singleflight"
 )
 
 type policiesGetter = policyeval.Getter
@@ -78,7 +79,7 @@ func (g *PostgresGetter) GetCandidateVersions(
 		rows, err := db.GetQueries(ctx).
 			ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
 				DeploymentID: deploymentID,
-				Limit:        pgtype.Int4{Int32: 5000, Valid: true},
+				Limit:        pgtype.Int4{Int32: 500, Valid: true},
 			})
 		if err != nil {
 			return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)

@@ -31,7 +31,7 @@ func (g *PostgresGetter) GetCandidateVersions(
 	rows, err := db.GetQueries(ctx).
 		ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
 			DeploymentID: deploymentID,
-			Limit:        pgtype.Int4{Int32: 5000, Valid: true},
+			Limit:        pgtype.Int4{Int32: 500, Valid: true},
 		})
 	if err != nil {
 		return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
