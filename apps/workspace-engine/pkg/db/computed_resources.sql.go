@@ -286,8 +286,7 @@ deleted AS (
 INSERT INTO computed_deployment_resource (deployment_id, resource_id, last_evaluated_at)
 SELECT $1, resource_id, NOW()
 FROM valid
-ON CONFLICT (deployment_id, resource_id) DO UPDATE
-SET last_evaluated_at = NOW()
+ON CONFLICT (deployment_id, resource_id) DO NOTHING
 `
 
 type SetComputedDeploymentResourcesParams struct {
@@ -321,8 +320,7 @@ deleted AS (
 INSERT INTO computed_environment_resource (environment_id, resource_id, last_evaluated_at)
 SELECT $1, resource_id, NOW()
 FROM valid
-ON CONFLICT (environment_id, resource_id) DO UPDATE
-SET last_evaluated_at = NOW()
+ON CONFLICT (environment_id, resource_id) DO NOTHING
 `
 
 type SetComputedEnvironmentResourcesParams struct {
