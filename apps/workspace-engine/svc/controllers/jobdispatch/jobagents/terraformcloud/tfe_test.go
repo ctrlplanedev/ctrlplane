@@ -3,11 +3,11 @@ package terraformcloud
 import (
 	"encoding/json"
 	"testing"
-	"workspace-engine/pkg/oapi"
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // ===== parseJobAgentConfig =====
@@ -25,7 +25,7 @@ func TestParseJobAgentConfig_Valid(t *testing.T) {
 	assert.Equal(t, "my-token", parsed.token)
 	assert.Equal(t, "my-org", parsed.organization)
 	assert.Equal(t, "name: {{ .Resource.Name }}", parsed.template)
-	assert.Equal(t, "", parsed.webhookUrl)
+	assert.Empty(t, parsed.webhookUrl)
 	assert.True(t, parsed.triggerRunOnChange)
 }
 
@@ -100,10 +100,22 @@ func TestParseJobAgentConfig_MissingFields(t *testing.T) {
 		name string
 		cfg  oapi.JobAgentConfig
 	}{
-		{"missing address", oapi.JobAgentConfig{"token": "t", "organization": "o", "template": "t"}},
-		{"missing token", oapi.JobAgentConfig{"address": "a", "organization": "o", "template": "t"}},
-		{"missing organization", oapi.JobAgentConfig{"address": "a", "token": "t", "template": "t"}},
-		{"missing template", oapi.JobAgentConfig{"address": "a", "token": "t", "organization": "o"}},
+		{
+			"missing address",
+			oapi.JobAgentConfig{"token": "t", "organization": "o", "template": "t"},
+		},
+		{
+			"missing token",
+			oapi.JobAgentConfig{"address": "a", "organization": "o", "template": "t"},
+		},
+		{
+			"missing organization",
+			oapi.JobAgentConfig{"address": "a", "token": "t", "template": "t"},
+		},
+		{
+			"missing template",
+			oapi.JobAgentConfig{"address": "a", "token": "t", "organization": "o"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -249,7 +261,7 @@ func TestVariableTemplate_ToUpdateOptions(t *testing.T) {
 	}
 	opts := v.toUpdateOptions()
 	assert.Equal(t, "TF_VAR_foo", *opts.Key)
-	assert.Equal(t, `{"bar":"baz"}`, *opts.Value)
+	assert.JSONEq(t, `{"bar":"baz"}`, *opts.Value)
 	assert.Equal(t, tfe.CategoryType("terraform"), *opts.Category)
 	assert.True(t, *opts.HCL)
 	assert.False(t, *opts.Sensitive)
@@ -284,4 +296,3 @@ func TestTFE_Type(t *testing.T) {
 	tfeInst := &TFE{}
 	assert.Equal(t, "tfe", tfeInst.Type())
 }
-

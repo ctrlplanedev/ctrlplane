@@ -3,9 +3,8 @@ package terraformcloud
 import (
 	"fmt"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/hashicorp/go-tfe"
+	"workspace-engine/pkg/oapi"
 )
 
 type tfeConfig struct {

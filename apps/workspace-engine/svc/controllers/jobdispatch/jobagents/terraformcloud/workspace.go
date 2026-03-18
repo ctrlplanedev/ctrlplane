@@ -6,48 +6,47 @@ import (
 	"errors"
 	"fmt"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/templatefuncs"
-
 	"github.com/hashicorp/go-tfe"
 	"sigs.k8s.io/yaml"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
 )
 
 type VCSRepoTemplate struct {
-	Identifier        string `json:"identifier" yaml:"identifier"`
-	Branch            string `json:"branch,omitempty" yaml:"branch,omitempty"`
-	OAuthTokenID      string `json:"oauth_token_id,omitempty" yaml:"oauth_token_id,omitempty"`
+	Identifier        string `json:"identifier"                   yaml:"identifier"`
+	Branch            string `json:"branch,omitempty"             yaml:"branch,omitempty"`
+	OAuthTokenID      string `json:"oauth_token_id,omitempty"     yaml:"oauth_token_id,omitempty"`
 	IngressSubmodules bool   `json:"ingress_submodules,omitempty" yaml:"ingress_submodules,omitempty"`
-	TagsRegex         string `json:"tags_regex,omitempty" yaml:"tags_regex,omitempty"`
+	TagsRegex         string `json:"tags_regex,omitempty"         yaml:"tags_regex,omitempty"`
 }
 
 type WorkspaceTemplate struct {
-	Name                string             `json:"name" yaml:"name"`
-	Description         string             `json:"description,omitempty" yaml:"description,omitempty"`
-	Project             string             `json:"project,omitempty" yaml:"project,omitempty"`
-	ExecutionMode       string             `json:"execution_mode,omitempty" yaml:"execution_mode,omitempty"`
-	AutoApply           bool               `json:"auto_apply,omitempty" yaml:"auto_apply,omitempty"`
-	AllowDestroyPlan    bool               `json:"allow_destroy_plan,omitempty" yaml:"allow_destroy_plan,omitempty"`
+	Name                string             `json:"name"                            yaml:"name"`
+	Description         string             `json:"description,omitempty"           yaml:"description,omitempty"`
+	Project             string             `json:"project,omitempty"               yaml:"project,omitempty"`
+	ExecutionMode       string             `json:"execution_mode,omitempty"        yaml:"execution_mode,omitempty"`
+	AutoApply           bool               `json:"auto_apply,omitempty"            yaml:"auto_apply,omitempty"`
+	AllowDestroyPlan    bool               `json:"allow_destroy_plan,omitempty"    yaml:"allow_destroy_plan,omitempty"`
 	FileTriggersEnabled bool               `json:"file_triggers_enabled,omitempty" yaml:"file_triggers_enabled,omitempty"`
-	GlobalRemoteState   bool               `json:"global_remote_state,omitempty" yaml:"global_remote_state,omitempty"`
-	QueueAllRuns        bool               `json:"queue_all_runs,omitempty" yaml:"queue_all_runs,omitempty"`
-	SpeculativeEnabled  bool               `json:"speculative_enabled,omitempty" yaml:"speculative_enabled,omitempty"`
-	TerraformVersion    string             `json:"terraform_version,omitempty" yaml:"terraform_version,omitempty"`
-	TriggerPrefixes     []string           `json:"trigger_prefixes,omitempty" yaml:"trigger_prefixes,omitempty"`
-	TriggerPatterns     []string           `json:"trigger_patterns,omitempty" yaml:"trigger_patterns,omitempty"`
-	WorkingDirectory    string             `json:"working_directory,omitempty" yaml:"working_directory,omitempty"`
-	AgentPoolID         string             `json:"agent_pool_id,omitempty" yaml:"agent_pool_id,omitempty"`
-	VCSRepo             *VCSRepoTemplate   `json:"vcs_repo,omitempty" yaml:"vcs_repo,omitempty"`
-	Variables           []VariableTemplate `json:"variables,omitempty" yaml:"variables,omitempty"`
+	GlobalRemoteState   bool               `json:"global_remote_state,omitempty"   yaml:"global_remote_state,omitempty"`
+	QueueAllRuns        bool               `json:"queue_all_runs,omitempty"        yaml:"queue_all_runs,omitempty"`
+	SpeculativeEnabled  bool               `json:"speculative_enabled,omitempty"   yaml:"speculative_enabled,omitempty"`
+	TerraformVersion    string             `json:"terraform_version,omitempty"     yaml:"terraform_version,omitempty"`
+	TriggerPrefixes     []string           `json:"trigger_prefixes,omitempty"      yaml:"trigger_prefixes,omitempty"`
+	TriggerPatterns     []string           `json:"trigger_patterns,omitempty"      yaml:"trigger_patterns,omitempty"`
+	WorkingDirectory    string             `json:"working_directory,omitempty"     yaml:"working_directory,omitempty"`
+	AgentPoolID         string             `json:"agent_pool_id,omitempty"         yaml:"agent_pool_id,omitempty"`
+	VCSRepo             *VCSRepoTemplate   `json:"vcs_repo,omitempty"              yaml:"vcs_repo,omitempty"`
+	Variables           []VariableTemplate `json:"variables,omitempty"             yaml:"variables,omitempty"`
 }
 
 type VariableTemplate struct {
-	Key         string `json:"key" yaml:"key"`
-	Value       string `json:"value,omitempty" yaml:"value,omitempty"`
+	Key         string `json:"key"                   yaml:"key"`
+	Value       string `json:"value,omitempty"       yaml:"value,omitempty"`
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-	Category    string `json:"category" yaml:"category"`
-	HCL         bool   `json:"hcl,omitempty" yaml:"hcl,omitempty"`
-	Sensitive   bool   `json:"sensitive,omitempty" yaml:"sensitive,omitempty"`
+	Category    string `json:"category"              yaml:"category"`
+	HCL         bool   `json:"hcl,omitempty"         yaml:"hcl,omitempty"`
+	Sensitive   bool   `json:"sensitive,omitempty"   yaml:"sensitive,omitempty"`
 }
 
 // templateWorkspace renders the workspace YAML template using the dispatch context.
@@ -68,7 +67,12 @@ func templateWorkspace(dispatchCtx *oapi.DispatchContext, tmpl string) (*Workspa
 	return &workspace, nil
 }
 
-func upsertWorkspace(ctx context.Context, client *tfe.Client, organization string, workspace *WorkspaceTemplate) (*tfe.Workspace, error) {
+func upsertWorkspace(
+	ctx context.Context,
+	client *tfe.Client,
+	organization string,
+	workspace *WorkspaceTemplate,
+) (*tfe.Workspace, error) {
 	existing, err := client.Workspaces.Read(ctx, organization, workspace.Name)
 	if err != nil && !errors.Is(err, tfe.ErrResourceNotFound) {
 		return nil, fmt.Errorf("failed to read workspace: %w", err)
@@ -89,7 +93,12 @@ func upsertWorkspace(ctx context.Context, client *tfe.Client, organization strin
 	return updated, nil
 }
 
-func syncVariables(ctx context.Context, client *tfe.Client, workspaceID string, desiredVars []VariableTemplate) error {
+func syncVariables(
+	ctx context.Context,
+	client *tfe.Client,
+	workspaceID string,
+	desiredVars []VariableTemplate,
+) error {
 	existingVars, err := client.Variables.List(ctx, workspaceID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list variables: %w", err)
@@ -105,7 +114,12 @@ func syncVariables(ctx context.Context, client *tfe.Client, workspaceID string, 
 			return err
 		}
 		if existing, ok := existingByKey[desired.Key]; ok {
-			_, err := client.Variables.Update(ctx, workspaceID, existing.ID, desired.toUpdateOptions())
+			_, err := client.Variables.Update(
+				ctx,
+				workspaceID,
+				existing.ID,
+				desired.toUpdateOptions(),
+			)
 			if err != nil {
 				return fmt.Errorf("failed to update variable %s: %w", desired.Key, err)
 			}
@@ -120,7 +134,11 @@ func syncVariables(ctx context.Context, client *tfe.Client, workspaceID string, 
 	return nil
 }
 
-func createRun(ctx context.Context, client *tfe.Client, workspaceID, jobID string) (*tfe.Run, error) {
+func createRun(
+	ctx context.Context,
+	client *tfe.Client,
+	workspaceID, jobID string,
+) (*tfe.Run, error) {
 	autoApply := true
 	message := fmt.Sprintf("Triggered by ctrlplane job %s", jobID)
 	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
@@ -137,7 +155,11 @@ func createRun(ctx context.Context, client *tfe.Client, workspaceID, jobID strin
 // ensureNotificationConfig creates or updates a notification configuration
 // on the TFC workspace to send run events to the ctrlplane webhook endpoint.
 // It is idempotent — safe to call on every dispatch.
-func ensureNotificationConfig(ctx context.Context, client *tfe.Client, workspaceID, webhookURL, webhookSecret string) error {
+func ensureNotificationConfig(
+	ctx context.Context,
+	client *tfe.Client,
+	workspaceID, webhookURL, webhookSecret string,
+) error {
 	configs, err := client.NotificationConfigurations.List(ctx, workspaceID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list notification configs: %w", err)
@@ -150,9 +172,13 @@ func ensureNotificationConfig(ctx context.Context, client *tfe.Client, workspace
 		if cfg.URL == webhookURL {
 			return nil
 		}
-		_, err := client.NotificationConfigurations.Update(ctx, cfg.ID, tfe.NotificationConfigurationUpdateOptions{
-			URL: &webhookURL,
-		})
+		_, err := client.NotificationConfigurations.Update(
+			ctx,
+			cfg.ID,
+			tfe.NotificationConfigurationUpdateOptions{
+				URL: &webhookURL,
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("failed to update notification config: %w", err)
 		}
@@ -272,7 +298,11 @@ func (v *VariableTemplate) categoryType() (tfe.CategoryType, error) {
 	if ct, ok := validCategories[v.Category]; ok {
 		return ct, nil
 	}
-	return "", fmt.Errorf("invalid variable category %q for key %q (must be \"terraform\" or \"env\")", v.Category, v.Key)
+	return "", fmt.Errorf(
+		"invalid variable category %q for key %q (must be \"terraform\" or \"env\")",
+		v.Category,
+		v.Key,
+	)
 }
 
 func (v *VariableTemplate) toCreateOptions() tfe.VariableCreateOptions {

@@ -40,10 +40,12 @@ function makeMockRes() {
 
 function getWebhookHandler() {
   const router = createTfeRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   const layer = (router as any).stack.find(
     (l: any) => l.route?.path === "/webhook" && l.route?.methods?.post,
   );
   if (!layer) throw new Error("POST /webhook route not found on router");
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   const handlers = layer.route.stack.filter(
     (s: any) => s.method === "post",
   );

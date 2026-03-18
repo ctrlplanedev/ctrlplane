@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
-	"github.com/charmbracelet/log"
 )
 
 var _ types.Dispatchable = (*TFE)(nil)
@@ -74,7 +73,13 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 	webhookSecret := os.Getenv("TFE_WEBHOOK_SECRET")
 	if cfg.webhookUrl != "" {
-		if err := ensureNotificationConfig(ctx, client, targetWorkspace.ID, cfg.webhookUrl, webhookSecret); err != nil {
+		if err := ensureNotificationConfig(
+			ctx,
+			client,
+			targetWorkspace.ID,
+			cfg.webhookUrl,
+			webhookSecret,
+		); err != nil {
 			log.Warn("Failed to ensure notification config, continuing dispatch", "error", err)
 		}
 	}
@@ -97,7 +102,13 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 	return nil
 }
 
-func (t *TFE) updateJobStatus(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) {
+func (t *TFE) updateJobStatus(
+	ctx context.Context,
+	jobID string,
+	status oapi.JobStatus,
+	message string,
+	metadata map[string]string,
+) {
 	if err := t.setter.UpdateJob(ctx, jobID, status, message, metadata); err != nil {
 		log.Error("Failed to update job status", "jobID", jobID, "error", err)
 	}
