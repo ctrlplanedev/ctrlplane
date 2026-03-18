@@ -143,7 +143,9 @@ INSERT INTO computed_entity_relationship (
     rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
 )
 VALUES ($1, $2, $3, $4, $5, NOW())
-ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO NOTHING
+ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO UPDATE
+SET last_evaluated_at = NOW()
+WHERE computed_entity_relationship.last_evaluated_at < NOW() - INTERVAL '1 minute'
 `
 
 type BatchUpsertComputedEntityRelationshipBatchResults struct {
