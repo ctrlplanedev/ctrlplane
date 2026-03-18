@@ -123,6 +123,9 @@ const setResourceProviderResources: AsyncTypedHandler<
   const { resources: incoming } = req.body;
 
   const incomingIdentifiers = incoming.map((r: any) => r.identifier as string);
+  const incomingKinds = [
+    ...new Set(incoming.map((r: any) => r.kind as string)),
+  ];
 
   await db.transaction(async (tx) => {
     if (incomingIdentifiers.length > 0) {
@@ -178,17 +181,21 @@ const setResourceProviderResources: AsyncTypedHandler<
           });
     }
 
-    await tx
-      .delete(resource)
-      .where(
-        and(
-          eq(resource.workspaceId, workspaceId),
-          eq(resource.providerId, providerId),
-          incomingIdentifiers.length > 0
-            ? notInArray(resource.identifier, incomingIdentifiers)
-            : undefined,
-        ),
-      );
+    // Delete resources of the same kind(s) that aren't in the incoming list
+    if (incomingKinds.length > 0) {
+      await tx
+        .delete(resource)
+        .where(
+          and(
+            eq(resource.workspaceId, workspaceId),
+            eq(resource.providerId, providerId),
+            inArray(resource.kind, incomingKinds),
+            incomingIdentifiers.length > 0
+              ? notInArray(resource.identifier, incomingIdentifiers)
+              : undefined,
+          ),
+        );
+    }
   });
 
   const deployments = await db
