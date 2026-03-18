@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -28,6 +29,8 @@ func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
 type PostgresGetter struct {
 	policiesGetter
 	variableResolverGetter
+
+	versionsSF singleflight.Group
 }
 
 func (g *PostgresGetter) ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error) {
@@ -70,20 +73,27 @@ func (g *PostgresGetter) GetCandidateVersions(
 	ctx context.Context,
 	deploymentID uuid.UUID,
 ) ([]*oapi.DeploymentVersion, error) {
-	rows, err := db.GetQueries(ctx).
-		ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
-			DeploymentID: deploymentID,
-			Limit:        pgtype.Int4{Int32: 5000, Valid: true},
-		})
-	if err != nil {
-		return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
-	}
+	key := deploymentID.String()
+	v, err, _ := g.versionsSF.Do(key, func() (any, error) {
+		rows, err := db.GetQueries(ctx).
+			ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
+				DeploymentID: deploymentID,
+				Limit:        pgtype.Int4{Int32: 5000, Valid: true},
+			})
+		if err != nil {
+			return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
+		}
 
-	versions := make([]*oapi.DeploymentVersion, 0, len(rows))
-	for _, row := range rows {
-		versions = append(versions, db.ToOapiDeploymentVersion(row))
+		versions := make([]*oapi.DeploymentVersion, 0, len(rows))
+		for _, row := range rows {
+			versions = append(versions, db.ToOapiDeploymentVersion(row))
+		}
+		return versions, nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return versions, nil
+	return v.([]*oapi.DeploymentVersion), nil
 }
 
 func (g *PostgresGetter) GetApprovalRecords(

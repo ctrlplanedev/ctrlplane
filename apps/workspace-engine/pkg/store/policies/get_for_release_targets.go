@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
@@ -24,7 +25,37 @@ type GetPoliciesForReleaseTarget interface {
 
 var _ GetPoliciesForReleaseTarget = (*PostgresGetPoliciesForReleaseTarget)(nil)
 
-type PostgresGetPoliciesForReleaseTarget struct{}
+type PostgresGetPoliciesForReleaseTarget struct {
+	workspacePolicySF singleflight.Group
+}
+
+func NewPostgresGetPoliciesForReleaseTarget() *PostgresGetPoliciesForReleaseTarget {
+	return &PostgresGetPoliciesForReleaseTarget{}
+}
+
+// listWorkspacePolicies fetches all policies with rules for a workspace,
+// deduplicating concurrent calls via singleflight.
+func (p *PostgresGetPoliciesForReleaseTarget) listWorkspacePolicies(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]*oapi.Policy, error) {
+	v, err, _ := p.workspacePolicySF.Do(workspaceID.String(), func() (any, error) {
+		rows, err := db.GetQueries(ctx).
+			ListPoliciesWithRulesByWorkspaceID(ctx, workspaceID)
+		if err != nil {
+			return nil, fmt.Errorf("list policies with rules: %w", err)
+		}
+		policies := make([]*oapi.Policy, 0, len(rows))
+		for _, row := range rows {
+			policies = append(policies, db.ToOapiPolicyWithRules(row))
+		}
+		return policies, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.([]*oapi.Policy), nil
+}
 
 func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 	ctx context.Context,
@@ -67,19 +98,13 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 	resourceSpan.End()
 
 	allPoliciesSpanCtx, allPoliciesSpan := tracer.Start(ctx, "ListPoliciesWithRulesByWorkspaceID")
-	allPolicies, err := db.GetQueries(allPoliciesSpanCtx).
-		ListPoliciesWithRulesByWorkspaceID(ctx, environment.WorkspaceID)
+	policiesOapi, err := p.listWorkspacePolicies(allPoliciesSpanCtx, environment.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("get policies for release target: %w", err)
 	}
 	allPoliciesSpan.End()
 
 	filterPoliciesSpanCtx, filterPoliciesSpan := tracer.Start(ctx, "FilterPolicies")
-	policiesOapi := make([]*oapi.Policy, 0, len(allPolicies))
-	for _, policy := range allPolicies {
-		policiesOapi = append(policiesOapi, db.ToOapiPolicyWithRules(policy))
-	}
-
 	policies := match.Filter(filterPoliciesSpanCtx, policiesOapi, &match.Target{
 		Environment: db.ToOapiEnvironment(environment),
 		Deployment:  db.ToOapiDeployment(deployment),

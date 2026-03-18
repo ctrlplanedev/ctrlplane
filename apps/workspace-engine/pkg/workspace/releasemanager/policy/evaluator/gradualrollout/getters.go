@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
@@ -49,11 +50,13 @@ type PostgresGetters struct {
 	*environmentProgressionPostgresGetters
 	policiesForReleaseTargetGetter
 	queries *db.Queries
+
+	releaseTargetsSF singleflight.Group
 }
 
 func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 	return &PostgresGetters{
-		policiesForReleaseTargetGetter:        &policies.PostgresGetPoliciesForReleaseTarget{},
+		policiesForReleaseTargetGetter:        policies.NewPostgresGetPoliciesForReleaseTarget(),
 		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
 		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries),
 		queries:                               queries,
@@ -125,21 +128,27 @@ func (p *PostgresGetters) GetReleaseTargetsForDeployment(
 	ctx context.Context,
 	deploymentID string,
 ) ([]*oapi.ReleaseTarget, error) {
-	deploymentUUID, err := uuid.Parse(deploymentID)
+	v, err, _ := p.releaseTargetsSF.Do(deploymentID, func() (any, error) {
+		deploymentUUID, err := uuid.Parse(deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("parse deployment id: %w", err)
+		}
+		rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, deploymentUUID)
+		if err != nil {
+			return nil, fmt.Errorf("get release targets for deployment: %w", err)
+		}
+		targets := make([]*oapi.ReleaseTarget, 0, len(rows))
+		for _, row := range rows {
+			targets = append(targets, &oapi.ReleaseTarget{
+				DeploymentId:  row.DeploymentID.String(),
+				EnvironmentId: row.EnvironmentID.String(),
+				ResourceId:    row.ResourceID.String(),
+			})
+		}
+		return targets, nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("parse deployment id: %w", err)
+		return nil, err
 	}
-	rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, deploymentUUID)
-	if err != nil {
-		return nil, fmt.Errorf("get release targets for deployment: %w", err)
-	}
-	targets := make([]*oapi.ReleaseTarget, 0, len(rows))
-	for _, row := range rows {
-		targets = append(targets, &oapi.ReleaseTarget{
-			DeploymentId:  row.DeploymentID.String(),
-			EnvironmentId: row.EnvironmentID.String(),
-			ResourceId:    row.ResourceID.String(),
-		})
-	}
-	return targets, nil
+	return v.([]*oapi.ReleaseTarget), nil
 }

@@ -23,7 +23,7 @@ type PostgresGetter struct {
 
 func NewPostgresGetter() *PostgresGetter {
 	return &PostgresGetter{
-		policiesGetter: &policies.PostgresGetPoliciesForReleaseTarget{},
+		policiesGetter: policies.NewPostgresGetPoliciesForReleaseTarget(),
 	}
 }
 
