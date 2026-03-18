@@ -12,6 +12,64 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const batchUpsertComputedEntityRelationship = `-- name: BatchUpsertComputedEntityRelationship :many
+INSERT INTO computed_entity_relationship (
+    rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
+)
+VALUES ($1, $2, $3, $4, $5, NOW())
+ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO UPDATE
+SET last_evaluated_at = NOW()
+RETURNING rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id
+`
+
+type BatchUpsertComputedEntityRelationshipParams struct {
+	RuleID         uuid.UUID
+	FromEntityType string
+	FromEntityID   uuid.UUID
+	ToEntityType   string
+	ToEntityID     uuid.UUID
+}
+
+type BatchUpsertComputedEntityRelationshipRow struct {
+	RuleID         uuid.UUID
+	FromEntityType string
+	FromEntityID   uuid.UUID
+	ToEntityType   string
+	ToEntityID     uuid.UUID
+}
+
+func (q *Queries) BatchUpsertComputedEntityRelationship(ctx context.Context, arg BatchUpsertComputedEntityRelationshipParams) ([]BatchUpsertComputedEntityRelationshipRow, error) {
+	rows, err := q.db.Query(ctx, batchUpsertComputedEntityRelationship,
+		arg.RuleID,
+		arg.FromEntityType,
+		arg.FromEntityID,
+		arg.ToEntityType,
+		arg.ToEntityID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BatchUpsertComputedEntityRelationshipRow
+	for rows.Next() {
+		var i BatchUpsertComputedEntityRelationshipRow
+		if err := rows.Scan(
+			&i.RuleID,
+			&i.FromEntityType,
+			&i.FromEntityID,
+			&i.ToEntityType,
+			&i.ToEntityID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getActiveResourceByID = `-- name: GetActiveResourceByID :one
 SELECT id, workspace_id, name, kind, version, identifier,
        provider_id, config, metadata

@@ -44,13 +44,14 @@ WHERE rule_id = $1
   AND to_entity_type = $4
   AND to_entity_id = $5;
 
--- name: BatchUpsertComputedEntityRelationship :batchexec
+-- name: BatchUpsertComputedEntityRelationship :many
 INSERT INTO computed_entity_relationship (
     rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
 )
 VALUES ($1, $2, $3, $4, $5, NOW())
 ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO UPDATE
-SET last_evaluated_at = NOW();
+SET last_evaluated_at = NOW()
+RETURNING rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id;
 
 -- name: GetExistingRelationshipsForEntity :many
 -- Returns all computed relationships where the given entity appears

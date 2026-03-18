@@ -109,21 +109,9 @@ func (s *PostgresSetter) SetComputedRelationships(
 		}
 	}
 
-	for i := 0; i < len(toUpsert); i += batchSize {
-		end := i + batchSize
-		if end > len(toUpsert) {
-			end = len(toUpsert)
-		}
-		chunk := toUpsert[i:end]
-		upsertResults := q.BatchUpsertComputedEntityRelationship(ctx, chunk)
-		var upsertErr error
-		upsertResults.Exec(func(j int, err error) {
-			if err != nil && upsertErr == nil {
-				upsertErr = fmt.Errorf("batch upsert relationship %d: %w", i+j, err)
-			}
-		})
-		if upsertErr != nil {
-			return upsertErr
+	for i, rel := range toUpsert {
+		if _, err := q.BatchUpsertComputedEntityRelationship(ctx, rel); err != nil {
+			return fmt.Errorf("upsert relationship %d: %w", i, err)
 		}
 	}
 
