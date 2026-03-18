@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type PostgresSetter struct{}
@@ -27,7 +29,7 @@ func (s *PostgresSetter) SetComputedRelationships(
 	q := db.GetQueries(ctx)
 
 	existing, err := q.GetExistingRelationshipsForEntity(ctx, db.GetExistingRelationshipsForEntityParams{
-		EntityType: entityType,
+		EntityType: pgtype.Text{String: entityType, Valid: true},
 		EntityID:   entityID,
 	})
 	if err != nil {

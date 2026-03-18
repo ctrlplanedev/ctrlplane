@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type PostgresGetter struct{}
@@ -159,7 +161,7 @@ func (g *PostgresGetter) GetExistingRelationships(
 	q := db.GetQueries(ctx)
 
 	rows, err := q.GetExistingRelationshipsForEntity(ctx, db.GetExistingRelationshipsForEntityParams{
-		EntityType: entityType,
+		EntityType: pgtype.Text{String: entityType, Valid: true},
 		EntityID:   entityID,
 	})
 	if err != nil {
