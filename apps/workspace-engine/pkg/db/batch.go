@@ -138,65 +138,6 @@ func (b *BatchDeleteStalePolicyRuleEvaluationsBatchResults) Close() error {
 	return b.br.Close()
 }
 
-const batchUpsertComputedEntityRelationship = `-- name: BatchUpsertComputedEntityRelationship :batchexec
-INSERT INTO computed_entity_relationship (
-    rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
-)
-VALUES ($1, $2, $3, $4, $5, NOW())
-ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO NOTHING
-`
-
-type BatchUpsertComputedEntityRelationshipBatchResults struct {
-	br     pgx.BatchResults
-	tot    int
-	closed bool
-}
-
-type BatchUpsertComputedEntityRelationshipParams struct {
-	RuleID         uuid.UUID
-	FromEntityType string
-	FromEntityID   uuid.UUID
-	ToEntityType   string
-	ToEntityID     uuid.UUID
-}
-
-func (q *Queries) BatchUpsertComputedEntityRelationship(ctx context.Context, arg []BatchUpsertComputedEntityRelationshipParams) *BatchUpsertComputedEntityRelationshipBatchResults {
-	batch := &pgx.Batch{}
-	for _, a := range arg {
-		vals := []interface{}{
-			a.RuleID,
-			a.FromEntityType,
-			a.FromEntityID,
-			a.ToEntityType,
-			a.ToEntityID,
-		}
-		batch.Queue(batchUpsertComputedEntityRelationship, vals...)
-	}
-	br := q.db.SendBatch(ctx, batch)
-	return &BatchUpsertComputedEntityRelationshipBatchResults{br, len(arg), false}
-}
-
-func (b *BatchUpsertComputedEntityRelationshipBatchResults) Exec(f func(int, error)) {
-	defer b.br.Close()
-	for t := 0; t < b.tot; t++ {
-		if b.closed {
-			if f != nil {
-				f(t, ErrBatchAlreadyClosed)
-			}
-			continue
-		}
-		_, err := b.br.Exec()
-		if f != nil {
-			f(t, err)
-		}
-	}
-}
-
-func (b *BatchUpsertComputedEntityRelationshipBatchResults) Close() error {
-	b.closed = true
-	return b.br.Close()
-}
-
 const batchUpsertPolicyRuleEvaluation = `-- name: BatchUpsertPolicyRuleEvaluation :batchexec
 INSERT INTO policy_rule_evaluation (
     rule_type, rule_id, environment_id, version_id, resource_id,

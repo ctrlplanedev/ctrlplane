@@ -6,11 +6,10 @@ import (
 	"sort"
 	"testing"
 
-	"workspace-engine/pkg/reconcile"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/reconcile"
 )
 
 // ---------------------------------------------------------------------------

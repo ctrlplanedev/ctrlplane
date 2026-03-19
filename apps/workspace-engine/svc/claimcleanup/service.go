@@ -4,11 +4,10 @@ import (
 	"context"
 	"time"
 
-	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/svc"
-
 	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/svc"
 )
 
 var _ svc.Service = (*Service)(nil)

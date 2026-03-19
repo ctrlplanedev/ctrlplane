@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/store/policies")
@@ -69,7 +68,8 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 	if err != nil {
 		return nil, fmt.Errorf("parse deployment id: %w", err)
 	}
-	deployment, err := db.GetQueries(deploymentSpanCtx).GetDeploymentByID(deploymentSpanCtx, deploymentID)
+	deployment, err := db.GetQueries(deploymentSpanCtx).
+		GetDeploymentByID(deploymentSpanCtx, deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("get deployment by id: %w", err)
 	}
@@ -80,7 +80,8 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 	if err != nil {
 		return nil, fmt.Errorf("parse environment id: %w", err)
 	}
-	environment, err := db.GetQueries(environmentSpanCtx).GetEnvironmentByID(environmentSpanCtx, environmentID)
+	environment, err := db.GetQueries(environmentSpanCtx).
+		GetEnvironmentByID(environmentSpanCtx, environmentID)
 	if err != nil {
 		return nil, fmt.Errorf("get environment by id: %w", err)
 	}
@@ -134,12 +135,13 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 		resourceID,
 	)
 	setPoliciesSpanCtx, setPoliciesSpan := tracer.Start(ctx, "SetPoliciesForReleaseTarget")
-	db.GetQueries(setPoliciesSpanCtx).SetPoliciesForReleaseTarget(setPoliciesSpanCtx, db.SetPoliciesForReleaseTargetParams{
-		PolicyIds:     policyIDs,
-		EnvironmentID: environmentID,
-		DeploymentID:  deploymentID,
-		ResourceID:    resourceID,
-	})
+	db.GetQueries(setPoliciesSpanCtx).
+		SetPoliciesForReleaseTarget(setPoliciesSpanCtx, db.SetPoliciesForReleaseTargetParams{
+			PolicyIds:     policyIDs,
+			EnvironmentID: environmentID,
+			DeploymentID:  deploymentID,
+			ResourceID:    resourceID,
+		})
 	setPoliciesSpan.End()
 
 	return policies, nil

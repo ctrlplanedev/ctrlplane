@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
-	"github.com/google/uuid"
 )
 
 type Getter interface {

@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-
-	"github.com/google/uuid"
 )
 
 type DeploymentGetter interface {

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/svc"
@@ -21,9 +23,6 @@ import (
 	"workspace-engine/svc/controllers/relationshipeval"
 	httpsvc "workspace-engine/svc/http"
 	"workspace-engine/svc/pprof"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
 )
 
 var (

@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-	"golang.org/x/sync/singleflight"
 )
 
 type policiesGetter = policyeval.Getter

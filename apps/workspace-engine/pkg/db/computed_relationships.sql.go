@@ -12,6 +12,39 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const batchUpsertComputedEntityRelationship = `-- name: BatchUpsertComputedEntityRelationship :exec
+INSERT INTO computed_entity_relationship (
+    rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
+)
+SELECT
+  unnest($1::uuid[]),
+  unnest($2::text[]),
+  unnest($3::uuid[]),
+  unnest($4::text[]),
+  unnest($5::uuid[]),
+  NOW()
+ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO NOTHING
+`
+
+type BatchUpsertComputedEntityRelationshipParams struct {
+	RuleIds         []uuid.UUID
+	FromEntityTypes []string
+	FromEntityIds   []uuid.UUID
+	ToEntityTypes   []string
+	ToEntityIds     []uuid.UUID
+}
+
+func (q *Queries) BatchUpsertComputedEntityRelationship(ctx context.Context, arg BatchUpsertComputedEntityRelationshipParams) error {
+	_, err := q.db.Exec(ctx, batchUpsertComputedEntityRelationship,
+		arg.RuleIds,
+		arg.FromEntityTypes,
+		arg.FromEntityIds,
+		arg.ToEntityTypes,
+		arg.ToEntityIds,
+	)
+	return err
+}
+
 const getActiveResourceByID = `-- name: GetActiveResourceByID :one
 SELECT id, workspace_id, name, kind, version, identifier,
        provider_id, config, metadata

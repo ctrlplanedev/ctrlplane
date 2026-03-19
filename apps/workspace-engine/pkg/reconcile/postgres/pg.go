@@ -7,12 +7,11 @@ import (
 	"sort"
 	"time"
 
-	"workspace-engine/pkg/reconcile"
-	sqldb "workspace-engine/pkg/reconcile/postgres/db"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"workspace-engine/pkg/reconcile"
+	sqldb "workspace-engine/pkg/reconcile/postgres/db"
 )
 
 const defaultPriority int16 = 100

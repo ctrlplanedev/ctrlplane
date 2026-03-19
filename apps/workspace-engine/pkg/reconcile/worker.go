@@ -6,9 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"workspace-engine/svc"
-
 	"github.com/charmbracelet/log"
+	"workspace-engine/svc"
 )
 
 const (

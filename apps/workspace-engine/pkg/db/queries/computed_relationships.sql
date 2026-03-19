@@ -44,11 +44,17 @@ WHERE rule_id = $1
   AND to_entity_type = $4
   AND to_entity_id = $5;
 
--- name: BatchUpsertComputedEntityRelationship :batchexec
+-- name: BatchUpsertComputedEntityRelationship :exec
 INSERT INTO computed_entity_relationship (
     rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
 )
-VALUES ($1, $2, $3, $4, $5, NOW())
+SELECT
+  unnest(sqlc.arg(rule_ids)::uuid[]),
+  unnest(sqlc.arg(from_entity_types)::text[]),
+  unnest(sqlc.arg(from_entity_ids)::uuid[]),
+  unnest(sqlc.arg(to_entity_types)::text[]),
+  unnest(sqlc.arg(to_entity_ids)::uuid[]),
+  NOW()
 ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO NOTHING;
 
 -- name: GetExistingRelationshipsForEntity :many

@@ -7,16 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // --- mocks ---
@@ -47,7 +46,10 @@ type mockGetter struct {
 	err    error
 }
 
-func (m *mockGetter) GetDeploymentPlanTargetResult(_ context.Context, _ uuid.UUID) (db.DeploymentPlanTargetResult, error) {
+func (m *mockGetter) GetDeploymentPlanTargetResult(
+	_ context.Context,
+	_ uuid.UUID,
+) (db.DeploymentPlanTargetResult, error) {
 	return m.result, m.err
 }
 
@@ -70,7 +72,10 @@ type mockSetter struct {
 	stateErr   error
 }
 
-func (m *mockSetter) UpdateDeploymentPlanTargetResultCompleted(_ context.Context, arg db.UpdateDeploymentPlanTargetResultCompletedParams) error {
+func (m *mockSetter) UpdateDeploymentPlanTargetResultCompleted(
+	_ context.Context,
+	arg db.UpdateDeploymentPlanTargetResultCompletedParams,
+) error {
 	m.completedCalls = append(m.completedCalls, completedCall{
 		ID:     arg.ID,
 		Status: arg.Status,
@@ -79,7 +84,10 @@ func (m *mockSetter) UpdateDeploymentPlanTargetResultCompleted(_ context.Context
 	return m.completedErr
 }
 
-func (m *mockSetter) UpdateDeploymentPlanTargetResultState(_ context.Context, arg db.UpdateDeploymentPlanTargetResultStateParams) error {
+func (m *mockSetter) UpdateDeploymentPlanTargetResultState(
+	_ context.Context,
+	arg db.UpdateDeploymentPlanTargetResultStateParams,
+) error {
 	m.stateCalls = append(m.stateCalls, stateCall{
 		ID:         arg.ID,
 		AgentState: arg.AgentState,
@@ -120,7 +128,11 @@ func testItem(resultID uuid.UUID) reconcile.Item {
 	}
 }
 
-func testResultRow(resultID uuid.UUID, agentType string, agentState []byte) db.DeploymentPlanTargetResult {
+func testResultRow(
+	resultID uuid.UUID,
+	agentType string,
+	agentState []byte,
+) db.DeploymentPlanTargetResult {
 	return db.DeploymentPlanTargetResult{
 		ID:              resultID,
 		TargetID:        uuid.New(),
@@ -367,7 +379,7 @@ func TestProcess_PassesExistingAgentState(t *testing.T) {
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
-	assert.Equal(t, json.RawMessage(savedState), agent.calledState)
+	assert.JSONEq(t, string(savedState), string(agent.calledState))
 }
 
 func TestProcess_ExtractsAgentTypeFromDispatchContext(t *testing.T) {
