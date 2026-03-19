@@ -11,7 +11,7 @@ import (
 )
 
 type GetReleaseTargetsForDeployment interface {
-	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]oapi.ReleaseTarget, error)
+	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
 }
 
 var _ GetReleaseTargetsForDeployment = (*PostgresGetReleaseTargetsForDeployment)(nil)
@@ -26,13 +26,13 @@ func NewGetReleaseTargetsForDeployment(opts ...Option) *PostgresGetReleaseTarget
 
 func (s *PostgresGetReleaseTargetsForDeployment) GetReleaseTargetsForDeployment(
 	ctx context.Context, deploymentID string,
-) ([]oapi.ReleaseTarget, error) {
+) ([]*oapi.ReleaseTarget, error) {
 	ctx, span := tracer.Start(ctx, "Store.GetReleaseTargetsForDeployment")
 	defer span.End()
 
 	if s.cache != nil {
 		if v, ok := s.cache.Get(deploymentID); ok {
-			return v.([]oapi.ReleaseTarget), nil
+			return v.([]*oapi.ReleaseTarget), nil
 		}
 	}
 
@@ -46,9 +46,9 @@ func (s *PostgresGetReleaseTargetsForDeployment) GetReleaseTargetsForDeployment(
 		return nil, fmt.Errorf("get release targets for deployment: %w", err)
 	}
 
-	targets := make([]oapi.ReleaseTarget, 0, len(rows))
+	targets := make([]*oapi.ReleaseTarget, 0, len(rows))
 	for _, row := range rows {
-		targets = append(targets, oapi.ReleaseTarget{
+		targets = append(targets, &oapi.ReleaseTarget{
 			DeploymentId:  row.DeploymentID.String(),
 			EnvironmentId: row.EnvironmentID.String(),
 			ResourceId:    row.ResourceID.String(),

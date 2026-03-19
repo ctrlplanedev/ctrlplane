@@ -19,7 +19,7 @@ type PostgresGetter struct {
 
 func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
 	return &PostgresGetter{
-		policyEvalGetter: pevalgetters.NewPostgresGetter(queries),
+		policyEvalGetter: pevalgetters.NewPostgresGetter(queries, nil, nil),
 	}
 }
 

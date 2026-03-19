@@ -5,6 +5,7 @@ import (
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
@@ -23,9 +24,13 @@ type PostgresGetter struct {
 	deploymentdependency *deploymentdependency.PostgresGetters
 }
 
-func NewPostgresGetter(queries *db.Queries) Getter {
+func NewPostgresGetter(
+	queries *db.Queries,
+	rtForDep releasetargets.GetReleaseTargetsForDeployment,
+	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+) Getter {
 	return &PostgresGetter{
-		gradualrolloutGetter: gradualrollout.NewPostgresGetters(queries),
+		gradualrolloutGetter: gradualrollout.NewPostgresGetters(queries, rtForDep, rtForDepEnv),
 		versioncooldown:      versioncooldown.NewPostgresGetters(queries),
 		deploymentdependency: deploymentdependency.NewPostgresGetters(queries),
 	}
