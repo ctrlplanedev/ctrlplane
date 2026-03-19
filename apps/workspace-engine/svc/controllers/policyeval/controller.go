@@ -5,36 +5,20 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/reconcile/events"
+	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/svc"
+
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"workspace-engine/pkg/config"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/reconcile/events"
-	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/svc"
 )
-
-func backoffeval(version *oapi.DeploymentVersion) time.Duration {
-	now := time.Now()
-	createdAt := version.CreatedAt
-	if createdAt.IsZero() {
-		return 0
-	}
-	days := now.Sub(createdAt).Hours() / 24
-	if days > 365 {
-		// If the version is older than 365 days, don't requeue
-		return 0
-	}
-	// Calculate backoff using 1/20 * x^2, where x is days since creation.
-	backoffDays := (days * days) / 20
-	return time.Duration(backoffDays*24) * time.Hour
-}
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/policyeval")
 var _ reconcile.Processor = (*Controller)(nil)
@@ -65,16 +49,14 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("parse version id from scope: %w", err)
 	}
 
-	version, err := Reconcile(ctx, c.getter, c.setter, versionID)
+	_, err = Reconcile(ctx, c.getter, c.setter, versionID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return reconcile.Result{}, fmt.Errorf("reconcile policy eval: %w", err)
 	}
 
-	requeue := backoffeval(version)
-	span.SetAttributes(attribute.String("requeue_after", requeue.String()))
-	return reconcile.Result{RequeueAfter: requeue}, nil
+	return reconcile.Result{}, nil
 }
 
 // NewController creates a Controller with the given dependencies.
