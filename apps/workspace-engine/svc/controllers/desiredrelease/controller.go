@@ -5,25 +5,28 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/svc"
+
+	"github.com/charmbracelet/log"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/desiredrelease")
 var _ reconcile.Processor = (*Controller)(nil)
 
 type Controller struct {
-	getter Getter
-	setter Setter
+	getter  Getter
+	queries *db.Queries
+	setter  Setter
 }
 
 // Process implements [reconcile.Processor].
@@ -45,7 +48,15 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("parse release target: %w", err)
 	}
 
-	exists, err := c.getter.ReleaseTargetExists(ctx, rt)
+	getter := c.getter
+	if getter == nil {
+		cacheTTL := 5 * time.Minute
+		rtForDep := releasetargets.NewGetReleaseTargetsForDeployment(releasetargets.WithCache(cacheTTL))
+		rtForDepEnv := releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment(releasetargets.WithCache(cacheTTL))
+		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv)
+	}
+
+	exists, err := getter.ReleaseTargetExists(ctx, rt)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("check release target exists: %w", err)
 	}
@@ -55,7 +66,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	result, err := Reconcile(ctx, item.WorkspaceID, c.getter, c.setter, rt)
+	result, err := Reconcile(ctx, item.WorkspaceID, getter, c.setter, rt)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -104,8 +115,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	queue := postgres.NewForKinds(pgxPool, kind)
 	enqueueQueue := postgres.New(pgxPool)
 	controller := &Controller{
-		getter: NewPostgresGetter(db.GetQueries(ctx)),
-		setter: NewPostgresSetter(enqueueQueue),
+		queries: db.GetQueries(ctx),
+		setter:  NewPostgresSetter(enqueueQueue),
 	}
 	worker, err := reconcile.NewWorker(
 		kind,

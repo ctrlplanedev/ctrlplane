@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
@@ -23,7 +24,13 @@ var _ GetReleaseTargetsForDeploymentAndEnvironment = (*PostgresGetReleaseTargets
 	nil,
 )
 
-type PostgresGetReleaseTargetsForDeploymentAndEnvironment struct{}
+type PostgresGetReleaseTargetsForDeploymentAndEnvironment struct {
+	cache *gocache.Cache
+}
+
+func NewGetReleaseTargetsForDeploymentAndEnvironment(opts ...Option) *PostgresGetReleaseTargetsForDeploymentAndEnvironment {
+	return &PostgresGetReleaseTargetsForDeploymentAndEnvironment{cache: buildCache(opts)}
+}
 
 func (p *PostgresGetReleaseTargetsForDeploymentAndEnvironment) GetReleaseTargetsForDeploymentAndEnvironment(
 	ctx context.Context,
@@ -31,6 +38,13 @@ func (p *PostgresGetReleaseTargetsForDeploymentAndEnvironment) GetReleaseTargets
 ) ([]oapi.ReleaseTarget, error) {
 	ctx, span := tracer.Start(ctx, "Store.GetReleaseTargetsForDeploymentAndEnvironment")
 	defer span.End()
+
+	cacheKey := deploymentID + ":" + environmentID
+	if p.cache != nil {
+		if v, ok := p.cache.Get(cacheKey); ok {
+			return v.([]oapi.ReleaseTarget), nil
+		}
+	}
 
 	depID, err := uuid.Parse(deploymentID)
 	if err != nil {
@@ -58,6 +72,10 @@ func (p *PostgresGetReleaseTargetsForDeploymentAndEnvironment) GetReleaseTargets
 			EnvironmentId: row.EnvironmentID.String(),
 			ResourceId:    row.ResourceID.String(),
 		})
+	}
+
+	if p.cache != nil {
+		p.cache.SetDefault(cacheKey, targets)
 	}
 
 	return targets, nil
