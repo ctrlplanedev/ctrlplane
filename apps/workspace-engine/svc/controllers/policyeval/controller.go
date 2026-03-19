@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/svc"
 
 	"github.com/charmbracelet/log"
@@ -26,8 +27,9 @@ var _ reconcile.Processor = (*Controller)(nil)
 // Controller evaluates policy rules for a deployment version against all of
 // its release targets. The version ID is the queue scope.
 type Controller struct {
-	getter Getter
-	setter Setter
+	getter  Getter // set for tests via NewController; nil for prod
+	queries *db.Queries
+	setter  Setter
 }
 
 // Process implements [reconcile.Processor].
@@ -49,7 +51,15 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("parse version id from scope: %w", err)
 	}
 
-	_, err = Reconcile(ctx, c.getter, c.setter, versionID)
+	getter := c.getter
+	if getter == nil {
+		cacheTTL := 5 * time.Minute
+		rtForDep := releasetargets.NewGetReleaseTargetsForDeployment(releasetargets.WithCache(cacheTTL))
+		rtForDepEnv := releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment(releasetargets.WithCache(cacheTTL))
+		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv)
+	}
+
+	_, err = Reconcile(ctx, getter, c.setter, versionID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -91,8 +101,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	ctx := context.Background()
 	queue := postgres.NewForKinds(pgxPool, kind)
 	controller := &Controller{
-		getter: NewPostgresGetter(db.GetQueries(ctx)),
-		setter: NewPostgresSetter(),
+		queries: db.GetQueries(ctx),
+		setter:  NewPostgresSetter(),
 	}
 	worker, err := reconcile.NewWorker(
 		kind,
