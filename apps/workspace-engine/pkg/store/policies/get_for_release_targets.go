@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
@@ -25,35 +25,39 @@ type GetPoliciesForReleaseTarget interface {
 var _ GetPoliciesForReleaseTarget = (*PostgresGetPoliciesForReleaseTarget)(nil)
 
 type PostgresGetPoliciesForReleaseTarget struct {
-	workspacePolicySF singleflight.Group
+	cache *gocache.Cache
 }
 
-func NewPostgresGetPoliciesForReleaseTarget() *PostgresGetPoliciesForReleaseTarget {
-	return &PostgresGetPoliciesForReleaseTarget{}
+func NewPostgresGetPoliciesForReleaseTarget(opts ...Option) *PostgresGetPoliciesForReleaseTarget {
+	return &PostgresGetPoliciesForReleaseTarget{cache: buildCache(opts)}
 }
 
-// listWorkspacePolicies fetches all policies with rules for a workspace,
-// deduplicating concurrent calls via singleflight.
 func (p *PostgresGetPoliciesForReleaseTarget) listWorkspacePolicies(
 	ctx context.Context,
 	workspaceID uuid.UUID,
 ) ([]*oapi.Policy, error) {
-	v, err, _ := p.workspacePolicySF.Do(workspaceID.String(), func() (any, error) {
-		rows, err := db.GetQueries(ctx).
-			ListPoliciesWithRulesByWorkspaceID(ctx, workspaceID)
-		if err != nil {
-			return nil, fmt.Errorf("list policies with rules: %w", err)
+	cacheKey := workspaceID.String()
+	if p.cache != nil {
+		if v, ok := p.cache.Get(cacheKey); ok {
+			return v.([]*oapi.Policy), nil
 		}
-		policies := make([]*oapi.Policy, 0, len(rows))
-		for _, row := range rows {
-			policies = append(policies, db.ToOapiPolicyWithRules(row))
-		}
-		return policies, nil
-	})
-	if err != nil {
-		return nil, err
 	}
-	return v.([]*oapi.Policy), nil
+
+	rows, err := db.GetQueries(ctx).
+		ListPoliciesWithRulesByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("list policies with rules: %w", err)
+	}
+	policies := make([]*oapi.Policy, 0, len(rows))
+	for _, row := range rows {
+		policies = append(policies, db.ToOapiPolicyWithRules(row))
+	}
+
+	if p.cache != nil {
+		p.cache.SetDefault(cacheKey, policies)
+	}
+
+	return policies, nil
 }
 
 func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(

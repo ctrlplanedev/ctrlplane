@@ -52,9 +52,10 @@ func NewPostgresGetters(
 	queries *db.Queries,
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+	policiesForRT policies.GetPoliciesForReleaseTarget,
 ) *PostgresGetters {
 	return &PostgresGetters{
-		policiesForReleaseTargetGetter:        policies.NewPostgresGetPoliciesForReleaseTarget(),
+		policiesForReleaseTargetGetter:        policiesForRT,
 		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
 		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries, rtForDep, rtForDepEnv),
 		queries:                               queries,

@@ -76,6 +76,7 @@ export const releaseJob = pgTable(
   (t) => [
     uniqueIndex().on(t.releaseId, t.jobId),
     index("release_job_job_id_index").on(t.jobId),
+    index("release_job_release_id_index").on(t.releaseId),
   ],
 );
 

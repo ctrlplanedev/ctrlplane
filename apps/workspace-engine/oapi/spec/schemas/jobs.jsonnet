@@ -144,12 +144,14 @@ local JobPropertyKeys = std.objectFields(Job.properties);
 
   TerraformCloudJobAgentConfig: {
     type: 'object',
-    required: ['address', 'organization', 'token', 'template'],
+    required: ['address', 'organization', 'token', 'template', 'webhookUrl'],
     properties: {
       address: { type: 'string', description: 'Terraform Cloud address (e.g. https://app.terraform.io).' },
       organization: { type: 'string', description: 'Terraform Cloud organization name.' },
       token: { type: 'string', description: 'Terraform Cloud API token.' },
       template: { type: 'string', description: 'Terraform Cloud workspace template.' },
+      webhookUrl: { type: 'string', description: 'The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook).' },
+      triggerRunOnChange: { type: 'boolean', default: true, description: 'Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.' },
     },
   },
 

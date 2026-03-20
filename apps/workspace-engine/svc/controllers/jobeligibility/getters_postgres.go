@@ -21,9 +21,9 @@ type PostgresGetter struct {
 	policiesGetter
 }
 
-func NewPostgresGetter() *PostgresGetter {
+func NewPostgresGetter(policiesForRT policies.GetPoliciesForReleaseTarget) *PostgresGetter {
 	return &PostgresGetter{
-		policiesGetter: policies.NewPostgresGetPoliciesForReleaseTarget(),
+		policiesGetter: policiesForRT,
 	}
 }
 

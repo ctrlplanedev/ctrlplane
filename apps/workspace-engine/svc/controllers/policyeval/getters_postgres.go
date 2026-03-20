@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	pevalgetters "workspace-engine/svc/controllers/desiredrelease/policyeval"
@@ -22,9 +23,10 @@ func NewPostgresGetter(
 	queries *db.Queries,
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+	policiesForRT policies.GetPoliciesForReleaseTarget,
 ) *PostgresGetter {
 	return &PostgresGetter{
-		policyEvalGetter: pevalgetters.NewPostgresGetter(queries, rtForDep, rtForDepEnv),
+		policyEvalGetter: pevalgetters.NewPostgresGetter(queries, rtForDep, rtForDepEnv, policiesForRT),
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/svc"
 )
 
@@ -103,7 +104,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	queue := postgres.NewForKinds(pgxPool, kind)
 	enqueueQueue := postgres.New(pgxPool)
 	controller := &Controller{
-		getter: NewPostgresGetter(),
+		getter: NewPostgresGetter(policies.NewPostgresGetPoliciesForReleaseTarget(policies.WithCache(5 * time.Minute))),
 		setter: &PostgresSetter{Queue: enqueueQueue},
 	}
 	worker, err := reconcile.NewWorker(

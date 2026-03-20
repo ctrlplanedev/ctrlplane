@@ -4,7 +4,7 @@ description: "Manage infrastructure deployments with Terraform Cloud/Enterprise"
 ---
 
 The Terraform Cloud job agent creates workspaces and triggers runs, enabling
-infrastructure-as-code deployments with automatic run verification.
+infrastructure-as-code deployments with webhook-based status tracking.
 
 ## How It Works
 
@@ -16,25 +16,31 @@ sequenceDiagram
 
     C->>T: Create/Update Workspace
     C->>T: Sync Variables
+    C->>T: Ensure Notification Config
     C->>T: Create Run
     T->>I: Plan & Apply
-    C->>T: Poll run status
-    T-->>C: Applied
-    C->>C: Mark job successful
+    T->>C: Webhook: run status updates
+    C->>C: Update job status
 ```
 
 1. Ctrlplane renders a workspace configuration from your template
 2. The workspace is created or updated via Terraform Cloud API
 3. Variables are synced to match your template
-4. A run is triggered with auto-apply
-5. Ctrlplane verifies the run reaches `applied` status
-6. Job is marked successful when verification passes
+4. A webhook notification configuration (`ctrlplane-webhook`) is created on the workspace (idempotent)
+5. A run is triggered with auto-apply
+6. Terraform Cloud sends webhook notifications as the run progresses
+7. The ctrlplane API receives webhooks and updates job status in the database
+
+This is a **fire-and-forget** dispatch model — the workspace-engine does not poll
+or maintain long-running goroutines. Status tracking is handled entirely by
+TFC webhooks, making it resilient to engine restarts.
 
 ## Prerequisites
 
 - Terraform Cloud or Terraform Enterprise account
-- API token with workspace and run permissions
+- API token with workspace, run, and notification configuration permissions
 - VCS connection (optional, for Git-based workflows)
+- A reachable webhook endpoint (the ctrlplane API must be accessible from TFC)
 
 ## Configuration
 
@@ -58,6 +64,8 @@ jobAgentConfig:
   organization: your-org
   address: https://app.terraform.io
   token: "{{.variables.tfe_token}}"
+  webhookUrl: https://ctrlplane.example.com/api/tfe/webhook
+  triggerRunOnChange: true
   template: |
     name: {{.deployment.slug}}-{{.resource.identifier}}
     description: "Managed by Ctrlplane"
@@ -78,12 +86,37 @@ jobAgentConfig:
         category: terraform
 ```
 
-| Field          | Required | Description                             |
-| -------------- | -------- | --------------------------------------- |
-| `organization` | Yes      | Terraform Cloud organization            |
-| `address`      | Yes      | Terraform Cloud/Enterprise URL          |
-| `token`        | Yes      | API token                               |
-| `template`     | Yes      | Go template for workspace configuration |
+| Field                | Required | Default | Description                                                                 |
+| -------------------- | -------- | ------- | --------------------------------------------------------------------------- |
+| `organization`       | Yes      |         | Terraform Cloud organization                                                |
+| `address`            | Yes      |         | Terraform Cloud/Enterprise URL                                              |
+| `token`              | Yes      |         | API token                                                                   |
+| `template`           | Yes      |         | Go template for workspace configuration                                     |
+| `webhookUrl`         | Yes      |         | Ctrlplane API endpoint for TFC notifications (e.g. `https://ctrlplane.example.com/api/tfe/webhook`) |
+| `triggerRunOnChange` | No       | `true`  | Whether to create a TFC run on dispatch. When `false`, only the workspace and variables are synced. |
+
+### Environment Variables
+
+| Variable             | Where       | Description                                              |
+| -------------------- | ----------- | -------------------------------------------------------- |
+| `TFE_WEBHOOK_SECRET` | API         | HMAC secret for verifying incoming TFC webhooks          |
+| `TFE_WEBHOOK_SECRET` | Workspace Engine | Same secret, used when creating notification configs on TFC |
+
+Both the API and workspace-engine must share the same `TFE_WEBHOOK_SECRET`.
+
+## Webhook Status Mapping
+
+When TFC sends a notification, the webhook handler maps the trigger to a
+ctrlplane job status:
+
+| TFC Trigger          | Example Run Status        | Ctrlplane Status  |
+| -------------------- | ------------------------- | ----------------- |
+| `run:created`        | pending                   | `pending`         |
+| `run:planning`       | planning                  | `inProgress`      |
+| `run:needs_attention`| planned (confirmable), policy_override | `actionRequired` |
+| `run:applying`       | applying                  | `inProgress`      |
+| `run:completed`      | applied, planned_and_finished | `successful`   |
+| `run:errored`        | errored                   | `failure`         |
 
 ## Workspace Template
 
@@ -125,35 +158,32 @@ variables:
 
 ## Template Context
 
-The template has access to all job context:
+The template has access to the full dispatch context:
 
-| Variable       | Description                 |
-| -------------- | --------------------------- |
-| `.job`         | Job details                 |
-| `.version`     | Version being deployed      |
-| `.deployment`  | Deployment details          |
-| `.environment` | Environment details         |
-| `.resource`    | Target resource             |
-| `.variables`   | Merged deployment variables |
+| Variable       | Description                         |
+| -------------- | ----------------------------------- |
+| `.deployment`  | Deployment details                  |
+| `.environment` | Environment details                 |
+| `.resource`    | Target resource (config, metadata)  |
+| `.release`     | Release details                     |
+| `.version`     | Deployment version (tag, name)      |
+| `.variables`   | Merged deployment variables         |
 
-## Automatic Verification
+## `triggerRunOnChange: false`
 
-When a run is created, Ctrlplane automatically starts a verification that
-monitors the run status:
+When `triggerRunOnChange` is set to `false`, the dispatcher will:
 
-**Success conditions:**
+1. Upsert the workspace
+2. Sync variables
+3. Ensure the notification config exists
+4. **Skip** creating a run
 
-- `applied` - Run completed successfully
-- `planned_and_finished` - Plan-only run completed
-- `planned_and_saved` - Plan saved for later apply
+This is useful when you want VCS pushes to trigger runs instead of ctrlplane
+creating them directly. The webhook notification config is still created so
+that run status updates flow back to ctrlplane.
 
-**Failure conditions:**
-
-- `canceled` - Run was canceled
-- `discarded` - Run was discarded
-- `errored` - Run failed with error
-
-The verification polls every 60 seconds for up to 100 iterations.
+> **Note:** Correlating VCS-triggered runs back to ctrlplane jobs (by workspace
+> name/ID instead of run ID) is a planned follow-up.
 
 ## Example: Multi-Environment Infrastructure
 
@@ -165,6 +195,7 @@ jobAgentConfig:
   organization: "{{.variables.tfe_org}}"
   address: "{{.variables.tfe_address}}"
   token: "{{.variables.tfe_token}}"
+  webhookUrl: "{{.variables.ctrlplane_webhook_url}}"
   template: |
     name: vpc-{{.environment.name}}-{{.resource.metadata.region}}
     description: "VPC for {{.environment.name}} in {{.resource.metadata.region}}"
@@ -215,6 +246,25 @@ template: |
       category: terraform
 ```
 
+## Terraform Provider Configuration
+
+When using the ctrlplane Terraform provider:
+
+```hcl
+resource "ctrlplane_job_agent" "tfc" {
+  name = "terraform-cloud"
+
+  terraform_cloud {
+    address            = "https://app.terraform.io"
+    organization       = "your-org"
+    token              = var.tfc_token
+    webhook_url        = "https://ctrlplane.example.com/api/tfe/webhook"
+    trigger_run_on_change = true
+    template           = file("workspace-template.yaml")
+  }
+}
+```
+
 ## Troubleshooting
 
 ### Workspace creation fails
@@ -240,3 +290,21 @@ template: |
 - Verify variable keys match expected format
 - Check for duplicate variable definitions
 - Sensitive variables won't show values in UI
+
+### Webhook returns 401
+
+- Check `TFE_WEBHOOK_SECRET` is set on the API
+- Verify the same secret was used when creating the notification config on TFC
+- Ensure the `x-tfe-notification-signature` header is present
+
+### No webhook notifications received
+
+- Verify the `webhookUrl` is reachable from Terraform Cloud
+- Check the notification config exists on the TFC workspace (Settings > Notifications)
+- Review TFC's notification delivery log for errors
+- For local development, use smee.io or localtunnel to expose your API
+
+### Job stays in `inProgress`
+
+- Verify webhooks are reaching the API (check API logs for `POST /api/tfe/webhook`)
+- Check the TFC run status directly in the TFC UI

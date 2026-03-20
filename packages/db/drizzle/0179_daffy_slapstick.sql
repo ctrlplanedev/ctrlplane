@@ -1,0 +1,1 @@
+CREATE INDEX "release_job_release_id_index" ON "release_job" USING btree ("release_id");
