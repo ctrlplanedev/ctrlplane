@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
@@ -15,6 +16,7 @@ import (
 	"workspace-engine/pkg/store/resources"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/jobdispatch"
@@ -425,6 +427,13 @@ func (g *DesiredReleaseGetter) GetReleaseByJobID(
 		}
 	}
 	return nil, fmt.Errorf("job %s not found", jobID)
+}
+
+func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
+	_ context.Context,
+	_, _ string,
+) ([]environmentprogression.ReleaseTargetJob, error) {
+	return nil, nil
 }
 
 type eligibilityCall struct {

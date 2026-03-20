@@ -125,6 +125,34 @@ func (m *mockGetters) GetReleaseByJobID(_ context.Context, jobID string) (*oapi.
 	return rel, nil
 }
 
+func (m *mockGetters) GetJobsForEnvironmentAndVersion(
+	_ context.Context,
+	environmentID string,
+	_ string,
+) ([]ReleaseTargetJob, error) {
+	var result []ReleaseTargetJob
+	for _, jobMap := range m.jobs {
+		for _, job := range jobMap {
+			rel, ok := m.releaseByJob[job.Id]
+			if !ok {
+				continue
+			}
+			if rel.ReleaseTarget.EnvironmentId != environmentID {
+				continue
+			}
+			result = append(result, ReleaseTargetJob{
+				JobID:         job.Id,
+				Status:        job.Status,
+				CompletedAt:   job.CompletedAt,
+				DeploymentID:  rel.ReleaseTarget.DeploymentId,
+				EnvironmentID: rel.ReleaseTarget.EnvironmentId,
+				ResourceID:    rel.ReleaseTarget.ResourceId,
+			})
+		}
+	}
+	return result, nil
+}
+
 func (m *mockGetters) addReleaseTarget(rt *oapi.ReleaseTarget) {
 	m.releaseTargets = append(m.releaseTargets, rt)
 }

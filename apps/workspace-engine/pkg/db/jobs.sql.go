@@ -316,6 +316,64 @@ func (q *Queries) ListJobsByAgentID(ctx context.Context, jobAgentID pgtype.UUID)
 	return items, nil
 }
 
+const listJobsByEnvironmentAndVersion = `-- name: ListJobsByEnvironmentAndVersion :many
+SELECT
+  j.id,
+  j.status,
+  j.completed_at,
+  r.deployment_id,
+  r.environment_id,
+  r.resource_id
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.environment_id = $1
+  AND r.version_id = $2
+`
+
+type ListJobsByEnvironmentAndVersionParams struct {
+	EnvironmentID uuid.UUID
+	VersionID     uuid.UUID
+}
+
+type ListJobsByEnvironmentAndVersionRow struct {
+	ID            uuid.UUID
+	Status        JobStatus
+	CompletedAt   pgtype.Timestamptz
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns all jobs for a given environment and version in a single query,
+// avoiding N+1 round trips per release target.
+func (q *Queries) ListJobsByEnvironmentAndVersion(ctx context.Context, arg ListJobsByEnvironmentAndVersionParams) ([]ListJobsByEnvironmentAndVersionRow, error) {
+	rows, err := q.db.Query(ctx, listJobsByEnvironmentAndVersion, arg.EnvironmentID, arg.VersionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListJobsByEnvironmentAndVersionRow
+	for rows.Next() {
+		var i ListJobsByEnvironmentAndVersionRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.CompletedAt,
+			&i.DeploymentID,
+			&i.EnvironmentID,
+			&i.ResourceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listJobsByReleaseID = `-- name: ListJobsByReleaseID :many
 SELECT
   j.id,
