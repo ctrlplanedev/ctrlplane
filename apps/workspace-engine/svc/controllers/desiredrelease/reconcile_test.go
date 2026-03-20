@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 )
@@ -221,8 +220,7 @@ var _ Getter = (*mockReconcileGetter)(nil)
 // ---------------------------------------------------------------------------
 
 type mockReconcileSetter struct {
-	releases    []*oapi.Release
-	evaluations []policies.RuleEvaluationParams
+	releases []*oapi.Release
 }
 
 func (s *mockReconcileSetter) SetDesiredRelease(
@@ -233,14 +231,6 @@ func (s *mockReconcileSetter) SetDesiredRelease(
 	if r != nil {
 		s.releases = append(s.releases, r)
 	}
-	return nil
-}
-
-func (s *mockReconcileSetter) UpsertRuleEvaluations(
-	_ context.Context,
-	evals []policies.RuleEvaluationParams,
-) error {
-	s.evaluations = append(s.evaluations, evals...)
 	return nil
 }
 
@@ -293,7 +283,6 @@ func TestReconcile_NoVersions(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Nil(t, result.NextReconcileAt)
 	assert.Empty(t, setter.releases, "no release should be created when no versions exist")
-	assert.Empty(t, setter.evaluations, "no evaluations should be upserted when no versions exist")
 }
 
 func TestReconcile_AllPoliciesAllow(t *testing.T) {
@@ -354,18 +343,6 @@ func TestReconcile_PolicyDeniesAllVersions(t *testing.T) {
 		setter.releases,
 		"no release should be persisted when policies deny all versions",
 	)
-	assert.NotEmpty(
-		t,
-		setter.evaluations,
-		"evaluations should be upserted even when no version passes",
-	)
-
-	for _, e := range setter.evaluations {
-		assert.Equal(t, rt.EnvironmentID.String(), e.EnvironmentID)
-		assert.Equal(t, rt.ResourceID.String(), e.ResourceID)
-		assert.NotNil(t, e.Evaluation)
-		assert.False(t, e.Evaluation.Allowed, "evaluation should reflect denial")
-	}
 }
 
 func TestReconcile_SelectsFirstPassingVersion(t *testing.T) {
@@ -396,7 +373,7 @@ func TestReconcile_SelectsFirstPassingVersion(t *testing.T) {
 	)
 }
 
-func TestReconcile_EvaluationsContainCorrectVersionIDs(t *testing.T) {
+func TestReconcile_AllVersionsDenied_NoRelease(t *testing.T) {
 	ctx := context.Background()
 	rt := testRT()
 	v1 := uuid.New().String()
@@ -426,19 +403,7 @@ func TestReconcile_EvaluationsContainCorrectVersionIDs(t *testing.T) {
 	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
 	assert.Nil(t, result.NextReconcileAt)
-
 	assert.Empty(t, setter.releases, "no version should pass the approval gate")
-	require.Len(t, setter.evaluations, 2, "one evaluation per version")
-
-	assert.Equal(t, v1, setter.evaluations[0].VersionID)
-	assert.Equal(t, v2, setter.evaluations[1].VersionID)
-
-	for _, e := range setter.evaluations {
-		assert.Equal(t, rt.EnvironmentID.String(), e.EnvironmentID)
-		assert.Equal(t, rt.ResourceID.String(), e.ResourceID)
-		assert.NotNil(t, e.Evaluation)
-		assert.False(t, e.Evaluation.Allowed)
-	}
 }
 
 func TestReconcile_UpsertsEvaluationsForPassingVersion(t *testing.T) {
@@ -458,5 +423,4 @@ func TestReconcile_UpsertsEvaluationsForPassingVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, setter.releases, 1, "version should pass with no policies")
-	assert.Empty(t, setter.evaluations, "no evaluations to upsert with no policy rules")
 }
