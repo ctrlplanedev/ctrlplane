@@ -72,16 +72,14 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	webhookSecret := os.Getenv("TFE_WEBHOOK_SECRET")
-	if cfg.webhookUrl != "" {
-		if err := ensureNotificationConfig(
-			ctx,
-			client,
-			targetWorkspace.ID,
-			cfg.webhookUrl,
-			webhookSecret,
-		); err != nil {
-			log.Warn("Failed to ensure notification config, continuing dispatch", "error", err)
-		}
+	if err := ensureNotificationConfig(
+		ctx,
+		client,
+		targetWorkspace.ID,
+		cfg.webhookUrl,
+		webhookSecret,
+	); err != nil {
+		log.Warn("Failed to ensure notification config, continuing dispatch", "error", err)
 	}
 
 	if !cfg.triggerRunOnChange {

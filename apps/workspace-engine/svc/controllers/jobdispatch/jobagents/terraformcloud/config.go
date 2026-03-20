@@ -37,7 +37,10 @@ func parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (*tfeConfig, error)
 		return nil, fmt.Errorf("missing required fields in job agent config")
 	}
 
-	webhookUrl, _ := jobAgentConfig["webhookUrl"].(string)
+	webhookUrl, ok := jobAgentConfig["webhookUrl"].(string)
+	if !ok || webhookUrl == "" {
+		return nil, fmt.Errorf("webhookUrl is required")
+	}
 
 	triggerRunOnChange := true
 	if v, ok := jobAgentConfig["triggerRunOnChange"]; ok {

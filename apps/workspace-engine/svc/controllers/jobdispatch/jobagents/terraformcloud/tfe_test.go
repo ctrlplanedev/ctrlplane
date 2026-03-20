@@ -18,6 +18,7 @@ func TestParseJobAgentConfig_Valid(t *testing.T) {
 		"token":        "my-token",
 		"organization": "my-org",
 		"template":     "name: {{ .Resource.Name }}",
+		"webhookUrl":   "https://ctrlplane.example.com/api/tfe/webhook",
 	}
 	parsed, err := parseJobAgentConfig(cfg)
 	require.NoError(t, err)
@@ -25,8 +26,20 @@ func TestParseJobAgentConfig_Valid(t *testing.T) {
 	assert.Equal(t, "my-token", parsed.token)
 	assert.Equal(t, "my-org", parsed.organization)
 	assert.Equal(t, "name: {{ .Resource.Name }}", parsed.template)
-	assert.Empty(t, parsed.webhookUrl)
+	assert.Equal(t, "https://ctrlplane.example.com/api/tfe/webhook", parsed.webhookUrl)
 	assert.True(t, parsed.triggerRunOnChange)
+}
+
+func TestParseJobAgentConfig_MissingWebhookUrl(t *testing.T) {
+	cfg := oapi.JobAgentConfig{
+		"address":      "https://app.terraform.io",
+		"token":        "my-token",
+		"organization": "my-org",
+		"template":     "name: foo",
+	}
+	_, err := parseJobAgentConfig(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "webhookUrl is required")
 }
 
 func TestParseJobAgentConfig_WithWebhookUrl(t *testing.T) {
@@ -49,6 +62,7 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 			"token":        "t",
 			"organization": "o",
 			"template":     "t",
+			"webhookUrl":   "https://example.com/api/tfe/webhook",
 		}
 		parsed, err := parseJobAgentConfig(cfg)
 		require.NoError(t, err)
@@ -61,6 +75,7 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 			"token":              "t",
 			"organization":       "o",
 			"template":           "t",
+			"webhookUrl":         "https://example.com/api/tfe/webhook",
 			"triggerRunOnChange": false,
 		}
 		parsed, err := parseJobAgentConfig(cfg)
@@ -74,6 +89,7 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 			"token":              "t",
 			"organization":       "o",
 			"template":           "t",
+			"webhookUrl":         "https://example.com/api/tfe/webhook",
 			"triggerRunOnChange": "false",
 		}
 		parsed, err := parseJobAgentConfig(cfg)
@@ -87,6 +103,7 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 			"token":              "t",
 			"organization":       "o",
 			"template":           "t",
+			"webhookUrl":         "https://example.com/api/tfe/webhook",
 			"triggerRunOnChange": true,
 		}
 		parsed, err := parseJobAgentConfig(cfg)
