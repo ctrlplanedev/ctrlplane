@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/svc"
 
@@ -56,7 +57,8 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		cacheTTL := 5 * time.Minute
 		rtForDep := releasetargets.NewGetReleaseTargetsForDeployment(releasetargets.WithCache(cacheTTL))
 		rtForDepEnv := releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment(releasetargets.WithCache(cacheTTL))
-		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv)
+		policiesForRT := policies.NewPostgresGetPoliciesForReleaseTarget(policies.WithCache(cacheTTL))
+		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv, policiesForRT)
 	}
 
 	_, err = Reconcile(ctx, getter, c.setter, versionID)

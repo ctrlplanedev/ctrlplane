@@ -9,6 +9,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
@@ -24,9 +25,10 @@ func NewPostgresGetter(
 	queries *db.Queries,
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+	policiesForRT policies.GetPoliciesForReleaseTarget,
 ) *PostgresGetter {
 	return &PostgresGetter{
-		policiesGetter:         policyeval.NewPostgresGetter(queries, rtForDep, rtForDepEnv),
+		policiesGetter:         policyeval.NewPostgresGetter(queries, rtForDep, rtForDepEnv, policiesForRT),
 		variableResolverGetter: variableresolver.NewPostgresGetter(queries),
 	}
 }
