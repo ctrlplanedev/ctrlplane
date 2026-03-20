@@ -99,14 +99,20 @@ func syncVariables(
 	workspaceID string,
 	desiredVars []VariableTemplate,
 ) error {
-	existingVars, err := client.Variables.List(ctx, workspaceID, nil)
-	if err != nil {
-		return fmt.Errorf("failed to list variables: %w", err)
-	}
-
 	existingByKey := make(map[string]*tfe.Variable)
-	for _, v := range existingVars.Items {
-		existingByKey[v.Key] = v
+	listOpts := &tfe.VariableListOptions{}
+	for {
+		existingVars, err := client.Variables.List(ctx, workspaceID, listOpts)
+		if err != nil {
+			return fmt.Errorf("failed to list variables: %w", err)
+		}
+		for _, v := range existingVars.Items {
+			existingByKey[v.Key] = v
+		}
+		if existingVars.Pagination == nil || existingVars.CurrentPage >= existingVars.TotalPages {
+			break
+		}
+		listOpts.PageNumber = existingVars.NextPage
 	}
 
 	desiredKeys := make(map[string]bool, len(desiredVars))
@@ -179,15 +185,19 @@ func ensureNotificationConfig(
 		if cfg.Name != notificationConfigName {
 			continue
 		}
-		if cfg.URL == webhookURL {
-			return nil
+		// Always update: the token is write-only in the TFC API so we
+		// cannot verify it matches.  Re-sending ensures secret rotation
+		// is propagated without manual intervention.
+		updateOpts := tfe.NotificationConfigurationUpdateOptions{
+			URL: &webhookURL,
+		}
+		if webhookSecret != "" {
+			updateOpts.Token = &webhookSecret
 		}
 		_, err := client.NotificationConfigurations.Update(
 			ctx,
 			cfg.ID,
-			tfe.NotificationConfigurationUpdateOptions{
-				URL: &webhookURL,
-			},
+			updateOpts,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update notification config: %w", err)

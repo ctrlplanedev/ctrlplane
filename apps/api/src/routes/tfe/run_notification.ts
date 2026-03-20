@@ -1,4 +1,4 @@
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, sql, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
@@ -67,7 +67,9 @@ export const handleRunNotification = async (payload: {
       status,
       updatedAt: now,
       message: notification.message,
-      ...(isInProgress ? { startedAt: now } : {}),
+      ...(isInProgress
+        ? { startedAt: sql`COALESCE(${schema.job.startedAt}, ${now})` }
+        : {}),
       ...(isCompleted ? { completedAt: now } : {}),
     })
     .where(eq(schema.job.id, jobId))
