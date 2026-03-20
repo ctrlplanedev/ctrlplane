@@ -155,12 +155,10 @@ func createRun(
 	client *tfe.Client,
 	workspaceID, jobID string,
 ) (*tfe.Run, error) {
-	autoApply := true
 	message := fmt.Sprintf("Triggered by ctrlplane job %s", jobID)
 	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
 		Workspace: &tfe.Workspace{ID: workspaceID},
 		Message:   &message,
-		AutoApply: &autoApply,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create run: %w", err)
@@ -185,11 +183,21 @@ func ensureNotificationConfig(
 		if cfg.Name != notificationConfigName {
 			continue
 		}
-		// Always update: the token is write-only in the TFC API so we
-		// cannot verify it matches.  Re-sending ensures secret rotation
-		// is propagated without manual intervention.
+		// Always reconcile the full desired state: URL, token, enabled,
+		// and triggers.  The token is write-only so we can't verify it
+		// matches, and any field could have been changed in the TFC UI.
+		enabled := true
 		updateOpts := tfe.NotificationConfigurationUpdateOptions{
-			URL: &webhookURL,
+			URL:     &webhookURL,
+			Enabled: &enabled,
+			Triggers: []tfe.NotificationTriggerType{
+				tfe.NotificationTriggerCreated,
+				tfe.NotificationTriggerPlanning,
+				tfe.NotificationTriggerNeedsAttention,
+				tfe.NotificationTriggerApplying,
+				tfe.NotificationTriggerCompleted,
+				tfe.NotificationTriggerErrored,
+			},
 		}
 		if webhookSecret != "" {
 			updateOpts.Token = &webhookSecret
@@ -287,6 +295,9 @@ func (w *WorkspaceTemplate) toUpdateOptions() tfe.WorkspaceUpdateOptions {
 		WorkingDirectory:    &w.WorkingDirectory,
 	}
 
+	if w.Project != "" {
+		opts.Project = &tfe.Project{ID: w.Project}
+	}
 	if w.ExecutionMode != "" {
 		opts.ExecutionMode = &w.ExecutionMode
 	}
