@@ -7,14 +7,13 @@ import (
 	"regexp"
 	"strings"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo")
@@ -63,7 +62,12 @@ type ArgoApplication struct {
 	upserter ApplicationUpserter
 }
 
-func New(upserter ApplicationUpserter, deleter ApplicationDeleter, setter Setter, manifestGetter ManifestGetter) *ArgoApplication {
+func New(
+	upserter ApplicationUpserter,
+	deleter ApplicationDeleter,
+	setter Setter,
+	manifestGetter ManifestGetter,
+) *ArgoApplication {
 	return &ArgoApplication{
 		setter:   setter,
 		upserter: upserter,

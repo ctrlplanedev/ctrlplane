@@ -11,11 +11,17 @@ import (
 
 type PostgresGetter struct{}
 
-func (g *PostgresGetter) GetDeploymentPlan(ctx context.Context, id uuid.UUID) (db.DeploymentPlan, error) {
+func (g *PostgresGetter) GetDeploymentPlan(
+	ctx context.Context,
+	id uuid.UUID,
+) (db.DeploymentPlan, error) {
 	return db.GetQueries(ctx).GetDeploymentPlan(ctx, id)
 }
 
-func (g *PostgresGetter) GetDeployment(ctx context.Context, id uuid.UUID) (*oapi.Deployment, error) {
+func (g *PostgresGetter) GetDeployment(
+	ctx context.Context,
+	id uuid.UUID,
+) (*oapi.Deployment, error) {
 	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -23,7 +29,10 @@ func (g *PostgresGetter) GetDeployment(ctx context.Context, id uuid.UUID) (*oapi
 	return db.ToOapiDeployment(row), nil
 }
 
-func (g *PostgresGetter) GetReleaseTargets(ctx context.Context, deploymentID uuid.UUID) ([]ReleaseTarget, error) {
+func (g *PostgresGetter) GetReleaseTargets(
+	ctx context.Context,
+	deploymentID uuid.UUID,
+) ([]ReleaseTarget, error) {
 	rows, err := db.GetQueries(ctx).GetReleaseTargetsForDeployment(ctx, deploymentID)
 	if err != nil {
 		return nil, err
@@ -35,7 +44,10 @@ func (g *PostgresGetter) GetReleaseTargets(ctx context.Context, deploymentID uui
 	return targets, nil
 }
 
-func (g *PostgresGetter) GetEnvironment(ctx context.Context, id uuid.UUID) (*oapi.Environment, error) {
+func (g *PostgresGetter) GetEnvironment(
+	ctx context.Context,
+	id uuid.UUID,
+) (*oapi.Environment, error) {
 	row, err := db.GetQueries(ctx).GetEnvironmentByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -67,6 +79,10 @@ func NewPostgresVarResolver(getter variableresolver.Getter) *PostgresVarResolver
 	return &PostgresVarResolver{getter: getter}
 }
 
-func (r *PostgresVarResolver) Resolve(ctx context.Context, scope *variableresolver.Scope, deploymentID, resourceID string) (map[string]oapi.LiteralValue, error) {
+func (r *PostgresVarResolver) Resolve(
+	ctx context.Context,
+	scope *variableresolver.Scope,
+	deploymentID, resourceID string,
+) (map[string]oapi.LiteralValue, error) {
 	return variableresolver.Resolve(ctx, r.getter, scope, deploymentID, resourceID)
 }

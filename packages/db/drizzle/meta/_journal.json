@@ -1247,6 +1247,13 @@
       "when": 1773784343298,
       "tag": "0177_tiresome_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 178,
+      "version": "7",
+      "when": 1773898849706,
+      "tag": "0178_fancy_human_cannonball",
+      "breakpoints": true
     }
   ]
 }

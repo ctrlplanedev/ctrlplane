@@ -28,7 +28,11 @@ type Verifiable interface {
 // Between calls the reconciler persists State so the agent can resume.
 type Plannable interface {
 	Type() string
-	Plan(ctx context.Context, dispatchCtx *oapi.DispatchContext, state json.RawMessage) (*PlanResult, error)
+	Plan(
+		ctx context.Context,
+		dispatchCtx *oapi.DispatchContext,
+		state json.RawMessage,
+	) (*PlanResult, error)
 }
 
 type PlanResult struct {

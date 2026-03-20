@@ -183,7 +183,11 @@ func (c *Controller) processTarget(
 			return fmt.Errorf("insert plan target result: %w", err)
 		}
 
-		if err := c.setter.EnqueueResult(ctx, plan.WorkspaceID.String(), resultID.String()); err != nil {
+		if err := c.setter.EnqueueResult(
+			ctx,
+			plan.WorkspaceID.String(),
+			resultID.String(),
+		); err != nil {
 			return fmt.Errorf("enqueue plan target result: %w", err)
 		}
 	}

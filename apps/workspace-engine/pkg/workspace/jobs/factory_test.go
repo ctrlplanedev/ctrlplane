@@ -205,7 +205,14 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
 	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
 	environment := createTestEnvironment(t, envID, "production")
-	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]any{})
+	resource := createTestResource(
+		t,
+		resourceID,
+		"server-1",
+		"server",
+		"server-1",
+		map[string]any{},
+	)
 
 	mock.deployments[deployID] = deployment
 	mock.environments[envID] = environment
@@ -255,7 +262,14 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
 	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
-	resource := createTestResource(t, resourceID, "server-1", "server", "server-1", map[string]any{})
+	resource := createTestResource(
+		t,
+		resourceID,
+		"server-1",
+		"server",
+		"server-1",
+		map[string]any{},
+	)
 	environment := createTestEnvironment(t, envID, "production")
 
 	mock.deployments[deployID] = deployment
@@ -548,7 +562,12 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeplo
 		"apiKey": "selected-token",
 		"template": "selected-agent-template"
 	}`)
-	_ = createTestJobAgent(t, otherAgentID, "argocd", mustCreateJobAgentConfig(t, `{"template": "other-agent-template"}`))
+	_ = createTestJobAgent(
+		t,
+		otherAgentID,
+		"argocd",
+		mustCreateJobAgentConfig(t, `{"template": "other-agent-template"}`),
+	)
 	deployConfig := mustCreateJobAgentConfig(t, `{"template": "deployment-template"}`)
 
 	selectedAgent := createTestJobAgent(t, selectedAgentID, "argocd", selectedAgentConfig)

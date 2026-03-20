@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	pevalgetters "workspace-engine/svc/controllers/desiredrelease/policyeval"
 )
@@ -17,9 +18,13 @@ type PostgresGetter struct {
 	policyEvalGetter
 }
 
-func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
+func NewPostgresGetter(
+	queries *db.Queries,
+	rtForDep releasetargets.GetReleaseTargetsForDeployment,
+	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+) *PostgresGetter {
 	return &PostgresGetter{
-		policyEvalGetter: pevalgetters.NewPostgresGetter(queries),
+		policyEvalGetter: pevalgetters.NewPostgresGetter(queries, rtForDep, rtForDepEnv),
 	}
 }
 

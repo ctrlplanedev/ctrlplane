@@ -9,11 +9,11 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 const (
@@ -126,7 +126,12 @@ func (p *ArgoCDPlanner) Plan(
 
 	now := time.Now()
 
-	proposedManifests, manifestErr := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, s.TmpAppName)
+	proposedManifests, manifestErr := p.manifestGetter.GetManifests(
+		ctx,
+		serverAddr,
+		apiKey,
+		s.TmpAppName,
+	)
 	if manifestErr != nil || len(proposedManifests) == 0 {
 		if s.FirstCheckedAt == nil {
 			s.FirstCheckedAt = &now
@@ -138,9 +143,18 @@ func (p *ArgoCDPlanner) Plan(
 		if elapsed >= manifestTimeout {
 			p.deleteTmpApp(ctx, serverAddr, apiKey, s.TmpAppName)
 			if manifestErr != nil {
-				return nil, fmt.Errorf("get proposed manifests after %s (%d checks): %w", elapsed.Round(time.Second), s.ManifestChecks, manifestErr)
+				return nil, fmt.Errorf(
+					"get proposed manifests after %s (%d checks): %w",
+					elapsed.Round(time.Second),
+					s.ManifestChecks,
+					manifestErr,
+				)
 			}
-			return nil, fmt.Errorf("no manifests found after %s (%d checks)", elapsed.Round(time.Second), s.ManifestChecks)
+			return nil, fmt.Errorf(
+				"no manifests found after %s (%d checks)",
+				elapsed.Round(time.Second),
+				s.ManifestChecks,
+			)
 		}
 
 		retryState, err := json.Marshal(s)
@@ -148,9 +162,18 @@ func (p *ArgoCDPlanner) Plan(
 			return nil, fmt.Errorf("marshal plan state: %w", err)
 		}
 
-		msg := fmt.Sprintf("Waiting for manifests to render (check %d, %s elapsed)", s.ManifestChecks, elapsed.Round(time.Second))
+		msg := fmt.Sprintf(
+			"Waiting for manifests to render (check %d, %s elapsed)",
+			s.ManifestChecks,
+			elapsed.Round(time.Second),
+		)
 		if manifestErr != nil {
-			msg = fmt.Sprintf("Retrying manifest fetch (check %d, %s elapsed): %s", s.ManifestChecks, elapsed.Round(time.Second), manifestErr.Error())
+			msg = fmt.Sprintf(
+				"Retrying manifest fetch (check %d, %s elapsed): %s",
+				s.ManifestChecks,
+				elapsed.Round(time.Second),
+				manifestErr.Error(),
+			)
 		}
 		return &types.PlanResult{
 			State:   retryState,

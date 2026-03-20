@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"golang.org/x/sync/singleflight"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
+	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 )
@@ -29,10 +29,6 @@ type Getters interface {
 		versionID, environmentID, resourceID string,
 	) ([]*oapi.PolicySkip, error)
 	HasCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (bool, error)
-	GetReleaseTargetsForDeployment(
-		ctx context.Context,
-		deploymentID string,
-	) ([]*oapi.ReleaseTarget, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -50,15 +46,17 @@ type PostgresGetters struct {
 	*environmentProgressionPostgresGetters
 	policiesForReleaseTargetGetter
 	queries *db.Queries
-
-	releaseTargetsSF singleflight.Group
 }
 
-func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+func NewPostgresGetters(
+	queries *db.Queries,
+	rtForDep releasetargets.GetReleaseTargetsForDeployment,
+	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+) *PostgresGetters {
 	return &PostgresGetters{
 		policiesForReleaseTargetGetter:        policies.NewPostgresGetPoliciesForReleaseTarget(),
 		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
-		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries),
+		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries, rtForDep, rtForDepEnv),
 		queries:                               queries,
 	}
 }
@@ -124,31 +122,3 @@ func (p *PostgresGetters) HasCurrentRelease(
 	return len(releases) > 0, nil
 }
 
-func (p *PostgresGetters) GetReleaseTargetsForDeployment(
-	ctx context.Context,
-	deploymentID string,
-) ([]*oapi.ReleaseTarget, error) {
-	v, err, _ := p.releaseTargetsSF.Do(deploymentID, func() (any, error) {
-		deploymentUUID, err := uuid.Parse(deploymentID)
-		if err != nil {
-			return nil, fmt.Errorf("parse deployment id: %w", err)
-		}
-		rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, deploymentUUID)
-		if err != nil {
-			return nil, fmt.Errorf("get release targets for deployment: %w", err)
-		}
-		targets := make([]*oapi.ReleaseTarget, 0, len(rows))
-		for _, row := range rows {
-			targets = append(targets, &oapi.ReleaseTarget{
-				DeploymentId:  row.DeploymentID.String(),
-				EnvironmentId: row.EnvironmentID.String(),
-				ResourceId:    row.ResourceID.String(),
-			})
-		}
-		return targets, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return v.([]*oapi.ReleaseTarget), nil
-}

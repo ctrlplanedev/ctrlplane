@@ -5,8 +5,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 )
+
+const batchSize = 100
 
 type PostgresSetter struct{}
 
@@ -26,23 +29,20 @@ func (s *PostgresSetter) SetComputedRelationships(
 ) error {
 	q := db.GetQueries(ctx)
 
-	existing, err := q.GetExistingRelationshipsForEntity(ctx, db.GetExistingRelationshipsForEntityParams{
-		EntityType: entityType,
-		EntityID:   entityID,
-	})
+	existing, err := q.GetExistingRelationshipsForEntity(
+		ctx,
+		db.GetExistingRelationshipsForEntityParams{
+			EntityType: pgtype.Text{String: entityType, Valid: true},
+			EntityID:   entityID,
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("get existing relationships for %s/%s: %w", entityType, entityID, err)
 	}
 
 	desiredSet := make(map[relKey]struct{}, len(relationships))
 	for _, rel := range relationships {
-		desiredSet[relKey{
-			RuleID:         rel.RuleID,
-			FromEntityType: rel.FromEntityType,
-			FromEntityID:   rel.FromEntityID,
-			ToEntityType:   rel.ToEntityType,
-			ToEntityID:     rel.ToEntityID,
-		}] = struct{}{}
+		desiredSet[relKey(rel)] = struct{}{}
 	}
 
 	existingSet := make(map[relKey]struct{}, len(existing))
@@ -57,42 +57,30 @@ func (s *PostgresSetter) SetComputedRelationships(
 		}
 		existingSet[k] = struct{}{}
 		if _, ok := desiredSet[k]; !ok {
-			toDelete = append(toDelete, db.BatchDeleteComputedEntityRelationshipByPKParams{
-				RuleID:         row.RuleID,
-				FromEntityType: row.FromEntityType,
-				FromEntityID:   row.FromEntityID,
-				ToEntityType:   row.ToEntityType,
-				ToEntityID:     row.ToEntityID,
-			})
+			toDelete = append(toDelete, db.BatchDeleteComputedEntityRelationshipByPKParams(row))
 		}
 	}
 
-	var toUpsert []db.BatchUpsertComputedEntityRelationshipParams
+	var upsert db.BatchUpsertComputedEntityRelationshipParams
 	for _, rel := range relationships {
-		k := relKey{
-			RuleID:         rel.RuleID,
-			FromEntityType: rel.FromEntityType,
-			FromEntityID:   rel.FromEntityID,
-			ToEntityType:   rel.ToEntityType,
-			ToEntityID:     rel.ToEntityID,
-		}
+		k := relKey(rel)
 		if _, ok := existingSet[k]; !ok {
-			toUpsert = append(toUpsert, db.BatchUpsertComputedEntityRelationshipParams{
-				RuleID:         rel.RuleID,
-				FromEntityType: rel.FromEntityType,
-				FromEntityID:   rel.FromEntityID,
-				ToEntityType:   rel.ToEntityType,
-				ToEntityID:     rel.ToEntityID,
-			})
+			upsert.RuleIds = append(upsert.RuleIds, rel.RuleID)
+			upsert.FromEntityTypes = append(upsert.FromEntityTypes, rel.FromEntityType)
+			upsert.FromEntityIds = append(upsert.FromEntityIds, rel.FromEntityID)
+			upsert.ToEntityTypes = append(upsert.ToEntityTypes, rel.ToEntityType)
+			upsert.ToEntityIds = append(upsert.ToEntityIds, rel.ToEntityID)
 		}
 	}
 
-	if len(toDelete) > 0 {
-		delResults := q.BatchDeleteComputedEntityRelationshipByPK(ctx, toDelete)
+	for i := 0; i < len(toDelete); i += batchSize {
+		end := min(i+batchSize, len(toDelete))
+		chunk := toDelete[i:end]
+		delResults := q.BatchDeleteComputedEntityRelationshipByPK(ctx, chunk)
 		var delErr error
-		delResults.Exec(func(i int, err error) {
+		delResults.Exec(func(j int, err error) {
 			if err != nil && delErr == nil {
-				delErr = fmt.Errorf("batch delete relationship %d: %w", i, err)
+				delErr = fmt.Errorf("batch delete relationship %d: %w", i+j, err)
 			}
 		})
 		if delErr != nil {
@@ -100,16 +88,9 @@ func (s *PostgresSetter) SetComputedRelationships(
 		}
 	}
 
-	if len(toUpsert) > 0 {
-		upsertResults := q.BatchUpsertComputedEntityRelationship(ctx, toUpsert)
-		var upsertErr error
-		upsertResults.Exec(func(i int, err error) {
-			if err != nil && upsertErr == nil {
-				upsertErr = fmt.Errorf("batch upsert relationship %d: %w", i, err)
-			}
-		})
-		if upsertErr != nil {
-			return upsertErr
+	if len(upsert.RuleIds) > 0 {
+		if err := q.BatchUpsertComputedEntityRelationship(ctx, upsert); err != nil {
+			return fmt.Errorf("batch upsert relationships: %w", err)
 		}
 	}
 

@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/jobs")

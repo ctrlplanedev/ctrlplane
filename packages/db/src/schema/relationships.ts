@@ -56,16 +56,10 @@ export const computedEntityRelationship = pgTable(
     index("computed_entity_relationship_from_idx").on(
       table.fromEntityType,
       table.fromEntityId,
-      table.ruleId,
-      table.toEntityType,
-      table.toEntityId,
     ),
     index("computed_entity_relationship_to_idx").on(
       table.toEntityType,
       table.toEntityId,
-      table.ruleId,
-      table.fromEntityType,
-      table.fromEntityId,
     ),
   ],
 );

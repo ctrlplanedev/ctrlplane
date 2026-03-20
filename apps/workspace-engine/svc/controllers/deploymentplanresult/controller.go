@@ -6,6 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
@@ -14,14 +21,6 @@ import (
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentplanresult")
@@ -82,14 +81,17 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	if planResult == nil && err == nil {
 		span.AddEvent("agent does not implement Plannable")
-		if updateErr := c.setter.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
-			ID:     resultID,
-			Status: db.DeploymentPlanTargetStatusUnsupported,
-			Message: pgtype.Text{
-				String: fmt.Sprintf("Agent %q does not support plan operations", agentType),
-				Valid:  true,
+		if updateErr := c.setter.UpdateDeploymentPlanTargetResultCompleted(
+			ctx,
+			db.UpdateDeploymentPlanTargetResultCompletedParams{
+				ID:     resultID,
+				Status: db.DeploymentPlanTargetStatusUnsupported,
+				Message: pgtype.Text{
+					String: fmt.Sprintf("Agent %q does not support plan operations", agentType),
+					Valid:  true,
+				},
 			},
-		}); updateErr != nil {
+		); updateErr != nil {
 			return reconcile.Result{}, fmt.Errorf("mark result unsupported: %w", updateErr)
 		}
 		return reconcile.Result{}, nil
@@ -98,25 +100,35 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if updateErr := c.setter.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
-			ID:     resultID,
-			Status: db.DeploymentPlanTargetStatusErrored,
-			Message: pgtype.Text{
-				String: err.Error(),
-				Valid:  true,
+		if updateErr := c.setter.UpdateDeploymentPlanTargetResultCompleted(
+			ctx,
+			db.UpdateDeploymentPlanTargetResultCompletedParams{
+				ID:     resultID,
+				Status: db.DeploymentPlanTargetStatusErrored,
+				Message: pgtype.Text{
+					String: err.Error(),
+					Valid:  true,
+				},
 			},
-		}); updateErr != nil {
-			return reconcile.Result{}, fmt.Errorf("mark result errored: %w (original: %w)", updateErr, err)
+		); updateErr != nil {
+			return reconcile.Result{}, fmt.Errorf(
+				"mark result errored: %w (original: %w)",
+				updateErr,
+				err,
+			)
 		}
 		return reconcile.Result{}, nil
 	}
 
 	if planResult.CompletedAt == nil {
 		span.AddEvent("agent needs more time, saving state and requeuing")
-		if err := c.setter.UpdateDeploymentPlanTargetResultState(ctx, db.UpdateDeploymentPlanTargetResultStateParams{
-			ID:         resultID,
-			AgentState: planResult.State,
-		}); err != nil {
+		if err := c.setter.UpdateDeploymentPlanTargetResultState(
+			ctx,
+			db.UpdateDeploymentPlanTargetResultStateParams{
+				ID:         resultID,
+				AgentState: planResult.State,
+			},
+		); err != nil {
 			return reconcile.Result{}, fmt.Errorf("save agent state: %w", err)
 		}
 		return reconcile.Result{RequeueAfter: requeueDelay}, nil
@@ -125,30 +137,33 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	span.SetAttributes(attribute.Bool("result.has_changes", planResult.HasChanges))
 	span.AddEvent("agent completed")
 
-	if err := c.setter.UpdateDeploymentPlanTargetResultCompleted(ctx, db.UpdateDeploymentPlanTargetResultCompletedParams{
-		ID:     resultID,
-		Status: db.DeploymentPlanTargetStatusCompleted,
-		HasChanges: pgtype.Bool{
-			Bool:  planResult.HasChanges,
-			Valid: true,
+	if err := c.setter.UpdateDeploymentPlanTargetResultCompleted(
+		ctx,
+		db.UpdateDeploymentPlanTargetResultCompletedParams{
+			ID:     resultID,
+			Status: db.DeploymentPlanTargetStatusCompleted,
+			HasChanges: pgtype.Bool{
+				Bool:  planResult.HasChanges,
+				Valid: true,
+			},
+			ContentHash: pgtype.Text{
+				String: planResult.ContentHash,
+				Valid:  planResult.ContentHash != "",
+			},
+			Current: pgtype.Text{
+				String: planResult.Current,
+				Valid:  true,
+			},
+			Proposed: pgtype.Text{
+				String: planResult.Proposed,
+				Valid:  true,
+			},
+			Message: pgtype.Text{
+				String: planResult.Message,
+				Valid:  planResult.Message != "",
+			},
 		},
-		ContentHash: pgtype.Text{
-			String: planResult.ContentHash,
-			Valid:  planResult.ContentHash != "",
-		},
-		Current: pgtype.Text{
-			String: planResult.Current,
-			Valid:  true,
-		},
-		Proposed: pgtype.Text{
-			String: planResult.Proposed,
-			Valid:  true,
-		},
-		Message: pgtype.Text{
-			String: planResult.Message,
-			Valid:  planResult.Message != "",
-		},
-	}); err != nil {
+	); err != nil {
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
 	}
 

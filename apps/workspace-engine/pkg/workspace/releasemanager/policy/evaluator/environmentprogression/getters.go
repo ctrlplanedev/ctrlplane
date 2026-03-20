@@ -3,14 +3,13 @@ package environmentprogression
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
 	"workspace-engine/pkg/store/releasetargets"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var gettersTracer = otel.Tracer(
@@ -23,6 +22,7 @@ type resourceGetter = store.ResourceGetter
 type releaseGetter = store.ReleaseGetter
 
 type releaseTargetForDeploymentAndEnvironmentGetter = releasetargets.GetReleaseTargetsForDeploymentAndEnvironment
+type releaseTargetForDeploymentGetter = releasetargets.GetReleaseTargetsForDeployment
 
 type Getters interface {
 	environmentGetter
@@ -31,12 +31,9 @@ type Getters interface {
 	releaseGetter
 
 	releaseTargetForDeploymentAndEnvironmentGetter
+	releaseTargetForDeploymentGetter
 
 	GetSystemIDsForEnvironment(environmentID string) []string
-	GetReleaseTargetsForDeployment(
-		ctx context.Context,
-		deploymentID string,
-	) ([]*oapi.ReleaseTarget, error)
 	GetJobsForReleaseTarget(
 		ctx context.Context,
 		releaseTarget *oapi.ReleaseTarget,
@@ -57,18 +54,30 @@ type PostgresGetters struct {
 	resourceGetter
 	releaseGetter
 	releaseTargetForDeploymentAndEnvironmentGetter
+	releaseTargetForDeploymentGetter
 
 	queries *db.Queries
 }
 
-func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+func NewPostgresGetters(
+	queries *db.Queries,
+	rtForDep releasetargets.GetReleaseTargetsForDeployment,
+	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+) *PostgresGetters {
+	if rtForDep == nil {
+		rtForDep = releasetargets.NewGetReleaseTargetsForDeployment()
+	}
+	if rtForDepEnv == nil {
+		rtForDepEnv = releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment()
+	}
 	return &PostgresGetters{
 		queries:           queries,
 		environmentGetter: store.NewPostgresEnvironmentGetter(queries),
 		deploymentGetter:  store.NewPostgresDeploymentGetter(queries),
 		resourceGetter:    store.NewPostgresResourceGetter(queries),
 		releaseGetter:     store.NewPostgresReleaseGetter(queries),
-		releaseTargetForDeploymentAndEnvironmentGetter: &releasetargets.PostgresGetReleaseTargetsForDeploymentAndEnvironment{},
+		releaseTargetForDeploymentAndEnvironmentGetter: rtForDepEnv,
+		releaseTargetForDeploymentGetter:               rtForDep,
 	}
 }
 
@@ -128,24 +137,6 @@ func (p *PostgresGetters) GetReleaseTargetsForEnvironment(
 	return targets, nil
 }
 
-func (p *PostgresGetters) GetReleaseTargetsForDeployment(
-	ctx context.Context,
-	deploymentID string,
-) ([]*oapi.ReleaseTarget, error) {
-	rows, err := p.queries.GetReleaseTargetsForDeployment(ctx, uuid.MustParse(deploymentID))
-	if err != nil {
-		return nil, err
-	}
-	targets := make([]*oapi.ReleaseTarget, 0, len(rows))
-	for _, row := range rows {
-		targets = append(targets, &oapi.ReleaseTarget{
-			DeploymentId:  row.DeploymentID.String(),
-			EnvironmentId: row.EnvironmentID.String(),
-			ResourceId:    row.ResourceID.String(),
-		})
-	}
-	return targets, nil
-}
 
 func (p *PostgresGetters) GetJobsForReleaseTarget(
 	ctx context.Context,

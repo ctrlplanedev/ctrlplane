@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/svc/controllers/desiredrelease/policyeval"
-	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/sync/singleflight"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/store/releasetargets"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/svc/controllers/desiredrelease/policyeval"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 type policiesGetter = policyeval.Getter
@@ -20,9 +20,13 @@ type variableResolverGetter = variableresolver.Getter
 
 var _ Getter = (*PostgresGetter)(nil)
 
-func NewPostgresGetter(queries *db.Queries) *PostgresGetter {
+func NewPostgresGetter(
+	queries *db.Queries,
+	rtForDep releasetargets.GetReleaseTargetsForDeployment,
+	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+) *PostgresGetter {
 	return &PostgresGetter{
-		policiesGetter:         policyeval.NewPostgresGetter(queries),
+		policiesGetter:         policyeval.NewPostgresGetter(queries, rtForDep, rtForDepEnv),
 		variableResolverGetter: variableresolver.NewPostgresGetter(queries),
 	}
 }

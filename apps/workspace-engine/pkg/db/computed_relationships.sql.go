@@ -9,9 +9,41 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const batchUpsertComputedEntityRelationship = `-- name: BatchUpsertComputedEntityRelationship :exec
+INSERT INTO computed_entity_relationship (
+    rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
+)
+SELECT
+  unnest($1::uuid[]),
+  unnest($2::text[]),
+  unnest($3::uuid[]),
+  unnest($4::text[]),
+  unnest($5::uuid[]),
+  NOW()
+ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO NOTHING
+`
+
+type BatchUpsertComputedEntityRelationshipParams struct {
+	RuleIds         []uuid.UUID
+	FromEntityTypes []string
+	FromEntityIds   []uuid.UUID
+	ToEntityTypes   []string
+	ToEntityIds     []uuid.UUID
+}
+
+func (q *Queries) BatchUpsertComputedEntityRelationship(ctx context.Context, arg BatchUpsertComputedEntityRelationshipParams) error {
+	_, err := q.db.Exec(ctx, batchUpsertComputedEntityRelationship,
+		arg.RuleIds,
+		arg.FromEntityTypes,
+		arg.FromEntityIds,
+		arg.ToEntityTypes,
+		arg.ToEntityIds,
+	)
+	return err
+}
 
 const getActiveResourceByID = `-- name: GetActiveResourceByID :one
 SELECT id, workspace_id, name, kind, version, identifier,
@@ -121,7 +153,7 @@ WHERE to_entity_type = $1 AND to_entity_id = $2
 `
 
 type GetExistingRelationshipsForEntityParams struct {
-	EntityType string
+	EntityType pgtype.Text
 	EntityID   uuid.UUID
 }
 
@@ -134,7 +166,8 @@ type GetExistingRelationshipsForEntityRow struct {
 }
 
 // Returns all computed relationships where the given entity appears
-// as either the "from" or "to" side.
+// as either the "from" or "to" side. Uses UNION ALL instead of OR
+// so PostgreSQL can use separate index scans on each leg.
 func (q *Queries) GetExistingRelationshipsForEntity(ctx context.Context, arg GetExistingRelationshipsForEntityParams) ([]GetExistingRelationshipsForEntityRow, error) {
 	rows, err := q.db.Query(ctx, getExistingRelationshipsForEntity, arg.EntityType, arg.EntityID)
 	if err != nil {
@@ -144,7 +177,13 @@ func (q *Queries) GetExistingRelationshipsForEntity(ctx context.Context, arg Get
 	var items []GetExistingRelationshipsForEntityRow
 	for rows.Next() {
 		var i GetExistingRelationshipsForEntityRow
-		if err := rows.Scan(&i.RuleID, &i.FromEntityType, &i.FromEntityID, &i.ToEntityType, &i.ToEntityID); err != nil {
+		if err := rows.Scan(
+			&i.RuleID,
+			&i.FromEntityType,
+			&i.FromEntityID,
+			&i.ToEntityType,
+			&i.ToEntityID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -321,124 +360,4 @@ func (q *Queries) ListEnvironmentsByWorkspace(ctx context.Context, workspaceID u
 		return nil, err
 	}
 	return items, nil
-}
-
-const batchDeleteComputedEntityRelationshipByPK = `-- name: BatchDeleteComputedEntityRelationshipByPK :batchexec
-DELETE FROM computed_entity_relationship
-WHERE rule_id = $1
-  AND from_entity_type = $2
-  AND from_entity_id = $3
-  AND to_entity_type = $4
-  AND to_entity_id = $5
-`
-
-type BatchDeleteComputedEntityRelationshipByPKBatchResults struct {
-	br     pgx.BatchResults
-	tot    int
-	closed bool
-}
-
-type BatchDeleteComputedEntityRelationshipByPKParams struct {
-	RuleID         uuid.UUID
-	FromEntityType string
-	FromEntityID   uuid.UUID
-	ToEntityType   string
-	ToEntityID     uuid.UUID
-}
-
-func (q *Queries) BatchDeleteComputedEntityRelationshipByPK(ctx context.Context, arg []BatchDeleteComputedEntityRelationshipByPKParams) *BatchDeleteComputedEntityRelationshipByPKBatchResults {
-	batch := &pgx.Batch{}
-	for _, a := range arg {
-		vals := []interface{}{
-			a.RuleID,
-			a.FromEntityType,
-			a.FromEntityID,
-			a.ToEntityType,
-			a.ToEntityID,
-		}
-		batch.Queue(batchDeleteComputedEntityRelationshipByPK, vals...)
-	}
-	br := q.db.SendBatch(ctx, batch)
-	return &BatchDeleteComputedEntityRelationshipByPKBatchResults{br, len(arg), false}
-}
-
-func (b *BatchDeleteComputedEntityRelationshipByPKBatchResults) Exec(f func(int, error)) {
-	defer b.br.Close()
-	for t := 0; t < b.tot; t++ {
-		if b.closed {
-			if f != nil {
-				f(t, ErrBatchAlreadyClosed)
-			}
-			continue
-		}
-		_, err := b.br.Exec()
-		if f != nil {
-			f(t, err)
-		}
-	}
-}
-
-func (b *BatchDeleteComputedEntityRelationshipByPKBatchResults) Close() error {
-	b.closed = true
-	return b.br.Close()
-}
-
-const batchUpsertComputedEntityRelationship = `-- name: BatchUpsertComputedEntityRelationship :batchexec
-INSERT INTO computed_entity_relationship (
-    rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, last_evaluated_at
-)
-VALUES ($1, $2, $3, $4, $5, NOW())
-ON CONFLICT (rule_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id) DO UPDATE
-SET last_evaluated_at = NOW()
-`
-
-type BatchUpsertComputedEntityRelationshipBatchResults struct {
-	br     pgx.BatchResults
-	tot    int
-	closed bool
-}
-
-type BatchUpsertComputedEntityRelationshipParams struct {
-	RuleID         uuid.UUID
-	FromEntityType string
-	FromEntityID   uuid.UUID
-	ToEntityType   string
-	ToEntityID     uuid.UUID
-}
-
-func (q *Queries) BatchUpsertComputedEntityRelationship(ctx context.Context, arg []BatchUpsertComputedEntityRelationshipParams) *BatchUpsertComputedEntityRelationshipBatchResults {
-	batch := &pgx.Batch{}
-	for _, a := range arg {
-		vals := []interface{}{
-			a.RuleID,
-			a.FromEntityType,
-			a.FromEntityID,
-			a.ToEntityType,
-			a.ToEntityID,
-		}
-		batch.Queue(batchUpsertComputedEntityRelationship, vals...)
-	}
-	br := q.db.SendBatch(ctx, batch)
-	return &BatchUpsertComputedEntityRelationshipBatchResults{br, len(arg), false}
-}
-
-func (b *BatchUpsertComputedEntityRelationshipBatchResults) Exec(f func(int, error)) {
-	defer b.br.Close()
-	for t := 0; t < b.tot; t++ {
-		if b.closed {
-			if f != nil {
-				f(t, ErrBatchAlreadyClosed)
-			}
-			continue
-		}
-		_, err := b.br.Exec()
-		if f != nil {
-			f(t, err)
-		}
-	}
-}
-
-func (b *BatchUpsertComputedEntityRelationshipBatchResults) Close() error {
-	b.closed = true
-	return b.br.Close()
 }

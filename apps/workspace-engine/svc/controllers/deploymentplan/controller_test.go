@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
-	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 // --- mocks ---
@@ -115,7 +114,10 @@ func (m *mockSetter) CompletePlan(_ context.Context, planID uuid.UUID) error {
 	return m.completePlanErr
 }
 
-func (m *mockSetter) InsertTarget(_ context.Context, planID, envID, resourceID uuid.UUID) (uuid.UUID, error) {
+func (m *mockSetter) InsertTarget(
+	_ context.Context,
+	planID, envID, resourceID uuid.UUID,
+) (uuid.UUID, error) {
 	m.insertTargetCalls = append(m.insertTargetCalls, insertTargetCall{planID, envID, resourceID})
 	if m.insertTargetErr != nil {
 		return uuid.UUID{}, m.insertTargetErr
@@ -127,7 +129,11 @@ func (m *mockSetter) InsertTarget(_ context.Context, planID, envID, resourceID u
 	return uuid.New(), nil
 }
 
-func (m *mockSetter) InsertResult(_ context.Context, targetID uuid.UUID, dispatchContext []byte) (uuid.UUID, error) {
+func (m *mockSetter) InsertResult(
+	_ context.Context,
+	targetID uuid.UUID,
+	dispatchContext []byte,
+) (uuid.UUID, error) {
 	m.insertResultCalls = append(m.insertResultCalls, insertResultCall{targetID, dispatchContext})
 	if m.insertResultErr != nil {
 		return uuid.UUID{}, m.insertResultErr
@@ -149,7 +155,11 @@ type mockVarResolver struct {
 	err       error
 }
 
-func (m *mockVarResolver) Resolve(_ context.Context, _ *variableresolver.Scope, _, _ string) (map[string]oapi.LiteralValue, error) {
+func (m *mockVarResolver) Resolve(
+	_ context.Context,
+	_ *variableresolver.Scope,
+	_, _ string,
+) (map[string]oapi.LiteralValue, error) {
 	if m.err != nil {
 		return nil, m.err
 	}

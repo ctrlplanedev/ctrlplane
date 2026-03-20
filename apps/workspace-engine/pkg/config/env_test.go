@@ -12,11 +12,11 @@ func TestGetMaxConcurrency(t *testing.T) {
 	gomaxprocs := runtime.GOMAXPROCS(0)
 
 	tests := []struct {
-		name       string
-		kind       string
-		global     int
-		overrides  string
-		want       int
+		name      string
+		kind      string
+		global    int
+		overrides string
+		want      int
 	}{
 		{
 			name: "falls back to GOMAXPROCS when nothing set",

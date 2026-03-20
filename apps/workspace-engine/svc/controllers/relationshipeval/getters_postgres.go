@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 )
 
@@ -158,12 +159,20 @@ func (g *PostgresGetter) GetExistingRelationships(
 ) ([]ExistingRelationship, error) {
 	q := db.GetQueries(ctx)
 
-	rows, err := q.GetExistingRelationshipsForEntity(ctx, db.GetExistingRelationshipsForEntityParams{
-		EntityType: entityType,
-		EntityID:   entityID,
-	})
+	rows, err := q.GetExistingRelationshipsForEntity(
+		ctx,
+		db.GetExistingRelationshipsForEntityParams{
+			EntityType: pgtype.Text{String: entityType, Valid: true},
+			EntityID:   entityID,
+		},
+	)
 	if err != nil {
-		return nil, fmt.Errorf("get existing relationships for %s/%s: %w", entityType, entityID, err)
+		return nil, fmt.Errorf(
+			"get existing relationships for %s/%s: %w",
+			entityType,
+			entityID,
+			err,
+		)
 	}
 
 	rels := make([]ExistingRelationship, 0, len(rows))

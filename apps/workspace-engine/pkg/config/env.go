@@ -45,7 +45,7 @@ type Config struct {
 	Services string `default:"" envconfig:"SERVICES"`
 
 	ReconcileMaxConcurrency          int    `default:"0" envconfig:"RECONCILE_MAX_CONCURRENCY"`
-	ReconcileMaxConcurrencyOverrides string `default:"" envconfig:"RECONCILE_MAX_CONCURRENCY_OVERRIDES"`
+	ReconcileMaxConcurrencyOverrides string `default:""  envconfig:"RECONCILE_MAX_CONCURRENCY_OVERRIDES"`
 }
 
 // GetMaxConcurrency returns the max concurrency for a given service kind.

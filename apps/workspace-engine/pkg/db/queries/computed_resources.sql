@@ -19,8 +19,7 @@ deleted AS (
 INSERT INTO computed_deployment_resource (deployment_id, resource_id, last_evaluated_at)
 SELECT @deployment_id, resource_id, NOW()
 FROM valid
-ON CONFLICT (deployment_id, resource_id) DO UPDATE
-SET last_evaluated_at = NOW();
+ON CONFLICT (deployment_id, resource_id) DO NOTHING;
 
 -- name: GetReleaseTargetsForDeployment :many
 -- Returns all valid release targets for a deployment by joining computed
@@ -90,6 +89,22 @@ JOIN system_environment se
     AND se.system_id = sd.system_id
 WHERE cer.environment_id = @environment_id;
 
+-- name: GetReleaseTargetsForEnvironments :many
+-- Returns all valid release targets for a set of environments.
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cer.environment_id = ANY(@environment_ids::uuid[]);
+
 -- name: GetReleaseTargetsForWorkspace :many
 -- Returns all valid release targets for a workspace.
 SELECT DISTINCT
@@ -147,5 +162,4 @@ deleted AS (
 INSERT INTO computed_environment_resource (environment_id, resource_id, last_evaluated_at)
 SELECT @environment_id, resource_id, NOW()
 FROM valid
-ON CONFLICT (environment_id, resource_id) DO UPDATE
-SET last_evaluated_at = NOW();
+ON CONFLICT (environment_id, resource_id) DO NOTHING;

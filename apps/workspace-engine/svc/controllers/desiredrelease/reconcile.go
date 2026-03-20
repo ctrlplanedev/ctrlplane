@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/svc/controllers/desiredrelease/policyeval"
-	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/svc/controllers/desiredrelease/policyeval"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 type ReconcileResult struct {

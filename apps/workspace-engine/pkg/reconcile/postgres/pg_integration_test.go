@@ -267,8 +267,18 @@ func TestQueue_EnqueueMany_ClaimableByFilteredQueue(t *testing.T) {
 	ctx := context.Background()
 
 	err := all.EnqueueMany(ctx, []reconcile.EnqueueParams{
-		{WorkspaceID: workspaceID, Kind: "target-kind", ScopeType: "env", ScopeID: uuid.NewString()},
-		{WorkspaceID: workspaceID, Kind: "target-kind", ScopeType: "env", ScopeID: uuid.NewString()},
+		{
+			WorkspaceID: workspaceID,
+			Kind:        "target-kind",
+			ScopeType:   "env",
+			ScopeID:     uuid.NewString(),
+		},
+		{
+			WorkspaceID: workspaceID,
+			Kind:        "target-kind",
+			ScopeType:   "env",
+			ScopeID:     uuid.NewString(),
+		},
 		{WorkspaceID: workspaceID, Kind: "other-kind", ScopeType: "env", ScopeID: uuid.NewString()},
 	})
 	if err != nil {

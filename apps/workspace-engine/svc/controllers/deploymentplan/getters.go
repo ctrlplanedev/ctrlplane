@@ -27,5 +27,9 @@ type Getter interface {
 
 // VarResolver resolves deployment variables for a release target.
 type VarResolver interface {
-	Resolve(ctx context.Context, scope *variableresolver.Scope, deploymentID, resourceID string) (map[string]oapi.LiteralValue, error)
+	Resolve(
+		ctx context.Context,
+		scope *variableresolver.Scope,
+		deploymentID, resourceID string,
+	) (map[string]oapi.LiteralValue, error)
 }

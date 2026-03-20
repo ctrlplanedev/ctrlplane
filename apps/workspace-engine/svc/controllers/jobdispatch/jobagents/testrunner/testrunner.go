@@ -97,7 +97,11 @@ func (t *TestRunner) resolveJobAfterDelay(
 	t.setter.UpdateJob(ctx, jobID, status, finalMessage, nil)
 }
 
-func (t *TestRunner) Plan(_ context.Context, dispatchCtx *oapi.DispatchContext, _ json.RawMessage) (*types.PlanResult, error) {
+func (t *TestRunner) Plan(
+	_ context.Context,
+	dispatchCtx *oapi.DispatchContext,
+	_ json.RawMessage,
+) (*types.PlanResult, error) {
 	hasChanges, ok := dispatchCtx.JobAgentConfig["hasChanges"].(bool)
 	if !ok {
 		hasChanges = false

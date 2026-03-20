@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"sort"
 
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/relationships/eval"
-
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/relationships/eval"
 )
 
 func NewResourceEntity(resource *oapi.Resource) *oapi.RelatableEntity {
