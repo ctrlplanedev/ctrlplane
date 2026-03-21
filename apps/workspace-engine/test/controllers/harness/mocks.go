@@ -3,6 +3,7 @@ package harness
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -431,9 +432,35 @@ func (g *DesiredReleaseGetter) GetReleaseByJobID(
 
 func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
 	_ context.Context,
-	_, _ string,
+	environmentID, versionID string,
 ) ([]environmentprogression.ReleaseTargetJob, error) {
-	return nil, nil
+	var result []environmentprogression.ReleaseTargetJob
+	for rtKey, jobMap := range g.JobsByReleaseTarget {
+		// rtKey format is "deploymentID:environmentID:resourceID"
+		parts := strings.SplitN(rtKey, ":", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		depID, envID, resID := parts[0], parts[1], parts[2]
+		if envID != environmentID {
+			continue
+		}
+		for _, job := range jobMap {
+			rel, ok := g.Releases[job.ReleaseId]
+			if !ok || rel.Version.Id != versionID {
+				continue
+			}
+			result = append(result, environmentprogression.ReleaseTargetJob{
+				JobID:         job.Id,
+				Status:        job.Status,
+				CompletedAt:   job.CompletedAt,
+				DeploymentID:  depID,
+				EnvironmentID: envID,
+				ResourceID:    resID,
+			})
+		}
+	}
+	return result, nil
 }
 
 type eligibilityCall struct {
