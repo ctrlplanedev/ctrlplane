@@ -2,13 +2,13 @@ package environmentprogression
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+
 	"workspace-engine/pkg/oapi"
 )
 
@@ -106,62 +106,50 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	span.SetAttributes(attribute.String("version.id", t.Version.Id))
 	span.SetAttributes(attribute.String("version.tag", t.Version.Tag))
 
-	// Use indexed lookup through release targets instead of scanning all jobs
-	for _, rt := range t.ReleaseTargets {
-		span.AddEvent(
-			"GetJobsForReleaseTarget",
-			trace.WithAttributes(attribute.String("release_target.key", rt.Key())),
+	rows, err := t.getters.GetJobsForEnvironmentAndVersion(
+		ctx, t.Environment.Id, t.Version.Id,
+	)
+	if err != nil {
+		span.AddEvent("GetJobsForEnvironmentAndVersion error",
+			trace.WithAttributes(attribute.String("error", err.Error())),
 		)
-		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
-		rtJobs := t.getters.GetJobsForReleaseTarget(ctx, &rt)
-		for _, job := range rtJobs {
-			// Get the release to check version
-			release, err := t.getters.GetReleaseByJobID(ctx, job.Id)
-			if err != nil {
-				span.AddEvent(
-					"GetReleaseByJobID",
-					trace.WithAttributes(
-						attribute.String("job.id", job.Id),
-						attribute.String("error", err.Error()),
-					),
-				)
-				continue
-			}
-			if release == nil {
-				continue
-			}
-			span.AddEvent(
-				"found release",
-				trace.WithAttributes(attribute.String("release", fmt.Sprintf("%+v", release))),
-			)
-			// Filter by version ID
-			if release.Version.Id != t.Version.Id {
-				continue
-			}
+		return t.jobs
+	}
 
-			hasCompletedAt := job.CompletedAt != nil
-			span.AddEvent("job check", trace.WithAttributes(
-				attribute.String("job.id", job.Id),
-				attribute.String("job.status", string(job.Status)),
-				attribute.Bool("job.has_completed_at", hasCompletedAt),
-				attribute.Bool("job.is_success_status", t.SuccessStatuses[job.Status]),
-			))
+	rtKeys := make(map[string]bool, len(t.ReleaseTargets))
+	for _, rt := range t.ReleaseTargets {
+		rtKeys[rt.Key()] = true
+	}
 
-			if t.SuccessStatuses[job.Status] && hasCompletedAt {
-				targetKey := rt.Key()
-				// Store the oldest successful completion time for this release target
-				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists ||
-					job.CompletedAt.Before(existingTime) {
-					t.successfulReleaseTargets[targetKey] = *job.CompletedAt
-				}
-				if t.mostRecentSuccess.Before(*job.CompletedAt) {
-					t.mostRecentSuccess = *job.CompletedAt
-				}
-			}
-
-			t.jobsByStatus[job.Status]++
-			t.jobs = append(t.jobs, job)
+	for _, row := range rows {
+		rt := oapi.ReleaseTarget{
+			DeploymentId:  row.DeploymentID,
+			EnvironmentId: row.EnvironmentID,
+			ResourceId:    row.ResourceID,
 		}
+		targetKey := rt.Key()
+		if !rtKeys[targetKey] {
+			continue
+		}
+
+		job := &oapi.Job{
+			Id:          row.JobID,
+			Status:      row.Status,
+			CompletedAt: row.CompletedAt,
+		}
+
+		if t.SuccessStatuses[row.Status] && row.CompletedAt != nil {
+			if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists ||
+				row.CompletedAt.Before(existingTime) {
+				t.successfulReleaseTargets[targetKey] = *row.CompletedAt
+			}
+			if t.mostRecentSuccess.Before(*row.CompletedAt) {
+				t.mostRecentSuccess = *row.CompletedAt
+			}
+		}
+
+		t.jobsByStatus[row.Status]++
+		t.jobs = append(t.jobs, job)
 	}
 
 	span.SetAttributes(

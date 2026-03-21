@@ -8,7 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 )
 
@@ -172,6 +174,13 @@ func (m *mockGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget
 	return nil
 }
 func (m *mockGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetJobsForEnvironmentAndVersion(
+	_ context.Context,
+	_, _ string,
+) ([]environmentprogression.ReleaseTargetJob, error) {
 	return nil, nil
 }
 

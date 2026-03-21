@@ -2,10 +2,12 @@ package environmentprogression
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -40,6 +42,22 @@ type Getters interface {
 	) map[string]*oapi.Job
 	GetAllPolicies(ctx context.Context, workspaceID string) (map[string]*oapi.Policy, error)
 	GetReleaseByJobID(ctx context.Context, jobID string) (*oapi.Release, error)
+	GetJobsForEnvironmentAndVersion(
+		ctx context.Context,
+		environmentID string,
+		versionID string,
+	) ([]ReleaseTargetJob, error)
+}
+
+// ReleaseTargetJob holds the minimal job fields needed by the job tracker,
+// along with the release target triple identifying which target the job belongs to.
+type ReleaseTargetJob struct {
+	JobID         string
+	Status        oapi.JobStatus
+	CompletedAt   *time.Time
+	DeploymentID  string
+	EnvironmentID string
+	ResourceID    string
 }
 
 // ---------------------------------------------------------------------------
@@ -182,6 +200,50 @@ func (p *PostgresGetters) GetAllPolicies(
 	for _, row := range rows {
 		pol := db.ToOapiPolicy(row)
 		result[pol.Id] = pol
+	}
+	return result, nil
+}
+
+func (p *PostgresGetters) GetJobsForEnvironmentAndVersion(
+	ctx context.Context,
+	environmentID string,
+	versionID string,
+) ([]ReleaseTargetJob, error) {
+	ctx, span := gettersTracer.Start(ctx, "GetJobsForEnvironmentAndVersion")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("environment_id", environmentID),
+		attribute.String("version_id", versionID),
+	)
+
+	rows, err := p.queries.ListJobsByEnvironmentAndVersion(
+		ctx,
+		db.ListJobsByEnvironmentAndVersionParams{
+			EnvironmentID: uuid.MustParse(environmentID),
+			VersionID:     uuid.MustParse(versionID),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("jobs.count", len(rows)))
+
+	result := make([]ReleaseTargetJob, len(rows))
+	for i, row := range rows {
+		rtj := ReleaseTargetJob{
+			JobID:         row.ID.String(),
+			Status:        db.ToOapiJobStatus(row.Status),
+			DeploymentID:  row.DeploymentID.String(),
+			EnvironmentID: row.EnvironmentID.String(),
+			ResourceID:    row.ResourceID.String(),
+		}
+		if row.CompletedAt.Valid {
+			t := row.CompletedAt.Time
+			rtj.CompletedAt = &t
+		}
+		result[i] = rtj
 	}
 	return result, nil
 }
