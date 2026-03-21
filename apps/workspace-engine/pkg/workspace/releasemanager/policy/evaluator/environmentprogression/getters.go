@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -154,7 +153,6 @@ func (p *PostgresGetters) GetReleaseTargetsForEnvironment(
 	}
 	return targets, nil
 }
-
 
 func (p *PostgresGetters) GetJobsForReleaseTarget(
 	ctx context.Context,

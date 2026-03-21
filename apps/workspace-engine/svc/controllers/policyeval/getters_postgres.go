@@ -26,7 +26,12 @@ func NewPostgresGetter(
 	policiesForRT policies.GetPoliciesForReleaseTarget,
 ) *PostgresGetter {
 	return &PostgresGetter{
-		policyEvalGetter: pevalgetters.NewPostgresGetter(queries, rtForDep, rtForDepEnv, policiesForRT),
+		policyEvalGetter: pevalgetters.NewPostgresGetter(
+			queries,
+			rtForDep,
+			rtForDepEnv,
+			policiesForRT,
+		),
 	}
 }
 

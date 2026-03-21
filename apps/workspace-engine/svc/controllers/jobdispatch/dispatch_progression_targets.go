@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/selector"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // DispatchProgressionTargets enqueues desired-release evaluations for
@@ -63,7 +62,11 @@ func dispatchProgressionTargets(
 
 	if len(dependentEnvIDs) == 0 {
 		span.AddEvent("no dependent environments found, dispatching job release target only")
-		if err := events.EnqueueManyDesiredRelease(queue, ctx, []events.DesiredReleaseEvalParams{jobReleaseTarget}); err != nil {
+		if err := events.EnqueueManyDesiredRelease(
+			queue,
+			ctx,
+			[]events.DesiredReleaseEvalParams{jobReleaseTarget},
+		); err != nil {
 			return fmt.Errorf("enqueue desired releases: %w", err)
 		}
 		return nil
@@ -103,9 +106,12 @@ func findDependentEnvironments(
 		return nil, fmt.Errorf("list policies: %w", err)
 	}
 
-	envRows, err := queries.ListEnvironmentsByWorkspaceID(ctx, db.ListEnvironmentsByWorkspaceIDParams{
-		WorkspaceID: workspaceID,
-	})
+	envRows, err := queries.ListEnvironmentsByWorkspaceID(
+		ctx,
+		db.ListEnvironmentsByWorkspaceIDParams{
+			WorkspaceID: workspaceID,
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list environments: %w", err)
 	}
@@ -221,7 +227,10 @@ func collectReleaseTargets(
 	return params, nil
 }
 
-func releaseTargetForJob(workspaceID uuid.UUID, release db.Release) events.DesiredReleaseEvalParams {
+func releaseTargetForJob(
+	workspaceID uuid.UUID,
+	release db.Release,
+) events.DesiredReleaseEvalParams {
 	return events.DesiredReleaseEvalParams{
 		WorkspaceID:   workspaceID.String(),
 		ResourceID:    release.ResourceID.String(),

@@ -28,7 +28,12 @@ func NewPostgresGetter(
 	policiesForRT policies.GetPoliciesForReleaseTarget,
 ) *PostgresGetter {
 	return &PostgresGetter{
-		policiesGetter:         policyeval.NewPostgresGetter(queries, rtForDep, rtForDepEnv, policiesForRT),
+		policiesGetter: policyeval.NewPostgresGetter(
+			queries,
+			rtForDep,
+			rtForDepEnv,
+			policiesForRT,
+		),
 		variableResolverGetter: variableresolver.NewPostgresGetter(queries),
 	}
 }

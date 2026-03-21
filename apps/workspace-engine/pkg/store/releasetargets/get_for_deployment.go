@@ -11,7 +11,10 @@ import (
 )
 
 type GetReleaseTargetsForDeployment interface {
-	GetReleaseTargetsForDeployment(ctx context.Context, deploymentID string) ([]*oapi.ReleaseTarget, error)
+	GetReleaseTargetsForDeployment(
+		ctx context.Context,
+		deploymentID string,
+	) ([]*oapi.ReleaseTarget, error)
 }
 
 var _ GetReleaseTargetsForDeployment = (*PostgresGetReleaseTargetsForDeployment)(nil)

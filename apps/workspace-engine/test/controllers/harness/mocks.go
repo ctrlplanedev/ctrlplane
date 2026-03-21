@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"

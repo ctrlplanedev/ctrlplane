@@ -10,7 +10,10 @@ import (
 )
 
 type ReleaseTargetExists interface {
-	ReleaseTargetExists(ctx context.Context, deploymentID, environmentID, resourceID string) (bool, error)
+	ReleaseTargetExists(
+		ctx context.Context,
+		deploymentID, environmentID, resourceID string,
+	) (bool, error)
 }
 
 var _ ReleaseTargetExists = (*PostgresReleaseTargetExists)(nil)
