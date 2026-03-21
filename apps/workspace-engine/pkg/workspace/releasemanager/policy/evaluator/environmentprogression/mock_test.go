@@ -128,7 +128,7 @@ func (m *mockGetters) GetReleaseByJobID(_ context.Context, jobID string) (*oapi.
 func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 	_ context.Context,
 	environmentID string,
-	_ string,
+	versionID string,
 ) ([]ReleaseTargetJob, error) {
 	var result []ReleaseTargetJob
 	for _, jobMap := range m.jobs {
@@ -138,6 +138,9 @@ func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 				continue
 			}
 			if rel.ReleaseTarget.EnvironmentId != environmentID {
+				continue
+			}
+			if rel.Version.Id != versionID {
 				continue
 			}
 			result = append(result, ReleaseTargetJob{
