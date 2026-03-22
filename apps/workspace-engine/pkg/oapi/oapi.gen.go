@@ -384,8 +384,11 @@ type DeploymentWithVariablesAndSystems struct {
 
 // DispatchContext defines model for DispatchContext.
 type DispatchContext struct {
-	Deployment     *Deployment              `json:"deployment,omitempty"`
-	Environment    *Environment             `json:"environment,omitempty"`
+	Deployment  *Deployment  `json:"deployment,omitempty"`
+	Environment *Environment `json:"environment,omitempty"`
+
+	// Inputs Resolved input values for the workflow run.
+	Inputs         *map[string]interface{}  `json:"inputs,omitempty"`
 	JobAgent       JobAgent                 `json:"jobAgent"`
 	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
 	Release        *Release                 `json:"release,omitempty"`

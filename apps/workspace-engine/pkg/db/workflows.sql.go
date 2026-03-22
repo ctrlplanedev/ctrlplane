@@ -27,3 +27,48 @@ func (q *Queries) GetWorkflowByID(ctx context.Context, id uuid.UUID) (Workflow, 
 	)
 	return i, err
 }
+
+const getWorkflowJobByJobID = `-- name: GetWorkflowJobByJobID :one
+SELECT id, workflow_run_id, job_id FROM workflow_job WHERE job_id = $1
+`
+
+func (q *Queries) GetWorkflowJobByJobID(ctx context.Context, jobID uuid.UUID) (WorkflowJob, error) {
+	row := q.db.QueryRow(ctx, getWorkflowJobByJobID, jobID)
+	var i WorkflowJob
+	err := row.Scan(&i.ID, &i.WorkflowRunID, &i.JobID)
+	return i, err
+}
+
+const insertWorkflowJob = `-- name: InsertWorkflowJob :one
+INSERT INTO workflow_job (workflow_run_id, job_id) VALUES ($1, $2)
+RETURNING id, workflow_run_id, job_id
+`
+
+type InsertWorkflowJobParams struct {
+	WorkflowRunID uuid.UUID
+	JobID         uuid.UUID
+}
+
+func (q *Queries) InsertWorkflowJob(ctx context.Context, arg InsertWorkflowJobParams) (WorkflowJob, error) {
+	row := q.db.QueryRow(ctx, insertWorkflowJob, arg.WorkflowRunID, arg.JobID)
+	var i WorkflowJob
+	err := row.Scan(&i.ID, &i.WorkflowRunID, &i.JobID)
+	return i, err
+}
+
+const insertWorkflowRun = `-- name: InsertWorkflowRun :one
+INSERT INTO workflow_run (workflow_id, inputs) VALUES ($1, $2)
+RETURNING id, workflow_id, inputs
+`
+
+type InsertWorkflowRunParams struct {
+	WorkflowID uuid.UUID
+	Inputs     map[string]any
+}
+
+func (q *Queries) InsertWorkflowRun(ctx context.Context, arg InsertWorkflowRunParams) (WorkflowRun, error) {
+	row := q.db.QueryRow(ctx, insertWorkflowRun, arg.WorkflowID, arg.Inputs)
+	var i WorkflowRun
+	err := row.Scan(&i.ID, &i.WorkflowID, &i.Inputs)
+	return i, err
+}

@@ -8,7 +8,9 @@ import (
 )
 
 func New() *Server {
-	return &Server{}
+	return &Server{
+		Workflows: workflows.NewWorkflows(),
+	}
 }
 
 var _ oapi.ServerInterface = &Server{}
