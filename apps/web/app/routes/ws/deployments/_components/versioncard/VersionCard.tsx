@@ -8,7 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import prettyMs from "pretty-ms";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import type { ReleaseTargetWithState } from "../types";
 import { Badge } from "~/components/ui/badge";
@@ -18,7 +18,9 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Separator } from "~/components/ui/separator";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
+import { useDeployment } from "../DeploymentProvider";
 import { useDeploymentStats } from "./useDeploymentStats";
 import { VersionDropdown } from "./VersionDropdown";
 
@@ -136,39 +138,56 @@ const NoActiveDeployments: React.FC<NoActiveDeploymentsProps> = ({
   );
 };
 
+const useVersionFilterUrl = (versionId: string) => {
+  const { workspace } = useWorkspace();
+  const { deployment } = useDeployment();
+  return `/${workspace.slug}/deployments/${deployment.id}/release-targets?version=${versionId}`;
+};
+
 const DeploymentProgress: React.FC<{
   deployed: number;
   totalTargets: number;
-}> = ({ deployed, totalTargets }) => (
-  <div className="space-y-1">
-    <div className="flex items-center justify-between text-xs">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded-full bg-green-600" />
-          <span className="text-muted-foreground">{deployed} deployed</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded-full bg-blue-600" />
-          <span className="text-muted-foreground">{totalTargets} desired</span>
+  versionId: string;
+}> = ({ deployed, totalTargets, versionId }) => {
+  const releaseTargetsUrl = useVersionFilterUrl(versionId);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex flex-col gap-2">
+          <Link
+            to={releaseTargetsUrl}
+            target="_blank"
+            className="flex items-center gap-1 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-2 w-2 shrink-0 rounded-full bg-green-600" />
+            <span className="text-muted-foreground">{deployed} deployed</span>
+          </Link>
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+            <span className="text-muted-foreground">
+              {totalTargets} desired
+            </span>
+          </div>
         </div>
       </div>
+      {totalTargets > 0 && (
+        <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-green-600 transition-all"
+            style={{ width: `${(deployed / totalTargets) * 100}%` }}
+          />
+          <div
+            className="h-full bg-blue-600 transition-all"
+            style={{
+              width: `${((totalTargets - deployed) / totalTargets) * 100}%`,
+            }}
+          />
+        </div>
+      )}
     </div>
-    {totalTargets > 0 && (
-      <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full bg-green-600 transition-all"
-          style={{ width: `${(deployed / totalTargets) * 100}%` }}
-        />
-        <div
-          className="h-full bg-blue-600 transition-all"
-          style={{
-            width: `${((totalTargets - deployed) / totalTargets) * 100}%`,
-          }}
-        />
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 const PendingPopoverContent: React.FC<{
   targets: ReleaseTargetWithState[];
@@ -372,7 +391,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
       <VersionHeader version={version} displayName={displayName} />
       <Separator />
       <div className="flex-1 space-y-2.5">
-        <DeploymentProgress {...deploymentStats} />
+        <DeploymentProgress {...deploymentStats} versionId={version.id} />
         <DeploymentIssues {...deploymentStats} />
         <EnvironmentCount {...deploymentStats} />
       </div>
