@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-
-	"github.com/google/uuid"
 )
 
 type Getter interface {
@@ -35,7 +34,10 @@ func convertJobAgents(raw []byte) ([]oapi.WorkflowJobAgent, error) {
 	return agents, nil
 }
 
-func (g *PostgresGetter) GetWorkflowByID(ctx context.Context, workflowID string) (*oapi.Workflow, error) {
+func (g *PostgresGetter) GetWorkflowByID(
+	ctx context.Context,
+	workflowID string,
+) (*oapi.Workflow, error) {
 	workflowIDUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, fmt.Errorf("parse workflow id: %w", err)

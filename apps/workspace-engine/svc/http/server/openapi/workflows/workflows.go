@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/gin-gonic/gin"
+	"workspace-engine/pkg/oapi"
 )
 
 type Workflows struct {
@@ -90,7 +89,12 @@ func (w *Workflows) CreateWorkflowRun(
 		return
 	}
 
-	if err := w.setter.CreateWorkflowRun(c.Request.Context(), workspaceId, workflow, inputs); err != nil {
+	if err := w.setter.CreateWorkflowRun(
+		c.Request.Context(),
+		workspaceId,
+		workflow,
+		inputs,
+	); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

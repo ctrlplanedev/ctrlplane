@@ -5,17 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/selector"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Setter interface {
-	CreateWorkflowRun(ctx context.Context, workspaceID string, workflow *oapi.Workflow, inputs map[string]any) error
+	CreateWorkflowRun(
+		ctx context.Context,
+		workspaceID string,
+		workflow *oapi.Workflow,
+		inputs map[string]any,
+	) error
 }
 
 var _ Setter = &PostgresSetter{}
@@ -28,14 +33,22 @@ func NewPostgresSetter(queue reconcile.Queue) *PostgresSetter {
 	return &PostgresSetter{queue: queue}
 }
 
-func (s *PostgresSetter) buildDispatchContext(workflow *oapi.Workflow, inputs map[string]any) *oapi.DispatchContext {
+func (s *PostgresSetter) buildDispatchContext(
+	workflow *oapi.Workflow,
+	inputs map[string]any,
+) *oapi.DispatchContext {
 	return &oapi.DispatchContext{
 		Workflow: workflow,
 		Inputs:   &inputs,
 	}
 }
 
-func (s *PostgresSetter) CreateWorkflowRun(ctx context.Context, workspaceID string, workflow *oapi.Workflow, inputs map[string]any) error {
+func (s *PostgresSetter) CreateWorkflowRun(
+	ctx context.Context,
+	workspaceID string,
+	workflow *oapi.Workflow,
+	inputs map[string]any,
+) error {
 	dispatchContext := s.buildDispatchContext(workflow, inputs)
 
 	workflowIDUUID, err := uuid.Parse(workflow.Id)
@@ -67,7 +80,14 @@ func (s *PostgresSetter) CreateWorkflowRun(ctx context.Context, workspaceID stri
 		if !isMatchingSelector {
 			continue
 		}
-		if err := s.dispatchJobForAgent(ctx, queries, jobAgent, workflowRun.ID, dispatchContext, workspaceID); err != nil {
+		if err := s.dispatchJobForAgent(
+			ctx,
+			queries,
+			jobAgent,
+			workflowRun.ID,
+			dispatchContext,
+			workspaceID,
+		); err != nil {
 			return err
 		}
 	}
