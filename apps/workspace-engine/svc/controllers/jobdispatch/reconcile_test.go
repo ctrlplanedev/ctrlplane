@@ -57,6 +57,10 @@ func (m *mockGetter) GetVerificationPolicies(
 	return m.verificationPolicies, m.verificationPoliciesErr
 }
 
+func (m *mockGetter) IsWorkflowJob(_ context.Context, _ uuid.UUID) (bool, error) {
+	return false, nil
+}
+
 // ---------------------------------------------------------------------------
 // Mock Setter
 // ---------------------------------------------------------------------------

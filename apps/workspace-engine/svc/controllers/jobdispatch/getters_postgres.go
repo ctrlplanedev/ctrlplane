@@ -2,9 +2,11 @@ package jobdispatch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -115,4 +117,15 @@ func (p *PostgresGetter) GetVerificationPolicies(
 	}
 
 	return specs, nil
+}
+
+func (p *PostgresGetter) IsWorkflowJob(ctx context.Context, jobID uuid.UUID) (bool, error) {
+	_, err := db.GetQueries(ctx).GetWorkflowJobByJobID(ctx, jobID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, fmt.Errorf("check workflow job: %w", err)
+	}
+	return true, nil
 }

@@ -472,6 +472,11 @@
                "environment": {
                   "$ref": "#/components/schemas/Environment"
                },
+               "inputs": {
+                  "additionalProperties": true,
+                  "description": "Resolved input values for the workflow run.",
+                  "type": "object"
+               },
                "jobAgent": {
                   "$ref": "#/components/schemas/JobAgent"
                },
@@ -2233,13 +2238,23 @@
                "token": {
                   "description": "Terraform Cloud API token.",
                   "type": "string"
+               },
+               "triggerRunOnChange": {
+                  "default": true,
+                  "description": "Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.",
+                  "type": "boolean"
+               },
+               "webhookUrl": {
+                  "description": "The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook).",
+                  "type": "string"
                }
             },
             "required": [
                "address",
                "organization",
                "token",
-               "template"
+               "template",
+               "webhookUrl"
             ],
             "type": "object"
          },
@@ -2534,7 +2549,7 @@
                },
                "jobs": {
                   "items": {
-                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                     "$ref": "#/components/schemas/WorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -2554,9 +2569,6 @@
             "oneOf": [
                {
                   "$ref": "#/components/schemas/WorkflowManualArrayInput"
-               },
-               {
-                  "$ref": "#/components/schemas/WorkflowSelectorArrayInput"
                }
             ]
          },
@@ -2630,40 +2642,7 @@
             ],
             "type": "object"
          },
-         "WorkflowJobAgentConfig": {
-            "properties": {
-               "config": {
-                  "additionalProperties": true,
-                  "type": "object"
-               },
-               "id": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "config"
-            ],
-            "type": "object"
-         },
-         "WorkflowJobMatrix": {
-            "additionalProperties": {
-               "oneOf": [
-                  {
-                     "items": {
-                        "additionalProperties": true,
-                        "type": "object"
-                     },
-                     "type": "array"
-                  },
-                  {
-                     "type": "string"
-                  }
-               ]
-            },
-            "type": "object"
-         },
-         "WorkflowJobTemplate": {
+         "WorkflowJobAgent": {
             "properties": {
                "config": {
                   "additionalProperties": true,
@@ -2673,13 +2652,6 @@
                "id": {
                   "type": "string"
                },
-               "if": {
-                  "description": "CEL expression to determine if the job should run",
-                  "type": "string"
-               },
-               "matrix": {
-                  "$ref": "#/components/schemas/WorkflowJobMatrix"
-               },
                "name": {
                   "type": "string"
                },
@@ -2687,7 +2659,8 @@
                   "description": "Reference to the job agent",
                   "type": "string"
                },
-               "workflowId": {
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should dispatch a job",
                   "type": "string"
                }
             },
@@ -2696,30 +2669,9 @@
                "name",
                "ref",
                "config",
-               "workflowId"
+               "selector"
             ],
             "type": "object"
-         },
-         "WorkflowJobWithJobs": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/WorkflowJob"
-               },
-               {
-                  "properties": {
-                     "jobs": {
-                        "items": {
-                           "$ref": "#/components/schemas/Job"
-                        },
-                        "type": "array"
-                     }
-                  },
-                  "required": [
-                     "jobs"
-                  ],
-                  "type": "object"
-               }
-            ]
          },
          "WorkflowManualArrayInput": {
             "properties": {
@@ -2806,66 +2758,6 @@
                "id",
                "workflowId",
                "inputs"
-            ],
-            "type": "object"
-         },
-         "WorkflowRunWithJobs": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/WorkflowRun"
-               },
-               {
-                  "properties": {
-                     "jobs": {
-                        "items": {
-                           "$ref": "#/components/schemas/WorkflowJobWithJobs"
-                        },
-                        "type": "array"
-                     }
-                  },
-                  "required": [
-                     "jobs"
-                  ],
-                  "type": "object"
-               }
-            ]
-         },
-         "WorkflowSelectorArrayInput": {
-            "properties": {
-               "key": {
-                  "type": "string"
-               },
-               "selector": {
-                  "properties": {
-                     "default": {
-                        "description": "CEL expression to determine if the selector array input should be used",
-                        "type": "string"
-                     },
-                     "entityType": {
-                        "enum": [
-                           "resource",
-                           "environment",
-                           "deployment"
-                        ],
-                        "type": "string"
-                     }
-                  },
-                  "required": [
-                     "entityType"
-                  ],
-                  "type": "object"
-               },
-               "type": {
-                  "enum": [
-                     "array"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "key",
-               "type",
-               "selector"
             ],
             "type": "object"
          },
@@ -3162,6 +3054,85 @@
                }
             },
             "summary": "Query resources with CEL expression"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
+         "post": {
+            "description": "Creates a new run for the specified workflow with the provided inputs.",
+            "operationId": "createWorkflowRun",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the workflow",
+                  "in": "path",
+                  "name": "workflowId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "inputs": {
+                              "additionalProperties": true,
+                              "description": "Input values for the workflow run.",
+                              "type": "object"
+                           }
+                        },
+                        "required": [
+                           "inputs"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/WorkflowRun"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Create a workflow run"
          }
       }
    }
