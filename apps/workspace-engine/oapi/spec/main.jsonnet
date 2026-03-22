@@ -9,7 +9,8 @@
   // Combine all path modules
   paths:
     (import 'paths/resource.jsonnet') +
-    (import 'paths/validate.jsonnet'),
+    (import 'paths/validate.jsonnet') +
+    (import 'paths/workflows.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),

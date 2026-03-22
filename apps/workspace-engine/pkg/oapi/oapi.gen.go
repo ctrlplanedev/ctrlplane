@@ -1375,6 +1375,12 @@ type QueryResourcesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// CreateWorkflowRunJSONBody defines parameters for CreateWorkflowRun.
+type CreateWorkflowRunJSONBody struct {
+	// Inputs Input values for the workflow run.
+	Inputs map[string]interface{} `json:"inputs"`
+}
+
 // ValidateResourceSelectorJSONRequestBody defines body for ValidateResourceSelector for application/json ContentType.
 type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
 
@@ -1383,6 +1389,9 @@ type ComputeAggergateJSONRequestBody ComputeAggergateJSONBody
 
 // QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
 type QueryResourcesJSONRequestBody QueryResourcesJSONBody
+
+// CreateWorkflowRunJSONRequestBody defines body for CreateWorkflowRun for application/json ContentType.
+type CreateWorkflowRunJSONRequestBody CreateWorkflowRunJSONBody
 
 // AsJobUpdateEvent0 returns the union data inside the JobUpdateEvent as a JobUpdateEvent0
 func (t JobUpdateEvent) AsJobUpdateEvent0() (JobUpdateEvent0, error) {
@@ -2305,6 +2314,9 @@ type ServerInterface interface {
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
 	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
+	// Create a workflow run
+	// (POST /v1/workspaces/{workspaceId}/workflows/{workflowId}/runs)
+	CreateWorkflowRun(c *gin.Context, workspaceId string, workflowId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -2396,6 +2408,39 @@ func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 	siw.Handler.QueryResources(c, workspaceId, params)
 }
 
+// CreateWorkflowRun operation middleware
+func (siw *ServerInterfaceWrapper) CreateWorkflowRun(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "workflowId" -------------
+	var workflowId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowId", c.Param("workflowId"), &workflowId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateWorkflowRun(c, workspaceId, workflowId)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -2426,4 +2471,5 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.CreateWorkflowRun)
 }
