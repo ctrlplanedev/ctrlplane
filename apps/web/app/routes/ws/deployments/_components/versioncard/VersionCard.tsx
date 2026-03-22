@@ -153,7 +153,7 @@ const DeploymentProgress: React.FC<{
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-0.5">
           <Link
             to={releaseTargetsUrl}
             target="_blank"
