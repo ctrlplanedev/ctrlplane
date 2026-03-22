@@ -5,7 +5,6 @@ import { Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { useDebounce } from "react-use";
 
-import type { DeploymentVersion } from "./_components/types";
 import { trpc } from "~/api/trpc";
 import {
   Breadcrumb,
