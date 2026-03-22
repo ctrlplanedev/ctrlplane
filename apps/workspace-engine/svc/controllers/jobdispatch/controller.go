@@ -83,7 +83,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 }
 
 func (c *Controller) reconcileJob(ctx context.Context, jobID uuid.UUID, job *oapi.Job) (*ReconcileResult, error) {
-	isWorkflowJob, err := IsWorkflowJob(ctx, jobID)
+	isWorkflowJob, err := c.getter.IsWorkflowJob(ctx, jobID)
 	if err != nil {
 		return nil, fmt.Errorf("check workflow job: %w", err)
 	}

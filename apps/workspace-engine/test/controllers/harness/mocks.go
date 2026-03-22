@@ -626,6 +626,10 @@ func (g *JobDispatchGetter) GetVerificationPolicies(
 	return g.VerificationPolicies, nil
 }
 
+func (g *JobDispatchGetter) IsWorkflowJob(_ context.Context, _ uuid.UUID) (bool, error) {
+	return false, nil
+}
+
 // JobDispatchSetter implements jobdispatch.Setter for testing.
 type JobDispatchSetter struct {
 	mu                sync.Mutex
