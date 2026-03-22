@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"fmt"
+	"maps"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,9 +28,7 @@ func getInputs(c *gin.Context) (map[string]any, error) {
 
 func resolveInputs(workflow *oapi.Workflow, provided map[string]any) (map[string]any, error) {
 	resolved := make(map[string]any, len(provided))
-	for k, v := range provided {
-		resolved[k] = v
-	}
+	maps.Copy(resolved, provided)
 
 	for _, input := range workflow.Inputs {
 		if s, err := input.AsWorkflowStringInput(); err == nil {
