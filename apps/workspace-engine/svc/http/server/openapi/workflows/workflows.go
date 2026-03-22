@@ -30,10 +30,12 @@ func (w *Workflows) CreateWorkflowRun(
 	workspaceId string,
 	workflowId string,
 ) {
-	req, err := extractCreateWorkflowRunRequest(c, workspaceId, workflowId)
+	inputs, err := getInputs(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	_ = req
+
+	dispatchContext := buildDispatchContext(inputs)
+
 }
