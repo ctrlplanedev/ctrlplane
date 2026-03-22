@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
+	"workspace-engine/pkg/selector"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -59,6 +60,13 @@ func (s *PostgresSetter) CreateWorkflowRun(ctx context.Context, workspaceID stri
 	}
 
 	for _, jobAgent := range workflow.Jobs {
+		isMatchingSelector, err := selector.Match(ctx, jobAgent.Selector, *dispatchContext)
+		if err != nil {
+			return fmt.Errorf("match selector: %w", err)
+		}
+		if !isMatchingSelector {
+			continue
+		}
 		if err := s.dispatchJobForAgent(ctx, queries, jobAgent, workflowRun.ID, dispatchContext, workspaceID); err != nil {
 			return err
 		}
