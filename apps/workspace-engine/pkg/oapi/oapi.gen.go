@@ -239,6 +239,12 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
+// ArgoWorkflowJobAgentConfig defines model for ArgoWorkflowJobAgentConfig.
+type ArgoWorkflowJobAgentConfig struct {
+	// Name ArgoWorkflow job name
+	Name string `json:"name"`
+}
+
 // BasicResource defines model for BasicResource.
 type BasicResource struct {
 	Id          string `json:"id"`
@@ -1094,6 +1100,12 @@ type TerraformCloudJobAgentConfig struct {
 
 	// Token Terraform Cloud API token.
 	Token string `json:"token"`
+
+	// TriggerRunOnChange Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.
+	TriggerRunOnChange *bool `json:"triggerRunOnChange,omitempty"`
+
+	// WebhookUrl The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook).
+	WebhookUrl string `json:"webhookUrl"`
 }
 
 // TerraformCloudRunMetricProvider defines model for TerraformCloudRunMetricProvider.

@@ -53,6 +53,18 @@
             ],
             "type": "object"
          },
+         "ArgoWorkflowJobAgentConfig": {
+            "properties": {
+               "name": {
+                  "description": "ArgoWorkflow job name",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name"
+            ],
+            "type": "object"
+         },
          "BasicResource": {
             "properties": {
                "id": {
@@ -2233,13 +2245,23 @@
                "token": {
                   "description": "Terraform Cloud API token.",
                   "type": "string"
+               },
+               "triggerRunOnChange": {
+                  "default": true,
+                  "description": "Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.",
+                  "type": "boolean"
+               },
+               "webhookUrl": {
+                  "description": "The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook).",
+                  "type": "string"
                }
             },
             "required": [
                "address",
                "organization",
                "token",
-               "template"
+               "template",
+               "webhookUrl"
             ],
             "type": "object"
          },
