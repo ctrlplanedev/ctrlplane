@@ -25,6 +25,7 @@ type releaseGetter = store.ReleaseGetter
 
 type releaseTargetForDeploymentAndEnvironmentGetter = releasetargets.GetReleaseTargetsForDeploymentAndEnvironment
 type releaseTargetForDeploymentGetter = releasetargets.GetReleaseTargetsForDeployment
+type jobsForReleaseTargetGetter = releasetargets.GetJobsForReleaseTarget
 
 type Getters interface {
 	environmentGetter
@@ -73,6 +74,7 @@ type PostgresGetters struct {
 	releaseGetter
 	releaseTargetForDeploymentAndEnvironmentGetter
 	releaseTargetForDeploymentGetter
+	jobsForReleaseTargetGetter
 
 	queries *db.Queries
 }
@@ -81,12 +83,16 @@ func NewPostgresGetters(
 	queries *db.Queries,
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
+	jobsForRT releasetargets.GetJobsForReleaseTarget,
 ) *PostgresGetters {
 	if rtForDep == nil {
 		rtForDep = releasetargets.NewGetReleaseTargetsForDeployment()
 	}
 	if rtForDepEnv == nil {
 		rtForDepEnv = releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment()
+	}
+	if jobsForRT == nil {
+		jobsForRT = releasetargets.NewGetJobsForReleaseTarget()
 	}
 	return &PostgresGetters{
 		queries:           queries,
@@ -96,6 +102,7 @@ func NewPostgresGetters(
 		releaseGetter:     store.NewPostgresReleaseGetter(queries),
 		releaseTargetForDeploymentAndEnvironmentGetter: rtForDepEnv,
 		releaseTargetForDeploymentGetter:               rtForDep,
+		jobsForReleaseTargetGetter:                     jobsForRT,
 	}
 }
 
@@ -153,36 +160,6 @@ func (p *PostgresGetters) GetReleaseTargetsForEnvironment(
 		}
 	}
 	return targets, nil
-}
-
-func (p *PostgresGetters) GetJobsForReleaseTarget(
-	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) map[string]*oapi.Job {
-	ctx, span := gettersTracer.Start(ctx, "GetJobsForReleaseTarget")
-	defer span.End()
-
-	span.SetAttributes(attribute.String("release_target.deployment_id", releaseTarget.DeploymentId))
-	span.SetAttributes(
-		attribute.String("release_target.environment_id", releaseTarget.EnvironmentId),
-	)
-	span.SetAttributes(attribute.String("release_target.resource_id", releaseTarget.ResourceId))
-
-	rows, err := p.queries.ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
-		DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
-		EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-		ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
-	})
-	if err != nil {
-		return nil
-	}
-	span.SetAttributes(attribute.Int("jobs.count", len(rows)))
-
-	jobs := make(map[string]*oapi.Job, len(rows))
-	for _, row := range rows {
-		jobs[row.ID.String()] = db.ToOapiJob(db.ListJobsByReleaseIDRow(row))
-	}
-	return jobs
 }
 
 func (p *PostgresGetters) GetAllPolicies(

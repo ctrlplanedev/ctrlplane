@@ -9,7 +9,7 @@ import (
 )
 
 func TestPostgresGetters_GetReleaseTargetsForDeployment_InvalidUUID(t *testing.T) {
-	g := NewPostgresGetters(nil, nil, nil, nil)
+	g := NewPostgresGetters(nil, nil, nil, nil, nil)
 
 	_, err := g.GetReleaseTargetsForDeployment(context.Background(), "not-a-uuid")
 	require.Error(t, err)
@@ -17,7 +17,7 @@ func TestPostgresGetters_GetReleaseTargetsForDeployment_InvalidUUID(t *testing.T
 }
 
 func TestPostgresGetters_GetReleaseTargetsForDeployment_DoesNotPanic(t *testing.T) {
-	g := NewPostgresGetters(nil, nil, nil, nil)
+	g := NewPostgresGetters(nil, nil, nil, nil, nil)
 
 	assert.NotPanics(t, func() {
 		_, _ = g.GetReleaseTargetsForDeployment(context.Background(), "not-a-uuid")
