@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
@@ -20,6 +14,13 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/terraformcloud"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/jobdispatch")
@@ -103,7 +104,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	enqueueQueue := postgres.New(pgxPool)
 
 	pgSetter := &PostgresSetter{Queue: enqueueQueue}
-	dispatcher := jobagents.NewRegistry(&PostgresGetter{})
+	dispatcher := jobagents.NewRegistry(&PostgresGetter{}, pgSetter)
 	dispatcher.Register(
 		argo.New(
 			&argo.GoApplicationUpserter{},

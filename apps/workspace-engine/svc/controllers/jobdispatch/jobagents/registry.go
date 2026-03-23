@@ -5,13 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+
+	"github.com/google/uuid"
 )
 
 type Getter interface {
 	GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error)
+}
+
+type Setter interface {
+	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
 }
 
 type Registry struct {
@@ -19,14 +24,16 @@ type Registry struct {
 	planners    map[string]types.Plannable
 	verifiers   map[string]types.Verifiable
 	getter      Getter
+	setter      Setter
 }
 
-func NewRegistry(getter Getter) *Registry {
+func NewRegistry(getter Getter, setter Setter) *Registry {
 	r := &Registry{}
 	r.dispatchers = make(map[string]types.Dispatchable)
 	r.planners = make(map[string]types.Plannable)
 	r.verifiers = make(map[string]types.Verifiable)
 	r.getter = getter
+	r.setter = setter
 	return r
 }
 
