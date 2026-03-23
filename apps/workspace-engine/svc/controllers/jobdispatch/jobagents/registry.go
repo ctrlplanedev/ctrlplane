@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
@@ -59,6 +60,11 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatcher, ok := r.dispatchers[jobAgent.Type]
 	if !ok {
 		return fmt.Errorf("job agent type %s not found", jobAgent.Type)
+	}
+
+	if config.Global.DryRunEnabled {
+		r.setter.UpdateJob(ctx, job.Id, oapi.JobStatusCancelled, "Dry run mode enabled, cancelling job", nil)
+		return nil
 	}
 
 	return dispatcher.Dispatch(ctx, job)
