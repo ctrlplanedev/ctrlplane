@@ -39,6 +39,9 @@ export const env = createEnv({
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
 
     AZURE_APP_CLIENT_ID: z.string().optional(),
+
+    ARGO_WORKFLOW_WEBHOOK_SECRET: z.string().optional(),
+    ARGO_WORKFLOW_HTTP_ENDPOINT: z.string().optional(),
   },
   runtimeEnv: process.env,
 
