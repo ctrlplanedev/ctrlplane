@@ -30,6 +30,7 @@ func NewPostgresGetter(
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
 	policiesForRT policies.GetPoliciesForReleaseTarget,
+	jobsForRT releasetargets.GetJobsForReleaseTarget,
 ) Getter {
 	return &PostgresGetter{
 		gradualrolloutGetter: gradualrollout.NewPostgresGetters(
@@ -37,8 +38,9 @@ func NewPostgresGetter(
 			rtForDep,
 			rtForDepEnv,
 			policiesForRT,
+			jobsForRT,
 		),
-		versioncooldown:      versioncooldown.NewPostgresGetters(queries),
+		versioncooldown:      versioncooldown.NewPostgresGetters(queries, jobsForRT),
 		deploymentdependency: deploymentdependency.NewPostgresGetters(queries),
 	}
 }
