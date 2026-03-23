@@ -69,16 +69,13 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if config.Global.DryRunEnabled {
-		if err := r.setter.UpdateJob(
+		return r.setter.UpdateJob(
 			ctx,
 			job.Id,
 			oapi.JobStatusCancelled,
 			"Dry run mode enabled, cancelling job",
 			nil,
-		); err != nil {
-			return fmt.Errorf("failed to update job: %w", err)
-		}
-		return nil
+		)
 	}
 
 	return dispatcher.Dispatch(ctx, job)
