@@ -96,6 +96,6 @@ export const jobAgentsRouter = router({
       ctx.db
         .select()
         .from(schema.deployment)
-        .where(eq(schema.deployment.jobAgentId, input.jobAgentId))
+        .where(eq(schema.deployment.jobAgentId, input.jobAgentId)),
     ),
 });
