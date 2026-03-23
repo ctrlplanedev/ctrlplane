@@ -16,7 +16,7 @@ import {
   enqueueDesiredRelease,
   enqueueEnvironmentSelectorEval,
   enqueueManyRelationshipEval,
-  enqueuePolicySummary,
+  enqueuePolicyEval,
   enqueueRelationshipEval,
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
@@ -147,7 +147,9 @@ export const reconcileRouter = router({
         versionId: z.string().uuid(),
       }),
     )
-    .mutation(({ ctx, input }) => enqueuePolicySummary(ctx.db, input)),
+    .mutation(({ ctx, input }) =>
+      enqueuePolicyEval(ctx.db, input.workspaceId, input.versionId),
+    ),
 
   listWorkScopes: protectedProcedure
     .input(
