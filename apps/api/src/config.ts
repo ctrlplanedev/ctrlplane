@@ -33,6 +33,7 @@ export const env = createEnv({
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     GITHUB_WEBHOOK_SECRET: z.string().optional(),
     TFE_WEBHOOK_SECRET: z.string().optional(),
+    ARGO_WORKFLOW_WEBHOOK_SECRET: z.string().optional(),
 
     BASE_URL: z.string().optional(),
 

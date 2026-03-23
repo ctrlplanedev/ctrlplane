@@ -53,6 +53,28 @@
             ],
             "type": "object"
          },
+         "ArgoWorkflowJobAgentConfig": {
+            "properties": {
+               "apiKey": {
+                  "description": "ArgoWorkflow API token.",
+                  "type": "string"
+               },
+               "serverUrl": {
+                  "description": "ArgoWorkflow server address (host[:port] or URL).",
+                  "type": "string"
+               },
+               "uid": {
+                  "description": "ArgoWorkflow job id  ",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "uid",
+               "serverUrl",
+               "apiKey"
+            ],
+            "type": "object"
+         },
          "BasicResource": {
             "properties": {
                "id": {

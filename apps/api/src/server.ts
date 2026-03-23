@@ -16,6 +16,7 @@ import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
 import swaggerDocument from "../openapi/openapi.json" with { type: "json" };
+import { createArgoWorkflowRouter } from "./routes/argoworkflow";
 import { createGithubRouter } from "./routes/github/index.js";
 import { createTfeRouter } from "./routes/tfe/index.js";
 
@@ -26,7 +27,7 @@ const specFile = join(__dirname, "../openapi/openapi.json");
 const oapiValidatorMiddleware = OpenApiValidator.middleware({
   apiSpec: specFile,
   validateRequests: true,
-  ignorePaths: /\/api\/(auth|trpc|github|tfe|ui|healthz)/,
+  ignorePaths: /\/api\/(auth|trpc|github|tfe|ui|healthz|argo)/,
 });
 
 const trpcMiddleware = trpcExpress.createExpressMiddleware({
@@ -80,7 +81,11 @@ const app = express()
   .use("/api/v1", requireAuth)
   .use("/api/v1", createV1Router())
   .use("/api/github", createGithubRouter())
+<<<<<<< Updated upstream
   .use("/api/tfe", createTfeRouter())
+=======
+  .use("/api/argo", createArgoWorkflowRouter())
+>>>>>>> Stashed changes
   .use("/api/trpc", trpcMiddleware)
   .use(errorHandler);
 

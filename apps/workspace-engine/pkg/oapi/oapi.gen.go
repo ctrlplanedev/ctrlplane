@@ -239,6 +239,18 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
+// ArgoWorkflowJobAgentConfig defines model for ArgoWorkflowJobAgentConfig.
+type ArgoWorkflowJobAgentConfig struct {
+	// ApiKey ArgoWorkflow API token.
+	ApiKey string `json:"apiKey"`
+
+	// ServerUrl ArgoWorkflow server address (host[:port] or URL).
+	ServerUrl string `json:"serverUrl"`
+
+	// Uid ArgoWorkflow job id
+	Uid string `json:"uid"`
+}
+
 // BasicResource defines model for BasicResource.
 type BasicResource struct {
 	Id          string `json:"id"`
