@@ -157,9 +157,13 @@ local JobPropertyKeys = std.objectFields(Job.properties);
 
   ArgoWorkflowJobAgentConfig: {
     type: 'object',
-    required: ['name'],
+    required: ['serverUrl', 'apiKey', 'template', 'name'],
     properties: {
       name: { type: 'string', description: 'ArgoWorkflow job name' },
+      serverUrl: { type: 'string', description: 'ArgoWorkflow server address (host[:port] or URL).' },
+      apiKey: { type: 'string', description: 'ArgoWorkflow API token.' },
+      template: { type: 'string', description: 'ArgoWorkflow application template.' },
+
     },
   },
 

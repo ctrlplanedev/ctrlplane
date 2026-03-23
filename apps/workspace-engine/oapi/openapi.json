@@ -55,12 +55,27 @@
          },
          "ArgoWorkflowJobAgentConfig": {
             "properties": {
+               "apiKey": {
+                  "description": "ArgoWorkflow API token.",
+                  "type": "string"
+               },
                "name": {
                   "description": "ArgoWorkflow job name",
+                  "type": "string"
+               },
+               "serverUrl": {
+                  "description": "ArgoWorkflow server address (host[:port] or URL).",
+                  "type": "string"
+               },
+               "template": {
+                  "description": "ArgoWorkflow application template.",
                   "type": "string"
                }
             },
             "required": [
+               "serverUrl",
+               "apiKey",
+               "template",
                "name"
             ],
             "type": "object"
