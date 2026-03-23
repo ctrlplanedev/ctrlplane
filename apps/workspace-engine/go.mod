@@ -7,7 +7,7 @@ require (
 	github.com/argoproj/argo-cd/v2 v2.14.21
 	github.com/avast/retry-go v2.7.0+incompatible
 	github.com/charmbracelet/log v0.4.2
-	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1
+	github.com/confluentinc/confluent-kafka-go/v2 v2.13.3
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/exaring/otelpgx v0.9.3
 	github.com/gin-gonic/gin v1.11.0
@@ -263,3 +263,4 @@ require (
 )
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+replace github.com/containerd/containerd/api => github.com/containerd/containerd v1.7.18
