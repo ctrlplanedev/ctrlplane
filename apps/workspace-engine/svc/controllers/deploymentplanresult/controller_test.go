@@ -98,7 +98,7 @@ func (m *mockSetter) UpdateDeploymentPlanTargetResultState(
 // --- helpers ---
 
 func testRegistry(agents ...*mockAgent) *jobagents.Registry {
-	r := jobagents.NewRegistry(nil)
+	r := jobagents.NewRegistry(nil, nil)
 	for _, a := range agents {
 		r.Register(a)
 	}

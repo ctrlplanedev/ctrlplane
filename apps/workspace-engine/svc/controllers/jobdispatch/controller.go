@@ -103,7 +103,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	enqueueQueue := postgres.New(pgxPool)
 
 	pgSetter := &PostgresSetter{Queue: enqueueQueue}
-	dispatcher := jobagents.NewRegistry(&PostgresGetter{})
+	dispatcher := jobagents.NewRegistry(&PostgresGetter{}, pgSetter)
 	dispatcher.Register(
 		argo.New(
 			&argo.GoApplicationUpserter{},
