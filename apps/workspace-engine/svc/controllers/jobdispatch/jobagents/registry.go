@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
-	"github.com/google/uuid"
 )
 
 type Getter interface {
@@ -17,7 +16,13 @@ type Getter interface {
 }
 
 type Setter interface {
-	UpdateJob(ctx context.Context, jobID string, status oapi.JobStatus, message string, metadata map[string]string) error
+	UpdateJob(
+		ctx context.Context,
+		jobID string,
+		status oapi.JobStatus,
+		message string,
+		metadata map[string]string,
+	) error
 }
 
 type Registry struct {
@@ -63,7 +68,13 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if config.Global.DryRunEnabled {
-		r.setter.UpdateJob(ctx, job.Id, oapi.JobStatusCancelled, "Dry run mode enabled, cancelling job", nil)
+		r.setter.UpdateJob(
+			ctx,
+			job.Id,
+			oapi.JobStatusCancelled,
+			"Dry run mode enabled, cancelling job",
+			nil,
+		)
 		return nil
 	}
 
