@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+
+	"github.com/google/uuid"
 )
 
 type Getter interface {
@@ -68,13 +69,15 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if config.Global.DryRunEnabled {
-		r.setter.UpdateJob(
+		if err := r.setter.UpdateJob(
 			ctx,
 			job.Id,
 			oapi.JobStatusCancelled,
 			"Dry run mode enabled, cancelling job",
 			nil,
-		)
+		); err != nil {
+			return fmt.Errorf("failed to update job: %w", err)
+		}
 		return nil
 	}
 
