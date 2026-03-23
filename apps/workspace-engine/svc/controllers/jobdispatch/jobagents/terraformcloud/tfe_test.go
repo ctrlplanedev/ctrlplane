@@ -7,15 +7,20 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 )
+
+func setTFEToken(token string) {
+	config.Global.TFEToken = token
+}
 
 // ===== parseJobAgentConfig =====
 
 func TestParseJobAgentConfig_Valid(t *testing.T) {
+	setTFEToken("my-token")
 	cfg := oapi.JobAgentConfig{
 		"address":      "https://app.terraform.io",
-		"token":        "my-token",
 		"organization": "my-org",
 		"template":     "name: {{ .Resource.Name }}",
 		"webhookUrl":   "https://ctrlplane.example.com/api/tfe/webhook",
@@ -31,9 +36,9 @@ func TestParseJobAgentConfig_Valid(t *testing.T) {
 }
 
 func TestParseJobAgentConfig_MissingWebhookUrl(t *testing.T) {
+	setTFEToken("my-token")
 	cfg := oapi.JobAgentConfig{
 		"address":      "https://app.terraform.io",
-		"token":        "my-token",
 		"organization": "my-org",
 		"template":     "name: foo",
 	}
@@ -43,9 +48,9 @@ func TestParseJobAgentConfig_MissingWebhookUrl(t *testing.T) {
 }
 
 func TestParseJobAgentConfig_WithWebhookUrl(t *testing.T) {
+	setTFEToken("my-token")
 	cfg := oapi.JobAgentConfig{
 		"address":      "https://app.terraform.io",
-		"token":        "my-token",
 		"organization": "my-org",
 		"template":     "name: foo",
 		"webhookUrl":   "https://ctrlplane.example.com/api/tfe/webhook",
@@ -56,10 +61,11 @@ func TestParseJobAgentConfig_WithWebhookUrl(t *testing.T) {
 }
 
 func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
+	setTFEToken("t")
+
 	t.Run("defaults to true", func(t *testing.T) {
 		cfg := oapi.JobAgentConfig{
 			"address":      "https://app.terraform.io",
-			"token":        "t",
 			"organization": "o",
 			"template":     "t",
 			"webhookUrl":   "https://example.com/api/tfe/webhook",
@@ -72,7 +78,6 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 	t.Run("bool false", func(t *testing.T) {
 		cfg := oapi.JobAgentConfig{
 			"address":            "https://app.terraform.io",
-			"token":              "t",
 			"organization":       "o",
 			"template":           "t",
 			"webhookUrl":         "https://example.com/api/tfe/webhook",
@@ -86,7 +91,6 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 	t.Run("string false", func(t *testing.T) {
 		cfg := oapi.JobAgentConfig{
 			"address":            "https://app.terraform.io",
-			"token":              "t",
 			"organization":       "o",
 			"template":           "t",
 			"webhookUrl":         "https://example.com/api/tfe/webhook",
@@ -100,7 +104,6 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 	t.Run("bool true", func(t *testing.T) {
 		cfg := oapi.JobAgentConfig{
 			"address":            "https://app.terraform.io",
-			"token":              "t",
 			"organization":       "o",
 			"template":           "t",
 			"webhookUrl":         "https://example.com/api/tfe/webhook",
@@ -113,25 +116,22 @@ func TestParseJobAgentConfig_TriggerRunOnChange(t *testing.T) {
 }
 
 func TestParseJobAgentConfig_MissingFields(t *testing.T) {
+	setTFEToken("t")
 	tests := []struct {
 		name string
 		cfg  oapi.JobAgentConfig
 	}{
 		{
 			"missing address",
-			oapi.JobAgentConfig{"token": "t", "organization": "o", "template": "t"},
-		},
-		{
-			"missing token",
-			oapi.JobAgentConfig{"address": "a", "organization": "o", "template": "t"},
+			oapi.JobAgentConfig{"organization": "o", "template": "t"},
 		},
 		{
 			"missing organization",
-			oapi.JobAgentConfig{"address": "a", "token": "t", "template": "t"},
+			oapi.JobAgentConfig{"address": "a", "template": "t"},
 		},
 		{
 			"missing template",
-			oapi.JobAgentConfig{"address": "a", "token": "t", "organization": "o"},
+			oapi.JobAgentConfig{"address": "a", "organization": "o"},
 		},
 	}
 	for _, tt := range tests {
@@ -142,10 +142,23 @@ func TestParseJobAgentConfig_MissingFields(t *testing.T) {
 	}
 }
 
+func TestParseJobAgentConfig_MissingToken(t *testing.T) {
+	setTFEToken("")
+	cfg := oapi.JobAgentConfig{
+		"address":      "https://app.terraform.io",
+		"organization": "my-org",
+		"template":     "name: foo",
+		"webhookUrl":   "https://example.com/api/tfe/webhook",
+	}
+	_, err := parseJobAgentConfig(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "TFE_TOKEN")
+}
+
 func TestParseJobAgentConfig_EmptyValues(t *testing.T) {
+	setTFEToken("my-token")
 	cfg := oapi.JobAgentConfig{
 		"address":      "",
-		"token":        "my-token",
 		"organization": "my-org",
 		"template":     "name: foo",
 	}
@@ -155,9 +168,9 @@ func TestParseJobAgentConfig_EmptyValues(t *testing.T) {
 }
 
 func TestParseJobAgentConfig_WrongType(t *testing.T) {
+	setTFEToken("my-token")
 	cfg := oapi.JobAgentConfig{
 		"address":      123,
-		"token":        "my-token",
 		"organization": "my-org",
 		"template":     "name: foo",
 	}

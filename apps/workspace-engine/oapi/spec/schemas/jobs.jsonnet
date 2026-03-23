@@ -144,7 +144,7 @@ local JobPropertyKeys = std.objectFields(Job.properties);
 
   TerraformCloudJobAgentConfig: {
     type: 'object',
-    required: ['address', 'organization', 'token', 'template', 'webhookUrl'],
+    required: ['address', 'organization', 'template', 'webhookUrl'],
     properties: {
       address: { type: 'string', description: 'Terraform Cloud address (e.g. https://app.terraform.io).' },
       organization: { type: 'string', description: 'Terraform Cloud organization name.' },

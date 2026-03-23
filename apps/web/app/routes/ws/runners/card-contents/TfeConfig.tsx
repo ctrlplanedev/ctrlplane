@@ -4,7 +4,6 @@ export const tfeJobAgentConfig = z
   .object({
     organization: z.string(),
     address: z.string(),
-    token: z.string(),
   })
   .passthrough();
 

@@ -3,9 +3,9 @@ package terraformcloud
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/charmbracelet/log"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
@@ -71,7 +71,7 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 		}
 	}
 
-	webhookSecret := os.Getenv("TFE_WEBHOOK_SECRET")
+	webhookSecret := config.Global.TFEWebhookSecret
 	if err := ensureNotificationConfig(
 		ctx,
 		client,

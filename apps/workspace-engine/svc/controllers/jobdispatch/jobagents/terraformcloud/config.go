@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-tfe"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 )
 
@@ -21,10 +22,11 @@ func parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (*tfeConfig, error)
 	if !ok {
 		return nil, fmt.Errorf("address is required")
 	}
-	token, ok := jobAgentConfig["token"].(string)
-	if !ok {
-		return nil, fmt.Errorf("token is required")
+	token := config.Global.TFEToken
+	if token == "" {
+		return nil, fmt.Errorf("TFE_TOKEN environment variable is required")
 	}
+
 	organization, ok := jobAgentConfig["organization"].(string)
 	if !ok {
 		return nil, fmt.Errorf("organization is required")
@@ -33,7 +35,7 @@ func parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (*tfeConfig, error)
 	if !ok {
 		return nil, fmt.Errorf("template is required")
 	}
-	if address == "" || token == "" || organization == "" || template == "" {
+	if address == "" || organization == "" || template == "" {
 		return nil, fmt.Errorf("missing required fields in job agent config")
 	}
 

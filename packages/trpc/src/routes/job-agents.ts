@@ -22,7 +22,7 @@ const jobAgentConfig = z.discriminatedUnion("type", [
       type: z.literal("tfe"),
       address: z.string(),
       organization: z.string(),
-      token: z.string(),
+      token: z.string().optional(),
       template: z.string().optional(),
     })
     .passthrough(),
@@ -96,6 +96,6 @@ export const jobAgentsRouter = router({
       ctx.db
         .select()
         .from(schema.deployment)
-        .where(eq(schema.deployment.jobAgentId, input.jobAgentId)),
+        .where(eq(schema.deployment.jobAgentId, input.jobAgentId))
     ),
 });

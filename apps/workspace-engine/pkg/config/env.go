@@ -39,6 +39,9 @@ type Config struct {
 	PostgresMaxPoolSize     int    `default:"50"                                                        envconfig:"POSTGRES_MAX_POOL_SIZE"`
 	PostgresApplicationName string `default:"workspace-engine"                                          envconfig:"POSTGRES_APPLICATION_NAME"`
 
+	TFEToken         string `default:"" envconfig:"TFE_TOKEN"`
+	TFEWebhookSecret string `default:"" envconfig:"TFE_WEBHOOK_SECRET"`
+
 	TraceTokenSecret string `default:"secret" envconfig:"TRACE_TOKEN_SECRET"`
 
 	// Comma-separated list of services to run (empty means all).

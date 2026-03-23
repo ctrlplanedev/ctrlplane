@@ -63,7 +63,6 @@ jobAgent: terraform-cloud
 jobAgentConfig:
   organization: your-org
   address: https://app.terraform.io
-  token: "{{.variables.tfe_token}}"
   webhookUrl: https://ctrlplane.example.com/api/tfe/webhook
   triggerRunOnChange: true
   template: |
@@ -90,16 +89,16 @@ jobAgentConfig:
 | -------------------- | -------- | ------- | --------------------------------------------------------------------------- |
 | `organization`       | Yes      |         | Terraform Cloud organization                                                |
 | `address`            | Yes      |         | Terraform Cloud/Enterprise URL                                              |
-| `token`              | Yes      |         | API token                                                                   |
 | `template`           | Yes      |         | Go template for workspace configuration                                     |
 | `webhookUrl`         | Yes      |         | Ctrlplane API endpoint for TFC notifications (e.g. `https://ctrlplane.example.com/api/tfe/webhook`) |
 | `triggerRunOnChange` | No       | `true`  | Whether to create a TFC run on dispatch. When `false`, only the workspace and variables are synced. |
 
 ### Environment Variables
 
-| Variable             | Where       | Description                                              |
-| -------------------- | ----------- | -------------------------------------------------------- |
-| `TFE_WEBHOOK_SECRET` | API         | HMAC secret for verifying incoming TFC webhooks          |
+| Variable             | Where            | Description                                              |
+| -------------------- | ---------------- | -------------------------------------------------------- |
+| `TFE_TOKEN`          | Workspace Engine | Terraform Cloud API token for authenticating API calls   |
+| `TFE_WEBHOOK_SECRET` | API              | HMAC secret for verifying incoming TFC webhooks          |
 | `TFE_WEBHOOK_SECRET` | Workspace Engine | Same secret, used when creating notification configs on TFC |
 
 Both the API and workspace-engine must share the same `TFE_WEBHOOK_SECRET`.
@@ -194,7 +193,6 @@ jobAgent: terraform-cloud
 jobAgentConfig:
   organization: "{{.variables.tfe_org}}"
   address: "{{.variables.tfe_address}}"
-  token: "{{.variables.tfe_token}}"
   webhookUrl: "{{.variables.ctrlplane_webhook_url}}"
   template: |
     name: vpc-{{.environment.name}}-{{.resource.metadata.region}}
@@ -257,7 +255,6 @@ resource "ctrlplane_job_agent" "tfc" {
   terraform_cloud {
     address            = "https://app.terraform.io"
     organization       = "your-org"
-    token              = var.tfc_token
     webhook_url        = "https://ctrlplane.example.com/api/tfe/webhook"
     trigger_run_on_change = true
     template           = file("workspace-template.yaml")
