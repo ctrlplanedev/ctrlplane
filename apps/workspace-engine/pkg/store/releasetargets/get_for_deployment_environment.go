@@ -28,7 +28,9 @@ type PostgresGetReleaseTargetsForDeploymentAndEnvironment struct {
 	cache *gocache.Cache
 }
 
-func NewGetReleaseTargetsForDeploymentAndEnvironment(opts ...Option) *PostgresGetReleaseTargetsForDeploymentAndEnvironment {
+func NewGetReleaseTargetsForDeploymentAndEnvironment(
+	opts ...Option,
+) *PostgresGetReleaseTargetsForDeploymentAndEnvironment {
 	return &PostgresGetReleaseTargetsForDeploymentAndEnvironment{cache: buildCache(opts)}
 }
 

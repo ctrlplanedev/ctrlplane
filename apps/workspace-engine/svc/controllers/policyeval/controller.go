@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/reconcile"
@@ -13,13 +19,6 @@ import (
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/svc"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/policyeval")
@@ -55,9 +54,15 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	getter := c.getter
 	if getter == nil {
 		cacheTTL := 5 * time.Minute
-		rtForDep := releasetargets.NewGetReleaseTargetsForDeployment(releasetargets.WithCache(cacheTTL))
-		rtForDepEnv := releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment(releasetargets.WithCache(cacheTTL))
-		policiesForRT := policies.NewPostgresGetPoliciesForReleaseTarget(policies.WithCache(cacheTTL))
+		rtForDep := releasetargets.NewGetReleaseTargetsForDeployment(
+			releasetargets.WithCache(cacheTTL),
+		)
+		rtForDepEnv := releasetargets.NewGetReleaseTargetsForDeploymentAndEnvironment(
+			releasetargets.WithCache(cacheTTL),
+		)
+		policiesForRT := policies.NewPostgresGetPoliciesForReleaseTarget(
+			policies.WithCache(cacheTTL),
+		)
 		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv, policiesForRT)
 	}
 

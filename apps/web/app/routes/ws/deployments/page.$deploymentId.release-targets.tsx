@@ -86,6 +86,48 @@ function JobStatusSelect() {
   );
 }
 
+type Version = {
+  id: string;
+  name: string;
+  tag: string;
+};
+
+function useVersion() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const version = searchParams.get("version") ?? "all";
+  const setVersion = (version: string) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (version === "all") newSearchParams.delete("version");
+    if (version !== "all") newSearchParams.set("version", version);
+    setSearchParams(newSearchParams);
+  };
+  return { version, setVersion };
+}
+
+function VersionSelect({ versions }: { versions: Version[] }) {
+  const { version, setVersion } = useVersion();
+  const selectedVersion = versions.find((v) => v.id === version) ?? null;
+  return (
+    <Select value={version} onValueChange={setVersion}>
+      <SelectTrigger className="w-40">
+        {selectedVersion == null
+          ? "Select version"
+          : /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+            (selectedVersion.name ?? selectedVersion.tag)}
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All versions</SelectItem>
+        {versions.map((version) => (
+          <SelectItem key={version.id} value={version.id}>
+            {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+            {version.name || version.tag}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export default function ReleaseTargetsPage() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
@@ -116,16 +158,27 @@ export default function ReleaseTargetsPage() {
       environmentIds.has(environment.id),
     ) ?? [];
 
+  const { version } = useVersion();
+
   const releaseTargets = releaseTargetsQuery.data ?? [];
   const filteredReleaseTargets = releaseTargets.filter((rt) => {
-    if (jobStatus == null) return true;
-    return camelCase(rt.latestJob?.status ?? "") === jobStatus;
+    const isMatchingJobStatus =
+      jobStatus == null || camelCase(rt.latestJob?.status ?? "") === jobStatus;
+    const isMatchingVersion =
+      version === "all" || rt.currentVersion?.id === version;
+    return isMatchingJobStatus && isMatchingVersion;
   });
 
   const groupByEnvironmentId = _.groupBy(
     filteredReleaseTargets,
     (rt) => rt.environment.id,
   );
+
+  const versions = _.chain(releaseTargets)
+    .map((rt) => rt.currentVersion)
+    .compact()
+    .uniqBy((v) => v.id)
+    .value();
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
@@ -168,6 +221,7 @@ export default function ReleaseTargetsPage() {
             />
           </div>
           <JobStatusSelect />
+          <VersionSelect versions={versions} />
         </div>
 
         <Table className="border-b">

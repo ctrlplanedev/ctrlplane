@@ -11,7 +11,10 @@ import (
 )
 
 type GetReleaseTargetsForResource interface {
-	GetReleaseTargetsForResource(ctx context.Context, resourceID string) ([]oapi.ReleaseTarget, error)
+	GetReleaseTargetsForResource(
+		ctx context.Context,
+		resourceID string,
+	) ([]oapi.ReleaseTarget, error)
 }
 
 var _ GetReleaseTargetsForResource = (*PostgresGetReleaseTargetsForResource)(nil)

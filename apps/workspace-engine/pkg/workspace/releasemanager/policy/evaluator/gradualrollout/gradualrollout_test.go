@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 )
 
 // mockGetters implements the full Getters interface for testing.
@@ -150,6 +151,13 @@ func (m *mockGetters) GetPolicySkips(
 
 func (m *mockGetters) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget) (bool, error) {
 	return m.hasRelease, nil
+}
+
+func (m *mockGetters) GetJobsForEnvironmentAndVersion(
+	_ context.Context,
+	_, _ string,
+) ([]environmentprogression.ReleaseTargetJob, error) {
+	return nil, nil
 }
 
 // ---------------------------------------------------------------------------

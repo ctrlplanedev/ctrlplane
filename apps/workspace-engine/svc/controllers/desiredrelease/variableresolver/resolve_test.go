@@ -641,11 +641,13 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 				Value:      referenceValue("database", "metadata", "host"),
 			},
 		},
-		rules: []eval.Rule{{
-			ID:        ruleID,
-			Reference: "database",
-			Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Database"`,
-		}},
+		rules: []eval.Rule{
+			{
+				ID:        ruleID,
+				Reference: "database",
+				Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Database"`,
+			},
+		},
 		candidates: map[string][]eval.EntityData{
 			"resource": {
 				{
@@ -666,10 +668,14 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 					WorkspaceID: uuid.MustParse(scope.Resource.WorkspaceId),
 					EntityType:  "resource",
 					Raw: map[string]any{
-						"type": "resource", "id": relatedResourceID.String(),
-						"name": relatedResource.Name, "kind": relatedResource.Kind,
-						"version": "v1", "identifier": "db-server",
-						"config": map[string]any{}, "metadata": map[string]any{"host": "db.internal"},
+						"type":       "resource",
+						"id":         relatedResourceID.String(),
+						"name":       relatedResource.Name,
+						"kind":       relatedResource.Kind,
+						"version":    "v1",
+						"identifier": "db-server",
+						"config":     map[string]any{},
+						"metadata":   map[string]any{"host": "db.internal"},
 					},
 				},
 			},
@@ -716,11 +722,13 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 			}},
 		}},
 		resourceVars: map[string]oapi.ResourceVariable{},
-		rules: []eval.Rule{{
-			ID:        ruleID,
-			Reference: "cluster",
-			Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Cluster"`,
-		}},
+		rules: []eval.Rule{
+			{
+				ID:        ruleID,
+				Reference: "cluster",
+				Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Cluster"`,
+			},
+		},
 		candidates: map[string][]eval.EntityData{
 			"resource": {
 				{
@@ -741,10 +749,14 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 					WorkspaceID: uuid.MustParse(scope.Resource.WorkspaceId),
 					EntityType:  "resource",
 					Raw: map[string]any{
-						"type": "resource", "id": relatedResourceID.String(),
-						"name": "cluster", "kind": "Cluster",
-						"version": "v1", "identifier": "cluster",
-						"config": map[string]any{}, "metadata": map[string]any{"endpoint": "https://k8s.internal"},
+						"type":       "resource",
+						"id":         relatedResourceID.String(),
+						"name":       "cluster",
+						"kind":       "Cluster",
+						"version":    "v1",
+						"identifier": "cluster",
+						"config":     map[string]any{},
+						"metadata":   map[string]any{"endpoint": "https://k8s.internal"},
 					},
 				},
 			},
@@ -807,11 +819,13 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 			},
 		},
 		resourceVars: map[string]oapi.ResourceVariable{},
-		rules: []eval.Rule{{
-			ID:        ruleID,
-			Reference: "vpc",
-			Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Network"`,
-		}},
+		rules: []eval.Rule{
+			{
+				ID:        ruleID,
+				Reference: "vpc",
+				Cel:       `from.type == "resource" && to.type == "resource" && from.kind == "Server" && to.kind == "Network"`,
+			},
+		},
 		candidates: map[string][]eval.EntityData{
 			"resource": {
 				{
@@ -832,10 +846,14 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 					WorkspaceID: uuid.MustParse(scope.Resource.WorkspaceId),
 					EntityType:  "resource",
 					Raw: map[string]any{
-						"type": "resource", "id": relatedResourceID.String(),
-						"name": "vpc", "kind": "Network",
-						"version": "v1", "identifier": "vpc",
-						"config": map[string]any{}, "metadata": map[string]any{"cidr": "10.0.0.0/8"},
+						"type":       "resource",
+						"id":         relatedResourceID.String(),
+						"name":       "vpc",
+						"kind":       "Network",
+						"version":    "v1",
+						"identifier": "vpc",
+						"config":     map[string]any{},
+						"metadata":   map[string]any{"cidr": "10.0.0.0/8"},
 					},
 				},
 			},

@@ -142,7 +142,9 @@ func TestEvaluateRule_EntityIsBothFromAndTo(t *testing.T) {
 	candidate2 := resourceEntity(c2, wsID, "other", "Server", nil)
 
 	rule := Rule{
-		ID: ruleID, Reference: "peer", Cel: `from.type == "resource" && to.type == "resource" && from.name == to.name`,
+		ID:        ruleID,
+		Reference: "peer",
+		Cel:       `from.type == "resource" && to.type == "resource" && from.name == to.name`,
 	}
 
 	matches, err := EvaluateRule(
@@ -189,7 +191,9 @@ func TestEvaluateRule_SkipsSelf(t *testing.T) {
 	self := resourceEntity(entityID, wsID, "web", "Server", nil)
 
 	rule := Rule{
-		ID: newID(), Reference: "self", Cel: `from.type == "resource" && to.type == "resource" && true`,
+		ID:        newID(),
+		Reference: "self",
+		Cel:       `from.type == "resource" && to.type == "resource" && true`,
 	}
 
 	matches, err := EvaluateRule(context.Background(), &entity, &rule, []EntityData{self})

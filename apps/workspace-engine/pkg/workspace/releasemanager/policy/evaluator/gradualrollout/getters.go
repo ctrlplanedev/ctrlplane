@@ -55,10 +55,14 @@ func NewPostgresGetters(
 	policiesForRT policies.GetPoliciesForReleaseTarget,
 ) *PostgresGetters {
 	return &PostgresGetters{
-		policiesForReleaseTargetGetter:        policiesForRT,
-		approvalPostgresGetters:               approval.NewPostgresGetters(queries),
-		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(queries, rtForDep, rtForDepEnv),
-		queries:                               queries,
+		policiesForReleaseTargetGetter: policiesForRT,
+		approvalPostgresGetters:        approval.NewPostgresGetters(queries),
+		environmentProgressionPostgresGetters: environmentprogression.NewPostgresGetters(
+			queries,
+			rtForDep,
+			rtForDepEnv,
+		),
+		queries: queries,
 	}
 }
 
@@ -122,4 +126,3 @@ func (p *PostgresGetters) HasCurrentRelease(
 	}
 	return len(releases) > 0, nil
 }
-

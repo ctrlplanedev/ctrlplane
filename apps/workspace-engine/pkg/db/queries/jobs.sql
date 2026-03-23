@@ -226,6 +226,22 @@ FROM job j
 JOIN release_job rj ON rj.job_id = j.id
 WHERE rj.release_id = $1;
 
+-- name: ListJobsByEnvironmentAndVersion :many
+-- Returns all jobs for a given environment and version in a single query,
+-- avoiding N+1 round trips per release target.
+SELECT
+  j.id,
+  j.status,
+  j.completed_at,
+  r.deployment_id,
+  r.environment_id,
+  r.resource_id
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.environment_id = @environment_id
+  AND r.version_id = @version_id;
+
 -- name: GetWorkspaceIDByJobID :one
 SELECT d.workspace_id
 FROM job j

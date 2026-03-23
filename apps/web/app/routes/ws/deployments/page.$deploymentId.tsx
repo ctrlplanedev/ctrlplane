@@ -185,7 +185,9 @@ export default function DeploymentDetail() {
                     (rt) => rt.currentVersion?.id === version.id,
                   );
                   const desiredReleaseTargets = releaseTargets.filter(
-                    (rt) => rt.desiredVersion?.id === version.id,
+                    (rt) =>
+                      rt.desiredVersion?.id === version.id &&
+                      rt.currentVersion?.id !== version.id,
                   );
                   const isSelected = selectedVersionId === version.id;
 
