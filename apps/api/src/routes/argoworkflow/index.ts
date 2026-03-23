@@ -9,7 +9,7 @@ export const createArgoWorkflowRouter = (): Router =>
   Router().post("/webhook", asyncHandler(handleWebhookRequest));
 
 const verifyRequest = (req: Request): boolean => {
-  const authHeader = req.headers["authorization"]?.toString();
+  const authHeader = req.headers.authorization?.toString();
   if (authHeader == null) return false;
   const secret = env.ARGO_WORKFLOW_WEBHOOK_SECRET;
   return authHeader === secret;
