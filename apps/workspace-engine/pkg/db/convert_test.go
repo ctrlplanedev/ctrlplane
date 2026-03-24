@@ -488,3 +488,76 @@ func TestParseDispatchContext_NestedReleaseVariables(t *testing.T) {
 	require.True(t, ok, "release.variables must be present in Map() output")
 	assert.Equal(t, "small", releaseVars["size"])
 }
+
+func TestParseDispatchContext_SelectorObjects(t *testing.T) {
+	raw := []byte(`{
+		"release": {
+			"id": "11111111-1111-1111-1111-111111111111",
+			"version": {
+				"id": "ver-1",
+				"tag": "v1.2.3",
+				"name": "example-version",
+				"config": {},
+				"status": "ready",
+				"metadata": {},
+				"createdAt": "2026-03-24T00:00:00Z",
+				"deploymentId": "dep-1"
+			},
+			"createdAt": "2026-03-24T00:00:00Z",
+			"variables": {"size": "small"},
+			"releaseTarget": {
+				"resourceId": "res-1",
+				"deploymentId": "dep-1",
+				"environmentId": "env-1"
+			},
+			"encryptedVariables": []
+		},
+		"deployment": {
+			"id": "dep-1",
+			"name": "example-deployment",
+			"slug": "example-deployment",
+			"metadata": {},
+			"description": "example deployment",
+			"jobAgentConfig": {},
+			"resourceSelector": {
+				"cel": "resource.kind == 'ExampleKind'"
+			}
+		},
+		"environment": {
+			"id": "env-1",
+			"name": "example-environment",
+			"metadata": {},
+			"createdAt": "2026-03-24T00:00:00Z",
+			"description": "example environment",
+			"workspaceId": "ws-1",
+			"resourceSelector": {
+				"cel": "resource.metadata['tier'] == 'prod'"
+			}
+		},
+		"jobAgentConfig": {
+			"type": "argo-cd",
+			"apiKey": "test-key",
+			"template": "some-template",
+			"serverUrl": "argocd.wandb.dev"
+		}
+	}`)
+
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc, "dispatch context must not be nil when selector objects are present")
+
+	require.NotNil(t, dc.Environment)
+	require.NotNil(t, dc.Environment.ResourceSelector)
+	assert.Equal(
+		t,
+		"resource.metadata['tier'] == 'prod'",
+		*dc.Environment.ResourceSelector,
+	)
+
+	require.NotNil(t, dc.Deployment)
+	require.NotNil(t, dc.Deployment.ResourceSelector)
+	assert.Equal(
+		t,
+		"resource.kind == 'ExampleKind'",
+		*dc.Deployment.ResourceSelector,
+	)
+}
