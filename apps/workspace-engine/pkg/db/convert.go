@@ -3,9 +3,10 @@ package db
 import (
 	"encoding/json"
 
+	"workspace-engine/pkg/oapi"
+
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
-	"workspace-engine/pkg/oapi"
 )
 
 func ToOapiDeployment(row Deployment) *oapi.Deployment {
@@ -477,12 +478,69 @@ func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 	}
 	j.Metadata = parseJobMetadata(row.Metadata)
 	if len(row.DispatchContext) > 0 {
-		var dc oapi.DispatchContext
-		if err := json.Unmarshal(row.DispatchContext, &dc); err == nil {
-			j.DispatchContext = &dc
-		}
+		j.DispatchContext = parseDispatchContext(row.DispatchContext)
 	}
 	return j
+}
+
+func parseDispatchContext(raw []byte) *oapi.DispatchContext {
+	var fields map[string]any
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil
+	}
+
+	var dc oapi.DispatchContext
+
+	if v, ok := fields["jobAgent"].(oapi.JobAgent); ok {
+		dc.JobAgent = v
+	}
+	if v, ok := fields["jobAgentConfig"].(map[string]any); ok {
+		dc.JobAgentConfig = oapi.JobAgentConfig(v)
+	}
+	if v, ok := fields["deployment"].(*oapi.Deployment); ok {
+		dc.Deployment = v
+	}
+	if v, ok := fields["environment"].(*oapi.Environment); ok {
+		dc.Environment = v
+	}
+	if v, ok := fields["release"].(*oapi.Release); ok {
+		dc.Release = v
+	}
+	if v, ok := fields["resource"].(*oapi.Resource); ok {
+		dc.Resource = v
+	}
+	if v, ok := fields["version"].(*oapi.DeploymentVersion); ok {
+		dc.Version = v
+	}
+	if v, ok := fields["workflow"].(*oapi.Workflow); ok {
+		dc.Workflow = v
+	}
+	if v, ok := fields["workflowJob"].(*oapi.WorkflowJob); ok {
+		dc.WorkflowJob = v
+	}
+	if v, ok := fields["workflowRun"].(*oapi.WorkflowRun); ok {
+		dc.WorkflowRun = v
+	}
+	if v, ok := fields["variables"].(map[string]any); ok {
+		vars := make(map[string]oapi.LiteralValue, len(v))
+		for k, val := range v {
+			var lv oapi.LiteralValue
+			switch t := val.(type) {
+			case string:
+				_ = lv.FromStringValue(t)
+			case float64:
+				_ = lv.FromNumberValue(float32(t))
+			case bool:
+				_ = lv.FromBooleanValue(oapi.BooleanValue(t))
+			default:
+				continue
+			}
+			vars[k] = lv
+		}
+		dc.Variables = &vars
+	}
+
+	return &dc
 }
 
 func parseJobMetadata(raw []byte) map[string]string {
