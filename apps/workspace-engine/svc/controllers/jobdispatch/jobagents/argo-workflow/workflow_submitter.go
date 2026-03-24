@@ -1,67 +1,18 @@
 package argo_workflows
 
 import (
-	"bytes"
 	"context"
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 	"time"
 
-	"os"
-
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
-	"github.com/goccy/go-yaml"
 
-	argoapiclient "github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"sigs.k8s.io/yaml"
+	argoapiclient "github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
-
-type submitWorkflowRequest struct {
-	Workflow *Workflow `json:"workflow"`
-}
-
-func submitThing() {
-	ctx := context.Background()
-
-	b, err := os.ReadFile("workflow.yaml")
-	if err != nil {
-		panic(err)
-	}
-
-	var wf wfv1.Workflow
-	if err := yaml.Unmarshal(b, &wf); err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("kind=%q\n", wf.Kind)
-	fmt.Printf("apiVersion=%q\n", wf.APIVersion)
-	fmt.Printf("metadata.name=%q\n", wf.Name)
-	fmt.Printf("metadata.generateName=%q\n", wf.GenerateName)
-	fmt.Printf("metadata.namespace=%q\n", wf.Namespace)
-
-	ctx, apiClient, err := argoapiclient.NewClientFromOptsWithContext(ctx, argoapiclient.Opts{
-		ArgoServerOpts: argoapiclient.ArgoServerOpts{
-			URL:                "localhost:2746", // host:port only
-			Secure:             true,             // HTTPS
-			HTTP1:              true,             // avoid gRPC/HTTP2 issues
-			InsecureSkipVerify: true,
-		},
-		AuthSupplier: func() string {
-			return ""
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	wfClient := apiClient.NewWorkflowServiceClient(ctx)
-
-}
 
 // GoWorkflowSubmitter is the production implementation of WorkflowSubmitter
 // that calls the Argo Workflows REST API.
@@ -70,78 +21,44 @@ type GoWorkflowSubmitter struct{}
 func (s *GoWorkflowSubmitter) SubmitWorkflow(
 	ctx context.Context,
 	serverAddr, apiKey string,
-	wf *Workflow,
+	wf *wfv1.Workflow,
 ) error {
-	namespace := wf.Metadata.Namespace
+
+	ctx, apiClient, err := argoapiclient.NewClientFromOptsWithContext(ctx, argoapiclient.Opts{
+		ArgoServerOpts: argoapiclient.ArgoServerOpts{
+			URL:                serverAddr,
+			Secure:             true,
+			HTTP1:              true,
+			InsecureSkipVerify: true,
+		},
+		AuthSupplier: func() string {
+			return apiKey
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create argo client: %w", err)
+	}
+	fmt.Printf("serverAddr: %s, apiKey: %s\n", serverAddr, apiKey)
+
+	wfClient := apiClient.NewWorkflowServiceClient(ctx)
+	namespace := wf.Namespace
 	if namespace == "" {
 		namespace = "default"
 	}
 
-	url := fmt.Sprintf(
-		"%s/api/v1/workflows/%s",
-		strings.TrimRight(serverAddr, "/"),
-		namespace,
-	)
-	jsonBody, err := yaml.YAMLToJSON(template)
-	if err != nil {
-		panic(err)
-	}
-
-	client := &http.Client{
-		Timeout: 20 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // local dev only
-			},
-		},
-	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader())
-	if err != nil {
-		panic(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	respBody, _ := io.ReadAll(resp.Body)
-
 	return retry.Do(
 		func() error {
-			body, err := json.Marshal(submitWorkflowRequest{Workflow: wf})
-			if err != nil {
-				return retry.Unrecoverable(fmt.Errorf("marshal workflow: %w", err))
-			}
+			_, err := wfClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
+				Namespace: namespace,
+				Workflow:  wf,
+			})
 
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 			if err != nil {
-				return retry.Unrecoverable(fmt.Errorf("create request: %w", err))
-			}
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+apiKey)
-
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return fmt.Errorf("submit workflow: %w", err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 300 {
-				respBody, _ := io.ReadAll(resp.Body)
-				errMsg := fmt.Sprintf("submit workflow: status %d: %s", resp.StatusCode, string(respBody))
-				if isRetryableStatusCode(resp.StatusCode) {
-					return fmt.Errorf("%s", errMsg)
+				if isRetryableError(err) {
+					return err
 				}
-				return retry.Unrecoverable(fmt.Errorf("%s", errMsg))
+				return retry.Unrecoverable(err)
 			}
-
 			return nil
 		},
 		retry.Attempts(5),
@@ -149,7 +66,7 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 		retry.MaxDelay(10*time.Second),
 		retry.DelayType(retry.BackOffDelay),
 		retry.OnRetry(func(n uint, err error) {
-			log.Warn("Retrying Argo Workflow submission",
+			log.Warn("Retrying ArgoWorkflow submission",
 				"attempt", n+1,
 				"error", err)
 		}),
@@ -157,6 +74,18 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 	)
 }
 
-func isRetryableStatusCode(code int) bool {
-	return code == 502 || code == 503 || code == 504
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "502") ||
+		strings.Contains(errStr, "503") ||
+		strings.Contains(errStr, "504") ||
+		strings.Contains(errStr, "connection refused") ||
+		strings.Contains(errStr, "connection reset") ||
+		strings.Contains(errStr, "timeout") ||
+		strings.Contains(errStr, "temporarily unavailable") ||
+		strings.Contains(errStr, "EOF") ||
+		strings.Contains(errStr, "Unavailable")
 }

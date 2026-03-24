@@ -11,33 +11,18 @@ import (
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("workspace-engine/jobagents/argo")
+var tracer = otel.Tracer("workspace-engine/jobagents/argo-workflow")
 
-// Workflow is a minimal representation of an Argo Workflows Workflow resource.
-// We define this locally to avoid importing argo-workflows/v4, which conflicts
-// with argo-cd/v2's transitive dependencies (docker/docker vs moby/moby rename).
-type Workflow struct {
-	Kind       string           `yaml:"kind,omitempty"       json:"kind,omitempty"`
-	APIVersion string           `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`
-	Metadata   WorkflowMetadata `yaml:"metadata,omitempty"   json:"metadata,omitempty"`
-	Spec       interface{}      `yaml:"spec,omitempty"       json:"spec,omitempty"`
-}
-
-type WorkflowMetadata struct {
-	Name      string            `yaml:"name,omitempty"      json:"name,omitempty"`
-	Namespace string            `yaml:"namespace,omitempty" json:"namespace,omitempty"`
-	Labels    map[string]string `yaml:"labels,omitempty"    json:"labels,omitempty"`
-}
-
-var _ types.Dispatchable = &ArgoWorkflow{}
+var _ types.Dispatchable = (*ArgoWorkflow)(nil)
 
 type Getter interface {
-	GetWorkflow(ctx context.Context, name string) (*Workflow, error)
+	GetWorkflow(ctx context.Context, name string) (*wfv1.Workflow, error)
 }
 
 // Setter persists job status updates.
@@ -58,7 +43,7 @@ type WorkflowDeleter interface {
 
 // WorkflowSubmitter submits an Argo Workflows Workflow to the server.
 type WorkflowSubmitter interface {
-	SubmitWorkflow(ctx context.Context, serverAddr, apiKey string, wf *Workflow) error
+	SubmitWorkflow(ctx context.Context, serverAddr, apiKey string, wf *wfv1.Workflow) error
 }
 
 type ArgoWorkflow struct {
@@ -76,8 +61,12 @@ func (a *ArgoWorkflow) Type() string {
 
 func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatchCtx := job.DispatchContext
+	if dispatchCtx == nil {
+		return fmt.Errorf("job %s has no dispatch context", job.Id)
+	}
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := ParseJobAgentConfig(jobAgentConfig)
+	fmt.Printf("jobConfig: %+v\n", jobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
@@ -87,6 +76,7 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("failed to generate workflow from template: %w", err)
 	}
 
+	wf.Name = job.Id
 	MakeApplicationK8sCompatible(wf)
 
 	go func() {
@@ -125,7 +115,7 @@ func ParseJobAgentConfig(
 	if !ok {
 		return "", "", "", fmt.Errorf("template is required")
 	}
-	if serverAddr == "" || apiKey == "" || template == "" {
+	if serverAddr == "" || template == "" {
 		return "", "", "", fmt.Errorf("missing required fields in job agent config")
 	}
 	return serverAddr, apiKey, template, nil
@@ -133,7 +123,7 @@ func ParseJobAgentConfig(
 
 // TemplateApplication renders the Argo Workflows Workflow YAML template using
 // the dispatch context variables.
-func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*Workflow, error) {
+func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*wfv1.Workflow, error) {
 	t, err := templatefuncs.Parse("argoWorkflowAgentConfig", tmpl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
@@ -143,7 +133,7 @@ func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*Workflow, err
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	var workflow Workflow
+	var workflow wfv1.Workflow
 	if err := yaml.Unmarshal(buf.Bytes(), &workflow); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal workflow: %w", err)
 	}
@@ -152,11 +142,11 @@ func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*Workflow, err
 
 // MakeApplicationK8sCompatible sanitises the workflow name and label
 // values so they conform to Kubernetes naming rules.
-func MakeApplicationK8sCompatible(wf *Workflow) {
-	wf.Metadata.Name = getK8sCompatibleName(wf.Metadata.Name)
-	if wf.Metadata.Labels != nil {
-		for key, value := range wf.Metadata.Labels {
-			wf.Metadata.Labels[key] = getK8sCompatibleName(value)
+func MakeApplicationK8sCompatible(wf *wfv1.Workflow) {
+	wf.Name = getK8sCompatibleName(wf.Name)
+	if wf.Labels != nil {
+		for key, value := range wf.Labels {
+			wf.Labels[key] = getK8sCompatibleName(value)
 		}
 	}
 }
@@ -178,8 +168,8 @@ func getK8sCompatibleName(name string) string {
 }
 
 // BuildArgoLinks builds the metadata map with an Argo Workflows URL.
-func BuildArgoLinks(serverAddr string, wf *Workflow) map[string]string {
-	appURL := fmt.Sprintf("%s/workflows/%s/%s", serverAddr, wf.Metadata.Namespace, wf.Metadata.Name)
+func BuildArgoLinks(serverAddr string, wf *wfv1.Workflow) map[string]string {
+	appURL := fmt.Sprintf("%s/workflows/%s/%s", serverAddr, wf.Namespace, wf.Name)
 	if !strings.HasPrefix(appURL, "https://") {
 		appURL = "https://" + appURL
 	}

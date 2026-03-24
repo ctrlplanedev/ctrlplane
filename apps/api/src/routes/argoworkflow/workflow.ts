@@ -35,7 +35,7 @@ export const mapTriggerToStatus = (trigger: string): JobStatus | null =>
 export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
   const { workflowName, uid, phase, startedAt, finishedAt } = payload;
 
-  const jobId = uid;
+  const jobId = extractUuid(workflowName);
   if (jobId == null) return;
 
   const status = statusMap[phase] ?? null;
@@ -50,7 +50,7 @@ export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
     .set({
       externalId: uid,
       status,
-      startedAt: new Date(startedAt),
+      ...(startedAt ? { startedAt: new Date(startedAt) } : {}),
       completedAt,
       updatedAt: new Date(),
     })
