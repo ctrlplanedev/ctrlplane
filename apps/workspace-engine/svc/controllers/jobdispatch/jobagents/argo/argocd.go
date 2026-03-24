@@ -87,6 +87,7 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 	span.SetAttributes(attribute.String("job.id", job.Id))
 	span.SetAttributes(attribute.String("job.status", string(job.Status)))
 	span.SetAttributes(attribute.String("job.dispatch_context", fmt.Sprintf("%+v", job.DispatchContext)))
+	span.SetAttributes(attribute.String("job.dispatch_context_raw", fmt.Sprintf("%+v", job.DispatchContext.Map())))
 
 	dispatchCtx := job.DispatchContext
 	if dispatchCtx == nil {
