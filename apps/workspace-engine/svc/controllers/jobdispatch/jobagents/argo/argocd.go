@@ -80,6 +80,9 @@ func (a *ArgoApplication) Type() string {
 
 func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatchCtx := job.DispatchContext
+	if dispatchCtx == nil {
+		return fmt.Errorf("job %s has no dispatch context", job.Id)
+	}
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := ParseJobAgentConfig(jobAgentConfig)
 	if err != nil {

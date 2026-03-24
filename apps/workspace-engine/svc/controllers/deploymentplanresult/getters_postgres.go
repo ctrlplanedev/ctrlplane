@@ -20,7 +20,7 @@ func (g *PostgresGetter) GetDeploymentPlanTargetResult(
 }
 
 func newRegistry() *jobagents.Registry {
-	registry := jobagents.NewRegistry(nil)
+	registry := jobagents.NewRegistry(nil, nil)
 	registry.Register(
 		argo.NewArgoCDPlanner(
 			&argo.GoApplicationUpserter{},

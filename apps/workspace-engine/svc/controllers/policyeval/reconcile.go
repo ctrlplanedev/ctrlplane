@@ -1,15 +1,9 @@
 package policyeval
 
 import (
-	"cmp"
 	"context"
 	"fmt"
-	"slices"
 
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -20,6 +14,12 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 )
 
 type versionEvaluation struct {
@@ -77,9 +77,6 @@ func collectEvaluators(getter Getter, pols []*oapi.Policy) []evaluator.Evaluator
 			evals = append(evals, ruleEvaluators(getter, &rule)...)
 		}
 	}
-	slices.SortFunc(evals, func(a, b evaluator.Evaluator) int {
-		return cmp.Compare(a.Complexity(), b.Complexity())
-	})
 	return evals
 }
 
@@ -233,29 +230,27 @@ func Reconcile(
 		return version, nil
 	}
 
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(10)
 	for _, rt := range releaseTargets {
-		r := &reconciler{getter: getter, setter: setter, rt: rt}
+		g.Go(func() error {
+			r := &reconciler{getter: getter, setter: setter, rt: rt}
 
-		if err := r.loadInput(ctx); err != nil {
-			return nil, recordErr(span, "load input", err)
-		}
+			if err := r.loadInput(ctx); err != nil {
+				return fmt.Errorf("load input: %w", err)
+			}
 
-		evals, err := r.evaluateVersion(ctx, version)
-		if err != nil {
-			return nil, recordErr(
-				span,
-				fmt.Sprintf("evaluate version for rt %s", rt.DeploymentID),
-				err,
-			)
-		}
+			evals, err := r.evaluateVersion(ctx, version)
+			if err != nil {
+				return fmt.Errorf("evaluate version for rt %s: %w", rt.DeploymentID, err)
+			}
 
-		if err := r.persistEvaluations(ctx, evals); err != nil {
-			return nil, recordErr(
-				span,
-				fmt.Sprintf("persist evaluations for rt %s", rt.DeploymentID),
-				err,
-			)
-		}
+			return r.persistEvaluations(ctx, evals)
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, recordErr(span, "reconcile release targets", err)
 	}
 
 	span.SetStatus(codes.Ok, "policy eval completed")
