@@ -28163,15 +28163,16 @@ async function run() {
         core.setFailed(`Job not found: ${jobId}`);
         return;
     }
+    const { dispatchContext, ...restJob } = job.job;
     const ghActionsJobObject = {
-        ...job.job,
+        ...restJob,
         base: { url: baseUrl },
-        variable: job.release.variables,
-        resource: job.resource,
-        version: job.release.version,
+        variable: dispatchContext?.variables,
+        resource: dispatchContext?.resource,
+        version: dispatchContext?.version,
         workspace: { id: job.workspaceId },
-        environment: job.environment,
-        deployment: job.deployment,
+        environment: dispatchContext?.environment,
+        deployment: dispatchContext?.deployment,
     };
     setOutputsRecursively(null, ghActionsJobObject);
     const missingOutputs = requiredOutputs.filter((output) => !outputTracker.has(output));
