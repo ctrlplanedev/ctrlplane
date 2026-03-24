@@ -416,4 +416,25 @@ func TestParseDispatchContext_FullBlob(t *testing.T) {
 	sv, err := vars["size"].AsStringValue()
 	require.NoError(t, err)
 	assert.Equal(t, "small", sv)
+
+	require.NotNil(t, dc.Resource, "resource must be populated")
+	assert.Equal(t, "wandb-incyte", dc.Resource.Name)
+	assert.Equal(t, "04f1ae82-de8b-4862-9ab1-8c2d513b403f", dc.Resource.Id)
+	assert.Equal(t, "arn:aws:eks:us-east-1:830241207209:cluster/wandb-incyte", dc.Resource.Identifier)
+
+	require.NotNil(t, dc.Deployment, "deployment must be populated")
+	assert.Equal(t, "Datadog Cluster Agent", dc.Deployment.Name)
+
+	require.NotNil(t, dc.Environment, "environment must be populated")
+	assert.Equal(t, "prod-aws", dc.Environment.Name)
+
+	require.NotNil(t, dc.Version, "version must be populated")
+	assert.Equal(t, "d19527d8ff5df1831990c8b65a3dd50dcd353b0e", dc.Version.Tag)
+
+	// Verify Map() produces the data the template engine needs
+	m := dc.Map()
+	require.NotNil(t, m)
+	resource, ok := m["resource"].(map[string]any)
+	require.True(t, ok, "resource must be a map in Map() output")
+	assert.Equal(t, "wandb-incyte", resource["name"])
 }

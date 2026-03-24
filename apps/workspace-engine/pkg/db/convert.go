@@ -484,60 +484,46 @@ func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 }
 
 func parseDispatchContext(raw []byte) *oapi.DispatchContext {
-	var fields map[string]any
+	// Strip "variables" before unmarshalling — it uses the LiteralValue union
+	// type which breaks json.Unmarshal. Everything else unmarshals fine.
+	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &fields); err != nil {
 		return nil
 	}
 
-	var dc oapi.DispatchContext
+	varsRaw := fields["variables"]
+	delete(fields, "variables")
 
-	if v, ok := fields["jobAgent"].(oapi.JobAgent); ok {
-		dc.JobAgent = v
+	stripped, err := json.Marshal(fields)
+	if err != nil {
+		return nil
 	}
-	if v, ok := fields["jobAgentConfig"].(map[string]any); ok {
-		dc.JobAgentConfig = oapi.JobAgentConfig(v)
+
+	var dc oapi.DispatchContext
+	if err := json.Unmarshal(stripped, &dc); err != nil {
+		return nil
 	}
-	if v, ok := fields["deployment"].(*oapi.Deployment); ok {
-		dc.Deployment = v
-	}
-	if v, ok := fields["environment"].(*oapi.Environment); ok {
-		dc.Environment = v
-	}
-	if v, ok := fields["release"].(*oapi.Release); ok {
-		dc.Release = v
-	}
-	if v, ok := fields["resource"].(*oapi.Resource); ok {
-		dc.Resource = v
-	}
-	if v, ok := fields["version"].(*oapi.DeploymentVersion); ok {
-		dc.Version = v
-	}
-	if v, ok := fields["workflow"].(*oapi.Workflow); ok {
-		dc.Workflow = v
-	}
-	if v, ok := fields["workflowJob"].(*oapi.WorkflowJob); ok {
-		dc.WorkflowJob = v
-	}
-	if v, ok := fields["workflowRun"].(*oapi.WorkflowRun); ok {
-		dc.WorkflowRun = v
-	}
-	if v, ok := fields["variables"].(map[string]any); ok {
-		vars := make(map[string]oapi.LiteralValue, len(v))
-		for k, val := range v {
-			var lv oapi.LiteralValue
-			switch t := val.(type) {
-			case string:
-				_ = lv.FromStringValue(t)
-			case float64:
-				_ = lv.FromNumberValue(float32(t))
-			case bool:
-				_ = lv.FromBooleanValue(oapi.BooleanValue(t))
-			default:
-				continue
+
+	if len(varsRaw) > 0 {
+		var varsMap map[string]any
+		if json.Unmarshal(varsRaw, &varsMap) == nil {
+			vars := make(map[string]oapi.LiteralValue, len(varsMap))
+			for k, val := range varsMap {
+				var lv oapi.LiteralValue
+				switch t := val.(type) {
+				case string:
+					_ = lv.FromStringValue(t)
+				case float64:
+					_ = lv.FromNumberValue(float32(t))
+				case bool:
+					_ = lv.FromBooleanValue(oapi.BooleanValue(t))
+				default:
+					continue
+				}
+				vars[k] = lv
 			}
-			vars[k] = lv
+			dc.Variables = &vars
 		}
-		dc.Variables = &vars
 	}
 
 	return &dc
