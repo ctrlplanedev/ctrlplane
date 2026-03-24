@@ -29,6 +29,10 @@ const deploymentTfeConfig = z.object({
   template: z.string(),
 });
 
+const deploymentArgoWorkflowConfig = z.object({
+  template: z.string(),
+});
+
 const deploymentCustomConfig = z.object({}).passthrough();
 
 const deploymentJobAgentConfig = z.union([
@@ -36,6 +40,7 @@ const deploymentJobAgentConfig = z.union([
   deploymentArgoCdConfig,
   deploymentTfeConfig,
   deploymentCustomConfig,
+  deploymentArgoWorkflowConfig,
 ]);
 
 const getAgentsArrayWithLegacyAgent = (
@@ -507,6 +512,10 @@ export const deploymentsRouter = router({
         const tfeResult = deploymentTfeConfig.safeParse(config);
         if (tfeResult.success)
           return { ...tfeResult.data, type: "tfe" as const };
+        const argoWorkflowResult =
+          deploymentArgoWorkflowConfig.safeParse(config);
+        if (argoWorkflowResult.success)
+          return { ...argoWorkflowResult.data, type: "argo-workflow" as const };
         return { ...config, type: "custom" as const };
       };
 

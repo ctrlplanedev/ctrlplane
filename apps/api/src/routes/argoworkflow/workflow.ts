@@ -11,6 +11,7 @@ interface ArgoWorkflowPayload {
   createdAt: string;
   startedAt: string;
   finishedAt: string | null;
+  jobId: string | null;
   phase: string;
   eventType: string;
 }
@@ -32,10 +33,17 @@ const extractUuid = (str: string) => {
 export const mapTriggerToStatus = (trigger: string): JobStatus | null =>
   statusMap[trigger] ?? null;
 
+export const getJobId = (payload: ArgoWorkflowPayload): string => {
+  if (payload.jobId != null && payload.jobId !== "") {
+    return payload.jobId;
+  }
+  return payload.workflowName;
+};
+
 export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
   const { workflowName, uid, phase, startedAt, finishedAt } = payload;
 
-  const jobId = extractUuid(workflowName);
+  const jobId = getJobId(payload);
   if (jobId == null) return;
 
   const status = statusMap[phase] ?? null;
