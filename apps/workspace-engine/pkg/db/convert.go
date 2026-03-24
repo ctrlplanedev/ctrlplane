@@ -483,9 +483,20 @@ func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 	return j
 }
 
+func stripVariablesKey(raw json.RawMessage) json.RawMessage {
+	var obj map[string]json.RawMessage
+	if json.Unmarshal(raw, &obj) != nil {
+		return raw
+	}
+	delete(obj, "variables")
+	out, err := json.Marshal(obj)
+	if err != nil {
+		return raw
+	}
+	return out
+}
+
 func parseDispatchContext(raw []byte) *oapi.DispatchContext {
-	// Strip "variables" before unmarshalling — it uses the LiteralValue union
-	// type which breaks json.Unmarshal. Everything else unmarshals fine.
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &fields); err != nil {
 		return nil
@@ -493,6 +504,10 @@ func parseDispatchContext(raw []byte) *oapi.DispatchContext {
 
 	varsRaw := fields["variables"]
 	delete(fields, "variables")
+
+	if release, ok := fields["release"]; ok {
+		fields["release"] = stripVariablesKey(release)
+	}
 
 	stripped, err := json.Marshal(fields)
 	if err != nil {

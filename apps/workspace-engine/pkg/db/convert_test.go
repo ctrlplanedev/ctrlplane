@@ -438,3 +438,29 @@ func TestParseDispatchContext_FullBlob(t *testing.T) {
 	require.True(t, ok, "resource must be a map in Map() output")
 	assert.Equal(t, "wandb-incyte", resource["name"])
 }
+
+func TestParseDispatchContext_NestedReleaseVariables(t *testing.T) {
+	raw := []byte(`{
+		"release": {
+			"id": "a75c2617-cfec-55ed-a27c-23e8b149db87",
+			"version": {"id": "bd862bc1", "tag": "abc123", "name": "v1", "config": {}, "status": "ready", "metadata": {}, "createdAt": "2026-03-23T16:27:35.013Z", "deploymentId": "e9b5a41c"},
+			"createdAt": "2026-03-23T17:13:18Z",
+			"variables": {"size": "small"},
+			"releaseTarget": {"resourceId": "04f1ae82", "deploymentId": "e9b5a41c", "environmentId": "02bece1d"},
+			"encryptedVariables": []
+		},
+		"resource": {"id": "04f1ae82", "kind": "EKS", "name": "my-cluster", "config": {}, "version": "v1", "metadata": {}, "identifier": "arn:eks", "workspaceId": "ws1"},
+		"jobAgentConfig": {"type": "argo-cd"}
+	}`)
+
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc, "dispatch context must not be nil even with nested release.variables")
+
+	require.NotNil(t, dc.Resource, "resource must be populated despite nested release.variables")
+	assert.Equal(t, "my-cluster", dc.Resource.Name)
+
+	require.NotNil(t, dc.Release, "release must be populated")
+	assert.Equal(t, "abc123", dc.Release.Version.Tag)
+
+	assert.Equal(t, "argo-cd", dc.JobAgentConfig["type"])
+}
