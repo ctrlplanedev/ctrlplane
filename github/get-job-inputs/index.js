@@ -28148,7 +28148,7 @@ const getJob = async (jobId) => {
     const workspaces = workspaceIdsResponse.data?.workspaces ?? [];
     const workspaceIds = workspaces.map(({ id }) => id);
     for (const workspaceId of workspaceIds) {
-        const jobResponse = await api.GET("/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release", { params: { path: { workspaceId, jobId } } });
+        const jobResponse = await api.GET("/v1/workspaces/{workspaceId}/jobs/{jobId}", { params: { path: { workspaceId, jobId } } });
         const job = jobResponse.data;
         if (job != null)
             return { ...job, workspaceId };
@@ -28163,9 +28163,9 @@ async function run() {
         core.setFailed(`Job not found: ${jobId}`);
         return;
     }
-    const { dispatchContext, ...restJob } = job.job;
+    const { dispatchContext, ...rest } = job;
     const ghActionsJobObject = {
-        ...restJob,
+        ...rest,
         base: { url: baseUrl },
         variable: dispatchContext?.variables,
         resource: dispatchContext?.resource,

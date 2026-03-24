@@ -38,7 +38,7 @@ const setOutputsRecursively = (prefix: string | null, obj: any) => {
 };
 
 type Job =
-  Operations["getJobWithRelease"]["responses"]["200"]["content"]["application/json"];
+  Operations["getJob"]["responses"]["200"]["content"]["application/json"];
 
 type JobWithWorkspace = Job & {
   workspaceId: string;
@@ -51,7 +51,7 @@ const getJob = async (jobId: string): Promise<JobWithWorkspace | null> => {
 
   for (const workspaceId of workspaceIds) {
     const jobResponse = await api.GET(
-      "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release",
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}",
       { params: { path: { workspaceId, jobId } } },
     );
 
@@ -72,10 +72,10 @@ async function run() {
     return;
   }
 
-  const { dispatchContext, ...restJob } = job.job;
+  const { dispatchContext, ...rest } = job;
 
   const ghActionsJobObject = {
-    ...restJob,
+    ...rest,
     base: { url: baseUrl },
     variable: dispatchContext?.variables,
     resource: dispatchContext?.resource,
