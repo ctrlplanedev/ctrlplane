@@ -148,31 +148,30 @@ func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*wfv1.Workflow
 // values so they conform to Kubernetes naming rules.
 func MakeApplicationK8sCompatible(wf *wfv1.Workflow) {
 	if wf.Name != "" {
-		wf.Name = getK8sCompatibleName(wf.Name)
+		wf.Name = getK8sCompatibleName(wf.Name, false)
 	}
 	if wf.GenerateName != "" {
-		wf.GenerateName = getK8sCompatibleName(wf.GenerateName)
+		wf.GenerateName = getK8sCompatibleName(wf.GenerateName, true)
 	}
 	if wf.Labels != nil {
 		for key, value := range wf.Labels {
-			wf.Labels[key] = getK8sCompatibleName(value)
+			wf.Labels[key] = getK8sCompatibleName(value, false)
 		}
 	}
 }
 
-func getK8sCompatibleName(name string) string {
+func getK8sCompatibleName(name string, generated bool) string {
 	cleaned := strings.ToLower(name)
 	k8sInvalidCharsRegex := regexp.MustCompile(`[^a-z0-9-]`)
 	cleaned = k8sInvalidCharsRegex.ReplaceAllString(cleaned, "-")
-
 	if len(cleaned) > 63 {
 		cleaned = cleaned[:63]
 	}
-	cleaned = strings.Trim(cleaned, "-")
-	if cleaned == "" {
-		return "default"
+	if !generated {
+		cleaned = strings.Trim(cleaned, "-")
+	} else {
+		cleaned = strings.TrimLeft(cleaned, "-")
 	}
-
 	return cleaned
 }
 
