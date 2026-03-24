@@ -431,12 +431,24 @@ func TestParseDispatchContext_FullBlob(t *testing.T) {
 	require.NotNil(t, dc.Version, "version must be populated")
 	assert.Equal(t, "d19527d8ff5df1831990c8b65a3dd50dcd353b0e", dc.Version.Tag)
 
+	require.NotNil(t, dc.Release, "release must be populated")
+	require.NotEmpty(t, dc.Release.Variables, "release.variables must be populated")
+	relSv, relErr := dc.Release.Variables["size"].AsStringValue()
+	require.NoError(t, relErr)
+	assert.Equal(t, "small", relSv)
+
 	// Verify Map() produces the data the template engine needs
 	m := dc.Map()
 	require.NotNil(t, m)
 	resource, ok := m["resource"].(map[string]any)
 	require.True(t, ok, "resource must be a map in Map() output")
 	assert.Equal(t, "wandb-incyte", resource["name"])
+
+	release, ok := m["release"].(map[string]any)
+	require.True(t, ok, "release must be a map in Map() output")
+	releaseVars, ok := release["variables"].(map[string]any)
+	require.True(t, ok, "release.variables must be present in Map() output")
+	assert.Equal(t, "small", releaseVars["size"])
 }
 
 func TestParseDispatchContext_NestedReleaseVariables(t *testing.T) {
@@ -463,4 +475,16 @@ func TestParseDispatchContext_NestedReleaseVariables(t *testing.T) {
 	assert.Equal(t, "abc123", dc.Release.Version.Tag)
 
 	assert.Equal(t, "argo-cd", dc.JobAgentConfig["type"])
+
+	require.NotEmpty(t, dc.Release.Variables, "release.variables must be populated")
+	sv, err := dc.Release.Variables["size"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "small", sv)
+
+	m := dc.Map()
+	release, ok := m["release"].(map[string]any)
+	require.True(t, ok)
+	releaseVars, ok := release["variables"].(map[string]any)
+	require.True(t, ok, "release.variables must be present in Map() output")
+	assert.Equal(t, "small", releaseVars["size"])
 }
