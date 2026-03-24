@@ -22,7 +22,7 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 	ctx context.Context,
 	serverAddr, apiKey string,
 	wf *wfv1.Workflow,
-) error {
+) (*wfv1.Workflow, error) {
 
 	ctx, apiClient, err := argoapiclient.NewClientFromOptsWithContext(ctx, argoapiclient.Opts{
 		ArgoServerOpts: argoapiclient.ArgoServerOpts{
@@ -36,28 +36,28 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create argo client: %w", err)
+		return nil, fmt.Errorf("failed to create argo client: %w", err)
 	}
-	fmt.Printf("serverAddr: %s, apiKey: %s\n", serverAddr, apiKey)
-
 	wfClient := apiClient.NewWorkflowServiceClient(ctx)
 	namespace := wf.Namespace
 	if namespace == "" {
 		namespace = "default"
 	}
 
-	return retry.Do(
+	var created *wfv1.Workflow
+	err = retry.Do(
 		func() error {
-			_, err := wfClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
+			var createdErr error
+			created, createdErr = wfClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
 				Namespace: namespace,
 				Workflow:  wf,
 			})
 
-			if err != nil {
-				if isRetryableError(err) {
-					return err
+			if createdErr != nil {
+				if isRetryableError(createdErr) {
+					return createdErr
 				}
-				return retry.Unrecoverable(err)
+				return retry.Unrecoverable(createdErr)
 			}
 			return nil
 		},
@@ -72,6 +72,7 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 		}),
 		retry.Context(ctx),
 	)
+	return created, err
 }
 
 func isRetryableError(err error) bool {

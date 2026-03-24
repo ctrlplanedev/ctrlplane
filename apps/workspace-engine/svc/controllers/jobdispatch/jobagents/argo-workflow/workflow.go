@@ -43,7 +43,7 @@ type WorkflowDeleter interface {
 
 // WorkflowSubmitter submits an Argo Workflows Workflow to the server.
 type WorkflowSubmitter interface {
-	SubmitWorkflow(ctx context.Context, serverAddr, apiKey string, wf *wfv1.Workflow) error
+	SubmitWorkflow(ctx context.Context, serverAddr, apiKey string, wf *wfv1.Workflow) (*wfv1.Workflow, error)
 }
 
 type ArgoWorkflow struct {
@@ -66,7 +66,6 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := ParseJobAgentConfig(jobAgentConfig)
-	fmt.Printf("jobConfig: %+v\n", jobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
@@ -76,7 +75,11 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("failed to generate workflow from template: %w", err)
 	}
 
-	wf.Name = job.Id
+	if wf.Labels == nil {
+		wf.Labels = map[string]string{}
+	}
+
+	wf.Labels["job-id"] = job.Id
 	MakeApplicationK8sCompatible(wf)
 
 	go func() {
@@ -86,13 +89,14 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 		)
 		defer span.End()
 
-		if err := a.submitter.SubmitWorkflow(asyncCtx, serverAddr, apiKey, wf); err != nil {
+		created, err := a.submitter.SubmitWorkflow(asyncCtx, serverAddr, apiKey, wf)
+		if err != nil {
 			_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusFailure,
 				fmt.Sprintf("failed to submit workflow: %s", err.Error()), nil)
 			return
 		}
 
-		metadata := BuildArgoLinks(serverAddr, wf)
+		metadata := BuildArgoLinks(serverAddr, created)
 		_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusInProgress, "", metadata)
 	}()
 
@@ -143,7 +147,12 @@ func TemplateApplication(ctx *oapi.DispatchContext, tmpl string) (*wfv1.Workflow
 // MakeApplicationK8sCompatible sanitises the workflow name and label
 // values so they conform to Kubernetes naming rules.
 func MakeApplicationK8sCompatible(wf *wfv1.Workflow) {
-	wf.Name = getK8sCompatibleName(wf.Name)
+	if wf.Name != "" {
+		wf.Name = getK8sCompatibleName(wf.Name)
+	}
+	if wf.GenerateName != "" {
+		wf.GenerateName = getK8sCompatibleName(wf.GenerateName)
+	}
 	if wf.Labels != nil {
 		for key, value := range wf.Labels {
 			wf.Labels[key] = getK8sCompatibleName(value)
