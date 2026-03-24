@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -14,12 +19,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/sync/errgroup"
 )
 
 type versionEvaluation struct {

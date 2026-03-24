@@ -3,10 +3,9 @@ package db
 import (
 	"encoding/json"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/oapi"
 )
 
 func ToOapiDeployment(row Deployment) *oapi.Deployment {

@@ -6,13 +6,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 )
 
 type PostgresSetter struct {
@@ -73,11 +72,14 @@ func (s *PostgresSetter) SetDesiredRelease(
 		return fmt.Errorf("upsert release: %w", err)
 	}
 
-	currentDesiredRelease, err := q.GetDesiredReleaseByReleaseTarget(ctx, db.GetDesiredReleaseByReleaseTargetParams{
-		ResourceID:    rt.ResourceID,
-		EnvironmentID: rt.EnvironmentID,
-		DeploymentID:  rt.DeploymentID,
-	})
+	currentDesiredRelease, err := q.GetDesiredReleaseByReleaseTarget(
+		ctx,
+		db.GetDesiredReleaseByReleaseTargetParams{
+			ResourceID:    rt.ResourceID,
+			EnvironmentID: rt.EnvironmentID,
+			DeploymentID:  rt.DeploymentID,
+		},
+	)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("get current desired release: %w", err)
 	}

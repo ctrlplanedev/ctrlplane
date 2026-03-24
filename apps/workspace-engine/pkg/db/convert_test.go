@@ -420,7 +420,11 @@ func TestParseDispatchContext_FullBlob(t *testing.T) {
 	require.NotNil(t, dc.Resource, "resource must be populated")
 	assert.Equal(t, "wandb-incyte", dc.Resource.Name)
 	assert.Equal(t, "04f1ae82-de8b-4862-9ab1-8c2d513b403f", dc.Resource.Id)
-	assert.Equal(t, "arn:aws:eks:us-east-1:830241207209:cluster/wandb-incyte", dc.Resource.Identifier)
+	assert.Equal(
+		t,
+		"arn:aws:eks:us-east-1:830241207209:cluster/wandb-incyte",
+		dc.Resource.Identifier,
+	)
 
 	require.NotNil(t, dc.Deployment, "deployment must be populated")
 	assert.Equal(t, "Datadog Cluster Agent", dc.Deployment.Name)

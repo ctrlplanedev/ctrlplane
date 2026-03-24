@@ -7,15 +7,14 @@ import (
 	"regexp"
 	"strings"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo")
@@ -86,8 +85,12 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 	span.SetAttributes(attribute.String("job.id", job.Id))
 	span.SetAttributes(attribute.String("job.status", string(job.Status)))
-	span.SetAttributes(attribute.String("job.dispatch_context", fmt.Sprintf("%+v", job.DispatchContext)))
-	span.SetAttributes(attribute.String("job.dispatch_context_raw", fmt.Sprintf("%+v", job.DispatchContext.Map())))
+	span.SetAttributes(
+		attribute.String("job.dispatch_context", fmt.Sprintf("%+v", job.DispatchContext)),
+	)
+	span.SetAttributes(
+		attribute.String("job.dispatch_context_raw", fmt.Sprintf("%+v", job.DispatchContext.Map())),
+	)
 
 	dispatchCtx := job.DispatchContext
 	if dispatchCtx == nil {
