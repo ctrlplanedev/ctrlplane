@@ -33,7 +33,10 @@ type Getters interface {
 
 var _ Getters = (*PostgresGetters)(nil)
 
-func NewPostgresGetters(queries *db.Queries, jobsForRT releasetargets.GetJobsForReleaseTarget) *PostgresGetters {
+func NewPostgresGetters(
+	queries *db.Queries,
+	jobsForRT releasetargets.GetJobsForReleaseTarget,
+) *PostgresGetters {
 	if jobsForRT == nil {
 		jobsForRT = releasetargets.NewGetJobsForReleaseTarget()
 	}

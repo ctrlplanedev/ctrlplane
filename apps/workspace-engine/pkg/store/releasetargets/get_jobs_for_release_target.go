@@ -3,13 +3,11 @@ package releasetargets
 import (
 	"context"
 
-	"workspace-engine/pkg/oapi"
-
-	"workspace-engine/pkg/db"
-
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type GetJobsForReleaseTarget interface {
@@ -37,7 +35,9 @@ func (s *PostgresGetJobsForReleaseTarget) GetJobsForReleaseTarget(
 	defer span.End()
 
 	span.SetAttributes(attribute.String("release_target.deployment_id", releaseTarget.DeploymentId))
-	span.SetAttributes(attribute.String("release_target.environment_id", releaseTarget.EnvironmentId))
+	span.SetAttributes(
+		attribute.String("release_target.environment_id", releaseTarget.EnvironmentId),
+	)
 	span.SetAttributes(attribute.String("release_target.resource_id", releaseTarget.ResourceId))
 
 	if s.cache != nil {

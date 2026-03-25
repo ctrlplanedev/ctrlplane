@@ -711,26 +711,14 @@ type Workflow struct {
 	ID          uuid.UUID
 	Name        string
 	Inputs      []byte
-	Jobs        []byte
+	JobAgents   []byte
 	WorkspaceID uuid.UUID
 }
 
 type WorkflowJob struct {
 	ID            uuid.UUID
 	WorkflowRunID uuid.UUID
-	Ref           string
-	Config        map[string]any
-	Index         int32
-}
-
-type WorkflowJobTemplate struct {
-	ID          uuid.UUID
-	WorkflowID  uuid.UUID
-	Name        string
-	Ref         string
-	Config      map[string]any
-	IfCondition pgtype.Text
-	Matrix      []byte
+	JobID         uuid.UUID
 }
 
 type WorkflowRun struct {

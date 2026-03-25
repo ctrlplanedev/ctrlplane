@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { ConfigEntry } from "~/components/config-entry";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useJobAgent } from "../_hooks/job-agents";
 
@@ -86,17 +87,7 @@ function ConfigExpanded({
 
         <div className="max-h-[80vh] overflow-auto rounded-md border border-muted-foreground/20 p-2">
           {entries.map(([key, value]) => (
-            <div
-              key={key}
-              className="flex items-start gap-2 font-mono font-semibold"
-            >
-              <span className="shrink-0 text-red-600">{key}:</span>
-              <pre className="text-green-700">
-                {typeof value === "string"
-                  ? value
-                  : JSON.stringify(value, null, 2)}
-              </pre>
-            </div>
+            <ConfigEntry key={key} entryKey={key} value={value} />
           ))}
         </div>
       </DialogContent>
@@ -122,17 +113,7 @@ function Config({
       </div>
       <div className="max-h-60 overflow-auto rounded-md border border-muted-foreground/20 p-2">
         {entries.map(([key, value]) => (
-          <div
-            key={key}
-            className="flex items-start gap-2 font-mono font-semibold"
-          >
-            <span className="shrink-0 text-red-600">{key}:</span>
-            <pre className="text-green-700">
-              {typeof value === "string"
-                ? value
-                : JSON.stringify(value, null, 2)}
-            </pre>
-          </div>
+          <ConfigEntry key={key} entryKey={key} value={value} />
         ))}
       </div>
     </div>

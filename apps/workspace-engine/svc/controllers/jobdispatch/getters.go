@@ -16,4 +16,5 @@ type Getter interface {
 		ctx context.Context,
 		rt *ReleaseTarget,
 	) ([]oapi.VerificationMetricSpec, error)
+	IsWorkflowJob(ctx context.Context, jobID uuid.UUID) (bool, error)
 }

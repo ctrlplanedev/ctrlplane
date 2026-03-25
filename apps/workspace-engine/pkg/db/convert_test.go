@@ -321,3 +321,174 @@ func TestToOapiPolicy_NoDescription(t *testing.T) {
 	p := ToOapiPolicy(row)
 	assert.Nil(t, p.Description)
 }
+
+// ---------------------------------------------------------------------------
+// parseDispatchContext
+// ---------------------------------------------------------------------------
+
+func TestParseDispatchContext_ValidJSON(t *testing.T) {
+	raw := []byte(`{
+		"jobAgentConfig": {"type": "argo-cd", "serverUrl": "https://argo.example.com"},
+		"variables": {"size": "small", "count": 3, "enabled": true}
+	}`)
+
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc)
+
+	assert.Equal(t, "argo-cd", dc.JobAgentConfig["type"])
+	assert.Equal(t, "https://argo.example.com", dc.JobAgentConfig["serverUrl"])
+
+	require.NotNil(t, dc.Variables)
+	vars := *dc.Variables
+
+	sv, err := vars["size"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "small", sv)
+
+	nv, err := vars["count"].AsNumberValue()
+	require.NoError(t, err)
+	assert.InDelta(t, float32(3), nv, 0)
+
+	bv, err := vars["enabled"].AsBooleanValue()
+	require.NoError(t, err)
+	assert.True(t, bool(bv))
+}
+
+func TestParseDispatchContext_InvalidJSON(t *testing.T) {
+	dc := parseDispatchContext([]byte(`not json`))
+	assert.Nil(t, dc)
+}
+
+func TestParseDispatchContext_EmptyObject(t *testing.T) {
+	dc := parseDispatchContext([]byte(`{}`))
+	require.NotNil(t, dc)
+	assert.Nil(t, dc.Variables)
+}
+
+func TestParseDispatchContext_NoVariables(t *testing.T) {
+	raw := []byte(`{"jobAgentConfig": {"type": "github"}}`)
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc)
+	assert.Equal(t, "github", dc.JobAgentConfig["type"])
+	assert.Nil(t, dc.Variables)
+}
+
+func TestParseDispatchContext_VariablesWithUnsupportedType(t *testing.T) {
+	raw := []byte(`{"variables": {"good": "yes", "bad": [1, 2, 3]}}`)
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc)
+	require.NotNil(t, dc.Variables)
+	vars := *dc.Variables
+	_, ok := vars["good"]
+	assert.True(t, ok, "string variable should be included")
+	_, ok = vars["bad"]
+	assert.False(t, ok, "array variable should be skipped")
+}
+
+func TestParseDispatchContext_FullBlob(t *testing.T) {
+	raw := []byte(`{
+		"release": {
+			"id": "a75c2617-cfec-55ed-a27c-23e8b149db87",
+			"version": {"id": "bd862bc1-26af-4cbc-9172-288615db1118", "tag": "d19527d8ff5df1831990c8b65a3dd50dcd353b0e", "name": "3.195.1-d19527d", "config": {}, "status": "ready", "metadata": {}, "createdAt": "2026-03-23T16:27:35.013Z", "deploymentId": "e9b5a41c-e837-464f-9eed-026d8d660c38"},
+			"createdAt": "2026-03-23T17:13:18Z",
+			"variables": {"size": "small"},
+			"releaseTarget": {"resourceId": "04f1ae82-de8b-4862-9ab1-8c2d513b403f", "deploymentId": "e9b5a41c-e837-464f-9eed-026d8d660c38", "environmentId": "02bece1d-6145-45d4-9f7c-a1fb801a58a7"},
+			"encryptedVariables": []
+		},
+		"version": {"id": "bd862bc1-26af-4cbc-9172-288615db1118", "tag": "d19527d8ff5df1831990c8b65a3dd50dcd353b0e", "name": "3.195.1-d19527d", "config": {}, "status": "ready", "metadata": {}, "createdAt": "2026-03-23T16:27:35.013Z", "deploymentId": "e9b5a41c-e837-464f-9eed-026d8d660c38"},
+		"jobAgent": {"id": "65d49095-2f80-4563-bc6d-85d916354097", "name": "W&B ArgoCD", "type": "argo-cd", "config": {}, "metadata": {}, "workspaceId": "569de0fb-6173-45b7-bb84-2f01b5e08075"},
+		"resource": {"id": "04f1ae82-de8b-4862-9ab1-8c2d513b403f", "kind": "AmazonElasticKubernetesService", "name": "wandb-incyte", "config": {}, "version": "ctrlplane.dev/kubernetes/cluster/v1", "metadata": {}, "createdAt": "2025-10-20T09:24:45.81861Z", "updatedAt": "2026-03-13T05:00:12.381752457Z", "identifier": "arn:aws:eks:us-east-1:830241207209:cluster/wandb-incyte", "workspaceId": "569de0fb-6173-45b7-bb84-2f01b5e08075"},
+		"variables": {"size": "small"},
+		"deployment": {"id": "e9b5a41c-e837-464f-9eed-026d8d660c38", "name": "Datadog Cluster Agent", "slug": "datadog-cluster-agent", "metadata": {}, "description": "Datadog Cluster Agent"},
+		"environment": {"id": "02bece1d-6145-45d4-9f7c-a1fb801a58a7", "name": "prod-aws", "metadata": {}, "createdAt": "2026-02-13T18:19:28.877Z", "description": "Prod Cluster Platform Tools for aws", "workspaceId": ""},
+		"jobAgentConfig": {"type": "argo-cd", "apiKey": "test-key", "template": "some-template", "serverUrl": "argocd.wandb.dev"}
+	}`)
+
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc)
+
+	assert.Equal(t, "argo-cd", dc.JobAgentConfig["type"])
+	assert.Equal(t, "test-key", dc.JobAgentConfig["apiKey"])
+	assert.Equal(t, "argocd.wandb.dev", dc.JobAgentConfig["serverUrl"])
+
+	require.NotNil(t, dc.Variables)
+	vars := *dc.Variables
+	sv, err := vars["size"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "small", sv)
+
+	require.NotNil(t, dc.Resource, "resource must be populated")
+	assert.Equal(t, "wandb-incyte", dc.Resource.Name)
+	assert.Equal(t, "04f1ae82-de8b-4862-9ab1-8c2d513b403f", dc.Resource.Id)
+	assert.Equal(
+		t,
+		"arn:aws:eks:us-east-1:830241207209:cluster/wandb-incyte",
+		dc.Resource.Identifier,
+	)
+
+	require.NotNil(t, dc.Deployment, "deployment must be populated")
+	assert.Equal(t, "Datadog Cluster Agent", dc.Deployment.Name)
+
+	require.NotNil(t, dc.Environment, "environment must be populated")
+	assert.Equal(t, "prod-aws", dc.Environment.Name)
+
+	require.NotNil(t, dc.Version, "version must be populated")
+	assert.Equal(t, "d19527d8ff5df1831990c8b65a3dd50dcd353b0e", dc.Version.Tag)
+
+	require.NotNil(t, dc.Release, "release must be populated")
+	require.NotEmpty(t, dc.Release.Variables, "release.variables must be populated")
+	relSv, relErr := dc.Release.Variables["size"].AsStringValue()
+	require.NoError(t, relErr)
+	assert.Equal(t, "small", relSv)
+
+	// Verify Map() produces the data the template engine needs
+	m := dc.Map()
+	require.NotNil(t, m)
+	resource, ok := m["resource"].(map[string]any)
+	require.True(t, ok, "resource must be a map in Map() output")
+	assert.Equal(t, "wandb-incyte", resource["name"])
+
+	release, ok := m["release"].(map[string]any)
+	require.True(t, ok, "release must be a map in Map() output")
+	releaseVars, ok := release["variables"].(map[string]any)
+	require.True(t, ok, "release.variables must be present in Map() output")
+	assert.Equal(t, "small", releaseVars["size"])
+}
+
+func TestParseDispatchContext_NestedReleaseVariables(t *testing.T) {
+	raw := []byte(`{
+		"release": {
+			"id": "a75c2617-cfec-55ed-a27c-23e8b149db87",
+			"version": {"id": "bd862bc1", "tag": "abc123", "name": "v1", "config": {}, "status": "ready", "metadata": {}, "createdAt": "2026-03-23T16:27:35.013Z", "deploymentId": "e9b5a41c"},
+			"createdAt": "2026-03-23T17:13:18Z",
+			"variables": {"size": "small"},
+			"releaseTarget": {"resourceId": "04f1ae82", "deploymentId": "e9b5a41c", "environmentId": "02bece1d"},
+			"encryptedVariables": []
+		},
+		"resource": {"id": "04f1ae82", "kind": "EKS", "name": "my-cluster", "config": {}, "version": "v1", "metadata": {}, "identifier": "arn:eks", "workspaceId": "ws1"},
+		"jobAgentConfig": {"type": "argo-cd"}
+	}`)
+
+	dc := parseDispatchContext(raw)
+	require.NotNil(t, dc, "dispatch context must not be nil even with nested release.variables")
+
+	require.NotNil(t, dc.Resource, "resource must be populated despite nested release.variables")
+	assert.Equal(t, "my-cluster", dc.Resource.Name)
+
+	require.NotNil(t, dc.Release, "release must be populated")
+	assert.Equal(t, "abc123", dc.Release.Version.Tag)
+
+	assert.Equal(t, "argo-cd", dc.JobAgentConfig["type"])
+
+	require.NotEmpty(t, dc.Release.Variables, "release.variables must be populated")
+	sv, err := dc.Release.Variables["size"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "small", sv)
+
+	m := dc.Map()
+	release, ok := m["release"].(map[string]any)
+	require.True(t, ok)
+	releaseVars, ok := release["variables"].(map[string]any)
+	require.True(t, ok, "release.variables must be present in Map() output")
+	assert.Equal(t, "small", releaseVars["size"])
+}

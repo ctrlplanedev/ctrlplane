@@ -28148,7 +28148,7 @@ const getJob = async (jobId) => {
     const workspaces = workspaceIdsResponse.data?.workspaces ?? [];
     const workspaceIds = workspaces.map(({ id }) => id);
     for (const workspaceId of workspaceIds) {
-        const jobResponse = await api.GET("/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release", { params: { path: { workspaceId, jobId } } });
+        const jobResponse = await api.GET("/v1/workspaces/{workspaceId}/jobs/{jobId}", { params: { path: { workspaceId, jobId } } });
         const job = jobResponse.data;
         if (job != null)
             return { ...job, workspaceId };
@@ -28163,15 +28163,16 @@ async function run() {
         core.setFailed(`Job not found: ${jobId}`);
         return;
     }
+    const { dispatchContext, ...rest } = job;
     const ghActionsJobObject = {
-        ...job.job,
+        ...rest,
         base: { url: baseUrl },
-        variable: job.release.variables,
-        resource: job.resource,
-        version: job.release.version,
+        variable: dispatchContext?.variables,
+        resource: dispatchContext?.resource,
+        version: dispatchContext?.version,
         workspace: { id: job.workspaceId },
-        environment: job.environment,
-        deployment: job.deployment,
+        environment: dispatchContext?.environment,
+        deployment: dispatchContext?.deployment,
     };
     setOutputsRecursively(null, ghActionsJobObject);
     const missingOutputs = requiredOutputs.filter((output) => !outputTracker.has(output));
