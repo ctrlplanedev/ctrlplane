@@ -271,7 +271,10 @@ func loadReleaseTargetInputs(
 	return reconcilers, nil
 }
 
-func buildSharedEvaluators(getter Getter, reconcilers []*reconciler) map[string]evaluator.Evaluator {
+func buildSharedEvaluators(
+	getter Getter,
+	reconcilers []*reconciler,
+) map[string]evaluator.Evaluator {
 	shared := make(map[string]evaluator.Evaluator)
 	for _, r := range reconcilers {
 		for _, eval := range collectEvaluators(getter, r.policies) {
