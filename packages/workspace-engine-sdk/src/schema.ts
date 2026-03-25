@@ -757,7 +757,11 @@ export interface components {
       currentVersion?: components["schemas"]["DeploymentVersion"];
       desiredVersion?: components["schemas"]["DeploymentVersion"];
       environment: components["schemas"]["Environment"];
-      latestJob?: components["schemas"]["Job"];
+      latestJob?:
+        | (components["schemas"]["Job"] & {
+            verifications: components["schemas"]["JobVerification"][];
+          })
+        | null;
       releaseTarget: {
         deploymentId: string;
         environmentId: string;
@@ -1019,7 +1023,7 @@ export interface components {
       | components["schemas"]["SensitiveValue"];
     VerificationMeasurement: {
       /** @description Raw measurement data */
-      data?: {
+      data: {
         [key: string]: unknown;
       };
       /**
@@ -1070,6 +1074,7 @@ export interface components {
       successThreshold?: number;
     };
     VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
+      id: string;
       /** @description Individual verification measurements taken for this metric */
       measurements: components["schemas"]["VerificationMeasurement"][];
     };

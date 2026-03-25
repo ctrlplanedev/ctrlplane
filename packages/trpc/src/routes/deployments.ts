@@ -151,7 +151,18 @@ export const deploymentsRouter = router({
         });
       }
 
-      return result.data.items;
+      return result.data.items.map((item) => ({
+        ...item,
+        latestJob: item.latestJob
+          ? {
+              ...item.latestJob,
+              createdAt: new Date(item.latestJob.createdAt),
+              completedAt: item.latestJob.completedAt
+                ? new Date(item.latestJob.completedAt)
+                : null,
+            }
+          : null,
+      }));
     }),
 
   versions: protectedProcedure

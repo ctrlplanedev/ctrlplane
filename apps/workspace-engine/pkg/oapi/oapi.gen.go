@@ -879,8 +879,25 @@ type ReleaseTargetItem struct {
 	CurrentVersion *DeploymentVersion `json:"currentVersion,omitempty"`
 	DesiredVersion *DeploymentVersion `json:"desiredVersion,omitempty"`
 	Environment    Environment        `json:"environment"`
-	LatestJob      *Job               `json:"latestJob,omitempty"`
-	ReleaseTarget  struct {
+	LatestJob      *struct {
+		CompletedAt     *time.Time        `json:"completedAt,omitempty"`
+		CreatedAt       time.Time         `json:"createdAt"`
+		DispatchContext *DispatchContext  `json:"dispatchContext,omitempty"`
+		ExternalId      *string           `json:"externalId,omitempty"`
+		Id              string            `json:"id"`
+		JobAgentConfig  JobAgentConfig    `json:"jobAgentConfig"`
+		JobAgentId      string            `json:"jobAgentId"`
+		Message         *string           `json:"message,omitempty"`
+		Metadata        map[string]string `json:"metadata"`
+		ReleaseId       string            `json:"releaseId"`
+		StartedAt       *time.Time        `json:"startedAt,omitempty"`
+		Status          JobStatus         `json:"status"`
+		TraceToken      *string           `json:"traceToken,omitempty"`
+		UpdatedAt       time.Time         `json:"updatedAt"`
+		Verifications   []JobVerification `json:"verifications"`
+		WorkflowJobId   string            `json:"workflowJobId"`
+	} `json:"latestJob"`
+	ReleaseTarget struct {
 		DeploymentId  string `json:"deploymentId"`
 		EnvironmentId string `json:"environmentId"`
 		ResourceId    string `json:"resourceId"`
@@ -1155,7 +1172,7 @@ type Value struct {
 // VerificationMeasurement defines model for VerificationMeasurement.
 type VerificationMeasurement struct {
 	// Data Raw measurement data
-	Data *map[string]interface{} `json:"data,omitempty"`
+	Data map[string]interface{} `json:"data"`
 
 	// MeasuredAt When measurement was taken
 	MeasuredAt time.Time `json:"measuredAt"`
@@ -1204,7 +1221,8 @@ type VerificationMetricStatus struct {
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
 	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
-	FailureThreshold *int `json:"failureThreshold,omitempty"`
+	FailureThreshold *int   `json:"failureThreshold,omitempty"`
+	Id               string `json:"id"`
 
 	// IntervalSeconds Interval between measurements in seconds
 	IntervalSeconds int32 `json:"intervalSeconds"`
