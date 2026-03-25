@@ -8737,6 +8737,88 @@
                "Workflows"
             ]
          }
+      },
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
+         "post": {
+            "description": "Creates a new run for a workflow.",
+            "operationId": "createWorkflowRun",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the workflow",
+                  "in": "path",
+                  "name": "workflowId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "inputs": {
+                              "additionalProperties": true,
+                              "description": "Input values for the workflow run.",
+                              "type": "object"
+                           }
+                        },
+                        "required": [
+                           "inputs"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "201": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/WorkflowRun"
+                        }
+                     }
+                  },
+                  "description": "Resource created successfully"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Create a workflow run",
+            "tags": [
+               "Workflows"
+            ]
+         }
       }
    },
    "security": [
