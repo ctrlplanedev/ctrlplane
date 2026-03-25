@@ -347,7 +347,7 @@ func TestParseDispatchContext_ValidJSON(t *testing.T) {
 
 	nv, err := vars["count"].AsNumberValue()
 	require.NoError(t, err)
-	assert.Equal(t, float32(3), nv)
+	assert.InDelta(t, float32(3), nv, 0)
 
 	bv, err := vars["enabled"].AsBooleanValue()
 	require.NoError(t, err)

@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, count, eq, sql } from "@ctrlplane/db";
+import { count, eq, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
