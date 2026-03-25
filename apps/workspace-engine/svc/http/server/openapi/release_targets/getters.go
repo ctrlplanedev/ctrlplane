@@ -10,12 +10,12 @@ import (
 )
 
 type ReleaseTargetResult struct {
-	ReleaseTarget  gin.H  `json:"releaseTarget"`
-	Environment    gin.H  `json:"environment"`
-	Resource       gin.H  `json:"resource"`
-	DesiredVersion gin.H  `json:"desiredVersion,omitempty"`
-	CurrentVersion gin.H  `json:"currentVersion,omitempty"`
-	LatestJob      gin.H  `json:"latestJob,omitempty"`
+	ReleaseTarget  gin.H `json:"releaseTarget"`
+	Environment    gin.H `json:"environment"`
+	Resource       gin.H `json:"resource"`
+	DesiredVersion gin.H `json:"desiredVersion,omitempty"`
+	CurrentVersion gin.H `json:"currentVersion,omitempty"`
+	LatestJob      gin.H `json:"latestJob,omitempty"`
 }
 
 type Getter interface {
@@ -28,7 +28,10 @@ var _ Getter = &PostgresGetter{}
 
 var nilUUID = uuid.UUID{}
 
-func (g *PostgresGetter) ListReleaseTargets(ctx context.Context, deploymentID string) ([]ReleaseTargetResult, error) {
+func (g *PostgresGetter) ListReleaseTargets(
+	ctx context.Context,
+	deploymentID string,
+) ([]ReleaseTargetResult, error) {
 	id, err := uuid.Parse(deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid deployment id: %w", err)
@@ -46,9 +49,17 @@ func (g *PostgresGetter) ListReleaseTargets(ctx context.Context, deploymentID st
 		return nil, fmt.Errorf("list current versions: %w", err)
 	}
 
-	currentVersionMap := make(map[string]db.ListCurrentVersionsByDeploymentIDRow, len(currentVersions))
+	currentVersionMap := make(
+		map[string]db.ListCurrentVersionsByDeploymentIDRow,
+		len(currentVersions),
+	)
 	for _, cv := range currentVersions {
-		key := fmt.Sprintf("%s-%s-%s", cv.ResourceID.String(), cv.EnvironmentID.String(), cv.DeploymentID.String())
+		key := fmt.Sprintf(
+			"%s-%s-%s",
+			cv.ResourceID.String(),
+			cv.EnvironmentID.String(),
+			cv.DeploymentID.String(),
+		)
 		currentVersionMap[key] = cv
 	}
 
@@ -132,7 +143,12 @@ func (g *PostgresGetter) ListReleaseTargets(ctx context.Context, deploymentID st
 			item.LatestJob = jobH
 		}
 
-		key := fmt.Sprintf("%s-%s-%s", row.ResourceID.String(), row.EnvironmentID.String(), row.DeploymentID.String())
+		key := fmt.Sprintf(
+			"%s-%s-%s",
+			row.ResourceID.String(),
+			row.EnvironmentID.String(),
+			row.DeploymentID.String(),
+		)
 		if cv, ok := currentVersionMap[key]; ok {
 			item.CurrentVersion = gin.H{
 				"id":             cv.VersionID.String(),
@@ -154,7 +170,11 @@ func (g *PostgresGetter) ListReleaseTargets(ctx context.Context, deploymentID st
 	return items, nil
 }
 
-func buildVerificationsMap(ctx context.Context, queries *db.Queries, jobIDs []uuid.UUID) map[string][]gin.H {
+func buildVerificationsMap(
+	ctx context.Context,
+	queries *db.Queries,
+	jobIDs []uuid.UUID,
+) map[string][]gin.H {
 	verificationsMap := make(map[string][]gin.H)
 	if len(jobIDs) == 0 {
 		return verificationsMap
