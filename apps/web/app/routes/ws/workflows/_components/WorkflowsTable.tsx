@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
+import { useNavigate, useParams } from "react-router";
 
 import {
   Table,
@@ -13,11 +14,17 @@ import { WorkflowActionsDropdown } from "./WorkflowActionsDropdown";
 type Workflow = RouterOutputs["workflows"]["list"][number];
 
 function WorkflowRow({ workflow }: { workflow: Workflow }) {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const navigate = useNavigate();
+
   return (
-    <TableRow>
+    <TableRow
+      className="cursor-pointer hover:bg-muted/50"
+      onClick={() => navigate(`/${workspaceSlug}/workflows/${workflow.id}`)}
+    >
       <TableCell className="font-medium">{workflow.name}</TableCell>
       <TableCell className="text-center font-mono text-sm">
-        {workflow.jobCount}
+        {workflow.runCount}
       </TableCell>
       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <WorkflowActionsDropdown />
@@ -33,7 +40,7 @@ export function WorkflowsTable({ workflows }: { workflows: Workflow[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
-          <TableHead className="text-center">Jobs</TableHead>
+          <TableHead className="text-center">Runs</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
