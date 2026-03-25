@@ -35,6 +35,10 @@ export function TfeConfig({ config }: { config: TfeConfig }) {
           {config.organization}
         </a>
       </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Token</span>
+        <span className="text-muted-foreground">[REDACTED]</span>
+      </div>
     </div>
   );
 }
