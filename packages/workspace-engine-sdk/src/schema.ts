@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+  "/v1/deployments/{deploymentId}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List release targets for a deployment */
+    get: operations["listReleaseTargets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/validate/resource-selector": {
     parameters: {
       query?: never;
@@ -736,6 +753,18 @@ export interface components {
       releaseTarget: components["schemas"]["ReleaseTarget"];
       state: components["schemas"]["ReleaseTargetState"];
     };
+    ReleaseTargetItem: {
+      currentVersion?: components["schemas"]["DeploymentVersion"];
+      desiredVersion?: components["schemas"]["DeploymentVersion"];
+      environment: components["schemas"]["Environment"];
+      latestJob?: components["schemas"]["Job"];
+      releaseTarget: {
+        deploymentId: string;
+        environmentId: string;
+        resourceId: string;
+      };
+      resource: components["schemas"]["Resource"];
+    };
     ReleaseTargetPreview: {
       deployment: components["schemas"]["Deployment"];
       environment: components["schemas"]["Environment"];
@@ -1161,6 +1190,40 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  listReleaseTargets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the deployment */
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of release targets for the deployment */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["ReleaseTargetItem"][];
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   validateResourceSelector: {
     parameters: {
       query?: never;
