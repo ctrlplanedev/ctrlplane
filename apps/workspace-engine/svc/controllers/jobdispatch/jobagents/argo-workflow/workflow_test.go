@@ -105,11 +105,25 @@ spec:
       args: ["hello world"]
 `
 
+const nonInlineWorkflowTemplate = `
+{{- $resourceName := .resource.name }}
+{{- $resourceIdentifier := .resource.identifier }}
+{{- $environmentName := .environment.name }}
+{{- $repo := .release.version.tag }}
+{
+  "repo": "{{$repo}}",
+  "resource": "{{$resourceName}}",
+  "environment": "{{$environmentName}}"
+}
+`
+
 func validConfig() oapi.JobAgentConfig {
 	return oapi.JobAgentConfig{
 		"serverUrl": "https://argo.example.com",
 		"apiKey":    "secret-token",
 		"template":  minimalWorkflowTemplate,
+		"inline":    true,
+		"name":      "job-1",
 	}
 }
 
@@ -125,6 +139,42 @@ func newTestJob(id string, cfg oapi.JobAgentConfig) *oapi.Job {
 			JobAgentConfig: cfg,
 		},
 	}
+}
+
+// ----- TemplateApplication (non-inline) -----
+
+func TestTemplateApplication_NonInline_RendersParamsAndCreatesTemplateRef(t *testing.T) {
+	tag := "v1.2.3"
+	ctx := &oapi.DispatchContext{
+		Resource: &oapi.Resource{
+			Name:       "my-resource",
+			Identifier: "res-id-123",
+		},
+		Environment: &oapi.Environment{
+			Name: "production",
+		},
+		Release: &oapi.Release{
+			Version: oapi.DeploymentVersion{
+				Tag: tag,
+			},
+		},
+		JobAgent:       oapi.JobAgent{},
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+
+	wf, err := TemplateApplication(ctx, nonInlineWorkflowTemplate, false, "my-workflow", "default")
+	require.NoError(t, err)
+	assert.Equal(t, "my-workflow-", wf.GenerateName)
+	require.NotNil(t, wf.Spec.WorkflowTemplateRef)
+	assert.Equal(t, "my-workflow", wf.Spec.WorkflowTemplateRef.Name)
+
+	params := make(map[string]string)
+	for _, p := range wf.Spec.Arguments.Parameters {
+		params[p.Name] = p.Value.String()
+	}
+	assert.Equal(t, tag, params["repo"])
+	assert.Equal(t, "my-resource", params["resource"])
+	assert.Equal(t, "production", params["environment"])
 }
 
 // ----- Type -----
@@ -280,17 +330,17 @@ func TestDispatch_ConcurrentDispatches(t *testing.T) {
 // ----- ParseJobAgentConfig -----
 
 func TestParseJobAgentConfig_Valid(t *testing.T) {
-	serverAddr, apiKey, template, err := ParseJobAgentConfig(validConfig())
+	c, err := ParseJobAgentConfig(validConfig())
 	require.NoError(t, err)
-	assert.Equal(t, "https://argo.example.com", serverAddr)
-	assert.Equal(t, "secret-token", apiKey)
-	assert.Equal(t, minimalWorkflowTemplate, template)
+	assert.Equal(t, "https://argo.example.com", c.serverAddr)
+	assert.Equal(t, "secret-token", c.apiKey)
+	assert.Equal(t, minimalWorkflowTemplate, c.template)
 }
 
 func TestParseJobAgentConfig_MissingServerUrl(t *testing.T) {
 	cfg := validConfig()
 	delete(cfg, "serverUrl")
-	_, _, _, err := ParseJobAgentConfig(cfg)
+	_, err := ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "serverUrl")
 }
@@ -298,7 +348,7 @@ func TestParseJobAgentConfig_MissingServerUrl(t *testing.T) {
 func TestParseJobAgentConfig_MissingApiKey(t *testing.T) {
 	cfg := validConfig()
 	delete(cfg, "apiKey")
-	_, _, _, err := ParseJobAgentConfig(cfg)
+	_, err := ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "apiKey")
 }
@@ -306,7 +356,7 @@ func TestParseJobAgentConfig_MissingApiKey(t *testing.T) {
 func TestParseJobAgentConfig_MissingTemplate(t *testing.T) {
 	cfg := validConfig()
 	delete(cfg, "template")
-	_, _, _, err := ParseJobAgentConfig(cfg)
+	_, err := ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "template")
 }
@@ -314,14 +364,14 @@ func TestParseJobAgentConfig_MissingTemplate(t *testing.T) {
 func TestParseJobAgentConfig_EmptyServerUrl(t *testing.T) {
 	cfg := validConfig()
 	cfg["serverUrl"] = ""
-	_, _, _, err := ParseJobAgentConfig(cfg)
+	_, err := ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 }
 
 func TestParseJobAgentConfig_EmptyTemplate(t *testing.T) {
 	cfg := validConfig()
 	cfg["template"] = ""
-	_, _, _, err := ParseJobAgentConfig(cfg)
+	_, err := ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 }
 

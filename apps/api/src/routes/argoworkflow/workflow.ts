@@ -23,13 +23,6 @@ const statusMap: Record<string, JobStatus> = {
   Pending: JobStatus.Pending,
 };
 
-const extractUuid = (str: string) => {
-  const uuidRegex =
-    /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/;
-  const match = uuidRegex.exec(str);
-  return match ? match[0] : null;
-};
-
 export const mapTriggerToStatus = (trigger: string): JobStatus | null =>
   statusMap[trigger] ?? null;
 

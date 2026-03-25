@@ -244,8 +244,14 @@ type ArgoWorkflowJobAgentConfig struct {
 	// ApiKey ArgoWorkflow API token.
 	ApiKey string `json:"apiKey"`
 
+	// Inline If the template passed in is meant to trigger a workflow template
+	Inline bool `json:"inline"`
+
 	// Name ArgoWorkflow job name
 	Name string `json:"name"`
+
+	// Namespace ArgoWorkflow workflowTemplate namespace
+	Namespace string `json:"namespace"`
 
 	// ServerUrl ArgoWorkflow server address (host[:port] or URL).
 	ServerUrl string `json:"serverUrl"`

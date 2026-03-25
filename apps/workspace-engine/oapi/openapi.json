@@ -59,8 +59,16 @@
                   "description": "ArgoWorkflow API token.",
                   "type": "string"
                },
+               "inline": {
+                  "description": "If the template passed in is meant to trigger a workflow template",
+                  "type": "boolean"
+               },
                "name": {
                   "description": "ArgoWorkflow job name",
+                  "type": "string"
+               },
+               "namespace": {
+                  "description": "ArgoWorkflow workflowTemplate namespace",
                   "type": "string"
                },
                "serverUrl": {
@@ -76,7 +84,9 @@
                "serverUrl",
                "apiKey",
                "template",
-               "name"
+               "name",
+               "inline",
+               "namespace"
             ],
             "type": "object"
          },

@@ -23,7 +23,6 @@ const handleWebhookRequest = async (req: Request, res: Response) => {
   }
 
   const payload = req.body;
-  console.log("handleArgoWorkflow payload:", JSON.stringify(payload, null, 2));
   await handleArgoWorkflow(payload);
   res.status(200).send();
 };
