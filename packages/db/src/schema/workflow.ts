@@ -1,27 +1,27 @@
-import { integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 
+import { job } from "./job.js";
 import { workspace } from "./workspace.js";
+
+export type WorkflowJobAgent = {
+  id: string;
+  name: string;
+  ref: string;
+  config: Record<string, any>;
+  selector: string;
+};
 
 export const workflow = pgTable("workflow", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   inputs: jsonb("inputs").notNull().default("[]"),
-  jobs: jsonb("jobs").notNull().default("[]"),
+  jobAgents: jsonb("job_agents")
+    .default("[]")
+    .$type<Array<WorkflowJobAgent>>()
+    .notNull(),
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspace.id, { onDelete: "cascade" }),
-});
-
-export const workflowJobTemplate = pgTable("workflow_job_template", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workflowId: uuid("workflow_id")
-    .notNull()
-    .references(() => workflow.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  ref: text("ref").notNull(),
-  config: jsonb("config").notNull().default("{}"),
-  ifCondition: text("if_condition"),
-  matrix: jsonb("matrix"),
 });
 
 export const workflowRun = pgTable("workflow_run", {
@@ -37,7 +37,7 @@ export const workflowJob = pgTable("workflow_job", {
   workflowRunId: uuid("workflow_run_id")
     .notNull()
     .references(() => workflowRun.id, { onDelete: "cascade" }),
-  ref: text("ref").notNull(),
-  config: jsonb("config").notNull().default("{}"),
-  index: integer("index").notNull().default(0),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => job.id, { onDelete: "cascade" }),
 });

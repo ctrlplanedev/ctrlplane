@@ -1,36 +1,57 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  WorkflowJobAgentConfig: {
+  WorkflowJobAgent: {
     type: 'object',
-    required: ['id', 'config'],
-    properties: {
-      id: { type: 'string' },
-      config: { type: 'object', additionalProperties: true },
-    },
-  },
-
-  WorkflowJobMatrix: {
-    type: 'object',
-    additionalProperties: {
-      oneOf: [
-        { type: 'array', items: { type: 'object', additionalProperties: true } },
-        { type: 'string' },
-      ],
-    },
-  },
-
-  WorkflowJobTemplate: {
-    type: 'object',
-    required: ['id', 'name', 'ref', 'config', 'workflowId'],
+    required: ['id', 'name', 'ref', 'config', 'selector'],
     properties: {
       name: { type: 'string' },
       id: { type: 'string' },
-      workflowId: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
-      matrix: openapi.schemaRef('WorkflowJobMatrix'),
-      'if': { type: 'string', description: 'CEL expression to determine if the job should run' },
+      selector: { type: 'string', description: 'CEL expression to determine if the job agent should dispatch a job' },
+    },
+  },
+
+  Workflow: {
+    type: 'object',
+    required: ['id', 'name', 'inputs', 'jobs'],
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+      inputs: {
+        type: 'array',
+        items: openapi.schemaRef('WorkflowInput'),
+      },
+      jobs: {
+        type: 'array',
+        items: openapi.schemaRef('WorkflowJobAgent'),
+      },
+    },
+  },
+
+  WorkflowRun: {
+    type: 'object',
+    required: ['id', 'workflowId', 'inputs'],
+    properties: {
+      id: { type: 'string' },
+      workflowId: { type: 'string' },
+      inputs: {
+        type: 'object',
+        additionalProperties: true,
+      },
+    },
+  },
+
+  WorkflowJob: {
+    type: 'object',
+    required: ['id', 'workflowRunId', 'index', 'ref', 'config'],
+    properties: {
+      id: { type: 'string' },
+      index: { type: 'integer' },
+      workflowRunId: { type: 'string' },
+      ref: { type: 'string', description: 'Reference to the job agent' },
+      config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
     },
   },
 
@@ -84,27 +105,10 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowSelectorArrayInput: {
-    type: 'object',
-    required: ['key', 'type', 'selector'],
-    properties: {
-      key: { type: 'string' },
-      type: { type: 'string', enum: ['array'] },
-      selector: {
-        type: 'object',
-        required: ['entityType'],
-        properties: {
-          entityType: { type: 'string', enum: ['resource', 'environment', 'deployment'] },
-          default: { type: 'string', description: 'CEL expression to determine if the selector array input should be used' },
-        },
-      },
-    },
-  },
 
   WorkflowArrayInput: {
     oneOf: [
       openapi.schemaRef('WorkflowManualArrayInput'),
-      openapi.schemaRef('WorkflowSelectorArrayInput'),
     ],
   },
 
@@ -115,74 +119,6 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('WorkflowBooleanInput'),
       openapi.schemaRef('WorkflowArrayInput'),
       openapi.schemaRef('WorkflowObjectInput'),
-    ],
-  },
-
-  Workflow: {
-    type: 'object',
-    required: ['id', 'name', 'inputs', 'jobs'],
-    properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      inputs: {
-        type: 'array',
-        items: openapi.schemaRef('WorkflowInput'),
-      },
-      jobs: {
-        type: 'array',
-        items: openapi.schemaRef('WorkflowJobTemplate'),
-      },
-    },
-  },
-
-  WorkflowRun: {
-    type: 'object',
-    required: ['id', 'workflowId', 'inputs'],
-    properties: {
-      id: { type: 'string' },
-      workflowId: { type: 'string' },
-      inputs: {
-        type: 'object',
-        additionalProperties: true,
-      },
-    },
-  },
-
-  WorkflowJob: {
-    type: 'object',
-    required: ['id', 'workflowRunId', 'index', 'ref', 'config'],
-    properties: {
-      id: { type: 'string' },
-      index: { type: 'integer' },
-      workflowRunId: { type: 'string' },
-      ref: { type: 'string', description: 'Reference to the job agent' },
-      config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
-    },
-  },
-
-  WorkflowRunWithJobs: {
-    allOf: [
-      openapi.schemaRef('WorkflowRun'),
-      {
-        type: 'object',
-        required: ['jobs'],
-        properties: {
-          jobs: { type: 'array', items: openapi.schemaRef('WorkflowJobWithJobs') },
-        },
-      },
-    ],
-  },
-
-  WorkflowJobWithJobs: {
-    allOf: [
-      openapi.schemaRef('WorkflowJob'),
-      {
-        type: 'object',
-        required: ['jobs'],
-        properties: {
-          jobs: { type: 'array', items: openapi.schemaRef('Job') },
-        },
-      },
     ],
   },
 }
