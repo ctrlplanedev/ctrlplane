@@ -62,11 +62,7 @@ export default function DeploymentDetail() {
   const { deployment } = useDeployment();
 
   const versionsQuery = trpc.deployment.versions.useQuery(
-    {
-      deploymentId: deployment.id,
-      limit: 1000,
-      offset: 0,
-    },
+    { deploymentId: deployment.id, limit: 10, offset: 0 },
     { refetchInterval: 5000 },
   );
 
