@@ -209,7 +209,7 @@ INSERT INTO job_verification_metric (
   job_id, name, provider, interval_seconds, count,
   success_condition, success_threshold, failure_condition, failure_threshold
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, created_at, job_id, name, provider, interval_seconds, count, success_condition, success_threshold, failure_condition, failure_threshold
+RETURNING id, created_at, job_id, policy_rule_verification_metric_id, name, provider, interval_seconds, count, success_condition, success_threshold, failure_condition, failure_threshold
 `
 
 type InsertJobVerificationMetricParams struct {
@@ -241,6 +241,7 @@ func (q *Queries) InsertJobVerificationMetric(ctx context.Context, arg InsertJob
 		&i.ID,
 		&i.CreatedAt,
 		&i.JobID,
+		&i.PolicyRuleVerificationMetricID,
 		&i.Name,
 		&i.Provider,
 		&i.IntervalSeconds,

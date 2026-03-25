@@ -4,7 +4,7 @@ import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, asc, desc, eq, inArray, sql, takeFirst } from "@ctrlplane/db";
+import { and, asc, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import {
   enqueueDeploymentSelectorEval,
   enqueuePolicyEval,
@@ -12,6 +12,7 @@ import {
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -137,248 +138,30 @@ export const deploymentsRouter = router({
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input, ctx }) => {
-      const releaseTargets = await ctx.db
-        .selectDistinctOn(
-          [schema.deployment.id, schema.resource.id, schema.environment.id],
-          {
-            deployment: schema.deployment,
-            environment: schema.environment,
-            resource: schema.resource,
-            desiredRelease: schema.release,
-            desiredVersion: schema.deploymentVersion,
-            latestJob: schema.job,
-          },
-        )
-        .from(schema.computedDeploymentResource)
-        .innerJoin(
-          schema.deployment,
-          eq(
-            schema.computedDeploymentResource.deploymentId,
-            schema.deployment.id,
-          ),
-        )
-        .innerJoin(
-          schema.resource,
-          eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
-        )
-        .innerJoin(
-          schema.systemDeployment,
-          eq(
-            schema.computedDeploymentResource.deploymentId,
-            schema.systemDeployment.deploymentId,
-          ),
-        )
-        .innerJoin(
-          schema.systemEnvironment,
-          eq(
-            schema.systemDeployment.systemId,
-            schema.systemEnvironment.systemId,
-          ),
-        )
-        .innerJoin(
-          schema.environment,
-          eq(schema.systemEnvironment.environmentId, schema.environment.id),
-        )
-        .innerJoin(
-          schema.computedEnvironmentResource,
-          and(
-            eq(
-              schema.computedEnvironmentResource.environmentId,
-              schema.environment.id,
-            ),
-            eq(
-              schema.computedEnvironmentResource.resourceId,
-              schema.resource.id,
-            ),
-          ),
-        )
-        .leftJoin(
-          schema.releaseTargetDesiredRelease,
-          and(
-            eq(
-              schema.releaseTargetDesiredRelease.deploymentId,
-              schema.deployment.id,
-            ),
-            eq(
-              schema.releaseTargetDesiredRelease.resourceId,
-              schema.resource.id,
-            ),
-            eq(
-              schema.releaseTargetDesiredRelease.environmentId,
-              schema.environment.id,
-            ),
-          ),
-        )
-        .leftJoin(
-          schema.release,
-          eq(
-            schema.releaseTargetDesiredRelease.desiredReleaseId,
-            schema.release.id,
-          ),
-        )
-        .leftJoin(
-          schema.deploymentVersion,
-          eq(schema.release.versionId, schema.deploymentVersion.id),
-        )
-        .leftJoin(
-          schema.releaseJob,
-          eq(schema.release.id, schema.releaseJob.releaseId),
-        )
-        .leftJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
-        .where(eq(schema.deployment.id, input.deploymentId))
-        .orderBy(
-          schema.deployment.id,
-          schema.resource.id,
-          schema.environment.id,
-          desc(schema.job.createdAt),
-        );
-
-      const currentVersions = await ctx.db
-        .selectDistinctOn(
-          [
-            schema.release.resourceId,
-            schema.release.environmentId,
-            schema.release.deploymentId,
-          ],
-          {
-            resourceId: schema.release.resourceId,
-            environmentId: schema.release.environmentId,
-            deploymentId: schema.release.deploymentId,
-            version: schema.deploymentVersion,
-          },
-        )
-        .from(schema.release)
-        .innerJoin(
-          schema.releaseJob,
-          eq(schema.release.id, schema.releaseJob.releaseId),
-        )
-        .innerJoin(
-          schema.job,
-          and(
-            eq(schema.releaseJob.jobId, schema.job.id),
-            eq(schema.job.status, "successful"),
-          ),
-        )
-        .innerJoin(
-          schema.deploymentVersion,
-          eq(schema.release.versionId, schema.deploymentVersion.id),
-        )
-        .where(eq(schema.release.deploymentId, input.deploymentId))
-        .orderBy(
-          schema.release.resourceId,
-          schema.release.environmentId,
-          schema.release.deploymentId,
-          sql`${schema.job.completedAt} desc nulls last`,
-        );
-
-      const currentVersionMap = new Map(
-        currentVersions.map((cv) => [
-          `${cv.resourceId}-${cv.environmentId}-${cv.deploymentId}`,
-          cv.version,
-        ]),
+    .query(async ({ input }) => {
+      const result = await getClientFor().GET(
+        "/v1/deployments/{deploymentId}/release-targets",
+        { params: { path: { deploymentId: input.deploymentId } } },
       );
 
-      const jobIds = releaseTargets
-        .map((rt) => rt.latestJob?.id)
-        .filter((id): id is string => id != null);
-
-      const rows = await ctx.db
-        .select({
-          metric: schema.jobVerificationMetricStatus,
-          measurement: schema.jobVerificationMetricMeasurement,
-        })
-        .from(schema.jobVerificationMetricStatus)
-        .leftJoin(
-          schema.jobVerificationMetricMeasurement,
-          eq(
-            schema.jobVerificationMetricMeasurement
-              .jobVerificationMetricStatusId,
-            schema.jobVerificationMetricStatus.id,
-          ),
-        )
-        .where(inArray(schema.jobVerificationMetricStatus.jobId, jobIds))
-        .orderBy(schema.jobVerificationMetricStatus.jobId);
-
-      type MetricWithMeasurements = {
-        metric: typeof schema.jobVerificationMetricStatus.$inferSelect;
-        measurements: Array<
-          typeof schema.jobVerificationMetricMeasurement.$inferSelect
-        >;
-      };
-
-      // Group: jobId -> policyRuleVerificationMetricId (or "ungrouped") -> metrics
-      const verificationsMap = new Map<
-        string,
-        Map<string, MetricWithMeasurements[]>
-      >();
-
-      for (const row of rows) {
-        const jobId = row.metric.jobId;
-        const groupKey =
-          row.metric.policyRuleVerificationMetricId ?? "ungrouped";
-
-        let byRule = verificationsMap.get(jobId);
-        if (!byRule) {
-          byRule = new Map();
-          verificationsMap.set(jobId, byRule);
-        }
-
-        let metrics = byRule.get(groupKey);
-        if (!metrics) {
-          metrics = [];
-          byRule.set(groupKey, metrics);
-        }
-
-        let existing = metrics.find((m) => m.metric.id === row.metric.id);
-        if (!existing) {
-          existing = { metric: row.metric, measurements: [] };
-          metrics.push(existing);
-        }
-
-        if (row.measurement != null) {
-          existing.measurements.push(row.measurement);
-        }
+      if (result.error != null) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to list release targets: ${JSON.stringify(result.error)}`,
+        });
       }
 
-      const buildVerifications = (jobId: string, createdAt: Date) => {
-        const byRule = verificationsMap.get(jobId);
-        if (!byRule) return [];
-
-        return [...byRule.entries()].map(([groupKey, metrics]) => ({
-          id: groupKey === "ungrouped" ? jobId : groupKey,
-          jobId,
-          createdAt,
-          metrics: metrics.map((v) => ({
-            ...v.metric,
-            measurements: v.measurements,
-          })),
-        }));
-      };
-
-      return releaseTargets.map((rt) => ({
-        releaseTarget: {
-          resourceId: rt.resource.id,
-          environmentId: rt.environment.id,
-          deploymentId: rt.deployment.id,
-        },
-        environment: rt.environment,
-        resource: rt.resource,
-        desiredVersion: rt.desiredVersion,
-        currentVersion:
-          currentVersionMap.get(
-            `${rt.resource.id}-${rt.environment.id}-${rt.deployment.id}`,
-          ) ?? null,
-        latestJob:
-          rt.latestJob != null
-            ? {
-                ...rt.latestJob,
-                verifications: buildVerifications(
-                  rt.latestJob.id,
-                  rt.latestJob.createdAt,
-                ),
-              }
-            : null,
+      return result.data.items.map((item) => ({
+        ...item,
+        latestJob: item.latestJob
+          ? {
+              ...item.latestJob,
+              createdAt: new Date(item.latestJob.createdAt),
+              completedAt: item.latestJob.completedAt
+                ? new Date(item.latestJob.completedAt)
+                : null,
+            }
+          : null,
       }));
     }),
 
