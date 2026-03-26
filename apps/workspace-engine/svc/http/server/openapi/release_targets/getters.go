@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"workspace-engine/pkg/db"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
 )
 
 type ReleaseTargetResult struct {
@@ -73,7 +72,12 @@ func (g *PostgresGetter) ListReleaseTargets(
 	latestJobMap := make(map[string]db.ListLatestJobsByDeploymentIDRow, len(latestJobs))
 	var jobIDs []uuid.UUID
 	for _, lj := range latestJobs {
-		key := fmt.Sprintf("%s-%s-%s", lj.ResourceID.String(), lj.EnvironmentID.String(), lj.DeploymentID.String())
+		key := fmt.Sprintf(
+			"%s-%s-%s",
+			lj.ResourceID.String(),
+			lj.EnvironmentID.String(),
+			lj.DeploymentID.String(),
+		)
 		latestJobMap[key] = lj
 		jobIDs = append(jobIDs, lj.JobID)
 	}
