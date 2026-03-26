@@ -1,6 +1,9 @@
 import { formatDistanceToNowStrict } from "date-fns";
 
+import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+
+import { useMetricMeasurements } from "./useMetricMeasurements";
 
 type MetricMeasurement = {
   status: "failed" | "inconclusive" | "passed";
@@ -10,6 +13,7 @@ type MetricMeasurement = {
 };
 
 type VerificationMetricStatusType = {
+  id: string;
   name: string;
   count: number;
   successCondition: string;
@@ -50,11 +54,13 @@ export function calculateMeasurementCounts(
   return { failedCount, consecutiveSuccessCount };
 }
 
-export function getVerificationStatus(metric: VerificationMetricStatusType): {
+export function getVerificationStatus(
+  metric: VerificationMetricStatusType,
+  measurements: MetricMeasurement[],
+): {
   status: VerificationStatus;
   message: string;
 } {
-  const measurements: MetricMeasurement[] = [];
   if (measurements.length === 0)
     return {
       status: "in_progress",
@@ -109,14 +115,29 @@ export function VerificationMetricStatus({
 }: {
   metric: VerificationMetricStatusType;
 }) {
-  const { status, message } = getVerificationStatus(metric);
+  const { measurements, isLoading } = useMetricMeasurements(metric.id);
+
+  if (isLoading)
+    return <Skeleton className="h-4 w-20" />;
+
+  const { status, message } = getVerificationStatus(metric, measurements);
+  const latestMeasurement = [...measurements].sort(
+    (a, b) =>
+      new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
+  )[0];
+
+  const timeAgo = latestMeasurement
+    ? formatDistanceToNowStrict(new Date(latestMeasurement.measuredAt), {
+        addSuffix: true,
+      })
+    : null;
 
   return (
     <div className="flex flex-col items-end text-right">
       <span
         className={cn("text-xs font-medium", VerificationStatusColors[status])}
       >
-        {VerificationStatusLabels[status]}
+        {VerificationStatusLabels[status]} {timeAgo}
       </span>
       {status === "in_progress" && (
         <span className="text-xs text-muted-foreground">{message}</span>

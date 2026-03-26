@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { Spinner } from "~/components/ui/spinner";
 import { cn } from "~/lib/utils";
 import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
 import { isArgoCDMeasurement } from "./argocd/argocd-metric";
@@ -22,6 +23,7 @@ import { isDatadogProvider } from "./datadog/datadog-metric";
 import { PrometheusVerificationDisplay } from "./prometheus/Prometheus";
 import { isPrometheusProvider } from "./prometheus/prometheus-metric";
 import { PrometheusIcon } from "./prometheus/PrometheusIcon";
+import { useMetricMeasurements } from "./useMetricMeasurements";
 import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
 type MetricMeasurement = {
@@ -114,7 +116,15 @@ function getStatusMessage(
 }
 
 function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
-  const measurements: MetricMeasurement[] = [];
+  const { measurements, isLoading } = useMetricMeasurements(metric.id);
+
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Spinner />
+      </div>
+    );
+
   const passedCount = measurements.filter(
     (m) => m.status === "passed",
   ).length;
@@ -167,7 +177,7 @@ const nullToUndefined = <T,>(v: T | null | undefined): T | undefined =>
 
 function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   const [open, setOpen] = useState(false);
-  const measurements: MetricMeasurement[] = [];
+  const { measurements, isLoading } = useMetricMeasurements(metric.id);
   const sortedMeasurements = [...measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
@@ -182,7 +192,9 @@ function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   };
 
   const isArgoCD =
-    latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
+    !isLoading &&
+    latestMeasurement != null &&
+    isArgoCDMeasurement(latestMeasurement.data);
   const isPrometheus = isPrometheusProvider(metric.provider);
   const isDatadog = isDatadogProvider(metric.provider);
 
@@ -209,12 +221,21 @@ function MetricDisplay({ metric }: { metric: VerificationMetric }) {
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
-        {isArgoCD && <ArgoCDVerificationDisplay metric={displayMetric} />}
-        {isPrometheus && (
+        {isLoading && (
+          <div className="flex items-center justify-center py-4">
+            <Spinner />
+          </div>
+        )}
+        {!isLoading && isArgoCD && (
+          <ArgoCDVerificationDisplay metric={displayMetric} />
+        )}
+        {!isLoading && isPrometheus && (
           <PrometheusVerificationDisplay metric={displayMetric} />
         )}
-        {isDatadog && <DatadogVerificationDisplay metric={displayMetric} />}
-        {!isArgoCD && !isPrometheus && !isDatadog && (
+        {!isLoading && isDatadog && (
+          <DatadogVerificationDisplay metric={displayMetric} />
+        )}
+        {!isLoading && !isArgoCD && !isPrometheus && !isDatadog && (
           <>
             <MetricSummaryDisplay metric={metric} />
             {sortedMeasurements.map((measurement, idx) => (

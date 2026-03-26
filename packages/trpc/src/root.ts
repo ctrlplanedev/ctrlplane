@@ -18,6 +18,7 @@ import { resourcesRouter } from "./routes/resources.js";
 import { systemsRouter } from "./routes/systems.js";
 import { userRouter } from "./routes/user.js";
 import { validateRouter } from "./routes/validate.js";
+import { verificationsRouter } from "./routes/verifications.js";
 import { workflowsRouter } from "./routes/workflows.js";
 import { workspaceRouter } from "./routes/workspace.js";
 import { router } from "./trpc.js";
@@ -44,5 +45,6 @@ export const appRouter = router({
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
   releaseTargets: releaseTargetsRouter,
+  verifications: verificationsRouter,
   workflows: workflowsRouter,
 });
