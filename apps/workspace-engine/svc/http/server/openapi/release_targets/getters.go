@@ -160,8 +160,8 @@ func (g *PostgresGetter) ListReleaseTargets(
 				"updatedAt":       lj.JobUpdatedAt.Time,
 				"externalId":      lj.JobExternalID.String,
 				"jobAgentId":      lj.JobAgentID,
-				"jobAgentConfig":  lj.JobAgentConfig,
-				"dispatchContext": lj.JobDispatchContext,
+				"jobAgentConfig":  json.RawMessage(lj.JobAgentConfig),
+				"dispatchContext": json.RawMessage(lj.JobDispatchContext),
 				"metadata":        json.RawMessage(lj.JobMetadata),
 			}
 			if v, ok := verificationsMap[lj.JobID.String()]; ok {
@@ -226,7 +226,7 @@ func buildVerificationsMap(
 			existing.measurements = append(existing.measurements, gin.H{
 				"id":                            vr.MeasurementID.String(),
 				"jobVerificationMetricStatusId": vr.MeasurementMetricID.String(),
-				"data":                          vr.MeasurementData,
+				"data":                          json.RawMessage(vr.MeasurementData),
 				"measuredAt":                    vr.MeasurementMeasuredAt.Time,
 				"message":                       vr.MeasurementMessage.String,
 				"status":                        vr.MeasurementStatus.JobVerificationStatus,
@@ -249,7 +249,7 @@ func buildVerificationsMap(
 					"jobId":                          me.metric.MetricJobID.String(),
 					"policyRuleVerificationMetricId": me.metric.MetricPolicyRuleID.String(),
 					"name":                           me.metric.MetricName,
-					"provider":                       me.metric.MetricProvider,
+					"provider":                       json.RawMessage(me.metric.MetricProvider),
 					"intervalSeconds":                me.metric.MetricIntervalSeconds,
 					"count":                          me.metric.MetricCount,
 					"successCondition":               me.metric.MetricSuccessCondition,
