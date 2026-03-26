@@ -164,11 +164,7 @@ func buildVerificationsMap(
 		return verificationsMap
 	}
 
-	type metricEntry struct {
-		metric       db.ListVerificationMetricsByJobIDsRow
-		measurements []gin.H
-	}
-	byJob := make(map[string]map[string][]*metricEntry)
+	byJob := make(map[string]map[string][]db.ListVerificationMetricsByJobIDsRow)
 
 	for _, vr := range vRows {
 		jobKey := vr.MetricJobID.String()
@@ -178,30 +174,9 @@ func buildVerificationsMap(
 		}
 
 		if byJob[jobKey] == nil {
-			byJob[jobKey] = make(map[string][]*metricEntry)
+			byJob[jobKey] = make(map[string][]db.ListVerificationMetricsByJobIDsRow)
 		}
-
-		var existing *metricEntry
-		for _, me := range byJob[jobKey][groupKey] {
-			if me.metric.MetricID == vr.MetricID {
-				existing = me
-				break
-			}
-		}
-		if existing == nil {
-			existing = &metricEntry{metric: vr}
-			byJob[jobKey][groupKey] = append(byJob[jobKey][groupKey], existing)
-		}
-
-		if vr.MeasurementID != nilUUID {
-			existing.measurements = append(existing.measurements, gin.H{
-				"id":                            vr.MeasurementID.String(),
-				"jobVerificationMetricStatusId": vr.MeasurementMetricID.String(),
-				"data":                          json.RawMessage(vr.MeasurementData),
-				"measuredAt":                    vr.MeasurementMeasuredAt.Time,
-				"status":                        vr.MeasurementStatus.JobVerificationStatus,
-			})
-		}
+		byJob[jobKey][groupKey] = append(byJob[jobKey][groupKey], vr)
 	}
 
 	for jobKey, byRule := range byJob {
@@ -212,19 +187,18 @@ func buildVerificationsMap(
 				verifID = jobKey
 			}
 			metricsJSON := make([]gin.H, len(metrics))
-			for i, me := range metrics {
+			for i, m := range metrics {
 				metricsJSON[i] = gin.H{
-					"id":                             me.metric.MetricID.String(),
-					"jobId":                          me.metric.MetricJobID.String(),
-					"policyRuleVerificationMetricId": me.metric.MetricPolicyRuleID.String(),
-					"name":                           me.metric.MetricName,
-					"provider":                       json.RawMessage(me.metric.MetricProvider),
-					"count":                          me.metric.MetricCount,
-					"successCondition":               me.metric.MetricSuccessCondition,
-					"successThreshold":               me.metric.MetricSuccessThreshold,
-					"failureCondition":               me.metric.MetricFailureCondition.String,
-					"failureThreshold":               me.metric.MetricFailureThreshold,
-					"measurements":                   orEmptySlice(me.measurements),
+					"id":                             m.MetricID.String(),
+					"jobId":                          m.MetricJobID.String(),
+					"policyRuleVerificationMetricId": m.MetricPolicyRuleID.String(),
+					"name":                           m.MetricName,
+					"provider":                       json.RawMessage(m.MetricProvider),
+					"count":                          m.MetricCount,
+					"successCondition":               m.MetricSuccessCondition,
+					"successThreshold":               m.MetricSuccessThreshold,
+					"failureCondition":               m.MetricFailureCondition.String,
+					"failureThreshold":               m.MetricFailureThreshold,
 				}
 			}
 			verifications = append(verifications, gin.H{
@@ -237,11 +211,4 @@ func buildVerificationsMap(
 	}
 
 	return verificationsMap
-}
-
-func orEmptySlice(s []gin.H) []gin.H {
-	if s == nil {
-		return []gin.H{}
-	}
-	return s
 }

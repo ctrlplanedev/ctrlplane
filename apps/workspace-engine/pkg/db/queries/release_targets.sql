@@ -89,14 +89,7 @@ SELECT
   jvm.success_condition AS metric_success_condition,
   jvm.success_threshold AS metric_success_threshold,
   jvm.failure_condition AS metric_failure_condition,
-  jvm.failure_threshold AS metric_failure_threshold,
-  m.id AS measurement_id,
-  m.job_verification_metric_status_id AS measurement_metric_id,
-  m.data AS measurement_data,
-  m.measured_at AS measurement_measured_at,
-  m.status AS measurement_status
+  jvm.failure_threshold AS metric_failure_threshold
 FROM job_verification_metric jvm
-LEFT JOIN job_verification_metric_measurement m
-  ON m.job_verification_metric_status_id = jvm.id
 WHERE jvm.job_id = ANY(@job_ids::uuid[])
-ORDER BY jvm.job_id, jvm.id, m.measured_at;
+ORDER BY jvm.job_id, jvm.id;

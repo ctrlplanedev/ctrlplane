@@ -22,12 +22,10 @@ type VerificationMetricStatus = {
   name: string;
   provider: unknown;
   count: number;
-  intervalSeconds: number;
   successCondition: string;
   successThreshold?: number;
   failureCondition?: string;
   failureThreshold?: number;
-  measurements: MetricMeasurement[];
 };
 
 export function DatadogVerificationDisplay({
@@ -36,7 +34,8 @@ export function DatadogVerificationDisplay({
   metric: VerificationMetricStatus;
 }) {
   const provider = parseDatadogProvider(metric.provider);
-  const sortedMeasurements = [...metric.measurements].sort(
+  const measurements: MetricMeasurement[] = [];
+  const sortedMeasurements = [...measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
