@@ -1,4 +1,4 @@
-package argo_workflows
+package argo_workflows_test
 
 import (
 	"context"
@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"workspace-engine/pkg/oapi"
+	argo_workflows "workspace-engine/svc/controllers/jobdispatch/jobagents/argo-workflow"
 )
 
 // ----- Mocks -----
@@ -75,7 +75,10 @@ func (m *mockSetter) UpdateJob(
 ) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.calls = append(m.calls, updateCall{JobID: jobID, Status: status, Message: message, Metadata: metadata})
+	m.calls = append(
+		m.calls,
+		updateCall{JobID: jobID, Status: status, Message: message, Metadata: metadata},
+	)
 	return m.err
 }
 
@@ -181,7 +184,13 @@ func TestTemplateApplication_NonInline_RendersParamsAndCreatesTemplateRef(t *tes
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
-	wf, err := TemplateApplication(ctx, nonInlineWorkflowTemplate, false, "my-workflow", "default")
+	wf, err := argo_workflows.TemplateApplication(
+		ctx,
+		nonInlineWorkflowTemplate,
+		false,
+		"my-workflow",
+		"default",
+	)
 	require.NoError(t, err)
 	assert.Equal(t, "my-workflow-", wf.GenerateName)
 	require.NotNil(t, wf.Spec.WorkflowTemplateRef)
@@ -199,7 +208,7 @@ func TestTemplateApplication_NonInline_RendersParamsAndCreatesTemplateRef(t *tes
 // ----- Type -----
 
 func TestType(t *testing.T) {
-	a := New(&mockSubmitter{}, &mockSetter{})
+	a := argo_workflows.New(&mockSubmitter{}, &mockSetter{})
 	assert.Equal(t, "argo-workflow", a.Type())
 }
 
@@ -208,7 +217,7 @@ func TestType(t *testing.T) {
 func TestDispatch_Success_SubmitsWorkflow(t *testing.T) {
 	sub := &mockSubmitter{}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := newTestJob("job-1", validConfig())
 	err := a.Dispatch(context.Background(), job)
@@ -227,7 +236,7 @@ func TestDispatch_Success_SubmitsWorkflow(t *testing.T) {
 func TestDispatch_Success_SetsJobInProgress(t *testing.T) {
 	sub := &mockSubmitter{}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := newTestJob("job-2", validConfig())
 	err := a.Dispatch(context.Background(), job)
@@ -251,7 +260,7 @@ func TestDispatch_Success_MetadataContainsArgoLink(t *testing.T) {
 	}
 	sub := &mockSubmitter{result: created}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := newTestJob("job-3", validConfig())
 	_ = a.Dispatch(context.Background(), job)
@@ -268,7 +277,7 @@ func TestDispatch_Success_MetadataContainsArgoLink(t *testing.T) {
 func TestDispatch_SubmitFailure_SetsJobFailure(t *testing.T) {
 	sub := &mockSubmitter{err: fmt.Errorf("argo server unavailable")}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := newTestJob("job-4", validConfig())
 	err := a.Dispatch(context.Background(), job)
@@ -287,7 +296,7 @@ func TestDispatch_SubmitFailure_SetsJobFailure(t *testing.T) {
 func TestDispatch_NilDispatchContext_ReturnsError(t *testing.T) {
 	sub := &mockSubmitter{}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := &oapi.Job{Id: "job-5", DispatchContext: nil}
 	err := a.Dispatch(context.Background(), job)
@@ -299,7 +308,7 @@ func TestDispatch_NilDispatchContext_ReturnsError(t *testing.T) {
 func TestDispatch_InvalidConfig_ReturnsError(t *testing.T) {
 	sub := &mockSubmitter{}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := newTestJob("job-6", oapi.JobAgentConfig{})
 	err := a.Dispatch(context.Background(), job)
@@ -312,7 +321,7 @@ func TestDispatch_InvalidConfig_ReturnsError(t *testing.T) {
 func TestDispatch_SetsJobIDLabel(t *testing.T) {
 	sub := &mockSubmitter{}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	job := newTestJob("job-7", validConfig())
 	_ = a.Dispatch(context.Background(), job)
@@ -328,7 +337,7 @@ func TestDispatch_SetsJobIDLabel(t *testing.T) {
 func TestDispatch_ConcurrentDispatches(t *testing.T) {
 	sub := &mockSubmitter{}
 	setter := &mockSetter{}
-	a := New(sub, setter)
+	a := argo_workflows.New(sub, setter)
 
 	var wg sync.WaitGroup
 	for i := range 10 {
@@ -349,17 +358,17 @@ func TestDispatch_ConcurrentDispatches(t *testing.T) {
 // ----- ParseJobAgentConfig -----
 
 func TestParseJobAgentConfig_Valid(t *testing.T) {
-	c, err := ParseJobAgentConfig(validConfig())
+	c, err := argo_workflows.ParseJobAgentConfig(validConfig())
 	require.NoError(t, err)
-	assert.Equal(t, "https://argo.example.com", c.serverAddr)
-	assert.Equal(t, "secret-token", c.apiKey)
-	assert.Equal(t, minimalWorkflowTemplate, c.template)
+	assert.Equal(t, "https://argo.example.com", c.ServerAddr)
+	assert.Equal(t, "secret-token", c.ApiKey)
+	assert.Equal(t, minimalWorkflowTemplate, c.Template)
 }
 
 func TestParseJobAgentConfig_MissingServerUrl(t *testing.T) {
 	cfg := validConfig()
 	delete(cfg, "serverUrl")
-	_, err := ParseJobAgentConfig(cfg)
+	_, err := argo_workflows.ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "serverUrl")
 }
@@ -367,7 +376,7 @@ func TestParseJobAgentConfig_MissingServerUrl(t *testing.T) {
 func TestParseJobAgentConfig_MissingApiKey(t *testing.T) {
 	cfg := validConfig()
 	delete(cfg, "apiKey")
-	_, err := ParseJobAgentConfig(cfg)
+	_, err := argo_workflows.ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "apiKey")
 }
@@ -375,7 +384,7 @@ func TestParseJobAgentConfig_MissingApiKey(t *testing.T) {
 func TestParseJobAgentConfig_MissingTemplate(t *testing.T) {
 	cfg := validConfig()
 	delete(cfg, "template")
-	_, err := ParseJobAgentConfig(cfg)
+	_, err := argo_workflows.ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "template")
 }
@@ -383,14 +392,14 @@ func TestParseJobAgentConfig_MissingTemplate(t *testing.T) {
 func TestParseJobAgentConfig_EmptyServerUrl(t *testing.T) {
 	cfg := validConfig()
 	cfg["serverUrl"] = ""
-	_, err := ParseJobAgentConfig(cfg)
+	_, err := argo_workflows.ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 }
 
 func TestParseJobAgentConfig_EmptyTemplate(t *testing.T) {
 	cfg := validConfig()
 	cfg["template"] = ""
-	_, err := ParseJobAgentConfig(cfg)
+	_, err := argo_workflows.ParseJobAgentConfig(cfg)
 	require.Error(t, err)
 }
 
@@ -398,13 +407,13 @@ func TestParseJobAgentConfig_EmptyTemplate(t *testing.T) {
 
 func TestMakeApplicationK8sCompatible_SanitisesName(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "My_Workflow 1!"}}
-	MakeApplicationK8sCompatible(wf)
+	argo_workflows.MakeApplicationK8sCompatible(wf)
 	assert.Equal(t, "my-workflow-1", wf.Name)
 }
 
 func TestMakeApplicationK8sCompatible_SanitisesGenerateName(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{GenerateName: "My_Workflow-"}}
-	MakeApplicationK8sCompatible(wf)
+	argo_workflows.MakeApplicationK8sCompatible(wf)
 	assert.Equal(t, "my-workflow-", wf.GenerateName)
 }
 
@@ -415,19 +424,19 @@ func TestMakeApplicationK8sCompatible_SanitisesLabels(t *testing.T) {
 			Labels: map[string]string{"env": "Prod/US"},
 		},
 	}
-	MakeApplicationK8sCompatible(wf)
+	argo_workflows.MakeApplicationK8sCompatible(wf)
 	assert.Equal(t, "prod-us", wf.Labels["env"])
 }
 
 func TestMakeApplicationK8sCompatible_NilLabels(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Labels: nil}}
-	assert.NotPanics(t, func() { MakeApplicationK8sCompatible(wf) })
+	assert.NotPanics(t, func() { argo_workflows.MakeApplicationK8sCompatible(wf) })
 }
 
 func TestMakeApplicationK8sCompatible_TruncatesLongName(t *testing.T) {
 	long := "abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz"
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: long}}
-	MakeApplicationK8sCompatible(wf)
+	argo_workflows.MakeApplicationK8sCompatible(wf)
 	assert.LessOrEqual(t, len(wf.Name), 63)
 }
 
@@ -435,20 +444,20 @@ func TestMakeApplicationK8sCompatible_TruncatesLongName(t *testing.T) {
 
 func TestBuildArgoLinks_WithHttpsPrefix(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"}}
-	links := BuildArgoLinks("https://argo.example.com", wf)
+	links := argo_workflows.BuildArgoLinks("https://argo.example.com", wf)
 	assert.Contains(t, links["ctrlplane/links"], "https://argo.example.com/workflows/argo/my-wf")
 }
 
 func TestBuildArgoLinks_AddsHttpsWhenMissing(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"}}
-	links := BuildArgoLinks("argo.example.com", wf)
-	assert.True(t, len(links["ctrlplane/links"]) > 0)
+	links := argo_workflows.BuildArgoLinks("argo.example.com", wf)
+	assert.Positive(t, len(links["ctrlplane/links"]))
 	assert.Contains(t, links["ctrlplane/links"], "https://")
 }
 
 func TestBuildArgoLinks_ContainsWorkflowName(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "deploy-abc123", Namespace: "ci"}}
-	links := BuildArgoLinks("https://argo.internal", wf)
+	links := argo_workflows.BuildArgoLinks("https://argo.internal", wf)
 	assert.Contains(t, links["ctrlplane/links"], "deploy-abc123")
 	assert.Contains(t, links["ctrlplane/links"], "ci")
 }
@@ -476,13 +485,17 @@ func TestGetK8sCompatibleName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expect, getK8sCompatibleName(tt.input.input, tt.input.generate))
+			assert.Equal(
+				t,
+				tt.expect,
+				argo_workflows.GetK8sCompatibleName(tt.input.input, tt.input.generate),
+			)
 		})
 	}
 }
 
 func TestGetK8sCompatibleName_LongNameTruncatedTo63(t *testing.T) {
 	long := "a" + fmt.Sprintf("%0*d", 70, 0) // 71 chars
-	result := getK8sCompatibleName(long, false)
+	result := argo_workflows.GetK8sCompatibleName(long, false)
 	assert.LessOrEqual(t, len(result), 63)
 }

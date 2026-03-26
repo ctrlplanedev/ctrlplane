@@ -24,12 +24,12 @@ var tracer = otel.Tracer("workspace-engine/jobagents/argo-workflow")
 var _ types.Dispatchable = (*ArgoWorkflow)(nil)
 
 type WorkFlowJobAgentConfig struct {
-	serverAddr string
-	apiKey     string
-	template   string
-	name       string
-	inline     bool
-	namespace  string
+	ServerAddr string
+	ApiKey     string
+	Template   string
+	Name       string
+	Inline     bool
+	Namespace  string
 }
 
 type Getter interface {
@@ -54,7 +54,11 @@ type WorkflowDeleter interface {
 
 // WorkflowSubmitter submits an Argo Workflows Workflow to the server.
 type WorkflowSubmitter interface {
-	SubmitWorkflow(ctx context.Context, serverAddr, apiKey string, wf *wfv1.Workflow) (*wfv1.Workflow, error)
+	SubmitWorkflow(
+		ctx context.Context,
+		serverAddr, apiKey string,
+		wf *wfv1.Workflow,
+	) (*wfv1.Workflow, error)
 }
 
 type ArgoWorkflow struct {
@@ -81,7 +85,13 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
 
-	wf, err := TemplateApplication(dispatchCtx, wfConfig.template, wfConfig.inline, wfConfig.name, wfConfig.namespace)
+	wf, err := TemplateApplication(
+		dispatchCtx,
+		wfConfig.Template,
+		wfConfig.Inline,
+		wfConfig.Name,
+		wfConfig.Namespace,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to generate workflow from template: %w", err)
 	}
@@ -100,14 +110,19 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 		)
 		defer span.End()
 
-		created, err := a.submitter.SubmitWorkflow(asyncCtx, wfConfig.serverAddr, wfConfig.apiKey, wf)
+		created, err := a.submitter.SubmitWorkflow(
+			asyncCtx,
+			wfConfig.ServerAddr,
+			wfConfig.ApiKey,
+			wf,
+		)
 		if err != nil {
 			_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusFailure,
 				fmt.Sprintf("failed to submit workflow: %s", err.Error()), nil)
 			return
 		}
 
-		metadata := BuildArgoLinks(wfConfig.serverAddr, created)
+		metadata := BuildArgoLinks(wfConfig.ServerAddr, created)
 		_ = a.setter.UpdateJob(asyncCtx, job.Id, oapi.JobStatusInProgress, "", metadata)
 	}()
 
@@ -123,39 +138,47 @@ func ParseJobAgentConfig(
 	if !ok {
 		return wfT, fmt.Errorf("serverUrl is required")
 	}
-	wfT.serverAddr = serverAddr
+	wfT.ServerAddr = serverAddr
 	apiKey, ok := config["apiKey"].(string)
 	if !ok {
 		return wfT, fmt.Errorf("apiKey is required")
 	}
-	wfT.apiKey = apiKey
+	wfT.ApiKey = apiKey
 	template, ok := config["template"].(string)
 	if !ok {
 		return wfT, fmt.Errorf("template is required")
 	}
-	wfT.template = template
+	wfT.Template = template
 
 	isInline, _ := config["inline"].(bool)
-	wfT.inline = isInline
+	wfT.Inline = isInline
 	name, ok := config["name"].(string)
 	if !ok {
 		return wfT, fmt.Errorf("name is required")
 	}
-	wfT.name = name
+	wfT.Name = name
 	namespace, _ := config["namespace"].(string)
 	if serverAddr == "" || template == "" || name == "" {
 		return wfT, fmt.Errorf("missing required fields in job agent config")
 	}
 	if !isInline && namespace == "" {
-		return wfT, fmt.Errorf("when inline is false namespace must be set to trigger the correct workflow template")
+		return wfT, fmt.Errorf(
+			"when inline is false namespace must be set to trigger the correct workflow template",
+		)
 	}
-	wfT.namespace = namespace
+	wfT.Namespace = namespace
 	return wfT, nil
 }
 
 // TemplateApplication renders the Argo Workflows Workflow YAML template using
 // the dispatch context variables.
-func TemplateApplication(ctx *oapi.DispatchContext, tmpl string, inline bool, name string, namespace string) (*wfv1.Workflow, error) {
+func TemplateApplication(
+	ctx *oapi.DispatchContext,
+	tmpl string,
+	inline bool,
+	name string,
+	namespace string,
+) (*wfv1.Workflow, error) {
 	t, err := templatefuncs.Parse("argoWorkflowAgentConfig", tmpl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
@@ -181,7 +204,11 @@ func TemplateApplication(ctx *oapi.DispatchContext, tmpl string, inline bool, na
 	return &workflow, nil
 }
 
-func createWorkFlowTemplateCall(name string, namespace string, params map[string]any) *wfv1.Workflow {
+func createWorkFlowTemplateCall(
+	name string,
+	namespace string,
+	params map[string]any,
+) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-", name),
@@ -210,19 +237,19 @@ func createWorkFlowTemplateCall(name string, namespace string, params map[string
 // values so they conform to Kubernetes naming rules.
 func MakeApplicationK8sCompatible(wf *wfv1.Workflow) {
 	if wf.Name != "" {
-		wf.Name = getK8sCompatibleName(wf.Name, false)
+		wf.Name = GetK8sCompatibleName(wf.Name, false)
 	}
 	if wf.GenerateName != "" {
-		wf.GenerateName = getK8sCompatibleName(wf.GenerateName, true)
+		wf.GenerateName = GetK8sCompatibleName(wf.GenerateName, true)
 	}
 	if wf.Labels != nil {
 		for key, value := range wf.Labels {
-			wf.Labels[key] = getK8sCompatibleName(value, false)
+			wf.Labels[key] = GetK8sCompatibleName(value, false)
 		}
 	}
 }
 
-func getK8sCompatibleName(name string, generated bool) string {
+func GetK8sCompatibleName(name string, generated bool) string {
 	cleaned := strings.ToLower(name)
 	k8sInvalidCharsRegex := regexp.MustCompile(`[^a-z0-9-]`)
 	cleaned = k8sInvalidCharsRegex.ReplaceAllString(cleaned, "-")
