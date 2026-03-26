@@ -81,9 +81,9 @@ SELECT DISTINCT ON (rel.resource_id, rel.environment_id, rel.deployment_id)
   j.job_agent_config AS job_agent_config,
   j.dispatch_context AS job_dispatch_context,
   COALESCE(
-    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
+    (SELECT json_object_agg(m.key, m.value)
      FROM job_metadata m WHERE m.job_id = j.id),
-    '[]'
+    '{}'
   )::jsonb AS job_metadata
 FROM release rel
 INNER JOIN release_job rj

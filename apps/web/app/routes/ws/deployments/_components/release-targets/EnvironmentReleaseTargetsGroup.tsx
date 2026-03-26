@@ -38,7 +38,7 @@ type ReleaseTargetSummary = {
     id: string;
     status: string;
     message?: string | null;
-    metadata?: Array<{ key: string; value: string }>;
+    metadata?: Record<string, string>;
     verifications: JobVerification[];
   } | null;
 };
@@ -53,12 +53,12 @@ type ReleaseTargetRowProps = {
 };
 
 function extractJobLinks(
-  metadata?: Array<{ key: string; value: string }>,
+  metadata?: Record<string, string>,
 ): Record<string, string> | undefined {
-  const entry = metadata?.find((m) => m.key === "ctrlplane/links");
-  if (entry == null) return undefined;
+  const value = metadata?.["ctrlplane/links"];
+  if (value == null) return undefined;
   try {
-    return JSON.parse(entry.value) as Record<string, string>;
+    return JSON.parse(value) as Record<string, string>;
   } catch {
     return undefined;
   }
