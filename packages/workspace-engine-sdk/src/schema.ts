@@ -759,6 +759,8 @@ export interface components {
       environment: components["schemas"]["Environment"];
       latestJob?: {
         /** Format: date-time */
+        completedAt?: string;
+        /** Format: date-time */
         createdAt: string;
         id: string;
         message?: string;

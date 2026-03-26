@@ -1727,6 +1727,10 @@
                "latestJob": {
                   "nullable": true,
                   "properties": {
+                     "completedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                     },
                      "createdAt": {
                         "format": "date-time",
                         "type": "string"

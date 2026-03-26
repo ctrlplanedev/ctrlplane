@@ -27,6 +27,7 @@ local openapi = import '../lib/openapi.libsonnet';
           status: openapi.schemaRef('JobStatus'),
           message: { type: 'string' },
           createdAt: { type: 'string', format: 'date-time' },
+          completedAt: { type: 'string', format: 'date-time' },
           metadata: {
             type: 'object',
             additionalProperties: { type: 'string' },

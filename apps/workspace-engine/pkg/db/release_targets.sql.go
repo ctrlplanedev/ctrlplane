@@ -98,6 +98,7 @@ SELECT DISTINCT ON (rel.resource_id, rel.environment_id, rel.deployment_id)
   j.status AS job_status,
   j.message AS job_message,
   j.created_at AS job_created_at,
+  j.completed_at AS job_completed_at,
   COALESCE(
     (SELECT json_object_agg(m.key, m.value)
      FROM job_metadata m WHERE m.job_id = j.id),
@@ -113,14 +114,15 @@ ORDER BY rel.resource_id, rel.environment_id, rel.deployment_id, j.created_at DE
 `
 
 type ListLatestJobsByDeploymentIDRow struct {
-	ResourceID    uuid.UUID
-	EnvironmentID uuid.UUID
-	DeploymentID  uuid.UUID
-	JobID         uuid.UUID
-	JobStatus     JobStatus
-	JobMessage    pgtype.Text
-	JobCreatedAt  pgtype.Timestamptz
-	JobMetadata   []byte
+	ResourceID     uuid.UUID
+	EnvironmentID  uuid.UUID
+	DeploymentID   uuid.UUID
+	JobID          uuid.UUID
+	JobStatus      JobStatus
+	JobMessage     pgtype.Text
+	JobCreatedAt   pgtype.Timestamptz
+	JobCompletedAt pgtype.Timestamptz
+	JobMetadata    []byte
 }
 
 func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID uuid.UUID) ([]ListLatestJobsByDeploymentIDRow, error) {
@@ -140,6 +142,7 @@ func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID
 			&i.JobStatus,
 			&i.JobMessage,
 			&i.JobCreatedAt,
+			&i.JobCompletedAt,
 			&i.JobMetadata,
 		); err != nil {
 			return nil, err

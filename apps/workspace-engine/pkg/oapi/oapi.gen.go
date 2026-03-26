@@ -880,6 +880,7 @@ type ReleaseTargetItem struct {
 	DesiredVersion *DeploymentVersion `json:"desiredVersion,omitempty"`
 	Environment    Environment        `json:"environment"`
 	LatestJob      *struct {
+		CompletedAt   *time.Time        `json:"completedAt,omitempty"`
 		CreatedAt     time.Time         `json:"createdAt"`
 		Id            string            `json:"id"`
 		Message       *string           `json:"message,omitempty"`

@@ -72,6 +72,7 @@ SELECT DISTINCT ON (rel.resource_id, rel.environment_id, rel.deployment_id)
   j.status AS job_status,
   j.message AS job_message,
   j.created_at AS job_created_at,
+  j.completed_at AS job_completed_at,
   COALESCE(
     (SELECT json_object_agg(m.key, m.value)
      FROM job_metadata m WHERE m.job_id = j.id),
