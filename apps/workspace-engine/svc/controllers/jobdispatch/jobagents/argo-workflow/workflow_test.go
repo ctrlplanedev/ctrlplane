@@ -90,6 +90,10 @@ func (m *mockSetter) getCalls() []updateCall {
 // ----- Helpers -----
 
 const minimalWorkflowTemplate = `
+{{- $resourceIdentifier := .resource.identifier }}
+{{- $environmentName := .environment.name }}
+{{- $repo := .release.version.tag }}
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -128,6 +132,7 @@ func validConfig() oapi.JobAgentConfig {
 }
 
 func newTestJob(id string, cfg oapi.JobAgentConfig) *oapi.Job {
+	tag := "v1.2.3"
 	return &oapi.Job{
 		Id:             id,
 		Status:         oapi.JobStatusPending,
@@ -135,7 +140,21 @@ func newTestJob(id string, cfg oapi.JobAgentConfig) *oapi.Job {
 		UpdatedAt:      time.Now(),
 		Metadata:       map[string]string{},
 		JobAgentConfig: cfg,
+
 		DispatchContext: &oapi.DispatchContext{
+			Resource: &oapi.Resource{
+				Name:       "my-resource",
+				Identifier: "res-id-123",
+			},
+			Environment: &oapi.Environment{
+				Name: "production",
+			},
+			Release: &oapi.Release{
+				Version: oapi.DeploymentVersion{
+					Tag: tag,
+				},
+			},
+			JobAgent:       oapi.JobAgent{},
 			JobAgentConfig: cfg,
 		},
 	}

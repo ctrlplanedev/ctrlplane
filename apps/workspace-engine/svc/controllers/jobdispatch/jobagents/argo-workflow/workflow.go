@@ -135,12 +135,8 @@ func ParseJobAgentConfig(
 	}
 	wfT.template = template
 
-	isInline, ok := config["inline"].(bool)
-	if !ok {
-		wfT.inline = false
-	} else {
-		wfT.inline = isInline
-	}
+	isInline, _ := config["inline"].(bool)
+	wfT.inline = isInline
 	name, ok := config["name"].(string)
 	if !ok {
 		return wfT, fmt.Errorf("name is required")
