@@ -30,16 +30,17 @@ export function meta() {
   ];
 }
 
+const QUERY_PARAM_NAME = "query";
 function useSearch() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const cel = searchParams.get("cel");
-  const [search, setSearch] = useState(cel ?? "true");
+  const cel = searchParams.get(QUERY_PARAM_NAME);
+  const [search, setSearch] = useState(cel ?? "");
   const [searchDebounced, setSearchDebounced] = useState(search);
   useDebounce(
     () => {
       const newParams = new URLSearchParams(searchParams);
-      if (search === "") newParams.set("cel", "true");
-      if (search !== "") newParams.set("cel", search);
+      if (search === "") newParams.set(QUERY_PARAM_NAME, "");
+      if (search !== "") newParams.set(QUERY_PARAM_NAME, search);
       setSearchParams(newParams);
       setSearchDebounced(search);
     },
@@ -111,7 +112,7 @@ export default function Resources() {
         </div>
       </header>
 
-      {resources?.items.map((resource) => (
+      {resources?.items?.map((resource) => (
         <ResourceRow key={resource.identifier} resource={resource} />
       ))}
     </>

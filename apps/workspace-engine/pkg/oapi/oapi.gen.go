@@ -895,6 +895,37 @@ type ReleaseTargetAndState struct {
 	State         ReleaseTargetState `json:"state"`
 }
 
+// ReleaseTargetItem defines model for ReleaseTargetItem.
+type ReleaseTargetItem struct {
+	CurrentVersion *DeploymentVersion `json:"currentVersion,omitempty"`
+	DesiredVersion *DeploymentVersion `json:"desiredVersion,omitempty"`
+	Environment    Environment        `json:"environment"`
+	LatestJob      *struct {
+		CompletedAt     *time.Time        `json:"completedAt,omitempty"`
+		CreatedAt       time.Time         `json:"createdAt"`
+		DispatchContext *DispatchContext  `json:"dispatchContext,omitempty"`
+		ExternalId      *string           `json:"externalId,omitempty"`
+		Id              string            `json:"id"`
+		JobAgentConfig  JobAgentConfig    `json:"jobAgentConfig"`
+		JobAgentId      string            `json:"jobAgentId"`
+		Message         *string           `json:"message,omitempty"`
+		Metadata        map[string]string `json:"metadata"`
+		ReleaseId       string            `json:"releaseId"`
+		StartedAt       *time.Time        `json:"startedAt,omitempty"`
+		Status          JobStatus         `json:"status"`
+		TraceToken      *string           `json:"traceToken,omitempty"`
+		UpdatedAt       time.Time         `json:"updatedAt"`
+		Verifications   []JobVerification `json:"verifications"`
+		WorkflowJobId   string            `json:"workflowJobId"`
+	} `json:"latestJob"`
+	ReleaseTarget struct {
+		DeploymentId  string `json:"deploymentId"`
+		EnvironmentId string `json:"environmentId"`
+		ResourceId    string `json:"resourceId"`
+	} `json:"releaseTarget"`
+	Resource Resource `json:"resource"`
+}
+
 // ReleaseTargetPreview defines model for ReleaseTargetPreview.
 type ReleaseTargetPreview struct {
 	Deployment  Deployment  `json:"deployment"`
@@ -1162,7 +1193,7 @@ type Value struct {
 // VerificationMeasurement defines model for VerificationMeasurement.
 type VerificationMeasurement struct {
 	// Data Raw measurement data
-	Data *map[string]interface{} `json:"data,omitempty"`
+	Data map[string]interface{} `json:"data"`
 
 	// MeasuredAt When measurement was taken
 	MeasuredAt time.Time `json:"measuredAt"`
@@ -1211,7 +1242,8 @@ type VerificationMetricStatus struct {
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
 	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
-	FailureThreshold *int `json:"failureThreshold,omitempty"`
+	FailureThreshold *int   `json:"failureThreshold,omitempty"`
+	Id               string `json:"id"`
 
 	// IntervalSeconds Interval between measurements in seconds
 	IntervalSeconds int32 `json:"intervalSeconds"`
@@ -2329,6 +2361,9 @@ func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// List release targets for a deployment
+	// (GET /v1/deployments/{deploymentId}/release-targets)
+	ListReleaseTargets(c *gin.Context, deploymentId string)
 	// Validate a resource selector
 	// (POST /v1/validate/resource-selector)
 	ValidateResourceSelector(c *gin.Context)
@@ -2351,6 +2386,30 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// ListReleaseTargets operation middleware
+func (siw *ServerInterfaceWrapper) ListReleaseTargets(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListReleaseTargets(c, deploymentId)
+}
 
 // ValidateResourceSelector operation middleware
 func (siw *ServerInterfaceWrapper) ValidateResourceSelector(c *gin.Context) {
@@ -2492,6 +2551,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)

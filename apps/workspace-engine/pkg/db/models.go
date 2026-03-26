@@ -445,17 +445,18 @@ type JobMetadatum struct {
 }
 
 type JobVerificationMetric struct {
-	ID               uuid.UUID
-	CreatedAt        pgtype.Timestamptz
-	JobID            uuid.UUID
-	Name             string
-	Provider         []byte
-	IntervalSeconds  int32
-	Count            int32
-	SuccessCondition string
-	SuccessThreshold pgtype.Int4
-	FailureCondition pgtype.Text
-	FailureThreshold pgtype.Int4
+	ID                             uuid.UUID
+	CreatedAt                      pgtype.Timestamptz
+	JobID                          uuid.UUID
+	PolicyRuleVerificationMetricID uuid.UUID
+	Name                           string
+	Provider                       []byte
+	IntervalSeconds                int32
+	Count                          int32
+	SuccessCondition               string
+	SuccessThreshold               pgtype.Int4
+	FailureCondition               pgtype.Text
+	FailureThreshold               pgtype.Int4
 }
 
 type JobVerificationMetricMeasurement struct {

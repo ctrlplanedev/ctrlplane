@@ -1748,6 +1748,71 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetItem": {
+            "properties": {
+               "currentVersion": {
+                  "$ref": "#/components/schemas/DeploymentVersion",
+                  "nullable": true
+               },
+               "desiredVersion": {
+                  "$ref": "#/components/schemas/DeploymentVersion",
+                  "nullable": true
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "latestJob": {
+                  "allOf": [
+                     {
+                        "$ref": "#/components/schemas/Job"
+                     },
+                     {
+                        "properties": {
+                           "verifications": {
+                              "items": {
+                                 "$ref": "#/components/schemas/JobVerification"
+                              },
+                              "type": "array"
+                           }
+                        },
+                        "required": [
+                           "verifications"
+                        ],
+                        "type": "object"
+                     }
+                  ],
+                  "nullable": true
+               },
+               "releaseTarget": {
+                  "properties": {
+                     "deploymentId": {
+                        "type": "string"
+                     },
+                     "environmentId": {
+                        "type": "string"
+                     },
+                     "resourceId": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "resourceId",
+                     "environmentId",
+                     "deploymentId"
+                  ],
+                  "type": "object"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/Resource"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "environment",
+               "resource"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetPreview": {
             "properties": {
                "deployment": {
@@ -2411,7 +2476,8 @@
             },
             "required": [
                "status",
-               "measuredAt"
+               "measuredAt",
+               "data"
             ],
             "type": "object"
          },
@@ -2482,6 +2548,9 @@
                },
                {
                   "properties": {
+                     "id": {
+                        "type": "string"
+                     },
                      "measurements": {
                         "description": "Individual verification measurements taken for this metric",
                         "items": {
@@ -2491,6 +2560,7 @@
                      }
                   },
                   "required": [
+                     "id",
                      "measurements"
                   ],
                   "type": "object"
@@ -2828,6 +2898,56 @@
    },
    "openapi": "3.0.0",
    "paths": {
+      "/v1/deployments/{deploymentId}/release-targets": {
+         "get": {
+            "operationId": "listReleaseTargets",
+            "parameters": [
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ReleaseTargetItem"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "required": [
+                              "items"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "List of release targets for the deployment"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "List release targets for a deployment"
+         }
+      },
       "/v1/validate/resource-selector": {
          "post": {
             "operationId": "validateResourceSelector",

@@ -368,6 +368,8 @@ CREATE TABLE job_verification_metric (
 
     job_id UUID NOT NULL,
 
+    policy_rule_verification_metric_id UUID REFERENCES policy_rule_job_verification_metric(id) ON DELETE SET NULL,
+
     name TEXT NOT NULL,
     provider JSONB NOT NULL,
 
