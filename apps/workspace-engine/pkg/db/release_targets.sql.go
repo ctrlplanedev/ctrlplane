@@ -230,17 +230,10 @@ SELECT
   jvm.success_condition AS metric_success_condition,
   jvm.success_threshold AS metric_success_threshold,
   jvm.failure_condition AS metric_failure_condition,
-  jvm.failure_threshold AS metric_failure_threshold,
-  m.id AS measurement_id,
-  m.job_verification_metric_status_id AS measurement_metric_id,
-  m.data AS measurement_data,
-  m.measured_at AS measurement_measured_at,
-  m.status AS measurement_status
+  jvm.failure_threshold AS metric_failure_threshold
 FROM job_verification_metric jvm
-LEFT JOIN job_verification_metric_measurement m
-  ON m.job_verification_metric_status_id = jvm.id
 WHERE jvm.job_id = ANY($1::uuid[])
-ORDER BY jvm.job_id, jvm.id, m.measured_at
+ORDER BY jvm.job_id, jvm.id
 `
 
 type ListVerificationMetricsByJobIDsRow struct {
@@ -254,11 +247,6 @@ type ListVerificationMetricsByJobIDsRow struct {
 	MetricSuccessThreshold pgtype.Int4
 	MetricFailureCondition pgtype.Text
 	MetricFailureThreshold pgtype.Int4
-	MeasurementID          uuid.UUID
-	MeasurementMetricID    uuid.UUID
-	MeasurementData        []byte
-	MeasurementMeasuredAt  pgtype.Timestamptz
-	MeasurementStatus      NullJobVerificationStatus
 }
 
 func (q *Queries) ListVerificationMetricsByJobIDs(ctx context.Context, jobIds []uuid.UUID) ([]ListVerificationMetricsByJobIDsRow, error) {
@@ -281,11 +269,6 @@ func (q *Queries) ListVerificationMetricsByJobIDs(ctx context.Context, jobIds []
 			&i.MetricSuccessThreshold,
 			&i.MetricFailureCondition,
 			&i.MetricFailureThreshold,
-			&i.MeasurementID,
-			&i.MeasurementMetricID,
-			&i.MeasurementData,
-			&i.MeasurementMeasuredAt,
-			&i.MeasurementStatus,
 		); err != nil {
 			return nil, err
 		}

@@ -1796,7 +1796,72 @@
                      },
                      "verifications": {
                         "items": {
-                           "$ref": "#/components/schemas/JobVerification"
+                           "properties": {
+                              "id": {
+                                 "type": "string"
+                              },
+                              "jobId": {
+                                 "type": "string"
+                              },
+                              "metrics": {
+                                 "items": {
+                                    "properties": {
+                                       "count": {
+                                          "type": "integer"
+                                       },
+                                       "failureCondition": {
+                                          "nullable": true,
+                                          "type": "string"
+                                       },
+                                       "failureThreshold": {
+                                          "nullable": true,
+                                          "type": "integer"
+                                       },
+                                       "id": {
+                                          "type": "string"
+                                       },
+                                       "jobId": {
+                                          "type": "string"
+                                       },
+                                       "name": {
+                                          "type": "string"
+                                       },
+                                       "policyRuleVerificationMetricId": {
+                                          "type": "string"
+                                       },
+                                       "provider": {
+                                          "additionalProperties": true,
+                                          "type": "object"
+                                       },
+                                       "successCondition": {
+                                          "type": "string"
+                                       },
+                                       "successThreshold": {
+                                          "nullable": true,
+                                          "type": "integer"
+                                       }
+                                    },
+                                    "required": [
+                                       "id",
+                                       "name",
+                                       "provider",
+                                       "count",
+                                       "successCondition",
+                                       "successThreshold",
+                                       "failureCondition",
+                                       "failureThreshold"
+                                    ],
+                                    "type": "object"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "required": [
+                              "id",
+                              "jobId",
+                              "metrics"
+                           ],
+                           "type": "object"
                         },
                         "type": "array"
                      }

@@ -779,7 +779,24 @@ export interface components {
           [key: string]: string;
         };
         status: components["schemas"]["JobStatus"];
-        verifications: components["schemas"]["JobVerification"][];
+        verifications: {
+          id: string;
+          jobId: string;
+          metrics: {
+            count: number;
+            failureCondition: string | null;
+            failureThreshold: number | null;
+            id: string;
+            jobId?: string;
+            name: string;
+            policyRuleVerificationMetricId?: string;
+            provider: {
+              [key: string]: unknown;
+            };
+            successCondition: string;
+            successThreshold: number | null;
+          }[];
+        }[];
       } | null;
       releaseTarget: {
         deploymentId: string;

@@ -69,7 +69,33 @@ local openapi = import '../lib/openapi.libsonnet';
           },
           verifications: {
             type: 'array',
-            items: openapi.schemaRef('JobVerification'),
+            items: {
+              type: 'object',
+              required: ['id', 'jobId', 'metrics'],
+              properties: {
+                id: { type: 'string' },
+                jobId: { type: 'string' },
+                metrics: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['id', 'name', 'provider', 'count', 'successCondition', 'successThreshold', 'failureCondition', 'failureThreshold'],
+                    properties: {
+                      id: { type: 'string' },
+                      jobId: { type: 'string' },
+                      policyRuleVerificationMetricId: { type: 'string' },
+                      name: { type: 'string' },
+                      provider: { type: 'object', additionalProperties: true },
+                      count: { type: 'integer' },
+                      successCondition: { type: 'string' },
+                      successThreshold: { type: 'integer', nullable: true },
+                      failureCondition: { type: 'string', nullable: true },
+                      failureThreshold: { type: 'integer', nullable: true },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },

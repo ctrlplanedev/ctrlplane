@@ -897,7 +897,22 @@ type ReleaseTargetItem struct {
 		Message       *string           `json:"message,omitempty"`
 		Metadata      map[string]string `json:"metadata"`
 		Status        JobStatus         `json:"status"`
-		Verifications []JobVerification `json:"verifications"`
+		Verifications []struct {
+			Id      string `json:"id"`
+			JobId   string `json:"jobId"`
+			Metrics []struct {
+				Count                          int                    `json:"count"`
+				FailureCondition               *string                `json:"failureCondition"`
+				FailureThreshold               *int                   `json:"failureThreshold"`
+				Id                             string                 `json:"id"`
+				JobId                          *string                `json:"jobId,omitempty"`
+				Name                           string                 `json:"name"`
+				PolicyRuleVerificationMetricId *string                `json:"policyRuleVerificationMetricId,omitempty"`
+				Provider                       map[string]interface{} `json:"provider"`
+				SuccessCondition               string                 `json:"successCondition"`
+				SuccessThreshold               *int                   `json:"successThreshold"`
+			} `json:"metrics"`
+		} `json:"verifications"`
 	} `json:"latestJob"`
 	ReleaseTarget struct {
 		DeploymentId  string `json:"deploymentId"`

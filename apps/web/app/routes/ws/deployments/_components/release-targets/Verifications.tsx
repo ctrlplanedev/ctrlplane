@@ -36,18 +36,15 @@ type VerificationMetric = {
   name: string;
   provider: unknown;
   count: number;
-  intervalSeconds: number;
   successCondition: string;
   successThreshold?: number | null;
   failureCondition?: string | null;
   failureThreshold?: number | null;
-  measurements: MetricMeasurement[];
 };
 
 export type JobVerification = {
   id: string;
   jobId: string;
-  createdAt: Date | string;
   message?: string;
   metrics: VerificationMetric[];
 };
@@ -117,20 +114,21 @@ function getStatusMessage(
 }
 
 function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
-  const passedCount = metric.measurements.filter(
+  const measurements: MetricMeasurement[] = [];
+  const passedCount = measurements.filter(
     (m) => m.status === "passed",
   ).length;
-  const failedCount = metric.measurements.filter(
+  const failedCount = measurements.filter(
     (m) => m.status === "failed",
   ).length;
-  const totalMeasurements = metric.measurements.length;
+  const totalMeasurements = measurements.length;
   const expectedCount = metric.count;
 
   const failureLimit = metric.failureThreshold ?? 0;
   const successThreshold = metric.successThreshold;
 
   const consecutiveSuccessCount = getConsecutiveSuccessCount(
-    metric.measurements,
+    measurements,
   );
 
   const statusMessage = getStatusMessage(
@@ -169,7 +167,8 @@ const nullToUndefined = <T,>(v: T | null | undefined): T | undefined =>
 
 function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   const [open, setOpen] = useState(false);
-  const sortedMeasurements = [...metric.measurements].sort(
+  const measurements: MetricMeasurement[] = [];
+  const sortedMeasurements = [...measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
@@ -236,7 +235,8 @@ type MetricSummary = {
 type VerificationMetricStatusType = VerificationMetric;
 
 const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
-  if (metric.measurements.length === 0) {
+  const measurements: MetricMeasurement[] = [];
+  if (measurements.length === 0) {
     return { name: metric.name, status: "inconclusive" };
   }
 
@@ -246,8 +246,7 @@ const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   let failedCount = 0;
   let consecutiveSuccessCount = 0;
 
-  // Process ALL measurements first (no early exit)
-  for (const m of metric.measurements) {
+  for (const m of measurements) {
     switch (m.status) {
       case "failed":
         failedCount++;
@@ -269,7 +268,7 @@ const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   if (successThreshold != null && consecutiveSuccessCount >= successThreshold)
     return { name: metric.name, status: "passed" };
 
-  if (metric.measurements.length < metric.count)
+  if (measurements.length < metric.count)
     return { name: metric.name, status: "inconclusive" };
 
   return { name: metric.name, status: "passed" };
