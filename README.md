@@ -86,13 +86,20 @@ For self-hosted options, see our [installation guide](https://docs.ctrlplane.dev
 
 ## 🛠️ Contributing
 
-> Development system must have Docker engine installed and running.
+### Local Setup
+
+#### Prereqs
+
+- Docker engine installed and running
+- [Flox](https://flox.dev/docs/install-flox/install/) installed
 
 ```bash
 git clone https://github.com/ctrlplanedev/ctrlplane.git
 cd ctrlplane
-cp .env.example .env
+
+flox activate
 docker compose -f docker-compose.dev.yaml up -d
+pnpm i && pnpm build
 cd packages/db && pnpm migrate && cd ../..
 pnpm dev
 ```
