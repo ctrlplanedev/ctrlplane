@@ -880,22 +880,13 @@ type ReleaseTargetItem struct {
 	DesiredVersion *DeploymentVersion `json:"desiredVersion,omitempty"`
 	Environment    Environment        `json:"environment"`
 	LatestJob      *struct {
-		CompletedAt     *time.Time        `json:"completedAt,omitempty"`
-		CreatedAt       time.Time         `json:"createdAt"`
-		DispatchContext *DispatchContext  `json:"dispatchContext,omitempty"`
-		ExternalId      *string           `json:"externalId,omitempty"`
-		Id              string            `json:"id"`
-		JobAgentConfig  JobAgentConfig    `json:"jobAgentConfig"`
-		JobAgentId      string            `json:"jobAgentId"`
-		Message         *string           `json:"message,omitempty"`
-		Metadata        map[string]string `json:"metadata"`
-		ReleaseId       string            `json:"releaseId"`
-		StartedAt       *time.Time        `json:"startedAt,omitempty"`
-		Status          JobStatus         `json:"status"`
-		TraceToken      *string           `json:"traceToken,omitempty"`
-		UpdatedAt       time.Time         `json:"updatedAt"`
-		Verifications   []JobVerification `json:"verifications"`
-		WorkflowJobId   string            `json:"workflowJobId"`
+		CompletedAt   *time.Time        `json:"completedAt,omitempty"`
+		CreatedAt     time.Time         `json:"createdAt"`
+		Id            string            `json:"id"`
+		Message       *string           `json:"message,omitempty"`
+		Metadata      map[string]string `json:"metadata"`
+		Status        JobStatus         `json:"status"`
+		Verifications []JobVerification `json:"verifications"`
 	} `json:"latestJob"`
 	ReleaseTarget struct {
 		DeploymentId  string `json:"deploymentId"`

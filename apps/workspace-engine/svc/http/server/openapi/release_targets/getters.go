@@ -72,7 +72,12 @@ func (g *PostgresGetter) ListReleaseTargets(
 	latestJobMap := make(map[string]db.ListLatestJobsByDeploymentIDRow, len(latestJobs))
 	var jobIDs []uuid.UUID
 	for _, lj := range latestJobs {
-		key := fmt.Sprintf("%s-%s-%s", lj.ResourceID.String(), lj.EnvironmentID.String(), lj.DeploymentID.String())
+		key := fmt.Sprintf(
+			"%s-%s-%s",
+			lj.ResourceID.String(),
+			lj.EnvironmentID.String(),
+			lj.DeploymentID.String(),
+		)
 		latestJobMap[key] = lj
 		jobIDs = append(jobIDs, lj.JobID)
 	}
@@ -150,19 +155,11 @@ func (g *PostgresGetter) ListReleaseTargets(
 
 		if lj, ok := latestJobMap[key]; ok {
 			jobH := gin.H{
-				"id":              lj.JobID.String(),
-				"status":          lj.JobStatus,
-				"message":         lj.JobMessage.String,
-				"reason":          lj.JobReason,
-				"createdAt":       lj.JobCreatedAt.Time,
-				"startedAt":       lj.JobStartedAt.Time,
-				"completedAt":     lj.JobCompletedAt.Time,
-				"updatedAt":       lj.JobUpdatedAt.Time,
-				"externalId":      lj.JobExternalID.String,
-				"jobAgentId":      lj.JobAgentID,
-				"jobAgentConfig":  json.RawMessage(lj.JobAgentConfig),
-				"dispatchContext": json.RawMessage(lj.JobDispatchContext),
-				"metadata":        json.RawMessage(lj.JobMetadata),
+				"id":        lj.JobID.String(),
+				"status":    lj.JobStatus,
+				"message":   lj.JobMessage.String,
+				"metadata":  json.RawMessage(lj.JobMetadata),
+				"createdAt": lj.JobCreatedAt.Time,
 			}
 			if v, ok := verificationsMap[lj.JobID.String()]; ok {
 				jobH["verifications"] = v

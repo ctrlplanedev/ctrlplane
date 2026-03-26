@@ -757,11 +757,19 @@ export interface components {
       currentVersion?: components["schemas"]["DeploymentVersion"];
       desiredVersion?: components["schemas"]["DeploymentVersion"];
       environment: components["schemas"]["Environment"];
-      latestJob?:
-        | (components["schemas"]["Job"] & {
-            verifications: components["schemas"]["JobVerification"][];
-          })
-        | null;
+      latestJob?: {
+        /** Format: date-time */
+        completedAt?: string;
+        /** Format: date-time */
+        createdAt: string;
+        id: string;
+        message?: string;
+        metadata: {
+          [key: string]: string;
+        };
+        status: components["schemas"]["JobStatus"];
+        verifications: components["schemas"]["JobVerification"][];
+      } | null;
       releaseTarget: {
         deploymentId: string;
         environmentId: string;
