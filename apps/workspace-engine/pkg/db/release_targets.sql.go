@@ -97,15 +97,7 @@ SELECT DISTINCT ON (rel.resource_id, rel.environment_id, rel.deployment_id)
   j.id AS job_id,
   j.status AS job_status,
   j.message AS job_message,
-  j.reason AS job_reason,
   j.created_at AS job_created_at,
-  j.started_at AS job_started_at,
-  j.completed_at AS job_completed_at,
-  j.updated_at AS job_updated_at,
-  j.external_id AS job_external_id,
-  j.job_agent_id AS job_agent_id,
-  j.job_agent_config AS job_agent_config,
-  j.dispatch_context AS job_dispatch_context,
   COALESCE(
     (SELECT json_object_agg(m.key, m.value)
      FROM job_metadata m WHERE m.job_id = j.id),
@@ -121,22 +113,14 @@ ORDER BY rel.resource_id, rel.environment_id, rel.deployment_id, j.created_at DE
 `
 
 type ListLatestJobsByDeploymentIDRow struct {
-	ResourceID         uuid.UUID
-	EnvironmentID      uuid.UUID
-	DeploymentID       uuid.UUID
-	JobID              uuid.UUID
-	JobStatus          JobStatus
-	JobMessage         pgtype.Text
-	JobReason          JobReason
-	JobCreatedAt       pgtype.Timestamptz
-	JobStartedAt       pgtype.Timestamptz
-	JobCompletedAt     pgtype.Timestamptz
-	JobUpdatedAt       pgtype.Timestamptz
-	JobExternalID      pgtype.Text
-	JobAgentID         pgtype.UUID
-	JobAgentConfig     []byte
-	JobDispatchContext []byte
-	JobMetadata        []byte
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+	JobID         uuid.UUID
+	JobStatus     JobStatus
+	JobMessage    pgtype.Text
+	JobCreatedAt  pgtype.Timestamptz
+	JobMetadata   []byte
 }
 
 func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID uuid.UUID) ([]ListLatestJobsByDeploymentIDRow, error) {
@@ -155,15 +139,7 @@ func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID
 			&i.JobID,
 			&i.JobStatus,
 			&i.JobMessage,
-			&i.JobReason,
 			&i.JobCreatedAt,
-			&i.JobStartedAt,
-			&i.JobCompletedAt,
-			&i.JobUpdatedAt,
-			&i.JobExternalID,
-			&i.JobAgentID,
-			&i.JobAgentConfig,
-			&i.JobDispatchContext,
 			&i.JobMetadata,
 		); err != nil {
 			return nil, err

@@ -20,19 +20,22 @@ local openapi = import '../lib/openapi.libsonnet';
       currentVersion: openapi.schemaRef('DeploymentVersion', nullable=true),
       latestJob: {
         nullable: true,
-        allOf: [
-          openapi.schemaRef('Job'),
-          {
+        type: 'object',
+        required: ['id', 'status', 'createdAt', 'metadata', 'verifications'],
+        properties: {
+          id: { type: 'string' },
+          status: openapi.schemaRef('JobStatus'),
+          message: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          metadata: {
             type: 'object',
-            required: ['verifications'],
-            properties: {
-              verifications: {
-                type: 'array',
-                items: openapi.schemaRef('JobVerification'),
-              },
-            },
+            additionalProperties: { type: 'string' },
           },
-        ],
+          verifications: {
+            type: 'array',
+            items: openapi.schemaRef('JobVerification'),
+          },
+        },
       },
     },
   },

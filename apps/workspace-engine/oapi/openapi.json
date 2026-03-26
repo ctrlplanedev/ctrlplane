@@ -1725,26 +1725,42 @@
                   "$ref": "#/components/schemas/Environment"
                },
                "latestJob": {
-                  "allOf": [
-                     {
-                        "$ref": "#/components/schemas/Job"
+                  "nullable": true,
+                  "properties": {
+                     "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
                      },
-                     {
-                        "properties": {
-                           "verifications": {
-                              "items": {
-                                 "$ref": "#/components/schemas/JobVerification"
-                              },
-                              "type": "array"
-                           }
+                     "id": {
+                        "type": "string"
+                     },
+                     "message": {
+                        "type": "string"
+                     },
+                     "metadata": {
+                        "additionalProperties": {
+                           "type": "string"
                         },
-                        "required": [
-                           "verifications"
-                        ],
                         "type": "object"
+                     },
+                     "status": {
+                        "$ref": "#/components/schemas/JobStatus"
+                     },
+                     "verifications": {
+                        "items": {
+                           "$ref": "#/components/schemas/JobVerification"
+                        },
+                        "type": "array"
                      }
+                  },
+                  "required": [
+                     "id",
+                     "status",
+                     "createdAt",
+                     "metadata",
+                     "verifications"
                   ],
-                  "nullable": true
+                  "type": "object"
                },
                "releaseTarget": {
                   "properties": {
