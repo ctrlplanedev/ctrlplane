@@ -38,6 +38,7 @@ type ReleaseTargetSummary = {
     id: string;
     status: string;
     message?: string | null;
+    metadata?: Array<{ key: string; value: string }>;
     verifications: JobVerification[];
   } | null;
 };
@@ -50,6 +51,18 @@ type EnvironmentReleaseTargetsGroupProps = {
 type ReleaseTargetRowProps = {
   rt: ReleaseTargetSummary;
 };
+
+function extractJobLinks(
+  metadata?: Array<{ key: string; value: string }>,
+): Record<string, string> | undefined {
+  const entry = metadata?.find((m) => m.key === "ctrlplane/links");
+  if (entry == null) return undefined;
+  try {
+    return JSON.parse(entry.value) as Record<string, string>;
+  } catch {
+    return undefined;
+  }
+}
 
 function JobLinks({ links }: { links?: Record<string, string> }) {
   const entries = Object.entries(links ?? {});
@@ -137,7 +150,7 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
           </div>
         )}
       </TableCell>
-      <JobLinks />
+      <JobLinks links={extractJobLinks(rt.latestJob?.metadata)} />
       <TableCell
         className={cn(
           "font-mono text-sm",

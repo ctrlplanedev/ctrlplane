@@ -2,6 +2,7 @@ package release_targets
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -63,11 +64,17 @@ func (g *PostgresGetter) ListReleaseTargets(
 		currentVersionMap[key] = cv
 	}
 
+	latestJobs, err := queries.ListLatestJobsByDeploymentID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("list latest jobs: %w", err)
+	}
+
+	latestJobMap := make(map[string]db.ListLatestJobsByDeploymentIDRow, len(latestJobs))
 	var jobIDs []uuid.UUID
-	for _, row := range rows {
-		if row.LatestJobID != nilUUID {
-			jobIDs = append(jobIDs, row.LatestJobID)
-		}
+	for _, lj := range latestJobs {
+		key := fmt.Sprintf("%s-%s-%s", lj.ResourceID.String(), lj.EnvironmentID.String(), lj.DeploymentID.String())
+		latestJobMap[key] = lj
+		jobIDs = append(jobIDs, lj.JobID)
 	}
 
 	verificationsMap := buildVerificationsMap(ctx, queries, jobIDs)
@@ -120,29 +127,6 @@ func (g *PostgresGetter) ListReleaseTargets(
 			}
 		}
 
-		if row.LatestJobID != nilUUID {
-			jobH := gin.H{
-				"id":              row.LatestJobID.String(),
-				"status":          row.LatestJobStatus.JobStatus,
-				"message":         row.LatestJobMessage.String,
-				"reason":          row.LatestJobReason.JobReason,
-				"createdAt":       row.LatestJobCreatedAt.Time,
-				"startedAt":       row.LatestJobStartedAt.Time,
-				"completedAt":     row.LatestJobCompletedAt.Time,
-				"updatedAt":       row.LatestJobUpdatedAt.Time,
-				"externalId":      row.LatestJobExternalID.String,
-				"jobAgentId":      row.LatestJobAgentID,
-				"jobAgentConfig":  row.LatestJobAgentConfig,
-				"dispatchContext": row.LatestJobDispatchContext,
-			}
-			if v, ok := verificationsMap[row.LatestJobID.String()]; ok {
-				jobH["verifications"] = v
-			} else {
-				jobH["verifications"] = []gin.H{}
-			}
-			item.LatestJob = jobH
-		}
-
 		key := fmt.Sprintf(
 			"%s-%s-%s",
 			row.ResourceID.String(),
@@ -162,6 +146,30 @@ func (g *PostgresGetter) ListReleaseTargets(
 				"message":        cv.VersionMessage.String,
 				"createdAt":      cv.VersionCreatedAt.Time,
 			}
+		}
+
+		if lj, ok := latestJobMap[key]; ok {
+			jobH := gin.H{
+				"id":              lj.JobID.String(),
+				"status":          lj.JobStatus,
+				"message":         lj.JobMessage.String,
+				"reason":          lj.JobReason,
+				"createdAt":       lj.JobCreatedAt.Time,
+				"startedAt":       lj.JobStartedAt.Time,
+				"completedAt":     lj.JobCompletedAt.Time,
+				"updatedAt":       lj.JobUpdatedAt.Time,
+				"externalId":      lj.JobExternalID.String,
+				"jobAgentId":      lj.JobAgentID,
+				"jobAgentConfig":  lj.JobAgentConfig,
+				"dispatchContext": lj.JobDispatchContext,
+				"metadata":        json.RawMessage(lj.JobMetadata),
+			}
+			if v, ok := verificationsMap[lj.JobID.String()]; ok {
+				jobH["verifications"] = v
+			} else {
+				jobH["verifications"] = []gin.H{}
+			}
+			item.LatestJob = jobH
 		}
 
 		items[i] = item
@@ -248,7 +256,7 @@ func buildVerificationsMap(
 					"successThreshold":               me.metric.MetricSuccessThreshold,
 					"failureCondition":               me.metric.MetricFailureCondition.String,
 					"failureThreshold":               me.metric.MetricFailureThreshold,
-					"measurements":                   me.measurements,
+					"measurements":                   orEmptySlice(me.measurements),
 				}
 			}
 			verifications = append(verifications, gin.H{
@@ -261,4 +269,11 @@ func buildVerificationsMap(
 	}
 
 	return verificationsMap
+}
+
+func orEmptySlice(s []gin.H) []gin.H {
+	if s == nil {
+		return []gin.H{}
+	}
+	return s
 }
