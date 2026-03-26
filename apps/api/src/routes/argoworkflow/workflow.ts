@@ -34,7 +34,13 @@ export const getJobId = (payload: ArgoWorkflowPayload): string => {
 };
 
 export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
-  const { workflowName, uid, phase, startedAt, finishedAt } = payload;
+  const {
+    workflowName: _workflowName,
+    uid,
+    phase,
+    startedAt,
+    finishedAt,
+  } = payload;
 
   const jobId = getJobId(payload);
   if (jobId == null) return;

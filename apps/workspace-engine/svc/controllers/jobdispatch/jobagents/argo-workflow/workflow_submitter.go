@@ -6,12 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/avast/retry-go"
-	"github.com/charmbracelet/log"
-
 	argoapiclient "github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/avast/retry-go"
+	"github.com/charmbracelet/log"
 )
 
 // GoWorkflowSubmitter is the production implementation of WorkflowSubmitter

@@ -16,7 +16,7 @@ import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
 import swaggerDocument from "../openapi/openapi.json" with { type: "json" };
-import { createArgoWorkflowRouter } from "./routes/argoworkflow";
+import { createArgoWorkflowRouter } from "./routes/argoworkflow/index.js";
 import { createGithubRouter } from "./routes/github/index.js";
 import { createTfeRouter } from "./routes/tfe/index.js";
 

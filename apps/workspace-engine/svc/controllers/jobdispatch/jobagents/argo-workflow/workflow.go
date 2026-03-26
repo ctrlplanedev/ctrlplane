@@ -8,15 +8,14 @@ import (
 	"regexp"
 	"strings"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
-
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
+	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo-workflow")

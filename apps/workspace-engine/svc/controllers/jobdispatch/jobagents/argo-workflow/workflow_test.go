@@ -451,7 +451,7 @@ func TestBuildArgoLinks_WithHttpsPrefix(t *testing.T) {
 func TestBuildArgoLinks_AddsHttpsWhenMissing(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"}}
 	links := argo_workflows.BuildArgoLinks("argo.example.com", wf)
-	assert.Positive(t, len(links["ctrlplane/links"]))
+	assert.NotEmpty(t, links["ctrlplane/links"])
 	assert.Contains(t, links["ctrlplane/links"], "https://")
 }
 
