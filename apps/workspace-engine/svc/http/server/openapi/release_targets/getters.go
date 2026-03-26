@@ -72,7 +72,12 @@ func (g *PostgresGetter) ListReleaseTargets(
 	latestJobMap := make(map[string]db.ListLatestJobsByDeploymentIDRow, len(latestJobs))
 	var jobIDs []uuid.UUID
 	for _, lj := range latestJobs {
-		key := fmt.Sprintf("%s-%s-%s", lj.ResourceID.String(), lj.EnvironmentID.String(), lj.DeploymentID.String())
+		key := fmt.Sprintf(
+			"%s-%s-%s",
+			lj.ResourceID.String(),
+			lj.EnvironmentID.String(),
+			lj.DeploymentID.String(),
+		)
 		latestJobMap[key] = lj
 		jobIDs = append(jobIDs, lj.JobID)
 	}
@@ -88,42 +93,23 @@ func (g *PostgresGetter) ListReleaseTargets(
 				"deploymentId":  row.DeploymentID.String(),
 			},
 			Environment: gin.H{
-				"id":               row.EnvironmentID.String(),
-				"name":             row.EnvironmentName,
-				"description":      row.EnvironmentDescription.String,
-				"resourceSelector": row.EnvironmentResourceSelector,
-				"metadata":         row.EnvironmentMetadata,
-				"createdAt":        row.EnvironmentCreatedAt.Time,
-				"workspaceId":      row.EnvironmentWorkspaceID.String(),
+				"id":   row.EnvironmentID.String(),
+				"name": row.EnvironmentName,
 			},
 			Resource: gin.H{
-				"id":          row.ResourceID.String(),
-				"name":        row.ResourceName,
-				"version":     row.ResourceVersion,
-				"kind":        row.ResourceKind,
-				"identifier":  row.ResourceIdentifier,
-				"providerId":  row.ResourceProviderID.String(),
-				"workspaceId": row.ResourceWorkspaceID.String(),
-				"config":      row.ResourceConfig,
-				"createdAt":   row.ResourceCreatedAt.Time,
-				"updatedAt":   row.ResourceUpdatedAt.Time,
-				"deletedAt":   row.ResourceDeletedAt.Time,
-				"metadata":    row.ResourceMetadata,
+				"id":         row.ResourceID.String(),
+				"name":       row.ResourceName,
+				"version":    row.ResourceVersion,
+				"kind":       row.ResourceKind,
+				"identifier": row.ResourceIdentifier,
 			},
 		}
 
 		if row.DesiredVersionID != nilUUID {
 			item.DesiredVersion = gin.H{
-				"id":             row.DesiredVersionID.String(),
-				"name":           row.DesiredVersionName.String,
-				"tag":            row.DesiredVersionTag.String,
-				"config":         row.DesiredVersionConfig,
-				"jobAgentConfig": row.DesiredVersionJobAgentConfig,
-				"deploymentId":   row.DesiredVersionDeploymentID.String(),
-				"metadata":       row.DesiredVersionMetadata,
-				"status":         row.DesiredVersionStatus.DeploymentVersionStatus,
-				"message":        row.DesiredVersionMessage.String,
-				"createdAt":      row.DesiredVersionCreatedAt.Time,
+				"id":   row.DesiredVersionID.String(),
+				"name": row.DesiredVersionName.String,
+				"tag":  row.DesiredVersionTag.String,
 			}
 		}
 
@@ -135,34 +121,19 @@ func (g *PostgresGetter) ListReleaseTargets(
 		)
 		if cv, ok := currentVersionMap[key]; ok {
 			item.CurrentVersion = gin.H{
-				"id":             cv.VersionID.String(),
-				"name":           cv.VersionName,
-				"tag":            cv.VersionTag,
-				"config":         cv.VersionConfig,
-				"jobAgentConfig": cv.VersionJobAgentConfig,
-				"deploymentId":   cv.VersionDeploymentID.String(),
-				"metadata":       cv.VersionMetadata,
-				"status":         cv.VersionStatus,
-				"message":        cv.VersionMessage.String,
-				"createdAt":      cv.VersionCreatedAt.Time,
+				"id":   cv.VersionID.String(),
+				"name": cv.VersionName,
+				"tag":  cv.VersionTag,
 			}
 		}
 
 		if lj, ok := latestJobMap[key]; ok {
 			jobH := gin.H{
-				"id":              lj.JobID.String(),
-				"status":          lj.JobStatus,
-				"message":         lj.JobMessage.String,
-				"reason":          lj.JobReason,
-				"createdAt":       lj.JobCreatedAt.Time,
-				"startedAt":       lj.JobStartedAt.Time,
-				"completedAt":     lj.JobCompletedAt.Time,
-				"updatedAt":       lj.JobUpdatedAt.Time,
-				"externalId":      lj.JobExternalID.String,
-				"jobAgentId":      lj.JobAgentID,
-				"jobAgentConfig":  json.RawMessage(lj.JobAgentConfig),
-				"dispatchContext": json.RawMessage(lj.JobDispatchContext),
-				"metadata":        json.RawMessage(lj.JobMetadata),
+				"id":        lj.JobID.String(),
+				"status":    lj.JobStatus,
+				"message":   lj.JobMessage.String,
+				"metadata":  json.RawMessage(lj.JobMetadata),
+				"createdAt": lj.JobCreatedAt.Time,
 			}
 			if v, ok := verificationsMap[lj.JobID.String()]; ok {
 				jobH["verifications"] = v
@@ -228,7 +199,6 @@ func buildVerificationsMap(
 				"jobVerificationMetricStatusId": vr.MeasurementMetricID.String(),
 				"data":                          json.RawMessage(vr.MeasurementData),
 				"measuredAt":                    vr.MeasurementMeasuredAt.Time,
-				"message":                       vr.MeasurementMessage.String,
 				"status":                        vr.MeasurementStatus.JobVerificationStatus,
 			})
 		}
@@ -245,12 +215,10 @@ func buildVerificationsMap(
 			for i, me := range metrics {
 				metricsJSON[i] = gin.H{
 					"id":                             me.metric.MetricID.String(),
-					"createdAt":                      me.metric.MetricCreatedAt.Time,
 					"jobId":                          me.metric.MetricJobID.String(),
 					"policyRuleVerificationMetricId": me.metric.MetricPolicyRuleID.String(),
 					"name":                           me.metric.MetricName,
 					"provider":                       json.RawMessage(me.metric.MetricProvider),
-					"intervalSeconds":                me.metric.MetricIntervalSeconds,
 					"count":                          me.metric.MetricCount,
 					"successCondition":               me.metric.MetricSuccessCondition,
 					"successThreshold":               me.metric.MetricSuccessThreshold,

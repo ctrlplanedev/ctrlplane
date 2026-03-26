@@ -754,20 +754,45 @@ export interface components {
       state: components["schemas"]["ReleaseTargetState"];
     };
     ReleaseTargetItem: {
-      currentVersion?: components["schemas"]["DeploymentVersion"];
-      desiredVersion?: components["schemas"]["DeploymentVersion"];
-      environment: components["schemas"]["Environment"];
-      latestJob?:
-        | (components["schemas"]["Job"] & {
-            verifications: components["schemas"]["JobVerification"][];
-          })
-        | null;
+      currentVersion?: {
+        id: string;
+        name: string;
+        tag: string;
+      } | null;
+      desiredVersion?: {
+        id: string;
+        name: string;
+        tag: string;
+      } | null;
+      environment: {
+        id: string;
+        name: string;
+      };
+      latestJob?: {
+        /** Format: date-time */
+        completedAt?: string;
+        /** Format: date-time */
+        createdAt: string;
+        id: string;
+        message?: string;
+        metadata: {
+          [key: string]: string;
+        };
+        status: components["schemas"]["JobStatus"];
+        verifications: components["schemas"]["JobVerification"][];
+      } | null;
       releaseTarget: {
         deploymentId: string;
         environmentId: string;
         resourceId: string;
       };
-      resource: components["schemas"]["Resource"];
+      resource: {
+        id: string;
+        identifier: string;
+        kind: string;
+        name: string;
+        version: string;
+      };
     };
     ReleaseTargetPreview: {
       deployment: components["schemas"]["Deployment"];

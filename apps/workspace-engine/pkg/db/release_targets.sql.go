@@ -19,14 +19,7 @@ SELECT DISTINCT ON (rel.resource_id, rel.environment_id, rel.deployment_id)
   rel.deployment_id,
   dv.id AS version_id,
   dv.name AS version_name,
-  dv.tag AS version_tag,
-  dv.config AS version_config,
-  dv.job_agent_config AS version_job_agent_config,
-  dv.deployment_id AS version_deployment_id,
-  dv.metadata AS version_metadata,
-  dv.status AS version_status,
-  dv.message AS version_message,
-  dv.created_at AS version_created_at
+  dv.tag AS version_tag
 FROM release rel
 INNER JOIN release_job rj
   ON rel.id = rj.release_id
@@ -40,19 +33,12 @@ ORDER BY rel.resource_id, rel.environment_id, rel.deployment_id, j.completed_at 
 `
 
 type ListCurrentVersionsByDeploymentIDRow struct {
-	ResourceID            uuid.UUID
-	EnvironmentID         uuid.UUID
-	DeploymentID          uuid.UUID
-	VersionID             uuid.UUID
-	VersionName           string
-	VersionTag            string
-	VersionConfig         map[string]any
-	VersionJobAgentConfig map[string]any
-	VersionDeploymentID   uuid.UUID
-	VersionMetadata       map[string]string
-	VersionStatus         DeploymentVersionStatus
-	VersionMessage        pgtype.Text
-	VersionCreatedAt      pgtype.Timestamptz
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+	VersionID     uuid.UUID
+	VersionName   string
+	VersionTag    string
 }
 
 func (q *Queries) ListCurrentVersionsByDeploymentID(ctx context.Context, deploymentID uuid.UUID) ([]ListCurrentVersionsByDeploymentIDRow, error) {
@@ -71,13 +57,6 @@ func (q *Queries) ListCurrentVersionsByDeploymentID(ctx context.Context, deploym
 			&i.VersionID,
 			&i.VersionName,
 			&i.VersionTag,
-			&i.VersionConfig,
-			&i.VersionJobAgentConfig,
-			&i.VersionDeploymentID,
-			&i.VersionMetadata,
-			&i.VersionStatus,
-			&i.VersionMessage,
-			&i.VersionCreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -97,15 +76,8 @@ SELECT DISTINCT ON (rel.resource_id, rel.environment_id, rel.deployment_id)
   j.id AS job_id,
   j.status AS job_status,
   j.message AS job_message,
-  j.reason AS job_reason,
   j.created_at AS job_created_at,
-  j.started_at AS job_started_at,
   j.completed_at AS job_completed_at,
-  j.updated_at AS job_updated_at,
-  j.external_id AS job_external_id,
-  j.job_agent_id AS job_agent_id,
-  j.job_agent_config AS job_agent_config,
-  j.dispatch_context AS job_dispatch_context,
   COALESCE(
     (SELECT json_object_agg(m.key, m.value)
      FROM job_metadata m WHERE m.job_id = j.id),
@@ -121,22 +93,15 @@ ORDER BY rel.resource_id, rel.environment_id, rel.deployment_id, j.created_at DE
 `
 
 type ListLatestJobsByDeploymentIDRow struct {
-	ResourceID         uuid.UUID
-	EnvironmentID      uuid.UUID
-	DeploymentID       uuid.UUID
-	JobID              uuid.UUID
-	JobStatus          JobStatus
-	JobMessage         pgtype.Text
-	JobReason          JobReason
-	JobCreatedAt       pgtype.Timestamptz
-	JobStartedAt       pgtype.Timestamptz
-	JobCompletedAt     pgtype.Timestamptz
-	JobUpdatedAt       pgtype.Timestamptz
-	JobExternalID      pgtype.Text
-	JobAgentID         pgtype.UUID
-	JobAgentConfig     []byte
-	JobDispatchContext []byte
-	JobMetadata        []byte
+	ResourceID     uuid.UUID
+	EnvironmentID  uuid.UUID
+	DeploymentID   uuid.UUID
+	JobID          uuid.UUID
+	JobStatus      JobStatus
+	JobMessage     pgtype.Text
+	JobCreatedAt   pgtype.Timestamptz
+	JobCompletedAt pgtype.Timestamptz
+	JobMetadata    []byte
 }
 
 func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID uuid.UUID) ([]ListLatestJobsByDeploymentIDRow, error) {
@@ -155,15 +120,8 @@ func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID
 			&i.JobID,
 			&i.JobStatus,
 			&i.JobMessage,
-			&i.JobReason,
 			&i.JobCreatedAt,
-			&i.JobStartedAt,
 			&i.JobCompletedAt,
-			&i.JobUpdatedAt,
-			&i.JobExternalID,
-			&i.JobAgentID,
-			&i.JobAgentConfig,
-			&i.JobDispatchContext,
 			&i.JobMetadata,
 		); err != nil {
 			return nil, err
@@ -179,43 +137,16 @@ func (q *Queries) ListLatestJobsByDeploymentID(ctx context.Context, deploymentID
 const listReleaseTargetsByDeploymentID = `-- name: ListReleaseTargetsByDeploymentID :many
 SELECT DISTINCT ON (d.id, r.id, e.id)
   d.id AS deployment_id,
-  d.name AS deployment_name,
-  d.description AS deployment_description,
-  d.resource_selector AS deployment_resource_selector,
-  d.metadata AS deployment_metadata,
-  d.workspace_id AS deployment_workspace_id,
   r.id AS resource_id,
   r.name AS resource_name,
   r.version AS resource_version,
   r.kind AS resource_kind,
   r.identifier AS resource_identifier,
-  r.provider_id AS resource_provider_id,
-  r.workspace_id AS resource_workspace_id,
-  r.config AS resource_config,
-  r.created_at AS resource_created_at,
-  r.updated_at AS resource_updated_at,
-  r.deleted_at AS resource_deleted_at,
-  r.metadata AS resource_metadata,
   e.id AS environment_id,
   e.name AS environment_name,
-  e.description AS environment_description,
-  e.resource_selector AS environment_resource_selector,
-  e.metadata AS environment_metadata,
-  e.created_at AS environment_created_at,
-  e.workspace_id AS environment_workspace_id,
-  rel.id AS desired_release_id,
-  rel.version_id AS desired_release_version_id,
-  rel.created_at AS desired_release_created_at,
   dv.id AS desired_version_id,
   dv.name AS desired_version_name,
-  dv.tag AS desired_version_tag,
-  dv.config AS desired_version_config,
-  dv.job_agent_config AS desired_version_job_agent_config,
-  dv.deployment_id AS desired_version_deployment_id,
-  dv.metadata AS desired_version_metadata,
-  dv.status AS desired_version_status,
-  dv.message AS desired_version_message,
-  dv.created_at AS desired_version_created_at
+  dv.tag AS desired_version_tag
 FROM computed_deployment_resource cdr
 INNER JOIN deployment d
   ON cdr.deployment_id = d.id
@@ -243,44 +174,17 @@ ORDER BY d.id, r.id, e.id
 `
 
 type ListReleaseTargetsByDeploymentIDRow struct {
-	DeploymentID                 uuid.UUID
-	DeploymentName               string
-	DeploymentDescription        string
-	DeploymentResourceSelector   pgtype.Text
-	DeploymentMetadata           map[string]string
-	DeploymentWorkspaceID        uuid.UUID
-	ResourceID                   uuid.UUID
-	ResourceName                 string
-	ResourceVersion              string
-	ResourceKind                 string
-	ResourceIdentifier           string
-	ResourceProviderID           uuid.UUID
-	ResourceWorkspaceID          uuid.UUID
-	ResourceConfig               map[string]any
-	ResourceCreatedAt            pgtype.Timestamptz
-	ResourceUpdatedAt            pgtype.Timestamptz
-	ResourceDeletedAt            pgtype.Timestamptz
-	ResourceMetadata             map[string]string
-	EnvironmentID                uuid.UUID
-	EnvironmentName              string
-	EnvironmentDescription       pgtype.Text
-	EnvironmentResourceSelector  string
-	EnvironmentMetadata          map[string]string
-	EnvironmentCreatedAt         pgtype.Timestamptz
-	EnvironmentWorkspaceID       uuid.UUID
-	DesiredReleaseID             uuid.UUID
-	DesiredReleaseVersionID      uuid.UUID
-	DesiredReleaseCreatedAt      pgtype.Timestamptz
-	DesiredVersionID             uuid.UUID
-	DesiredVersionName           pgtype.Text
-	DesiredVersionTag            pgtype.Text
-	DesiredVersionConfig         map[string]any
-	DesiredVersionJobAgentConfig map[string]any
-	DesiredVersionDeploymentID   uuid.UUID
-	DesiredVersionMetadata       map[string]string
-	DesiredVersionStatus         NullDeploymentVersionStatus
-	DesiredVersionMessage        pgtype.Text
-	DesiredVersionCreatedAt      pgtype.Timestamptz
+	DeploymentID       uuid.UUID
+	ResourceID         uuid.UUID
+	ResourceName       string
+	ResourceVersion    string
+	ResourceKind       string
+	ResourceIdentifier string
+	EnvironmentID      uuid.UUID
+	EnvironmentName    string
+	DesiredVersionID   uuid.UUID
+	DesiredVersionName pgtype.Text
+	DesiredVersionTag  pgtype.Text
 }
 
 func (q *Queries) ListReleaseTargetsByDeploymentID(ctx context.Context, id uuid.UUID) ([]ListReleaseTargetsByDeploymentIDRow, error) {
@@ -294,43 +198,16 @@ func (q *Queries) ListReleaseTargetsByDeploymentID(ctx context.Context, id uuid.
 		var i ListReleaseTargetsByDeploymentIDRow
 		if err := rows.Scan(
 			&i.DeploymentID,
-			&i.DeploymentName,
-			&i.DeploymentDescription,
-			&i.DeploymentResourceSelector,
-			&i.DeploymentMetadata,
-			&i.DeploymentWorkspaceID,
 			&i.ResourceID,
 			&i.ResourceName,
 			&i.ResourceVersion,
 			&i.ResourceKind,
 			&i.ResourceIdentifier,
-			&i.ResourceProviderID,
-			&i.ResourceWorkspaceID,
-			&i.ResourceConfig,
-			&i.ResourceCreatedAt,
-			&i.ResourceUpdatedAt,
-			&i.ResourceDeletedAt,
-			&i.ResourceMetadata,
 			&i.EnvironmentID,
 			&i.EnvironmentName,
-			&i.EnvironmentDescription,
-			&i.EnvironmentResourceSelector,
-			&i.EnvironmentMetadata,
-			&i.EnvironmentCreatedAt,
-			&i.EnvironmentWorkspaceID,
-			&i.DesiredReleaseID,
-			&i.DesiredReleaseVersionID,
-			&i.DesiredReleaseCreatedAt,
 			&i.DesiredVersionID,
 			&i.DesiredVersionName,
 			&i.DesiredVersionTag,
-			&i.DesiredVersionConfig,
-			&i.DesiredVersionJobAgentConfig,
-			&i.DesiredVersionDeploymentID,
-			&i.DesiredVersionMetadata,
-			&i.DesiredVersionStatus,
-			&i.DesiredVersionMessage,
-			&i.DesiredVersionCreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -345,12 +222,10 @@ func (q *Queries) ListReleaseTargetsByDeploymentID(ctx context.Context, id uuid.
 const listVerificationMetricsByJobIDs = `-- name: ListVerificationMetricsByJobIDs :many
 SELECT
   jvm.id AS metric_id,
-  jvm.created_at AS metric_created_at,
   jvm.job_id AS metric_job_id,
   jvm.policy_rule_verification_metric_id AS metric_policy_rule_id,
   jvm.name AS metric_name,
   jvm.provider AS metric_provider,
-  jvm.interval_seconds AS metric_interval_seconds,
   jvm.count AS metric_count,
   jvm.success_condition AS metric_success_condition,
   jvm.success_threshold AS metric_success_threshold,
@@ -360,7 +235,6 @@ SELECT
   m.job_verification_metric_status_id AS measurement_metric_id,
   m.data AS measurement_data,
   m.measured_at AS measurement_measured_at,
-  m.message AS measurement_message,
   m.status AS measurement_status
 FROM job_verification_metric jvm
 LEFT JOIN job_verification_metric_measurement m
@@ -371,12 +245,10 @@ ORDER BY jvm.job_id, jvm.id, m.measured_at
 
 type ListVerificationMetricsByJobIDsRow struct {
 	MetricID               uuid.UUID
-	MetricCreatedAt        pgtype.Timestamptz
 	MetricJobID            uuid.UUID
 	MetricPolicyRuleID     uuid.UUID
 	MetricName             string
 	MetricProvider         []byte
-	MetricIntervalSeconds  int32
 	MetricCount            int32
 	MetricSuccessCondition string
 	MetricSuccessThreshold pgtype.Int4
@@ -386,7 +258,6 @@ type ListVerificationMetricsByJobIDsRow struct {
 	MeasurementMetricID    uuid.UUID
 	MeasurementData        []byte
 	MeasurementMeasuredAt  pgtype.Timestamptz
-	MeasurementMessage     pgtype.Text
 	MeasurementStatus      NullJobVerificationStatus
 }
 
@@ -401,12 +272,10 @@ func (q *Queries) ListVerificationMetricsByJobIDs(ctx context.Context, jobIds []
 		var i ListVerificationMetricsByJobIDsRow
 		if err := rows.Scan(
 			&i.MetricID,
-			&i.MetricCreatedAt,
 			&i.MetricJobID,
 			&i.MetricPolicyRuleID,
 			&i.MetricName,
 			&i.MetricProvider,
-			&i.MetricIntervalSeconds,
 			&i.MetricCount,
 			&i.MetricSuccessCondition,
 			&i.MetricSuccessThreshold,
@@ -416,7 +285,6 @@ func (q *Queries) ListVerificationMetricsByJobIDs(ctx context.Context, jobIds []
 			&i.MeasurementMetricID,
 			&i.MeasurementData,
 			&i.MeasurementMeasuredAt,
-			&i.MeasurementMessage,
 			&i.MeasurementStatus,
 		); err != nil {
 			return nil, err
