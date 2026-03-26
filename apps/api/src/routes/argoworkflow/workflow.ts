@@ -43,7 +43,6 @@ export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
   } = payload;
 
   const jobId = getJobId(payload);
-  if (jobId == null) return;
 
   const status = statusMap[phase] ?? null;
   if (status == null) return;
