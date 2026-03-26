@@ -754,9 +754,20 @@ export interface components {
       state: components["schemas"]["ReleaseTargetState"];
     };
     ReleaseTargetItem: {
-      currentVersion?: components["schemas"]["DeploymentVersion"];
-      desiredVersion?: components["schemas"]["DeploymentVersion"];
-      environment: components["schemas"]["Environment"];
+      currentVersion?: {
+        id: string;
+        name: string;
+        tag: string;
+      } | null;
+      desiredVersion?: {
+        id: string;
+        name: string;
+        tag: string;
+      } | null;
+      environment: {
+        id: string;
+        name: string;
+      };
       latestJob?: {
         /** Format: date-time */
         completedAt?: string;
@@ -775,7 +786,13 @@ export interface components {
         environmentId: string;
         resourceId: string;
       };
-      resource: components["schemas"]["Resource"];
+      resource: {
+        id: string;
+        identifier: string;
+        kind: string;
+        name: string;
+        version: string;
+      };
     };
     ReleaseTargetPreview: {
       deployment: components["schemas"]["Deployment"];

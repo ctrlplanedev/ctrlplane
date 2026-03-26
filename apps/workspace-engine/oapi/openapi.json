@@ -1714,15 +1714,59 @@
          "ReleaseTargetItem": {
             "properties": {
                "currentVersion": {
-                  "$ref": "#/components/schemas/DeploymentVersion",
-                  "nullable": true
+                  "nullable": true,
+                  "properties": {
+                     "id": {
+                        "type": "string"
+                     },
+                     "name": {
+                        "type": "string"
+                     },
+                     "tag": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "id",
+                     "name",
+                     "tag"
+                  ],
+                  "type": "object"
                },
                "desiredVersion": {
-                  "$ref": "#/components/schemas/DeploymentVersion",
-                  "nullable": true
+                  "nullable": true,
+                  "properties": {
+                     "id": {
+                        "type": "string"
+                     },
+                     "name": {
+                        "type": "string"
+                     },
+                     "tag": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "id",
+                     "name",
+                     "tag"
+                  ],
+                  "type": "object"
                },
                "environment": {
-                  "$ref": "#/components/schemas/Environment"
+                  "properties": {
+                     "id": {
+                        "type": "string"
+                     },
+                     "name": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "id",
+                     "name"
+                  ],
+                  "type": "object"
                },
                "latestJob": {
                   "nullable": true,
@@ -1786,7 +1830,31 @@
                   "type": "object"
                },
                "resource": {
-                  "$ref": "#/components/schemas/Resource"
+                  "properties": {
+                     "id": {
+                        "type": "string"
+                     },
+                     "identifier": {
+                        "type": "string"
+                     },
+                     "kind": {
+                        "type": "string"
+                     },
+                     "name": {
+                        "type": "string"
+                     },
+                     "version": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "id",
+                     "name",
+                     "version",
+                     "kind",
+                     "identifier"
+                  ],
+                  "type": "object"
                }
             },
             "required": [
