@@ -21,6 +21,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/jobs/{jobId}/verification-status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get aggregate verification status for a job */
+    get: operations["getJobVerificationStatus"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/validate/resource-selector": {
     parameters: {
       query?: never;
@@ -1257,6 +1274,44 @@ export interface operations {
         content: {
           "application/json": {
             items: components["schemas"]["ReleaseTargetItem"][];
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getJobVerificationStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the job */
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Aggregate verification status for the job */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * @description Aggregate verification status
+             * @enum {string}
+             */
+            status: "passed" | "running" | "failed" | "";
           };
         };
       };

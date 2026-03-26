@@ -14,6 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { trpc } from "~/api/trpc";
+import { Skeleton } from "~/components/ui/skeleton";
 import { Spinner } from "~/components/ui/spinner";
 import { cn } from "~/lib/utils";
 import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
@@ -334,13 +336,29 @@ const VerificationStatusConfig: Record<
 };
 
 export function VerificationStatusBadge({
-  summaries,
+  jobId,
   verifications,
 }: {
-  summaries: MetricSummary[];
+  jobId: string;
   verifications?: JobVerification[];
 }) {
-  const status = getOverallVerificationStatus(summaries);
+  const { data, isLoading } = trpc.verifications.status.useQuery(
+    { jobId },
+    { enabled: (verifications?.length ?? 0) > 0 },
+  );
+
+  if (isLoading) return <Skeleton className="h-5 w-16 rounded" />;
+
+  const serverStatus = data?.status ?? "";
+  const status: OverallVerificationStatus =
+    serverStatus === "passed"
+      ? "passed"
+      : serverStatus === "failed"
+        ? "failed"
+        : serverStatus === "running"
+          ? "inconclusive"
+          : "none";
+
   if (status === "none" || verifications?.length === 0) return null;
 
   const config = VerificationStatusConfig[status];

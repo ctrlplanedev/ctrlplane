@@ -2366,6 +2366,9 @@ type ServerInterface interface {
 	// List release targets for a deployment
 	// (GET /v1/deployments/{deploymentId}/release-targets)
 	ListReleaseTargets(c *gin.Context, deploymentId string)
+	// Get aggregate verification status for a job
+	// (GET /v1/jobs/{jobId}/verification-status)
+	GetJobVerificationStatus(c *gin.Context, jobId string)
 	// Validate a resource selector
 	// (POST /v1/validate/resource-selector)
 	ValidateResourceSelector(c *gin.Context)
@@ -2411,6 +2414,30 @@ func (siw *ServerInterfaceWrapper) ListReleaseTargets(c *gin.Context) {
 	}
 
 	siw.Handler.ListReleaseTargets(c, deploymentId)
+}
+
+// GetJobVerificationStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetJobVerificationStatus(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "jobId" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobId", c.Param("jobId"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobVerificationStatus(c, jobId)
 }
 
 // ValidateResourceSelector operation middleware
@@ -2554,6 +2581,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
+	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
