@@ -93,42 +93,23 @@ func (g *PostgresGetter) ListReleaseTargets(
 				"deploymentId":  row.DeploymentID.String(),
 			},
 			Environment: gin.H{
-				"id":               row.EnvironmentID.String(),
-				"name":             row.EnvironmentName,
-				"description":      row.EnvironmentDescription.String,
-				"resourceSelector": row.EnvironmentResourceSelector,
-				"metadata":         row.EnvironmentMetadata,
-				"createdAt":        row.EnvironmentCreatedAt.Time,
-				"workspaceId":      row.EnvironmentWorkspaceID.String(),
+				"id":   row.EnvironmentID.String(),
+				"name": row.EnvironmentName,
 			},
 			Resource: gin.H{
-				"id":          row.ResourceID.String(),
-				"name":        row.ResourceName,
-				"version":     row.ResourceVersion,
-				"kind":        row.ResourceKind,
-				"identifier":  row.ResourceIdentifier,
-				"providerId":  row.ResourceProviderID.String(),
-				"workspaceId": row.ResourceWorkspaceID.String(),
-				"config":      row.ResourceConfig,
-				"createdAt":   row.ResourceCreatedAt.Time,
-				"updatedAt":   row.ResourceUpdatedAt.Time,
-				"deletedAt":   row.ResourceDeletedAt.Time,
-				"metadata":    row.ResourceMetadata,
+				"id":         row.ResourceID.String(),
+				"name":       row.ResourceName,
+				"version":    row.ResourceVersion,
+				"kind":       row.ResourceKind,
+				"identifier": row.ResourceIdentifier,
 			},
 		}
 
 		if row.DesiredVersionID != nilUUID {
 			item.DesiredVersion = gin.H{
-				"id":             row.DesiredVersionID.String(),
-				"name":           row.DesiredVersionName.String,
-				"tag":            row.DesiredVersionTag.String,
-				"config":         row.DesiredVersionConfig,
-				"jobAgentConfig": row.DesiredVersionJobAgentConfig,
-				"deploymentId":   row.DesiredVersionDeploymentID.String(),
-				"metadata":       row.DesiredVersionMetadata,
-				"status":         row.DesiredVersionStatus.DeploymentVersionStatus,
-				"message":        row.DesiredVersionMessage.String,
-				"createdAt":      row.DesiredVersionCreatedAt.Time,
+				"id":   row.DesiredVersionID.String(),
+				"name": row.DesiredVersionName.String,
+				"tag":  row.DesiredVersionTag.String,
 			}
 		}
 
@@ -140,16 +121,9 @@ func (g *PostgresGetter) ListReleaseTargets(
 		)
 		if cv, ok := currentVersionMap[key]; ok {
 			item.CurrentVersion = gin.H{
-				"id":             cv.VersionID.String(),
-				"name":           cv.VersionName,
-				"tag":            cv.VersionTag,
-				"config":         cv.VersionConfig,
-				"jobAgentConfig": cv.VersionJobAgentConfig,
-				"deploymentId":   cv.VersionDeploymentID.String(),
-				"metadata":       cv.VersionMetadata,
-				"status":         cv.VersionStatus,
-				"message":        cv.VersionMessage.String,
-				"createdAt":      cv.VersionCreatedAt.Time,
+				"id":   cv.VersionID.String(),
+				"name": cv.VersionName,
+				"tag":  cv.VersionTag,
 			}
 		}
 
@@ -225,7 +199,6 @@ func buildVerificationsMap(
 				"jobVerificationMetricStatusId": vr.MeasurementMetricID.String(),
 				"data":                          json.RawMessage(vr.MeasurementData),
 				"measuredAt":                    vr.MeasurementMeasuredAt.Time,
-				"message":                       vr.MeasurementMessage.String,
 				"status":                        vr.MeasurementStatus.JobVerificationStatus,
 			})
 		}
@@ -242,12 +215,10 @@ func buildVerificationsMap(
 			for i, me := range metrics {
 				metricsJSON[i] = gin.H{
 					"id":                             me.metric.MetricID.String(),
-					"createdAt":                      me.metric.MetricCreatedAt.Time,
 					"jobId":                          me.metric.MetricJobID.String(),
 					"policyRuleVerificationMetricId": me.metric.MetricPolicyRuleID.String(),
 					"name":                           me.metric.MetricName,
 					"provider":                       json.RawMessage(me.metric.MetricProvider),
-					"intervalSeconds":                me.metric.MetricIntervalSeconds,
 					"count":                          me.metric.MetricCount,
 					"successCondition":               me.metric.MetricSuccessCondition,
 					"successThreshold":               me.metric.MetricSuccessThreshold,

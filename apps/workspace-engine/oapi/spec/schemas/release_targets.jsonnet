@@ -14,10 +14,45 @@ local openapi = import '../lib/openapi.libsonnet';
           deploymentId: { type: 'string' },
         },
       },
-      environment: openapi.schemaRef('Environment'),
-      resource: openapi.schemaRef('Resource'),
-      desiredVersion: openapi.schemaRef('DeploymentVersion', nullable=true),
-      currentVersion: openapi.schemaRef('DeploymentVersion', nullable=true),
+      environment: {
+        type: 'object',
+        required: ['id', 'name'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+        },
+      },
+      resource: {
+        type: 'object',
+        required: ['id', 'name', 'version', 'kind', 'identifier'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          version: { type: 'string' },
+          kind: { type: 'string' },
+          identifier: { type: 'string' },
+        },
+      },
+      desiredVersion: {
+        nullable: true,
+        type: 'object',
+        required: ['id', 'name', 'tag'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          tag: { type: 'string' },
+        },
+      },
+      currentVersion: {
+        nullable: true,
+        type: 'object',
+        required: ['id', 'name', 'tag'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          tag: { type: 'string' },
+        },
+      },
       latestJob: {
         nullable: true,
         type: 'object',
