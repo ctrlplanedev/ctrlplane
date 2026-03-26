@@ -110,23 +110,13 @@ export function VerificationMetricStatus({
   metric: VerificationMetricStatusType;
 }) {
   const { status, message } = getVerificationStatus(metric);
-  const measurements: MetricMeasurement[] = [];
-  const latestMeasurement = [...measurements].sort(
-    (a, b) =>
-      new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
-  )[0];
-
-  const timeAgo = formatDistanceToNowStrict(
-    new Date(latestMeasurement.measuredAt),
-    { addSuffix: true },
-  );
 
   return (
     <div className="flex flex-col items-end text-right">
       <span
         className={cn("text-xs font-medium", VerificationStatusColors[status])}
       >
-        {VerificationStatusLabels[status]} {timeAgo}
+        {VerificationStatusLabels[status]}
       </span>
       {status === "in_progress" && (
         <span className="text-xs text-muted-foreground">{message}</span>
