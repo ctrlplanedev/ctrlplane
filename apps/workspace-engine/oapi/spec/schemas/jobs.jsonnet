@@ -160,6 +160,45 @@ local JobPropertyKeys = std.objectFields(Job.properties);
     },
   },
 
+  ArgoWorkflowJobAgentConfig: {
+    oneOf: [
+      {
+        type: 'object',
+        description: 'Inline workflow execution',
+        required: ['serverUrl', 'apiKey', 'template', 'name'],
+        properties: {
+          name: { type: 'string', description: 'ArgoWorkflow job name' },
+          inline: {
+            type: 'boolean',
+            enum: [true],
+            description: 'Execute inline workflow (defaults to false if omitted)',
+          },
+          serverUrl: { type: 'string', description: 'ArgoWorkflow server address (host[:port] or URL).' },
+          apiKey: { type: 'string', description: 'ArgoWorkflow API token.' },
+          template: { type: 'string', description: 'Inline workflow spec or template.' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        description: 'WorkflowTemplate reference execution',
+        required: ['serverUrl', 'apiKey', 'template', 'name', 'namespace'],
+        properties: {
+          name: { type: 'string', description: 'ArgoWorkflow job name' },
+          inline: {
+            type: 'boolean',
+            enum: [false],
+            description: 'Use WorkflowTemplate reference (default mode)',
+          },
+          serverUrl: { type: 'string', description: 'ArgoWorkflow server address (host[:port] or URL).' },
+          apiKey: { type: 'string', description: 'ArgoWorkflow API token.' },
+          template: { type: 'string', description: 'WorkflowTemplate name.' },
+          namespace: { type: 'string', description: 'WorkflowTemplate namespace' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
   TestRunnerJobAgentConfig: {
     type: 'object',
     properties: {

@@ -199,12 +199,13 @@ A **Job** is the actual deployment task executed by a Job Agent.
 A **Job Agent** is the executor that performs deployments. It bridges Ctrlplane
 to your infrastructure.
 
-| Agent Type      | What It Does                      |
-| --------------- | --------------------------------- |
-| GitHub Actions  | Triggers workflow dispatch        |
-| ArgoCD          | Creates/syncs ArgoCD Applications |
-| Terraform Cloud | Creates workspaces, triggers runs |
-| Kubernetes      | Applies manifests directly        |
+| Agent Type      | What It Does                          |
+| --------------- | --------------------------------------|
+| GitHub Actions  | Triggers workflow dispatch            |
+| ArgoCD          | Creates/syncs ArgoCD Applications     |
+| Terraform Cloud | Creates workspaces, triggers runs     |
+| Kubernetes      | Applies manifests directly            |
+| ArgoWorkflows   | Applies an inline workflow or template|
 
 ## Policy
 

@@ -1,0 +1,28 @@
+import type { Request, Response } from "express";
+import { env } from "@/config.js";
+import { asyncHandler } from "@/types/api.js";
+import { Router } from "express";
+
+import { handleArgoWorkflow } from "./workflow.js";
+
+export const createArgoWorkflowRouter = (): Router =>
+  Router().post("/webhook", asyncHandler(handleWebhookRequest));
+
+const verifyRequest = (req: Request): boolean => {
+  const authHeader = req.headers.authorization?.toString();
+  if (authHeader == null) return false;
+  const secret = env.ARGO_WORKFLOW_WEBHOOK_SECRET;
+  return authHeader === secret;
+};
+
+const handleWebhookRequest = async (req: Request, res: Response) => {
+  const isVerified = verifyRequest(req);
+  if (!isVerified) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  const payload = req.body;
+  await handleArgoWorkflow(payload);
+  res.status(200).send();
+};
