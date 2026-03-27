@@ -741,7 +741,11 @@ export interface paths {
          * @description Returns a resource by its identifier.
          */
         get: operations["getResourceByIdentifier"];
-        put?: never;
+        /**
+         * Upsert resource by identifier
+         * @description Creates or updates a resource by its identifier, including metadata and variables.
+         */
+        put: operations["upsertResourceByIdentifier"];
         post?: never;
         /**
          * Delete resource by identifier
@@ -1925,6 +1929,20 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+        };
+        UpsertResourceRequest: {
+            config?: {
+                [key: string]: unknown;
+            };
+            kind: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            variables?: {
+                [key: string]: unknown;
+            };
+            version: string;
         };
         UpsertSystemRequest: {
             description?: string;
@@ -4762,6 +4780,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Resource"];
+                };
+            };
+        };
+    };
+    upsertResourceByIdentifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Identifier of the resource */
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
