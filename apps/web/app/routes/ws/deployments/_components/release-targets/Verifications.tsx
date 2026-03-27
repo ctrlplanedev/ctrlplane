@@ -1,7 +1,9 @@
 import { Fragment, useState } from "react";
 import { SiDatadog } from "@icons-pack/react-simple-icons";
 import { ChevronRight } from "lucide-react";
+import { useInView } from "react-intersection-observer";
 
+import { trpc } from "~/api/trpc";
 import {
   Collapsible,
   CollapsibleContent,
@@ -14,7 +16,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
-import { trpc } from "~/api/trpc";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Spinner } from "~/components/ui/spinner";
 import { cn } from "~/lib/utils";
@@ -127,21 +128,15 @@ function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
       </div>
     );
 
-  const passedCount = measurements.filter(
-    (m) => m.status === "passed",
-  ).length;
-  const failedCount = measurements.filter(
-    (m) => m.status === "failed",
-  ).length;
+  const passedCount = measurements.filter((m) => m.status === "passed").length;
+  const failedCount = measurements.filter((m) => m.status === "failed").length;
   const totalMeasurements = measurements.length;
   const expectedCount = metric.count;
 
   const failureLimit = metric.failureThreshold ?? 0;
   const successThreshold = metric.successThreshold;
 
-  const consecutiveSuccessCount = getConsecutiveSuccessCount(
-    measurements,
-  );
+  const consecutiveSuccessCount = getConsecutiveSuccessCount(measurements);
 
   const statusMessage = getStatusMessage(
     failedCount,
@@ -305,15 +300,6 @@ export function verificationSummary(
 
 type OverallVerificationStatus = "passed" | "failed" | "inconclusive" | "none";
 
-function getOverallVerificationStatus(
-  summaries: MetricSummary[],
-): OverallVerificationStatus {
-  if (summaries.length === 0) return "none";
-  if (summaries.some((s) => s.status === "failed")) return "failed";
-  if (summaries.some((s) => s.status === "inconclusive")) return "inconclusive";
-  return "passed";
-}
-
 const VerificationStatusConfig: Record<
   Exclude<OverallVerificationStatus, "none">,
   { label: string; className: string }
@@ -335,18 +321,37 @@ const VerificationStatusConfig: Record<
   },
 };
 
-export function VerificationStatusBadge({
+export function LazyVerificationStatusBadge({
   jobId,
   verifications,
 }: {
   jobId: string;
   verifications?: JobVerification[];
 }) {
+  const { ref, inView } = useInView({ triggerOnce: true });
+
+  if (!inView)
+    return <Skeleton ref={ref} className="h-5 w-16 rounded" />;
+
+  return (
+    <VerificationStatusBadge jobId={jobId} verifications={verifications} />
+  );
+}
+
+function VerificationStatusBadge({
+  jobId,
+  verifications,
+}: {
+  jobId: string;
+  verifications?: JobVerification[];
+}) {
+  const hasVerifications = (verifications?.length ?? 0) > 0;
   const { data, isLoading } = trpc.verifications.status.useQuery(
     { jobId },
-    { enabled: (verifications?.length ?? 0) > 0 },
+    { enabled: hasVerifications },
   );
 
+  if (!hasVerifications) return null;
   if (isLoading) return <Skeleton className="h-5 w-16 rounded" />;
 
   const serverStatus = data?.status ?? "";
