@@ -245,7 +245,7 @@ const updateVariablesForResource: AsyncTypedHandler<
       message: "Resource variables update requested",
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error instanceof ApiError ? error.statusCode : 500).json({
       error: "Failed to update resource variables",
       message: extractMessageFromError(error),
     });
