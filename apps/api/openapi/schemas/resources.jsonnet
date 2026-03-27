@@ -73,6 +73,28 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  UpsertResourceRequest: {
+    type: 'object',
+    required: ['name', 'version', 'kind'],
+    properties: {
+      name: { type: 'string' },
+      version: { type: 'string' },
+      kind: { type: 'string' },
+      config: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
+      variables: {
+        type: 'object',
+        additionalProperties: true,
+      },
+    },
+  },
+
   ResourceRequestAccepted: {
     type: 'object',
     required: ['id', 'message'],
