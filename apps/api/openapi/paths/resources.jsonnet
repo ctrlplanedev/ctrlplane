@@ -29,6 +29,27 @@ local openapi = import '../lib/openapi.libsonnet';
       ],
       responses: openapi.okResponse(openapi.schemaRef('Resource')),
     },
+    put: {
+      tags: ['Resources'],
+      summary: 'Upsert resource by identifier',
+      operationId: 'upsertResourceByIdentifier',
+      description: 'Creates or updates a resource by its identifier, including metadata and variables.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.identifierParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('UpsertResourceRequest'),
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
     delete: {
       tags: ['Resources'],
       summary: 'Delete resource by identifier',
