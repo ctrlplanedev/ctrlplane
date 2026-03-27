@@ -119,11 +119,16 @@ export const argoCDApplicationJson = z.object({
   status: argoCDApplicationStatus.optional(),
 });
 
+const argoCDApplicationListJson = z.object({
+  metadata: z.object({}).passthrough(),
+  items: z.array(argoCDApplicationJson),
+});
+
 export const argoCDMeasurementData = z.object({
   ok: z.boolean(),
   statusCode: z.number(),
   body: z.string(),
-  json: argoCDApplicationJson,
+  json: argoCDApplicationJson.nullable().optional(),
   headers: z.record(z.array(z.string())).optional(),
   duration: z.number().optional(),
 });
@@ -131,6 +136,25 @@ export const argoCDMeasurementData = z.object({
 export type ArgoCDMeasurementData = z.infer<typeof argoCDMeasurementData>;
 
 export type ArgoCDApplicationJson = z.infer<typeof argoCDApplicationJson>;
+
+function parseAppFromBody(body: string): ArgoCDApplicationJson | null {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    const single = argoCDApplicationJson.safeParse(parsed);
+    if (single.success) return single.data;
+    const list = argoCDApplicationListJson.safeParse(parsed);
+    if (list.success && list.data.items.length > 0) return list.data.items[0];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveArgoCDApp(
+  data: ArgoCDMeasurementData,
+): ArgoCDApplicationJson | null {
+  return data.json ?? parseAppFromBody(data.body);
+}
 
 export function parseArgoCDMeasurement(
   data: unknown,
@@ -140,11 +164,28 @@ export function parseArgoCDMeasurement(
 }
 
 export function isArgoCDMeasurement(data: unknown): boolean {
-  return argoCDMeasurementData.safeParse(data).success;
+  const result = argoCDMeasurementData.safeParse(data);
+  if (!result.success) return false;
+  return resolveArgoCDApp(result.data) != null;
 }
 
 export function getArgoCDStatus(data: ArgoCDMeasurementData) {
-  const app = data.json;
+  const app = resolveArgoCDApp(data);
+  if (app == null)
+    return {
+      name: "Unknown",
+      namespace: "Unknown",
+      syncStatus: "Unknown",
+      healthStatus: "Unknown",
+      operationPhase: undefined,
+      operationMessage: undefined,
+      revision: undefined,
+      reconciledAt: undefined,
+      sourceType: undefined,
+      images: undefined,
+      resourceCount: undefined,
+    };
+
   const status = app.status;
 
   return {

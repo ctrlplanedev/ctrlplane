@@ -189,7 +189,7 @@ const (
 
 // Defines values for WorkflowManualArrayInputType.
 const (
-	WorkflowManualArrayInputTypeArray WorkflowManualArrayInputType = "array"
+	Array WorkflowManualArrayInputType = "array"
 )
 
 // Defines values for WorkflowNumberInputType.
@@ -200,18 +200,6 @@ const (
 // Defines values for WorkflowObjectInputType.
 const (
 	Object WorkflowObjectInputType = "object"
-)
-
-// Defines values for WorkflowSelectorArrayInputSelectorEntityType.
-const (
-	WorkflowSelectorArrayInputSelectorEntityTypeDeployment  WorkflowSelectorArrayInputSelectorEntityType = "deployment"
-	WorkflowSelectorArrayInputSelectorEntityTypeEnvironment WorkflowSelectorArrayInputSelectorEntityType = "environment"
-	WorkflowSelectorArrayInputSelectorEntityTypeResource    WorkflowSelectorArrayInputSelectorEntityType = "resource"
-)
-
-// Defines values for WorkflowSelectorArrayInputType.
-const (
-	WorkflowSelectorArrayInputTypeArray WorkflowSelectorArrayInputType = "array"
 )
 
 // Defines values for WorkflowStringInputType.
@@ -396,8 +384,11 @@ type DeploymentWithVariablesAndSystems struct {
 
 // DispatchContext defines model for DispatchContext.
 type DispatchContext struct {
-	Deployment     *Deployment              `json:"deployment,omitempty"`
-	Environment    *Environment             `json:"environment,omitempty"`
+	Deployment  *Deployment  `json:"deployment,omitempty"`
+	Environment *Environment `json:"environment,omitempty"`
+
+	// Inputs Resolved input values for the workflow run.
+	Inputs         *map[string]interface{}  `json:"inputs,omitempty"`
 	JobAgent       JobAgent                 `json:"jobAgent"`
 	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
 	Release        *Release                 `json:"release,omitempty"`
@@ -883,6 +874,60 @@ type ReleaseTargetAndState struct {
 	State         ReleaseTargetState `json:"state"`
 }
 
+// ReleaseTargetItem defines model for ReleaseTargetItem.
+type ReleaseTargetItem struct {
+	CurrentVersion *struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+		Tag  string `json:"tag"`
+	} `json:"currentVersion"`
+	DesiredVersion *struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+		Tag  string `json:"tag"`
+	} `json:"desiredVersion"`
+	Environment struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"environment"`
+	LatestJob *struct {
+		CompletedAt   *time.Time        `json:"completedAt,omitempty"`
+		CreatedAt     time.Time         `json:"createdAt"`
+		Id            string            `json:"id"`
+		Message       *string           `json:"message,omitempty"`
+		Metadata      map[string]string `json:"metadata"`
+		Status        JobStatus         `json:"status"`
+		Verifications []struct {
+			Id      string `json:"id"`
+			JobId   string `json:"jobId"`
+			Metrics []struct {
+				Count                          int                    `json:"count"`
+				FailureCondition               *string                `json:"failureCondition"`
+				FailureThreshold               *int                   `json:"failureThreshold"`
+				Id                             string                 `json:"id"`
+				JobId                          *string                `json:"jobId,omitempty"`
+				Name                           string                 `json:"name"`
+				PolicyRuleVerificationMetricId *string                `json:"policyRuleVerificationMetricId,omitempty"`
+				Provider                       map[string]interface{} `json:"provider"`
+				SuccessCondition               string                 `json:"successCondition"`
+				SuccessThreshold               *int                   `json:"successThreshold"`
+			} `json:"metrics"`
+		} `json:"verifications"`
+	} `json:"latestJob"`
+	ReleaseTarget struct {
+		DeploymentId  string `json:"deploymentId"`
+		EnvironmentId string `json:"environmentId"`
+		ResourceId    string `json:"resourceId"`
+	} `json:"releaseTarget"`
+	Resource struct {
+		Id         string `json:"id"`
+		Identifier string `json:"identifier"`
+		Kind       string `json:"kind"`
+		Name       string `json:"name"`
+		Version    string `json:"version"`
+	} `json:"resource"`
+}
+
 // ReleaseTargetPreview defines model for ReleaseTargetPreview.
 type ReleaseTargetPreview struct {
 	Deployment  Deployment  `json:"deployment"`
@@ -1094,6 +1139,12 @@ type TerraformCloudJobAgentConfig struct {
 
 	// Token Terraform Cloud API token.
 	Token string `json:"token"`
+
+	// TriggerRunOnChange Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.
+	TriggerRunOnChange *bool `json:"triggerRunOnChange,omitempty"`
+
+	// WebhookUrl The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook).
+	WebhookUrl string `json:"webhookUrl"`
 }
 
 // TerraformCloudRunMetricProvider defines model for TerraformCloudRunMetricProvider.
@@ -1144,7 +1195,7 @@ type Value struct {
 // VerificationMeasurement defines model for VerificationMeasurement.
 type VerificationMeasurement struct {
 	// Data Raw measurement data
-	Data *map[string]interface{} `json:"data,omitempty"`
+	Data map[string]interface{} `json:"data"`
 
 	// MeasuredAt When measurement was taken
 	MeasuredAt time.Time `json:"measuredAt"`
@@ -1193,7 +1244,8 @@ type VerificationMetricStatus struct {
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
 	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
-	FailureThreshold *int `json:"failureThreshold,omitempty"`
+	FailureThreshold *int   `json:"failureThreshold,omitempty"`
+	Id               string `json:"id"`
 
 	// IntervalSeconds Interval between measurements in seconds
 	IntervalSeconds int32 `json:"intervalSeconds"`
@@ -1248,10 +1300,10 @@ type VersionSummary struct {
 
 // Workflow defines model for Workflow.
 type Workflow struct {
-	Id     string                `json:"id"`
-	Inputs []WorkflowInput       `json:"inputs"`
-	Jobs   []WorkflowJobTemplate `json:"jobs"`
-	Name   string                `json:"name"`
+	Id     string             `json:"id"`
+	Inputs []WorkflowInput    `json:"inputs"`
+	Jobs   []WorkflowJobAgent `json:"jobs"`
+	Name   string             `json:"name"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.
@@ -1286,53 +1338,18 @@ type WorkflowJob struct {
 	WorkflowRunId string `json:"workflowRunId"`
 }
 
-// WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.
-type WorkflowJobAgentConfig struct {
-	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
-}
-
-// WorkflowJobMatrix defines model for WorkflowJobMatrix.
-type WorkflowJobMatrix map[string]WorkflowJobMatrix_AdditionalProperties
-
-// WorkflowJobMatrix0 defines model for .
-type WorkflowJobMatrix0 = []map[string]interface{}
-
-// WorkflowJobMatrix1 defines model for .
-type WorkflowJobMatrix1 = string
-
-// WorkflowJobMatrix_AdditionalProperties defines model for WorkflowJobMatrix.AdditionalProperties.
-type WorkflowJobMatrix_AdditionalProperties struct {
-	union json.RawMessage
-}
-
-// WorkflowJobTemplate defines model for WorkflowJobTemplate.
-type WorkflowJobTemplate struct {
+// WorkflowJobAgent defines model for WorkflowJobAgent.
+type WorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
-
-	// If CEL expression to determine if the job should run
-	If     *string            `json:"if,omitempty"`
-	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
-	Name   string             `json:"name"`
+	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent
-	Ref        string `json:"ref"`
-	WorkflowId string `json:"workflowId"`
-}
+	Ref string `json:"ref"`
 
-// WorkflowJobWithJobs defines model for WorkflowJobWithJobs.
-type WorkflowJobWithJobs struct {
-	// Config Configuration for the job agent
-	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
-	Index  int                    `json:"index"`
-	Jobs   []Job                  `json:"jobs"`
-
-	// Ref Reference to the job agent
-	Ref           string `json:"ref"`
-	WorkflowRunId string `json:"workflowRunId"`
+	// Selector CEL expression to determine if the job agent should dispatch a job
+	Selector string `json:"selector"`
 }
 
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
@@ -1371,31 +1388,6 @@ type WorkflowRun struct {
 	Inputs     map[string]interface{} `json:"inputs"`
 	WorkflowId string                 `json:"workflowId"`
 }
-
-// WorkflowRunWithJobs defines model for WorkflowRunWithJobs.
-type WorkflowRunWithJobs struct {
-	Id         string                 `json:"id"`
-	Inputs     map[string]interface{} `json:"inputs"`
-	Jobs       []WorkflowJobWithJobs  `json:"jobs"`
-	WorkflowId string                 `json:"workflowId"`
-}
-
-// WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
-type WorkflowSelectorArrayInput struct {
-	Key      string `json:"key"`
-	Selector struct {
-		// Default CEL expression to determine if the selector array input should be used
-		Default    *string                                      `json:"default,omitempty"`
-		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
-	} `json:"selector"`
-	Type WorkflowSelectorArrayInputType `json:"type"`
-}
-
-// WorkflowSelectorArrayInputSelectorEntityType defines model for WorkflowSelectorArrayInput.Selector.EntityType.
-type WorkflowSelectorArrayInputSelectorEntityType string
-
-// WorkflowSelectorArrayInputType defines model for WorkflowSelectorArrayInput.Type.
-type WorkflowSelectorArrayInputType string
 
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
@@ -1441,6 +1433,12 @@ type QueryResourcesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// CreateWorkflowRunJSONBody defines parameters for CreateWorkflowRun.
+type CreateWorkflowRunJSONBody struct {
+	// Inputs Input values for the workflow run.
+	Inputs map[string]interface{} `json:"inputs"`
+}
+
 // ValidateResourceSelectorJSONRequestBody defines body for ValidateResourceSelector for application/json ContentType.
 type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
 
@@ -1449,6 +1447,9 @@ type ComputeAggergateJSONRequestBody ComputeAggergateJSONBody
 
 // QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
 type QueryResourcesJSONRequestBody QueryResourcesJSONBody
+
+// CreateWorkflowRunJSONRequestBody defines body for CreateWorkflowRun for application/json ContentType.
+type CreateWorkflowRunJSONRequestBody CreateWorkflowRunJSONBody
 
 // AsJobUpdateEvent0 returns the union data inside the JobUpdateEvent as a JobUpdateEvent0
 func (t JobUpdateEvent) AsJobUpdateEvent0() (JobUpdateEvent0, error) {
@@ -2210,32 +2211,6 @@ func (t *WorkflowArrayInput) MergeWorkflowManualArrayInput(v WorkflowManualArray
 	return err
 }
 
-// AsWorkflowSelectorArrayInput returns the union data inside the WorkflowArrayInput as a WorkflowSelectorArrayInput
-func (t WorkflowArrayInput) AsWorkflowSelectorArrayInput() (WorkflowSelectorArrayInput, error) {
-	var body WorkflowSelectorArrayInput
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowSelectorArrayInput overwrites any union data inside the WorkflowArrayInput as the provided WorkflowSelectorArrayInput
-func (t *WorkflowArrayInput) FromWorkflowSelectorArrayInput(v WorkflowSelectorArrayInput) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowSelectorArrayInput performs a merge with any union data inside the WorkflowArrayInput, using the provided WorkflowSelectorArrayInput
-func (t *WorkflowArrayInput) MergeWorkflowSelectorArrayInput(v WorkflowSelectorArrayInput) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t WorkflowArrayInput) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -2386,70 +2361,14 @@ func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsWorkflowJobMatrix0 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix0
-func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix0() (WorkflowJobMatrix0, error) {
-	var body WorkflowJobMatrix0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowJobMatrix0 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix0
-func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowJobMatrix0 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix0
-func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWorkflowJobMatrix1 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix1
-func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix1() (WorkflowJobMatrix1, error) {
-	var body WorkflowJobMatrix1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowJobMatrix1 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix1
-func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowJobMatrix1 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix1
-func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t WorkflowJobMatrix_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *WorkflowJobMatrix_AdditionalProperties) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// List release targets for a deployment
+	// (GET /v1/deployments/{deploymentId}/release-targets)
+	ListReleaseTargets(c *gin.Context, deploymentId string)
+	// Get aggregate verification status for a job
+	// (GET /v1/jobs/{jobId}/verification-status)
+	GetJobVerificationStatus(c *gin.Context, jobId string)
 	// Validate a resource selector
 	// (POST /v1/validate/resource-selector)
 	ValidateResourceSelector(c *gin.Context)
@@ -2459,6 +2378,9 @@ type ServerInterface interface {
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
 	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
+	// Create a workflow run
+	// (POST /v1/workspaces/{workspaceId}/workflows/{workflowId}/runs)
+	CreateWorkflowRun(c *gin.Context, workspaceId string, workflowId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -2469,6 +2391,54 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// ListReleaseTargets operation middleware
+func (siw *ServerInterfaceWrapper) ListReleaseTargets(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListReleaseTargets(c, deploymentId)
+}
+
+// GetJobVerificationStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetJobVerificationStatus(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "jobId" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobId", c.Param("jobId"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobVerificationStatus(c, jobId)
+}
 
 // ValidateResourceSelector operation middleware
 func (siw *ServerInterfaceWrapper) ValidateResourceSelector(c *gin.Context) {
@@ -2550,6 +2520,39 @@ func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 	siw.Handler.QueryResources(c, workspaceId, params)
 }
 
+// CreateWorkflowRun operation middleware
+func (siw *ServerInterfaceWrapper) CreateWorkflowRun(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "workflowId" -------------
+	var workflowId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowId", c.Param("workflowId"), &workflowId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateWorkflowRun(c, workspaceId, workflowId)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -2577,7 +2580,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
+	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.CreateWorkflowRun)
 }

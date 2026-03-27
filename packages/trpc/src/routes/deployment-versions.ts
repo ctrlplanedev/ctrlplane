@@ -69,15 +69,15 @@ export const deploymentVersionsRouter = router({
         .returning();
 
       if (record != null) {
-        await enqueueReleaseTargetsForEnvironment(
-          ctx.db,
-          deployment.workspaceId,
-          record.environmentId,
-        );
-        await enqueuePolicyEval(
+        enqueuePolicyEval(
           ctx.db,
           deployment.workspaceId,
           input.deploymentVersionId,
+        );
+        enqueueReleaseTargetsForEnvironment(
+          ctx.db,
+          deployment.workspaceId,
+          record.environmentId,
         );
       }
 
@@ -110,7 +110,7 @@ export const deploymentVersionsRouter = router({
 
       if (!updated) throw new Error("Deployment version not found");
 
-      await enqueueReleaseTargetsForDeployment(
+      enqueueReleaseTargetsForDeployment(
         ctx.db,
         workspaceId,
         updated.deploymentId,
@@ -151,7 +151,7 @@ export const deploymentVersionsRouter = router({
           message: "Deployment does not have a workspace.",
         });
 
-      await enqueuePolicyEval(ctx.db, deployment.workspaceId, versionId);
+      enqueuePolicyEval(ctx.db, deployment.workspaceId, versionId);
 
       const conditions = [eq(schema.policyRuleEvaluation.versionId, versionId)];
       if (input.environmentId != null) {

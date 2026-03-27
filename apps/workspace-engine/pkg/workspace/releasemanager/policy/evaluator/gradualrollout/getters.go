@@ -53,6 +53,7 @@ func NewPostgresGetters(
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
 	policiesForRT policies.GetPoliciesForReleaseTarget,
+	jobsForRT releasetargets.GetJobsForReleaseTarget,
 ) *PostgresGetters {
 	return &PostgresGetters{
 		policiesForReleaseTargetGetter: policiesForRT,
@@ -61,6 +62,7 @@ func NewPostgresGetters(
 			queries,
 			rtForDep,
 			rtForDepEnv,
+			jobsForRT,
 		),
 		queries: queries,
 	}

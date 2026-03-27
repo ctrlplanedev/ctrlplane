@@ -24,6 +24,7 @@ func NewPostgresGetter(
 	rtForDep releasetargets.GetReleaseTargetsForDeployment,
 	rtForDepEnv releasetargets.GetReleaseTargetsForDeploymentAndEnvironment,
 	policiesForRT policies.GetPoliciesForReleaseTarget,
+	jobsForRT releasetargets.GetJobsForReleaseTarget,
 ) *PostgresGetter {
 	return &PostgresGetter{
 		policyEvalGetter: pevalgetters.NewPostgresGetter(
@@ -31,6 +32,7 @@ func NewPostgresGetter(
 			rtForDep,
 			rtForDepEnv,
 			policiesForRT,
+			jobsForRT,
 		),
 	}
 }

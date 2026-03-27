@@ -6,7 +6,7 @@ const defaultNodeHeight = 175;
 
 export const layoutNodes = (nodes: Node[], edges: Edge[]) => {
   const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: "LR" });
+  dagreGraph.setGraph({ rankdir: "LR", nodesep: 100 });
 
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, {

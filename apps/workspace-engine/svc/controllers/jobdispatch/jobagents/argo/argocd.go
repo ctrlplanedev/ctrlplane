@@ -7,9 +7,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
@@ -79,7 +80,22 @@ func (a *ArgoApplication) Type() string {
 }
 
 func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
+	ctx, span := tracer.Start(ctx, "ArgoApplication.Dispatch")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("job.id", job.Id))
+	span.SetAttributes(attribute.String("job.status", string(job.Status)))
+	span.SetAttributes(
+		attribute.String("job.dispatch_context", fmt.Sprintf("%+v", job.DispatchContext)),
+	)
+	span.SetAttributes(
+		attribute.String("job.dispatch_context_raw", fmt.Sprintf("%+v", job.DispatchContext.Map())),
+	)
+
 	dispatchCtx := job.DispatchContext
+	if dispatchCtx == nil {
+		return fmt.Errorf("job %s has no dispatch context", job.Id)
+	}
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := ParseJobAgentConfig(jobAgentConfig)
 	if err != nil {

@@ -3,9 +3,11 @@ package desiredrelease
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
@@ -70,6 +72,18 @@ func (s *PostgresSetter) SetDesiredRelease(
 		return fmt.Errorf("upsert release: %w", err)
 	}
 
+	currentDesiredRelease, err := q.GetDesiredReleaseByReleaseTarget(
+		ctx,
+		db.GetDesiredReleaseByReleaseTargetParams{
+			ResourceID:    rt.ResourceID,
+			EnvironmentID: rt.EnvironmentID,
+			DeploymentID:  rt.DeploymentID,
+		},
+	)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("get current desired release: %w", err)
+	}
+
 	_, err = q.UpsertReleaseDesired(ctx, db.UpsertReleaseDesiredParams{
 		ResourceID:       rt.ResourceID,
 		EnvironmentID:    rt.EnvironmentID,
@@ -78,6 +92,15 @@ func (s *PostgresSetter) SetDesiredRelease(
 	})
 	if err != nil {
 		return fmt.Errorf("upsert release desired: %w", err)
+	}
+
+	if currentDesiredRelease.ID != releaseRow.ID {
+		if err := events.EnqueuePolicyEval(s.Queue, ctx, events.PolicyEvalParams{
+			WorkspaceID: rt.WorkspaceID.String(),
+			VersionID:   versionID.String(),
+		}); err != nil {
+			return fmt.Errorf("enqueue policy eval: %w", err)
+		}
 	}
 
 	return nil

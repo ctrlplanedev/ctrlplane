@@ -24,17 +24,12 @@ type VersionRowProps = {
 };
 
 function VersionRow({ version, environment }: VersionRowProps) {
-  const { policyRules } = usePolicyRulesForVersion(
-    version.id,
-    environment.id,
-  );
+  const { policyRules } = usePolicyRulesForVersion(version.id, environment.id);
 
   return (
     <div className="space-y-2 rounded-lg border p-2" key={version.id}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">
-          {version.name || version.tag}
-        </h3>
+        <h3 className="text-sm font-semibold">{version.name || version.tag}</h3>
         {policyRules.length > 0 && (
           <PolicySkipDialog
             environmentId={environment.id}

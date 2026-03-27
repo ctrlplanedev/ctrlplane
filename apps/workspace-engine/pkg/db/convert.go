@@ -477,12 +477,84 @@ func ToOapiJob(row ListJobsByReleaseIDRow) *oapi.Job {
 	}
 	j.Metadata = parseJobMetadata(row.Metadata)
 	if len(row.DispatchContext) > 0 {
-		var dc oapi.DispatchContext
-		if err := json.Unmarshal(row.DispatchContext, &dc); err == nil {
-			j.DispatchContext = &dc
-		}
+		j.DispatchContext = parseDispatchContext(row.DispatchContext)
 	}
 	return j
+}
+
+func extractVariablesKey(raw json.RawMessage) (json.RawMessage, json.RawMessage) {
+	var obj map[string]json.RawMessage
+	if json.Unmarshal(raw, &obj) != nil {
+		return raw, nil
+	}
+	varsRaw := obj["variables"]
+	delete(obj, "variables")
+	out, err := json.Marshal(obj)
+	if err != nil {
+		return raw, nil
+	}
+	return out, varsRaw
+}
+
+func parseLiteralValues(raw json.RawMessage) map[string]oapi.LiteralValue {
+	if len(raw) == 0 {
+		return nil
+	}
+	var varsMap map[string]any
+	if json.Unmarshal(raw, &varsMap) != nil {
+		return nil
+	}
+	vars := make(map[string]oapi.LiteralValue, len(varsMap))
+	for k, val := range varsMap {
+		var lv oapi.LiteralValue
+		switch t := val.(type) {
+		case string:
+			_ = lv.FromStringValue(t)
+		case float64:
+			_ = lv.FromNumberValue(float32(t))
+		case bool:
+			_ = lv.FromBooleanValue(oapi.BooleanValue(t))
+		default:
+			continue
+		}
+		vars[k] = lv
+	}
+	return vars
+}
+
+func parseDispatchContext(raw []byte) *oapi.DispatchContext {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil
+	}
+
+	varsRaw := fields["variables"]
+	delete(fields, "variables")
+
+	var releaseVarsRaw json.RawMessage
+	if release, ok := fields["release"]; ok {
+		fields["release"], releaseVarsRaw = extractVariablesKey(release)
+	}
+
+	stripped, err := json.Marshal(fields)
+	if err != nil {
+		return nil
+	}
+
+	var dc oapi.DispatchContext
+	if err := json.Unmarshal(stripped, &dc); err != nil {
+		return nil
+	}
+
+	if vars := parseLiteralValues(varsRaw); vars != nil {
+		dc.Variables = &vars
+	}
+
+	if releaseVars := parseLiteralValues(releaseVarsRaw); releaseVars != nil && dc.Release != nil {
+		dc.Release.Variables = releaseVars
+	}
+
+	return &dc
 }
 
 func parseJobMetadata(raw []byte) map[string]string {

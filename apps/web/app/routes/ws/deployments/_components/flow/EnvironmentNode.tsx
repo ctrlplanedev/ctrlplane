@@ -82,15 +82,20 @@ const JobStatusBadges: React.FC<{ jobs: Job[] }> = ({ jobs }) => {
   );
 };
 
-
 const VersionDisplay: React.FC<{
   currentVersions: VersionWithCount[];
   desiredVersions: VersionWithCount[];
 }> = ({ currentVersions, desiredVersions }) => {
   if (currentVersions.length === 0) return null;
 
-  const currentTags = currentVersions.map((v) => v.tag).sort().join(",");
-  const desiredTags = desiredVersions.map((v) => v.tag).sort().join(",");
+  const currentTags = currentVersions
+    .map((v) => v.tag)
+    .sort()
+    .join(",");
+  const desiredTags = desiredVersions
+    .map((v) => v.tag)
+    .sort()
+    .join(",");
   const isTransitioning = currentTags !== desiredTags;
 
   // Single stable version - clean display
@@ -142,9 +147,9 @@ const VersionDisplay: React.FC<{
   );
 };
 
-const PolicyBlockIndicator: React.FC<{ reasons: Array<{ reason: string }> }> = ({
-  reasons,
-}) => {
+const PolicyBlockIndicator: React.FC<{
+  reasons: Array<{ reason: string }>;
+}> = ({ reasons }) => {
   if (reasons.length === 0) return null;
 
   return (
@@ -195,13 +200,13 @@ export const EnvironmentNode: React.FC<NodeProps<EnvironmentNodeData>> = ({
 
   return (
     <div
-      className="min-w-[200px] cursor-pointer rounded-lg border-2 border-primary/30 bg-card p-3 shadow-lg transition-all hover:border-primary/50 hover:shadow-xl"
+      className="w-96 cursor-pointer rounded-lg border-2 border-primary/30 bg-card p-3 shadow-lg transition-all hover:border-primary/50 hover:shadow-xl"
       onClick={onSelect}
     >
       <Handle
         type="target"
         position={Position.Left}
-        className="h-3 w-3 bg-primary!"
+        className="bg-primary! h-3 w-3"
       />
 
       <PolicyBlockIndicator reasons={blockedReasons} />
@@ -209,7 +214,7 @@ export const EnvironmentNode: React.FC<NodeProps<EnvironmentNodeData>> = ({
       <div className="space-y-2">
         <div className="text-sm font-semibold">{name}</div>
 
-        {isLoading && (<LoadingSkeleton />)}
+        {isLoading && <LoadingSkeleton />}
         {!isLoading && (
           <>
             <VersionDisplay
@@ -229,7 +234,7 @@ export const EnvironmentNode: React.FC<NodeProps<EnvironmentNodeData>> = ({
       <Handle
         type="source"
         position={Position.Right}
-        className="h-3 w-3 bg-primary!"
+        className="bg-primary! h-3 w-3"
       />
     </div>
   );

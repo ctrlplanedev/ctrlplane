@@ -280,18 +280,8 @@ CREATE TABLE workflow (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     inputs JSONB NOT NULL DEFAULT '[]',
-    jobs JSONB NOT NULL DEFAULT '[]',
+    job_agents JSONB NOT NULL DEFAULT '[]',
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
-);
-
-CREATE TABLE workflow_job_template (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workflow_id UUID NOT NULL REFERENCES workflow(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    ref TEXT NOT NULL,
-    config JSONB NOT NULL DEFAULT '{}',
-    if_condition TEXT,
-    matrix JSONB
 );
 
 CREATE TABLE workflow_run (
@@ -303,9 +293,7 @@ CREATE TABLE workflow_run (
 CREATE TABLE workflow_job (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workflow_run_id UUID NOT NULL REFERENCES workflow_run(id) ON DELETE CASCADE,
-    ref TEXT NOT NULL,
-    config JSONB NOT NULL DEFAULT '{}',
-    index INTEGER NOT NULL DEFAULT 0
+    job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE
 );
 
 CREATE TABLE resource_variable (
@@ -379,6 +367,8 @@ CREATE TABLE job_verification_metric (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     job_id UUID NOT NULL,
+
+    policy_rule_verification_metric_id UUID REFERENCES policy_rule_job_verification_metric(id) ON DELETE SET NULL,
 
     name TEXT NOT NULL,
     provider JSONB NOT NULL,

@@ -9,7 +9,10 @@
   // Combine all path modules
   paths:
     (import 'paths/resource.jsonnet') +
-    (import 'paths/validate.jsonnet'),
+    (import 'paths/release_targets.jsonnet') +
+    (import 'paths/jobs.jsonnet') +
+    (import 'paths/validate.jsonnet') +
+    (import 'paths/workflows.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),
@@ -26,6 +29,7 @@
       (import 'schemas/verification.jsonnet') +
       (import 'schemas/resourcevariables.jsonnet') +
       (import 'schemas/systems.jsonnet') +
-      (import 'schemas/workflows.jsonnet'),
+      (import 'schemas/workflows.jsonnet') +
+      (import 'schemas/release_targets.jsonnet'),
   },
 }

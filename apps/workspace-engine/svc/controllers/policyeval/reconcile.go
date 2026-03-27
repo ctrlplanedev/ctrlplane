@@ -1,15 +1,15 @@
 package policyeval
 
 import (
-	"cmp"
 	"context"
 	"fmt"
-	"slices"
+	"maps"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -77,9 +77,6 @@ func collectEvaluators(getter Getter, pols []*oapi.Policy) []evaluator.Evaluator
 			evals = append(evals, ruleEvaluators(getter, &rule)...)
 		}
 	}
-	slices.SortFunc(evals, func(a, b evaluator.Evaluator) int {
-		return cmp.Compare(a.Complexity(), b.Complexity())
-	})
 	return evals
 }
 
@@ -96,9 +93,9 @@ func buildSkipSet(skips []*oapi.PolicySkip) map[string]oapi.PolicySkip {
 func (r *reconciler) evaluateVersion(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
+	evals []evaluator.Evaluator,
 ) ([]versionEvaluation, error) {
 	oapiRT := r.rt.ToOAPI()
-	evals := collectEvaluators(r.getter, r.policies)
 
 	scope := evaluator.EvaluatorScope{
 		Deployment:  r.scope.Deployment,
@@ -140,6 +137,7 @@ func (r *reconciler) evaluateVersion(
 
 		result := eval.Evaluate(ctx, scope)
 		if result != nil {
+			result = cloneRuleEvaluation(result)
 			result.WithRuleId(eval.RuleId())
 			results = append(results, versionEvaluation{
 				VersionID:      version.Id,
@@ -233,33 +231,113 @@ func Reconcile(
 		return version, nil
 	}
 
-	for _, rt := range releaseTargets {
-		r := &reconciler{getter: getter, setter: setter, rt: rt}
+	reconcilers, err := loadReleaseTargetInputs(ctx, getter, setter, releaseTargets)
+	if err != nil {
+		return nil, recordErr(span, "load release target inputs", err)
+	}
 
-		if err := r.loadInput(ctx); err != nil {
-			return nil, recordErr(span, "load input", err)
-		}
+	sharedEvals := buildSharedEvaluators(getter, reconcilers)
 
-		evals, err := r.evaluateVersion(ctx, version)
-		if err != nil {
-			return nil, recordErr(
-				span,
-				fmt.Sprintf("evaluate version for rt %s", rt.DeploymentID),
-				err,
-			)
-		}
-
-		if err := r.persistEvaluations(ctx, evals); err != nil {
-			return nil, recordErr(
-				span,
-				fmt.Sprintf("persist evaluations for rt %s", rt.DeploymentID),
-				err,
-			)
-		}
+	if err := evaluateAndPersist(ctx, reconcilers, sharedEvals, version); err != nil {
+		return nil, recordErr(span, "reconcile release targets", err)
 	}
 
 	span.SetStatus(codes.Ok, "policy eval completed")
 	return version, nil
+}
+
+func loadReleaseTargetInputs(
+	ctx context.Context,
+	getter Getter,
+	setter Setter,
+	releaseTargets []*ReleaseTarget,
+) ([]*reconciler, error) {
+	reconcilers := make([]*reconciler, len(releaseTargets))
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(10)
+	for i, rt := range releaseTargets {
+		g.Go(func() error {
+			r := &reconciler{getter: getter, setter: setter, rt: rt}
+			if err := r.loadInput(ctx); err != nil {
+				return fmt.Errorf("load input: %w", err)
+			}
+			reconcilers[i] = r
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return reconcilers, nil
+}
+
+func buildSharedEvaluators(
+	getter Getter,
+	reconcilers []*reconciler,
+) map[string]evaluator.Evaluator {
+	shared := make(map[string]evaluator.Evaluator)
+	for _, r := range reconcilers {
+		for _, eval := range collectEvaluators(getter, r.policies) {
+			key := eval.RuleId() + "|" + eval.RuleType()
+			if _, exists := shared[key]; !exists {
+				shared[key] = eval
+			}
+		}
+	}
+	return shared
+}
+
+func evaluateAndPersist(
+	ctx context.Context,
+	reconcilers []*reconciler,
+	sharedEvals map[string]evaluator.Evaluator,
+	version *oapi.DeploymentVersion,
+) error {
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(10)
+	for _, r := range reconcilers {
+		g.Go(func() error {
+			evals := filterEvaluatorsForPolicies(sharedEvals, r.policies)
+			results, err := r.evaluateVersion(ctx, version, evals)
+			if err != nil {
+				return fmt.Errorf("evaluate version for rt %s: %w", r.rt.DeploymentID, err)
+			}
+			return r.persistEvaluations(ctx, results)
+		})
+	}
+	return g.Wait()
+}
+
+func filterEvaluatorsForPolicies(
+	shared map[string]evaluator.Evaluator,
+	pols []*oapi.Policy,
+) []evaluator.Evaluator {
+	ruleIDs := make(map[string]struct{})
+	for _, p := range pols {
+		if p == nil || !p.Enabled {
+			continue
+		}
+		for _, rule := range p.Rules {
+			ruleIDs[rule.Id] = struct{}{}
+		}
+	}
+
+	var result []evaluator.Evaluator
+	for _, eval := range shared {
+		if _, ok := ruleIDs[eval.RuleId()]; ok {
+			result = append(result, eval)
+		}
+	}
+	return result
+}
+
+func cloneRuleEvaluation(src *oapi.RuleEvaluation) *oapi.RuleEvaluation {
+	cp := *src
+	if src.Details != nil {
+		cp.Details = make(map[string]any, len(src.Details))
+		maps.Copy(cp.Details, src.Details)
+	}
+	return &cp
 }
 
 func recordErr(span trace.Span, msg string, err error) error {

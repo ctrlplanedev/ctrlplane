@@ -68,16 +68,7 @@ const navigationGroups = [
       { title: "Policies", to: "/policies", icon: ShieldCheck },
       { title: "Systems", to: "/systems", icon: LayoutDashboard },
       { title: "Jobs", to: "/jobs", icon: Briefcase },
-    ],
-  },
-  {
-    label: "Workflows",
-    items: [
-      {
-        title: "Trigger",
-        to: "/workflows",
-        icon: Zap,
-      },
+      { title: "Workflows", to: "/workflows", icon: Zap },
     ],
   },
   {

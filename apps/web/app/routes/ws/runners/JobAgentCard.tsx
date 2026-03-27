@@ -3,6 +3,7 @@ import { SiArgo, SiGithub, SiTerraform } from "@icons-pack/react-simple-icons";
 import { PlayIcon } from "lucide-react";
 
 import { trpc } from "~/api/trpc";
+import { ConfigEntry } from "~/components/config-entry";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { Badge } from "../../../components/ui/badge";
@@ -58,17 +59,12 @@ function ConfigSection({ config, id }: { config: JobAgentConfig; id: string }) {
         {entries
           .sort((a, b) => a[0].localeCompare(b[0]))
           .map(([key, value]) => (
-            <div
+            <ConfigEntry
               key={key}
-              className="flex items-start gap-2 font-mono text-xs font-semibold"
-            >
-              <span className="shrink-0 text-red-600">{key}:</span>
-              <pre className="text-green-700">
-                {typeof value === "string"
-                  ? value
-                  : JSON.stringify(value, null, 2)}
-              </pre>
-            </div>
+              entryKey={key}
+              value={value}
+              className="text-xs"
+            />
           ))}
       </CardContent>
     </Card>

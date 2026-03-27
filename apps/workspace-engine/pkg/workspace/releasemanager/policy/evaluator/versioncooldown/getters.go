@@ -4,17 +4,18 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
+	"workspace-engine/pkg/store/releasetargets"
 )
 
 type environmentGetter = store.EnvironmentGetter
 type deploymentGetter = store.DeploymentGetter
 type releaseGetter = store.ReleaseGetter
 type resourceGetter = store.ResourceGetter
+type jobsForReleaseTargetGetter = releasetargets.GetJobsForReleaseTarget
 
 type Getters interface {
 	environmentGetter
@@ -32,13 +33,20 @@ type Getters interface {
 
 var _ Getters = (*PostgresGetters)(nil)
 
-func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
+func NewPostgresGetters(
+	queries *db.Queries,
+	jobsForRT releasetargets.GetJobsForReleaseTarget,
+) *PostgresGetters {
+	if jobsForRT == nil {
+		jobsForRT = releasetargets.NewGetJobsForReleaseTarget()
+	}
 	return &PostgresGetters{
-		queries:           queries,
-		environmentGetter: store.NewPostgresEnvironmentGetter(queries),
-		deploymentGetter:  store.NewPostgresDeploymentGetter(queries),
-		releaseGetter:     store.NewPostgresReleaseGetter(queries),
-		resourceGetter:    store.NewPostgresResourceGetter(queries),
+		queries:                    queries,
+		environmentGetter:          store.NewPostgresEnvironmentGetter(queries),
+		deploymentGetter:           store.NewPostgresDeploymentGetter(queries),
+		releaseGetter:              store.NewPostgresReleaseGetter(queries),
+		resourceGetter:             store.NewPostgresResourceGetter(queries),
+		jobsForReleaseTargetGetter: jobsForRT,
 	}
 }
 
@@ -47,70 +55,8 @@ type PostgresGetters struct {
 	deploymentGetter
 	releaseGetter
 	resourceGetter
+	jobsForReleaseTargetGetter
 	queries *db.Queries
-}
-
-func (p *PostgresGetters) GetJobsForReleaseTarget(
-	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
-) map[string]*oapi.Job {
-	if releaseTarget == nil {
-		return nil
-	}
-	deploymentIDUUID, err := uuid.Parse(releaseTarget.DeploymentId)
-	if err != nil {
-		log.Error(
-			"failed to parse deployment id",
-			"deploymentID",
-			releaseTarget.DeploymentId,
-			"error",
-			err,
-		)
-		return nil
-	}
-	environmentIDUUID, err := uuid.Parse(releaseTarget.EnvironmentId)
-	if err != nil {
-		log.Error(
-			"failed to parse environment id",
-			"environmentID",
-			releaseTarget.EnvironmentId,
-			"error",
-			err,
-		)
-		return nil
-	}
-	resourceIDUUID, err := uuid.Parse(releaseTarget.ResourceId)
-	if err != nil {
-		log.Error(
-			"failed to parse resource id",
-			"resourceID",
-			releaseTarget.ResourceId,
-			"error",
-			err,
-		)
-		return nil
-	}
-	rows, err := p.queries.ListJobsByReleaseTarget(ctx, db.ListJobsByReleaseTargetParams{
-		DeploymentID:  deploymentIDUUID,
-		EnvironmentID: environmentIDUUID,
-		ResourceID:    resourceIDUUID,
-	})
-	if err != nil {
-		log.Error(
-			"failed to get jobs for release target",
-			"releaseTarget",
-			releaseTarget.Key(),
-			"error",
-			err,
-		)
-		return nil
-	}
-	jobs := make(map[string]*oapi.Job, len(rows))
-	for _, row := range rows {
-		job := db.ToOapiJob(db.ListJobsByReleaseIDRow(row))
-		jobs[job.Id] = job
-	}
-	return jobs
 }
 
 func (p *PostgresGetters) GetAllReleaseTargets(

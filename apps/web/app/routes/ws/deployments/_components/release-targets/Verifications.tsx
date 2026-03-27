@@ -1,7 +1,9 @@
 import { Fragment, useState } from "react";
 import { SiDatadog } from "@icons-pack/react-simple-icons";
 import { ChevronRight } from "lucide-react";
+import { useInView } from "react-intersection-observer";
 
+import { trpc } from "~/api/trpc";
 import {
   Collapsible,
   CollapsibleContent,
@@ -14,6 +16,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { Skeleton } from "~/components/ui/skeleton";
+import { Spinner } from "~/components/ui/spinner";
 import { cn } from "~/lib/utils";
 import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
 import { isArgoCDMeasurement } from "./argocd/argocd-metric";
@@ -22,6 +26,7 @@ import { isDatadogProvider } from "./datadog/datadog-metric";
 import { PrometheusVerificationDisplay } from "./prometheus/Prometheus";
 import { isPrometheusProvider } from "./prometheus/prometheus-metric";
 import { PrometheusIcon } from "./prometheus/PrometheusIcon";
+import { useMetricMeasurements } from "./useMetricMeasurements";
 import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
 type MetricMeasurement = {
@@ -36,18 +41,15 @@ type VerificationMetric = {
   name: string;
   provider: unknown;
   count: number;
-  intervalSeconds: number;
   successCondition: string;
   successThreshold?: number | null;
   failureCondition?: string | null;
   failureThreshold?: number | null;
-  measurements: MetricMeasurement[];
 };
 
 export type JobVerification = {
   id: string;
   jobId: string;
-  createdAt: Date | string;
   message?: string;
   metrics: VerificationMetric[];
 };
@@ -117,21 +119,24 @@ function getStatusMessage(
 }
 
 function MetricSummaryDisplay({ metric }: { metric: VerificationMetric }) {
-  const passedCount = metric.measurements.filter(
-    (m) => m.status === "passed",
-  ).length;
-  const failedCount = metric.measurements.filter(
-    (m) => m.status === "failed",
-  ).length;
-  const totalMeasurements = metric.measurements.length;
+  const { measurements, isLoading } = useMetricMeasurements(metric.id);
+
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Spinner />
+      </div>
+    );
+
+  const passedCount = measurements.filter((m) => m.status === "passed").length;
+  const failedCount = measurements.filter((m) => m.status === "failed").length;
+  const totalMeasurements = measurements.length;
   const expectedCount = metric.count;
 
   const failureLimit = metric.failureThreshold ?? 0;
   const successThreshold = metric.successThreshold;
 
-  const consecutiveSuccessCount = getConsecutiveSuccessCount(
-    metric.measurements,
-  );
+  const consecutiveSuccessCount = getConsecutiveSuccessCount(measurements);
 
   const statusMessage = getStatusMessage(
     failedCount,
@@ -169,7 +174,8 @@ const nullToUndefined = <T,>(v: T | null | undefined): T | undefined =>
 
 function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   const [open, setOpen] = useState(false);
-  const sortedMeasurements = [...metric.measurements].sort(
+  const { measurements, isLoading } = useMetricMeasurements(metric.id);
+  const sortedMeasurements = [...measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
@@ -183,7 +189,9 @@ function MetricDisplay({ metric }: { metric: VerificationMetric }) {
   };
 
   const isArgoCD =
-    latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
+    !isLoading &&
+    latestMeasurement != null &&
+    isArgoCDMeasurement(latestMeasurement.data);
   const isPrometheus = isPrometheusProvider(metric.provider);
   const isDatadog = isDatadogProvider(metric.provider);
 
@@ -210,12 +218,21 @@ function MetricDisplay({ metric }: { metric: VerificationMetric }) {
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
-        {isArgoCD && <ArgoCDVerificationDisplay metric={displayMetric} />}
-        {isPrometheus && (
+        {isLoading && (
+          <div className="flex items-center justify-center py-4">
+            <Spinner />
+          </div>
+        )}
+        {!isLoading && isArgoCD && (
+          <ArgoCDVerificationDisplay metric={displayMetric} />
+        )}
+        {!isLoading && isPrometheus && (
           <PrometheusVerificationDisplay metric={displayMetric} />
         )}
-        {isDatadog && <DatadogVerificationDisplay metric={displayMetric} />}
-        {!isArgoCD && !isPrometheus && !isDatadog && (
+        {!isLoading && isDatadog && (
+          <DatadogVerificationDisplay metric={displayMetric} />
+        )}
+        {!isLoading && !isArgoCD && !isPrometheus && !isDatadog && (
           <>
             <MetricSummaryDisplay metric={metric} />
             {sortedMeasurements.map((measurement, idx) => (
@@ -236,7 +253,8 @@ type MetricSummary = {
 type VerificationMetricStatusType = VerificationMetric;
 
 const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
-  if (metric.measurements.length === 0) {
+  const measurements: MetricMeasurement[] = [];
+  if (measurements.length === 0) {
     return { name: metric.name, status: "inconclusive" };
   }
 
@@ -246,8 +264,7 @@ const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   let failedCount = 0;
   let consecutiveSuccessCount = 0;
 
-  // Process ALL measurements first (no early exit)
-  for (const m of metric.measurements) {
+  for (const m of measurements) {
     switch (m.status) {
       case "failed":
         failedCount++;
@@ -269,7 +286,7 @@ const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   if (successThreshold != null && consecutiveSuccessCount >= successThreshold)
     return { name: metric.name, status: "passed" };
 
-  if (metric.measurements.length < metric.count)
+  if (measurements.length < metric.count)
     return { name: metric.name, status: "inconclusive" };
 
   return { name: metric.name, status: "passed" };
@@ -282,15 +299,6 @@ export function verificationSummary(
 }
 
 type OverallVerificationStatus = "passed" | "failed" | "inconclusive" | "none";
-
-function getOverallVerificationStatus(
-  summaries: MetricSummary[],
-): OverallVerificationStatus {
-  if (summaries.length === 0) return "none";
-  if (summaries.some((s) => s.status === "failed")) return "failed";
-  if (summaries.some((s) => s.status === "inconclusive")) return "inconclusive";
-  return "passed";
-}
 
 const VerificationStatusConfig: Record<
   Exclude<OverallVerificationStatus, "none">,
@@ -313,14 +321,49 @@ const VerificationStatusConfig: Record<
   },
 };
 
-export function VerificationStatusBadge({
-  summaries,
+export function LazyVerificationStatusBadge({
+  jobId,
   verifications,
 }: {
-  summaries: MetricSummary[];
+  jobId: string;
   verifications?: JobVerification[];
 }) {
-  const status = getOverallVerificationStatus(summaries);
+  const { ref, inView } = useInView({ triggerOnce: true });
+
+  if (!inView)
+    return <Skeleton ref={ref} className="h-[22px] w-[63px] rounded" />;
+
+  return (
+    <VerificationStatusBadge jobId={jobId} verifications={verifications} />
+  );
+}
+
+function VerificationStatusBadge({
+  jobId,
+  verifications,
+}: {
+  jobId: string;
+  verifications?: JobVerification[];
+}) {
+  const hasVerifications = (verifications?.length ?? 0) > 0;
+  const { data, isLoading } = trpc.verifications.status.useQuery(
+    { jobId },
+    { enabled: hasVerifications },
+  );
+
+  if (!hasVerifications) return null;
+  if (isLoading) return <Skeleton className="h-[22px] w-[63px] rounded" />;
+
+  const serverStatus = data?.status ?? "";
+  const status: OverallVerificationStatus =
+    serverStatus === "passed"
+      ? "passed"
+      : serverStatus === "failed"
+        ? "failed"
+        : serverStatus === "running"
+          ? "inconclusive"
+          : "none";
+
   if (status === "none" || verifications?.length === 0) return null;
 
   const config = VerificationStatusConfig[status];

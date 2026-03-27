@@ -14,7 +14,7 @@ import { cn } from "~/lib/utils";
 import { JobStatusBadge } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
 import { RedeployAllDialog } from "./RedeployAllDialog";
-import { VerificationStatusBadge, verificationSummary } from "./Verifications";
+import { LazyVerificationStatusBadge } from "./Verifications";
 
 type VersionSummary = { id: string; tag: string; name: string };
 
@@ -38,6 +38,7 @@ type ReleaseTargetSummary = {
     id: string;
     status: string;
     message?: string | null;
+    metadata?: Record<string, string>;
     verifications: JobVerification[];
   } | null;
 };
@@ -50,6 +51,18 @@ type EnvironmentReleaseTargetsGroupProps = {
 type ReleaseTargetRowProps = {
   rt: ReleaseTargetSummary;
 };
+
+function extractJobLinks(
+  metadata?: Record<string, string>,
+): Record<string, string> | undefined {
+  const value = metadata?.["ctrlplane/links"];
+  if (value == null) return undefined;
+  try {
+    return JSON.parse(value) as Record<string, string>;
+  } catch {
+    return undefined;
+  }
+}
 
 function JobLinks({ links }: { links?: Record<string, string> }) {
   const entries = Object.entries(links ?? {});
@@ -80,7 +93,6 @@ function JobLinks({ links }: { links?: Record<string, string> }) {
 function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
   const { workspace } = useWorkspace();
   const verifications = rt.latestJob?.verifications ?? [];
-  const summaries = verifications.map(verificationSummary).flat();
 
   const currentVersionTag =
     rt.currentVersion?.name || rt.currentVersion?.tag || "Not yet deployed";
@@ -130,14 +142,14 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
               status={rt.latestJob.status as keyof typeof JobStatusDisplayName}
               message={rt.latestJob.message}
             />
-            <VerificationStatusBadge
-              summaries={summaries}
+            <LazyVerificationStatusBadge
+              jobId={rt.latestJob.id}
               verifications={verifications}
             />
           </div>
         )}
       </TableCell>
-      <JobLinks />
+      <JobLinks links={extractJobLinks(rt.latestJob?.metadata)} />
       <TableCell
         className={cn(
           "font-mono text-sm",

@@ -60,7 +60,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		policiesForRT := policies.NewPostgresGetPoliciesForReleaseTarget(
 			policies.WithCache(cacheTTL),
 		)
-		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv, policiesForRT)
+		jobsForRT := releasetargets.NewGetJobsForReleaseTarget(
+			releasetargets.WithCache(cacheTTL),
+		)
+		getter = NewPostgresGetter(c.queries, rtForDep, rtForDepEnv, policiesForRT, jobsForRT)
 	}
 
 	exists, err := getter.ReleaseTargetExists(ctx, rt)

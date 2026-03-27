@@ -41,11 +41,15 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatchCtx := job.DispatchContext
 	cfg, err := parseJobAgentConfig(dispatchCtx.JobAgentConfig)
 	if err != nil {
+		t.updateJobStatus(ctx, job.Id, oapi.JobStatusFailure,
+			fmt.Sprintf("failed to parse job agent config: %s", err.Error()), nil)
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
 
 	workspace, err := templateWorkspace(job.DispatchContext, cfg.template)
 	if err != nil {
+		t.updateJobStatus(ctx, job.Id, oapi.JobStatusFailure,
+			fmt.Sprintf("failed to generate workspace from template: %s", err.Error()), nil)
 		return fmt.Errorf("failed to generate workspace from template: %w", err)
 	}
 

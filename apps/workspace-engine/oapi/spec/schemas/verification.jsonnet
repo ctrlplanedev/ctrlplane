@@ -73,8 +73,9 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('VerificationMetricSpec'),
       {
         type: 'object',
-        required: ['measurements'],
+        required: ['id', 'measurements'],
         properties: {
+          id: { type: 'string' },
           measurements: {
             type: 'array',
             items: openapi.schemaRef('VerificationMeasurement'),
@@ -93,7 +94,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   VerificationMeasurement: {
     type: 'object',
-    required: ['status', 'measuredAt'],
+    required: ['status', 'measuredAt', 'data'],
     properties: {
       status: openapi.schemaRef('VerificationMeasurementStatus'),
       measuredAt: {

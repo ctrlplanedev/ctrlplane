@@ -445,17 +445,18 @@ type JobMetadatum struct {
 }
 
 type JobVerificationMetric struct {
-	ID               uuid.UUID
-	CreatedAt        pgtype.Timestamptz
-	JobID            uuid.UUID
-	Name             string
-	Provider         []byte
-	IntervalSeconds  int32
-	Count            int32
-	SuccessCondition string
-	SuccessThreshold pgtype.Int4
-	FailureCondition pgtype.Text
-	FailureThreshold pgtype.Int4
+	ID                             uuid.UUID
+	CreatedAt                      pgtype.Timestamptz
+	JobID                          uuid.UUID
+	PolicyRuleVerificationMetricID uuid.UUID
+	Name                           string
+	Provider                       []byte
+	IntervalSeconds                int32
+	Count                          int32
+	SuccessCondition               string
+	SuccessThreshold               pgtype.Int4
+	FailureCondition               pgtype.Text
+	FailureThreshold               pgtype.Int4
 }
 
 type JobVerificationMetricMeasurement struct {
@@ -711,26 +712,14 @@ type Workflow struct {
 	ID          uuid.UUID
 	Name        string
 	Inputs      []byte
-	Jobs        []byte
+	JobAgents   []byte
 	WorkspaceID uuid.UUID
 }
 
 type WorkflowJob struct {
 	ID            uuid.UUID
 	WorkflowRunID uuid.UUID
-	Ref           string
-	Config        map[string]any
-	Index         int32
-}
-
-type WorkflowJobTemplate struct {
-	ID          uuid.UUID
-	WorkflowID  uuid.UUID
-	Name        string
-	Ref         string
-	Config      map[string]any
-	IfCondition pgtype.Text
-	Matrix      []byte
+	JobID         uuid.UUID
 }
 
 type WorkflowRun struct {

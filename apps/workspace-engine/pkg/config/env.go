@@ -46,6 +46,9 @@ type Config struct {
 
 	ReconcileMaxConcurrency          int    `default:"0" envconfig:"RECONCILE_MAX_CONCURRENCY"`
 	ReconcileMaxConcurrencyOverrides string `default:""  envconfig:"RECONCILE_MAX_CONCURRENCY_OVERRIDES"`
+
+	// Whether to enable dry run for workflow jobs.
+	DryRunEnabled bool `default:"false" envconfig:"DRY_RUN_ENABLED"`
 }
 
 // GetMaxConcurrency returns the max concurrency for a given service kind.

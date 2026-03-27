@@ -77,8 +77,8 @@ func (wt *Workflow) CompactionKey() (string, string) {
 	return "workflow", wt.Id
 }
 
-func (wtt *WorkflowJobTemplate) CompactionKey() (string, string) {
-	return "workflow_job_template", wtt.Id
+func (wtt *WorkflowJobAgent) CompactionKey() (string, string) {
+	return "workflow_job_agent", wtt.Id
 }
 
 func (w *WorkflowRun) CompactionKey() (string, string) {

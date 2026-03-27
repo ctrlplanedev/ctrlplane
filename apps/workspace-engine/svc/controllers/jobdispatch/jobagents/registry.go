@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
@@ -14,19 +15,31 @@ type Getter interface {
 	GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error)
 }
 
+type Setter interface {
+	UpdateJob(
+		ctx context.Context,
+		jobID string,
+		status oapi.JobStatus,
+		message string,
+		metadata map[string]string,
+	) error
+}
+
 type Registry struct {
 	dispatchers map[string]types.Dispatchable
 	planners    map[string]types.Plannable
 	verifiers   map[string]types.Verifiable
 	getter      Getter
+	setter      Setter
 }
 
-func NewRegistry(getter Getter) *Registry {
+func NewRegistry(getter Getter, setter Setter) *Registry {
 	r := &Registry{}
 	r.dispatchers = make(map[string]types.Dispatchable)
 	r.planners = make(map[string]types.Plannable)
 	r.verifiers = make(map[string]types.Verifiable)
 	r.getter = getter
+	r.setter = setter
 	return r
 }
 
@@ -52,6 +65,16 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatcher, ok := r.dispatchers[jobAgent.Type]
 	if !ok {
 		return fmt.Errorf("job agent type %s not found", jobAgent.Type)
+	}
+
+	if config.Global.DryRunEnabled {
+		return r.setter.UpdateJob(
+			ctx,
+			job.Id,
+			oapi.JobStatusCancelled,
+			"Dry run mode enabled, cancelling job",
+			nil,
+		)
 	}
 
 	return dispatcher.Dispatch(ctx, job)
