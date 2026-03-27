@@ -63,7 +63,16 @@ const app = express()
   .use(cors({ credentials: true }))
   .use(helmet())
   .use(express.urlencoded({ extended: true, limit: "100mb" }))
-  .use(express.json({ limit: "100mb" }))
+  .use((req, res, next) => {
+    if (
+      req.path.startsWith("/api/github/webhook") ||
+      req.path.startsWith("/api/tfe/webhook")
+    ) {
+      next();
+      return;
+    }
+    express.json({ limit: "100mb" })(req, res, next);
+  })
   .use(cookieParser())
   .use(loggerMiddleware)
 
