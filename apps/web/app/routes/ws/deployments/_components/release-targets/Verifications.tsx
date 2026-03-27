@@ -331,7 +331,7 @@ export function LazyVerificationStatusBadge({
   const { ref, inView } = useInView({ triggerOnce: true });
 
   if (!inView)
-    return <Skeleton ref={ref} className="h-5 w-16 rounded" />;
+    return <Skeleton ref={ref} className="h-[22px] w-[63px] rounded" />;
 
   return (
     <VerificationStatusBadge jobId={jobId} verifications={verifications} />
@@ -352,7 +352,7 @@ function VerificationStatusBadge({
   );
 
   if (!hasVerifications) return null;
-  if (isLoading) return <Skeleton className="h-5 w-16 rounded" />;
+  if (isLoading) return <Skeleton className="h-[22px] w-[63px] rounded" />;
 
   const serverStatus = data?.status ?? "";
   const status: OverallVerificationStatus =
