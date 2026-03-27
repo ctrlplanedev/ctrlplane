@@ -13,6 +13,7 @@ import {
 import * as schema from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
+import { extractMessageFromError } from "./utils.js";
 
 const listResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources",
@@ -150,12 +151,7 @@ const upsertResourceByIdentifier: AsyncTypedHandler<
   } catch (error) {
     res.status(500).json({
       error: "Failed to upsert resource",
-      message:
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : String(error),
+      message: extractMessageFromError(error),
     });
   }
 };
@@ -220,31 +216,40 @@ const updateVariablesForResource: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
   "patch"
 > = async (req, res) => {
-  const { workspaceId, identifier } = req.params;
-  const { body } = req;
+  try {
+    const { workspaceId, identifier } = req.params;
+    const { body } = req;
 
-  const resource = await findResource(workspaceId, identifier);
-  const { id: resourceId } = resource;
+    const resource = await findResource(workspaceId, identifier);
+    const { id: resourceId } = resource;
 
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(schema.resourceVariable)
-      .where(eq(schema.resourceVariable.resourceId, resource.id));
-    await tx.insert(schema.resourceVariable).values(
-      Object.entries(body).map(([key, value]) => ({
-        resourceId,
-        key,
-        value,
-      })),
-    );
-  });
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(schema.resourceVariable)
+        .where(eq(schema.resourceVariable.resourceId, resource.id));
+      const entries = Object.entries(body);
+      if (entries.length > 0)
+        await tx.insert(schema.resourceVariable).values(
+          entries.map(([key, value]) => ({
+            resourceId,
+            key,
+            value,
+          })),
+        );
+    });
 
-  enqueueReleaseTargetsForResource(db, workspaceId, resourceId);
+    enqueueReleaseTargetsForResource(db, workspaceId, resourceId);
 
-  res.status(202).json({
-    id: resource.id,
-    message: "Resource variables update requested",
-  });
+    res.status(202).json({
+      id: resource.id,
+      message: "Resource variables update requested",
+    });
+  } catch (error) {
+    res.status(error instanceof ApiError ? error.statusCode : 500).json({
+      error: "Failed to update resource variables",
+      message: extractMessageFromError(error),
+    });
+  }
 };
 
 const parseSelector = (raw: string | null | undefined): string | undefined => {
