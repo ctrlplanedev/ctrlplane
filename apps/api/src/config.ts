@@ -41,7 +41,6 @@ export const env = createEnv({
     AZURE_APP_CLIENT_ID: z.string().optional(),
 
     ARGO_WORKFLOW_WEBHOOK_SECRET: z.string().optional(),
-    ARGO_WORKFLOW_HTTP_ENDPOINT: z.string().optional(),
   },
   runtimeEnv: process.env,
 
