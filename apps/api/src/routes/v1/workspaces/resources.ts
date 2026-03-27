@@ -150,7 +150,12 @@ const upsertResourceByIdentifier: AsyncTypedHandler<
   } catch (error) {
     res.status(500).json({
       error: "Failed to upsert resource",
-      message: typeof error === "string" ? error : undefined,
+      message:
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : String(error),
     });
   }
 };

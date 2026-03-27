@@ -7455,6 +7455,16 @@
                      }
                   },
                   "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Upsert resource by identifier",

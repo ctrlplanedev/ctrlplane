@@ -47,6 +47,7 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('ResourceRequestAccepted'))
+                 + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
     delete: {
