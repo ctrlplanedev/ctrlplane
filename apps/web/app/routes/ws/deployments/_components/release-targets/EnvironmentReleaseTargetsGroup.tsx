@@ -14,7 +14,7 @@ import { cn } from "~/lib/utils";
 import { JobStatusBadge } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
 import { RedeployAllDialog } from "./RedeployAllDialog";
-import { VerificationStatusBadge, verificationSummary } from "./Verifications";
+import { LazyVerificationStatusBadge } from "./Verifications";
 
 type VersionSummary = { id: string; tag: string; name: string };
 
@@ -93,7 +93,6 @@ function JobLinks({ links }: { links?: Record<string, string> }) {
 function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
   const { workspace } = useWorkspace();
   const verifications = rt.latestJob?.verifications ?? [];
-  const summaries = verifications.map(verificationSummary).flat();
 
   const currentVersionTag =
     rt.currentVersion?.name || rt.currentVersion?.tag || "Not yet deployed";
@@ -143,8 +142,8 @@ function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
               status={rt.latestJob.status as keyof typeof JobStatusDisplayName}
               message={rt.latestJob.message}
             />
-            <VerificationStatusBadge
-              summaries={summaries}
+            <LazyVerificationStatusBadge
+              jobId={rt.latestJob.id}
               verifications={verifications}
             />
           </div>

@@ -1833,7 +1833,72 @@
                      },
                      "verifications": {
                         "items": {
-                           "$ref": "#/components/schemas/JobVerification"
+                           "properties": {
+                              "id": {
+                                 "type": "string"
+                              },
+                              "jobId": {
+                                 "type": "string"
+                              },
+                              "metrics": {
+                                 "items": {
+                                    "properties": {
+                                       "count": {
+                                          "type": "integer"
+                                       },
+                                       "failureCondition": {
+                                          "nullable": true,
+                                          "type": "string"
+                                       },
+                                       "failureThreshold": {
+                                          "nullable": true,
+                                          "type": "integer"
+                                       },
+                                       "id": {
+                                          "type": "string"
+                                       },
+                                       "jobId": {
+                                          "type": "string"
+                                       },
+                                       "name": {
+                                          "type": "string"
+                                       },
+                                       "policyRuleVerificationMetricId": {
+                                          "type": "string"
+                                       },
+                                       "provider": {
+                                          "additionalProperties": true,
+                                          "type": "object"
+                                       },
+                                       "successCondition": {
+                                          "type": "string"
+                                       },
+                                       "successThreshold": {
+                                          "nullable": true,
+                                          "type": "integer"
+                                       }
+                                    },
+                                    "required": [
+                                       "id",
+                                       "name",
+                                       "provider",
+                                       "count",
+                                       "successCondition",
+                                       "successThreshold",
+                                       "failureCondition",
+                                       "failureThreshold"
+                                    ],
+                                    "type": "object"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "required": [
+                              "id",
+                              "jobId",
+                              "metrics"
+                           ],
+                           "type": "object"
                         },
                         "type": "array"
                      }
@@ -3034,6 +3099,60 @@
                }
             },
             "summary": "List release targets for a deployment"
+         }
+      },
+      "/v1/jobs/{jobId}/verification-status": {
+         "get": {
+            "operationId": "getJobVerificationStatus",
+            "parameters": [
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "status": {
+                                 "description": "Aggregate verification status",
+                                 "enum": [
+                                    "passed",
+                                    "running",
+                                    "failed",
+                                    ""
+                                 ],
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "status"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Aggregate verification status for the job"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Get aggregate verification status for a job"
          }
       },
       "/v1/validate/resource-selector": {

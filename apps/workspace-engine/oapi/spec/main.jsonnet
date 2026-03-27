@@ -10,6 +10,7 @@
   paths:
     (import 'paths/resource.jsonnet') +
     (import 'paths/release_targets.jsonnet') +
+    (import 'paths/jobs.jsonnet') +
     (import 'paths/validate.jsonnet') +
     (import 'paths/workflows.jsonnet'),
 

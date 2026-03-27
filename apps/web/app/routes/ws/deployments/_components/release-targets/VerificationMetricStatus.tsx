@@ -1,6 +1,9 @@
 import { formatDistanceToNowStrict } from "date-fns";
 
+import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+
+import { useMetricMeasurements } from "./useMetricMeasurements";
 
 type MetricMeasurement = {
   status: "failed" | "inconclusive" | "passed";
@@ -10,14 +13,13 @@ type MetricMeasurement = {
 };
 
 type VerificationMetricStatusType = {
+  id: string;
   name: string;
   count: number;
-  intervalSeconds: number;
   successCondition: string;
   successThreshold: number;
   failureCondition?: string;
   failureThreshold: number;
-  measurements: MetricMeasurement[];
 };
 
 type VerificationStatus = "passed" | "failed" | "in_progress";
@@ -52,11 +54,14 @@ export function calculateMeasurementCounts(
   return { failedCount, consecutiveSuccessCount };
 }
 
-export function getVerificationStatus(metric: VerificationMetricStatusType): {
+export function getVerificationStatus(
+  metric: VerificationMetricStatusType,
+  measurements: MetricMeasurement[],
+): {
   status: VerificationStatus;
   message: string;
 } {
-  if (metric.measurements.length === 0)
+  if (measurements.length === 0)
     return {
       status: "in_progress",
       message: "Waiting for measurements",
@@ -66,7 +71,7 @@ export function getVerificationStatus(metric: VerificationMetricStatusType): {
   const successThreshold = metric.successThreshold;
 
   const { failedCount, consecutiveSuccessCount } = calculateMeasurementCounts(
-    metric.measurements,
+    measurements,
   );
 
   if (failedCount > failureLimit)
@@ -81,15 +86,15 @@ export function getVerificationStatus(metric: VerificationMetricStatusType): {
       message: `${consecutiveSuccessCount} consecutive successes met threshold of ${successThreshold}`,
     };
 
-  if (metric.measurements.length < metric.count)
+  if (measurements.length < metric.count)
     return {
       status: "in_progress",
-      message: `${metric.measurements.length}/${metric.count} measurements completed`,
+      message: `${measurements.length}/${metric.count} measurements completed`,
     };
 
   return {
     status: "passed",
-    message: `Completed ${metric.measurements.length} measurements within failure limit`,
+    message: `Completed ${measurements.length} measurements within failure limit`,
   };
 }
 
@@ -110,16 +115,22 @@ export function VerificationMetricStatus({
 }: {
   metric: VerificationMetricStatusType;
 }) {
-  const { status, message } = getVerificationStatus(metric);
-  const latestMeasurement = [...metric.measurements].sort(
+  const { measurements, isLoading } = useMetricMeasurements(metric.id);
+
+  if (isLoading)
+    return <Skeleton className="h-4 w-20" />;
+
+  const { status, message } = getVerificationStatus(metric, measurements);
+  const latestMeasurement = [...measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   )[0];
 
-  const timeAgo = formatDistanceToNowStrict(
-    new Date(latestMeasurement.measuredAt),
-    { addSuffix: true },
-  );
+  const timeAgo = latestMeasurement
+    ? formatDistanceToNowStrict(new Date(latestMeasurement.measuredAt), {
+        addSuffix: true,
+      })
+    : null;
 
   return (
     <div className="flex flex-col items-end text-right">

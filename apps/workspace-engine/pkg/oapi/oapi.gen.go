@@ -918,7 +918,22 @@ type ReleaseTargetItem struct {
 		Message       *string           `json:"message,omitempty"`
 		Metadata      map[string]string `json:"metadata"`
 		Status        JobStatus         `json:"status"`
-		Verifications []JobVerification `json:"verifications"`
+		Verifications []struct {
+			Id      string `json:"id"`
+			JobId   string `json:"jobId"`
+			Metrics []struct {
+				Count                          int                    `json:"count"`
+				FailureCondition               *string                `json:"failureCondition"`
+				FailureThreshold               *int                   `json:"failureThreshold"`
+				Id                             string                 `json:"id"`
+				JobId                          *string                `json:"jobId,omitempty"`
+				Name                           string                 `json:"name"`
+				PolicyRuleVerificationMetricId *string                `json:"policyRuleVerificationMetricId,omitempty"`
+				Provider                       map[string]interface{} `json:"provider"`
+				SuccessCondition               string                 `json:"successCondition"`
+				SuccessThreshold               *int                   `json:"successThreshold"`
+			} `json:"metrics"`
+		} `json:"verifications"`
 	} `json:"latestJob"`
 	ReleaseTarget struct {
 		DeploymentId  string `json:"deploymentId"`
@@ -2372,6 +2387,9 @@ type ServerInterface interface {
 	// List release targets for a deployment
 	// (GET /v1/deployments/{deploymentId}/release-targets)
 	ListReleaseTargets(c *gin.Context, deploymentId string)
+	// Get aggregate verification status for a job
+	// (GET /v1/jobs/{jobId}/verification-status)
+	GetJobVerificationStatus(c *gin.Context, jobId string)
 	// Validate a resource selector
 	// (POST /v1/validate/resource-selector)
 	ValidateResourceSelector(c *gin.Context)
@@ -2417,6 +2435,30 @@ func (siw *ServerInterfaceWrapper) ListReleaseTargets(c *gin.Context) {
 	}
 
 	siw.Handler.ListReleaseTargets(c, deploymentId)
+}
+
+// GetJobVerificationStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetJobVerificationStatus(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "jobId" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobId", c.Param("jobId"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobVerificationStatus(c, jobId)
 }
 
 // ValidateResourceSelector operation middleware
@@ -2560,6 +2602,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
+	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)

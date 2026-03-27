@@ -142,7 +142,6 @@ export type ReleaseTargetWithState = {
       jobId: string;
       metrics: Array<unknown>;
       message?: string;
-      createdAt: Date | string;
     }>;
   } | null;
 };
