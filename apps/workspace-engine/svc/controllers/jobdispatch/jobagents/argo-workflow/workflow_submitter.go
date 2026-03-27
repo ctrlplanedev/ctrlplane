@@ -11,6 +11,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // GoWorkflowSubmitter is the production implementation of WorkflowSubmitter
@@ -22,7 +23,6 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 	serverAddr, apiKey string,
 	wf *wfv1.Workflow,
 ) (*wfv1.Workflow, error) {
-
 	ctx, apiClient, err := argoapiclient.NewClientFromOptsWithContext(ctx, argoapiclient.Opts{
 		ArgoServerOpts: argoapiclient.ArgoServerOpts{
 			URL:                serverAddr,
@@ -43,9 +43,40 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 		namespace = "default"
 	}
 
+	jobID := wf.Labels["job-id"]
+
+	created, err := createWorkflowWithRetry(ctx, wfClient, namespace, jobID, wf)
+	return created, err
+}
+
+func createWorkflowWithRetry(
+	ctx context.Context,
+	wfClient workflowpkg.WorkflowServiceClient,
+	namespace, jobID string,
+	wf *wfv1.Workflow,
+) (*wfv1.Workflow, error) {
 	var created *wfv1.Workflow
-	err = retry.Do(
+	err := retry.Do(
 		func() error {
+			// Before creating, check whether a workflow for this job already
+			// exists. This makes retries idempotent when GenerateName is used:
+			// a previous attempt may have succeeded but the response was lost.
+			if jobID != "" {
+				list, listErr := wfClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+					Namespace: namespace,
+					ListOptions: &metav1.ListOptions{
+						LabelSelector: "job-id=" + jobID,
+					},
+				})
+				if listErr != nil && isRetryableError(listErr) {
+					return listErr
+				}
+				if listErr == nil && len(list.Items) > 0 {
+					created = &list.Items[0]
+					return nil
+				}
+			}
+
 			var createdErr error
 			created, createdErr = wfClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
 				Namespace: namespace,
