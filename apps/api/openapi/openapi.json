@@ -1849,6 +1849,72 @@
             },
             "type": "object"
          },
+         "ReleaseTargetStateResponse": {
+            "properties": {
+               "currentRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "desiredRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "latestJob": {
+                  "properties": {
+                     "job": {
+                        "$ref": "#/components/schemas/Job"
+                     },
+                     "verifications": {
+                        "items": {
+                           "properties": {
+                              "createdAt": {
+                                 "format": "date-time",
+                                 "type": "string"
+                              },
+                              "id": {
+                                 "type": "string"
+                              },
+                              "jobId": {
+                                 "type": "string"
+                              },
+                              "message": {
+                                 "type": "string"
+                              },
+                              "metrics": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/VerificationMetricStatus"
+                                 },
+                                 "type": "array"
+                              },
+                              "status": {
+                                 "description": "Computed aggregate status of this verification",
+                                 "enum": [
+                                    "passed",
+                                    "running",
+                                    "failed"
+                                 ],
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "id",
+                              "jobId",
+                              "metrics",
+                              "createdAt",
+                              "status"
+                           ],
+                           "type": "object"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "job",
+                     "verifications"
+                  ],
+                  "type": "object"
+               }
+            },
+            "type": "object"
+         },
          "ReleaseTargetWithState": {
             "properties": {
                "releaseTarget": {

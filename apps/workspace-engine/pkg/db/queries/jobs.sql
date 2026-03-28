@@ -242,6 +242,35 @@ JOIN release r ON r.id = rj.release_id
 WHERE r.environment_id = @environment_id
   AND r.version_id = @version_id;
 
+-- name: GetLatestJobByReleaseTarget :one
+-- Returns the most recent job (any status) for a release target, with metadata.
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_object_agg(m.key, m.value)
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '{}'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = @deployment_id
+  AND r.environment_id = @environment_id
+  AND r.resource_id = @resource_id
+ORDER BY j.created_at DESC
+LIMIT 1;
+
 -- name: GetWorkspaceIDByJobID :one
 SELECT d.workspace_id
 FROM job j

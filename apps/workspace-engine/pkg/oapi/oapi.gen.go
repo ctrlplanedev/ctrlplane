@@ -942,6 +942,25 @@ type ReleaseTargetState struct {
 	LatestJob      *JobWithVerifications `json:"latestJob,omitempty"`
 }
 
+// ReleaseTargetStateResponse defines model for ReleaseTargetStateResponse.
+type ReleaseTargetStateResponse struct {
+	CurrentRelease *Release `json:"currentRelease,omitempty"`
+	DesiredRelease *Release `json:"desiredRelease,omitempty"`
+	LatestJob      *struct {
+		Job           Job `json:"job"`
+		Verifications []struct {
+			CreatedAt time.Time                  `json:"createdAt"`
+			Id        string                     `json:"id"`
+			JobId     string                     `json:"jobId"`
+			Message   *string                    `json:"message,omitempty"`
+			Metrics   []VerificationMetricStatus `json:"metrics"`
+
+			// Status Computed aggregate status of this verification
+			Status string `json:"status"`
+		} `json:"verifications"`
+	} `json:"latestJob,omitempty"`
+}
+
 // ReleaseTargetSummary defines model for ReleaseTargetSummary.
 type ReleaseTargetSummary struct {
 	CurrentVersion *VersionSummary    `json:"currentVersion,omitempty"`
@@ -2372,6 +2391,9 @@ type ServerInterface interface {
 	// Validate a resource selector
 	// (POST /v1/validate/resource-selector)
 	ValidateResourceSelector(c *gin.Context)
+	// Get the state of a release target
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state)
+	GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string)
 	// Compute resource aggregate
 	// (POST /v1/workspaces/{workspaceId}/resources/aggregates)
 	ComputeAggergate(c *gin.Context, workspaceId string)
@@ -2451,6 +2473,39 @@ func (siw *ServerInterfaceWrapper) ValidateResourceSelector(c *gin.Context) {
 	}
 
 	siw.Handler.ValidateResourceSelector(c)
+}
+
+// GetReleaseTargetState operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetState(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetState(c, workspaceId, releaseTargetKey)
 }
 
 // ComputeAggergate operation middleware
@@ -2583,6 +2638,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
 	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/state", wrapper.GetReleaseTargetState)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.CreateWorkflowRun)

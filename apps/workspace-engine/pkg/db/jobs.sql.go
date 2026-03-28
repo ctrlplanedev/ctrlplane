@@ -166,6 +166,79 @@ func (q *Queries) GetLatestCompletedJobForReleaseTarget(ctx context.Context, arg
 	return i, err
 }
 
+const getLatestJobByReleaseTarget = `-- name: GetLatestJobByReleaseTarget :one
+SELECT
+  j.id,
+  j.job_agent_id,
+  j.job_agent_config,
+  j.external_id,
+  j.status,
+  j.message,
+  j.created_at,
+  j.started_at,
+  j.completed_at,
+  j.updated_at,
+  j.dispatch_context,
+  rj.release_id,
+  COALESCE(
+    (SELECT json_object_agg(m.key, m.value)
+     FROM job_metadata m WHERE m.job_id = j.id),
+    '{}'
+  )::jsonb AS metadata
+FROM job j
+JOIN release_job rj ON rj.job_id = j.id
+JOIN release r ON r.id = rj.release_id
+WHERE r.deployment_id = $1
+  AND r.environment_id = $2
+  AND r.resource_id = $3
+ORDER BY j.created_at DESC
+LIMIT 1
+`
+
+type GetLatestJobByReleaseTargetParams struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+type GetLatestJobByReleaseTargetRow struct {
+	ID              uuid.UUID
+	JobAgentID      pgtype.UUID
+	JobAgentConfig  []byte
+	ExternalID      pgtype.Text
+	Status          JobStatus
+	Message         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	DispatchContext []byte
+	ReleaseID       uuid.UUID
+	Metadata        []byte
+}
+
+// Returns the most recent job (any status) for a release target, with metadata.
+func (q *Queries) GetLatestJobByReleaseTarget(ctx context.Context, arg GetLatestJobByReleaseTargetParams) (GetLatestJobByReleaseTargetRow, error) {
+	row := q.db.QueryRow(ctx, getLatestJobByReleaseTarget, arg.DeploymentID, arg.EnvironmentID, arg.ResourceID)
+	var i GetLatestJobByReleaseTargetRow
+	err := row.Scan(
+		&i.ID,
+		&i.JobAgentID,
+		&i.JobAgentConfig,
+		&i.ExternalID,
+		&i.Status,
+		&i.Message,
+		&i.CreatedAt,
+		&i.StartedAt,
+		&i.CompletedAt,
+		&i.UpdatedAt,
+		&i.DispatchContext,
+		&i.ReleaseID,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const getWorkspaceIDByJobID = `-- name: GetWorkspaceIDByJobID :one
 SELECT d.workspace_id
 FROM job j

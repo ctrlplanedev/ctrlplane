@@ -1,8 +1,9 @@
 import { Router } from "express";
 
-import { and, count, desc, eq, inArray, sql } from "@ctrlplane/db";
+import { and, count, desc, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import type { AsyncTypedHandler } from "../../../types/api.js";
 import { ApiError, asyncHandler } from "../../../types/api.js";
@@ -101,16 +102,6 @@ const buildReleaseResponse = async (
   };
 };
 
-const getMetadataForJob = async (jobId: string) => {
-  const rows = await db
-    .select()
-    .from(schema.jobMetadata)
-    .where(eq(schema.jobMetadata.jobId, jobId));
-  const metadata: Record<string, string> = {};
-  for (const row of rows) metadata[row.key] = row.value;
-  return metadata;
-};
-
 const getMetadataForJobs = async (jobIds: string[]) => {
   if (jobIds.length === 0) return new Map<string, Record<string, string>>();
   const rows = await db
@@ -124,106 +115,6 @@ const getMetadataForJobs = async (jobIds: string[]) => {
     map.set(row.jobId, existing);
   }
   return map;
-};
-
-const computeReleaseTargetState = async (
-  resourceId: string,
-  environmentId: string,
-  deploymentId: string,
-) => {
-  const [desiredReleaseRow, latestSuccessfulJob, latestJob] = await Promise.all(
-    [
-      db
-        .select({
-          desiredReleaseId: schema.releaseTargetDesiredRelease.desiredReleaseId,
-        })
-        .from(schema.releaseTargetDesiredRelease)
-        .where(
-          and(
-            eq(schema.releaseTargetDesiredRelease.resourceId, resourceId),
-            eq(schema.releaseTargetDesiredRelease.environmentId, environmentId),
-            eq(schema.releaseTargetDesiredRelease.deploymentId, deploymentId),
-          ),
-        )
-        .then((rows) => rows[0]),
-      db
-        .select({ job: schema.job, releaseId: schema.releaseJob.releaseId })
-        .from(schema.job)
-        .innerJoin(
-          schema.releaseJob,
-          eq(schema.releaseJob.jobId, schema.job.id),
-        )
-        .innerJoin(
-          schema.release,
-          eq(schema.release.id, schema.releaseJob.releaseId),
-        )
-        .where(
-          and(
-            eq(schema.release.resourceId, resourceId),
-            eq(schema.release.environmentId, environmentId),
-            eq(schema.release.deploymentId, deploymentId),
-            eq(schema.job.status, "successful"),
-            sql`${schema.job.completedAt} IS NOT NULL`,
-          ),
-        )
-        .orderBy(desc(schema.job.completedAt))
-        .limit(1)
-        .then((rows) => rows[0]),
-      db
-        .select({ job: schema.job, releaseId: schema.releaseJob.releaseId })
-        .from(schema.job)
-        .innerJoin(
-          schema.releaseJob,
-          eq(schema.releaseJob.jobId, schema.job.id),
-        )
-        .innerJoin(
-          schema.release,
-          eq(schema.release.id, schema.releaseJob.releaseId),
-        )
-        .where(
-          and(
-            eq(schema.release.resourceId, resourceId),
-            eq(schema.release.environmentId, environmentId),
-            eq(schema.release.deploymentId, deploymentId),
-          ),
-        )
-        .orderBy(desc(schema.job.createdAt))
-        .limit(1)
-        .then((rows) => rows[0]),
-    ],
-  );
-
-  const state: Record<string, unknown> = {};
-
-  if (desiredReleaseRow?.desiredReleaseId != null) {
-    const release = await db
-      .select()
-      .from(schema.release)
-      .where(eq(schema.release.id, desiredReleaseRow.desiredReleaseId))
-      .then((rows) => rows[0]);
-    if (release != null)
-      state.desiredRelease = await buildReleaseResponse(release);
-  }
-
-  if (latestSuccessfulJob != null) {
-    const release = await db
-      .select()
-      .from(schema.release)
-      .where(eq(schema.release.id, latestSuccessfulJob.releaseId))
-      .then((rows) => rows[0]);
-    if (release != null)
-      state.currentRelease = await buildReleaseResponse(release);
-  }
-
-  if (latestJob != null) {
-    const metadata = await getMetadataForJob(latestJob.job.id);
-    state.latestJob = {
-      job: toJobResponseForState(latestJob.job, latestJob.releaseId, metadata),
-      verifications: [],
-    };
-  }
-
-  return state;
 };
 
 const getReleaseTargetJobs: AsyncTypedHandler<
@@ -327,37 +218,29 @@ const getReleaseTargetState: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
   "get"
 > = async (req, res) => {
-  const { releaseTargetKey } = req.params;
-  const { resourceId, environmentId, deploymentId } =
-    parseReleaseTargetKey(releaseTargetKey);
+  const { workspaceId, releaseTargetKey } = req.params;
 
-  const rtExists = await db
-    .select({ id: schema.releaseTargetDesiredRelease.id })
-    .from(schema.releaseTargetDesiredRelease)
-    .where(
-      and(
-        eq(schema.releaseTargetDesiredRelease.resourceId, resourceId),
-        eq(schema.releaseTargetDesiredRelease.environmentId, environmentId),
-        eq(schema.releaseTargetDesiredRelease.deploymentId, deploymentId),
-      ),
-    )
-    .then((rows) => rows[0]);
-
-  if (rtExists == null) throw new ApiError("Release target not found", 404);
-
-  const state = await computeReleaseTargetState(
-    resourceId,
-    environmentId,
-    deploymentId,
+  const { data, error } = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
+    {
+      params: { path: { workspaceId, releaseTargetKey } },
+    },
   );
 
-  res.status(200).json(state);
+  if (error != null)
+    throw new ApiError(
+      error.error ?? "Failed to get release target state",
+      400,
+    );
+
+  res.status(200).json(data);
 };
 
 const getReleaseTargetStates: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/release-targets/state",
   "post"
 > = async (req, res) => {
+  const { workspaceId } = req.params;
   const { limit: rawLimit, offset: rawOffset } = req.query;
   const { deploymentId, environmentId } = req.body;
 
@@ -385,18 +268,19 @@ const getReleaseTargetStates: AsyncTypedHandler<
 
   const items = await Promise.all(
     releaseTargets.map(async (rt) => {
-      const state = await computeReleaseTargetState(
-        rt.resourceId,
-        rt.environmentId,
-        rt.deploymentId,
+      const releaseTargetKey = `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`;
+      const { data } = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
+        { params: { path: { workspaceId, releaseTargetKey } } },
       );
+
       return {
         releaseTarget: {
           resourceId: rt.resourceId,
           environmentId: rt.environmentId,
           deploymentId: rt.deploymentId,
         },
-        state,
+        state: data ?? {},
       };
     }),
   );

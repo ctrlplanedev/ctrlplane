@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"workspace-engine/pkg/db"
 )
 
 type ReleaseTargetResult struct {
@@ -21,6 +24,11 @@ type ReleaseTargetResult struct {
 
 type Getter interface {
 	ListReleaseTargets(ctx context.Context, deploymentID string) ([]ReleaseTargetResult, error)
+
+	GetDesiredRelease(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Release, error)
+	GetCurrentRelease(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Release, error)
+	GetLatestJobWithMetadata(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Job, error)
+	GetJobVerifications(ctx context.Context, jobID uuid.UUID) ([]oapi.JobVerification, error)
 }
 
 type PostgresGetter struct{}
@@ -147,6 +155,177 @@ func (g *PostgresGetter) ListReleaseTargets(
 	}
 
 	return items, nil
+}
+
+func parseReleaseTargetUUIDs(rt oapi.ReleaseTarget) (uuid.UUID, uuid.UUID, uuid.UUID, error) {
+	resourceID, err := uuid.Parse(rt.ResourceId)
+	if err != nil {
+		return uuid.UUID{}, uuid.UUID{}, uuid.UUID{}, fmt.Errorf("invalid resource id: %w", err)
+	}
+	environmentID, err := uuid.Parse(rt.EnvironmentId)
+	if err != nil {
+		return uuid.UUID{}, uuid.UUID{}, uuid.UUID{}, fmt.Errorf("invalid environment id: %w", err)
+	}
+	deploymentID, err := uuid.Parse(rt.DeploymentId)
+	if err != nil {
+		return uuid.UUID{}, uuid.UUID{}, uuid.UUID{}, fmt.Errorf("invalid deployment id: %w", err)
+	}
+	return resourceID, environmentID, deploymentID, nil
+}
+
+func (g *PostgresGetter) GetDesiredRelease(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Release, error) {
+	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(rt)
+	if err != nil {
+		return nil, err
+	}
+
+	queries := db.GetQueries(ctx)
+	row, err := queries.GetDesiredReleaseByReleaseTarget(ctx, db.GetDesiredReleaseByReleaseTargetParams{
+		ResourceID:    resourceID,
+		EnvironmentID: environmentID,
+		DeploymentID:  deploymentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get desired release: %w", err)
+	}
+
+	return db.ToOapiFullRelease(row), nil
+}
+
+func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Release, error) {
+	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(rt)
+	if err != nil {
+		return nil, err
+	}
+
+	queries := db.GetQueries(ctx)
+	row, err := queries.GetCurrentReleaseByReleaseTarget(ctx, db.GetCurrentReleaseByReleaseTargetParams{
+		ResourceID:    resourceID,
+		EnvironmentID: environmentID,
+		DeploymentID:  deploymentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get current release: %w", err)
+	}
+
+	return db.ToOapiFullRelease(db.GetDesiredReleaseByReleaseTargetRow(row)), nil
+}
+
+func (g *PostgresGetter) GetLatestJobWithMetadata(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Job, error) {
+	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(rt)
+	if err != nil {
+		return nil, err
+	}
+
+	queries := db.GetQueries(ctx)
+	row, err := queries.GetLatestJobByReleaseTarget(ctx, db.GetLatestJobByReleaseTargetParams{
+		DeploymentID:  deploymentID,
+		EnvironmentID: environmentID,
+		ResourceID:    resourceID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get latest job: %w", err)
+	}
+
+	return db.ToOapiJob(db.ListJobsByReleaseIDRow(row)), nil
+}
+
+func (g *PostgresGetter) GetJobVerifications(ctx context.Context, jobID uuid.UUID) ([]oapi.JobVerification, error) {
+	queries := db.GetQueries(ctx)
+	rows, err := queries.GetJobVerificationsWithMeasurements(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("get job verifications: %w", err)
+	}
+
+	if len(rows) == 0 {
+		return []oapi.JobVerification{}, nil
+	}
+
+	byPolicyRule := make(map[string][]db.GetJobVerificationsWithMeasurementsRow)
+	for _, row := range rows {
+		groupKey := "ungrouped"
+		if row.PolicyRuleVerificationMetricID != nilUUID {
+			groupKey = row.PolicyRuleVerificationMetricID.String()
+		}
+		byPolicyRule[groupKey] = append(byPolicyRule[groupKey], row)
+	}
+
+	var verifications []oapi.JobVerification
+	for groupKey, metrics := range byPolicyRule {
+		verifID := groupKey
+		if groupKey == "ungrouped" {
+			verifID = jobID.String()
+		}
+
+		oapiMetrics := make([]oapi.VerificationMetricStatus, len(metrics))
+		for i, m := range metrics {
+			measurements := parseMeasurements(m.Measurements)
+
+			metric := oapi.VerificationMetricStatus{
+				Id:               m.ID.String(),
+				Name:             m.Name,
+				IntervalSeconds:  m.IntervalSeconds,
+				Count:            int(m.Count),
+				SuccessCondition: m.SuccessCondition,
+				Measurements:     measurements,
+			}
+
+			var provider oapi.MetricProvider
+			if err := json.Unmarshal(m.Provider, &provider); err == nil {
+				metric.Provider = provider
+			}
+
+			if m.SuccessThreshold.Valid {
+				st := int(m.SuccessThreshold.Int32)
+				metric.SuccessThreshold = &st
+			}
+			if m.FailureCondition.Valid {
+				metric.FailureCondition = &m.FailureCondition.String
+			}
+			if m.FailureThreshold.Valid {
+				ft := int(m.FailureThreshold.Int32)
+				metric.FailureThreshold = &ft
+			}
+
+			oapiMetrics[i] = metric
+		}
+
+		verifications = append(verifications, oapi.JobVerification{
+			Id:        verifID,
+			JobId:     jobID.String(),
+			CreatedAt: metrics[0].CreatedAt.Time,
+			Metrics:   oapiMetrics,
+		})
+	}
+
+	return verifications, nil
+}
+
+type dbMeasurement struct {
+	ID         string                 `json:"id"`
+	Data       map[string]interface{} `json:"data"`
+	MeasuredAt time.Time              `json:"measured_at"`
+	Message    string                 `json:"message"`
+	Status     string                 `json:"status"`
+}
+
+func parseMeasurements(raw []byte) []oapi.VerificationMeasurement {
+	var dbMs []dbMeasurement
+	if err := json.Unmarshal(raw, &dbMs); err != nil {
+		return []oapi.VerificationMeasurement{}
+	}
+	result := make([]oapi.VerificationMeasurement, len(dbMs))
+	for i, m := range dbMs {
+		result[i] = oapi.VerificationMeasurement{
+			Data:       m.Data,
+			MeasuredAt: m.MeasuredAt,
+			Status:     oapi.VerificationMeasurementStatus(m.Status),
+		}
+		if m.Message != "" {
+			result[i].Message = &m.Message
+		}
+	}
+	return result
 }
 
 func buildVerificationsMap(

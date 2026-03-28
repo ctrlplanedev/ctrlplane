@@ -55,6 +55,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the state of a release target */
+    get: operations["getReleaseTargetState"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/resources/aggregates": {
     parameters: {
       query?: never;
@@ -838,6 +855,23 @@ export interface components {
       desiredRelease?: components["schemas"]["Release"];
       latestJob?: components["schemas"]["JobWithVerifications"];
     };
+    ReleaseTargetStateResponse: {
+      currentRelease?: components["schemas"]["Release"];
+      desiredRelease?: components["schemas"]["Release"];
+      latestJob?: {
+        job: components["schemas"]["Job"];
+        verifications: {
+          /** Format: date-time */
+          createdAt: string;
+          id: string;
+          jobId: string;
+          message?: string;
+          metrics: components["schemas"]["VerificationMetricStatus"][];
+          /** @description Computed aggregate status of this verification */
+          status: string;
+        }[];
+      };
+    };
     ReleaseTargetSummary: {
       currentVersion?: components["schemas"]["VersionSummary"];
       desiredVersion?: components["schemas"]["VersionSummary"];
@@ -1352,6 +1386,49 @@ export interface operations {
             errors: string[];
             valid: boolean;
           };
+        };
+      };
+    };
+  };
+  getReleaseTargetState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Key of the release target */
+        releaseTargetKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release target state */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTargetState"];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
