@@ -4,11 +4,10 @@ import (
 	"errors"
 	"net/http"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"workspace-engine/pkg/oapi"
 )
 
 const uuidLen = 36
@@ -42,7 +41,11 @@ func parseReleaseTargetKey(key string) (oapi.ReleaseTarget, error) {
 	}, nil
 }
 
-func (rt *ReleaseTargets) GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string) {
+func (rt *ReleaseTargets) GetReleaseTargetState(
+	c *gin.Context,
+	workspaceId string,
+	releaseTargetKey string,
+) {
 	ctx := c.Request.Context()
 
 	target, err := parseReleaseTargetKey(releaseTargetKey)

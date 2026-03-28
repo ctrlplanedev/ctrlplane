@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 type ReleaseTargetResult struct {
@@ -173,18 +172,24 @@ func parseReleaseTargetUUIDs(rt oapi.ReleaseTarget) (uuid.UUID, uuid.UUID, uuid.
 	return resourceID, environmentID, deploymentID, nil
 }
 
-func (g *PostgresGetter) GetDesiredRelease(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Release, error) {
+func (g *PostgresGetter) GetDesiredRelease(
+	ctx context.Context,
+	rt oapi.ReleaseTarget,
+) (*oapi.Release, error) {
 	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(rt)
 	if err != nil {
 		return nil, err
 	}
 
 	queries := db.GetQueries(ctx)
-	row, err := queries.GetDesiredReleaseByReleaseTarget(ctx, db.GetDesiredReleaseByReleaseTargetParams{
-		ResourceID:    resourceID,
-		EnvironmentID: environmentID,
-		DeploymentID:  deploymentID,
-	})
+	row, err := queries.GetDesiredReleaseByReleaseTarget(
+		ctx,
+		db.GetDesiredReleaseByReleaseTargetParams{
+			ResourceID:    resourceID,
+			EnvironmentID: environmentID,
+			DeploymentID:  deploymentID,
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("get desired release: %w", err)
 	}
@@ -192,18 +197,24 @@ func (g *PostgresGetter) GetDesiredRelease(ctx context.Context, rt oapi.ReleaseT
 	return db.ToOapiFullRelease(row), nil
 }
 
-func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Release, error) {
+func (g *PostgresGetter) GetCurrentRelease(
+	ctx context.Context,
+	rt oapi.ReleaseTarget,
+) (*oapi.Release, error) {
 	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(rt)
 	if err != nil {
 		return nil, err
 	}
 
 	queries := db.GetQueries(ctx)
-	row, err := queries.GetCurrentReleaseByReleaseTarget(ctx, db.GetCurrentReleaseByReleaseTargetParams{
-		ResourceID:    resourceID,
-		EnvironmentID: environmentID,
-		DeploymentID:  deploymentID,
-	})
+	row, err := queries.GetCurrentReleaseByReleaseTarget(
+		ctx,
+		db.GetCurrentReleaseByReleaseTargetParams{
+			ResourceID:    resourceID,
+			EnvironmentID: environmentID,
+			DeploymentID:  deploymentID,
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("get current release: %w", err)
 	}
@@ -211,7 +222,10 @@ func (g *PostgresGetter) GetCurrentRelease(ctx context.Context, rt oapi.ReleaseT
 	return db.ToOapiFullRelease(db.GetDesiredReleaseByReleaseTargetRow(row)), nil
 }
 
-func (g *PostgresGetter) GetLatestJobWithMetadata(ctx context.Context, rt oapi.ReleaseTarget) (*oapi.Job, error) {
+func (g *PostgresGetter) GetLatestJobWithMetadata(
+	ctx context.Context,
+	rt oapi.ReleaseTarget,
+) (*oapi.Job, error) {
 	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(rt)
 	if err != nil {
 		return nil, err
@@ -230,7 +244,10 @@ func (g *PostgresGetter) GetLatestJobWithMetadata(ctx context.Context, rt oapi.R
 	return db.ToOapiJob(db.ListJobsByReleaseIDRow(row)), nil
 }
 
-func (g *PostgresGetter) GetJobVerifications(ctx context.Context, jobID uuid.UUID) ([]oapi.JobVerification, error) {
+func (g *PostgresGetter) GetJobVerifications(
+	ctx context.Context,
+	jobID uuid.UUID,
+) ([]oapi.JobVerification, error) {
 	queries := db.GetQueries(ctx)
 	rows, err := queries.GetJobVerificationsWithMeasurements(ctx, jobID)
 	if err != nil {
@@ -302,11 +319,11 @@ func (g *PostgresGetter) GetJobVerifications(ctx context.Context, jobID uuid.UUI
 }
 
 type dbMeasurement struct {
-	ID         string                 `json:"id"`
-	Data       map[string]interface{} `json:"data"`
-	MeasuredAt time.Time              `json:"measured_at"`
-	Message    string                 `json:"message"`
-	Status     string                 `json:"status"`
+	ID         string         `json:"id"`
+	Data       map[string]any `json:"data"`
+	MeasuredAt time.Time      `json:"measured_at"`
+	Message    string         `json:"message"`
+	Status     string         `json:"status"`
 }
 
 func parseMeasurements(raw []byte) []oapi.VerificationMeasurement {
