@@ -1962,6 +1962,67 @@
             },
             "type": "object"
          },
+         "ReleaseTargetStateResponse": {
+            "properties": {
+               "currentRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "desiredRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "latestJob": {
+                  "properties": {
+                     "job": {
+                        "$ref": "#/components/schemas/Job"
+                     },
+                     "verifications": {
+                        "items": {
+                           "properties": {
+                              "createdAt": {
+                                 "format": "date-time",
+                                 "type": "string"
+                              },
+                              "id": {
+                                 "type": "string"
+                              },
+                              "jobId": {
+                                 "type": "string"
+                              },
+                              "message": {
+                                 "type": "string"
+                              },
+                              "metrics": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/VerificationMetricStatus"
+                                 },
+                                 "type": "array"
+                              },
+                              "status": {
+                                 "description": "Computed aggregate status of this verification",
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "id",
+                              "jobId",
+                              "metrics",
+                              "createdAt",
+                              "status"
+                           ],
+                           "type": "object"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "job",
+                     "verifications"
+                  ],
+                  "type": "object"
+               }
+            },
+            "type": "object"
+         },
          "ReleaseTargetSummary": {
             "properties": {
                "currentVersion": {
@@ -3167,6 +3228,64 @@
                }
             },
             "summary": "Validate a resource selector"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
+         "get": {
+            "operationId": "getReleaseTargetState",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Key of the release target",
+                  "in": "path",
+                  "name": "releaseTargetKey",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ReleaseTargetStateResponse"
+                        }
+                     }
+                  },
+                  "description": "Release target state"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get the state of a release target"
          }
       },
       "/v1/workspaces/{workspaceId}/resources/aggregates": {

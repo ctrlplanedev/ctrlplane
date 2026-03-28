@@ -58,6 +58,90 @@ func (q *Queries) GetJobDispatchContext(ctx context.Context, id uuid.UUID) ([]by
 	return dispatch_context, err
 }
 
+const getJobVerificationsWithMeasurements = `-- name: GetJobVerificationsWithMeasurements :many
+SELECT
+  jvm.id,
+  jvm.created_at,
+  jvm.job_id,
+  jvm.policy_rule_verification_metric_id,
+  jvm.name,
+  jvm.provider,
+  jvm.interval_seconds,
+  jvm.count,
+  jvm.success_condition,
+  jvm.success_threshold,
+  jvm.failure_condition,
+  jvm.failure_threshold,
+  COALESCE(
+    (SELECT json_agg(
+      json_build_object(
+        'id', mm.id,
+        'data', mm.data,
+        'measured_at', mm.measured_at,
+        'message', mm.message,
+        'status', mm.status
+      ) ORDER BY mm.measured_at ASC
+    )
+    FROM job_verification_metric_measurement mm
+    WHERE mm.job_verification_metric_status_id = jvm.id),
+    '[]'
+  )::jsonb AS measurements
+FROM job_verification_metric jvm
+WHERE jvm.job_id = $1
+ORDER BY jvm.id
+`
+
+type GetJobVerificationsWithMeasurementsRow struct {
+	ID                             uuid.UUID
+	CreatedAt                      pgtype.Timestamptz
+	JobID                          uuid.UUID
+	PolicyRuleVerificationMetricID uuid.UUID
+	Name                           string
+	Provider                       []byte
+	IntervalSeconds                int32
+	Count                          int32
+	SuccessCondition               string
+	SuccessThreshold               pgtype.Int4
+	FailureCondition               pgtype.Text
+	FailureThreshold               pgtype.Int4
+	Measurements                   []byte
+}
+
+// Returns all verification metrics for a job, with measurements as JSON.
+func (q *Queries) GetJobVerificationsWithMeasurements(ctx context.Context, jobID uuid.UUID) ([]GetJobVerificationsWithMeasurementsRow, error) {
+	rows, err := q.db.Query(ctx, getJobVerificationsWithMeasurements, jobID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobVerificationsWithMeasurementsRow
+	for rows.Next() {
+		var i GetJobVerificationsWithMeasurementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.JobID,
+			&i.PolicyRuleVerificationMetricID,
+			&i.Name,
+			&i.Provider,
+			&i.IntervalSeconds,
+			&i.Count,
+			&i.SuccessCondition,
+			&i.SuccessThreshold,
+			&i.FailureCondition,
+			&i.FailureThreshold,
+			&i.Measurements,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReleaseTargetForMetric = `-- name: GetReleaseTargetForMetric :one
 SELECT
   r.deployment_id,

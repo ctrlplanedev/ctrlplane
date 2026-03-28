@@ -21,4 +21,21 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state': {
+    get: {
+      summary: 'Get the state of a release target',
+      operationId: 'getReleaseTargetState',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.releaseTargetKeyParam(),
+      ],
+      responses: openapi.okResponse(
+                   openapi.schemaRef('ReleaseTargetStateResponse'),
+                   'Release target state',
+                 )
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }
