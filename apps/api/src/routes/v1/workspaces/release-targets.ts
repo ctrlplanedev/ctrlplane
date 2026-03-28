@@ -220,7 +220,7 @@ const getReleaseTargetState: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, releaseTargetKey } = req.params;
 
-  const { data, error } = await getClientFor(workspaceId).GET(
+  const { data, error, response } = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
     {
       params: { path: { workspaceId, releaseTargetKey } },
@@ -230,7 +230,7 @@ const getReleaseTargetState: AsyncTypedHandler<
   if (error != null)
     throw new ApiError(
       error.error ?? "Failed to get release target state",
-      400,
+      response.status >= 400 && response.status < 500 ? response.status : 502,
     );
 
   res.status(200).json(data);
@@ -269,7 +269,7 @@ const getReleaseTargetStates: AsyncTypedHandler<
   const items = await Promise.all(
     releaseTargets.map(async (rt) => {
       const releaseTargetKey = `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`;
-      const { data, error } = await getClientFor(workspaceId).GET(
+      const { data, error, response } = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
         { params: { path: { workspaceId, releaseTargetKey } } },
       );
@@ -277,7 +277,9 @@ const getReleaseTargetStates: AsyncTypedHandler<
       if (error != null)
         throw new ApiError(
           error.error ?? "Failed to get release target state",
-          400,
+          response.status >= 400 && response.status < 500
+            ? response.status
+            : 502,
         );
 
       return {
