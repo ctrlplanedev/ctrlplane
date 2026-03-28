@@ -2,6 +2,7 @@ package release_targets
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,10 +35,28 @@ func parseReleaseTargetKey(key string) (oapi.ReleaseTarget, error) {
 	if len(key) != uuidLen*3+2 {
 		return oapi.ReleaseTarget{}, errors.New("invalid release target key format")
 	}
+	if key[uuidLen] != '-' || key[uuidLen*2+1] != '-' {
+		return oapi.ReleaseTarget{}, errors.New("invalid release target key separators")
+	}
+
+	resourceId := key[:uuidLen]
+	environmentId := key[uuidLen+1 : uuidLen*2+1]
+	deploymentId := key[uuidLen*2+2:]
+
+	if _, err := uuid.Parse(resourceId); err != nil {
+		return oapi.ReleaseTarget{}, fmt.Errorf("invalid resource id: %w", err)
+	}
+	if _, err := uuid.Parse(environmentId); err != nil {
+		return oapi.ReleaseTarget{}, fmt.Errorf("invalid environment id: %w", err)
+	}
+	if _, err := uuid.Parse(deploymentId); err != nil {
+		return oapi.ReleaseTarget{}, fmt.Errorf("invalid deployment id: %w", err)
+	}
+
 	return oapi.ReleaseTarget{
-		ResourceId:    key[:uuidLen],
-		EnvironmentId: key[uuidLen+1 : uuidLen*2+1],
-		DeploymentId:  key[uuidLen*2+2:],
+		ResourceId:    resourceId,
+		EnvironmentId: environmentId,
+		DeploymentId:  deploymentId,
 	}, nil
 }
 
@@ -84,10 +103,36 @@ func (rt *ReleaseTargets) GetReleaseTargetState(
 			return
 		}
 
+		// Build verifications with computed status since oapi.JobVerification
+		// has a Status() method but no serializable Status field.
+		verificationsWithStatus := make([]gin.H, len(verifications))
+		for i, v := range verifications {
+			verificationsWithStatus[i] = gin.H{
+				"id":        v.Id,
+				"jobId":     v.JobId,
+				"metrics":   v.Metrics,
+				"createdAt": v.CreatedAt,
+				"status":    string(v.Status()),
+			}
+			if v.Message != nil {
+				verificationsWithStatus[i]["message"] = *v.Message
+			}
+		}
+
 		state.LatestJob = &oapi.JobWithVerifications{
 			Job:           *latestJob,
 			Verifications: verifications,
 		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"desiredRelease": state.DesiredRelease,
+			"currentRelease": state.CurrentRelease,
+			"latestJob": gin.H{
+				"job":           state.LatestJob.Job,
+				"verifications": verificationsWithStatus,
+			},
+		})
+		return
 	}
 
 	c.JSON(http.StatusOK, state)

@@ -1621,6 +1621,26 @@ export interface components {
             desiredRelease?: components["schemas"]["Release"];
             latestJob?: components["schemas"]["Job"];
         };
+        ReleaseTargetStateResponse: {
+            currentRelease?: components["schemas"]["Release"];
+            desiredRelease?: components["schemas"]["Release"];
+            latestJob?: {
+                job: components["schemas"]["Job"];
+                verifications: {
+                    /** Format: date-time */
+                    createdAt: string;
+                    id: string;
+                    jobId: string;
+                    message?: string;
+                    metrics: components["schemas"]["VerificationMetricStatus"][];
+                    /**
+                     * @description Computed aggregate status of this verification
+                     * @enum {string}
+                     */
+                    status: "passed" | "running" | "failed";
+                }[];
+            };
+        };
         ReleaseTargetWithState: {
             releaseTarget: components["schemas"]["ReleaseTarget"];
             state: components["schemas"]["ReleaseTargetState"];

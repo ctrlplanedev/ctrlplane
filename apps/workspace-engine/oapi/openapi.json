@@ -3258,7 +3258,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ReleaseTargetState"
+                           "$ref": "#/components/schemas/ReleaseTargetStateResponse"
                         }
                      }
                   },

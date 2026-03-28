@@ -258,9 +258,9 @@ SELECT
   j.dispatch_context,
   rj.release_id,
   COALESCE(
-    (SELECT json_object_agg(m.key, m.value)
+    (SELECT json_agg(json_build_object('key', m.key, 'value', m.value))
      FROM job_metadata m WHERE m.job_id = j.id),
-    '{}'
+    '[]'
   )::jsonb AS metadata
 FROM job j
 JOIN release_job rj ON rj.job_id = j.id

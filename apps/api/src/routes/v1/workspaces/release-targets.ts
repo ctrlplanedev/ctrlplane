@@ -269,10 +269,16 @@ const getReleaseTargetStates: AsyncTypedHandler<
   const items = await Promise.all(
     releaseTargets.map(async (rt) => {
       const releaseTargetKey = `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`;
-      const { data } = await getClientFor(workspaceId).GET(
+      const { data, error } = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
         { params: { path: { workspaceId, releaseTargetKey } } },
       );
+
+      if (error != null)
+        throw new ApiError(
+          error.error ?? "Failed to get release target state",
+          400,
+        );
 
       return {
         releaseTarget: {
@@ -280,7 +286,7 @@ const getReleaseTargetStates: AsyncTypedHandler<
           environmentId: rt.environmentId,
           deploymentId: rt.deploymentId,
         },
-        state: data ?? {},
+        state: data,
       };
     }),
   );

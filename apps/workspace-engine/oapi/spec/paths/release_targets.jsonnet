@@ -31,7 +31,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.releaseTargetKeyParam(),
       ],
       responses: openapi.okResponse(
-                   openapi.schemaRef('ReleaseTargetState'),
+                   openapi.schemaRef('ReleaseTargetStateResponse'),
                    'Release target state',
                  )
                  + openapi.notFoundResponse()

@@ -1410,7 +1410,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ReleaseTargetState"];
+          "application/json": components["schemas"]["ReleaseTargetStateResponse"];
         };
       };
       /** @description Invalid request */
