@@ -280,8 +280,8 @@ examples, and best practices.
 
 ## Template Variables
 
-All provider configurations support Go templates with access to deployment
-context:
+Provider configurations, success conditions, and failure conditions all support
+Go templates with access to deployment context:
 
 ```yaml
 # Resource information
@@ -304,6 +304,23 @@ context:
 # Custom variables (from deployment variables)
 {{.variables.my_variable}}
 {{.variables.dd_api_key}}
+```
+
+### Templated Conditions
+
+Success and failure conditions can also use Go templates, which are rendered
+before CEL evaluation:
+
+```yaml
+metrics:
+  - name: resource-check
+    interval: 30s
+    count: 5
+    provider:
+      type: http
+      url: "http://api.internal/health/{{.resource.name}}"
+    successCondition: result.json.name == "{{.resource.name}}"
+    failureCondition: result.json.env != "{{.environment.name}}"
 ```
 
 ### Storing Secrets in Variables
