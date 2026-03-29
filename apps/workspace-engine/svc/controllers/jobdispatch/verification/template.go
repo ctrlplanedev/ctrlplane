@@ -31,7 +31,11 @@ func TemplateSpecs(
 		spec.SuccessCondition = successCondition
 
 		if spec.FailureCondition != nil {
-			failureCondition, err := renderString("failureCondition", *spec.FailureCondition, ctxMap)
+			failureCondition, err := renderString(
+				"failureCondition",
+				*spec.FailureCondition,
+				ctxMap,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("template failure condition for spec %q: %w", spec.Name, err)
 			}

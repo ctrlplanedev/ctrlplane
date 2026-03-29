@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
 )
 
 // ---------------------------------------------------------------------------
@@ -384,7 +383,11 @@ func TestReconcile_TemplatesConditionsFromDispatchContext(t *testing.T) {
 
 	require.Len(t, setter.createCalls, 1)
 	require.Len(t, setter.createCalls[0].Specs, 1)
-	assert.Equal(t, `result.json.resource == "prod-server"`, setter.createCalls[0].Specs[0].SuccessCondition)
+	assert.Equal(
+		t,
+		`result.json.resource == "prod-server"`,
+		setter.createCalls[0].Specs[0].SuccessCondition,
+	)
 }
 
 func TestReconcile_MultipleAgentsContributeSpecs(t *testing.T) {
