@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"workspace-engine/pkg/oapi"
 )
 
 // ---------------------------------------------------------------------------
@@ -349,6 +350,41 @@ func TestReconcile_MergesAndDeduplicatesPolicyAndAgentSpecs(t *testing.T) {
 	assert.Equal(t, "shared-check", specs[0].Name)
 	assert.Equal(t, 5, specs[0].Count, "policy spec should win over agent for duplicate name")
 	assert.Equal(t, "agent-only", specs[1].Name)
+}
+
+func TestReconcile_TemplatesConditionsFromDispatchContext(t *testing.T) {
+	agentID := uuid.New().String()
+
+	resource := &oapi.Resource{Name: "prod-server"}
+	dispatchCtx := &oapi.DispatchContext{
+		Resource: resource,
+	}
+
+	prov := sleepProvider(t)
+	policySpec := oapi.VerificationMetricSpec{
+		Name:             "resource-check",
+		IntervalSeconds:  30,
+		Count:            3,
+		SuccessCondition: `result.json.resource == "{{ .resource.name }}"`,
+		Provider:         prov,
+	}
+
+	job, getter := setupGetterWithAgents([]oapi.JobAgent{
+		{Id: agentID, Config: oapi.JobAgentConfig{}},
+	})
+	job.DispatchContext = dispatchCtx
+	getter.verificationPolicies = []oapi.VerificationMetricSpec{policySpec}
+
+	setter := &mockSetter{}
+	dispatcher := &mockDispatcher{}
+	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
+
+	_, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, job)
+	require.NoError(t, err)
+
+	require.Len(t, setter.createCalls, 1)
+	require.Len(t, setter.createCalls[0].Specs, 1)
+	assert.Equal(t, `result.json.resource == "prod-server"`, setter.createCalls[0].Specs[0].SuccessCondition)
 }
 
 func TestReconcile_MultipleAgentsContributeSpecs(t *testing.T) {

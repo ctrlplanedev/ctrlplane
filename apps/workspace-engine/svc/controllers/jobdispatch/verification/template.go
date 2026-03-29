@@ -1,4 +1,4 @@
-package jobdispatch
+package verification
 
 import (
 	"bytes"
@@ -8,11 +8,11 @@ import (
 	"workspace-engine/pkg/templatefuncs"
 )
 
-// templateVerificationSpecs renders Go templates in the success and failure
+// TemplateSpecs renders Go templates in the success and failure
 // conditions of each verification spec using the job's dispatch context as
 // template data. Conditions that contain no template directives are returned
 // unchanged.
-func templateVerificationSpecs(
+func TemplateSpecs(
 	specs []oapi.VerificationMetricSpec,
 	dispatchCtx *oapi.DispatchContext,
 ) ([]oapi.VerificationMetricSpec, error) {

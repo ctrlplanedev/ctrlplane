@@ -157,7 +157,7 @@ func Reconcile(
 
 	specs := verification.MergeAndDeduplicate(policySpecs, agentSpecs)
 
-	specs, err = templateVerificationSpecs(specs, job.DispatchContext)
+	specs, err = verification.TemplateSpecs(specs, job.DispatchContext)
 	if err != nil {
 		return nil, recordErr(span, "template verification specs", err)
 	}
