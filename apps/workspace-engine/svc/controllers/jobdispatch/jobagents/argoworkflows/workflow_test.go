@@ -1,4 +1,4 @@
-package argo_workflows_test
+package argoworkflows_test
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"workspace-engine/pkg/oapi"
-	argo_workflows "workspace-engine/svc/controllers/jobdispatch/jobagents/argo-workflow"
+	argo_workflows "workspace-engine/svc/controllers/jobdispatch/jobagents/argoworkflows"
 )
 
 // ----- Mocks -----

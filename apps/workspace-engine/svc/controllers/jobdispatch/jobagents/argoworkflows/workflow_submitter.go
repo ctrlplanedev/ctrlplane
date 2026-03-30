@@ -1,4 +1,4 @@
-package argo_workflows
+package argoworkflows
 
 import (
 	"context"
