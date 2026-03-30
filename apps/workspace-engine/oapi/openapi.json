@@ -54,85 +54,32 @@
             "type": "object"
          },
          "ArgoWorkflowJobAgentConfig": {
-            "oneOf": [
-               {
-                  "additionalProperties": false,
-                  "description": "Inline workflow execution",
-                  "properties": {
-                     "apiKey": {
-                        "description": "ArgoWorkflow API token.",
-                        "type": "string"
-                     },
-                     "inline": {
-                        "description": "Execute inline workflow (defaults to false if omitted)",
-                        "enum": [
-                           true
-                        ],
-                        "type": "boolean"
-                     },
-                     "name": {
-                        "description": "ArgoWorkflow job name",
-                        "type": "string"
-                     },
-                     "serverUrl": {
-                        "description": "ArgoWorkflow server address (host[:port] or URL).",
-                        "type": "string"
-                     },
-                     "template": {
-                        "description": "Inline workflow spec or template.",
-                        "type": "string"
-                     }
-                  },
-                  "required": [
-                     "serverUrl",
-                     "apiKey",
-                     "template",
-                     "name"
-                  ],
-                  "type": "object"
+            "description": "WorkflowTemplate reference execution",
+            "properties": {
+               "apiKey": {
+                  "description": "ArgoWorkflow API token.",
+                  "type": "string"
                },
-               {
-                  "additionalProperties": false,
-                  "description": "WorkflowTemplate reference execution",
-                  "properties": {
-                     "apiKey": {
-                        "description": "ArgoWorkflow API token.",
-                        "type": "string"
-                     },
-                     "inline": {
-                        "description": "Use WorkflowTemplate reference (default mode)",
-                        "enum": [
-                           false
-                        ],
-                        "type": "boolean"
-                     },
-                     "name": {
-                        "description": "ArgoWorkflow job name",
-                        "type": "string"
-                     },
-                     "namespace": {
-                        "description": "WorkflowTemplate namespace",
-                        "type": "string"
-                     },
-                     "serverUrl": {
-                        "description": "ArgoWorkflow server address (host[:port] or URL).",
-                        "type": "string"
-                     },
-                     "template": {
-                        "description": "WorkflowTemplate name.",
-                        "type": "string"
-                     }
-                  },
-                  "required": [
-                     "serverUrl",
-                     "apiKey",
-                     "template",
-                     "name",
-                     "namespace"
-                  ],
-                  "type": "object"
+               "name": {
+                  "description": "ArgoWorkflow job name",
+                  "type": "string"
+               },
+               "serverUrl": {
+                  "description": "ArgoWorkflow server address (host[:port] or URL).",
+                  "type": "string"
+               },
+               "template": {
+                  "description": "WorkflowTemplate name.",
+                  "type": "string"
                }
-            ]
+            },
+            "required": [
+               "serverUrl",
+               "apiKey",
+               "template",
+               "name"
+            ],
+            "type": "object"
          },
          "BasicResource": {
             "properties": {

@@ -1,6 +1,6 @@
 ---
 title: "Argo Workflows"
-description: "Execute deployments using Argo Workflows"
+description: "Execute pipelines using Argo Workflows"
 ---
 The Argo Workflow job agent triggers workflow dispatch events to execute your
 deployments. This is ideal for teams that use github for non git event triggered workflows.
@@ -77,8 +77,6 @@ jobAgentConfig:
 | `apiKey`    | Yes           | ArgoWorkflow API token                                                     |
 | `template`  | Yes           | Go template for ArgoWorkflow Application                                   |
 | `name`      | Yes           | Go template for ArgoWorkflow Application                                   |
-| `inline`    | No            | Boolean for if you're suppling an inline workflow ArgoWorkflow Application |
-| `namespace` | If not Inline | If not supplying an inline template this is required                       |
 
 ## Template Context
 
@@ -121,7 +119,7 @@ template invocation.
 
 ### Deployment Properties
 
-Each job invocation is tied to a specific deployment, so `.deployment` values can differ 
+Each job invocation is tied to a specific deployment, so `.deployment` values can differ
 for every ArgoWorkflow template invocation.
 
 | Property                      | Type              | Description                        |
@@ -137,7 +135,7 @@ for every ArgoWorkflow template invocation.
 
 ### Environment Properties
 
-Each job invocation is tied to a specific environment, so `.environment` values can differ 
+Each job invocation is tied to a specific environment, so `.environment` values can differ
 for every ArgoWorkflow template invocation.
 
 | Property                        | Type      | Description                     |
@@ -220,7 +218,8 @@ template: |
   apiVersion: argoproj.io/v1alpha1
   kind: Workflow
   metadata:
-    name: {{ .deployment.slug | lower | replace "_" "-" }}
+    generateName: {{ .deployment.slug | lower | replace "_" "-" }}
+    namespace: <namespace>
     labels:
       version: {{ .version.tag | trunc 63 }}
       deployed-at: {{ now | date "2006-01-02" }}
@@ -230,10 +229,9 @@ template: |
 
 When an ArgoWorkflows job is created, Ctrlplane automatically listens for webhooks from the argo server
 
-- Application sync status is `Synced`
-- Application health status is `Healthy` or `Progressing`
+- Application sync status is `Pending|Running|Succeeded|Failed|Error`
 
-## Example: Inline vs Triggering a Template
+## Example: Config for an inline workflow
 
 ```yaml
 type: argo-workflow
@@ -259,20 +257,143 @@ jobAgentConfig:
            args: ["echo hello"]
 ```
 
-```json
-type: argo-workflow
-name: api-service
-jobAgent: argo-workflow
-jobAgentConfig:
-  serverUrl: argoworkflows.example.com:443
-  apiKey: "{{.variables.argoworkflow_token}}"
-  inline: false
-  type: argo-workflow
-  namespace: mynamespace
-  template: |
-  {
-     "repo": "${variables.repo}}"
-     "branch": "${variables.branch}}"
-  }
+
+
+## Example: Config for triggering a workflow template
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: go-build-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: go-build
+    clusterScope: true
+  arguments:
+    parameters:
+      - name: repo
+        value: master
 ```
 
+
+## Example: Configuration for Argo Events
+
+To receive real-time status updates from Argo Workflows in Ctrlplane, you need an
+[Argo Events](https://argoproj.github.io/argo-events/) `Sensor` that watches for
+workflow phase changes and forwards them to the Ctrlplane webhook endpoint.
+
+### How it works
+
+1. An **EventSource** watches the Kubernetes API for changes to `Workflow` resources in
+   your cluster.
+2. The **Sensor** below subscribes to those events and filters for meaningful phase
+   transitions: `Pending`, `Running`, `Succeeded`, `Failed`, and `Error`.
+3. On each matching event the Sensor fires an HTTP `POST` to
+   `https://<ctrlplane host>/api/argo/webhook`, including the workflow name, namespace,
+   uid, timestamps, current phase, and — critically — the `job-id` label that Ctrlplane
+   stamped on the workflow when it was dispatched.
+4. Ctrlplane uses the `jobId` field to look up the in-flight job and update its status
+   in real time, so your deployment dashboard reflects the actual pipeline state without
+   polling.
+
+### Prerequisites
+
+- Argo Events installed in your cluster with an `EventBus` named `default`.
+- A `Secret` named `webhook-secret` in the `argo-events` namespace containing a `token`
+  key whose value matches the API key configured in Ctrlplane.
+- An EventSource (e.g. a `Resource` event source) that emits `workflow-status` events
+  for your `Workflow` objects — the event body must be the full Kubernetes object so
+  the field paths below resolve correctly.
+
+Apply the following `Sensor` manifest to start forwarding workflow status events:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: workflow-status-webhook
+  namespace: argo-events
+spec:
+  eventBusName: default
+  template:
+    serviceAccountName: default
+  dependencies:
+    - name: workflow-event
+      eventSourceName: workflow-resource
+      eventName: workflow-status
+      filters:
+        dataLogicalOperator: or
+        data:
+          - path: body.status.phase
+            type: string
+            value:
+              - Pending
+              - Running
+              - Succeeded
+              - Failed
+              - Error
+  triggers:
+    - template:
+        name: send-webhook
+        conditions: "workflow-event"
+        http:
+          url: https://<ctrlplane host>/api/argo/webhook
+          method: POST
+          headers:
+            Content-Type: application/json
+            Accept: application/json
+          secureHeaders:
+            - name: Authorization
+              valueFrom:
+                secretKeyRef:
+                  name: webhook-secret
+                  key: token
+          payload:
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.metadata.name
+              dest: workflowName
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.metadata.namespace
+              dest: namespace
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.metadata.uid
+              dest: uid
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.metadata.creationTimestamp
+              dest: createdAt
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.status.startedAt
+              dest: startedAt
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.status.finishedAt
+              dest: finishedAt
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.status.phase
+              dest: phase
+            - src:
+                dependencyName: workflow-event
+                dataKey: body.metadata.labels.job-id
+              dest: jobId
+            - src:
+                dependencyName: workflow-event
+                contextKey: type
+              dest: eventType
+          retryStrategy:
+            steps: 3
+            duration: 3s
+          policy:
+            status:
+              allow:
+                - 200
+                - 201
+
+```

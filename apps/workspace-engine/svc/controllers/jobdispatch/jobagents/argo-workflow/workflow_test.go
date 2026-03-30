@@ -112,18 +112,6 @@ spec:
       args: ["hello world"]
 `
 
-const nonInlineWorkflowTemplate = `
-{{- $resourceName := .resource.name }}
-{{- $resourceIdentifier := .resource.identifier }}
-{{- $environmentName := .environment.name }}
-{{- $repo := .release.version.tag }}
-{
-  "repo": "{{$repo}}",
-  "resource": "{{$resourceName}}",
-  "environment": "{{$environmentName}}"
-}
-`
-
 func validConfig() oapi.JobAgentConfig {
 	return oapi.JobAgentConfig{
 		"serverUrl": "https://argo.example.com",
@@ -162,50 +150,6 @@ func newTestJob(id string, cfg oapi.JobAgentConfig) *oapi.Job {
 		},
 	}
 }
-
-// ----- TemplateApplication (non-inline) -----
-
-func TestTemplateApplication_NonInline_RendersParamsAndCreatesTemplateRef(t *testing.T) {
-	tag := "v1.2.3"
-	ctx := &oapi.DispatchContext{
-		Resource: &oapi.Resource{
-			Name:       "my-resource",
-			Identifier: "res-id-123",
-		},
-		Environment: &oapi.Environment{
-			Name: "production",
-		},
-		Release: &oapi.Release{
-			Version: oapi.DeploymentVersion{
-				Tag: tag,
-			},
-		},
-		JobAgent:       oapi.JobAgent{},
-		JobAgentConfig: oapi.JobAgentConfig{},
-	}
-
-	wf, err := argo_workflows.TemplateApplication(
-		ctx,
-		nonInlineWorkflowTemplate,
-		false,
-		"my-workflow",
-		"default",
-	)
-	require.NoError(t, err)
-	assert.Equal(t, "my-workflow-", wf.GenerateName)
-	require.NotNil(t, wf.Spec.WorkflowTemplateRef)
-	assert.Equal(t, "my-workflow", wf.Spec.WorkflowTemplateRef.Name)
-
-	params := make(map[string]string)
-	for _, p := range wf.Spec.Arguments.Parameters {
-		params[p.Name] = p.Value.String()
-	}
-	assert.Equal(t, tag, params["repo"])
-	assert.Equal(t, "my-resource", params["resource"])
-	assert.Equal(t, "production", params["environment"])
-}
-
-// ----- Type -----
 
 func TestType(t *testing.T) {
 	a := argo_workflows.New(&mockSubmitter{}, &mockSetter{})

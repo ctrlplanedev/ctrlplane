@@ -3,7 +3,6 @@ package argo_workflows
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -27,8 +26,6 @@ type WorkFlowJobAgentConfig struct {
 	ApiKey     string
 	Template   string
 	Name       string
-	Inline     bool
-	Namespace  string
 }
 
 type Getter interface {
@@ -87,9 +84,7 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 	wf, err := TemplateApplication(
 		dispatchCtx,
 		wfConfig.Template,
-		wfConfig.Inline,
 		wfConfig.Name,
-		wfConfig.Namespace,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate workflow from template: %w", err)
@@ -149,23 +144,14 @@ func ParseJobAgentConfig(
 	}
 	wfT.Template = template
 
-	isInline, _ := config["inline"].(bool)
-	wfT.Inline = isInline
 	name, ok := config["name"].(string)
 	if !ok {
 		return wfT, fmt.Errorf("name is required")
 	}
 	wfT.Name = name
-	namespace, _ := config["namespace"].(string)
 	if serverAddr == "" || template == "" || name == "" {
 		return wfT, fmt.Errorf("missing required fields in job agent config")
 	}
-	if !isInline && namespace == "" {
-		return wfT, fmt.Errorf(
-			"when inline is false namespace must be set to trigger the correct workflow template",
-		)
-	}
-	wfT.Namespace = namespace
 	return wfT, nil
 }
 
@@ -174,9 +160,7 @@ func ParseJobAgentConfig(
 func TemplateApplication(
 	ctx *oapi.DispatchContext,
 	tmpl string,
-	inline bool,
 	name string,
-	namespace string,
 ) (*wfv1.Workflow, error) {
 	t, err := templatefuncs.Parse("argoWorkflowAgentConfig", tmpl)
 	if err != nil {
@@ -188,18 +172,18 @@ func TemplateApplication(
 	}
 
 	var workflow wfv1.Workflow
-	if inline {
-		if err := yaml.Unmarshal(buf.Bytes(), &workflow); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal workflow: %w", err)
-		}
-	} else {
-		params := make(map[string]any)
-		if err := json.Unmarshal(buf.Bytes(), &params); err != nil {
-			return nil, fmt.Errorf("failed to parse workflow template vars: %w", err)
-		}
-		workflow = *createWorkFlowTemplateCall(name, namespace, params)
+	if err := yaml.Unmarshal(buf.Bytes(), &workflow); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal workflow: %w", err)
 	}
 
+	if workflow.Name == "" && name == "" {
+		return nil, fmt.Errorf(
+			"a name must be provided either in the workflow spec or through the job agent config",
+		)
+	}
+	if workflow.Name == "" && name != "" {
+		workflow.Name = name
+	}
 	return &workflow, nil
 }
 

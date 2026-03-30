@@ -21,16 +21,6 @@ const (
 	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
-// Defines values for ArgoWorkflowJobAgentConfig0Inline.
-const (
-	ArgoWorkflowJobAgentConfig0InlineTrue ArgoWorkflowJobAgentConfig0Inline = true
-)
-
-// Defines values for ArgoWorkflowJobAgentConfig1Inline.
-const (
-	False ArgoWorkflowJobAgentConfig1Inline = false
-)
-
 // Defines values for DatadogMetricProviderAggregator.
 const (
 	Area       DatadogMetricProviderAggregator = "area"
@@ -124,7 +114,7 @@ const (
 
 // Defines values for NullValue.
 const (
-	NullValueTrue NullValue = true
+	True NullValue = true
 )
 
 // Defines values for PrometheusMetricProviderType.
@@ -237,45 +227,13 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
-// ArgoWorkflowJobAgentConfig defines model for ArgoWorkflowJobAgentConfig.
+// ArgoWorkflowJobAgentConfig WorkflowTemplate reference execution
 type ArgoWorkflowJobAgentConfig struct {
-	union json.RawMessage
-}
-
-// ArgoWorkflowJobAgentConfig0 Inline workflow execution
-type ArgoWorkflowJobAgentConfig0 struct {
 	// ApiKey ArgoWorkflow API token.
 	ApiKey string `json:"apiKey"`
 
-	// Inline Execute inline workflow (defaults to false if omitted)
-	Inline *ArgoWorkflowJobAgentConfig0Inline `json:"inline,omitempty"`
-
 	// Name ArgoWorkflow job name
 	Name string `json:"name"`
-
-	// ServerUrl ArgoWorkflow server address (host[:port] or URL).
-	ServerUrl string `json:"serverUrl"`
-
-	// Template Inline workflow spec or template.
-	Template string `json:"template"`
-}
-
-// ArgoWorkflowJobAgentConfig0Inline Execute inline workflow (defaults to false if omitted)
-type ArgoWorkflowJobAgentConfig0Inline bool
-
-// ArgoWorkflowJobAgentConfig1 WorkflowTemplate reference execution
-type ArgoWorkflowJobAgentConfig1 struct {
-	// ApiKey ArgoWorkflow API token.
-	ApiKey string `json:"apiKey"`
-
-	// Inline Use WorkflowTemplate reference (default mode)
-	Inline *ArgoWorkflowJobAgentConfig1Inline `json:"inline,omitempty"`
-
-	// Name ArgoWorkflow job name
-	Name string `json:"name"`
-
-	// Namespace WorkflowTemplate namespace
-	Namespace string `json:"namespace"`
 
 	// ServerUrl ArgoWorkflow server address (host[:port] or URL).
 	ServerUrl string `json:"serverUrl"`
@@ -283,9 +241,6 @@ type ArgoWorkflowJobAgentConfig1 struct {
 	// Template WorkflowTemplate name.
 	Template string `json:"template"`
 }
-
-// ArgoWorkflowJobAgentConfig1Inline Use WorkflowTemplate reference (default mode)
-type ArgoWorkflowJobAgentConfig1Inline bool
 
 // BasicResource defines model for BasicResource.
 type BasicResource struct {
@@ -1529,68 +1484,6 @@ type QueryResourcesJSONRequestBody QueryResourcesJSONBody
 
 // CreateWorkflowRunJSONRequestBody defines body for CreateWorkflowRun for application/json ContentType.
 type CreateWorkflowRunJSONRequestBody CreateWorkflowRunJSONBody
-
-// AsArgoWorkflowJobAgentConfig0 returns the union data inside the ArgoWorkflowJobAgentConfig as a ArgoWorkflowJobAgentConfig0
-func (t ArgoWorkflowJobAgentConfig) AsArgoWorkflowJobAgentConfig0() (ArgoWorkflowJobAgentConfig0, error) {
-	var body ArgoWorkflowJobAgentConfig0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromArgoWorkflowJobAgentConfig0 overwrites any union data inside the ArgoWorkflowJobAgentConfig as the provided ArgoWorkflowJobAgentConfig0
-func (t *ArgoWorkflowJobAgentConfig) FromArgoWorkflowJobAgentConfig0(v ArgoWorkflowJobAgentConfig0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeArgoWorkflowJobAgentConfig0 performs a merge with any union data inside the ArgoWorkflowJobAgentConfig, using the provided ArgoWorkflowJobAgentConfig0
-func (t *ArgoWorkflowJobAgentConfig) MergeArgoWorkflowJobAgentConfig0(v ArgoWorkflowJobAgentConfig0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsArgoWorkflowJobAgentConfig1 returns the union data inside the ArgoWorkflowJobAgentConfig as a ArgoWorkflowJobAgentConfig1
-func (t ArgoWorkflowJobAgentConfig) AsArgoWorkflowJobAgentConfig1() (ArgoWorkflowJobAgentConfig1, error) {
-	var body ArgoWorkflowJobAgentConfig1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromArgoWorkflowJobAgentConfig1 overwrites any union data inside the ArgoWorkflowJobAgentConfig as the provided ArgoWorkflowJobAgentConfig1
-func (t *ArgoWorkflowJobAgentConfig) FromArgoWorkflowJobAgentConfig1(v ArgoWorkflowJobAgentConfig1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeArgoWorkflowJobAgentConfig1 performs a merge with any union data inside the ArgoWorkflowJobAgentConfig, using the provided ArgoWorkflowJobAgentConfig1
-func (t *ArgoWorkflowJobAgentConfig) MergeArgoWorkflowJobAgentConfig1(v ArgoWorkflowJobAgentConfig1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t ArgoWorkflowJobAgentConfig) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *ArgoWorkflowJobAgentConfig) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
 
 // AsJobUpdateEvent0 returns the union data inside the JobUpdateEvent as a JobUpdateEvent0
 func (t JobUpdateEvent) AsJobUpdateEvent0() (JobUpdateEvent0, error) {
