@@ -345,6 +345,62 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 	assert.Contains(t, result.Message, "failed to compile")
 }
 
+func TestEvaluate_DoubleQuotedCELExpression(t *testing.T) {
+	ctx := context.Background()
+
+	deployment, _ := createTestDeployment()
+	environment := createTestEnvironment()
+	resource := createTestResource(nil)
+	version := createTestVersion(deployment.Id, "v2.1.0", nil)
+
+	// Regression test for #886: JSON.stringify wraps a CEL string in extra
+	// quotes, producing "\"version.tag.startsWith('v2.')\"" in the DB.
+	// CEL sees a string literal instead of a boolean expression.
+	t.Run("double-quoted CEL expression fails to evaluate as boolean", func(t *testing.T) {
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: `"version.tag.startsWith('v2.')"`,
+			},
+		}
+
+		eval := NewEvaluator(rule)
+
+		scope := evaluator.EvaluatorScope{
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
+		}
+
+		result := eval.Evaluate(ctx, scope)
+
+		assert.False(t, result.Allowed)
+	})
+
+	t.Run("plain CEL expression evaluates correctly", func(t *testing.T) {
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: "version.tag.startsWith('v2.')",
+			},
+		}
+
+		eval := NewEvaluator(rule)
+
+		scope := evaluator.EvaluatorScope{
+			Version:     version,
+			Environment: environment,
+			Resource:    resource,
+			Deployment:  deployment,
+		}
+
+		result := eval.Evaluate(ctx, scope)
+
+		assert.True(t, result.Allowed)
+	})
+}
+
 func TestEvaluate_WithDescription(t *testing.T) {
 	ctx := context.Background()
 

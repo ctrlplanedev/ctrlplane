@@ -193,7 +193,7 @@ export const policiesRouter = router({
 
           if (rule.environmentProgression != null) {
             const ep = rule.environmentProgression as {
-              dependsOnEnvironmentSelector: unknown;
+              dependsOnEnvironmentSelector: string;
               maximumAgeHours?: number;
               minimumSockTimeMinutes?: number;
               minimumSuccessPercentage?: number;
@@ -202,9 +202,7 @@ export const policiesRouter = router({
             await tx.insert(schema.policyRuleEnvironmentProgression).values({
               id: ruleId,
               policyId,
-              dependsOnEnvironmentSelector: JSON.stringify(
-                ep.dependsOnEnvironmentSelector,
-              ),
+              dependsOnEnvironmentSelector: ep.dependsOnEnvironmentSelector,
               maximumAgeHours: ep.maximumAgeHours,
               minimumSoakTimeMinutes: ep.minimumSockTimeMinutes,
               minimumSuccessPercentage: ep.minimumSuccessPercentage,
@@ -268,14 +266,14 @@ export const policiesRouter = router({
 
           if (rule.versionSelector != null) {
             const vs = rule.versionSelector as {
-              selector: unknown;
+              selector: string;
               description?: string;
             };
             await tx.insert(schema.policyRuleVersionSelector).values({
               id: ruleId,
               policyId,
               description: vs.description,
-              selector: JSON.stringify(vs.selector),
+              selector: vs.selector,
             });
           }
         }
