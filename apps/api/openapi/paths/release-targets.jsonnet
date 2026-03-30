@@ -54,7 +54,7 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       ],
       responses: openapi.okResponse(
-        openapi.schemaRef('ReleaseTargetState'),
+        openapi.schemaRef('ReleaseTargetStateResponse'),
         'The state for the release target',
       ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
