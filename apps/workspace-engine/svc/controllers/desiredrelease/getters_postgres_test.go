@@ -6,13 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"workspace-engine/pkg/db"
-	desiredrelease "workspace-engine/svc/controllers/desiredrelease"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/db"
+	desiredrelease "workspace-engine/svc/controllers/desiredrelease"
 )
 
 const defaultDBURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -338,17 +337,29 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 		require.NoError(t, err)
 
 		overrideA, _ := json.Marshal("a-override")
-		_, err = pool.Exec(ctx,
+		_, err = pool.Exec(
+			ctx,
 			`INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
 			 VALUES ($1, $2, $3, $4, $5)`,
-			uuid.New(), varA, overrideA, `resource.kind == "Server"`, int64(1))
+			uuid.New(),
+			varA,
+			overrideA,
+			`resource.kind == "Server"`,
+			int64(1),
+		)
 		require.NoError(t, err)
 
 		overrideB, _ := json.Marshal("b-override")
-		_, err = pool.Exec(ctx,
+		_, err = pool.Exec(
+			ctx,
 			`INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
 			 VALUES ($1, $2, $3, $4, $5)`,
-			uuid.New(), varB, overrideB, `resource.kind == "Worker"`, int64(2))
+			uuid.New(),
+			varB,
+			overrideB,
+			`resource.kind == "Worker"`,
+			int64(2),
+		)
 		require.NoError(t, err)
 
 		vars, err := getter.GetDeploymentVariables(ctx, f.deploymentID.String())
@@ -466,8 +477,13 @@ func TestPostgresGetter_GetPolicySkips(t *testing.T) {
 			ctx,
 			`INSERT INTO policy_skip (id, version_id, rule_id, environment_id, resource_id, reason, created_by)
 			 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			skipID, versionID, ruleID, f.environmentID, f.resourceID,
-			"emergency deploy", "user-1",
+			skipID,
+			versionID,
+			ruleID,
+			f.environmentID,
+			f.resourceID,
+			"emergency deploy",
+			"user-1",
 		)
 		require.NoError(t, err)
 
@@ -492,8 +508,11 @@ func TestPostgresGetter_GetPolicySkips(t *testing.T) {
 			ctx,
 			`INSERT INTO policy_skip (id, version_id, rule_id, environment_id, resource_id, reason, created_by)
 			 VALUES ($1, $2, $3, NULL, NULL, $4, $5)`,
-			globalSkipID, versionID, uuid.New(),
-			"global skip", "admin",
+			globalSkipID,
+			versionID,
+			uuid.New(),
+			"global skip",
+			"admin",
 		)
 		require.NoError(t, err)
 
@@ -623,24 +642,46 @@ func TestPostgresGetter_ReleaseTargetExists(t *testing.T) {
 			systemID, f.environmentID)
 		require.NoError(t, err)
 
-		_, err = pool.Exec(ctx,
+		_, err = pool.Exec(
+			ctx,
 			`INSERT INTO computed_deployment_resource (deployment_id, resource_id, last_evaluated_at)
 			 VALUES ($1, $2, NOW())`,
-			f.deploymentID, f.resourceID)
+			f.deploymentID,
+			f.resourceID,
+		)
 		require.NoError(t, err)
 
-		_, err = pool.Exec(ctx,
+		_, err = pool.Exec(
+			ctx,
 			`INSERT INTO computed_environment_resource (environment_id, resource_id, last_evaluated_at)
 			 VALUES ($1, $2, NOW())`,
-			f.environmentID, f.resourceID)
+			f.environmentID,
+			f.resourceID,
+		)
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
 			cleanCtx := context.Background()
-			_, _ = pool.Exec(cleanCtx, "DELETE FROM computed_environment_resource WHERE environment_id = $1", f.environmentID)
-			_, _ = pool.Exec(cleanCtx, "DELETE FROM computed_deployment_resource WHERE deployment_id = $1", f.deploymentID)
-			_, _ = pool.Exec(cleanCtx, "DELETE FROM system_environment WHERE system_id = $1", systemID)
-			_, _ = pool.Exec(cleanCtx, "DELETE FROM system_deployment WHERE system_id = $1", systemID)
+			_, _ = pool.Exec(
+				cleanCtx,
+				"DELETE FROM computed_environment_resource WHERE environment_id = $1",
+				f.environmentID,
+			)
+			_, _ = pool.Exec(
+				cleanCtx,
+				"DELETE FROM computed_deployment_resource WHERE deployment_id = $1",
+				f.deploymentID,
+			)
+			_, _ = pool.Exec(
+				cleanCtx,
+				"DELETE FROM system_environment WHERE system_id = $1",
+				systemID,
+			)
+			_, _ = pool.Exec(
+				cleanCtx,
+				"DELETE FROM system_deployment WHERE system_id = $1",
+				systemID,
+			)
 			_, _ = pool.Exec(cleanCtx, "DELETE FROM system WHERE id = $1", systemID)
 		})
 

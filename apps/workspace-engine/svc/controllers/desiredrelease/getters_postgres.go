@@ -171,4 +171,3 @@ func (g *PostgresGetter) GetPolicySkips(
 	}
 	return result, nil
 }
-

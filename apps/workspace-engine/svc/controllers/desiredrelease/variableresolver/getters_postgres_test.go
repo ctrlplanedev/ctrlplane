@@ -82,24 +82,47 @@ func setupFixture(t *testing.T, pool *pgxpool.Pool) *fixture {
 		ctx,
 		`INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, metadata)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, '{}'::jsonb, $8::jsonb)`,
-		f.resourceID, "v1", "test-resource", "Server",
+		f.resourceID,
+		"v1",
+		"test-resource",
+		"Server",
 		"urn:test:"+f.resourceID.String()[:8],
-		f.providerID, f.workspaceID, metadata,
+		f.providerID,
+		f.workspaceID,
+		metadata,
 	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		cleanCtx := context.Background()
-		_, _ = pool.Exec(cleanCtx, "DELETE FROM relationship_rule WHERE workspace_id = $1", f.workspaceID)
-		_, _ = pool.Exec(cleanCtx, "DELETE FROM resource_variable WHERE resource_id = $1", f.resourceID)
-		_, _ = pool.Exec(cleanCtx,
+		_, _ = pool.Exec(
+			cleanCtx,
+			"DELETE FROM relationship_rule WHERE workspace_id = $1",
+			f.workspaceID,
+		)
+		_, _ = pool.Exec(
+			cleanCtx,
+			"DELETE FROM resource_variable WHERE resource_id = $1",
+			f.resourceID,
+		)
+		_, _ = pool.Exec(
+			cleanCtx,
 			"DELETE FROM deployment_variable_value WHERE deployment_variable_id IN (SELECT id FROM deployment_variable WHERE deployment_id = $1)",
-			f.deploymentID)
-		_, _ = pool.Exec(cleanCtx, "DELETE FROM deployment_variable WHERE deployment_id = $1", f.deploymentID)
+			f.deploymentID,
+		)
+		_, _ = pool.Exec(
+			cleanCtx,
+			"DELETE FROM deployment_variable WHERE deployment_id = $1",
+			f.deploymentID,
+		)
 		_, _ = pool.Exec(cleanCtx, "DELETE FROM resource WHERE workspace_id = $1", f.workspaceID)
 		_, _ = pool.Exec(cleanCtx, "DELETE FROM deployment WHERE workspace_id = $1", f.workspaceID)
 		_, _ = pool.Exec(cleanCtx, "DELETE FROM environment WHERE workspace_id = $1", f.workspaceID)
-		_, _ = pool.Exec(cleanCtx, "DELETE FROM resource_provider WHERE workspace_id = $1", f.workspaceID)
+		_, _ = pool.Exec(
+			cleanCtx,
+			"DELETE FROM resource_provider WHERE workspace_id = $1",
+			f.workspaceID,
+		)
 		_, _ = pool.Exec(cleanCtx, "DELETE FROM workspace WHERE id = $1", f.workspaceID)
 	})
 
@@ -153,7 +176,11 @@ func TestPostgresGetter_GetRelationshipRules(t *testing.T) {
 
 		t.Cleanup(func() {
 			cleanCtx := context.Background()
-			_, _ = pool.Exec(cleanCtx, "DELETE FROM relationship_rule WHERE workspace_id = $1", otherWS)
+			_, _ = pool.Exec(
+				cleanCtx,
+				"DELETE FROM relationship_rule WHERE workspace_id = $1",
+				otherWS,
+			)
 			_, _ = pool.Exec(cleanCtx, "DELETE FROM workspace WHERE id = $1", otherWS)
 		})
 
@@ -193,11 +220,19 @@ func TestPostgresGetter_LoadCandidates(t *testing.T) {
 	t.Run("resource type excludes soft-deleted resources", func(t *testing.T) {
 		deletedID := uuid.New()
 		metadata, _ := json.Marshal(map[string]string{})
-		_, err := pool.Exec(ctx,
+		_, err := pool.Exec(
+			ctx,
 			`INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, metadata, deleted_at)
 			 VALUES ($1, $2, $3, $4, $5, $6, $7, '{}'::jsonb, $8::jsonb, NOW())`,
-			deletedID, "v1", "deleted-resource", "Server",
-			"urn:test:deleted", f.providerID, f.workspaceID, metadata)
+			deletedID,
+			"v1",
+			"deleted-resource",
+			"Server",
+			"urn:test:deleted",
+			f.providerID,
+			f.workspaceID,
+			metadata,
+		)
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
