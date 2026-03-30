@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/otel"
@@ -20,11 +21,13 @@ import (
 var tracer = otel.Tracer("server")
 
 // Server implements the OpenAPI ServerInterface for the workspace engine.
-type Server struct{}
+type Server struct {
+	pool *pgxpool.Pool
+}
 
 // New creates a new Server instance.
-func New() *Server {
-	return &Server{}
+func New(pool *pgxpool.Pool) *Server {
+	return &Server{pool: pool}
 }
 
 // SetupRouter configures and returns a Gin router with all routes and middleware.
@@ -52,7 +55,7 @@ func (s *Server) SetupRouter() *gin.Engine {
 	)
 
 	// Register OpenAPI handlers
-	oapi.RegisterHandlers(router, openapi.New())
+	oapi.RegisterHandlers(router, openapi.New(s.pool))
 
 	return router
 }

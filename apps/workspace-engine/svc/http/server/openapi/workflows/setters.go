@@ -103,7 +103,7 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	dispatchContext *oapi.DispatchContext,
 	workspaceID string,
 ) error {
-	jobAgentIDUUID, err := uuid.Parse(jobAgent.Id)
+	jobAgentIDUUID, err := uuid.Parse(jobAgent.Ref)
 	if err != nil {
 		return fmt.Errorf("parse job agent id: %w", err)
 	}

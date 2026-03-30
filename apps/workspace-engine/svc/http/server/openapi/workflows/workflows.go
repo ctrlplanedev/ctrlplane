@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile/postgres"
 )
 
 type Workflows struct {
@@ -14,8 +16,12 @@ type Workflows struct {
 	setter Setter
 }
 
-func NewWorkflows() Workflows {
-	return Workflows{getter: &PostgresGetter{}}
+func NewWorkflows(pool *pgxpool.Pool) Workflows {
+	queue := postgres.New(pool)
+	return Workflows{
+		getter: &PostgresGetter{},
+		setter: NewPostgresSetter(queue),
+	}
 }
 
 func getInputs(c *gin.Context) (map[string]any, error) {
