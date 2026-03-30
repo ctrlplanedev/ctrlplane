@@ -187,35 +187,6 @@ func TemplateApplication(
 	return &workflow, nil
 }
 
-func createWorkFlowTemplateCall(
-	name string,
-	namespace string,
-	params map[string]any,
-) *wfv1.Workflow {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", name),
-		},
-		Spec: wfv1.WorkflowSpec{
-			WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{
-				Name: name,
-			},
-			Arguments: wfv1.Arguments{
-				Parameters: []wfv1.Parameter{},
-			},
-		},
-	}
-	wf.Namespace = namespace
-	for key, val := range params {
-		p := wfv1.Parameter{
-			Name:  key,
-			Value: wfv1.AnyStringPtr(val),
-		}
-		wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, p)
-	}
-	return wf
-}
-
 // MakeApplicationK8sCompatible sanitises the workflow name and label
 // values so they conform to Kubernetes naming rules.
 func MakeApplicationK8sCompatible(wf *wfv1.Workflow) {
