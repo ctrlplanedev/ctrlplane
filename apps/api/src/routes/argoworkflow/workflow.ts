@@ -26,15 +26,11 @@ const statusMap: Record<string, JobStatus> = {
 export const mapTriggerToStatus = (trigger: string): JobStatus | null =>
   statusMap[trigger] ?? null;
 
-export const getJobId = (payload: ArgoWorkflowPayload) => payload.jobId || payload.workflowName;
+export const getJobId = (payload: ArgoWorkflowPayload) =>
+  payload.jobId ?? payload.workflowName;
 
 export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
-  const {
-    uid,
-    phase,
-    startedAt,
-    finishedAt,
-  } = payload;
+  const { uid, phase, startedAt, finishedAt } = payload;
 
   const jobId = getJobId(payload);
 
