@@ -76,9 +76,8 @@ const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
       await tx.insert(schema.policyRuleEnvironmentProgression).values({
         id: ruleId,
         policyId,
-        dependsOnEnvironmentSelector: JSON.stringify(
+        dependsOnEnvironmentSelector:
           rule.environmentProgression.dependsOnEnvironmentSelector,
-        ),
         maximumAgeHours: rule.environmentProgression.maximumAgeHours,
         minimumSoakTimeMinutes:
           rule.environmentProgression.minimumSockTimeMinutes,
@@ -126,7 +125,7 @@ const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
         id: ruleId,
         policyId,
         description: rule.versionSelector.description,
-        selector: JSON.stringify(rule.versionSelector.selector),
+        selector: rule.versionSelector.selector,
       });
   }
 };
