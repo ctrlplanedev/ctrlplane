@@ -30,7 +30,6 @@ export const getJobId = (payload: ArgoWorkflowPayload) => payload.jobId || paylo
 
 export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
   const {
-    workflowName: _workflowName,
     uid,
     phase,
     startedAt,
