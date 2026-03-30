@@ -158,9 +158,6 @@ func ParseJobAgentConfig(
 	if v, ok := config["httpInsecure"].(bool); ok {
 		wfT.InsecureSkipVerify = v
 	}
-
-	fmt.Printf("parsed: %+v\n", wfT)
-
 	return wfT, nil
 }
 
