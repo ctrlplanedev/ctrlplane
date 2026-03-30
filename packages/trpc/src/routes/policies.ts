@@ -202,8 +202,7 @@ export const policiesRouter = router({
             await tx.insert(schema.policyRuleEnvironmentProgression).values({
               id: ruleId,
               policyId,
-              dependsOnEnvironmentSelector:
-                ep.dependsOnEnvironmentSelector,
+              dependsOnEnvironmentSelector: ep.dependsOnEnvironmentSelector,
               maximumAgeHours: ep.maximumAgeHours,
               minimumSoakTimeMinutes: ep.minimumSockTimeMinutes,
               minimumSuccessPercentage: ep.minimumSuccessPercentage,
