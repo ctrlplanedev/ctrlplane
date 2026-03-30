@@ -432,8 +432,8 @@ type EnvironmentProgressionRule struct {
 	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
 	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
 
-	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
-	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
+	// MinimumSoakTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+	MinimumSoakTimeMinutes   *int32       `json:"minimumSoakTimeMinutes,omitempty"`
 	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
 	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
 }
