@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import { count, eq, sql } from "@ctrlplane/db";
+import { and, count, eq, sql, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -11,10 +11,21 @@ export const workflowsRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        workflowId: z.string(),
+        workflowId: z.string().uuid(),
       }),
     )
-    .query(() => {}),
+    .query(({ ctx: { db }, input }) =>
+      db
+        .select()
+        .from(schema.workflow)
+        .where(
+          and(
+            eq(schema.workflow.id, input.workflowId),
+            eq(schema.workflow.workspaceId, input.workspaceId),
+          ),
+        )
+        .then(takeFirst),
+    ),
 
   list: protectedProcedure
     .input(
