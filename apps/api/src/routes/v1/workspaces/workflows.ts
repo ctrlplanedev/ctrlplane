@@ -18,7 +18,8 @@ const createWorkflow: AsyncTypedHandler<
     .returning()
     .then(takeFirst);
 
-  res.status(202).json(created);
+  const { id, name, inputs, jobAgents } = created;
+  res.status(201).json({ id, name, inputs, jobAgents });
 };
 
 const createWorkflowRun: AsyncTypedHandler<
