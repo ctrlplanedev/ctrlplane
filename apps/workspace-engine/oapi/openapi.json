@@ -2933,9 +2933,6 @@
                   "description": "Configuration for the job agent",
                   "type": "object"
                },
-               "id": {
-                  "type": "string"
-               },
                "name": {
                   "type": "string"
                },
@@ -2949,7 +2946,6 @@
                }
             },
             "required": [
-               "id",
                "name",
                "ref",
                "config",

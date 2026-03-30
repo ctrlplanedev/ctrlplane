@@ -1361,7 +1361,6 @@ type WorkflowJob struct {
 type WorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
 	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent

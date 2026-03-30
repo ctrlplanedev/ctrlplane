@@ -99,10 +99,12 @@ func (s *PostgresSetter) UpdateJob(
 	}
 
 	releaseID := existingJob.ReleaseId
-	if releaseID != "" {
-		if err := dispatchProgressionTargets(ctx, s.Queue, jobIDUUID); err != nil {
-			return fmt.Errorf("dispatch progression targets: %w", err)
-		}
+	if releaseID == "" || releaseID == "00000000-0000-0000-0000-000000000000" {
+		return nil
+	}
+
+	if err := dispatchProgressionTargets(ctx, s.Queue, jobIDUUID); err != nil {
+		return fmt.Errorf("dispatch progression targets: %w", err)
 	}
 
 	return nil

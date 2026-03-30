@@ -41,7 +41,7 @@ func main() {
 
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
-		httpsvc.New(config.Global),
+		httpsvc.New(config.Global, db.GetPool(ctx)),
 		claimcleanup.New(db.GetPool(ctx), 30*time.Second),
 
 		deploymentplan.New(WorkerID, db.GetPool(ctx)),
