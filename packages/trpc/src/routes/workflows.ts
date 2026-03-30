@@ -81,6 +81,7 @@ export const workflowsRouter = router({
             runInputs: schema.workflowRun.inputs,
             jobId: schema.workflowJob.id,
             jobStatus: schema.job.status,
+            jobCreatedAt: schema.job.createdAt,
           })
           .from(schema.workflowRun)
           .leftJoin(
@@ -99,13 +100,23 @@ export const workflowsRouter = router({
             const statuses = jobs
               .filter((j) => j.jobId != null)
               .map((j) => j.jobStatus!);
+            const createdAt = _.chain(jobs)
+              .map((j) => j.jobCreatedAt)
+              .compact()
+              .min()
+              .value();
+            const inputs = first.runInputs as Record<string, unknown>;
+            const inputCount = Object.keys(inputs).length;
             return {
               id: runId,
               inputs: first.runInputs,
+              inputCount,
               jobCount: statuses.length,
               statuses,
+              createdAt,
             };
           })
+          .orderBy((r) => r.createdAt, "desc")
           .value();
       }),
   }),
