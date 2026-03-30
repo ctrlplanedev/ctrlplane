@@ -134,7 +134,12 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	)
 	dispatcher.Register(terraformcloud.New(pgSetter))
 	dispatcher.Register(
-		argoworkflow.New(&argoworkflow.GoWorkflowSubmitter{}, pgSetter),
+		argoworkflow.New(
+			&argoworkflow.GoWorkflowSubmitter{
+				InsecureSkipVerify: config.Global.ArgoWorkflowInsecureSkipVerify,
+			},
+			pgSetter,
+		),
 	)
 
 	maxConcurrency := config.GetMaxConcurrency(kind)

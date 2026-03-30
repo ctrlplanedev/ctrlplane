@@ -16,7 +16,9 @@ import (
 
 // GoWorkflowSubmitter is the production implementation of WorkflowSubmitter
 // that calls the Argo Workflows REST API.
-type GoWorkflowSubmitter struct{}
+type GoWorkflowSubmitter struct {
+	InsecureSkipVerify bool
+}
 
 func (s *GoWorkflowSubmitter) SubmitWorkflow(
 	ctx context.Context,
@@ -28,7 +30,7 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 			URL:                serverAddr,
 			Secure:             true,
 			HTTP1:              true,
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: s.InsecureSkipVerify,
 		},
 		AuthSupplier: func() string {
 			return apiKey

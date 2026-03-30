@@ -170,19 +170,19 @@ func TemplateApplication(
 	if err := t.Execute(&buf, ctx.Map()); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
-
 	var workflow wfv1.Workflow
 	if err := yaml.Unmarshal(buf.Bytes(), &workflow); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal workflow: %w", err)
 	}
-
-	if workflow.Name == "" && name == "" {
-		return nil, fmt.Errorf(
-			"a name must be provided either in the workflow spec or through the job agent config",
-		)
+	if workflow.GenerateName != "" {
+		workflow.Name = ""
 	}
-	if workflow.Name == "" && name != "" {
-		workflow.Name = name
+	if workflow.Name != "" {
+		workflow.Name = ""
+	}
+	if workflow.GenerateName == "" {
+		workflow.GenerateName = fmt.Sprintf("%s-", name)
+		workflow.Name = ""
 	}
 	return &workflow, nil
 }
