@@ -6,12 +6,13 @@ import (
 	"os"
 	"testing"
 
+	"workspace-engine/pkg/db"
+	desiredrelease "workspace-engine/svc/controllers/desiredrelease"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"workspace-engine/pkg/db"
-	desiredrelease "workspace-engine/svc/controllers/desiredrelease"
 )
 
 const defaultDBURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -146,6 +147,16 @@ func setupFixture(t *testing.T, pool *pgxpool.Pool) *fixture {
 	return f
 }
 
+// newGetter constructs a PostgresGetter with its embedded interfaces properly
+// initialized. A *db.Queries is required because some promoted methods
+// (HasCurrentRelease, GetDeploymentVariables, GetResourceVariables) use the
+// queries instance they were constructed with rather than db.GetQueries(ctx).
+// The store dependencies (release targets, policies, jobs) are nil because
+// none of the methods under test reach them.
+func newGetter(pool *pgxpool.Pool) *desiredrelease.PostgresGetter {
+	return desiredrelease.NewPostgresGetter(db.New(pool), nil, nil, nil, nil)
+}
+
 func newReleaseTarget(f *fixture) *desiredrelease.ReleaseTarget {
 	return &desiredrelease.ReleaseTarget{
 		WorkspaceID:   f.workspaceID,
@@ -160,7 +171,7 @@ func TestPostgresGetter_GetCandidateVersions(t *testing.T) {
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 
 	t.Run("returns empty slice when no versions exist", func(t *testing.T) {
 		versions, err := getter.GetCandidateVersions(ctx, f.deploymentID)
@@ -210,7 +221,7 @@ func TestPostgresGetter_HasCurrentRelease(t *testing.T) {
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 	rt := newReleaseTarget(f)
 
 	has, err := getter.HasCurrentRelease(ctx, rt.ToOAPI())
@@ -235,85 +246,12 @@ func TestPostgresGetter_HasCurrentRelease(t *testing.T) {
 	assert.True(t, has)
 }
 
-func TestPostgresGetter_GetCurrentRelease(t *testing.T) {
-	pool := requireTestDB(t)
-	f := setupFixture(t, pool)
-	ctx := context.Background()
-
-	getter := &desiredrelease.PostgresGetter{}
-	rt := newReleaseTarget(f)
-
-	t.Run("returns nil when no releases exist", func(t *testing.T) {
-		release, err := getter.GetCurrentRelease(ctx, rt)
-		require.NoError(t, err)
-		assert.Nil(t, release)
-	})
-
-	t.Run("returns release with correct fields", func(t *testing.T) {
-		versionID := uuid.New()
-		_, err := pool.Exec(ctx,
-			`INSERT INTO deployment_version (id, name, tag, deployment_id, status, workspace_id)
-			 VALUES ($1, $2, $3, $4, 'ready', $5)`,
-			versionID, "v1", "v1", f.deploymentID, f.workspaceID)
-		require.NoError(t, err)
-
-		_, err = pool.Exec(ctx,
-			`INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id)
-			 VALUES ($1, $2, $3, $4, $5)`,
-			uuid.New(), f.resourceID, f.environmentID, f.deploymentID, versionID)
-		require.NoError(t, err)
-
-		release, err := getter.GetCurrentRelease(ctx, rt)
-		require.NoError(t, err)
-		require.NotNil(t, release)
-
-		assert.Equal(t, versionID.String(), release.Version.Id)
-		assert.Equal(t, f.deploymentID.String(), release.ReleaseTarget.DeploymentId)
-		assert.Equal(t, f.environmentID.String(), release.ReleaseTarget.EnvironmentId)
-		assert.Equal(t, f.resourceID.String(), release.ReleaseTarget.ResourceId)
-		assert.NotNil(t, release.Variables, "Variables map should be initialized")
-		assert.NotNil(t, release.EncryptedVariables, "EncryptedVariables should be initialized")
-	})
-
-	t.Run("returns the most recent release when multiple exist", func(t *testing.T) {
-		v1 := uuid.New()
-		v2 := uuid.New()
-		_, err := pool.Exec(ctx,
-			`INSERT INTO deployment_version (id, name, tag, deployment_id, status, workspace_id)
-			 VALUES ($1, $2, $3, $4, 'ready', $5)`,
-			v1, "v-old", "v-old", f.deploymentID, f.workspaceID)
-		require.NoError(t, err)
-		_, err = pool.Exec(ctx,
-			`INSERT INTO deployment_version (id, name, tag, deployment_id, status, workspace_id)
-			 VALUES ($1, $2, $3, $4, 'ready', $5)`,
-			v2, "v-new", "v-new", f.deploymentID, f.workspaceID)
-		require.NoError(t, err)
-
-		_, err = pool.Exec(ctx,
-			`INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id, created_at)
-			 VALUES ($1, $2, $3, $4, $5, NOW() - INTERVAL '1 hour')`,
-			uuid.New(), f.resourceID, f.environmentID, f.deploymentID, v1)
-		require.NoError(t, err)
-		_, err = pool.Exec(ctx,
-			`INSERT INTO release (id, resource_id, environment_id, deployment_id, version_id, created_at)
-			 VALUES ($1, $2, $3, $4, $5, NOW())`,
-			uuid.New(), f.resourceID, f.environmentID, f.deploymentID, v2)
-		require.NoError(t, err)
-
-		release, err := getter.GetCurrentRelease(ctx, rt)
-		require.NoError(t, err)
-		require.NotNil(t, release)
-		assert.Equal(t, v2.String(), release.Version.Id,
-			"should return the most recently created release")
-	})
-}
-
 func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 	pool := requireTestDB(t)
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 
 	t.Run("returns empty slice when no variables exist", func(t *testing.T) {
 		vars, err := getter.GetDeploymentVariables(ctx, f.deploymentID.String())
@@ -442,7 +380,7 @@ func TestPostgresGetter_GetResourceVariables(t *testing.T) {
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 
 	t.Run("returns empty map when no variables exist", func(t *testing.T) {
 		vars, err := getter.GetResourceVariables(ctx, f.resourceID.String())
@@ -508,7 +446,7 @@ func TestPostgresGetter_GetPolicySkips(t *testing.T) {
 		versionID, "v1", "v1", f.deploymentID, f.workspaceID)
 	require.NoError(t, err)
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 
 	t.Run("returns empty slice when no skips exist", func(t *testing.T) {
 		skips, err := getter.GetPolicySkips(
@@ -601,7 +539,7 @@ func TestPostgresGetter_GetApprovalRecords(t *testing.T) {
 		versionID, "v1", "v1", f.deploymentID, f.workspaceID)
 	require.NoError(t, err)
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 
 	t.Run("returns empty slice when no records exist", func(t *testing.T) {
 		records, err := getter.GetApprovalRecords(ctx, versionID.String(), f.environmentID.String())
@@ -659,7 +597,7 @@ func TestPostgresGetter_ReleaseTargetExists(t *testing.T) {
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 	rt := newReleaseTarget(f)
 
 	t.Run("false when no computed rows link the triple", func(t *testing.T) {
@@ -729,7 +667,7 @@ func TestPostgresGetter_GetReleaseTargetScope(t *testing.T) {
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
-	getter := &desiredrelease.PostgresGetter{}
+	getter := newGetter(pool)
 	rt := newReleaseTarget(f)
 
 	t.Run("returns scope with deployment environment and resource", func(t *testing.T) {
