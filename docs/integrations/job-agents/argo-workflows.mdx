@@ -21,7 +21,7 @@ sequenceDiagram
 ```
 
 1. Ctrlplane creates a job and dispatches it to ArgoWorkflows
-2. ArgoEvents triggers your workflow with
+2. ArgoEvents triggers your workflow
 3. Your workflow fetches job context (version, environment, resource)
 4. Your workflow executes the deployment
 5. ArgoWorkflows sends a webhook event to Ctrlplane as the run progresses
