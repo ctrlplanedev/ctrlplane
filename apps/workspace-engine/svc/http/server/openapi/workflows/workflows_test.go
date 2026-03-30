@@ -68,7 +68,7 @@ func TestResolveInputs_MissingInputsGetDefaults(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "staging", resolved["env"])
-	assert.Equal(t, float32(3), resolved["retries"])
+	assert.InDelta(t, float32(3), resolved["retries"], 0)
 	assert.Equal(t, true, resolved["dryRun"])
 }
 
@@ -126,7 +126,7 @@ func TestResolveInputs_MixedProvidedAndDefaults(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "production", resolved["env"])
-	assert.Equal(t, float32(3), resolved["retries"])
+	assert.InDelta(t, float32(3), resolved["retries"], 0)
 	assert.NotContains(t, resolved, "verbose")
 }
 

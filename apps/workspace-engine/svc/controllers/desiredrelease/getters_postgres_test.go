@@ -176,7 +176,7 @@ func TestPostgresGetter_GetCandidateVersions(t *testing.T) {
 		versions, err := getter.GetCandidateVersions(ctx, f.deploymentID)
 		require.NoError(t, err)
 		assert.NotNil(t, versions, "should return empty slice, not nil")
-		assert.Len(t, versions, 0)
+		assert.Empty(t, versions)
 	})
 
 	t.Run("returns only ready versions", func(t *testing.T) {
@@ -211,7 +211,7 @@ func TestPostgresGetter_GetCandidateVersions(t *testing.T) {
 	t.Run("returns empty slice for nonexistent deployment", func(t *testing.T) {
 		versions, err := getter.GetCandidateVersions(ctx, uuid.New())
 		require.NoError(t, err)
-		assert.Len(t, versions, 0)
+		assert.Empty(t, versions)
 	})
 }
 
@@ -255,7 +255,7 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 	t.Run("returns empty slice when no variables exist", func(t *testing.T) {
 		vars, err := getter.GetDeploymentVariables(ctx, f.deploymentID.String())
 		require.NoError(t, err)
-		assert.Len(t, vars, 0)
+		assert.Empty(t, vars)
 	})
 
 	t.Run("returns variable with values", func(t *testing.T) {
@@ -313,7 +313,7 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 		for _, v := range vars {
 			if v.Variable.Key == "STANDALONE_VAR" {
 				found = true
-				assert.Len(t, v.Values, 0, "variable with no value rows should have empty Values")
+				assert.Empty(t, v.Values, "variable with no value rows should have empty Values")
 			}
 		}
 		assert.True(t, found, "STANDALONE_VAR should be in results")
@@ -397,7 +397,7 @@ func TestPostgresGetter_GetResourceVariables(t *testing.T) {
 		vars, err := getter.GetResourceVariables(ctx, f.resourceID.String())
 		require.NoError(t, err)
 		assert.NotNil(t, vars, "should return empty map, not nil")
-		assert.Len(t, vars, 0)
+		assert.Empty(t, vars)
 	})
 
 	t.Run("returns variables keyed by their key", func(t *testing.T) {
@@ -467,7 +467,7 @@ func TestPostgresGetter_GetPolicySkips(t *testing.T) {
 			f.resourceID.String(),
 		)
 		require.NoError(t, err)
-		assert.Len(t, skips, 0)
+		assert.Empty(t, skips)
 	})
 
 	t.Run("returns targeted skip with all fields", func(t *testing.T) {
@@ -563,7 +563,7 @@ func TestPostgresGetter_GetApprovalRecords(t *testing.T) {
 	t.Run("returns empty slice when no records exist", func(t *testing.T) {
 		records, err := getter.GetApprovalRecords(ctx, versionID.String(), f.environmentID.String())
 		require.NoError(t, err)
-		assert.Len(t, records, 0)
+		assert.Empty(t, records)
 	})
 
 	t.Run("returns approval record with all fields", func(t *testing.T) {

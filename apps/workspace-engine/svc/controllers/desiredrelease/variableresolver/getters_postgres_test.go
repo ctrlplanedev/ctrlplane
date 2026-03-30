@@ -139,7 +139,7 @@ func TestPostgresGetter_GetRelationshipRules(t *testing.T) {
 	t.Run("returns empty slice when no rules exist", func(t *testing.T) {
 		rules, err := getter.GetRelationshipRules(ctx, f.workspaceID)
 		require.NoError(t, err)
-		assert.Len(t, rules, 0)
+		assert.Empty(t, rules)
 	})
 
 	t.Run("returns rules with correct fields", func(t *testing.T) {
@@ -300,7 +300,7 @@ func TestPostgresGetter_LoadCandidates(t *testing.T) {
 
 		candidates, err := getter.LoadCandidates(ctx, emptyWS, "resource")
 		require.NoError(t, err)
-		assert.Len(t, candidates, 0)
+		assert.Empty(t, candidates)
 	})
 }
 
