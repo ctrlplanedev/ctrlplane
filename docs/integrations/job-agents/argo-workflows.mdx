@@ -339,7 +339,7 @@ spec:
         name: send-webhook
         conditions: "workflow-event"
         http:
-          url: https://<ctrlplane host>/api/argo/webhook
+          url: https://<ctrlplane host>/api/argo/<job-agent-id>/webhook
           method: POST
           headers:
             Content-Type: application/json
