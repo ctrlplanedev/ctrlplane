@@ -4,7 +4,28 @@ import { z } from "zod";
 import { and, count, eq, sql, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
+import type { Tx } from "@ctrlplane/db";
+
 import { protectedProcedure, router } from "../trpc.js";
+
+const getJobMetadataMap = async (db: Tx, jobIds: string[]) => {
+  if (jobIds.length === 0) return new Map<string, Record<string, string>>();
+
+  const metadata = await db.query.jobMetadata.findMany({
+    where: (jm, { inArray }) => inArray(jm.jobId, jobIds),
+  });
+
+  const map = new Map<string, Record<string, string>>();
+  for (const m of metadata) {
+    let entry = map.get(m.jobId);
+    if (!entry) {
+      entry = {};
+      map.set(m.jobId, entry);
+    }
+    entry[m.key] = m.value;
+  }
+  return map;
+};
 
 export const workflowsRouter = router({
   get: protectedProcedure
@@ -66,6 +87,51 @@ export const workflowsRouter = router({
     }),
 
   runs: router({
+    get: protectedProcedure
+      .input(
+        z.object({
+          workflowRunId: z.string().uuid(),
+        }),
+      )
+      .query(async ({ ctx, input }) => {
+        const run = await ctx.db
+          .select()
+          .from(schema.workflowRun)
+          .where(eq(schema.workflowRun.id, input.workflowRunId))
+          .then(takeFirst);
+
+        const jobRows = await ctx.db
+          .select({
+            id: schema.job.id,
+            status: schema.job.status,
+            message: schema.job.message,
+            createdAt: schema.job.createdAt,
+            completedAt: schema.job.completedAt,
+            jobAgentId: schema.job.jobAgentId,
+            jobAgentName: schema.jobAgent.name,
+            jobAgentType: schema.jobAgent.type,
+          })
+          .from(schema.workflowJob)
+          .innerJoin(schema.job, eq(schema.job.id, schema.workflowJob.jobId))
+          .leftJoin(
+            schema.jobAgent,
+            eq(schema.jobAgent.id, schema.job.jobAgentId),
+          )
+          .where(eq(schema.workflowJob.workflowRunId, input.workflowRunId));
+
+        const metadataMap = await getJobMetadataMap(
+          ctx.db,
+          jobRows.map((r) => r.id),
+        );
+
+        const jobs = jobRows.map((r) => ({
+          ...r,
+          metadata: metadataMap.get(r.id) ?? {},
+        }));
+
+        return { ...run, jobs };
+      }),
+
     create: protectedProcedure
       .input(
         z.object({
