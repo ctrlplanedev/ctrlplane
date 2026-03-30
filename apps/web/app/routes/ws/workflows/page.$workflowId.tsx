@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
 import {
@@ -34,6 +34,7 @@ function useWorkflow() {
 }
 
 function WorkflowPageHeader({ name }: { name: string }) {
+  const { workspace } = useWorkspace();
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b">
       <div className="flex w-full items-center gap-2 px-4">
@@ -45,9 +46,7 @@ function WorkflowPageHeader({ name }: { name: string }) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage className="text-muted-foreground">
-                Workflows
-              </BreadcrumbPage>
+              <Link to={`/${workspace.slug}/workflows`}>Workflows</Link>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
