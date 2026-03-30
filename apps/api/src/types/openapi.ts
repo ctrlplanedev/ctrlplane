@@ -1069,20 +1069,19 @@ export interface components {
         };
         CreateWorkflow: {
             inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
             name: string;
         };
-        CreateWorkflowJobTemplate: {
+        CreateWorkflowJobAgent: {
             /** @description Configuration for the job agent */
             config: {
                 [key: string]: unknown;
             };
-            /** @description CEL expression to determine if the job should run */
-            if?: string;
-            matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
             ref: string;
+            /** @description CEL expression to determine if the job agent should dispatch a job */
+            selector: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -1832,7 +1831,7 @@ export interface components {
         };
         UpdateWorkflow: {
             inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
             name: string;
         };
         UpdateWorkspaceRequest: {
@@ -2073,7 +2072,7 @@ export interface components {
         Workflow: {
             id: string;
             inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["WorkflowJobTemplate"][];
+            jobAgents: components["schemas"]["WorkflowJobAgent"][];
             name: string;
         };
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
@@ -2095,29 +2094,16 @@ export interface components {
             ref: string;
             workflowId: string;
         };
-        WorkflowJobAgentConfig: {
-            config: {
-                [key: string]: unknown;
-            };
-            id: string;
-        };
-        WorkflowJobMatrix: {
-            [key: string]: {
-                [key: string]: unknown;
-            }[] | string;
-        };
-        WorkflowJobTemplate: {
+        WorkflowJobAgent: {
             /** @description Configuration for the job agent */
             config: {
                 [key: string]: unknown;
             };
-            id: string;
-            /** @description CEL expression to determine if the job should run */
-            if?: string;
-            matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
             ref: string;
+            /** @description CEL expression to determine if the job agent should dispatch a job */
+            selector: string;
         };
         WorkflowManualArrayInput: {
             default?: {
