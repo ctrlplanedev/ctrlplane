@@ -19,6 +19,10 @@ const getJobAgent = async (id: string) => {
 
 const handleWebhookRequest = async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (id == null) {
+    res.status(400).json({ message: "Missing job agent id" });
+    return;
+  }
 
   const agent = await getJobAgent(id);
   if (agent == null) {
@@ -30,7 +34,9 @@ const handleWebhookRequest = async (req: Request, res: Response) => {
   const webhookSecret =
     typeof config.webhookSecret === "string" ? config.webhookSecret : null;
   if (webhookSecret == null) {
-    res.status(500).json({ message: "Job agent has no webhookSecret configured" });
+    res
+      .status(500)
+      .json({ message: "Job agent has no webhookSecret configured" });
     return;
   }
 
