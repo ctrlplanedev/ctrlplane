@@ -60,6 +60,11 @@
                   "description": "ArgoWorkflow API token.",
                   "type": "string"
                },
+               "httpInsecure": {
+                  "default": false,
+                  "description": "ArgoWorkClient http(s) connection configuration setting",
+                  "type": "boolean"
+               },
                "name": {
                   "description": "ArgoWorkflow job name",
                   "type": "string"
@@ -71,13 +76,19 @@
                "template": {
                   "description": "WorkflowTemplate name.",
                   "type": "string"
+               },
+               "webhookSecret": {
+                  "description": "ArgoEvents webhookSecret",
+                  "type": "string"
                }
             },
             "required": [
                "serverUrl",
                "apiKey",
                "template",
-               "name"
+               "name",
+               "webhookSecret",
+               "httpInsecure"
             ],
             "type": "object"
          },

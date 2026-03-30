@@ -21,10 +21,11 @@ var tracer = otel.Tracer("workspace-engine/jobagents/argo-workflow")
 var _ types.Dispatchable = (*ArgoWorkflow)(nil)
 
 type WorkFlowJobAgentConfig struct {
-	ServerAddr string
-	ApiKey     string
-	Template   string
-	Name       string
+	ServerAddr         string
+	ApiKey             string
+	Template           string
+	Name               string
+	InsecureSkipVerify bool
 }
 
 type Getter interface {
@@ -52,6 +53,7 @@ type WorkflowSubmitter interface {
 	SubmitWorkflow(
 		ctx context.Context,
 		serverAddr, apiKey string,
+		insecureSkipVerify bool,
 		wf *wfv1.Workflow,
 	) (*wfv1.Workflow, error)
 }
@@ -107,6 +109,7 @@ func (a *ArgoWorkflow) Dispatch(ctx context.Context, job *oapi.Job) error {
 			asyncCtx,
 			wfConfig.ServerAddr,
 			wfConfig.ApiKey,
+			wfConfig.InsecureSkipVerify,
 			wf,
 		)
 		if err != nil {
@@ -151,6 +154,13 @@ func ParseJobAgentConfig(
 	if serverAddr == "" || template == "" || name == "" {
 		return wfT, fmt.Errorf("missing required fields in job agent config")
 	}
+
+	if v, ok := config["httpInsecure"].(bool); ok {
+		wfT.InsecureSkipVerify = v
+	}
+
+	fmt.Printf("parsed: %+v\n", wfT)
+
 	return wfT, nil
 }
 

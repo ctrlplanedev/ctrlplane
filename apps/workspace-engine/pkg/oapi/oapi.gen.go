@@ -232,6 +232,9 @@ type ArgoWorkflowJobAgentConfig struct {
 	// ApiKey ArgoWorkflow API token.
 	ApiKey string `json:"apiKey"`
 
+	// HttpInsecure ArgoWorkClient http(s) connection configuration setting
+	HttpInsecure bool `json:"httpInsecure"`
+
 	// Name ArgoWorkflow job name
 	Name string `json:"name"`
 
@@ -240,6 +243,9 @@ type ArgoWorkflowJobAgentConfig struct {
 
 	// Template WorkflowTemplate name.
 	Template string `json:"template"`
+
+	// WebhookSecret ArgoEvents webhookSecret
+	WebhookSecret string `json:"webhookSecret"`
 }
 
 // BasicResource defines model for BasicResource.

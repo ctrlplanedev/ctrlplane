@@ -163,12 +163,14 @@ local JobPropertyKeys = std.objectFields(Job.properties);
   ArgoWorkflowJobAgentConfig: {
     type: 'object',
     description: 'WorkflowTemplate reference execution',
-    required: ['serverUrl', 'apiKey', 'template', 'name'],
+    required: ['serverUrl', 'apiKey', 'template', 'name', 'webhookSecret', 'httpInsecure'],
     properties: {
       name: { type: 'string', description: 'ArgoWorkflow job name' },
       serverUrl: { type: 'string', description: 'ArgoWorkflow server address (host[:port] or URL).' },
       apiKey: { type: 'string', description: 'ArgoWorkflow API token.' },
       template: { type: 'string', description: 'WorkflowTemplate name.' },
+      webhookSecret: { type: 'string', description: 'ArgoEvents webhookSecret' },
+      httpInsecure: { type: 'boolean', default: false, description: 'ArgoWorkClient http(s) connection configuration setting' },
     },
   },
   TestRunnerJobAgentConfig: {

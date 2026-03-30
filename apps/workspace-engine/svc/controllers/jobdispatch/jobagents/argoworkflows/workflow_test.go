@@ -33,6 +33,7 @@ type submitCall struct {
 func (m *mockSubmitter) SubmitWorkflow(
 	_ context.Context,
 	serverAddr, apiKey string,
+	_ bool,
 	wf *wfv1.Workflow,
 ) (*wfv1.Workflow, error) {
 	m.mu.Lock()

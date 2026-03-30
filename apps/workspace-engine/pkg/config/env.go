@@ -49,9 +49,6 @@ type Config struct {
 
 	// Whether to enable dry run for workflow jobs.
 	DryRunEnabled bool `default:"false" envconfig:"DRY_RUN_ENABLED"`
-
-	// Whether to skip TLS verification when connecting to the Argo Workflows server.
-	ArgoWorkflowInsecureSkipVerify bool `default:"false" envconfig:"ARGO_WORKFLOW_INSECURE_SKIP_VERIFY"`
 }
 
 // GetMaxConcurrency returns the max concurrency for a given service kind.
