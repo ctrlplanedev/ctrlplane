@@ -273,9 +273,9 @@
                   },
                   "type": "array"
                },
-               "jobs": {
+               "jobAgents": {
                   "items": {
-                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                     "$ref": "#/components/schemas/CreateWorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -286,23 +286,16 @@
             "required": [
                "name",
                "inputs",
-               "jobs"
+               "jobAgents"
             ],
             "type": "object"
          },
-         "CreateWorkflowJobTemplate": {
+         "CreateWorkflowJobAgent": {
             "properties": {
                "config": {
                   "additionalProperties": true,
                   "description": "Configuration for the job agent",
                   "type": "object"
-               },
-               "if": {
-                  "description": "CEL expression to determine if the job should run",
-                  "type": "string"
-               },
-               "matrix": {
-                  "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
                "name": {
                   "type": "string"
@@ -310,12 +303,17 @@
                "ref": {
                   "description": "Reference to the job agent",
                   "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should dispatch a job",
+                  "type": "string"
                }
             },
             "required": [
                "name",
                "ref",
-               "config"
+               "config",
+               "selector"
             ],
             "type": "object"
          },
@@ -2420,9 +2418,9 @@
                   },
                   "type": "array"
                },
-               "jobs": {
+               "jobAgents": {
                   "items": {
-                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                     "$ref": "#/components/schemas/CreateWorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -2433,7 +2431,7 @@
             "required": [
                "name",
                "inputs",
-               "jobs"
+               "jobAgents"
             ],
             "type": "object"
          },
@@ -3076,9 +3074,9 @@
                   },
                   "type": "array"
                },
-               "jobs": {
+               "jobAgents": {
                   "items": {
-                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                     "$ref": "#/components/schemas/WorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -3090,7 +3088,7 @@
                "id",
                "name",
                "inputs",
-               "jobs"
+               "jobAgents"
             ],
             "type": "object"
          },
@@ -3174,55 +3172,12 @@
             ],
             "type": "object"
          },
-         "WorkflowJobAgentConfig": {
-            "properties": {
-               "config": {
-                  "additionalProperties": true,
-                  "type": "object"
-               },
-               "id": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "config"
-            ],
-            "type": "object"
-         },
-         "WorkflowJobMatrix": {
-            "additionalProperties": {
-               "oneOf": [
-                  {
-                     "items": {
-                        "additionalProperties": true,
-                        "type": "object"
-                     },
-                     "type": "array"
-                  },
-                  {
-                     "type": "string"
-                  }
-               ]
-            },
-            "type": "object"
-         },
-         "WorkflowJobTemplate": {
+         "WorkflowJobAgent": {
             "properties": {
                "config": {
                   "additionalProperties": true,
                   "description": "Configuration for the job agent",
                   "type": "object"
-               },
-               "id": {
-                  "type": "string"
-               },
-               "if": {
-                  "description": "CEL expression to determine if the job should run",
-                  "type": "string"
-               },
-               "matrix": {
-                  "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
                "name": {
                   "type": "string"
@@ -3230,13 +3185,17 @@
                "ref": {
                   "description": "Reference to the job agent",
                   "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should dispatch a job",
+                  "type": "string"
                }
             },
             "required": [
-               "id",
                "name",
                "ref",
-               "config"
+               "config",
+               "selector"
             ],
             "type": "object"
          },
