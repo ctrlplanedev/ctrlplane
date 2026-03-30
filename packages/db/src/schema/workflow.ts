@@ -4,7 +4,6 @@ import { job } from "./job.js";
 import { workspace } from "./workspace.js";
 
 export type WorkflowJobAgent = {
-  id: string;
   name: string;
   ref: string;
   config: Record<string, any>;
