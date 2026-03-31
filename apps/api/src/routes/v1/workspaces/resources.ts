@@ -3,7 +3,7 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { evaluate } from "cel-js";
 import { Router } from "express";
 
-import { and, asc, count, eq } from "@ctrlplane/db";
+import { and, asc, count, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueManyDeploymentSelectorEval,
@@ -13,6 +13,7 @@ import {
 import * as schema from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
+import { extractMessageFromError } from "./utils.js";
 
 const listResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources",
@@ -92,6 +93,69 @@ const getResourceByIdentifier: AsyncTypedHandler<
   res.status(200).json(toResourceResponse(resource));
 };
 
+const upsertResourceByIdentifier: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+  "put"
+> = async (req, res) => {
+  try {
+    const { workspaceId, identifier } = req.params;
+    const { name, version, kind, config, metadata, variables } = req.body;
+
+    const upsertedResource = await db
+      .insert(schema.resource)
+      .values({
+        name,
+        version,
+        kind,
+        identifier,
+        workspaceId,
+        config: config ?? {},
+        metadata: metadata ?? {},
+      })
+      .onConflictDoUpdate({
+        target: [schema.resource.identifier, schema.resource.workspaceId],
+        set: {
+          name,
+          version,
+          kind,
+          config: config ?? {},
+          metadata: metadata ?? {},
+        },
+      })
+      .returning()
+      .then(takeFirst);
+
+    if (variables != null)
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(schema.resourceVariable)
+          .where(eq(schema.resourceVariable.resourceId, upsertedResource.id));
+
+        const entries = Object.entries(variables);
+        if (entries.length > 0)
+          await tx.insert(schema.resourceVariable).values(
+            entries.map(([key, value]) => ({
+              resourceId: upsertedResource.id,
+              key,
+              value,
+            })),
+          );
+      });
+
+    enqueueReleaseTargetsForResource(db, workspaceId, upsertedResource.id);
+
+    res.status(202).json({
+      id: upsertedResource.id,
+      message: "Resource upsert requested",
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to upsert resource",
+      message: extractMessageFromError(error),
+    });
+  }
+};
+
 const deleteResourceByIdentifier: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
   "delete"
@@ -152,36 +216,43 @@ const updateVariablesForResource: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
   "patch"
 > = async (req, res) => {
-  const { workspaceId, identifier } = req.params;
-  const { body } = req;
+  try {
+    const { workspaceId, identifier } = req.params;
+    const { body } = req;
 
-  const resource = await findResource(workspaceId, identifier);
-  const { id: resourceId } = resource;
+    const resource = await findResource(workspaceId, identifier);
+    const { id: resourceId } = resource;
 
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(schema.resourceVariable)
-      .where(eq(schema.resourceVariable.resourceId, resource.id));
-    await tx.insert(schema.resourceVariable).values(
-      Object.entries(body).map(([key, value]) => ({
-        resourceId,
-        key,
-        value,
-      })),
-    );
-  });
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(schema.resourceVariable)
+        .where(eq(schema.resourceVariable.resourceId, resource.id));
+      const entries = Object.entries(body);
+      if (entries.length > 0)
+        await tx.insert(schema.resourceVariable).values(
+          entries.map(([key, value]) => ({
+            resourceId,
+            key,
+            value,
+          })),
+        );
+    });
 
-  enqueueReleaseTargetsForResource(db, workspaceId, resourceId);
+    enqueueReleaseTargetsForResource(db, workspaceId, resourceId);
 
-  res.status(202).json({
-    id: resource.id,
-    message: "Resource variables update requested",
-  });
+    res.status(202).json({
+      id: resource.id,
+      message: "Resource variables update requested",
+    });
+  } catch (error) {
+    res.status(error instanceof ApiError ? error.statusCode : 500).json({
+      error: "Failed to update resource variables",
+      message: extractMessageFromError(error),
+    });
+  }
 };
 
-const parseSelector = (
-  raw: string | null | undefined,
-): string | undefined => {
+const parseSelector = (raw: string | null | undefined): string | undefined => {
   if (raw == null || raw === "false") return undefined;
   return raw;
 };
@@ -258,6 +329,7 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
 export const resourceRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listResources))
   .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
+  .put("/identifier/:identifier", asyncHandler(upsertResourceByIdentifier))
   .delete("/identifier/:identifier", asyncHandler(deleteResourceByIdentifier))
   .get(
     "/identifier/:identifier/variables",

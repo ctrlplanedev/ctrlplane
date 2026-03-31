@@ -1,5 +1,8 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
+import { formatDistanceToNowStrict } from "date-fns";
+import { useNavigate, useParams } from "react-router";
 
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import {
   Table,
   TableBody,
@@ -12,17 +15,39 @@ import { WorkflowRunStatusBadge } from "./WorkflowRunStatusBadge";
 
 type WorkflowRun = RouterOutputs["workflows"]["runs"]["list"][number];
 
+function timeAgo(date: Date | string | null) {
+  if (date == null) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return formatDistanceToNowStrict(d, { addSuffix: true });
+}
+
 function WorkflowRunRow({ run }: { run: WorkflowRun }) {
+  const { workspace } = useWorkspace();
+  const { workflowId } = useParams<{ workflowId: string }>();
+  const navigate = useNavigate();
   return (
-    <TableRow>
+    <TableRow
+      className="cursor-pointer"
+      onClick={() =>
+        navigate(
+          `/${workspace.slug}/workflows/${workflowId}/runs/${run.id}`,
+        )
+      }
+    >
       <TableCell className="font-mono text-xs text-muted-foreground">
         {run.id.slice(0, 8)}
+      </TableCell>
+      <TableCell className="text-center font-mono text-sm">
+        {run.inputCount}
       </TableCell>
       <TableCell className="text-center font-mono text-sm">
         {run.jobCount}
       </TableCell>
       <TableCell>
         <WorkflowRunStatusBadge statuses={run.statuses} />
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground">
+        {timeAgo(run.createdAt)}
       </TableCell>
     </TableRow>
   );
@@ -34,8 +59,10 @@ export function WorkflowRunsTable({ runs }: { runs: WorkflowRun[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Run</TableHead>
+          <TableHead className="text-center">Inputs</TableHead>
           <TableHead className="text-center">Jobs</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Created</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

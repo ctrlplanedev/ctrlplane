@@ -31,7 +31,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Workflow')) +
+      responses: openapi.createdResponse(openapi.schemaRef('Workflow')) +
                  openapi.badRequestResponse(),
     },
   },

@@ -227,6 +227,27 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
+// ArgoWorkflowJobAgentConfig WorkflowTemplate reference execution
+type ArgoWorkflowJobAgentConfig struct {
+	// ApiKey ArgoWorkflow API token.
+	ApiKey string `json:"apiKey"`
+
+	// HttpInsecure ArgoWorkClient http(s) connection configuration setting
+	HttpInsecure bool `json:"httpInsecure"`
+
+	// Name ArgoWorkflow job name
+	Name string `json:"name"`
+
+	// ServerUrl ArgoWorkflow server address (host[:port] or URL).
+	ServerUrl string `json:"serverUrl"`
+
+	// Template WorkflowTemplate name.
+	Template string `json:"template"`
+
+	// WebhookSecret ArgoEvents webhookSecret
+	WebhookSecret string `json:"webhookSecret"`
+}
+
 // BasicResource defines model for BasicResource.
 type BasicResource struct {
 	Id          string `json:"id"`
@@ -942,6 +963,25 @@ type ReleaseTargetState struct {
 	LatestJob      *JobWithVerifications `json:"latestJob,omitempty"`
 }
 
+// ReleaseTargetStateResponse defines model for ReleaseTargetStateResponse.
+type ReleaseTargetStateResponse struct {
+	CurrentRelease *Release `json:"currentRelease,omitempty"`
+	DesiredRelease *Release `json:"desiredRelease,omitempty"`
+	LatestJob      *struct {
+		Job           Job `json:"job"`
+		Verifications []struct {
+			CreatedAt time.Time                  `json:"createdAt"`
+			Id        string                     `json:"id"`
+			JobId     string                     `json:"jobId"`
+			Message   *string                    `json:"message,omitempty"`
+			Metrics   []VerificationMetricStatus `json:"metrics"`
+
+			// Status Computed aggregate status of this verification
+			Status string `json:"status"`
+		} `json:"verifications"`
+	} `json:"latestJob,omitempty"`
+}
+
 // ReleaseTargetSummary defines model for ReleaseTargetSummary.
 type ReleaseTargetSummary struct {
 	CurrentVersion *VersionSummary    `json:"currentVersion,omitempty"`
@@ -1342,7 +1382,6 @@ type WorkflowJob struct {
 type WorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
 	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent
@@ -2372,6 +2411,9 @@ type ServerInterface interface {
 	// Validate a resource selector
 	// (POST /v1/validate/resource-selector)
 	ValidateResourceSelector(c *gin.Context)
+	// Get the state of a release target
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state)
+	GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string)
 	// Compute resource aggregate
 	// (POST /v1/workspaces/{workspaceId}/resources/aggregates)
 	ComputeAggergate(c *gin.Context, workspaceId string)
@@ -2451,6 +2493,39 @@ func (siw *ServerInterfaceWrapper) ValidateResourceSelector(c *gin.Context) {
 	}
 
 	siw.Handler.ValidateResourceSelector(c)
+}
+
+// GetReleaseTargetState operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetState(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetState(c, workspaceId, releaseTargetKey)
 }
 
 // ComputeAggergate operation middleware
@@ -2583,6 +2658,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
 	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/state", wrapper.GetReleaseTargetState)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.CreateWorkflowRun)

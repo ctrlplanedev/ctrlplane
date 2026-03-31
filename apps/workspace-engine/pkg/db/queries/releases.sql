@@ -106,6 +106,30 @@ LEFT JOIN release_variable rv ON rv.release_id = r.id
 WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3
 GROUP BY r.id, dv.id;
 
+-- name: GetCurrentReleaseByReleaseTarget :one
+-- Returns the release associated with the latest successful job for a release target,
+-- including version and variables.
+SELECT
+    r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at,
+    dv.tag AS version_tag, dv.name AS version_name, dv.config AS version_config,
+    dv.job_agent_config AS version_job_agent_config, dv.metadata AS version_metadata,
+    dv.status AS version_status, dv.message AS version_message,
+    dv.created_at AS version_created_at,
+    COALESCE(jsonb_object_agg(rv.key, rv.value) FILTER (WHERE rv.key IS NOT NULL), '{}'::jsonb) AS variables
+FROM release r
+JOIN release_job rj ON rj.release_id = r.id
+JOIN job j ON j.id = rj.job_id
+JOIN deployment_version dv ON dv.id = r.version_id
+LEFT JOIN release_variable rv ON rv.release_id = r.id
+WHERE r.resource_id = @resource_id
+  AND r.environment_id = @environment_id
+  AND r.deployment_id = @deployment_id
+  AND j.status = 'successful'
+  AND j.completed_at IS NOT NULL
+GROUP BY r.id, dv.id, j.completed_at
+ORDER BY j.completed_at DESC
+LIMIT 1;
+
 -- name: GetReleaseByJobID :one
 SELECT r.*
 FROM release r

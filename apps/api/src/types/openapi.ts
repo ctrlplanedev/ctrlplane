@@ -741,7 +741,11 @@ export interface paths {
          * @description Returns a resource by its identifier.
          */
         get: operations["getResourceByIdentifier"];
-        put?: never;
+        /**
+         * Upsert resource by identifier
+         * @description Creates or updates a resource by its identifier, including metadata and variables.
+         */
+        put: operations["upsertResourceByIdentifier"];
         post?: never;
         /**
          * Delete resource by identifier
@@ -1065,20 +1069,19 @@ export interface components {
         };
         CreateWorkflow: {
             inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
             name: string;
         };
-        CreateWorkflowJobTemplate: {
+        CreateWorkflowJobAgent: {
             /** @description Configuration for the job agent */
             config: {
                 [key: string]: unknown;
             };
-            /** @description CEL expression to determine if the job should run */
-            if?: string;
-            matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
             ref: string;
+            /** @description CEL expression to determine if the job agent should dispatch a job */
+            selector: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -1617,6 +1620,26 @@ export interface components {
             desiredRelease?: components["schemas"]["Release"];
             latestJob?: components["schemas"]["Job"];
         };
+        ReleaseTargetStateResponse: {
+            currentRelease?: components["schemas"]["Release"];
+            desiredRelease?: components["schemas"]["Release"];
+            latestJob?: {
+                job: components["schemas"]["Job"];
+                verifications: {
+                    /** Format: date-time */
+                    createdAt: string;
+                    id: string;
+                    jobId: string;
+                    message?: string;
+                    metrics: components["schemas"]["VerificationMetricStatus"][];
+                    /**
+                     * @description Computed aggregate status of this verification
+                     * @enum {string}
+                     */
+                    status: "passed" | "running" | "failed";
+                }[];
+            };
+        };
         ReleaseTargetWithState: {
             releaseTarget: components["schemas"]["ReleaseTarget"];
             state: components["schemas"]["ReleaseTargetState"];
@@ -1808,7 +1831,7 @@ export interface components {
         };
         UpdateWorkflow: {
             inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
             name: string;
         };
         UpdateWorkspaceRequest: {
@@ -1926,6 +1949,20 @@ export interface components {
             };
             name: string;
         };
+        UpsertResourceRequest: {
+            config?: {
+                [key: string]: unknown;
+            };
+            kind: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            variables?: {
+                [key: string]: unknown;
+            };
+            version: string;
+        };
         UpsertSystemRequest: {
             description?: string;
             metadata?: {
@@ -2035,7 +2072,7 @@ export interface components {
         Workflow: {
             id: string;
             inputs: components["schemas"]["WorkflowInput"][];
-            jobs: components["schemas"]["WorkflowJobTemplate"][];
+            jobAgents: components["schemas"]["WorkflowJobAgent"][];
             name: string;
         };
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
@@ -2057,29 +2094,16 @@ export interface components {
             ref: string;
             workflowId: string;
         };
-        WorkflowJobAgentConfig: {
-            config: {
-                [key: string]: unknown;
-            };
-            id: string;
-        };
-        WorkflowJobMatrix: {
-            [key: string]: {
-                [key: string]: unknown;
-            }[] | string;
-        };
-        WorkflowJobTemplate: {
+        WorkflowJobAgent: {
             /** @description Configuration for the job agent */
             config: {
                 [key: string]: unknown;
             };
-            id: string;
-            /** @description CEL expression to determine if the job should run */
-            if?: string;
-            matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */
             ref: string;
+            /** @description CEL expression to determine if the job agent should dispatch a job */
+            selector: string;
         };
         WorkflowManualArrayInput: {
             default?: {
@@ -4433,7 +4457,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReleaseTargetState"];
+                    "application/json": components["schemas"]["ReleaseTargetStateResponse"];
                 };
             };
             /** @description Invalid request */
@@ -4762,6 +4786,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Resource"];
+                };
+            };
+        };
+    };
+    upsertResourceByIdentifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Identifier of the resource */
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

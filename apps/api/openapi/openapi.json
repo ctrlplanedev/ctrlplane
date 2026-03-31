@@ -273,9 +273,9 @@
                   },
                   "type": "array"
                },
-               "jobs": {
+               "jobAgents": {
                   "items": {
-                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                     "$ref": "#/components/schemas/CreateWorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -286,23 +286,16 @@
             "required": [
                "name",
                "inputs",
-               "jobs"
+               "jobAgents"
             ],
             "type": "object"
          },
-         "CreateWorkflowJobTemplate": {
+         "CreateWorkflowJobAgent": {
             "properties": {
                "config": {
                   "additionalProperties": true,
                   "description": "Configuration for the job agent",
                   "type": "object"
-               },
-               "if": {
-                  "description": "CEL expression to determine if the job should run",
-                  "type": "string"
-               },
-               "matrix": {
-                  "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
                "name": {
                   "type": "string"
@@ -310,12 +303,17 @@
                "ref": {
                   "description": "Reference to the job agent",
                   "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should dispatch a job",
+                  "type": "string"
                }
             },
             "required": [
                "name",
                "ref",
-               "config"
+               "config",
+               "selector"
             ],
             "type": "object"
          },
@@ -1849,6 +1847,72 @@
             },
             "type": "object"
          },
+         "ReleaseTargetStateResponse": {
+            "properties": {
+               "currentRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "desiredRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "latestJob": {
+                  "properties": {
+                     "job": {
+                        "$ref": "#/components/schemas/Job"
+                     },
+                     "verifications": {
+                        "items": {
+                           "properties": {
+                              "createdAt": {
+                                 "format": "date-time",
+                                 "type": "string"
+                              },
+                              "id": {
+                                 "type": "string"
+                              },
+                              "jobId": {
+                                 "type": "string"
+                              },
+                              "message": {
+                                 "type": "string"
+                              },
+                              "metrics": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/VerificationMetricStatus"
+                                 },
+                                 "type": "array"
+                              },
+                              "status": {
+                                 "description": "Computed aggregate status of this verification",
+                                 "enum": [
+                                    "passed",
+                                    "running",
+                                    "failed"
+                                 ],
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "id",
+                              "jobId",
+                              "metrics",
+                              "createdAt",
+                              "status"
+                           ],
+                           "type": "object"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "job",
+                     "verifications"
+                  ],
+                  "type": "object"
+               }
+            },
+            "type": "object"
+         },
          "ReleaseTargetWithState": {
             "properties": {
                "releaseTarget": {
@@ -2354,9 +2418,9 @@
                   },
                   "type": "array"
                },
-               "jobs": {
+               "jobAgents": {
                   "items": {
-                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                     "$ref": "#/components/schemas/CreateWorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -2367,7 +2431,7 @@
             "required": [
                "name",
                "inputs",
-               "jobs"
+               "jobAgents"
             ],
             "type": "object"
          },
@@ -2698,6 +2762,39 @@
             ],
             "type": "object"
          },
+         "UpsertResourceRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "variables": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "version": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "version",
+               "kind"
+            ],
+            "type": "object"
+         },
          "UpsertSystemRequest": {
             "properties": {
                "description": {
@@ -2977,9 +3074,9 @@
                   },
                   "type": "array"
                },
-               "jobs": {
+               "jobAgents": {
                   "items": {
-                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                     "$ref": "#/components/schemas/WorkflowJobAgent"
                   },
                   "type": "array"
                },
@@ -2991,7 +3088,7 @@
                "id",
                "name",
                "inputs",
-               "jobs"
+               "jobAgents"
             ],
             "type": "object"
          },
@@ -3075,55 +3172,12 @@
             ],
             "type": "object"
          },
-         "WorkflowJobAgentConfig": {
-            "properties": {
-               "config": {
-                  "additionalProperties": true,
-                  "type": "object"
-               },
-               "id": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "config"
-            ],
-            "type": "object"
-         },
-         "WorkflowJobMatrix": {
-            "additionalProperties": {
-               "oneOf": [
-                  {
-                     "items": {
-                        "additionalProperties": true,
-                        "type": "object"
-                     },
-                     "type": "array"
-                  },
-                  {
-                     "type": "string"
-                  }
-               ]
-            },
-            "type": "object"
-         },
-         "WorkflowJobTemplate": {
+         "WorkflowJobAgent": {
             "properties": {
                "config": {
                   "additionalProperties": true,
                   "description": "Configuration for the job agent",
                   "type": "object"
-               },
-               "id": {
-                  "type": "string"
-               },
-               "if": {
-                  "description": "CEL expression to determine if the job should run",
-                  "type": "string"
-               },
-               "matrix": {
-                  "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
                "name": {
                   "type": "string"
@@ -3131,13 +3185,17 @@
                "ref": {
                   "description": "Reference to the job agent",
                   "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to determine if the job agent should dispatch a job",
+                  "type": "string"
                }
             },
             "required": [
-               "id",
                "name",
                "ref",
-               "config"
+               "config",
+               "selector"
             ],
             "type": "object"
          },
@@ -6782,7 +6840,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ReleaseTargetState"
+                           "$ref": "#/components/schemas/ReleaseTargetStateResponse"
                         }
                      }
                   },
@@ -7365,6 +7423,76 @@
                }
             },
             "summary": "Get resource by identifier",
+            "tags": [
+               "Resources"
+            ]
+         },
+         "put": {
+            "description": "Creates or updates a resource by its identifier, including metadata and variables.",
+            "operationId": "upsertResourceByIdentifier",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "identifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertResourceRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ResourceRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert resource by identifier",
             "tags": [
                "Resources"
             ]

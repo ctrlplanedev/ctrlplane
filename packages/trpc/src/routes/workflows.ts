@@ -1,20 +1,51 @@
+import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 import { z } from "zod";
 
-import { count, eq, sql } from "@ctrlplane/db";
+import { and, count, eq, sql, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
+
+const getJobMetadataMap = async (db: Tx, jobIds: string[]) => {
+  if (jobIds.length === 0) return new Map<string, Record<string, string>>();
+
+  const metadata = await db.query.jobMetadata.findMany({
+    where: (jm, { inArray }) => inArray(jm.jobId, jobIds),
+  });
+
+  const map = new Map<string, Record<string, string>>();
+  for (const m of metadata) {
+    let entry = map.get(m.jobId);
+    if (!entry) {
+      entry = {};
+      map.set(m.jobId, entry);
+    }
+    entry[m.key] = m.value;
+  }
+  return map;
+};
 
 export const workflowsRouter = router({
   get: protectedProcedure
     .input(
       z.object({
         workspaceId: z.uuid(),
-        workflowId: z.string(),
+        workflowId: z.string().uuid(),
       }),
     )
-    .query(() => {}),
+    .query(({ ctx: { db }, input }) =>
+      db
+        .select()
+        .from(schema.workflow)
+        .where(
+          and(
+            eq(schema.workflow.id, input.workflowId),
+            eq(schema.workflow.workspaceId, input.workspaceId),
+          ),
+        )
+        .then(takeFirst),
+    ),
 
   list: protectedProcedure
     .input(
@@ -55,6 +86,62 @@ export const workflowsRouter = router({
     }),
 
   runs: router({
+    get: protectedProcedure
+      .input(
+        z.object({
+          workflowRunId: z.uuid(),
+          workspaceId: z.uuid(),
+        }),
+      )
+      .query(async ({ ctx, input }) => {
+        const run = await ctx.db
+          .select()
+          .from(schema.workflowRun)
+          .innerJoin(
+            schema.workflow,
+            eq(schema.workflow.id, schema.workflowRun.workflowId),
+          )
+          .where(
+            and(
+              eq(schema.workflowRun.id, input.workflowRunId),
+              eq(schema.workflow.workspaceId, input.workspaceId),
+            ),
+          )
+          .then(takeFirst)
+          .then(({ workflow_run }) => workflow_run);
+
+        const jobRows = await ctx.db
+          .select({
+            id: schema.job.id,
+            status: schema.job.status,
+            message: schema.job.message,
+            createdAt: schema.job.createdAt,
+            completedAt: schema.job.completedAt,
+            jobAgentId: schema.job.jobAgentId,
+            jobAgentName: schema.jobAgent.name,
+            jobAgentType: schema.jobAgent.type,
+          })
+          .from(schema.workflowJob)
+          .innerJoin(schema.job, eq(schema.job.id, schema.workflowJob.jobId))
+          .leftJoin(
+            schema.jobAgent,
+            eq(schema.jobAgent.id, schema.job.jobAgentId),
+          )
+          .where(eq(schema.workflowJob.workflowRunId, input.workflowRunId));
+
+        const metadataMap = await getJobMetadataMap(
+          ctx.db,
+          jobRows.map((r) => r.id),
+        );
+
+        const jobs = jobRows.map((r) => ({
+          ...r,
+          metadata: metadataMap.get(r.id) ?? {},
+        }));
+
+        return { ...run, jobs };
+      }),
+
     create: protectedProcedure
       .input(
         z.object({
@@ -81,6 +168,7 @@ export const workflowsRouter = router({
             runInputs: schema.workflowRun.inputs,
             jobId: schema.workflowJob.id,
             jobStatus: schema.job.status,
+            jobCreatedAt: schema.job.createdAt,
           })
           .from(schema.workflowRun)
           .leftJoin(
@@ -99,13 +187,23 @@ export const workflowsRouter = router({
             const statuses = jobs
               .filter((j) => j.jobId != null)
               .map((j) => j.jobStatus!);
+            const createdAt = _.chain(jobs)
+              .map((j) => j.jobCreatedAt)
+              .compact()
+              .min()
+              .value();
+            const inputs = first.runInputs as Record<string, unknown>;
+            const inputCount = Object.keys(inputs).length;
             return {
               id: runId,
               inputs: first.runInputs,
+              inputCount,
               jobCount: statuses.length,
               statuses,
+              createdAt,
             };
           })
+          .orderBy((r) => r.createdAt, "desc")
           .value();
       }),
   }),

@@ -100,9 +100,16 @@ export default [
       ]),
 
       route("workflows", "routes/ws/workflows/workflows.tsx"),
+      route("workflows/:workflowId", "routes/ws/workflows/_layout.tsx", [
+        route("", "routes/ws/workflows/page.$workflowId.tsx"),
+        route(
+          "settings",
+          "routes/ws/workflows/page.$workflowId.settings.tsx",
+        ),
+      ]),
       route(
-        "workflows/:workflowId",
-        "routes/ws/workflows/page.$workflowId.tsx",
+        "workflows/:workflowId/runs/:runId",
+        "routes/ws/workflows/page.$workflowId.runs.$runId.tsx",
       ),
 
       route("settings", "routes/ws/settings/_layout.tsx", [

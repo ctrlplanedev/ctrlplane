@@ -111,6 +111,78 @@ func (q *Queries) FindOrCreateRelease(ctx context.Context, arg FindOrCreateRelea
 	return i, err
 }
 
+const getCurrentReleaseByReleaseTarget = `-- name: GetCurrentReleaseByReleaseTarget :one
+SELECT
+    r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at,
+    dv.tag AS version_tag, dv.name AS version_name, dv.config AS version_config,
+    dv.job_agent_config AS version_job_agent_config, dv.metadata AS version_metadata,
+    dv.status AS version_status, dv.message AS version_message,
+    dv.created_at AS version_created_at,
+    COALESCE(jsonb_object_agg(rv.key, rv.value) FILTER (WHERE rv.key IS NOT NULL), '{}'::jsonb) AS variables
+FROM release r
+JOIN release_job rj ON rj.release_id = r.id
+JOIN job j ON j.id = rj.job_id
+JOIN deployment_version dv ON dv.id = r.version_id
+LEFT JOIN release_variable rv ON rv.release_id = r.id
+WHERE r.resource_id = $1
+  AND r.environment_id = $2
+  AND r.deployment_id = $3
+  AND j.status = 'successful'
+  AND j.completed_at IS NOT NULL
+GROUP BY r.id, dv.id, j.completed_at
+ORDER BY j.completed_at DESC
+LIMIT 1
+`
+
+type GetCurrentReleaseByReleaseTargetParams struct {
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+}
+
+type GetCurrentReleaseByReleaseTargetRow struct {
+	ID                    uuid.UUID
+	ResourceID            uuid.UUID
+	EnvironmentID         uuid.UUID
+	DeploymentID          uuid.UUID
+	VersionID             uuid.UUID
+	CreatedAt             pgtype.Timestamptz
+	VersionTag            string
+	VersionName           string
+	VersionConfig         map[string]any
+	VersionJobAgentConfig map[string]any
+	VersionMetadata       map[string]string
+	VersionStatus         DeploymentVersionStatus
+	VersionMessage        pgtype.Text
+	VersionCreatedAt      pgtype.Timestamptz
+	Variables             []byte
+}
+
+// Returns the release associated with the latest successful job for a release target,
+// including version and variables.
+func (q *Queries) GetCurrentReleaseByReleaseTarget(ctx context.Context, arg GetCurrentReleaseByReleaseTargetParams) (GetCurrentReleaseByReleaseTargetRow, error) {
+	row := q.db.QueryRow(ctx, getCurrentReleaseByReleaseTarget, arg.ResourceID, arg.EnvironmentID, arg.DeploymentID)
+	var i GetCurrentReleaseByReleaseTargetRow
+	err := row.Scan(
+		&i.ID,
+		&i.ResourceID,
+		&i.EnvironmentID,
+		&i.DeploymentID,
+		&i.VersionID,
+		&i.CreatedAt,
+		&i.VersionTag,
+		&i.VersionName,
+		&i.VersionConfig,
+		&i.VersionJobAgentConfig,
+		&i.VersionMetadata,
+		&i.VersionStatus,
+		&i.VersionMessage,
+		&i.VersionCreatedAt,
+		&i.Variables,
+	)
+	return i, err
+}
+
 const getDesiredReleaseByReleaseTarget = `-- name: GetDesiredReleaseByReleaseTarget :one
 SELECT
     r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at,

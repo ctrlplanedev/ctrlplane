@@ -97,6 +97,39 @@ LEFT JOIN LATERAL (
 ) mc ON true
 WHERE jvm.job_id = @job_id;
 
+-- name: GetJobVerificationsWithMeasurements :many
+-- Returns all verification metrics for a job, with measurements as JSON.
+SELECT
+  jvm.id,
+  jvm.created_at,
+  jvm.job_id,
+  jvm.policy_rule_verification_metric_id,
+  jvm.name,
+  jvm.provider,
+  jvm.interval_seconds,
+  jvm.count,
+  jvm.success_condition,
+  jvm.success_threshold,
+  jvm.failure_condition,
+  jvm.failure_threshold,
+  COALESCE(
+    (SELECT json_agg(
+      json_build_object(
+        'id', mm.id,
+        'data', mm.data,
+        'measured_at', mm.measured_at,
+        'message', mm.message,
+        'status', mm.status
+      ) ORDER BY mm.measured_at ASC
+    )
+    FROM job_verification_metric_measurement mm
+    WHERE mm.job_verification_metric_status_id = jvm.id),
+    '[]'
+  )::jsonb AS measurements
+FROM job_verification_metric jvm
+WHERE jvm.job_id = @job_id
+ORDER BY jvm.id;
+
 -- name: GetJobDispatchContext :one
 SELECT j.dispatch_context
 FROM job j
