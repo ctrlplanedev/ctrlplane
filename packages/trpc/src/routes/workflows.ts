@@ -89,15 +89,26 @@ export const workflowsRouter = router({
     get: protectedProcedure
       .input(
         z.object({
-          workflowRunId: z.string().uuid(),
+          workflowRunId: z.uuid(),
+          workspaceId: z.uuid(),
         }),
       )
       .query(async ({ ctx, input }) => {
         const run = await ctx.db
           .select()
           .from(schema.workflowRun)
-          .where(eq(schema.workflowRun.id, input.workflowRunId))
-          .then(takeFirst);
+          .innerJoin(
+            schema.workflow,
+            eq(schema.workflow.id, schema.workflowRun.workflowId),
+          )
+          .where(
+            and(
+              eq(schema.workflowRun.id, input.workflowRunId),
+              eq(schema.workflow.workspaceId, input.workspaceId),
+            ),
+          )
+          .then(takeFirst)
+          .then(({ workflow_run }) => workflow_run);
 
         const jobRows = await ctx.db
           .select({

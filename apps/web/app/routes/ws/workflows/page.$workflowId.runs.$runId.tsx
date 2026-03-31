@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
+import { Fragment } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { ExternalLink } from "lucide-react";
 import { Link, useParams } from "react-router";
@@ -24,8 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { cn } from "~/lib/utils";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { cn } from "~/lib/utils";
 import { JobStatusBadge } from "../_components/JobStatusBadge";
 
 type WorkflowRunJob = RouterOutputs["workflows"]["runs"]["get"]["jobs"][number];
@@ -87,24 +88,27 @@ function InputsSection({ inputs }: { inputs: unknown }) {
   return (
     <div className="grid grid-cols-[120px_1fr] gap-y-1 text-sm">
       {entries.map(([key, value]) => (
-        <>
-          <span key={`${key}-label`} className="text-muted-foreground">
-            {key}
-          </span>
-          <span key={`${key}-value`} className="font-mono text-xs">
-            {JSON.stringify(value)}
-          </span>
-        </>
+        <Fragment key={key}>
+          <span className="text-muted-foreground">{key}</span>
+          <span className="font-mono text-xs">{JSON.stringify(value)}</span>
+        </Fragment>
       ))}
     </div>
   );
 }
 
+function extractLinks(metadata: Record<string, string>) {
+  try {
+    const linksMetadata = metadata["ctrlplane/links"];
+    if (linksMetadata == null) return {};
+    return JSON.parse(linksMetadata) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
 function LinksCell({ metadata }: { metadata: Record<string, string> }) {
-  const links: Record<string, string> =
-    metadata["ctrlplane/links"] != null
-      ? JSON.parse(metadata["ctrlplane/links"])
-      : {};
+  const links = extractLinks(metadata);
 
   return (
     <TableCell>
@@ -163,7 +167,7 @@ export default function WorkflowRunDetailPage() {
   );
 
   const { data: run, isLoading } = trpc.workflows.runs.get.useQuery(
-    { workflowRunId: runId! },
+    { workflowRunId: runId!, workspaceId: workspace.id },
     { enabled: runId != null },
   );
 
