@@ -5595,8 +5595,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description Resource created successfully */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

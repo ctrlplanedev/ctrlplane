@@ -8647,7 +8647,7 @@
                "required": true
             },
             "responses": {
-               "202": {
+               "201": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -8655,7 +8655,7 @@
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "Resource created successfully"
                },
                "400": {
                   "content": {
