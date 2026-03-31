@@ -227,6 +227,27 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
+// ArgoWorkflowJobAgentConfig WorkflowTemplate reference execution
+type ArgoWorkflowJobAgentConfig struct {
+	// ApiKey ArgoWorkflow API token.
+	ApiKey string `json:"apiKey"`
+
+	// HttpInsecure ArgoWorkClient http(s) connection configuration setting
+	HttpInsecure bool `json:"httpInsecure"`
+
+	// Name ArgoWorkflow job name
+	Name string `json:"name"`
+
+	// ServerUrl ArgoWorkflow server address (host[:port] or URL).
+	ServerUrl string `json:"serverUrl"`
+
+	// Template WorkflowTemplate name.
+	Template string `json:"template"`
+
+	// WebhookSecret ArgoEvents webhookSecret
+	WebhookSecret string `json:"webhookSecret"`
+}
+
 // BasicResource defines model for BasicResource.
 type BasicResource struct {
 	Id          string `json:"id"`

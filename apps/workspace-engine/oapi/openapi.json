@@ -53,6 +53,45 @@
             ],
             "type": "object"
          },
+         "ArgoWorkflowJobAgentConfig": {
+            "description": "WorkflowTemplate reference execution",
+            "properties": {
+               "apiKey": {
+                  "description": "ArgoWorkflow API token.",
+                  "type": "string"
+               },
+               "httpInsecure": {
+                  "default": false,
+                  "description": "ArgoWorkClient http(s) connection configuration setting",
+                  "type": "boolean"
+               },
+               "name": {
+                  "description": "ArgoWorkflow job name",
+                  "type": "string"
+               },
+               "serverUrl": {
+                  "description": "ArgoWorkflow server address (host[:port] or URL).",
+                  "type": "string"
+               },
+               "template": {
+                  "description": "WorkflowTemplate name.",
+                  "type": "string"
+               },
+               "webhookSecret": {
+                  "description": "ArgoEvents webhookSecret",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "serverUrl",
+               "apiKey",
+               "template",
+               "name",
+               "webhookSecret",
+               "httpInsecure"
+            ],
+            "type": "object"
+         },
          "BasicResource": {
             "properties": {
                "id": {
