@@ -3,7 +3,7 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
-import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueDeploymentPlan,
@@ -291,6 +291,7 @@ const listDeploymentVersions: AsyncTypedHandler<
   const { deploymentId } = req.params;
   const limit = req.query.limit ?? 50;
   const offset = req.query.offset ?? 0;
+  const order = req.query.order ?? "desc";
 
   const [countResult] = await db
     .select({ total: count() })
@@ -303,7 +304,11 @@ const listDeploymentVersions: AsyncTypedHandler<
     .select()
     .from(schema.deploymentVersion)
     .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-    .orderBy(schema.deploymentVersion.createdAt)
+    .orderBy(
+      order === "asc"
+        ? asc(schema.deploymentVersion.createdAt)
+        : desc(schema.deploymentVersion.createdAt),
+    )
     .limit(limit)
     .offset(offset);
 

@@ -3143,6 +3143,8 @@ export interface operations {
                 limit?: number;
                 /** @description Number of items to skip */
                 offset?: number;
+                /** @description Sort order for results */
+                order?: "asc" | "desc";
             };
             header?: never;
             path: {
@@ -5595,8 +5597,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description Resource created successfully */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
