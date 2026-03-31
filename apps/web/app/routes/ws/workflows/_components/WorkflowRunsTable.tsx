@@ -1,6 +1,8 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
 import { formatDistanceToNowStrict } from "date-fns";
+import { useNavigate, useParams } from "react-router";
 
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import {
   Table,
   TableBody,
@@ -20,8 +22,18 @@ function timeAgo(date: Date | string | null) {
 }
 
 function WorkflowRunRow({ run }: { run: WorkflowRun }) {
+  const { workspace } = useWorkspace();
+  const { workflowId } = useParams<{ workflowId: string }>();
+  const navigate = useNavigate();
   return (
-    <TableRow>
+    <TableRow
+      className="cursor-pointer"
+      onClick={() =>
+        navigate(
+          `/${workspace.slug}/workflows/${workflowId}/runs/${run.id}`,
+        )
+      }
+    >
       <TableCell className="font-mono text-xs text-muted-foreground">
         {run.id.slice(0, 8)}
       </TableCell>

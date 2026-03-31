@@ -107,6 +107,10 @@ export default [
           "routes/ws/workflows/page.$workflowId.settings.tsx",
         ),
       ]),
+      route(
+        "workflows/:workflowId/runs/:runId",
+        "routes/ws/workflows/page.$workflowId.runs.$runId.tsx",
+      ),
 
       route("settings", "routes/ws/settings/_layout.tsx", [
         route("general", "routes/ws/settings/general.tsx"),
