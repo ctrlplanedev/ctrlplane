@@ -1,8 +1,8 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import { ApiError, asyncHandler } from "@/types/api.js";
+import { ApiError, asyncHandler, NotFoundError } from "@/types/api.js";
 import { Router } from "express";
 
-import { takeFirst } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -20,6 +20,28 @@ const createWorkflow: AsyncTypedHandler<
 
   const { id, name, inputs, jobAgents } = created;
   res.status(201).json({ id, name, inputs, jobAgents });
+};
+
+const getWorkflow: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+  "get"
+> = async (req, res) => {
+  const { workflowId, workspaceId } = req.params;
+  const workflow = await db
+    .select()
+    .from(schema.workflow)
+    .where(
+      and(
+        eq(schema.workflow.id, workflowId),
+        eq(schema.workflow.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (workflow == null) throw new NotFoundError("Workflow not found");
+
+  const { id, name, inputs, jobAgents } = workflow;
+  res.json({ id, name, inputs, jobAgents });
 };
 
 const createWorkflowRun: AsyncTypedHandler<
@@ -48,4 +70,5 @@ const createWorkflowRun: AsyncTypedHandler<
 
 export const workflowsRouter = Router({ mergeParams: true })
   .post("/", asyncHandler(createWorkflow))
+  .get("/:workflowId", asyncHandler(getWorkflow))
   .post("/:workflowId/runs", asyncHandler(createWorkflowRun));
