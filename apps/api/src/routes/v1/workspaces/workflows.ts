@@ -44,6 +44,51 @@ const getWorkflow: AsyncTypedHandler<
   res.json({ id, name, inputs, jobAgents });
 };
 
+const updateWorkflow: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+  "put"
+> = async (req, res) => {
+  const { workflowId, workspaceId } = req.params;
+  const updated = await db
+    .update(schema.workflow)
+    .set(req.body)
+    .where(
+      and(
+        eq(schema.workflow.id, workflowId),
+        eq(schema.workflow.workspaceId, workspaceId),
+      ),
+    )
+    .returning()
+    .then(takeFirstOrNull);
+
+  if (updated == null) throw new NotFoundError("Workflow not found");
+
+  const { id, name, inputs, jobAgents } = updated;
+  res.json({ id, name, inputs, jobAgents });
+};
+
+const deleteWorkflow: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+  "delete"
+> = async (req, res) => {
+  const { workflowId, workspaceId } = req.params;
+  const deleted = await db
+    .delete(schema.workflow)
+    .where(
+      and(
+        eq(schema.workflow.id, workflowId),
+        eq(schema.workflow.workspaceId, workspaceId),
+      ),
+    )
+    .returning()
+    .then(takeFirstOrNull);
+
+  if (deleted == null) throw new NotFoundError("Workflow not found");
+
+  const { id, name, inputs, jobAgents } = deleted;
+  res.json({ id, name, inputs, jobAgents });
+};
+
 const createWorkflowRun: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs",
   "post"
@@ -71,4 +116,6 @@ const createWorkflowRun: AsyncTypedHandler<
 export const workflowsRouter = Router({ mergeParams: true })
   .post("/", asyncHandler(createWorkflow))
   .get("/:workflowId", asyncHandler(getWorkflow))
+  .put("/:workflowId", asyncHandler(updateWorkflow))
+  .delete("/:workflowId", asyncHandler(deleteWorkflow))
   .post("/:workflowId/runs", asyncHandler(createWorkflowRun));
