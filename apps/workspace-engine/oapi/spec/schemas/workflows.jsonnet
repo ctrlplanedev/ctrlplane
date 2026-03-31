@@ -3,10 +3,9 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   WorkflowJobAgent: {
     type: 'object',
-    required: ['id', 'name', 'ref', 'config', 'selector'],
+    required: ['name', 'ref', 'config', 'selector'],
     properties: {
       name: { type: 'string' },
-      id: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
       selector: { type: 'string', description: 'CEL expression to determine if the job agent should dispatch a job' },

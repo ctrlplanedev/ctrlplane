@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/oapi"
 	release_targets "workspace-engine/svc/http/server/openapi/release_targets"
 	"workspace-engine/svc/http/server/openapi/resources"
@@ -9,9 +10,9 @@ import (
 	"workspace-engine/svc/http/server/openapi/workflows"
 )
 
-func New() *Server {
+func New(pool *pgxpool.Pool) *Server {
 	return &Server{
-		Workflows:      workflows.NewWorkflows(),
+		Workflows:      workflows.NewWorkflows(pool),
 		ReleaseTargets: release_targets.New(),
 		Verifications:  verifications.New(),
 	}
