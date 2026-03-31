@@ -64,7 +64,7 @@ const updateWorkflow: AsyncTypedHandler<
   if (updated == null) throw new NotFoundError("Workflow not found");
 
   const { id, name, inputs, jobAgents } = updated;
-  res.json({ id, name, inputs, jobAgents });
+  res.status(202).json({ id, name, inputs, jobAgents });
 };
 
 const deleteWorkflow: AsyncTypedHandler<
@@ -86,7 +86,7 @@ const deleteWorkflow: AsyncTypedHandler<
   if (deleted == null) throw new NotFoundError("Workflow not found");
 
   const { id, name, inputs, jobAgents } = deleted;
-  res.json({ id, name, inputs, jobAgents });
+  res.status(202).json({ id, name, inputs, jobAgents });
 };
 
 const createWorkflowRun: AsyncTypedHandler<
