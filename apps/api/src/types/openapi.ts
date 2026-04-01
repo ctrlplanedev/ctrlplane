@@ -896,6 +896,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/variable-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List variable sets
+         * @description Returns a list of variable sets.
+         */
+        get: operations["listVariableSets"];
+        put?: never;
+        /**
+         * Create a variable set
+         * @description Creates a variable set.
+         */
+        post: operations["createVariableSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/variable-sets/{variableSetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a variable set
+         * @description Gets a variable set by ID.
+         */
+        get: operations["getVariableSet"];
+        /**
+         * Update a variable set
+         * @description Updates a variable set.
+         */
+        put: operations["updateVariableSet"];
+        post?: never;
+        /**
+         * Delete a variable set
+         * @description Deletes a variable set.
+         */
+        delete: operations["deleteVariableSet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/workflows": {
         parameters: {
             query?: never;
@@ -1066,6 +1118,14 @@ export interface components {
             };
             name: string;
             slug?: string;
+        };
+        CreateVariableSet: {
+            description?: string;
+            name: string;
+            priority?: number;
+            /** @description A CEL expression to select which release targets this variable set applies to */
+            selector: string;
+            variables: components["schemas"]["VariableSetVariable"][];
         };
         CreateWorkflow: {
             inputs: components["schemas"]["WorkflowInput"][];
@@ -1829,6 +1889,13 @@ export interface components {
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag?: string;
         };
+        UpdateVariableSet: {
+            description?: string;
+            name?: string;
+            priority?: number;
+            selector?: string;
+            variables?: components["schemas"]["VariableSetVariable"][];
+        };
         UpdateWorkflow: {
             inputs: components["schemas"]["WorkflowInput"][];
             jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
@@ -1990,6 +2057,26 @@ export interface components {
             message: string;
         };
         Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
+        VariableSet: {
+            /** Format: date-time */
+            createdAt: string;
+            description: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            priority: number;
+            /** @description A CEL expression to select which release targets this variable set applies to */
+            selector: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        VariableSetVariable: {
+            key: string;
+            value: components["schemas"]["Value"];
+        };
+        VariableSetWithVariables: components["schemas"]["VariableSet"] & {
+            variables: components["schemas"]["VariableSetVariable"][];
+        };
         VerificationMeasurement: {
             /** @description Raw measurement data */
             data?: {
@@ -5512,6 +5599,220 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listVariableSets: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["VariableSetWithVariables"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createVariableSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVariableSet"];
+            };
+        };
+        responses: {
+            /** @description Resource created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariableSet"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getVariableSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the variable set */
+                variableSetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariableSetWithVariables"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateVariableSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the variable set */
+                variableSetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVariableSet"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariableSet"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteVariableSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the variable set */
+                variableSetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Variable set deleted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariableSet"];
                 };
             };
             /** @description Invalid request */

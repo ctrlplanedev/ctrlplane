@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships/eval"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
 )
 
 // ---------------------------------------------------------------------------
@@ -54,7 +53,10 @@ func (m *mockGetter) GetResourceVariables(
 	return m.resourceVars, nil
 }
 
-func (m *mockGetter) GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error) {
+func (m *mockGetter) GetVariableSetsWithVariables(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.VariableSetWithVariables, error) {
 	return m.variableSets, nil
 }
 
@@ -1019,9 +1021,14 @@ func TestResolve_VariableSet_SimpleInjection(t *testing.T) {
 		}},
 		resourceVars: map[string]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
-			makeVariableSet("prod-defaults", `resource.metadata.env == "production"`, 1, map[string]string{
-				"log_level": "warn",
-			}),
+			makeVariableSet(
+				"prod-defaults",
+				`resource.metadata.env == "production"`,
+				1,
+				map[string]string{
+					"log_level": "warn",
+				},
+			),
 		},
 	}
 
@@ -1064,9 +1071,14 @@ func TestResolve_VariableSet_DoesNotOverwriteResourceVar(t *testing.T) {
 			},
 		},
 		variableSets: []oapi.VariableSetWithVariables{
-			makeVariableSet("prod-defaults", `resource.metadata.env == "production"`, 1, map[string]string{
-				"log_level": "warn",
-			}),
+			makeVariableSet(
+				"prod-defaults",
+				`resource.metadata.env == "production"`,
+				1,
+				map[string]string{
+					"log_level": "warn",
+				},
+			),
 		},
 	}
 
@@ -1109,9 +1121,14 @@ func TestResolve_VariableSet_DoesNotOverwriteDeploymentVarValue(t *testing.T) {
 		}},
 		resourceVars: map[string]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
-			makeVariableSet("prod-defaults", `resource.metadata.env == "production"`, 1, map[string]string{
-				"log_level": "warn",
-			}),
+			makeVariableSet(
+				"prod-defaults",
+				`resource.metadata.env == "production"`,
+				1,
+				map[string]string{
+					"log_level": "warn",
+				},
+			),
 		},
 	}
 
@@ -1148,15 +1165,30 @@ func TestResolve_VariableSet_HighestPriorityWins(t *testing.T) {
 		}},
 		resourceVars: map[string]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
-			makeVariableSet("low-priority", `resource.metadata.env == "production"`, 1, map[string]string{
-				"log_level": "trace",
-			}),
-			makeVariableSet("high-priority", `resource.metadata.env == "production"`, 100, map[string]string{
-				"log_level": "error",
-			}),
-			makeVariableSet("medium-priority", `resource.metadata.env == "production"`, 50, map[string]string{
-				"log_level": "info",
-			}),
+			makeVariableSet(
+				"low-priority",
+				`resource.metadata.env == "production"`,
+				1,
+				map[string]string{
+					"log_level": "trace",
+				},
+			),
+			makeVariableSet(
+				"high-priority",
+				`resource.metadata.env == "production"`,
+				100,
+				map[string]string{
+					"log_level": "error",
+				},
+			),
+			makeVariableSet(
+				"medium-priority",
+				`resource.metadata.env == "production"`,
+				50,
+				map[string]string{
+					"log_level": "info",
+				},
+			),
 		},
 	}
 
@@ -1193,9 +1225,14 @@ func TestResolve_VariableSet_UnrelatedDoNotMatch(t *testing.T) {
 		}},
 		resourceVars: map[string]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
-			makeVariableSet("prod-only", `resource.metadata.env == "production"`, 1, map[string]string{
-				"log_level": "warn",
-			}),
+			makeVariableSet(
+				"prod-only",
+				`resource.metadata.env == "production"`,
+				1,
+				map[string]string{
+					"log_level": "warn",
+				},
+			),
 		},
 	}
 

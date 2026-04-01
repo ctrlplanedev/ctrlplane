@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
-
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var _ Getter = (*PostgresGetter)(nil)
@@ -161,10 +160,17 @@ func (g *PostgresGetter) GetResourceVariables(
 	return result, nil
 }
 
-func (g *PostgresGetter) GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error) {
+func (g *PostgresGetter) GetVariableSetsWithVariables(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.VariableSetWithVariables, error) {
 	rows, err := db.GetQueries(ctx).ListVariableSetsWithVariablesByWorkspaceID(ctx, workspaceID)
 	if err != nil {
-		return nil, fmt.Errorf("list variable sets with variables for workspace %s: %w", workspaceID, err)
+		return nil, fmt.Errorf(
+			"list variable sets with variables for workspace %s: %w",
+			workspaceID,
+			err,
+		)
 	}
 	result := make([]oapi.VariableSetWithVariables, 0, len(rows))
 	for _, row := range rows {

@@ -323,7 +323,9 @@ func ToOapiDeploymentVariableValue(row DeploymentVariableValue) oapi.DeploymentV
 	return v
 }
 
-func ToOapiVariableSetWithVariables(row ListVariableSetsWithVariablesByWorkspaceIDRow) oapi.VariableSetWithVariables {
+func ToOapiVariableSetWithVariables(
+	row ListVariableSetsWithVariablesByWorkspaceIDRow,
+) oapi.VariableSetWithVariables {
 	vs := oapi.VariableSetWithVariables{
 		Id:          row.ID,
 		Name:        row.Name,
@@ -346,9 +348,17 @@ func ToOapiVariableSetWithVariables(row ListVariableSetsWithVariablesByWorkspace
 	for _, v := range varsRaw {
 		var val oapi.Value
 		_ = val.UnmarshalJSON(v.Value)
+		id, err := uuid.Parse(v.Id)
+		if err != nil {
+			continue
+		}
+		variableSetId, err := uuid.Parse(v.VariableSetId)
+		if err != nil {
+			continue
+		}
 		vs.Variables = append(vs.Variables, oapi.VariableSetVariable{
-			Id:            uuid.MustParse(v.Id),
-			VariableSetId: uuid.MustParse(v.VariableSetId),
+			Id:            id,
+			VariableSetId: variableSetId,
 			Key:           v.Key,
 			Value:         val,
 		})

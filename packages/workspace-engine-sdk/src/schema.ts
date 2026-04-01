@@ -1132,6 +1132,49 @@ export interface components {
       | components["schemas"]["LiteralValue"]
       | components["schemas"]["ReferenceValue"]
       | components["schemas"]["SensitiveValue"];
+    VariableSet: {
+      /**
+       * Format: date-time
+       * @description The timestamp when the variable set was created
+       */
+      createdAt: string;
+      /** @description The description of the variable set */
+      description: string;
+      /** Format: uuid */
+      id: string;
+      /** @description The name of the variable set */
+      name: string;
+      /**
+       * Format: int64
+       * @description The priority of the variable set
+       */
+      priority: number;
+      /** @description A CEL expression to select which resources this value applies to */
+      selector: string;
+      /**
+       * Format: date-time
+       * @description The timestamp when the variable set was last updated
+       */
+      updatedAt: string;
+    };
+    VariableSetVariable: {
+      /**
+       * Format: uuid
+       * @description The ID of the variable
+       */
+      id: string;
+      /** @description The key of the variable, unique within the variable set */
+      key: string;
+      value: components["schemas"]["Value"];
+      /**
+       * Format: uuid
+       * @description The ID of the variable set this variable belongs to
+       */
+      variableSetId: string;
+    };
+    VariableSetWithVariables: components["schemas"]["VariableSet"] & {
+      variables: components["schemas"]["VariableSetVariable"][];
+    };
     VerificationMeasurement: {
       /** @description Raw measurement data */
       data: {

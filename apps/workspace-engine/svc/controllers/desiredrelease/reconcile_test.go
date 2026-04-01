@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -222,7 +221,10 @@ func (m *mockReconcileGetter) GetJobsForEnvironmentAndVersion(
 	return nil, nil
 }
 
-func (m *mockReconcileGetter) GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error) {
+func (m *mockReconcileGetter) GetVariableSetsWithVariables(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.VariableSetWithVariables, error) {
 	return nil, nil
 }
 

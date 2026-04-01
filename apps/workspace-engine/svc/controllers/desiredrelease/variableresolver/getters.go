@@ -3,10 +3,9 @@ package variableresolver
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
-
-	"github.com/google/uuid"
 )
 
 // Getter provides the data needed to resolve deployment variables for a
@@ -21,7 +20,10 @@ type Getter interface {
 		ctx context.Context,
 		resourceID string,
 	) (map[string]oapi.ResourceVariable, error)
-	GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error)
+	GetVariableSetsWithVariables(
+		ctx context.Context,
+		workspaceID uuid.UUID,
+	) ([]oapi.VariableSetWithVariables, error)
 	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
 	LoadCandidates(
 		ctx context.Context,
