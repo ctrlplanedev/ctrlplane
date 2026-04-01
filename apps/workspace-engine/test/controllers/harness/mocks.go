@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/policies/match"
@@ -22,6 +21,8 @@ import (
 	"workspace-engine/svc/controllers/jobdispatch"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
+
+	"github.com/google/uuid"
 )
 
 var celEnv, _ = celutil.NewEnvBuilder().
@@ -460,6 +461,10 @@ func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
 		}
 	}
 	return result, nil
+}
+
+func (g *DesiredReleaseGetter) GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error) {
+	return nil, nil
 }
 
 type eligibilityCall struct {
