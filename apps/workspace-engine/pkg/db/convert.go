@@ -323,6 +323,39 @@ func ToOapiDeploymentVariableValue(row DeploymentVariableValue) oapi.DeploymentV
 	return v
 }
 
+func ToOapiVariableSetWithVariables(row ListVariableSetsWithVariablesByWorkspaceIDRow) oapi.VariableSetWithVariables {
+	vs := oapi.VariableSetWithVariables{
+		Id:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		Selector:    row.Selector,
+		Priority:    int64(row.Priority),
+		CreatedAt:   row.CreatedAt.Time,
+		UpdatedAt:   row.UpdatedAt.Time,
+	}
+
+	type varJSON struct {
+		Id            string          `json:"id"`
+		VariableSetId string          `json:"variableSetId"`
+		Key           string          `json:"key"`
+		Value         json.RawMessage `json:"value"`
+	}
+	var varsRaw []varJSON
+	_ = json.Unmarshal(row.Variables, &varsRaw)
+	vs.Variables = make([]oapi.VariableSetVariable, 0, len(varsRaw))
+	for _, v := range varsRaw {
+		var val oapi.Value
+		_ = val.UnmarshalJSON(v.Value)
+		vs.Variables = append(vs.Variables, oapi.VariableSetVariable{
+			Id:            uuid.MustParse(v.Id),
+			VariableSetId: uuid.MustParse(v.VariableSetId),
+			Key:           v.Key,
+			Value:         val,
+		})
+	}
+	return vs
+}
+
 func ToOapiResourceVariable(row ResourceVariable) oapi.ResourceVariable {
 	v := oapi.ResourceVariable{
 		ResourceId: row.ResourceID.String(),
