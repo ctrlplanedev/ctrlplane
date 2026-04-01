@@ -22,14 +22,7 @@ local openapi = import '../lib/openapi.libsonnet';
       id: { type: 'string', format: 'uuid', description: 'The ID of the variable' },
       variableSetId: { type: 'string', format: 'uuid', description: 'The ID of the variable set this variable belongs to' },
       key: { type: 'string', description: 'The key of the variable, unique within the variable set' },
-      value: {
-        oneOf: [
-          { type: 'string' },
-          { type: 'number' },
-          { type: 'boolean' },
-          { type: 'object', additionalProperties: true },
-        ],
-      },
+      value: openapi.schemaRef('Value'),
     },
   },
 

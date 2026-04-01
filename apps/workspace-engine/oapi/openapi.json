@@ -2727,21 +2727,7 @@
                   "type": "string"
                },
                "value": {
-                  "oneOf": [
-                     {
-                        "type": "string"
-                     },
-                     {
-                        "type": "number"
-                     },
-                     {
-                        "type": "boolean"
-                     },
-                     {
-                        "additionalProperties": true,
-                        "type": "object"
-                     }
-                  ]
+                  "$ref": "#/components/schemas/Value"
                },
                "variableSetId": {
                   "description": "The ID of the variable set this variable belongs to",

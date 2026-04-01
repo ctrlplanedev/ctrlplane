@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"sort"
 
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	cel "workspace-engine/pkg/selector/langs/cel"
+	"workspace-engine/pkg/workspace/relationships/eval"
+
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/relationships/eval"
 )
 
 func NewResourceEntity(resource *oapi.Resource) *oapi.RelatableEntity {
@@ -78,6 +80,17 @@ func Resolve(
 		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
 
+	variableSets, err := getter.GetVariableSetsWithVariables(ctx, wsID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "get variable sets with variables failed")
+		return nil, fmt.Errorf("get variable sets with variables: %w", err)
+	}
+	span.SetAttributes(attribute.Int("variable_sets.count", len(variableSets)))
+
+	filteredVariableSets := filterVariableSets(scope, variableSets)
+	span.SetAttributes(attribute.Int("filtered_variable_sets.count", len(filteredVariableSets)))
+
 	rules, err := getter.GetRelationshipRules(ctx, wsID)
 	if err != nil {
 		span.RecordError(err)
@@ -90,7 +103,7 @@ func Resolve(
 	entity := NewResourceEntity(scope.Resource)
 
 	resolved := make(map[string]oapi.LiteralValue, len(deploymentVars))
-	var fromResource, fromValue, fromDefault int
+	var fromResource, fromValue, fromVariableSet, fromDefault int
 
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
@@ -121,6 +134,19 @@ func Resolve(
 			continue
 		}
 
+		if lv := resolveFromVariableSets(
+			ctx,
+			key,
+			filteredVariableSets,
+			resolver,
+			resourceID,
+			entity,
+		); lv != nil {
+			resolved[key] = *lv
+			fromVariableSet++
+			continue
+		}
+
 		if dv.Variable.DefaultValue != nil {
 			resolved[key] = *dv.Variable.DefaultValue
 			fromDefault++
@@ -131,6 +157,7 @@ func Resolve(
 		attribute.Int("resolved.total", len(resolved)),
 		attribute.Int("resolved.from_resource", fromResource),
 		attribute.Int("resolved.from_value", fromValue),
+		attribute.Int("resolved.from_variable_set", fromVariableSet),
 		attribute.Int("resolved.from_default", fromDefault),
 	)
 	return resolved, nil
@@ -275,6 +302,49 @@ func resolveFromValues(
 		}
 	}
 	return nil
+}
+
+func resolveFromVariableSets(
+	ctx context.Context,
+	key string,
+	variableSets []oapi.VariableSetWithVariables,
+	resolver RelatedEntityResolver,
+	resourceID string,
+	entity *oapi.RelatableEntity,
+) *oapi.LiteralValue {
+	for _, vs := range variableSets {
+		for _, v := range vs.Variables {
+			if v.Key == key {
+				lv, err := ResolveValue(ctx, resolver, resourceID, entity, &v.Value)
+				if err == nil && lv != nil {
+					return lv
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func filterVariableSets(
+	scope *Scope,
+	variableSets []oapi.VariableSetWithVariables,
+) []oapi.VariableSetWithVariables {
+	celCtx := cel.BuildEntityContext(scope.Resource, scope.Deployment, scope.Environment)
+	matched := make([]oapi.VariableSetWithVariables, 0, len(variableSets))
+	for _, vs := range variableSets {
+		if vs.Selector == "" {
+			continue
+		}
+		program, err := cel.CompileProgram(vs.Selector)
+		if err != nil {
+			continue
+		}
+		result, _ := celutil.EvalBool(program, celCtx)
+		if result {
+			matched = append(matched, vs)
+		}
+	}
+	return matched
 }
 
 func entityDataToRelatableEntity(data *eval.EntityData) (*oapi.RelatableEntity, error) {

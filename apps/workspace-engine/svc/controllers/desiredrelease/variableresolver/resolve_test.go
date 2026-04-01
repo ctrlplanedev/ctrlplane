@@ -976,12 +976,6 @@ func TestResolveValue_Sensitive_ReturnsError(t *testing.T) {
 // helpers — variable sets
 // ---------------------------------------------------------------------------
 
-func newVariableSetValue(s string) oapi.VariableSetVariable_Value {
-	var v oapi.VariableSetVariable_Value
-	_ = v.FromVariableSetVariableValue0(s)
-	return v
-}
-
 func makeVariableSet(
 	name, selector string,
 	priority int64,
@@ -994,7 +988,7 @@ func makeVariableSet(
 			Id:            uuid.New(),
 			VariableSetId: vsID,
 			Key:           k,
-			Value:         newVariableSetValue(val),
+			Value:         literalStringValue(val),
 		})
 	}
 	return oapi.VariableSetWithVariables{

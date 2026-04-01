@@ -119,6 +119,7 @@ type DesiredReleaseGetter struct {
 
 	DeploymentVars    []oapi.DeploymentVariableWithValues
 	ResourceVars      map[string]oapi.ResourceVariable
+	VariableSets      []oapi.VariableSetWithVariables
 	RelationshipRules []eval.Rule
 	Candidates        map[string][]eval.EntityData
 
