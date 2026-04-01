@@ -344,6 +344,9 @@ func filterVariableSets(
 			matched = append(matched, vs)
 		}
 	}
+	sort.Slice(matched, func(i, j int) bool {
+		return matched[i].Priority > matched[j].Priority
+	})
 	return matched
 }
 
