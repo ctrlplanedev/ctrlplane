@@ -7,6 +7,10 @@ on:
         required: true
         type: string
         description: "Docker image name (e.g., ctrlplane/api)"
+      tags:
+        required: false
+        type: string
+        description: "Tags for the Docker image"
       dockerfile:
         required: true
         type: string
@@ -63,6 +67,7 @@ jobs:
           images: ${{ inputs.image-name }}
           tags: |
             type=sha,format=short,prefix=
+            ${{ inputs.tags }}
 
       - name: Build
         uses: docker/build-push-action@v6
