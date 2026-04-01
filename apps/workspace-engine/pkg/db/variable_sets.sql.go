@@ -22,7 +22,7 @@ SELECT
   ) AS variables
 FROM variable_set vs
 WHERE vs.workspace_id = $1
-ORDER BY vs.priority DESC
+ORDER BY vs.priority DESC, vs.name ASC
 `
 
 type ListVariableSetsWithVariablesByWorkspaceIDRow struct {

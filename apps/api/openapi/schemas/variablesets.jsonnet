@@ -42,9 +42,9 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'selector', 'variables'],
     properties: {
       name: { type: 'string' },
-      description: { type: 'string' },
+      description: { type: 'string', default: '' },
       selector: { type: 'string', description: 'A CEL expression to select which release targets this variable set applies to' },
-      priority: { type: 'integer' },
+      priority: { type: 'integer', default: 0 },
       variables: { type: 'array', items: openapi.schemaRef('VariableSetVariable') },
     },
   },

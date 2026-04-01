@@ -1120,9 +1120,11 @@ export interface components {
             slug?: string;
         };
         CreateVariableSet: {
-            description?: string;
+            /** @default  */
+            description: string;
             name: string;
-            priority?: number;
+            /** @default 0 */
+            priority: number;
             /** @description A CEL expression to select which release targets this variable set applies to */
             selector: string;
             variables: components["schemas"]["VariableSetVariable"][];

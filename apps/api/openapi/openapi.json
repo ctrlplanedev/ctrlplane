@@ -268,12 +268,14 @@
          "CreateVariableSet": {
             "properties": {
                "description": {
+                  "default": "",
                   "type": "string"
                },
                "name": {
                   "type": "string"
                },
                "priority": {
+                  "default": 0,
                   "type": "integer"
                },
                "selector": {

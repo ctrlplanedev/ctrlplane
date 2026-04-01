@@ -5,6 +5,7 @@ import { Router } from "express";
 import {
   and,
   count,
+  desc,
   eq,
   inArray,
   takeFirst,
@@ -32,6 +33,7 @@ const listVariableSets: AsyncTypedHandler<
     .select()
     .from(schema.variableSet)
     .where(eq(schema.variableSet.workspaceId, workspaceId))
+    .orderBy(desc(schema.variableSet.priority), schema.variableSet.name)
     .limit(limit)
     .offset(offset);
 
@@ -57,7 +59,7 @@ const createVariableSet: AsyncTypedHandler<
   "post"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const { variables, ...setData } = req.body;
+  const { variables = [], ...setData } = req.body;
 
   const created = await db.transaction(async (tx) => {
     const vs = await tx

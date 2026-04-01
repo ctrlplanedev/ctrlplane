@@ -39,7 +39,9 @@ type Scope struct {
 //  1. Resource variable with matching key (highest priority)
 //  2. Deployment variable value whose resource selector matches, sorted by
 //     descending priority
-//  3. Deployment variable default value
+//  3. Variable set value from sets matching the release target (filtered by
+//     filterVariableSets, sorted by descending priority with name tiebreak)
+//  4. Deployment variable default value
 func Resolve(
 	ctx context.Context,
 	getter Getter,
@@ -344,7 +346,10 @@ func filterVariableSets(
 		}
 	}
 	sort.Slice(matched, func(i, j int) bool {
-		return matched[i].Priority > matched[j].Priority
+		if matched[i].Priority != matched[j].Priority {
+			return matched[i].Priority > matched[j].Priority
+		}
+		return matched[i].Name < matched[j].Name
 	})
 	return matched
 }
