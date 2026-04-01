@@ -1232,6 +1232,81 @@ type Value struct {
 	union json.RawMessage
 }
 
+// VariableSet defines model for VariableSet.
+type VariableSet struct {
+	// CreatedAt The timestamp when the variable set was created
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Description The description of the variable set
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+
+	// Name The name of the variable set
+	Name string `json:"name"`
+
+	// Priority The priority of the variable set
+	Priority int64 `json:"priority"`
+
+	// Selector A CEL expression to select which resources this value applies to
+	Selector string `json:"selector"`
+
+	// UpdatedAt The timestamp when the variable set was last updated
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// VariableSetVariable defines model for VariableSetVariable.
+type VariableSetVariable struct {
+	// Id The ID of the variable
+	Id openapi_types.UUID `json:"id"`
+
+	// Key The key of the variable, unique within the variable set
+	Key   string                    `json:"key"`
+	Value VariableSetVariable_Value `json:"value"`
+
+	// VariableSetId The ID of the variable set this variable belongs to
+	VariableSetId openapi_types.UUID `json:"variableSetId"`
+}
+
+// VariableSetVariableValue0 defines model for .
+type VariableSetVariableValue0 = string
+
+// VariableSetVariableValue1 defines model for .
+type VariableSetVariableValue1 = float32
+
+// VariableSetVariableValue2 defines model for .
+type VariableSetVariableValue2 = bool
+
+// VariableSetVariableValue3 defines model for .
+type VariableSetVariableValue3 map[string]interface{}
+
+// VariableSetVariable_Value defines model for VariableSetVariable.Value.
+type VariableSetVariable_Value struct {
+	union json.RawMessage
+}
+
+// VariableSetWithVariables defines model for VariableSetWithVariables.
+type VariableSetWithVariables struct {
+	// CreatedAt The timestamp when the variable set was created
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Description The description of the variable set
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+
+	// Name The name of the variable set
+	Name string `json:"name"`
+
+	// Priority The priority of the variable set
+	Priority int64 `json:"priority"`
+
+	// Selector A CEL expression to select which resources this value applies to
+	Selector string `json:"selector"`
+
+	// UpdatedAt The timestamp when the variable set was last updated
+	UpdatedAt time.Time             `json:"updatedAt"`
+	Variables []VariableSetVariable `json:"variables"`
+}
+
 // VerificationMeasurement defines model for VerificationMeasurement.
 type VerificationMeasurement struct {
 	// Data Raw measurement data
@@ -2220,6 +2295,120 @@ func (t Value) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsVariableSetVariableValue0 returns the union data inside the VariableSetVariable_Value as a VariableSetVariableValue0
+func (t VariableSetVariable_Value) AsVariableSetVariableValue0() (VariableSetVariableValue0, error) {
+	var body VariableSetVariableValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableSetVariableValue0 overwrites any union data inside the VariableSetVariable_Value as the provided VariableSetVariableValue0
+func (t *VariableSetVariable_Value) FromVariableSetVariableValue0(v VariableSetVariableValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableSetVariableValue0 performs a merge with any union data inside the VariableSetVariable_Value, using the provided VariableSetVariableValue0
+func (t *VariableSetVariable_Value) MergeVariableSetVariableValue0(v VariableSetVariableValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableSetVariableValue1 returns the union data inside the VariableSetVariable_Value as a VariableSetVariableValue1
+func (t VariableSetVariable_Value) AsVariableSetVariableValue1() (VariableSetVariableValue1, error) {
+	var body VariableSetVariableValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableSetVariableValue1 overwrites any union data inside the VariableSetVariable_Value as the provided VariableSetVariableValue1
+func (t *VariableSetVariable_Value) FromVariableSetVariableValue1(v VariableSetVariableValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableSetVariableValue1 performs a merge with any union data inside the VariableSetVariable_Value, using the provided VariableSetVariableValue1
+func (t *VariableSetVariable_Value) MergeVariableSetVariableValue1(v VariableSetVariableValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableSetVariableValue2 returns the union data inside the VariableSetVariable_Value as a VariableSetVariableValue2
+func (t VariableSetVariable_Value) AsVariableSetVariableValue2() (VariableSetVariableValue2, error) {
+	var body VariableSetVariableValue2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableSetVariableValue2 overwrites any union data inside the VariableSetVariable_Value as the provided VariableSetVariableValue2
+func (t *VariableSetVariable_Value) FromVariableSetVariableValue2(v VariableSetVariableValue2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableSetVariableValue2 performs a merge with any union data inside the VariableSetVariable_Value, using the provided VariableSetVariableValue2
+func (t *VariableSetVariable_Value) MergeVariableSetVariableValue2(v VariableSetVariableValue2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableSetVariableValue3 returns the union data inside the VariableSetVariable_Value as a VariableSetVariableValue3
+func (t VariableSetVariable_Value) AsVariableSetVariableValue3() (VariableSetVariableValue3, error) {
+	var body VariableSetVariableValue3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableSetVariableValue3 overwrites any union data inside the VariableSetVariable_Value as the provided VariableSetVariableValue3
+func (t *VariableSetVariable_Value) FromVariableSetVariableValue3(v VariableSetVariableValue3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableSetVariableValue3 performs a merge with any union data inside the VariableSetVariable_Value, using the provided VariableSetVariableValue3
+func (t *VariableSetVariable_Value) MergeVariableSetVariableValue3(v VariableSetVariableValue3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t VariableSetVariable_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *VariableSetVariable_Value) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

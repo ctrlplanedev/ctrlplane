@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var _ Getter = (*PostgresGetter)(nil)
@@ -158,6 +159,10 @@ func (g *PostgresGetter) GetResourceVariables(
 		result[row.Key] = db.ToOapiResourceVariable(row)
 	}
 	return result, nil
+}
+
+func (g *PostgresGetter) GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error) {
+	return nil, nil
 }
 
 func (g *PostgresGetter) GetRelationshipRules(

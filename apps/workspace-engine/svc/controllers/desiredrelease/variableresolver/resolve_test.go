@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships/eval"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships/eval"
 )
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ func (m *mockResolver) ResolveRelated(
 type mockGetter struct {
 	deploymentVars []oapi.DeploymentVariableWithValues
 	resourceVars   map[string]oapi.ResourceVariable
+	variableSets   []oapi.VariableSetWithVariables
 	rules          []eval.Rule
 	candidates     map[string][]eval.EntityData
 }
@@ -51,6 +53,11 @@ func (m *mockGetter) GetResourceVariables(
 ) (map[string]oapi.ResourceVariable, error) {
 	return m.resourceVars, nil
 }
+
+func (m *mockGetter) GetVariableSetsWithVariables(ctx context.Context, workspaceID uuid.UUID) ([]oapi.VariableSetWithVariables, error) {
+	return m.variableSets, nil
+}
+
 func (m *mockGetter) GetRelationshipRules(_ context.Context, _ uuid.UUID) ([]eval.Rule, error) {
 	return m.rules, nil
 }
@@ -963,4 +970,248 @@ func TestResolveValue_Sensitive_ReturnsError(t *testing.T) {
 	_, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, v)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "sensitive")
+}
+
+// ---------------------------------------------------------------------------
+// helpers — variable sets
+// ---------------------------------------------------------------------------
+
+func newVariableSetValue(s string) oapi.VariableSetVariable_Value {
+	var v oapi.VariableSetVariable_Value
+	_ = v.FromVariableSetVariableValue0(s)
+	return v
+}
+
+func makeVariableSet(
+	name, selector string,
+	priority int64,
+	vars map[string]string,
+) oapi.VariableSetWithVariables {
+	vsID := uuid.New()
+	variables := make([]oapi.VariableSetVariable, 0, len(vars))
+	for k, val := range vars {
+		variables = append(variables, oapi.VariableSetVariable{
+			Id:            uuid.New(),
+			VariableSetId: vsID,
+			Key:           k,
+			Value:         newVariableSetValue(val),
+		})
+	}
+	return oapi.VariableSetWithVariables{
+		Id:        vsID,
+		Name:      name,
+		Selector:  selector,
+		Priority:  priority,
+		Variables: variables,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Variable Set tests — simple injection
+// ---------------------------------------------------------------------------
+
+func TestResolve_VariableSet_SimpleInjection(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "production"}
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           uuid.New().String(),
+				DeploymentId: scope.Deployment.Id,
+				Key:          "log_level",
+			},
+			Values: []oapi.DeploymentVariableValue{},
+		}},
+		resourceVars: map[string]oapi.ResourceVariable{},
+		variableSets: []oapi.VariableSetWithVariables{
+			makeVariableSet("prod-defaults", `resource.metadata.env == "production"`, 1, map[string]string{
+				"log_level": "warn",
+			}),
+		},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	require.Contains(t, resolved, "log_level")
+	s, err := resolved["log_level"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "warn", s)
+}
+
+// ---------------------------------------------------------------------------
+// Variable Set tests — does not overwrite resource variable
+// ---------------------------------------------------------------------------
+
+func TestResolve_VariableSet_DoesNotOverwriteResourceVar(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "production"}
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           uuid.New().String(),
+				DeploymentId: scope.Deployment.Id,
+				Key:          "log_level",
+			},
+			Values: []oapi.DeploymentVariableValue{},
+		}},
+		resourceVars: map[string]oapi.ResourceVariable{
+			"log_level": {
+				Key:        "log_level",
+				ResourceId: scope.Resource.Id,
+				Value:      literalStringValue("debug"),
+			},
+		},
+		variableSets: []oapi.VariableSetWithVariables{
+			makeVariableSet("prod-defaults", `resource.metadata.env == "production"`, 1, map[string]string{
+				"log_level": "warn",
+			}),
+		},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	require.Contains(t, resolved, "log_level")
+	s, err := resolved["log_level"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "debug", s)
+}
+
+// ---------------------------------------------------------------------------
+// Variable Set tests — does not overwrite deployment variable value
+// ---------------------------------------------------------------------------
+
+func TestResolve_VariableSet_DoesNotOverwriteDeploymentVarValue(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "production"}
+	depVarID := uuid.New().String()
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           depVarID,
+				DeploymentId: scope.Deployment.Id,
+				Key:          "log_level",
+			},
+			Values: []oapi.DeploymentVariableValue{{
+				Id:                   uuid.New().String(),
+				DeploymentVariableId: depVarID,
+				Value:                literalStringValue("info"),
+				Priority:             1,
+			}},
+		}},
+		resourceVars: map[string]oapi.ResourceVariable{},
+		variableSets: []oapi.VariableSetWithVariables{
+			makeVariableSet("prod-defaults", `resource.metadata.env == "production"`, 1, map[string]string{
+				"log_level": "warn",
+			}),
+		},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	require.Contains(t, resolved, "log_level")
+	s, err := resolved["log_level"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "info", s)
+}
+
+// ---------------------------------------------------------------------------
+// Variable Set tests — multiple sets, highest priority wins
+// ---------------------------------------------------------------------------
+
+func TestResolve_VariableSet_HighestPriorityWins(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "production"}
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           uuid.New().String(),
+				DeploymentId: scope.Deployment.Id,
+				Key:          "log_level",
+			},
+			Values: []oapi.DeploymentVariableValue{},
+		}},
+		resourceVars: map[string]oapi.ResourceVariable{},
+		variableSets: []oapi.VariableSetWithVariables{
+			makeVariableSet("low-priority", `resource.metadata.env == "production"`, 1, map[string]string{
+				"log_level": "trace",
+			}),
+			makeVariableSet("high-priority", `resource.metadata.env == "production"`, 100, map[string]string{
+				"log_level": "error",
+			}),
+			makeVariableSet("medium-priority", `resource.metadata.env == "production"`, 50, map[string]string{
+				"log_level": "info",
+			}),
+		},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	require.Contains(t, resolved, "log_level")
+	s, err := resolved["log_level"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "error", s)
+}
+
+// ---------------------------------------------------------------------------
+// Variable Set tests — unrelated sets do not match
+// ---------------------------------------------------------------------------
+
+func TestResolve_VariableSet_UnrelatedDoNotMatch(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "staging"}
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           uuid.New().String(),
+				DeploymentId: scope.Deployment.Id,
+				Key:          "log_level",
+			},
+			Values: []oapi.DeploymentVariableValue{},
+		}},
+		resourceVars: map[string]oapi.ResourceVariable{},
+		variableSets: []oapi.VariableSetWithVariables{
+			makeVariableSet("prod-only", `resource.metadata.env == "production"`, 1, map[string]string{
+				"log_level": "warn",
+			}),
+		},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	assert.NotContains(t, resolved, "log_level")
 }
