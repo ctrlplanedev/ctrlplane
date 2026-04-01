@@ -21,6 +21,10 @@ go.version = "1.25.5"
 
 air.pkg-path = "air"
 
+golangci-lint.pkg-path = "golangci-lint"
+golangci-lint.version = "2.11.4"
+golangci-lint.pkg-group = "golangci-lint"
+
 
 ## Environment Variables ---------------------------------------------
 ##  ... available for use in the activated environment
