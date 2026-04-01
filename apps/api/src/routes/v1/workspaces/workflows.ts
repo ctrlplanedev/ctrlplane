@@ -2,10 +2,42 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler, NotFoundError } from "@/types/api.js";
 import { Router } from "express";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, count, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+
+const listWorkflows: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/workflows",
+  "get"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const limit = req.query.limit ?? 50;
+  const offset = req.query.offset ?? 0;
+
+  const total = await db
+    .select({ total: count() })
+    .from(schema.workflow)
+    .where(eq(schema.workflow.workspaceId, workspaceId))
+    .then(takeFirst)
+    .then(({ total }) => total);
+
+  const rows = await db
+    .select()
+    .from(schema.workflow)
+    .where(eq(schema.workflow.workspaceId, workspaceId))
+    .limit(limit)
+    .offset(offset);
+
+  const items = rows.map(({ id, name, inputs, jobAgents }) => ({
+    id,
+    name,
+    inputs,
+    jobAgents,
+  }));
+
+  res.status(200).json({ items, total, limit, offset });
+};
 
 const createWorkflow: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/workflows",
@@ -64,7 +96,7 @@ const updateWorkflow: AsyncTypedHandler<
   if (updated == null) throw new NotFoundError("Workflow not found");
 
   const { id, name, inputs, jobAgents } = updated;
-  res.json({ id, name, inputs, jobAgents });
+  res.status(202).json({ id, name, inputs, jobAgents });
 };
 
 const deleteWorkflow: AsyncTypedHandler<
@@ -86,7 +118,7 @@ const deleteWorkflow: AsyncTypedHandler<
   if (deleted == null) throw new NotFoundError("Workflow not found");
 
   const { id, name, inputs, jobAgents } = deleted;
-  res.json({ id, name, inputs, jobAgents });
+  res.status(202).json({ id, name, inputs, jobAgents });
 };
 
 const createWorkflowRun: AsyncTypedHandler<
@@ -114,6 +146,7 @@ const createWorkflowRun: AsyncTypedHandler<
 };
 
 export const workflowsRouter = Router({ mergeParams: true })
+  .get("/", asyncHandler(listWorkflows))
   .post("/", asyncHandler(createWorkflow))
   .get("/:workflowId", asyncHandler(getWorkflow))
   .put("/:workflowId", asyncHandler(updateWorkflow))
