@@ -27,9 +27,9 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { useJobAgent } from "../_hooks/job-agents";
 
 type DeploymentJobAgent = {
-  ref: string;
+  deploymentId: string;
+  jobAgentId: string;
   config: Record<string, any>;
-  selector: string;
 };
 
 type DeploymentAgentCardProps = {
@@ -123,7 +123,7 @@ function Config({
 export function DeploymentAgentCard({
   deploymentAgent,
 }: DeploymentAgentCardProps) {
-  const { jobAgent, isLoading } = useJobAgent(deploymentAgent.ref);
+  const { jobAgent, isLoading } = useJobAgent(deploymentAgent.jobAgentId);
   if (isLoading) return <SkeletonCard />;
   if (jobAgent == null) return null;
 

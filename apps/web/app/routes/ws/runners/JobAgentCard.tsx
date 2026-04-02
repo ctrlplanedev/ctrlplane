@@ -94,7 +94,7 @@ function DeploymentList({ jobAgentId }: { jobAgentId: string }) {
     );
   return (
     <div className="flex flex-wrap gap-1.5">
-      {deployments.map((deployment) => (
+      {deployments.map(({ deployment }) => (
         <a
           href={`/${workspace.slug}/deployments/${deployment.id}`}
           key={deployment.id}
