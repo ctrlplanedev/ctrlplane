@@ -51,6 +51,18 @@
     },
   },
 
+  orderParam():: {
+    name: 'order',
+    'in': 'query',
+    required: false,
+    description: 'Sort order for results',
+    schema: {
+      type: 'string',
+      enum: ['asc', 'desc'],
+      default: 'desc',
+    },
+  },
+
   celParam():: {
     name: 'cel',
     'in': 'query',
