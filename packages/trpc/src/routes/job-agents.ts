@@ -94,8 +94,12 @@ export const jobAgentsRouter = router({
     .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
     .query(({ input, ctx }) =>
       ctx.db
-        .select()
-        .from(schema.deployment)
-        .where(eq(schema.deployment.jobAgentId, input.jobAgentId)),
+        .select({ deployment: schema.deployment })
+        .from(schema.deploymentJobAgent)
+        .innerJoin(
+          schema.deployment,
+          eq(schema.deploymentJobAgent.deploymentId, schema.deployment.id),
+        )
+        .where(eq(schema.deploymentJobAgent.jobAgentId, input.jobAgentId)),
     ),
 });

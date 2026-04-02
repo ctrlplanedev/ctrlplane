@@ -82,19 +82,17 @@ func (q *Queries) GetActiveResourceByID(ctx context.Context, id uuid.UUID) (GetA
 }
 
 const getDeploymentForRelEval = `-- name: GetDeploymentForRelEval :one
-SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+SELECT id, workspace_id, name, description, metadata
 FROM deployment
 WHERE id = $1
 `
 
 type GetDeploymentForRelEvalRow struct {
-	ID             uuid.UUID
-	WorkspaceID    uuid.UUID
-	Name           string
-	Description    string
-	JobAgentID     uuid.UUID
-	JobAgentConfig map[string]any
-	Metadata       map[string]string
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Description string
+	Metadata    map[string]string
 }
 
 func (q *Queries) GetDeploymentForRelEval(ctx context.Context, id uuid.UUID) (GetDeploymentForRelEvalRow, error) {
@@ -105,8 +103,6 @@ func (q *Queries) GetDeploymentForRelEval(ctx context.Context, id uuid.UUID) (Ge
 		&i.WorkspaceID,
 		&i.Name,
 		&i.Description,
-		&i.JobAgentID,
-		&i.JobAgentConfig,
 		&i.Metadata,
 	)
 	return i, err
@@ -277,19 +273,17 @@ func (q *Queries) ListActiveResourcesByWorkspace(ctx context.Context, workspaceI
 }
 
 const listDeploymentsByWorkspace = `-- name: ListDeploymentsByWorkspace :many
-SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+SELECT id, workspace_id, name, description, metadata
 FROM deployment
 WHERE workspace_id = $1
 `
 
 type ListDeploymentsByWorkspaceRow struct {
-	ID             uuid.UUID
-	WorkspaceID    uuid.UUID
-	Name           string
-	Description    string
-	JobAgentID     uuid.UUID
-	JobAgentConfig map[string]any
-	Metadata       map[string]string
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Description string
+	Metadata    map[string]string
 }
 
 func (q *Queries) ListDeploymentsByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ListDeploymentsByWorkspaceRow, error) {
@@ -306,8 +300,6 @@ func (q *Queries) ListDeploymentsByWorkspace(ctx context.Context, workspaceID uu
 			&i.WorkspaceID,
 			&i.Name,
 			&i.Description,
-			&i.JobAgentID,
-			&i.JobAgentConfig,
 			&i.Metadata,
 		); err != nil {
 			return nil, err

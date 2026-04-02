@@ -3,6 +3,15 @@ SELECT *
 FROM deployment
 WHERE id = $1;
 
+-- name: GetDeploymentWithJobAgents :one
+SELECT d.*,
+  COALESCE(json_agg(json_build_object('ref', dja.job_agent_id, 'config', dja.config))
+    FILTER (WHERE dja.job_agent_id IS NOT NULL), '[]') AS job_agents
+FROM deployment d
+LEFT JOIN deployment_job_agent dja ON dja.deployment_id = d.id
+WHERE d.id = $1
+GROUP BY d.id;
+
 -- name: ListDeploymentsByWorkspaceID :many
 SELECT *
 FROM deployment
@@ -43,12 +52,6 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1;
 
 -- name: DeleteDeployment :exec
 DELETE FROM deployment WHERE id = $1;
-
--- name: ListJobAgentsForDeployment :many
-SELECT ja.id, ja.workspace_id, ja.name, ja.type, ja.config, dja.config AS deployment_config
-FROM deployment_job_agent dja
-INNER JOIN job_agent ja ON ja.id = dja.job_agent_id
-WHERE dja.deployment_id = $1;
 
 -- name: UpsertDeploymentJobAgent :exec
 INSERT INTO deployment_job_agent (deployment_id, job_agent_id, config)
