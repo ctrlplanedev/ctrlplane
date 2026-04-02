@@ -106,6 +106,10 @@
                "name": {
                   "type": "string"
                },
+               "selector": {
+                  "description": "CEL expression to scope this version to matching release targets",
+                  "type": "string"
+               },
                "status": {
                   "$ref": "#/components/schemas/DeploymentVersionStatus"
                },
@@ -786,6 +790,10 @@
                   "type": "object"
                },
                "name": {
+                  "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to scope this version to matching release targets",
                   "type": "string"
                },
                "status": {
@@ -2398,6 +2406,10 @@
                "name": {
                   "type": "string"
                },
+               "selector": {
+                  "description": "CEL expression to scope this version to matching release targets",
+                  "type": "string"
+               },
                "status": {
                   "$ref": "#/components/schemas/DeploymentVersionStatus"
                },
@@ -2563,6 +2575,10 @@
                   "type": "object"
                },
                "name": {
+                  "type": "string"
+               },
+               "selector": {
+                  "description": "CEL expression to scope this version to matching release targets",
                   "type": "string"
                },
                "status": {

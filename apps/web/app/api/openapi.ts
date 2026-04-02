@@ -1014,6 +1014,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
         };
@@ -1255,6 +1257,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
         };
@@ -1826,6 +1830,8 @@ export interface components {
                 [key: string]: string;
             };
             name?: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag?: string;
         };
@@ -1883,6 +1889,8 @@ export interface components {
                 [key: string]: string;
             };
             name?: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
         };
@@ -3143,6 +3151,8 @@ export interface operations {
                 limit?: number;
                 /** @description Number of items to skip */
                 offset?: number;
+                /** @description Sort order for results */
+                order?: "asc" | "desc";
             };
             header?: never;
             path: {
@@ -5595,8 +5605,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description Resource created successfully */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

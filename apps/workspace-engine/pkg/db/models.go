@@ -400,6 +400,7 @@ type DeploymentVersion struct {
 	Status         DeploymentVersionStatus
 	Message        pgtype.Text
 	CreatedAt      pgtype.Timestamptz
+	Selector       pgtype.Text
 	WorkspaceID    uuid.UUID
 }
 

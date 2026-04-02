@@ -366,16 +366,19 @@ type DeploymentVariableWithValues struct {
 
 // DeploymentVersion defines model for DeploymentVersion.
 type DeploymentVersion struct {
-	Config         map[string]interface{}  `json:"config"`
-	CreatedAt      time.Time               `json:"createdAt"`
-	DeploymentId   string                  `json:"deploymentId"`
-	Id             string                  `json:"id"`
-	JobAgentConfig JobAgentConfig          `json:"jobAgentConfig"`
-	Message        *string                 `json:"message,omitempty"`
-	Metadata       map[string]string       `json:"metadata"`
-	Name           string                  `json:"name"`
-	Status         DeploymentVersionStatus `json:"status"`
-	Tag            string                  `json:"tag"`
+	Config         map[string]interface{} `json:"config"`
+	CreatedAt      time.Time              `json:"createdAt"`
+	DeploymentId   string                 `json:"deploymentId"`
+	Id             string                 `json:"id"`
+	JobAgentConfig JobAgentConfig         `json:"jobAgentConfig"`
+	Message        *string                `json:"message,omitempty"`
+	Metadata       map[string]string      `json:"metadata"`
+	Name           string                 `json:"name"`
+
+	// Selector CEL expression to scope this version to matching release targets
+	Selector *string                 `json:"selector,omitempty"`
+	Status   DeploymentVersionStatus `json:"status"`
+	Tag      string                  `json:"tag"`
 }
 
 // DeploymentVersionStatus defines model for DeploymentVersionStatus.

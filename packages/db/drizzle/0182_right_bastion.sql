@@ -1,0 +1,1 @@
+ALTER TABLE "deployment_version" ADD COLUMN "selector" text;

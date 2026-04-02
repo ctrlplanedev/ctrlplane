@@ -22,7 +22,7 @@ func (q *Queries) DeleteDeploymentVersion(ctx context.Context, id uuid.UUID) err
 }
 
 const getDeploymentVersionByID = `-- name: GetDeploymentVersionByID :one
-SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version WHERE id = $1
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, selector, workspace_id FROM deployment_version WHERE id = $1
 `
 
 func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (DeploymentVersion, error) {
@@ -39,13 +39,14 @@ func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (D
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,
+		&i.Selector,
 		&i.WorkspaceID,
 	)
 	return i, err
 }
 
 const listDeployableVersionsByDeploymentID = `-- name: ListDeployableVersionsByDeploymentID :many
-SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, selector, workspace_id FROM deployment_version
 WHERE deployment_id = $1
   AND status NOT IN ('rejected', 'building')
 ORDER BY created_at DESC
@@ -77,6 +78,7 @@ func (q *Queries) ListDeployableVersionsByDeploymentID(ctx context.Context, arg 
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
+			&i.Selector,
 			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
@@ -90,7 +92,7 @@ func (q *Queries) ListDeployableVersionsByDeploymentID(ctx context.Context, arg 
 }
 
 const listDeploymentVersionsByDeploymentID = `-- name: ListDeploymentVersionsByDeploymentID :many
-SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, selector, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
 LIMIT COALESCE($2::int, 5000)
 `
 
@@ -119,6 +121,7 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, arg 
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
+			&i.Selector,
 			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
@@ -132,7 +135,7 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, arg 
 }
 
 const listDeploymentVersionsByWorkspaceID = `-- name: ListDeploymentVersionsByWorkspaceID :many
-SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, selector, workspace_id FROM deployment_version
 WHERE workspace_id = $1
 ORDER BY created_at DESC
 LIMIT COALESCE($2::int, 5000)
@@ -163,6 +166,7 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, arg L
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
+			&i.Selector,
 			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
@@ -176,12 +180,12 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, arg L
 }
 
 const upsertDeploymentVersion = `-- name: UpsertDeploymentVersion :one
-INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, workspace_id, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11::timestamptz, NOW()))
+INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, selector, workspace_id, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12::timestamptz, NOW()))
 ON CONFLICT (deployment_id, tag) DO UPDATE
-SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, metadata = EXCLUDED.metadata, status = EXCLUDED.status, message = EXCLUDED.message, workspace_id = EXCLUDED.workspace_id,
-    created_at = CASE WHEN $11::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE deployment_version.created_at END
-RETURNING id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id
+SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, metadata = EXCLUDED.metadata, status = EXCLUDED.status, message = EXCLUDED.message, selector = EXCLUDED.selector, workspace_id = EXCLUDED.workspace_id,
+    created_at = CASE WHEN $12::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE deployment_version.created_at END
+RETURNING id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, selector, workspace_id
 `
 
 type UpsertDeploymentVersionParams struct {
@@ -194,6 +198,7 @@ type UpsertDeploymentVersionParams struct {
 	Metadata       map[string]string
 	Status         DeploymentVersionStatus
 	Message        pgtype.Text
+	Selector       pgtype.Text
 	WorkspaceID    uuid.UUID
 	CreatedAt      pgtype.Timestamptz
 }
@@ -209,6 +214,7 @@ func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploym
 		arg.Metadata,
 		arg.Status,
 		arg.Message,
+		arg.Selector,
 		arg.WorkspaceID,
 		arg.CreatedAt,
 	)
@@ -224,6 +230,7 @@ func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploym
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,
+		&i.Selector,
 		&i.WorkspaceID,
 	)
 	return i, err

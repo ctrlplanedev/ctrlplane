@@ -1014,6 +1014,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
         };
@@ -1255,6 +1257,8 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
         };
@@ -1826,6 +1830,8 @@ export interface components {
                 [key: string]: string;
             };
             name?: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag?: string;
         };
@@ -1883,6 +1889,8 @@ export interface components {
                 [key: string]: string;
             };
             name?: string;
+            /** @description CEL expression to scope this version to matching release targets */
+            selector?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
         };
