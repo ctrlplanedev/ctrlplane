@@ -119,6 +119,34 @@ CREATE TABLE IF NOT EXISTS variable (
     )
 );
 
+create unique index if not exists variable_resource_key_uniq
+    on variable(resource_id, key)
+    where resource_id is not null;
+
+create unique index if not exists variable_deployment_key_uniq
+    on variable(deployment_id, key)
+    where deployment_id is not null;
+
+create unique index if not exists variable_dja_key_uniq
+    on variable(deployment_job_agent_id, key)
+    where deployment_job_agent_id is not null;
+
+create index if not exists variable_scope_idx
+    on variable(scope);
+
+create index if not exists variable_resource_lookup_idx
+    on variable(resource_id, key)
+    where resource_id is not null;
+
+create index if not exists variable_deployment_lookup_idx
+    on variable(deployment_id, key)
+    where deployment_id is not null;
+
+create index if not exists variable_dja_lookup_idx
+    on variable(deployment_job_agent_id, key)
+    where deployment_job_agent_id is not null;
+
+
 CREATE TABLE IF NOT EXISTS variable_value (
     id uuid primary key default uuid_generate_v4(),
 
@@ -172,6 +200,23 @@ CREATE TABLE IF NOT EXISTS variable_value (
         )
     )
 );
+
+create index if not exists variable_value_variable_priority_idx
+    on variable_value(variable_id, priority desc, id);
+
+create index if not exists variable_value_selector_idx
+    on variable_value(variable_id, resource_selector, priority desc);
+
+create index if not exists variable_value_kind_idx
+    on variable_value(kind);
+
+create unique index if not exists variable_value_resolution_uniq
+    on variable_value (
+        variable_id,
+        coalesce(resource_selector, ''),
+        priority
+    );
+
 
 ```
 
