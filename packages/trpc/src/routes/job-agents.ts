@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { and, eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -100,6 +100,11 @@ export const jobAgentsRouter = router({
           schema.deployment,
           eq(schema.deploymentJobAgent.deploymentId, schema.deployment.id),
         )
-        .where(eq(schema.deploymentJobAgent.jobAgentId, input.jobAgentId)),
+        .where(
+          and(
+            eq(schema.deploymentJobAgent.jobAgentId, input.jobAgentId),
+            eq(schema.deployment.workspaceId, input.workspaceId),
+          ),
+        ),
     ),
 });

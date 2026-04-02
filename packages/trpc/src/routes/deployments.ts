@@ -229,13 +229,29 @@ export const deploymentsRouter = router({
       const { workspaceId, deploymentId, jobAgentId, config } = input;
 
       const deployment = await ctx.db.query.deployment.findFirst({
-        where: eq(schema.deployment.id, deploymentId),
+        where: and(
+          eq(schema.deployment.id, deploymentId),
+          eq(schema.deployment.workspaceId, workspaceId),
+        ),
       });
 
       if (deployment == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Deployment not found",
+        });
+
+      const jobAgent = await ctx.db.query.jobAgent.findFirst({
+        where: and(
+          eq(schema.jobAgent.id, jobAgentId),
+          eq(schema.jobAgent.workspaceId, workspaceId),
+        ),
+      });
+
+      if (jobAgent == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Job agent not found in this workspace",
         });
 
       await ctx.db
@@ -249,12 +265,16 @@ export const deploymentsRouter = router({
           set: { config },
         });
 
-      await Promise.all([
+      const [updated] = await Promise.all([
+        ctx.db.query.deployment.findFirst({
+          where: eq(schema.deployment.id, deploymentId),
+          with: { jobAgents: true },
+        }),
         enqueueDeploymentSelectorEval(ctx.db, { workspaceId, deploymentId }),
         enqueueReleaseTargetsForDeployment(ctx.db, workspaceId, deploymentId),
       ]);
 
-      return deployment;
+      return updated!;
     }),
 
   variables: protectedProcedure
