@@ -37,6 +37,7 @@ export const deploymentsRouter = router({
               },
             },
           },
+          jobAgents: true,
         },
       });
 

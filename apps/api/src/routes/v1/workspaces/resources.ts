@@ -292,9 +292,6 @@ const getDeploymentsForResource: AsyncTypedHandler<
     name: r.deployment.name,
     slug: r.deployment.name,
     description: r.deployment.description,
-    jobAgentId: r.deployment.jobAgentId ?? undefined,
-    jobAgentConfig: r.deployment.jobAgentConfig,
-    jobAgents: r.deployment.jobAgents,
     resourceSelector: parseSelector(r.deployment.resourceSelector),
     metadata: r.deployment.metadata,
   }));

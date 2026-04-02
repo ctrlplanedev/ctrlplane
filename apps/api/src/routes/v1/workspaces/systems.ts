@@ -37,9 +37,6 @@ const formatDeployment = (dep: typeof schema.deployment.$inferSelect) => ({
   name: dep.name,
   slug: dep.name,
   description: dep.description,
-  jobAgentId: dep.jobAgentId ?? undefined,
-  jobAgentConfig: dep.jobAgentConfig,
-  jobAgents: dep.jobAgents,
   resourceSelector: parseSelector(dep.resourceSelector),
   metadata: dep.metadata,
 });
