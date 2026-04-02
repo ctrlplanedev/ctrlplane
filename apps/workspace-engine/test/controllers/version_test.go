@@ -881,6 +881,34 @@ func TestVersion_VersionConfigFlowsToRelease(t *testing.T) {
 }
 
 // ===========================================================================
+// Version selector scoping
+// ===========================================================================
+
+func TestVersion_SelectorFiltersOutNonMatchingTargets(t *testing.T) {
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("production")),
+		WithResource(ResourceName("us-east-server"), ResourceKind("Node"),
+			ResourceMetadata(map[string]any{"region": "us-east-1"})),
+		WithVersion(
+			VersionTag("v2.0.0-hotfix"),
+			VersionSelector("resource.metadata.region == 'eu-west-1'"),
+		),
+		WithVersion(
+			VersionTag("v1.0.0"),
+		),
+		WithJobAgent("deployer"),
+	)
+
+	p.Run()
+
+	// v2.0.0-hotfix is scoped to eu-west-1, so it should be filtered out
+	// for the us-east-1 resource, falling back to v1.0.0
+	p.AssertReleaseCreated(t)
+	p.AssertReleaseVersion(t, 0, "v1.0.0")
+}
+
+// ===========================================================================
 // More edge cases
 // ===========================================================================
 

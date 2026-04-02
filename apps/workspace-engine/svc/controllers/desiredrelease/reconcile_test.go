@@ -273,9 +273,120 @@ func testScope() *evaluator.EvaluatorScope {
 	}
 }
 
+func ptr[T any](v T) *T { return &v }
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+func TestFilterByTargetSelector_NilSelector(t *testing.T) {
+	r := &reconciler{
+		scope: &evaluator.EvaluatorScope{
+			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-east-1"}},
+			Deployment:  &oapi.Deployment{Id: "d1"},
+			Environment: &oapi.Environment{Id: "e1"},
+		},
+		versions: []*oapi.DeploymentVersion{
+			{Id: "v1", Selector: nil},
+			{Id: "v2", Selector: nil},
+		},
+	}
+
+	r.filterByTargetSelector()
+
+	assert.Len(t, r.versions, 2)
+}
+
+func TestFilterByTargetSelector_MatchingSelector(t *testing.T) {
+	r := &reconciler{
+		scope: &evaluator.EvaluatorScope{
+			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-east-1"}},
+			Deployment:  &oapi.Deployment{Id: "d1"},
+			Environment: &oapi.Environment{Id: "e1"},
+		},
+		versions: []*oapi.DeploymentVersion{
+			{Id: "v1", Selector: ptr("resource.metadata.region == 'us-east-1'")},
+		},
+	}
+
+	r.filterByTargetSelector()
+
+	assert.Len(t, r.versions, 1)
+	assert.Equal(t, "v1", r.versions[0].Id)
+}
+
+func TestFilterByTargetSelector_NonMatchingSelector(t *testing.T) {
+	r := &reconciler{
+		scope: &evaluator.EvaluatorScope{
+			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-west-2"}},
+			Deployment:  &oapi.Deployment{Id: "d1"},
+			Environment: &oapi.Environment{Id: "e1"},
+		},
+		versions: []*oapi.DeploymentVersion{
+			{Id: "v1", Selector: ptr("resource.metadata.region == 'us-east-1'")},
+		},
+	}
+
+	r.filterByTargetSelector()
+
+	assert.Empty(t, r.versions)
+}
+
+func TestFilterByTargetSelector_MixedVersions(t *testing.T) {
+	r := &reconciler{
+		scope: &evaluator.EvaluatorScope{
+			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-east-1"}},
+			Deployment:  &oapi.Deployment{Id: "d1"},
+			Environment: &oapi.Environment{Id: "e1"},
+		},
+		versions: []*oapi.DeploymentVersion{
+			{Id: "v1", Selector: nil},
+			{Id: "v2", Selector: ptr("resource.metadata.region == 'us-east-1'")},
+			{Id: "v3", Selector: ptr("resource.metadata.region == 'eu-west-1'")},
+		},
+	}
+
+	r.filterByTargetSelector()
+
+	assert.Len(t, r.versions, 2)
+	assert.Equal(t, "v1", r.versions[0].Id)
+	assert.Equal(t, "v2", r.versions[1].Id)
+}
+
+func TestFilterByTargetSelector_InvalidCEL_FailOpen(t *testing.T) {
+	r := &reconciler{
+		scope: &evaluator.EvaluatorScope{
+			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{}},
+			Deployment:  &oapi.Deployment{Id: "d1"},
+			Environment: &oapi.Environment{Id: "e1"},
+		},
+		versions: []*oapi.DeploymentVersion{
+			{Id: "v1", Selector: ptr("this is not valid CEL !!!")},
+		},
+	}
+
+	r.filterByTargetSelector()
+
+	assert.Len(t, r.versions, 1, "invalid CEL should fail-open")
+}
+
+func TestFilterByTargetSelector_AllFilteredOut(t *testing.T) {
+	r := &reconciler{
+		scope: &evaluator.EvaluatorScope{
+			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "ap-south-1"}},
+			Deployment:  &oapi.Deployment{Id: "d1"},
+			Environment: &oapi.Environment{Id: "e1"},
+		},
+		versions: []*oapi.DeploymentVersion{
+			{Id: "v1", Selector: ptr("resource.metadata.region == 'us-east-1'")},
+			{Id: "v2", Selector: ptr("resource.metadata.region == 'eu-west-1'")},
+		},
+	}
+
+	r.filterByTargetSelector()
+
+	assert.Empty(t, r.versions)
+}
 
 func TestReconcile_NoVersions(t *testing.T) {
 	ctx := context.Background()

@@ -253,6 +253,12 @@ func VersionCreatedAt(t time.Time) VersionOption {
 	return func(v *oapi.DeploymentVersion) { v.CreatedAt = t }
 }
 
+// VersionSelector sets the CEL selector on a deployment version to scope it
+// to matching release targets.
+func VersionSelector(sel string) VersionOption {
+	return func(v *oapi.DeploymentVersion) { v.Selector = &sel }
+}
+
 // ---------------------------------------------------------------------------
 // Resource options
 // ---------------------------------------------------------------------------

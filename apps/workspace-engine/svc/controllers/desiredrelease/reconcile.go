@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
+	celLang "workspace-engine/pkg/selector/langs/cel"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/svc/controllers/desiredrelease/policyeval"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
+
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/svc/controllers/desiredrelease/policyeval"
-	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 type ReconcileResult struct {
@@ -36,6 +40,43 @@ type reconciler struct {
 	vars     map[string]oapi.LiteralValue
 }
 
+func (r *reconciler) filterByTargetSelector() {
+	if len(r.versions) == 0 {
+		return
+	}
+
+	rt := selector.NewResolvedReleaseTarget(r.scope.Environment, r.scope.Deployment, r.scope.Resource)
+	celCtx := rt.CelContext()
+
+	filtered := make([]*oapi.DeploymentVersion, 0, len(r.versions))
+	for _, v := range r.versions {
+		if v.Selector == nil {
+			filtered = append(filtered, v)
+			continue
+		}
+
+		program, err := celLang.CompileProgram(*v.Selector)
+		if err != nil {
+			log.Warn("selector compile failed, including version", "version", v.Id, "error", err)
+			filtered = append(filtered, v)
+			continue
+		}
+
+		matches, err := celutil.EvalBool(program, celCtx)
+		if err != nil {
+			log.Warn("selector eval failed, including version", "version", v.Id, "error", err)
+			filtered = append(filtered, v)
+			continue
+		}
+
+		if matches {
+			filtered = append(filtered, v)
+		}
+	}
+
+	r.versions = filtered
+}
+
 func (r *reconciler) loadInput(ctx context.Context) (err error) {
 	r.scope, err = r.getter.GetReleaseTargetScope(ctx, r.rt)
 	if err != nil {
@@ -46,6 +87,8 @@ func (r *reconciler) loadInput(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("get candidate versions: %w", err)
 	}
+
+	r.filterByTargetSelector()
 
 	r.policies, err = r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
 	if err != nil {
