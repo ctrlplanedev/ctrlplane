@@ -80,6 +80,7 @@ CREATE TABLE deployment_version (
     status deployment_version_status NOT NULL DEFAULT 'ready',
     message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    selector TEXT,
     workspace_id UUID REFERENCES workspace(id),
     CONSTRAINT deployment_version_uniq UNIQUE (deployment_id, tag)
 );

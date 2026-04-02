@@ -109,6 +109,7 @@ local openapi = import '../lib/openapi.libsonnet';
       status: openapi.schemaRef('DeploymentVersionStatus'),
       message: { type: 'string' },
       createdAt: { type: 'string', format: 'date-time' },
+      selector: { type: 'string', description: 'CEL expression to scope this version to matching release targets' },
     },
   },
 }

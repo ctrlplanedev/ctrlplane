@@ -47,6 +47,8 @@ export const deploymentVersion = pgTable(
       .default("{}")
       .$type<Record<string, string>>(),
 
+    selector: text("selector"),
+
     workspaceId: uuid("workspace_id").references(() => workspace.id),
   },
   (t) => [
