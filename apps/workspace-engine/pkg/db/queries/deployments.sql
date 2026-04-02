@@ -10,17 +10,16 @@ WHERE workspace_id = $1
 LIMIT COALESCE(sqlc.narg('limit')::int, 5000);
 
 -- name: ListDeploymentsBySystemID :many
-SELECT d.id, d.name, d.description, d.job_agent_id, d.job_agent_config, d.job_agents, d.resource_selector, d.metadata, d.workspace_id
+SELECT d.id, d.name, d.description, d.resource_selector, d.metadata, d.workspace_id
 FROM deployment d
 INNER JOIN system_deployment sd ON sd.deployment_id = d.id
 WHERE sd.system_id = $1;
 
 -- name: UpsertDeployment :one
-INSERT INTO deployment (id, name, description, job_agent_id, job_agent_config, job_agents, resource_selector, metadata, workspace_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO deployment (id, name, description, resource_selector, metadata, workspace_id)
+VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (id) DO UPDATE
-SET name = EXCLUDED.name, description = EXCLUDED.description, job_agent_id = EXCLUDED.job_agent_id,
-    job_agent_config = EXCLUDED.job_agent_config, job_agents = EXCLUDED.job_agents,
+SET name = EXCLUDED.name, description = EXCLUDED.description,
     resource_selector = EXCLUDED.resource_selector,
     metadata = EXCLUDED.metadata, workspace_id = EXCLUDED.workspace_id
 RETURNING *;
@@ -44,3 +43,18 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1;
 
 -- name: DeleteDeployment :exec
 DELETE FROM deployment WHERE id = $1;
+
+-- name: ListJobAgentsForDeployment :many
+SELECT ja.id, ja.workspace_id, ja.name, ja.type, ja.config, dja.config AS deployment_config
+FROM deployment_job_agent dja
+INNER JOIN job_agent ja ON ja.id = dja.job_agent_id
+WHERE dja.deployment_id = $1;
+
+-- name: UpsertDeploymentJobAgent :exec
+INSERT INTO deployment_job_agent (deployment_id, job_agent_id, config)
+VALUES ($1, $2, $3)
+ON CONFLICT (deployment_id, job_agent_id) DO UPDATE
+SET config = EXCLUDED.config;
+
+-- name: DeleteDeploymentJobAgents :exec
+DELETE FROM deployment_job_agent WHERE deployment_id = $1;
