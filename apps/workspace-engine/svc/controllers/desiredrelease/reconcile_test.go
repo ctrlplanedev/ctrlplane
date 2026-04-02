@@ -282,7 +282,10 @@ func ptr[T any](v T) *T { return &v }
 func TestFilterByTargetSelector_NilSelector(t *testing.T) {
 	r := &reconciler{
 		scope: &evaluator.EvaluatorScope{
-			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-east-1"}},
+			Resource: &oapi.Resource{
+				Id:       "r1",
+				Metadata: map[string]string{"region": "us-east-1"},
+			},
 			Deployment:  &oapi.Deployment{Id: "d1"},
 			Environment: &oapi.Environment{Id: "e1"},
 		},
@@ -300,7 +303,10 @@ func TestFilterByTargetSelector_NilSelector(t *testing.T) {
 func TestFilterByTargetSelector_MatchingSelector(t *testing.T) {
 	r := &reconciler{
 		scope: &evaluator.EvaluatorScope{
-			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-east-1"}},
+			Resource: &oapi.Resource{
+				Id:       "r1",
+				Metadata: map[string]string{"region": "us-east-1"},
+			},
 			Deployment:  &oapi.Deployment{Id: "d1"},
 			Environment: &oapi.Environment{Id: "e1"},
 		},
@@ -318,7 +324,10 @@ func TestFilterByTargetSelector_MatchingSelector(t *testing.T) {
 func TestFilterByTargetSelector_NonMatchingSelector(t *testing.T) {
 	r := &reconciler{
 		scope: &evaluator.EvaluatorScope{
-			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-west-2"}},
+			Resource: &oapi.Resource{
+				Id:       "r1",
+				Metadata: map[string]string{"region": "us-west-2"},
+			},
 			Deployment:  &oapi.Deployment{Id: "d1"},
 			Environment: &oapi.Environment{Id: "e1"},
 		},
@@ -335,7 +344,10 @@ func TestFilterByTargetSelector_NonMatchingSelector(t *testing.T) {
 func TestFilterByTargetSelector_MixedVersions(t *testing.T) {
 	r := &reconciler{
 		scope: &evaluator.EvaluatorScope{
-			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "us-east-1"}},
+			Resource: &oapi.Resource{
+				Id:       "r1",
+				Metadata: map[string]string{"region": "us-east-1"},
+			},
 			Deployment:  &oapi.Deployment{Id: "d1"},
 			Environment: &oapi.Environment{Id: "e1"},
 		},
@@ -373,7 +385,10 @@ func TestFilterByTargetSelector_InvalidCEL_FailOpen(t *testing.T) {
 func TestFilterByTargetSelector_AllFilteredOut(t *testing.T) {
 	r := &reconciler{
 		scope: &evaluator.EvaluatorScope{
-			Resource:    &oapi.Resource{Id: "r1", Metadata: map[string]string{"region": "ap-south-1"}},
+			Resource: &oapi.Resource{
+				Id:       "r1",
+				Metadata: map[string]string{"region": "ap-south-1"},
+			},
 			Deployment:  &oapi.Deployment{Id: "d1"},
 			Environment: &oapi.Environment{Id: "e1"},
 		},

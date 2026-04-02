@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -12,11 +16,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -45,7 +44,11 @@ func (r *reconciler) filterByTargetSelector() {
 		return
 	}
 
-	rt := selector.NewResolvedReleaseTarget(r.scope.Environment, r.scope.Deployment, r.scope.Resource)
+	rt := selector.NewResolvedReleaseTarget(
+		r.scope.Environment,
+		r.scope.Deployment,
+		r.scope.Resource,
+	)
 	celCtx := rt.CelContext()
 
 	filtered := make([]*oapi.DeploymentVersion, 0, len(r.versions))
