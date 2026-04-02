@@ -10,18 +10,25 @@ import (
 
 func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
-		Id:             row.ID.String(),
-		Name:           row.Name,
-		JobAgentConfig: oapi.JobAgentConfig(row.JobAgentConfig),
-		Metadata:       row.Metadata,
+		Id:       row.ID.String(),
+		Name:     row.Name,
+		Metadata: row.Metadata,
 	}
 	if row.Description != "" {
 		d.Description = &row.Description
 	}
-	if row.JobAgentID != uuid.Nil {
-		s := row.JobAgentID.String()
-		d.JobAgentId = &s
-	}
+	return d
+}
+
+func ToOapiDeploymentWithJobAgents(row GetDeploymentWithJobAgentsRow) *oapi.Deployment {
+	d := ToOapiDeployment(Deployment{
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		ResourceSelector: row.ResourceSelector,
+		Metadata:         row.Metadata,
+		WorkspaceID:      row.WorkspaceID,
+	})
 	if row.JobAgents != nil {
 		var jobAgents []oapi.DeploymentJobAgent
 		if err := json.Unmarshal(row.JobAgents, &jobAgents); err == nil {

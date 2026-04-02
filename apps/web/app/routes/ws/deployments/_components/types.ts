@@ -55,8 +55,6 @@ export type Deployment = {
   description: string;
   workspaceId: string | null;
   resourceSelector: string | null;
-  jobAgentId: string | null;
-  jobAgentConfig: Record<string, unknown>;
   metadata: Record<string, string>;
 };
 

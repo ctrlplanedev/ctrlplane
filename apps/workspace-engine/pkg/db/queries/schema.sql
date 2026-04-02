@@ -17,12 +17,16 @@ CREATE TABLE deployment (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    job_agent_id UUID,
-    job_agent_config JSONB NOT NULL DEFAULT '{}',
-    job_agents JSONB NOT NULL DEFAULT '[]',
     resource_selector TEXT DEFAULT 'false',
     metadata JSONB NOT NULL DEFAULT '{}',
     workspace_id UUID REFERENCES workspace(id)
+);
+
+CREATE TABLE deployment_job_agent (
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    job_agent_id UUID NOT NULL REFERENCES job_agent(id) ON DELETE CASCADE,
+    config JSONB NOT NULL DEFAULT '{}',
+    PRIMARY KEY (deployment_id, job_agent_id)
 );
 
 CREATE TABLE job_agent (

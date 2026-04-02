@@ -30,7 +30,7 @@ export default function DeploymentJobAgentPage() {
       <div className="flex flex-col gap-4">
         {deployment.jobAgents.map((deploymentAgent) => (
           <DeploymentAgentCard
-            key={deploymentAgent.ref}
+            key={deploymentAgent.jobAgentId}
             deploymentAgent={deploymentAgent}
           />
         ))}

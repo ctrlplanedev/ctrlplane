@@ -191,11 +191,11 @@ func (g *PostgresGetter) GetDeployment(
 	ctx context.Context,
 	deploymentID uuid.UUID,
 ) (*oapi.Deployment, error) {
-	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, deploymentID)
+	row, err := db.GetQueries(ctx).GetDeploymentWithJobAgents(ctx, deploymentID)
 	if err != nil {
 		return nil, err
 	}
-	return db.ToOapiDeployment(row), nil
+	return db.ToOapiDeploymentWithJobAgents(row), nil
 }
 
 func (g *PostgresGetter) GetJobAgent(

@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import { parse } from "cel-js";
-import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -15,53 +14,6 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-
-const deploymentGhConfig = z.object({
-  repo: z.string(),
-  workflowId: z.coerce.number(),
-  ref: z.string().optional(),
-});
-
-const deploymentArgoCdConfig = z.object({
-  template: z.string(),
-});
-
-const deploymentTfeConfig = z.object({
-  template: z.string(),
-});
-
-const deploymentArgoWorkflowConfig = z.object({
-  template: z.string(),
-});
-
-const deploymentCustomConfig = z.object({}).passthrough();
-
-const deploymentJobAgentConfig = z.union([
-  deploymentGhConfig,
-  deploymentArgoCdConfig,
-  deploymentTfeConfig,
-  deploymentCustomConfig,
-  deploymentArgoWorkflowConfig,
-]);
-
-const getAgentsArrayWithLegacyAgent = (
-  deployment: typeof schema.deployment.$inferSelect,
-) => {
-  const agentsArray = deployment.jobAgents;
-  const agentsArrayWithLegacyAgent = [
-    ...agentsArray,
-    deployment.jobAgentId != null &&
-    deployment.jobAgentId !== "" &&
-    deployment.jobAgentId !== "00000000-0000-0000-0000-000000000000"
-      ? {
-          ref: deployment.jobAgentId,
-          config: deployment.jobAgentConfig,
-          selector: "true",
-        }
-      : null,
-  ].filter(isPresent);
-  return agentsArrayWithLegacyAgent;
-};
 
 export const deploymentsRouter = router({
   get: protectedProcedure
@@ -85,6 +37,7 @@ export const deploymentsRouter = router({
               },
             },
           },
+          jobAgents: true,
         },
       });
 
@@ -94,10 +47,7 @@ export const deploymentsRouter = router({
           message: "Deployment not found",
         });
 
-      return {
-        ...deployment,
-        jobAgents: getAgentsArrayWithLegacyAgent(deployment),
-      };
+      return deployment;
     }),
 
   list: protectedProcedure
@@ -122,10 +72,7 @@ export const deploymentsRouter = router({
         },
         orderBy: asc(schema.deployment.name),
       });
-      return deployments.map((deployment) => ({
-        ...deployment,
-        jobAgents: getAgentsArrayWithLegacyAgent(deployment),
-      }));
+      return deployments;
     }),
 
   releaseTargets: protectedProcedure
@@ -216,8 +163,6 @@ export const deploymentsRouter = router({
           name,
           description: description ?? "",
           metadata: metadata ?? {},
-          jobAgentConfig: {},
-          jobAgents: [],
         })
         .returning();
 
@@ -277,51 +222,59 @@ export const deploymentsRouter = router({
         workspaceId: z.uuid(),
         deploymentId: z.string(),
         jobAgentId: z.string(),
-        jobAgentConfig: deploymentJobAgentConfig,
+        config: z.record(z.string(), z.any()).default({}),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { workspaceId, deploymentId, jobAgentId, jobAgentConfig } = input;
+      const { workspaceId, deploymentId, jobAgentId, config } = input;
 
-      const getTypedJobAgentConfig = (
-        config: z.infer<typeof deploymentJobAgentConfig>,
-      ) => {
-        const ghResult = deploymentGhConfig.safeParse(config);
-        if (ghResult.success)
-          return { ...ghResult.data, type: "github-app" as const };
-        const argoCdResult = deploymentArgoCdConfig.safeParse(config);
-        if (argoCdResult.success)
-          return { ...argoCdResult.data, type: "argo-cd" as const };
-        const tfeResult = deploymentTfeConfig.safeParse(config);
-        if (tfeResult.success)
-          return { ...tfeResult.data, type: "tfe" as const };
-        const argoWorkflowResult =
-          deploymentArgoWorkflowConfig.safeParse(config);
-        if (argoWorkflowResult.success)
-          return { ...argoWorkflowResult.data, type: "argo-workflow" as const };
-        return { ...config, type: "custom" as const };
-      };
+      const deployment = await ctx.db.query.deployment.findFirst({
+        where: and(
+          eq(schema.deployment.id, deploymentId),
+          eq(schema.deployment.workspaceId, workspaceId),
+        ),
+      });
 
-      const typedConfig = getTypedJobAgentConfig(jobAgentConfig);
-
-      const [updated] = await ctx.db
-        .update(schema.deployment)
-        .set({ jobAgentId, jobAgentConfig: typedConfig })
-        .where(eq(schema.deployment.id, deploymentId))
-        .returning();
-
-      if (updated == null)
+      if (deployment == null)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Deployment not found",
         });
 
-      await Promise.all([
+      const jobAgent = await ctx.db.query.jobAgent.findFirst({
+        where: and(
+          eq(schema.jobAgent.id, jobAgentId),
+          eq(schema.jobAgent.workspaceId, workspaceId),
+        ),
+      });
+
+      if (jobAgent == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Job agent not found in this workspace",
+        });
+
+      await ctx.db
+        .insert(schema.deploymentJobAgent)
+        .values({ deploymentId, jobAgentId, config })
+        .onConflictDoUpdate({
+          target: [
+            schema.deploymentJobAgent.deploymentId,
+            schema.deploymentJobAgent.jobAgentId,
+          ],
+          set: { config },
+        });
+
+      const [updated] = await Promise.all([
+        ctx.db.query.deployment.findFirst({
+          where: eq(schema.deployment.id, deploymentId),
+          with: { jobAgents: true },
+        }),
         enqueueDeploymentSelectorEval(ctx.db, { workspaceId, deploymentId }),
         enqueueReleaseTargetsForDeployment(ctx.db, workspaceId, deploymentId),
       ]);
 
-      return updated;
+      return updated!;
     }),
 
   variables: protectedProcedure

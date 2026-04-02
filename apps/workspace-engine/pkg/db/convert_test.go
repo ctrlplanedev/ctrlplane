@@ -65,15 +65,12 @@ func TestToOapiEnvironment_NilOptionalFields(t *testing.T) {
 
 func TestToOapiDeployment(t *testing.T) {
 	depID := uuid.New()
-	agentID := uuid.New()
 
 	row := Deployment{
-		ID:             depID,
-		Name:           "api-server",
-		Description:    "Main API deployment",
-		JobAgentID:     agentID,
-		JobAgentConfig: map[string]any{"image": "api:latest"},
-		Metadata:       map[string]string{"team": "platform"},
+		ID:          depID,
+		Name:        "api-server",
+		Description: "Main API deployment",
+		Metadata:    map[string]string{"team": "platform"},
 	}
 
 	dep := ToOapiDeployment(row)
@@ -82,26 +79,66 @@ func TestToOapiDeployment(t *testing.T) {
 	assert.Equal(t, "api-server", dep.Name)
 	assert.NotNil(t, dep.Description)
 	assert.Equal(t, "Main API deployment", *dep.Description)
-	assert.NotNil(t, dep.JobAgentId)
-	assert.Equal(t, agentID.String(), *dep.JobAgentId)
 	assert.Equal(t, map[string]string{"team": "platform"}, dep.Metadata)
+	assert.Nil(t, dep.JobAgents, "base convert should not populate job agents")
 }
 
 func TestToOapiDeployment_NilOptionalFields(t *testing.T) {
 	depID := uuid.New()
 
 	row := Deployment{
-		ID:             depID,
-		Name:           "worker",
-		JobAgentConfig: map[string]any{},
-		Metadata:       map[string]string{},
+		ID:       depID,
+		Name:     "worker",
+		Metadata: map[string]string{},
 	}
 
 	dep := ToOapiDeployment(row)
 
 	assert.Equal(t, depID.String(), dep.Id)
 	assert.Nil(t, dep.Description, "empty description should not be set")
-	assert.Nil(t, dep.JobAgentId, "nil UUID agent should not be set")
+}
+
+func TestToOapiDeploymentWithJobAgents(t *testing.T) {
+	depID := uuid.New()
+	agentID := uuid.New()
+
+	row := GetDeploymentWithJobAgentsRow{
+		ID:          depID,
+		Name:        "api-server",
+		Description: "Main API deployment",
+		Metadata:    map[string]string{"team": "platform"},
+		JobAgents:   []byte(`[{"ref":"` + agentID.String() + `","config":{"image":"api:latest"}}]`),
+	}
+
+	dep := ToOapiDeploymentWithJobAgents(row)
+
+	assert.Equal(t, depID.String(), dep.Id)
+	assert.Equal(t, "api-server", dep.Name)
+	assert.NotNil(t, dep.Description)
+	assert.Equal(t, "Main API deployment", *dep.Description)
+	assert.Equal(t, map[string]string{"team": "platform"}, dep.Metadata)
+	require.NotNil(t, dep.JobAgents)
+	require.Len(t, *dep.JobAgents, 1)
+	assert.Equal(t, agentID.String(), (*dep.JobAgents)[0].Ref)
+	assert.Equal(t, "api:latest", (*dep.JobAgents)[0].Config["image"])
+}
+
+func TestToOapiDeploymentWithJobAgents_NoAgents(t *testing.T) {
+	depID := uuid.New()
+
+	row := GetDeploymentWithJobAgentsRow{
+		ID:        depID,
+		Name:      "worker",
+		Metadata:  map[string]string{},
+		JobAgents: []byte(`[]`),
+	}
+
+	dep := ToOapiDeploymentWithJobAgents(row)
+
+	assert.Equal(t, depID.String(), dep.Id)
+	assert.Nil(t, dep.Description, "empty description should not be set")
+	require.NotNil(t, dep.JobAgents)
+	assert.Empty(t, *dep.JobAgents)
 }
 
 // ---------------------------------------------------------------------------
