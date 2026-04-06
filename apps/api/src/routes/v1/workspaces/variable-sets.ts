@@ -166,12 +166,11 @@ const updateVariableSet: AsyncTypedHandler<
       }
     }
 
-    enqueueAllReleaseTargetsDesiredVersion(tx, workspaceId);
-
     return vs;
   });
 
   if (updated == null) throw new NotFoundError("Variable set not found");
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
   res.status(202).json(updated);
 };
 
