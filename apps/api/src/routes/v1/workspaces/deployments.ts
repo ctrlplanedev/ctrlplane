@@ -1,6 +1,7 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
+import _ from "lodash";
 import { v4 as uuidv4 } from "uuid";
 
 import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
@@ -12,14 +13,30 @@ import {
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
-const PLAN_TTL_MS = 60 * 60 * 1000; // 1 hour
+// 1 hour
 
 import { validResourceSelector } from "../valid-selector.js";
 import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
 
-const parseSelector = (
-  raw: string | null | undefined,
-): string | undefined => {
+const PLAN_TTL_MS = 60 * 60 * 1000;
+
+const getJobAgentsByDeploymentId = async (
+  deploymentIds: string[],
+): Promise<Record<string, { ref: string; config: Record<string, any> }[]>> => {
+  if (deploymentIds.length === 0) return {};
+  const links = await db
+    .select()
+    .from(schema.deploymentJobAgent)
+    .where(inArray(schema.deploymentJobAgent.deploymentId, deploymentIds));
+  return _.chain(links)
+    .groupBy((l) => l.deploymentId)
+    .mapValues((group) =>
+      group.map((l) => ({ ref: l.jobAgentId, config: l.config })),
+    )
+    .value();
+};
+
+const parseSelector = (raw: string | null | undefined): string | undefined => {
   if (raw == null || raw === "false") return undefined;
   return raw;
 };
@@ -84,16 +101,16 @@ const listDeployments: AsyncTypedHandler<
   const systemLinks =
     deploymentIds.length > 0
       ? await db
-        .select({
-          deploymentId: schema.systemDeployment.deploymentId,
-          system: schema.system,
-        })
-        .from(schema.systemDeployment)
-        .innerJoin(
-          schema.system,
-          eq(schema.systemDeployment.systemId, schema.system.id),
-        )
-        .where(inArray(schema.systemDeployment.deploymentId, deploymentIds))
+          .select({
+            deploymentId: schema.systemDeployment.deploymentId,
+            system: schema.system,
+          })
+          .from(schema.systemDeployment)
+          .innerJoin(
+            schema.system,
+            eq(schema.systemDeployment.systemId, schema.system.id),
+          )
+          .where(inArray(schema.systemDeployment.deploymentId, deploymentIds))
       : [];
 
   const systemsByDeploymentId = new Map<
@@ -106,8 +123,14 @@ const listDeployments: AsyncTypedHandler<
     systemsByDeploymentId.set(link.deploymentId, arr);
   }
 
+  const agentsByDeploymentId = await getJobAgentsByDeploymentId(deploymentIds);
   const items = deployments.map((dep) => ({
-    deployment: formatDeployment(dep),
+    deployment: {
+      ...formatDeployment(dep),
+      jobAgents: (agentsByDeploymentId[dep.id] ?? []).map(
+        ({ ref, config }) => ({ ref, config }),
+      ),
+    },
     systems: (systemsByDeploymentId.get(dep.id) ?? []).map(formatSystem),
   }));
 
@@ -129,6 +152,8 @@ const getDeployment: AsyncTypedHandler<
 
   if (dep == null) throw new ApiError("Deployment not found", 404);
 
+  const agentsByDeploymentId = await getJobAgentsByDeploymentId([deploymentId]);
+
   const systemRows = await db
     .select({ system: schema.system })
     .from(schema.systemDeployment)
@@ -147,14 +172,14 @@ const getDeployment: AsyncTypedHandler<
   const variableValues =
     variableIds.length > 0
       ? await db
-        .select()
-        .from(schema.deploymentVariableValue)
-        .where(
-          inArray(
-            schema.deploymentVariableValue.deploymentVariableId,
-            variableIds,
-          ),
-        )
+          .select()
+          .from(schema.deploymentVariableValue)
+          .where(
+            inArray(
+              schema.deploymentVariableValue.deploymentVariableId,
+              variableIds,
+            ),
+          )
       : [];
 
   const valuesByVariableId = new Map<
@@ -168,7 +193,12 @@ const getDeployment: AsyncTypedHandler<
   }
 
   res.status(200).json({
-    deployment: formatDeployment(dep),
+    deployment: {
+      ...formatDeployment(dep),
+      jobAgents: (agentsByDeploymentId[dep.id] ?? []).map(
+        ({ ref, config }) => ({ ref, config }),
+      ),
+    },
     systems: systemRows.map((r) => formatSystem(r.system)),
     variables: variables.map((v) => ({
       variable: {
@@ -448,12 +478,12 @@ const getDeploymentPlan: AsyncTypedHandler<
     status === "computing"
       ? null
       : {
-        total: allResults.length,
-        changed,
-        unchanged,
-        errored,
-        unsupported,
-      };
+          total: allResults.length,
+          changed,
+          unchanged,
+          errored,
+          unsupported,
+        };
 
   res.status(200).json({
     id: plan.id,
