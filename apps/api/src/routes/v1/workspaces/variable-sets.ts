@@ -12,6 +12,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
 const listVariableSets: AsyncTypedHandler<
@@ -86,6 +87,8 @@ const createVariableSet: AsyncTypedHandler<
 
     return vs;
   });
+
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
 
   res.status(201).json(created);
 };
@@ -167,6 +170,7 @@ const updateVariableSet: AsyncTypedHandler<
   });
 
   if (updated == null) throw new NotFoundError("Variable set not found");
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
   res.status(202).json(updated);
 };
 
@@ -187,6 +191,9 @@ const deleteVariableSet: AsyncTypedHandler<
     .then(takeFirstOrNull);
 
   if (deleted == null) throw new NotFoundError("Variable set not found");
+
+  enqueueAllReleaseTargetsDesiredVersion(db, workspaceId);
+
   res.status(202).json(deleted);
 };
 
