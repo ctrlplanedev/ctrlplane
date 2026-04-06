@@ -1,5 +1,5 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import { asyncHandler, NotFoundError } from "@/types/api.js";
+import { asyncHandler, BadRequestError, NotFoundError } from "@/types/api.js";
 import { Router } from "express";
 
 import {
@@ -61,6 +61,13 @@ const createVariableSet: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { variables = [], ...setData } = req.body;
 
+  const keys = variables.map((v) => v.key);
+  const duplicateKeys = keys.filter((k, i) => keys.indexOf(k) !== i);
+  if (duplicateKeys.length > 0)
+    throw new BadRequestError(
+      `Duplicate variable keys: ${[...new Set(duplicateKeys)].join(", ")}`,
+    );
+
   const created = await db.transaction(async (tx) => {
     const vs = await tx
       .insert(schema.variableSet)
@@ -115,6 +122,15 @@ const updateVariableSet: AsyncTypedHandler<
 > = async (req, res) => {
   const { variableSetId, workspaceId } = req.params;
   const { variables, ...setData } = req.body;
+
+  if (variables != null) {
+    const keys = variables.map((v) => v.key);
+    const duplicateKeys = keys.filter((k, i) => keys.indexOf(k) !== i);
+    if (duplicateKeys.length > 0)
+      throw new BadRequestError(
+        `Duplicate variable keys: ${[...new Set(duplicateKeys)].join(", ")}`,
+      );
+  }
 
   const updated = await db.transaction(async (tx) => {
     const vs = await tx
