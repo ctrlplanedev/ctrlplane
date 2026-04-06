@@ -28,3 +28,4 @@ export * from "./policy-rule-summary.js";
 export * from "./job-verification-metric.js";
 export * from "./relationships.js";
 export * from "./job-agent.js";
+export * from "./variable-set.js";

@@ -501,3 +501,23 @@ CREATE TABLE deployment_plan_target_result (
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );
+
+CREATE TABLE variable_set (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    selector TEXT NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    priority INTEGER NOT NULL DEFAULT 0,
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE variable_set_variable (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    variable_set_id UUID NOT NULL REFERENCES variable_set(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value JSONB NOT NULL,
+    UNIQUE (variable_set_id, key)
+);

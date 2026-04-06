@@ -1232,6 +1232,64 @@ type Value struct {
 	union json.RawMessage
 }
 
+// VariableSet defines model for VariableSet.
+type VariableSet struct {
+	// CreatedAt The timestamp when the variable set was created
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Description The description of the variable set
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+
+	// Name The name of the variable set
+	Name string `json:"name"`
+
+	// Priority The priority of the variable set
+	Priority int64 `json:"priority"`
+
+	// Selector A CEL expression to select which resources this value applies to
+	Selector string `json:"selector"`
+
+	// UpdatedAt The timestamp when the variable set was last updated
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// VariableSetVariable defines model for VariableSetVariable.
+type VariableSetVariable struct {
+	// Id The ID of the variable
+	Id openapi_types.UUID `json:"id"`
+
+	// Key The key of the variable, unique within the variable set
+	Key   string `json:"key"`
+	Value Value  `json:"value"`
+
+	// VariableSetId The ID of the variable set this variable belongs to
+	VariableSetId openapi_types.UUID `json:"variableSetId"`
+}
+
+// VariableSetWithVariables defines model for VariableSetWithVariables.
+type VariableSetWithVariables struct {
+	// CreatedAt The timestamp when the variable set was created
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Description The description of the variable set
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+
+	// Name The name of the variable set
+	Name string `json:"name"`
+
+	// Priority The priority of the variable set
+	Priority int64 `json:"priority"`
+
+	// Selector A CEL expression to select which resources this value applies to
+	Selector string `json:"selector"`
+
+	// UpdatedAt The timestamp when the variable set was last updated
+	UpdatedAt time.Time             `json:"updatedAt"`
+	Variables []VariableSetVariable `json:"variables"`
+}
+
 // VerificationMeasurement defines model for VerificationMeasurement.
 type VerificationMeasurement struct {
 	// Data Raw measurement data

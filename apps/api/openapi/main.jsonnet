@@ -49,7 +49,8 @@ local securitySchemes = {
          (import 'paths/release-targets.jsonnet') +
          (import 'paths/release.jsonnet') +
          (import 'paths/job-agents.jsonnet') +
-         (import 'paths/workflows.jsonnet'),
+         (import 'paths/workflows.jsonnet') +
+         (import 'paths/variablesets.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
@@ -71,6 +72,7 @@ local securitySchemes = {
       (import 'schemas/release.jsonnet') +
       (import 'schemas/job-agents.jsonnet') +
       (import 'schemas/verifications.jsonnet') +
-      (import 'schemas/workflows.jsonnet'),
+      (import 'schemas/workflows.jsonnet') +
+      (import 'schemas/variablesets.jsonnet'),
   },
 }

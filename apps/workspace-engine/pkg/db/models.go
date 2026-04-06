@@ -711,6 +711,25 @@ type UserApprovalRecord struct {
 	CreatedAt     pgtype.Timestamptz
 }
 
+type VariableSet struct {
+	ID          uuid.UUID
+	Name        string
+	Description string
+	Selector    string
+	Metadata    map[string]string
+	Priority    int32
+	WorkspaceID uuid.UUID
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type VariableSetVariable struct {
+	ID            uuid.UUID
+	VariableSetID uuid.UUID
+	Key           string
+	Value         []byte
+}
+
 type Workflow struct {
 	ID          uuid.UUID
 	Name        string

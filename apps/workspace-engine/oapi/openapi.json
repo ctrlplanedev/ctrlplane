@@ -2670,6 +2670,100 @@
                }
             ]
          },
+         "VariableSet": {
+            "properties": {
+               "createdAt": {
+                  "description": "The timestamp when the variable set was created",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "description": {
+                  "description": "The description of the variable set",
+                  "type": "string"
+               },
+               "id": {
+                  "format": "uuid",
+                  "type": "string"
+               },
+               "name": {
+                  "description": "The name of the variable set",
+                  "type": "string"
+               },
+               "priority": {
+                  "description": "The priority of the variable set",
+                  "format": "int64",
+                  "type": "integer"
+               },
+               "selector": {
+                  "description": "A CEL expression to select which resources this value applies to",
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "description": "The timestamp when the variable set was last updated",
+                  "format": "date-time",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "description",
+               "selector",
+               "priority",
+               "createdAt",
+               "updatedAt"
+            ],
+            "type": "object"
+         },
+         "VariableSetVariable": {
+            "properties": {
+               "id": {
+                  "description": "The ID of the variable",
+                  "format": "uuid",
+                  "type": "string"
+               },
+               "key": {
+                  "description": "The key of the variable, unique within the variable set",
+                  "type": "string"
+               },
+               "value": {
+                  "$ref": "#/components/schemas/Value"
+               },
+               "variableSetId": {
+                  "description": "The ID of the variable set this variable belongs to",
+                  "format": "uuid",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "variableSetId",
+               "key",
+               "value"
+            ],
+            "type": "object"
+         },
+         "VariableSetWithVariables": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/VariableSet"
+               },
+               {
+                  "properties": {
+                     "variables": {
+                        "items": {
+                           "$ref": "#/components/schemas/VariableSetVariable"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "variables"
+                  ],
+                  "type": "object"
+               }
+            ]
+         },
          "VerificationMeasurement": {
             "properties": {
                "data": {

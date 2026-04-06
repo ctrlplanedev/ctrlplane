@@ -30,6 +30,7 @@
       (import 'schemas/resourcevariables.jsonnet') +
       (import 'schemas/systems.jsonnet') +
       (import 'schemas/workflows.jsonnet') +
-      (import 'schemas/release_targets.jsonnet'),
+      (import 'schemas/release_targets.jsonnet') +
+      (import 'schemas/variablesets.jsonnet'),
   },
 }

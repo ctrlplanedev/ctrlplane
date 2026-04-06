@@ -118,6 +118,7 @@ type DesiredReleaseGetter struct {
 
 	DeploymentVars    []oapi.DeploymentVariableWithValues
 	ResourceVars      map[string]oapi.ResourceVariable
+	VariableSets      []oapi.VariableSetWithVariables
 	RelationshipRules []eval.Rule
 	Candidates        map[string][]eval.EntityData
 
@@ -460,6 +461,13 @@ func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
 		}
 	}
 	return result, nil
+}
+
+func (g *DesiredReleaseGetter) GetVariableSetsWithVariables(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.VariableSetWithVariables, error) {
+	return g.VariableSets, nil
 }
 
 type eligibilityCall struct {

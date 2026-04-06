@@ -265,6 +265,37 @@
             ],
             "type": "object"
          },
+         "CreateVariableSet": {
+            "properties": {
+               "description": {
+                  "default": "",
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "priority": {
+                  "default": 0,
+                  "type": "integer"
+               },
+               "selector": {
+                  "description": "A CEL expression to select which release targets this variable set applies to",
+                  "type": "string"
+               },
+               "variables": {
+                  "items": {
+                     "$ref": "#/components/schemas/VariableSetVariable"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "name",
+               "selector",
+               "variables"
+            ],
+            "type": "object"
+         },
          "CreateWorkflow": {
             "properties": {
                "inputs": {
@@ -2410,6 +2441,29 @@
             ],
             "type": "object"
          },
+         "UpdateVariableSet": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "priority": {
+                  "type": "integer"
+               },
+               "selector": {
+                  "type": "string"
+               },
+               "variables": {
+                  "items": {
+                     "$ref": "#/components/schemas/VariableSetVariable"
+                  },
+                  "type": "array"
+               }
+            },
+            "type": "object"
+         },
          "UpdateWorkflow": {
             "properties": {
                "inputs": {
@@ -2895,6 +2949,81 @@
                },
                {
                   "$ref": "#/components/schemas/SensitiveValue"
+               }
+            ]
+         },
+         "VariableSet": {
+            "properties": {
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "format": "uuid",
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "priority": {
+                  "type": "integer"
+               },
+               "selector": {
+                  "description": "A CEL expression to select which release targets this variable set applies to",
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "description",
+               "selector",
+               "priority",
+               "createdAt",
+               "updatedAt"
+            ],
+            "type": "object"
+         },
+         "VariableSetVariable": {
+            "properties": {
+               "key": {
+                  "type": "string"
+               },
+               "value": {
+                  "$ref": "#/components/schemas/Value"
+               }
+            },
+            "required": [
+               "key",
+               "value"
+            ],
+            "type": "object"
+         },
+         "VariableSetWithVariables": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/VariableSet"
+               },
+               {
+                  "properties": {
+                     "variables": {
+                        "items": {
+                           "$ref": "#/components/schemas/VariableSetVariable"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "variables"
+                  ],
+                  "type": "object"
                }
             ]
          },
@@ -8543,6 +8672,341 @@
                }
             },
             "summary": "Link environment to system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/variable-sets": {
+         "get": {
+            "description": "Returns a list of variable sets.",
+            "operationId": "listVariableSets",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/VariableSetWithVariables"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "List variable sets",
+            "tags": [
+               "Variable Sets"
+            ]
+         },
+         "post": {
+            "description": "Creates a variable set.",
+            "operationId": "createVariableSet",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateVariableSet"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "201": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/VariableSet"
+                        }
+                     }
+                  },
+                  "description": "Resource created successfully"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Create a variable set",
+            "tags": [
+               "Variable Sets"
+            ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/variable-sets/{variableSetId}": {
+         "delete": {
+            "description": "Deletes a variable set.",
+            "operationId": "deleteVariableSet",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the variable set",
+                  "in": "path",
+                  "name": "variableSetId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/VariableSet"
+                        }
+                     }
+                  },
+                  "description": "Variable set deleted"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Delete a variable set",
+            "tags": [
+               "Variable Sets"
+            ]
+         },
+         "get": {
+            "description": "Gets a variable set by ID.",
+            "operationId": "getVariableSet",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the variable set",
+                  "in": "path",
+                  "name": "variableSetId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/VariableSetWithVariables"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get a variable set",
+            "tags": [
+               "Variable Sets"
+            ]
+         },
+         "put": {
+            "description": "Updates a variable set.",
+            "operationId": "updateVariableSet",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the variable set",
+                  "in": "path",
+                  "name": "variableSetId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpdateVariableSet"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/VariableSet"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Update a variable set",
+            "tags": [
+               "Variable Sets"
+            ]
          }
       },
       "/v1/workspaces/{workspaceId}/workflows": {

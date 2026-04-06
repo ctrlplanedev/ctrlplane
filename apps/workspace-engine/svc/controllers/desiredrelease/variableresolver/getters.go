@@ -20,6 +20,10 @@ type Getter interface {
 		ctx context.Context,
 		resourceID string,
 	) (map[string]oapi.ResourceVariable, error)
+	GetVariableSetsWithVariables(
+		ctx context.Context,
+		workspaceID uuid.UUID,
+	) ([]oapi.VariableSetWithVariables, error)
 	GetRelationshipRules(ctx context.Context, workspaceID uuid.UUID) ([]eval.Rule, error)
 	LoadCandidates(
 		ctx context.Context,

@@ -221,6 +221,13 @@ func (m *mockReconcileGetter) GetJobsForEnvironmentAndVersion(
 	return nil, nil
 }
 
+func (m *mockReconcileGetter) GetVariableSetsWithVariables(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.VariableSetWithVariables, error) {
+	return nil, nil
+}
+
 var _ Getter = (*mockReconcileGetter)(nil)
 
 // ---------------------------------------------------------------------------
