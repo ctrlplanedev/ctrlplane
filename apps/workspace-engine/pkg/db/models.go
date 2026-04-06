@@ -327,12 +327,15 @@ type Deployment struct {
 	ID               uuid.UUID
 	Name             string
 	Description      string
-	JobAgentID       uuid.UUID
-	JobAgentConfig   map[string]any
-	JobAgents        []byte
 	ResourceSelector pgtype.Text
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
+}
+
+type DeploymentJobAgent struct {
+	DeploymentID uuid.UUID
+	JobAgentID   uuid.UUID
+	Config       []byte
 }
 
 type DeploymentPlan struct {

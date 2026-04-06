@@ -3232,6 +3232,8 @@ export interface operations {
                 limit?: number;
                 /** @description Number of items to skip */
                 offset?: number;
+                /** @description Sort order for results */
+                order?: "asc" | "desc";
             };
             header?: never;
             path: {

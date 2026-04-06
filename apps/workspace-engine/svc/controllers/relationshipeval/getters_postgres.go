@@ -240,17 +240,13 @@ func resourceRowToMap(r db.GetActiveResourceByIDRow) map[string]any {
 
 func deploymentRowToMap(r db.GetDeploymentForRelEvalRow) map[string]any {
 	m := map[string]any{
-		"type":           "deployment",
-		"id":             r.ID.String(),
-		"name":           r.Name,
-		"jobAgentConfig": r.JobAgentConfig,
-		"metadata":       stringMapToAnyMap(r.Metadata),
+		"type":     "deployment",
+		"id":       r.ID.String(),
+		"name":     r.Name,
+		"metadata": stringMapToAnyMap(r.Metadata),
 	}
 	if r.Description != "" {
 		m["description"] = r.Description
-	}
-	if r.JobAgentID != uuid.Nil {
-		m["jobAgentId"] = r.JobAgentID.String()
 	}
 	return m
 }
@@ -289,17 +285,13 @@ func resourceListRowToMap(r db.ListActiveResourcesByWorkspaceRow) map[string]any
 
 func deploymentListRowToMap(r db.ListDeploymentsByWorkspaceRow) map[string]any {
 	m := map[string]any{
-		"type":           "deployment",
-		"id":             r.ID.String(),
-		"name":           r.Name,
-		"jobAgentConfig": r.JobAgentConfig,
-		"metadata":       stringMapToAnyMap(r.Metadata),
+		"type":     "deployment",
+		"id":       r.ID.String(),
+		"name":     r.Name,
+		"metadata": stringMapToAnyMap(r.Metadata),
 	}
 	if r.Description != "" {
 		m["description"] = r.Description
-	}
-	if r.JobAgentID != uuid.Nil {
-		m["jobAgentId"] = r.JobAgentID.String()
 	}
 	return m
 }

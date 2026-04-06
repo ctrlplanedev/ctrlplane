@@ -4913,6 +4913,20 @@
                      "minimum": 0,
                      "type": "integer"
                   }
+               },
+               {
+                  "description": "Sort order for results",
+                  "in": "query",
+                  "name": "order",
+                  "required": false,
+                  "schema": {
+                     "default": "desc",
+                     "enum": [
+                        "asc",
+                        "desc"
+                     ],
+                     "type": "string"
+                  }
                }
             ],
             "responses": {

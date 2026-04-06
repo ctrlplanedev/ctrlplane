@@ -11,7 +11,7 @@ FROM resource
 WHERE id = @id AND deleted_at IS NULL;
 
 -- name: GetDeploymentForRelEval :one
-SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+SELECT id, workspace_id, name, description, metadata
 FROM deployment
 WHERE id = @id;
 
@@ -27,7 +27,7 @@ FROM resource
 WHERE workspace_id = @workspace_id AND deleted_at IS NULL;
 
 -- name: ListDeploymentsByWorkspace :many
-SELECT id, workspace_id, name, description, job_agent_id, job_agent_config, metadata
+SELECT id, workspace_id, name, description, metadata
 FROM deployment
 WHERE workspace_id = @workspace_id;
 

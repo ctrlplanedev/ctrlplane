@@ -22,11 +22,11 @@ func (g *PostgresGetter) GetDeployment(
 	ctx context.Context,
 	id uuid.UUID,
 ) (*oapi.Deployment, error) {
-	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, id)
+	row, err := db.GetQueries(ctx).GetDeploymentWithJobAgents(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return db.ToOapiDeployment(row), nil
+	return db.ToOapiDeploymentWithJobAgents(row), nil
 }
 
 func (g *PostgresGetter) GetReleaseTargets(

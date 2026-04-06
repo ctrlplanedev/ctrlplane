@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
+      - name: Release
+        id: semantic-release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: simple
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Tag Images
+        if: ${{ steps.semantic-release.outputs.release_created }}
+        run: |
+          VERSION=${{ steps.semantic-release.outputs.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  build-app:
+    name: Build API App
+
+    needs: release
+    if: ${{ needs.release.outputs.release_created }}
+
+    uses: ./.github/workflows/build-image.yaml
+    secrets: inherit
+
+    with:
+      image-name: ctrlplane/api
+      dockerfile: apps/api/Dockerfile
+      platform: "linux/amd64"
+      tags: |
+        type=semver,pattern={{version}},value=${{ needs.release.outputs.tag_name }}
+        type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.tag_name }}
+        type=semver,pattern={{major}},value=${{ needs.release.outputs.tag_name }}
+        type=raw,value=latest
+
+  build-web:
+    name: Build Web App
+
+    needs: release
+    if: ${{ needs.release.outputs.release_created }}
+
+    uses: ./.github/workflows/build-image.yaml
+    secrets: inherit
+
+    with:
+      image-name: ctrlplane/web
+      dockerfile: apps/web/Dockerfile
+      platform: "linux/amd64"
+      tags: |
+        type=semver,pattern={{version}},value=${{ needs.release.outputs.tag_name }}
+        type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.tag_name }}
+        type=semver,pattern={{major}},value=${{ needs.release.outputs.tag_name }}
+        type=raw,value=latest
+
+  build-workspace-engine:
+    name: Build Workspace Engine
+
+    needs: release
+    if: ${{ needs.release.outputs.release_created }}
+
+    uses: ./.github/workflows/build-image.yaml
+    secrets: inherit
+
+    with:
+      image-name: ctrlplane/workspace-engine
+      dockerfile: apps/workspace-engine/Dockerfile
+      platform: "linux/amd64"
+      tags: |
+        type=semver,pattern={{version}},value=${{ needs.release.outputs.tag_name }}
+        type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.tag_name }}
+        type=semver,pattern={{major}},value=${{ needs.release.outputs.tag_name }}
+        type=raw,value=latest
