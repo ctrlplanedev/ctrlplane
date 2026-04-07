@@ -257,13 +257,16 @@ const postDeployment: AsyncTypedHandler<
       .onConflictDoNothing();
 
   if (body.jobAgents != null && body.jobAgents.length > 0)
-    await db.insert(schema.deploymentJobAgent).values(
-      body.jobAgents.map((agent) => ({
-        deploymentId: id,
-        jobAgentId: agent.ref,
-        config: agent.config,
-      })),
-    );
+    await db
+      .insert(schema.deploymentJobAgent)
+      .values(
+        body.jobAgents.map((agent) => ({
+          deploymentId: id,
+          jobAgentId: agent.ref,
+          config: agent.config,
+        })),
+      )
+      .onConflictDoNothing();
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, id);
 
@@ -333,13 +336,16 @@ const upsertDeployment: AsyncTypedHandler<
         .where(eq(schema.deploymentJobAgent.deploymentId, deploymentId));
 
       if (body.jobAgents!.length > 0)
-        await tx.insert(schema.deploymentJobAgent).values(
-          body.jobAgents!.map((agent) => ({
-            deploymentId,
-            jobAgentId: agent.ref,
-            config: agent.config,
-          })),
-        );
+        await tx
+          .insert(schema.deploymentJobAgent)
+          .values(
+            body.jobAgents!.map((agent) => ({
+              deploymentId,
+              jobAgentId: agent.ref,
+              config: agent.config,
+            })),
+          )
+          .onConflictDoNothing();
     });
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
