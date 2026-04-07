@@ -1044,6 +1044,8 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            jobAgentSelector?: string;
             jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
@@ -1202,6 +1204,8 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            /** @description CEL expression to match job agents */
+            jobAgentSelector?: string;
             jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
@@ -1915,6 +1919,8 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            jobAgentSelector?: string;
             jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;

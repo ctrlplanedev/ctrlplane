@@ -54,6 +54,10 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents. Defaults to jobAgent.id == \"<jobAgentId>\" if not provided.",
+                  "type": "string"
+               },
                "jobAgents": {
                   "items": {
                      "$ref": "#/components/schemas/DeploymentJobAgent"
@@ -453,6 +457,10 @@
                   "type": "object"
                },
                "jobAgentId": {
+                  "type": "string"
+               },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents",
                   "type": "string"
                },
                "jobAgents": {
@@ -2517,6 +2525,10 @@
                   "type": "object"
                },
                "jobAgentId": {
+                  "type": "string"
+               },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents. Defaults to jobAgent.id == \"<jobAgentId>\" if not provided.",
                   "type": "string"
                },
                "jobAgents": {

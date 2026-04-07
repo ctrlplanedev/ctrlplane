@@ -186,6 +186,168 @@ test.describe("Deployment API", () => {
     );
   });
 
+  test("should create a deployment with a custom jobAgentSelector", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `deploy-selector-${faker.string.alphanumeric(8)}`;
+    const selector = `jobAgent.type == "test-runner"`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name,
+          slug: name,
+          jobAgentSelector: selector,
+          jobAgentConfig: { workflow: "ci.yaml" },
+        },
+      },
+    );
+
+    expect(createRes.response.status).toBe(202);
+    const deploymentId = createRes.data!.id;
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    const { deployment } = getRes.data!;
+    expect(deployment.jobAgentSelector).toBe(selector);
+    expect(deployment.jobAgentConfig).toEqual({ workflow: "ci.yaml" });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
+  test("should default jobAgentSelector from jobAgentId", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `deploy-default-sel-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name,
+          slug: name,
+          jobAgentId,
+          jobAgentConfig: { image: "app:latest" },
+        },
+      },
+    );
+
+    expect(createRes.response.status).toBe(202);
+    const deploymentId = createRes.data!.id;
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    const { deployment } = getRes.data!;
+    expect(deployment.jobAgentSelector).toBe(
+      `jobAgent.id == "${jobAgentId}"`,
+    );
+    expect(deployment.jobAgentConfig).toEqual({ image: "app:latest" });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
+  test("should upsert a deployment with a custom jobAgentSelector", async ({
+    api,
+    workspace,
+  }) => {
+    const deploymentId = uuidv4();
+    const name = `deploy-upsert-sel-${faker.string.alphanumeric(8)}`;
+    const selector = `jobAgent.name == "my-agent"`;
+
+    const upsertRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId },
+        },
+        body: {
+          name,
+          slug: name,
+          jobAgentSelector: selector,
+          jobAgentConfig: { env: "staging" },
+        },
+      },
+    );
+
+    expect(upsertRes.response.status).toBe(202);
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    const { deployment } = getRes.data!;
+    expect(deployment.jobAgentSelector).toBe(selector);
+    expect(deployment.jobAgentConfig).toEqual({ env: "staging" });
+
+    // Update the selector via upsert
+    const updatedSelector = `jobAgent.type == "kubernetes"`;
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId },
+        },
+        body: {
+          name,
+          slug: name,
+          jobAgentSelector: updatedSelector,
+          jobAgentConfig: { env: "production" },
+        },
+      },
+    );
+
+    const getRes2 = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId },
+        },
+      },
+    );
+
+    expect(getRes2.response.status).toBe(200);
+    expect(getRes2.data!.deployment.jobAgentSelector).toBe(updatedSelector);
+    expect(getRes2.data!.deployment.jobAgentConfig).toEqual({
+      env: "production",
+    });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
   test("should delete a deployment", async ({ api, workspace }) => {
     const name = `deploy-delete-${faker.string.alphanumeric(8)}`;
     const createRes = await api.POST(

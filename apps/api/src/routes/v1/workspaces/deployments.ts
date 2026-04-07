@@ -47,6 +47,8 @@ const formatDeployment = (dep: typeof schema.deployment.$inferSelect) => ({
   slug: dep.name,
   description: dep.description,
   resourceSelector: parseSelector(dep.resourceSelector),
+  jobAgentSelector: parseSelector(dep.jobAgentSelector),
+  jobAgentConfig: dep.jobAgentConfig ?? {},
   metadata: dep.metadata,
 });
 
@@ -240,7 +242,9 @@ const postDeployment: AsyncTypedHandler<
     name: body.name,
     description: body.description ?? "",
     resourceSelector: body.resourceSelector ?? "false",
-    jobAgentSelector: jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false",
+    jobAgentSelector:
+      body.jobAgentSelector ??
+      (jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false"),
     jobAgentConfig,
     metadata: body.metadata ?? {},
     workspaceId,
@@ -294,7 +298,9 @@ const upsertDeployment: AsyncTypedHandler<
       name: body.name,
       description: body.description ?? "",
       resourceSelector: body.resourceSelector ?? "false",
-      jobAgentSelector: jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false",
+      jobAgentSelector:
+        body.jobAgentSelector ??
+        (jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false"),
       jobAgentConfig,
       metadata: body.metadata ?? {},
       workspaceId,
@@ -306,10 +312,14 @@ const upsertDeployment: AsyncTypedHandler<
         description: body.description ?? "",
         resourceSelector: body.resourceSelector ?? "false",
         metadata: body.metadata ?? {},
-        ...(jobAgentId != null && {
-          jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
-          jobAgentConfig,
-        }),
+        ...(body.jobAgentSelector != null
+          ? { jobAgentSelector: body.jobAgentSelector, jobAgentConfig }
+          : jobAgentId != null
+            ? {
+                jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
+                jobAgentConfig,
+              }
+            : {}),
       },
     });
 
