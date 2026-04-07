@@ -256,6 +256,15 @@ const postDeployment: AsyncTypedHandler<
       })
       .onConflictDoNothing();
 
+  if (body.jobAgents != null && body.jobAgents.length > 0)
+    await db.insert(schema.deploymentJobAgent).values(
+      body.jobAgents.map((agent) => ({
+        deploymentId: id,
+        jobAgentId: agent.ref,
+        config: agent.config,
+      })),
+    );
+
   enqueueReleaseTargetsForDeployment(db, workspaceId, id);
 
   res.status(202).json({ id, message: "Deployment creation requested" });
@@ -301,7 +310,7 @@ const upsertDeployment: AsyncTypedHandler<
       },
     });
 
-  if (jobAgentId) {
+  if (jobAgentId)
     await db
       .insert(schema.deploymentJobAgent)
       .values({
@@ -316,7 +325,22 @@ const upsertDeployment: AsyncTypedHandler<
         ],
         set: { config: jobAgentConfig },
       });
-  }
+
+  if (body.jobAgents != null)
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(schema.deploymentJobAgent)
+        .where(eq(schema.deploymentJobAgent.deploymentId, deploymentId));
+
+      if (body.jobAgents!.length > 0)
+        await tx.insert(schema.deploymentJobAgent).values(
+          body.jobAgents!.map((agent) => ({
+            deploymentId,
+            jobAgentId: agent.ref,
+            config: agent.config,
+          })),
+        );
+    });
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 

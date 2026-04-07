@@ -1,419 +1,449 @@
-import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
-const yamlPath = path.join(__dirname, "resources.spec.yaml");
-
 test.describe("Resource API", () => {
-  let builder: EntitiesBuilder;
-
-  test.beforeAll(async ({ api, workspace }) => {
-    builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.upsertSystemFixture();
-    await builder.upsertEnvironmentFixtures();
-    await builder.upsertDeploymentFixtures();
-  });
-
-  test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.refs, workspace.id);
-  });
-
-  test("create a resource", async ({ api, workspace }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    const resourceName1 = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const resource = await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resourceName1,
-        kind: "ResourceAPI",
-        identifier: resourceName1,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    expect(resource.response.status).toBe(200);
-    expect(resource.data?.id).toBeDefined();
-    expect(resource.error).toBeUndefined();
-    expect(resource.data?.workspaceId).toBe(workspace.id);
-    expect(resource.data?.name).toBe(resourceName1);
-    expect(resource.data?.kind).toBe("ResourceAPI");
-    expect(resource.data?.identifier).toBe(resourceName1);
-    expect(resource.data?.version).toBe("test-version/v1");
-    expect(resource.data?.config).toEqual({ "e2e-test": true });
-    expect(resource.data?.metadata).toEqual({ "e2e-test": "true" });
-
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
-
-    const environment = builder.refs.environments[0]!;
-    const deployment = builder.refs.deployments[0]!;
-
-    const environmentResourcesResponse = await api.GET(
-      "/v1/environments/{environmentId}/resources",
-      { params: { path: { environmentId: environment.id } } },
-    );
-
-    expect(environmentResourcesResponse.response.status).toBe(200);
-    const environmentResources = environmentResourcesResponse.data?.resources;
-    const environmentResourceMatch = environmentResources?.find(
-      (r) => r.identifier === resourceName1,
-    );
-    expect(environmentResourceMatch).toBeDefined();
-
-    const deploymentResourcesResponse = await api.GET(
-      "/v1/deployments/{deploymentId}/resources",
-      { params: { path: { deploymentId: deployment.id } } },
-    );
-
-    expect(deploymentResourcesResponse.response.status).toBe(200);
-    const deploymentResources = deploymentResourcesResponse.data?.resources;
-    const deploymentResourceMatch = deploymentResources?.find(
-      (r) => r.identifier === resourceName1,
-    );
-    expect(deploymentResourceMatch).toBeDefined();
-
-    const releaseTargetsResponse = await api.GET(
-      "/v1/resources/{resourceId}/release-targets",
-      {
-        params: {
-          path: { resourceId: resource.data?.id ?? "" },
-        },
-      },
-    );
-
-    expect(releaseTargetsResponse.response.status).toBe(200);
-
-    const releaseTarget = releaseTargetsResponse.data?.find(
-      (rt) =>
-        rt.environment.id === environment.id &&
-        rt.deployment.id === deployment.id,
-    );
-    expect(releaseTarget).toBeDefined();
-
-    await api.DELETE("/v1/resources/{resourceId}", {
-      params: { path: { resourceId: resource.data?.id ?? "" } },
-    });
-  });
-
-  test("get a resource by identifier", async ({ api, workspace }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resourceName,
-        kind: "ResourceAPI",
-        identifier: resourceName,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    // Then get it by identifier
-    const response = await api.GET(
-      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-      {
-        params: {
-          path: {
-            workspaceId: workspace.id,
-            identifier: resourceName,
-          },
-        },
-      },
-    );
-
-    expect(response.response.status).toBe(200);
-    const { data } = response;
-    expect(data?.identifier).toBe(resourceName);
-    expect(data?.workspaceId).toBe(workspace.id);
-  });
-
-  test("list resources", async ({ api, workspace }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resourceName,
-        kind: "ResourceAPI",
-        identifier: resourceName,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    // Then list all resources
-    const response = await api.GET("/v1/workspaces/{workspaceId}/resources", {
-      params: { path: { workspaceId: workspace.id } },
-    });
-
-    expect(response.response.status).toBe(200);
-    const { data } = response;
-    expect(data?.resources).toBeDefined();
-    expect(Array.isArray(data?.resources)).toBe(true);
-
-    expect(data?.resources?.length).toBeGreaterThan(0);
-  });
-
-  test("update a resource", async ({ api, workspace }) => {
-    // First create a resource
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resourceName,
-        kind: "ResourceAPI",
-        identifier: resourceName,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    // Get the resource to update
-    const getResponse = await api.GET(
-      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-      {
-        params: {
-          path: {
-            workspaceId: workspace.id,
-            identifier: resourceName,
-          },
-        },
-      },
-    );
-
-    const { data } = getResponse;
-    const resourceId = data?.id ?? "";
-
-    // Update the resource
-    const newName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const updateResponse = await api.PATCH("/v1/resources/{resourceId}", {
-      params: {
-        path: { resourceId },
-      },
-      body: {
-        name: newName,
-        metadata: { "e2e-test": "updated" },
-      },
-    });
-
-    expect(updateResponse.response.status).toBe(200);
-    const { data: updatedData } = updateResponse;
-    expect(updatedData?.name).toBe(newName);
-    expect(updatedData?.metadata?.["e2e-test"]).toBe("updated");
-
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
-
-    const environment = builder.refs.environments[0]!;
-    const deployment = builder.refs.deployments[0]!;
-    const releaseTargetsResponse = await api.GET(
-      "/v1/resources/{resourceId}/release-targets",
-      {
-        params: { path: { resourceId } },
-      },
-    );
-
-    expect(releaseTargetsResponse.response.status).toBe(200);
-    const releaseTarget = releaseTargetsResponse.data?.find(
-      (rt) =>
-        rt.environment.id === environment.id &&
-        rt.deployment.id === deployment.id,
-    );
-    expect(releaseTarget).toBeDefined();
-  });
-
-  test("updating non metadata fields should not change resource's current metadata", async ({
+  test("should upsert a resource and retrieve it", async ({
     api,
     workspace,
   }) => {
-    // First create a resource
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resourceName,
-        kind: "ResourceAPI",
-        identifier: resourceName,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    // Get the resource to update
-    const getResponse = await api.GET(
+    const identifier = `res-${faker.string.alphanumeric(8)}`;
+    const upsertRes = await api.PUT(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
         params: {
-          path: {
-            workspaceId: workspace.id,
-            identifier: resourceName,
-          },
+          path: { workspaceId: workspace.id, identifier },
         },
-      },
-    );
-
-    const { data } = getResponse;
-    const resourceId = data?.id ?? "";
-
-    // Update the resource
-    const newName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const updateResponse = await api.PATCH("/v1/resources/{resourceId}", {
-      params: {
-        path: { resourceId },
-      },
-      body: { name: newName },
-    });
-
-    expect(updateResponse.response.status).toBe(200);
-    const { data: updatedData } = updateResponse;
-    expect(updatedData?.name).toBe(newName);
-    expect(updatedData?.metadata?.["e2e-test"]).toBe("true");
-  });
-
-  test("delete a resource", async ({ api, workspace }) => {
-    // First create a resource
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const resourceIdentifer = `${resourceName}/${faker.string.alphanumeric(
-      10,
-    )}`;
-    const resourceResponse = await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resourceName,
-        kind: "ResourceAPI",
-        identifier: resourceIdentifer,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    expect(resourceResponse.response.status).toBe(200);
-    const resourceId = resourceResponse.data?.id;
-    expect(resourceId).toBeDefined();
-
-    // Delete by identifier
-    const deleteResponse = await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-      {
-        params: {
-          path: {
-            workspaceId: workspace.id,
-            identifier: resourceIdentifer,
-          },
-        },
-      },
-    );
-    expect(deleteResponse.response.status).toBe(200);
-    const { data: deleteData } = deleteResponse;
-    expect(deleteData?.success).toBe(true);
-
-    // Verify resource is deleted
-    const getResponse = await api.GET(
-      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-      {
-        params: {
-          path: {
-            workspaceId: workspace.id,
-            identifier: resourceIdentifer,
-          },
-        },
-      },
-    );
-    expect(getResponse.response.status).toBe(200);
-    expect(getResponse.data?.deletedAt).toBeDefined();
-
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
-
-    const environment = builder.refs.environments[0]!;
-    const deployment = builder.refs.deployments[0]!;
-
-    const environmentResourcesResponse = await api.GET(
-      "/v1/environments/{environmentId}/resources",
-      { params: { path: { environmentId: environment.id } } },
-    );
-
-    expect(environmentResourcesResponse.response.status).toBe(200);
-    const environmentResources = environmentResourcesResponse.data?.resources;
-    const environmentResourceMatch = environmentResources?.find(
-      (r) => r.identifier === resourceIdentifer,
-    );
-    expect(environmentResourceMatch).toBeUndefined();
-
-    const deploymentResourcesResponse = await api.GET(
-      "/v1/deployments/{deploymentId}/resources",
-      { params: { path: { deploymentId: deployment.id } } },
-    );
-
-    expect(deploymentResourcesResponse.response.status).toBe(200);
-    const deploymentResources = deploymentResourcesResponse.data?.resources;
-    const deploymentResourceMatch = deploymentResources?.find(
-      (r) => r.identifier === resourceIdentifer,
-    );
-    expect(deploymentResourceMatch).toBeUndefined();
-  });
-
-  test("create resource relationship", async ({ api, workspace }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
-    // Create two resources
-    const resource1Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const resource2Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-
-    await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resource1Name,
-        kind: "ResourceAPI",
-        identifier: resource1Name,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    await api.POST("/v1/resources", {
-      body: {
-        workspaceId: workspace.id,
-        name: resource2Name,
-        kind: "ResourceAPI",
-        identifier: resource2Name,
-        version: "test-version/v1",
-        config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
-      },
-    });
-
-    // Create relationship between resources
-    const { response } = await api.POST(
-      "/v1/relationship/resource-to-resource",
-      {
         body: {
-          workspaceId: workspace.id,
-          fromIdentifier: resource1Name,
-          toIdentifier: resource2Name,
-          type: "depends_on",
+          name: "Test Resource",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: { key: "value" },
+          metadata: { env: "test" },
         },
       },
     );
 
-    expect(response.status).toBe(200);
+    expect(upsertRes.response.status).toBe(202);
 
-    const data = await api.GET(
+    const getRes = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
         params: {
-          path: { workspaceId: workspace.id, identifier: resource1Name },
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.identifier).toBe(identifier);
+    expect(getRes.data!.name).toBe("Test Resource");
+    expect(getRes.data!.kind).toBe("TestKind");
+    expect(getRes.data!.version).toBe("1.0.0");
+    expect(getRes.data!.config).toEqual({ key: "value" });
+    expect(getRes.data!.metadata).toEqual({ env: "test" });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should update a resource on second upsert", async ({
+    api,
+    workspace,
+  }) => {
+    const identifier = `res-${faker.string.alphanumeric(8)}`;
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Original",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: { a: "1" },
+        },
+      },
+    );
+
+    const upsertRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Updated",
+          kind: "TestKind",
+          version: "2.0.0",
+          config: { new: "config" },
+          metadata: { b: "2" },
+        },
+      },
+    );
+
+    expect(upsertRes.response.status).toBe(202);
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.name).toBe("Updated");
+    expect(getRes.data!.version).toBe("2.0.0");
+    expect(getRes.data!.config).toEqual({ new: "config" });
+    expect(getRes.data!.metadata).toEqual({ b: "2" });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should delete a resource", async ({ api, workspace }) => {
+    const identifier = `res-${faker.string.alphanumeric(8)}`;
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "To Delete",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const deleteRes = await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(deleteRes.response.status).toBe(200);
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(404);
+  });
+
+  test("should return 404 for non-existent resource", async ({
+    api,
+    workspace,
+  }) => {
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: `nonexistent-${faker.string.alphanumeric(8)}`,
+          },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(404);
+  });
+
+  test("should list resources", async ({ api, workspace }) => {
+    const identifier = `res-list-${faker.string.alphanumeric(8)}`;
+    const upsertRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "List Test",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: { path: { workspaceId: workspace.id } },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier)).toBe(
+      true,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should list resources with CEL filter", async ({ api, workspace }) => {
+    const identifier1 = `res-cel-a-${faker.string.alphanumeric(8)}`;
+    const identifier2 = `res-cel-b-${faker.string.alphanumeric(8)}`;
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier1 },
+        },
+        body: {
+          name: "CEL Match",
+          kind: "FilterKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier2 },
+        },
+        body: {
+          name: "CEL NoMatch",
+          kind: "OtherKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: { cel: 'resource.kind == "FilterKind"' },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier1)).toBe(
+      true,
+    );
+    expect(listRes.data!.items.some((r) => r.identifier === identifier2)).toBe(
+      false,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier1 },
+        },
+      },
+    );
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier2 },
+        },
+      },
+    );
+  });
+
+  test("should upsert a resource with variables", async ({
+    api,
+    workspace,
+  }) => {
+    const identifier = `res-vars-${faker.string.alphanumeric(8)}`;
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "With Vars",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+          variables: { DB_HOST: "localhost", DB_PORT: "port-5432" },
+        },
+      },
+    );
+
+    const varsRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(varsRes.response.status).toBe(200);
+    const vars = varsRes.data!.items;
+    expect(vars).toHaveLength(2);
+    expect(vars.find((v) => v.key === "DB_HOST")?.value).toBe("localhost");
+    expect(vars.find((v) => v.key === "DB_PORT")?.value).toBe("port-5432");
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should update variables via PATCH", async ({ api, workspace }) => {
+    const identifier = `res-patch-${faker.string.alphanumeric(8)}`;
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Patch Vars",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+          variables: { OLD_KEY: "old_value" },
+        },
+      },
+    );
+
+    const patchRes = await api.PATCH(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: { NEW_KEY: "new_value", ANOTHER: "val" },
+      },
+    );
+
+    expect(patchRes.response.status).toBe(202);
+
+    const varsRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(varsRes.response.status).toBe(200);
+    const vars = varsRes.data!.items;
+    expect(vars).toHaveLength(2);
+    expect(vars.find((v) => v.key === "NEW_KEY")?.value).toBe("new_value");
+    expect(vars.find((v) => v.key === "ANOTHER")?.value).toBe("val");
+    expect(vars.find((v) => v.key === "OLD_KEY")).toBeUndefined();
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should replace variables on re-upsert", async ({ api, workspace }) => {
+    const identifier = `res-revar-${faker.string.alphanumeric(8)}`;
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Revar",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+          variables: { FIRST: "val-1", SECOND: "val-2" },
+        },
+      },
+    );
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Revar",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+          variables: { THIRD: "val-3" },
+        },
+      },
+    );
+
+    const varsRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+
+    expect(varsRes.response.status).toBe(200);
+    const vars = varsRes.data!.items;
+    expect(vars).toHaveLength(1);
+    expect(vars[0]!.key).toBe("THIRD");
+    expect(vars[0]!.value).toBe("val-3");
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
         },
       },
     );

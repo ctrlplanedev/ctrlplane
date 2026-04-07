@@ -200,6 +200,9 @@ const getVariablesForResource: AsyncTypedHandler<
   const { workspaceId, identifier } = req.params;
   const resource = await findResource(workspaceId, identifier);
 
+  const limit = req.query.limit ?? 1000;
+  const offset = req.query.offset ?? 0;
+
   const rows = await db
     .select({
       resourceId: schema.resourceVariable.resourceId,
@@ -209,7 +212,10 @@ const getVariablesForResource: AsyncTypedHandler<
     .from(schema.resourceVariable)
     .where(eq(schema.resourceVariable.resourceId, resource.id));
 
-  res.status(200).json(rows);
+  const total = rows.length;
+  const items = rows.slice(offset, offset + limit);
+
+  res.status(200).json({ items, total, limit, offset });
 };
 
 const updateVariablesForResource: AsyncTypedHandler<
