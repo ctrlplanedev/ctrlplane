@@ -82,6 +82,11 @@ test.describe("Deployment API", () => {
     expect(getRes.response.status).toBe(200);
     expect(getRes.data!.deployment.id).toBe(deploymentId);
     expect(getRes.data!.deployment.name).toBe(name);
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
   });
 
   test("should create a deployment with a job agent", async ({
@@ -96,8 +101,9 @@ test.describe("Deployment API", () => {
         body: {
           name,
           slug: name,
-          jobAgentId,
-          jobAgentConfig: { repo: "my-repo" },
+          jobAgents: [
+            { ref: jobAgentId, config: { repo: "my-repo" }, selector: "true" },
+          ],
         },
       },
     );
@@ -119,6 +125,11 @@ test.describe("Deployment API", () => {
     expect(deployment.jobAgents).toHaveLength(1);
     expect(deployment.jobAgents![0]!.ref).toBe(jobAgentId);
     expect(deployment.jobAgents![0]!.config).toEqual({ repo: "my-repo" });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
   });
 
   test("should upsert a deployment with a job agent", async ({
@@ -138,8 +149,13 @@ test.describe("Deployment API", () => {
           name,
           slug: name,
           resourceSelector: "false",
-          jobAgentId,
-          jobAgentConfig: { workflow: "deploy.yaml" },
+          jobAgents: [
+            {
+              ref: jobAgentId,
+              config: { workflow: "deploy.yaml" },
+              selector: "true",
+            },
+          ],
         },
       },
     );
@@ -163,6 +179,11 @@ test.describe("Deployment API", () => {
     expect(deployment.jobAgents![0]!.config).toEqual({
       workflow: "deploy.yaml",
     });
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
   });
 
   test("should delete a deployment", async ({ api, workspace }) => {
@@ -224,5 +245,10 @@ test.describe("Deployment API", () => {
     expect(listRes.response.status).toBe(200);
     const items = listRes.data!.items;
     expect(items.some((d) => d.deployment.id === deploymentId)).toBe(true);
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
   });
 });
