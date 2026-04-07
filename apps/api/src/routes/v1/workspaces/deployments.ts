@@ -3,6 +3,7 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import _ from "lodash";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 
 import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -234,6 +235,9 @@ const postDeployment: AsyncTypedHandler<
   const id = uuidv4();
 
   const jobAgentId = body.jobAgentId ?? body.jobAgents?.[0]?.ref;
+  if (jobAgentId != null && !z.string().uuid().safeParse(jobAgentId).success)
+    throw new ApiError("Invalid job agent ID", 400);
+
   const jobAgentConfig =
     body.jobAgentConfig ?? body.jobAgents?.[0]?.config ?? {};
 
@@ -288,6 +292,9 @@ const upsertDeployment: AsyncTypedHandler<
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
   const jobAgentId = body.jobAgentId ?? body.jobAgents?.[0]?.ref;
+  if (jobAgentId != null && !z.string().uuid().safeParse(jobAgentId).success)
+    throw new ApiError("Invalid job agent ID", 400);
+
   const jobAgentConfig =
     body.jobAgentConfig ?? body.jobAgents?.[0]?.config ?? {};
 
