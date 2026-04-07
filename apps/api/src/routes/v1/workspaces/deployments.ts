@@ -3,6 +3,7 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import _ from "lodash";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 
 import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -47,6 +48,8 @@ const formatDeployment = (dep: typeof schema.deployment.$inferSelect) => ({
   slug: dep.name,
   description: dep.description,
   resourceSelector: parseSelector(dep.resourceSelector),
+  jobAgentSelector: parseSelector(dep.jobAgentSelector),
+  jobAgentConfig: dep.jobAgentConfig ?? {},
   metadata: dep.metadata,
 });
 
@@ -232,6 +235,9 @@ const postDeployment: AsyncTypedHandler<
   const id = uuidv4();
 
   const jobAgentId = body.jobAgentId ?? body.jobAgents?.[0]?.ref;
+  if (jobAgentId != null && !z.string().uuid().safeParse(jobAgentId).success)
+    throw new ApiError("Invalid job agent ID", 400);
+
   const jobAgentConfig =
     body.jobAgentConfig ?? body.jobAgents?.[0]?.config ?? {};
 
@@ -240,7 +246,9 @@ const postDeployment: AsyncTypedHandler<
     name: body.name,
     description: body.description ?? "",
     resourceSelector: body.resourceSelector ?? "false",
-    jobAgentSelector: jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false",
+    jobAgentSelector:
+      body.jobAgentSelector ??
+      (jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false"),
     jobAgentConfig,
     metadata: body.metadata ?? {},
     workspaceId,
@@ -284,6 +292,9 @@ const upsertDeployment: AsyncTypedHandler<
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
   const jobAgentId = body.jobAgentId ?? body.jobAgents?.[0]?.ref;
+  if (jobAgentId != null && !z.string().uuid().safeParse(jobAgentId).success)
+    throw new ApiError("Invalid job agent ID", 400);
+
   const jobAgentConfig =
     body.jobAgentConfig ?? body.jobAgents?.[0]?.config ?? {};
 
@@ -294,7 +305,9 @@ const upsertDeployment: AsyncTypedHandler<
       name: body.name,
       description: body.description ?? "",
       resourceSelector: body.resourceSelector ?? "false",
-      jobAgentSelector: jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false",
+      jobAgentSelector:
+        body.jobAgentSelector ??
+        (jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false"),
       jobAgentConfig,
       metadata: body.metadata ?? {},
       workspaceId,
@@ -306,10 +319,14 @@ const upsertDeployment: AsyncTypedHandler<
         description: body.description ?? "",
         resourceSelector: body.resourceSelector ?? "false",
         metadata: body.metadata ?? {},
-        ...(jobAgentId != null && {
-          jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
-          jobAgentConfig,
-        }),
+        ...(body.jobAgentSelector != null
+          ? { jobAgentSelector: body.jobAgentSelector, jobAgentConfig }
+          : jobAgentId != null
+            ? {
+                jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
+                jobAgentConfig,
+              }
+            : {}),
       },
     });
 
