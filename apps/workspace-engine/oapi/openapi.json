@@ -235,6 +235,10 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents",
+                  "type": "string"
+               },
                "jobAgents": {
                   "items": {
                      "$ref": "#/components/schemas/DeploymentJobAgent"

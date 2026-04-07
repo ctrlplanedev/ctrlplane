@@ -265,6 +265,14 @@ export const deploymentsRouter = router({
           set: { config },
         });
 
+      await ctx.db
+        .update(schema.deployment)
+        .set({
+          jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
+          jobAgentConfig: config,
+        })
+        .where(eq(schema.deployment.id, deploymentId));
+
       const [updated] = await Promise.all([
         ctx.db.query.deployment.findFirst({
           where: eq(schema.deployment.id, deploymentId),
