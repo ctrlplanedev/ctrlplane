@@ -13,6 +13,7 @@
     "test:web": "pnpm exec playwright test --project=ui-tests",
     "test:debug": "pnpm exec playwright test --debug",
     "test:resources": "pnpm exec playwright test tests/api/resources.spec.ts",
+    "test:resource-providers": "pnpm exec playwright test tests/api/resource-providers.spec.ts",
     "test:environments": "pnpm exec playwright test tests/api/environments.spec.ts",
     "test:policies": "pnpm exec playwright test tests/api/policies/",
     "test:deployments": "pnpm exec playwright test --project=api-tests tests/api/deployments.spec.ts",
@@ -25,7 +26,7 @@
     "clean": "rm -rf .turbo node_modules",
     "show-report": "pnpm exec playwright show-report",
     "install-browsers": "npx playwright install --with-deps",
-    "generate": "pnpm dlx openapi-typescript ../openapi.v1.json -o api/schema.ts"
+    "generate": "pnpm dlx openapi-typescript ../apps/api/openapi/openapi.json -o api/schema.ts"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",

@@ -23,6 +23,11 @@ export const deployment = pgTable(
 
     resourceSelector: text("resource_selector").default("false"),
 
+    jobAgentSelector: text("job_agent_selector").notNull().default("false"),
+    jobAgentConfig: jsonb("job_agent_config")
+      .default("{}")
+      .$type<Record<string, any>>(),
+
     metadata: jsonb("metadata")
       .default("{}")
       .$type<Record<string, string>>()

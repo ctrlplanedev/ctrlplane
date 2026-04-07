@@ -64,3 +64,4 @@ dist/
 .idea/
 
 state/
+.claude/
