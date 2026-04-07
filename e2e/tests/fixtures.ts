@@ -13,6 +13,12 @@ export const test = base.extend<{
   api: ReturnType<typeof createClient>;
 }>({
   workspace: async ({}, use) => {
+    if (!fs.existsSync(workspaceFile)) {
+      throw new Error(
+        `Workspace state file not found at ${workspaceFile}. ` +
+          `Run "pnpm -F @ctrlplane/e2e seed" or the setup project first.`,
+      );
+    }
     const workspaceData: WorkspaceFixture = JSON.parse(
       await fs.promises.readFile(workspaceFile, "utf-8"),
     );
