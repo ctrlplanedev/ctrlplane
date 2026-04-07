@@ -167,6 +167,7 @@ test.describe("Resource Provider API", () => {
         body: {
           resources: [
             {
+              createdAt: new Date().toISOString(),
               identifier: `res-${faker.string.alphanumeric(8)}`,
               name: "Test Resource",
               kind: "TestKind",
@@ -229,6 +230,7 @@ test.describe("Resource Provider API", () => {
         body: {
           resources: [
             {
+              createdAt: new Date().toISOString(),
               identifier: identifier1,
               name: "Resource A",
               kind: "KindA",
@@ -237,6 +239,7 @@ test.describe("Resource Provider API", () => {
               metadata: { env: "test" },
             },
             {
+              createdAt: new Date().toISOString(),
               identifier: identifier2,
               name: "Resource B",
               kind: "KindB",
@@ -261,12 +264,12 @@ test.describe("Resource Provider API", () => {
 
     expect(getRes.response.status).toBe(200);
     expect(getRes.data!.items).toHaveLength(2);
-    expect(
-      getRes.data!.items.some((r) => r.identifier === identifier1),
-    ).toBe(true);
-    expect(
-      getRes.data!.items.some((r) => r.identifier === identifier2),
-    ).toBe(true);
+    expect(getRes.data!.items.some((r) => r.identifier === identifier1)).toBe(
+      true,
+    );
+    expect(getRes.data!.items.some((r) => r.identifier === identifier2)).toBe(
+      true,
+    );
 
     // Cleanup
     await api.PUT(
@@ -310,6 +313,7 @@ test.describe("Resource Provider API", () => {
         body: {
           resources: [
             {
+              createdAt: new Date().toISOString(),
               identifier: oldIdentifier,
               name: "Old Resource",
               kind: "TestKind",
@@ -330,6 +334,7 @@ test.describe("Resource Provider API", () => {
         body: {
           resources: [
             {
+              createdAt: new Date().toISOString(),
               identifier: newIdentifier,
               name: "New Resource",
               kind: "TestKind",
@@ -391,6 +396,7 @@ test.describe("Resource Provider API", () => {
         body: {
           resources: [
             {
+              createdAt: new Date().toISOString(),
               identifier: `res-${faker.string.alphanumeric(8)}`,
               name: "Will Be Removed",
               kind: "TestKind",
