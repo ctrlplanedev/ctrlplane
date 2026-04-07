@@ -18,28 +18,30 @@ test.describe("Resource Provider API", () => {
       },
     );
 
-    expect(upsertRes.response.status).toBe(202);
-    expect(upsertRes.data!.name).toBe(name);
-    expect(upsertRes.data!.workspaceId).toBe(workspace.id);
+    try {
+      expect(upsertRes.response.status).toBe(202);
+      expect(upsertRes.data!.name).toBe(name);
+      expect(upsertRes.data!.workspaceId).toBe(workspace.id);
 
-    const getRes = await api.GET(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      const getRes = await api.GET(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
 
-    expect(getRes.response.status).toBe(200);
-    expect(getRes.data!.name).toBe(name);
-    expect(getRes.data!.workspaceId).toBe(workspace.id);
-    expect(getRes.data!.id).toBe(upsertRes.data!.id);
-
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      expect(getRes.response.status).toBe(200);
+      expect(getRes.data!.name).toBe(name);
+      expect(getRes.data!.workspaceId).toBe(workspace.id);
+      expect(getRes.data!.id).toBe(upsertRes.data!.id);
+    } finally {
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
+    }
   });
 
   test("should return same provider on second upsert with same name", async ({
@@ -55,28 +57,31 @@ test.describe("Resource Provider API", () => {
         body: { id: uuidv4(), name },
       },
     );
-    expect(firstRes.response.status).toBe(202);
-    const firstId = firstRes.data!.id;
 
-    const secondRes = await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: { id: uuidv4(), name },
-      },
-    );
-    expect(secondRes.response.status).toBe(202);
+    try {
+      expect(firstRes.response.status).toBe(202);
+      const firstId = firstRes.data!.id;
 
-    // Should return the same provider (same id)
-    expect(secondRes.data!.id).toBe(firstId);
-    expect(secondRes.data!.name).toBe(name);
+      const secondRes = await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers",
+        {
+          params: { path: { workspaceId: workspace.id } },
+          body: { id: uuidv4(), name },
+        },
+      );
+      expect(secondRes.response.status).toBe(202);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      // Should return the same provider (same id)
+      expect(secondRes.data!.id).toBe(firstId);
+      expect(secondRes.data!.name).toBe(name);
+    } finally {
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
+    }
   });
 
   test("should return 404 for non-existent resource provider", async ({
@@ -160,49 +165,51 @@ test.describe("Resource Provider API", () => {
     expect(upsertRes.response.status).toBe(202);
     const providerId = upsertRes.data!.id;
 
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: {
-          resources: [
-            {
-              createdAt: new Date().toISOString(),
-              identifier: `res-${faker.string.alphanumeric(8)}`,
-              name: "Test Resource",
-              kind: "TestKind",
-              version: "1.0.0",
-              config: {},
-              metadata: {},
-            },
-          ],
+    try {
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: {
+            resources: [
+              {
+                createdAt: new Date().toISOString(),
+                identifier: `res-${faker.string.alphanumeric(8)}`,
+                name: "Test Resource",
+                kind: "TestKind",
+                version: "1.0.0",
+                config: {},
+                metadata: {},
+              },
+            ],
+          },
         },
-      },
-    );
+      );
 
-    const deleteRes = await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      const deleteRes = await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
 
-    expect(deleteRes.response.status).toBe(400);
-
-    // Cleanup: remove resources first, then delete provider
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: { resources: [] },
-      },
-    );
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      expect(deleteRes.response.status).toBe(400);
+    } finally {
+      // Cleanup: remove resources first, then delete provider
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: { resources: [] },
+        },
+      );
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
+    }
   });
 
   test("should set resources on a provider and retrieve them", async ({
@@ -220,71 +227,72 @@ test.describe("Resource Provider API", () => {
     expect(upsertRes.response.status).toBe(202);
     const providerId = upsertRes.data!.id;
 
-    const identifier1 = `res-set-a-${faker.string.alphanumeric(8)}`;
-    const identifier2 = `res-set-b-${faker.string.alphanumeric(8)}`;
+    try {
+      const identifier1 = `res-set-a-${faker.string.alphanumeric(8)}`;
+      const identifier2 = `res-set-b-${faker.string.alphanumeric(8)}`;
 
-    const setRes = await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: {
-          resources: [
-            {
-              createdAt: new Date().toISOString(),
-              identifier: identifier1,
-              name: "Resource A",
-              kind: "KindA",
-              version: "1.0.0",
-              config: { key: "a" },
-              metadata: { env: "test" },
-            },
-            {
-              createdAt: new Date().toISOString(),
-              identifier: identifier2,
-              name: "Resource B",
-              kind: "KindB",
-              version: "2.0.0",
-              config: { key: "b" },
-              metadata: { env: "prod" },
-            },
-          ],
+      const setRes = await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: {
+            resources: [
+              {
+                createdAt: new Date().toISOString(),
+                identifier: identifier1,
+                name: "Resource A",
+                kind: "KindA",
+                version: "1.0.0",
+                config: { key: "a" },
+                metadata: { env: "test" },
+              },
+              {
+                createdAt: new Date().toISOString(),
+                identifier: identifier2,
+                name: "Resource B",
+                kind: "KindB",
+                version: "2.0.0",
+                config: { key: "b" },
+                metadata: { env: "prod" },
+              },
+            ],
+          },
         },
-      },
-    );
+      );
 
-    expect(setRes.response.status).toBe(202);
-    expect(setRes.data!.ok).toBe(true);
+      expect(setRes.response.status).toBe(202);
+      expect(setRes.data!.ok).toBe(true);
 
-    const getRes = await api.GET(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      const getRes = await api.GET(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
 
-    expect(getRes.response.status).toBe(200);
-    expect(getRes.data!.items).toHaveLength(2);
-    expect(getRes.data!.items.some((r) => r.identifier === identifier1)).toBe(
-      true,
-    );
-    expect(getRes.data!.items.some((r) => r.identifier === identifier2)).toBe(
-      true,
-    );
-
-    // Cleanup
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: { resources: [] },
-      },
-    );
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      expect(getRes.response.status).toBe(200);
+      expect(getRes.data!.items).toHaveLength(2);
+      expect(getRes.data!.items.some((r) => r.identifier === identifier1)).toBe(
+        true,
+      );
+      expect(getRes.data!.items.some((r) => r.identifier === identifier2)).toBe(
+        true,
+      );
+    } finally {
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: { resources: [] },
+        },
+      );
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
+    }
   });
 
   test("should replace resources on second set call", async ({
@@ -302,76 +310,77 @@ test.describe("Resource Provider API", () => {
     expect(upsertRes.response.status).toBe(202);
     const providerId = upsertRes.data!.id;
 
-    const oldIdentifier = `res-old-${faker.string.alphanumeric(8)}`;
-    const newIdentifier = `res-new-${faker.string.alphanumeric(8)}`;
+    try {
+      const oldIdentifier = `res-old-${faker.string.alphanumeric(8)}`;
+      const newIdentifier = `res-new-${faker.string.alphanumeric(8)}`;
 
-    // First set
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: {
-          resources: [
-            {
-              createdAt: new Date().toISOString(),
-              identifier: oldIdentifier,
-              name: "Old Resource",
-              kind: "TestKind",
-              version: "1.0.0",
-              config: {},
-              metadata: {},
-            },
-          ],
+      // First set
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: {
+            resources: [
+              {
+                createdAt: new Date().toISOString(),
+                identifier: oldIdentifier,
+                name: "Old Resource",
+                kind: "TestKind",
+                version: "1.0.0",
+                config: {},
+                metadata: {},
+              },
+            ],
+          },
         },
-      },
-    );
+      );
 
-    // Second set replaces with different resource
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: {
-          resources: [
-            {
-              createdAt: new Date().toISOString(),
-              identifier: newIdentifier,
-              name: "New Resource",
-              kind: "TestKind",
-              version: "1.0.0",
-              config: {},
-              metadata: {},
-            },
-          ],
+      // Second set replaces with different resource
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: {
+            resources: [
+              {
+                createdAt: new Date().toISOString(),
+                identifier: newIdentifier,
+                name: "New Resource",
+                kind: "TestKind",
+                version: "1.0.0",
+                config: {},
+                metadata: {},
+              },
+            ],
+          },
         },
-      },
-    );
+      );
 
-    const getRes = await api.GET(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      const getRes = await api.GET(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
 
-    expect(getRes.response.status).toBe(200);
-    expect(getRes.data!.items).toHaveLength(1);
-    expect(getRes.data!.items[0]!.identifier).toBe(newIdentifier);
-
-    // Cleanup
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: { resources: [] },
-      },
-    );
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      expect(getRes.response.status).toBe(200);
+      expect(getRes.data!.items).toHaveLength(1);
+      expect(getRes.data!.items[0]!.identifier).toBe(newIdentifier);
+    } finally {
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: { resources: [] },
+        },
+      );
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
+    }
   });
 
   test("should remove all resources when set with empty list", async ({
@@ -389,52 +398,61 @@ test.describe("Resource Provider API", () => {
     expect(upsertRes.response.status).toBe(202);
     const providerId = upsertRes.data!.id;
 
-    await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: {
-          resources: [
-            {
-              createdAt: new Date().toISOString(),
-              identifier: `res-${faker.string.alphanumeric(8)}`,
-              name: "Will Be Removed",
-              kind: "TestKind",
-              version: "1.0.0",
-              config: {},
-              metadata: {},
-            },
-          ],
+    try {
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: {
+            resources: [
+              {
+                createdAt: new Date().toISOString(),
+                identifier: `res-${faker.string.alphanumeric(8)}`,
+                name: "Will Be Removed",
+                kind: "TestKind",
+                version: "1.0.0",
+                config: {},
+                metadata: {},
+              },
+            ],
+          },
         },
-      },
-    );
+      );
 
-    // Set empty
-    const emptySetRes = await api.PUT(
-      "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-      {
-        params: { path: { workspaceId: workspace.id, providerId } },
-        body: { resources: [] },
-      },
-    );
-    expect(emptySetRes.response.status).toBe(202);
+      // Set empty
+      const emptySetRes = await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: { resources: [] },
+        },
+      );
+      expect(emptySetRes.response.status).toBe(202);
 
-    const getRes = await api.GET(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      const getRes = await api.GET(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
 
-    expect(getRes.response.status).toBe(200);
-    expect(getRes.data!.items).toHaveLength(0);
-
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      {
-        params: { path: { workspaceId: workspace.id, name } },
-      },
-    );
+      expect(getRes.response.status).toBe(200);
+      expect(getRes.data!.items).toHaveLength(0);
+    } finally {
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: { resources: [] },
+        },
+      );
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        {
+          params: { path: { workspaceId: workspace.id, name } },
+        },
+      );
+    }
   });
 
   test("should return 404 when getting resources for unknown provider", async ({
