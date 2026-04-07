@@ -7,6 +7,7 @@ on:
     paths:
       - apps/api/**
       - packages/**
+      - e2e/**
       - .github/workflows/apps-api.yaml
       - pnpm-lock.yaml
 
@@ -15,6 +16,7 @@ on:
     paths:
       - apps/api/**
       - packages/**
+      - e2e/**
       - .github/workflows/apps-api.yaml
       - pnpm-lock.yaml
 
@@ -27,3 +29,69 @@ jobs:
       image-name: ctrlplane/api
       dockerfile: apps/api/Dockerfile
       platform: "linux/amd64"
+
+  api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ctrlplane_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: ctrlplane_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
+      AUTH_SECRET: "d0c1b54c50ccd3c89ee37e9c041f91748d361b09f8fd3b7fe542779c0f3f0983"
+      AUTH_TRUST_HOST: "true"
+      BASE_URL: "http://localhost:5173"
+      VARIABLES_AES_256_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      - name: Copy env
+        run: |
+          cp .env.example .env
+          sed -i "s|POSTGRES_URL=.*|POSTGRES_URL=$POSTGRES_URL|" .env
+
+      - name: Run migrations
+        working-directory: packages/db
+        run: pnpm exec drizzle-kit migrate
+
+      - name: Seed test data
+        run: pnpm -F @ctrlplane/e2e seed
+
+      - name: Build
+        run: pnpm build
+
+      - name: Start servers
+        run: |
+          pnpm -F @ctrlplane/web-api dev &
+          pnpm -F @ctrlplane/web dev &
+
+      - name: Wait for services
+        run: |
+          timeout 60s bash -c 'until curl -sf http://localhost:5173/api/healthz; do sleep 2; done'
+
+      - name: Run API tests
+        run: pnpm -F @ctrlplane/e2e test:api
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 5

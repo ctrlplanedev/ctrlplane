@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches: ["*"]
 
 jobs:
-  test:
-    timeout-minutes: 60
+  api-tests:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     services:
@@ -25,54 +27,53 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    defaults:
-      run:
-        working-directory: e2e
+    env:
+      POSTGRES_URL: postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test
+      AUTH_SECRET: d0c1b54c50ccd3c89ee37e9c041f91748d361b09f8fd3b7fe542779c0f3f0983
+      AUTH_TRUST_HOST: "true"
+      BASE_URL: http://localhost:5173
+      VARIABLES_AES_256_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
 
     steps:
       - uses: actions/checkout@v4
 
-      # - name: Setup
-      #   uses: ./tooling/github/setup
+      - name: Setup
+        uses: ./tooling/github/setup
 
-      # - name: Login to Docker Hub
-      #   uses: docker/login-action@v3
+      - name: Copy env
+        run: cp .env.example .env
 
-      # - name: Set up Docker Compose
-      #   run: |
-      #     sed -i "s/ctrlplane\/webservice:.*/ctrlplane\/webservice:${GITHUB_SHA::7}/g" docker-compose.yaml
-      #     sed -i "s/ctrlplane\/event-worker:.*/ctrlplane\/event-worker:${GITHUB_SHA::7}/g" docker-compose.yaml
-      #     sed -i "s/ctrlplane\/jobs:.*/ctrlplane\/jobs:${GITHUB_SHA::7}/g" docker-compose.yaml
-      #     sed -i "s/ctrlplane\/pty-proxy:.*/ctrlplane\/pty-proxy:${GITHUB_SHA::7}/g" docker-compose.yaml
+      - name: Override database URL
+        run: |
+          sed -i "s|POSTGRES_URL=.*|POSTGRES_URL=$POSTGRES_URL|" .env
 
-      #     sed -i "s/ctrlplane\/migrations:.*/ctrlplane\/migrations:${GITHUB_SHA::7}/g" docker-compose.yaml
+      - name: Push database schema
+        run: pnpm -F @ctrlplane/db push
 
-      #     docker-compose pull
-      #     docker-compose up -d
+      - name: Seed test data
+        run: pnpm -F @ctrlplane/e2e seed
 
-      # - name: Wait for services to be ready
-      #   run: |
-      #     # Wait for webservice to be ready
-      #     timeout 60s bash -c 'until curl -s http://localhost:5173; do sleep 2; done'
+      - name: Build
+        run: pnpm build
 
-      #     # Add other health checks as needed
-      #     sleep 10 # Give additional time for all services to stabilize
+      - name: Start API server
+        run: pnpm -F @ctrlplane/web-api dev &
+        env:
+          PORT: "8080"
 
-      # - name: Install Playwright Browsers
-      #   run: pnpm exec playwright install --with-deps
+      - name: Start web dev server
+        run: pnpm -F @ctrlplane/web dev &
 
-      # - name: Run Playwright tests
-      #   run: pnpm exec playwright test
-      #   env:
-      #     BASE_URL: http://localhost:5173
+      - name: Wait for services
+        run: |
+          timeout 60s bash -c 'until curl -sf http://localhost:5173/api/healthz; do sleep 2; done'
 
-      # - uses: actions/upload-artifact@v4
-      #   if: ${{ !cancelled() }}
-      #   with:
-      #     name: playwright-report
-      #     path: playwright-report/
-      #     retention-days: 5
+      - name: Run API tests
+        run: pnpm -F @ctrlplane/e2e test:api
 
-      # - name: Docker Compose Logs on Failure
-      #   if: failure()
-      #   run: docker-compose logs
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 5
