@@ -8,7 +8,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { user, userApiKey, workspace } from "@ctrlplane/db/schema";
+import {
+  entityRole,
+  role,
+  rolePermission,
+  user,
+  userApiKey,
+  workspace,
+} from "@ctrlplane/db/schema";
 
 const generateApiKey = () => {
   const prefix = crypto.randomBytes(8).toString("hex");
@@ -41,6 +48,27 @@ async function seed() {
     .update(user)
     .set({ activeWorkspaceId: workspaceId })
     .where(eq(user.id, userId));
+
+  // Create admin role for workspace
+  const roleId = crypto.randomUUID();
+  await db.insert(role).values({
+    id: roleId,
+    name: "Admin",
+    workspaceId,
+  });
+
+  await db.insert(rolePermission).values({
+    roleId,
+    permission: "*",
+  });
+
+  await db.insert(entityRole).values({
+    roleId,
+    entityType: "user",
+    entityId: userId,
+    scopeType: "workspace",
+    scopeId: workspaceId,
+  });
 
   const { apiKey, prefix, keyHash } = generateApiKey();
   await db.insert(userApiKey).values({
