@@ -53,7 +53,7 @@ jobs:
       POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
       AUTH_SECRET: "d0c1b54c50ccd3c89ee37e9c041f91748d361b09f8fd3b7fe542779c0f3f0983"
       AUTH_TRUST_HOST: "true"
-      BASE_URL: "http://localhost:5173"
+      BASE_URL: "http://localhost:8080"
       VARIABLES_AES_256_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
 
     steps:
@@ -77,17 +77,19 @@ jobs:
       - name: Seed test data
         run: pnpm -F @ctrlplane/e2e seed
 
-      - name: Start servers
-        run: |
-          pnpm -F @ctrlplane/web-api dev &
-          pnpm -F @ctrlplane/web dev &
+      - name: Start API server
+        run: pnpm -F @ctrlplane/web-api dev &
+        env:
+          PORT: "8080"
 
-      - name: Wait for services
+      - name: Wait for API server
         run: |
-          timeout 60s bash -c 'until curl -sf http://localhost:5173/api/healthz; do sleep 2; done'
+          timeout 60s bash -c 'until curl -sf http://localhost:8080/api/healthz; do sleep 2; done'
 
       - name: Run API tests
         run: pnpm -F @ctrlplane/e2e test:api
+        env:
+          BASE_URL: "http://localhost:8080"
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
