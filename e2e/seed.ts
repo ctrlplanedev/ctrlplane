@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import fs from "fs";
 import path from "path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -47,7 +51,7 @@ async function seed() {
     keyPreview: `${prefix}.****`,
   });
 
-  const stateDir = path.join(import.meta.dirname, ".state");
+  const stateDir = path.join(__dirname, ".state");
   fs.mkdirSync(stateDir, { recursive: true });
 
   fs.writeFileSync(
