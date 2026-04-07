@@ -57,7 +57,8 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	span.SetAttributes(attribute.String("job", fmt.Sprintf("%+v", job)))
 
-	result, err := c.reconcileJob(ctx, jobID, job)
+	workspaceID := uuid.MustParse(item.WorkspaceID)
+	result, err := c.reconcileJob(ctx, workspaceID, jobID, job)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -86,6 +87,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 func (c *Controller) reconcileJob(
 	ctx context.Context,
+	workspaceID uuid.UUID,
 	jobID uuid.UUID,
 	job *oapi.Job,
 ) (*ReconcileResult, error) {
@@ -96,7 +98,7 @@ func (c *Controller) reconcileJob(
 	if isWorkflowJob {
 		return ReconcileWorkflowJob(ctx, c.dispatcher, job)
 	}
-	return Reconcile(ctx, c.getter, c.setter, c.verifier, c.dispatcher, job)
+	return Reconcile(ctx, c.getter, c.setter, c.verifier, c.dispatcher, workspaceID, job)
 }
 
 // NewController creates a Controller with the given dependencies.

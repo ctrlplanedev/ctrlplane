@@ -22,11 +22,26 @@ func (g *PostgresGetter) GetDeployment(
 	ctx context.Context,
 	id uuid.UUID,
 ) (*oapi.Deployment, error) {
-	row, err := db.GetQueries(ctx).GetDeploymentWithJobAgents(ctx, id)
+	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return db.ToOapiDeploymentWithJobAgents(row), nil
+	return db.ToOapiDeployment(row), nil
+}
+
+func (g *PostgresGetter) ListJobAgentsByWorkspaceID(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.JobAgent, error) {
+	rows, err := db.GetQueries(ctx).ListJobAgentsByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	agents := make([]oapi.JobAgent, len(rows))
+	for i, row := range rows {
+		agents[i] = *db.ToOapiJobAgent(row)
+	}
+	return agents, nil
 }
 
 func (g *PostgresGetter) GetReleaseTargets(

@@ -19,6 +19,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
@@ -66,7 +67,24 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("get deployment: %w", err)
 	}
 
-	if deployment.JobAgents == nil || len(*deployment.JobAgents) == 0 {
+	if deployment.JobAgentSelector == nil || *deployment.JobAgentSelector == "" {
+		if err := c.setter.CompletePlan(ctx, planID); err != nil {
+			return reconcile.Result{}, fmt.Errorf("mark plan completed: %w", err)
+		}
+		return reconcile.Result{}, nil
+	}
+
+	allAgents, err := c.getter.ListJobAgentsByWorkspaceID(ctx, plan.WorkspaceID)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("list job agents: %w", err)
+	}
+
+	matchedAgents, err := selector.MatchJobAgents(ctx, *deployment.JobAgentSelector, allAgents)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("match job agents: %w", err)
+	}
+
+	if len(matchedAgents) == 0 {
 		if err := c.setter.CompletePlan(ctx, planID); err != nil {
 			return reconcile.Result{}, fmt.Errorf("mark plan completed: %w", err)
 		}
@@ -100,7 +118,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	}
 
 	for _, target := range targets {
-		if err := c.processTarget(ctx, plan, deployment, version, target); err != nil {
+		if err := c.processTarget(ctx, plan, deployment, matchedAgents, version, target); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
 			return reconcile.Result{}, err
@@ -114,6 +132,7 @@ func (c *Controller) processTarget(
 	ctx context.Context,
 	plan db.DeploymentPlan,
 	deployment *oapi.Deployment,
+	agents []oapi.JobAgent,
 	version *oapi.DeploymentVersion,
 	target ReleaseTarget,
 ) error {
@@ -148,19 +167,11 @@ func (c *Controller) processTarget(
 		return fmt.Errorf("resolve variables: %w", err)
 	}
 
-	for _, agentRef := range *deployment.JobAgents {
-		agentID, err := uuid.Parse(agentRef.Ref)
-		if err != nil {
-			return fmt.Errorf("parse agent ref: %w", err)
-		}
-
-		jobAgent, err := c.getter.GetJobAgent(ctx, agentID)
-		if err != nil {
-			return fmt.Errorf("get job agent %s: %w", agentRef.Ref, err)
-		}
+	for i := range agents {
+		agent := &agents[i]
 
 		mergedConfig := oapi.DeepMergeConfigs(
-			jobAgent.Config, agentRef.Config, version.JobAgentConfig,
+			agent.Config, deployment.JobAgentConfig, version.JobAgentConfig,
 		)
 
 		dispatchCtx := &oapi.DispatchContext{
@@ -169,7 +180,7 @@ func (c *Controller) processTarget(
 			Resource:       resource,
 			Version:        version,
 			Variables:      &variables,
-			JobAgent:       *jobAgent,
+			JobAgent:       *agent,
 			JobAgentConfig: mergedConfig,
 		}
 

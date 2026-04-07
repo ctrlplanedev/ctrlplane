@@ -26,12 +26,13 @@ type mockGetter struct {
 	targets    []ReleaseTarget
 	targetsErr error
 
-	environments map[uuid.UUID]*oapi.Environment
-	envErr       error
-	resources    map[uuid.UUID]*oapi.Resource
-	resErr       error
-	jobAgents    map[uuid.UUID]*oapi.JobAgent
-	agentErr     error
+	environments    map[uuid.UUID]*oapi.Environment
+	envErr          error
+	resources       map[uuid.UUID]*oapi.Resource
+	resErr          error
+	jobAgents       map[uuid.UUID]*oapi.JobAgent
+	agentErr        error
+	workspaceAgents []oapi.JobAgent
 }
 
 func (m *mockGetter) GetDeploymentPlan(_ context.Context, _ uuid.UUID) (db.DeploymentPlan, error) {
@@ -77,6 +78,10 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 		return nil, fmt.Errorf("job agent %s not found", id)
 	}
 	return agent, nil
+}
+
+func (m *mockGetter) ListJobAgentsByWorkspaceID(_ context.Context, _ uuid.UUID) ([]oapi.JobAgent, error) {
+	return m.workspaceAgents, nil
 }
 
 type insertTargetCall struct {
@@ -201,26 +206,16 @@ func testItem() reconcile.Item {
 	}
 }
 
-func makeAgents(agentIDs ...uuid.UUID) *[]oapi.DeploymentJobAgent {
-	agents := make([]oapi.DeploymentJobAgent, len(agentIDs))
-	for i, id := range agentIDs {
-		agents[i] = oapi.DeploymentJobAgent{
-			Ref:    id.String(),
-			Config: oapi.JobAgentConfig{"agentRefKey": "agentRefVal"},
-		}
-	}
-	return &agents
-}
-
-func testDeployment(agentIDs ...uuid.UUID) *oapi.Deployment {
+func testDeployment(hasSelector bool) *oapi.Deployment {
 	dep := &oapi.Deployment{
 		Id:             testDeploymentID().String(),
 		Name:           "my-deployment",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Metadata:       map[string]string{},
 	}
-	if len(agentIDs) > 0 {
-		dep.JobAgents = makeAgents(agentIDs...)
+	if hasSelector {
+		sel := "true"
+		dep.JobAgentSelector = &sel
 	}
 	return dep
 }
@@ -288,7 +283,7 @@ func TestProcess_GetDeploymentError(t *testing.T) {
 func TestProcess_NoAgents_CompletesPlan(t *testing.T) {
 	getter := &mockGetter{
 		plan:       testPlan(),
-		deployment: testDeployment(),
+		deployment: testDeployment(false),
 	}
 	setter := &mockSetter{}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -300,10 +295,10 @@ func TestProcess_NoAgents_CompletesPlan(t *testing.T) {
 	assert.Equal(t, testPlanID(), setter.completePlanCalls[0])
 }
 
-func TestProcess_EmptyAgents_CompletesPlan(t *testing.T) {
-	dep := testDeployment()
-	empty := []oapi.DeploymentJobAgent{}
-	dep.JobAgents = &empty
+func TestProcess_EmptySelector_CompletesPlan(t *testing.T) {
+	dep := testDeployment(false)
+	emptySel := ""
+	dep.JobAgentSelector = &emptySel
 
 	getter := &mockGetter{plan: testPlan(), deployment: dep}
 	setter := &mockSetter{}
@@ -316,11 +311,12 @@ func TestProcess_EmptyAgents_CompletesPlan(t *testing.T) {
 }
 
 func TestProcess_NoTargets_CompletesPlan(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	getter := &mockGetter{
-		plan:       testPlan(),
-		deployment: testDeployment(agentID),
-		targets:    []ReleaseTarget{},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{},
 	}
 	setter := &mockSetter{}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -332,11 +328,12 @@ func TestProcess_NoTargets_CompletesPlan(t *testing.T) {
 }
 
 func TestProcess_GetTargetsError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	getter := &mockGetter{
-		plan:       testPlan(),
-		deployment: testDeployment(agentID),
-		targetsErr: fmt.Errorf("db error"),
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targetsErr:      fmt.Errorf("db error"),
 	}
 	ctrl := NewController(getter, &mockSetter{}, &mockVarResolver{})
 
@@ -346,14 +343,15 @@ func TestProcess_GetTargetsError(t *testing.T) {
 }
 
 func TestProcess_TargetAlreadyExists_Skipped(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:       testPlan(),
-		deployment: testDeployment(agentID),
-		targets:    []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
 	}
 	setter := &mockSetter{insertTargetErr: ErrTargetExists}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -366,14 +364,15 @@ func TestProcess_TargetAlreadyExists_Skipped(t *testing.T) {
 }
 
 func TestProcess_InsertTargetError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:       testPlan(),
-		deployment: testDeployment(agentID),
-		targets:    []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
 	}
 	setter := &mockSetter{insertTargetErr: fmt.Errorf("fk violation")}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -384,15 +383,16 @@ func TestProcess_InsertTargetError(t *testing.T) {
 }
 
 func TestProcess_GetEnvironmentError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{},
 	}
 	ctrl := NewController(getter, &mockSetter{}, &mockVarResolver{})
 
@@ -402,16 +402,17 @@ func TestProcess_GetEnvironmentError(t *testing.T) {
 }
 
 func TestProcess_GetResourceError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
+		resources:       map[uuid.UUID]*oapi.Resource{},
 	}
 	ctrl := NewController(getter, &mockSetter{}, &mockVarResolver{})
 
@@ -421,16 +422,17 @@ func TestProcess_GetResourceError(t *testing.T) {
 }
 
 func TestProcess_ResolveVariablesError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
+		resources:       map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
 	}
 	varResolver := &mockVarResolver{err: fmt.Errorf("resolver error")}
 	ctrl := NewController(getter, &mockSetter{}, varResolver)
@@ -440,40 +442,22 @@ func TestProcess_ResolveVariablesError(t *testing.T) {
 	assert.Contains(t, err.Error(), "resolve variables")
 }
 
-func TestProcess_GetJobAgentError(t *testing.T) {
-	agentID := uuid.New()
-	envID := uuid.New()
-	resID := uuid.New()
-
-	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
-		jobAgents:    map[uuid.UUID]*oapi.JobAgent{},
-	}
-	ctrl := NewController(getter, &mockSetter{}, &mockVarResolver{})
-
-	_, err := ctrl.Process(context.Background(), testItem())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "get job agent")
-}
-
 func TestProcess_SingleTarget_SingleAgent(t *testing.T) {
 	agentID := uuid.New()
+	agent := testJobAgent(agentID, "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 	targetID := uuid.New()
 	resultID := uuid.New()
 
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
-		jobAgents:    map[uuid.UUID]*oapi.JobAgent{agentID: testJobAgent(agentID, "argo-cd")},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
+		resources:       map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
+		jobAgents:       map[uuid.UUID]*oapi.JobAgent{agentID: agent},
 	}
 	setter := &mockSetter{
 		insertTargetIDs: []uuid.UUID{targetID},
@@ -502,16 +486,21 @@ func TestProcess_SingleTarget_SingleAgent(t *testing.T) {
 
 func TestProcess_SingleTarget_SingleAgent_DispatchContext(t *testing.T) {
 	agentID := uuid.New()
+	agent := testJobAgent(agentID, "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
+	dep := testDeployment(true)
+	dep.JobAgentConfig = oapi.JobAgentConfig{"deploymentKey": "deploymentVal"}
+
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
-		jobAgents:    map[uuid.UUID]*oapi.JobAgent{agentID: testJobAgent(agentID, "argo-cd")},
+		plan:            testPlan(),
+		deployment:      dep,
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
+		resources:       map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
+		jobAgents:       map[uuid.UUID]*oapi.JobAgent{agentID: agent},
 	}
 	setter := &mockSetter{}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -532,21 +521,22 @@ func TestProcess_SingleTarget_SingleAgent_DispatchContext(t *testing.T) {
 	assert.Equal(t, "argo-cd", dc.JobAgent.Type)
 
 	assert.Equal(t, "baseVal", dc.JobAgentConfig["baseKey"])
-	assert.Equal(t, "agentRefVal", dc.JobAgentConfig["agentRefKey"])
+	assert.Equal(t, "deploymentVal", dc.JobAgentConfig["deploymentKey"])
 	assert.Equal(t, "planVal", dc.JobAgentConfig["planKey"])
 }
 
 func TestProcess_MultipleTargets_MultipleAgents(t *testing.T) {
-	agent1 := uuid.New()
-	agent2 := uuid.New()
+	agent1 := testJobAgent(uuid.New(), "argo-cd")
+	agent2 := testJobAgent(uuid.New(), "test-runner")
 	env1 := uuid.New()
 	env2 := uuid.New()
 	res1 := uuid.New()
 	res2 := uuid.New()
 
 	getter := &mockGetter{
-		plan:       testPlan(),
-		deployment: testDeployment(agent1, agent2),
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent1, *agent2},
 		targets: []ReleaseTarget{
 			{EnvironmentID: env1, ResourceID: res1},
 			{EnvironmentID: env2, ResourceID: res2},
@@ -558,10 +548,6 @@ func TestProcess_MultipleTargets_MultipleAgents(t *testing.T) {
 		resources: map[uuid.UUID]*oapi.Resource{
 			res1: testResource(res1, "us-east-1"),
 			res2: testResource(res2, "eu-west-1"),
-		},
-		jobAgents: map[uuid.UUID]*oapi.JobAgent{
-			agent1: testJobAgent(agent1, "argo-cd"),
-			agent2: testJobAgent(agent2, "test-runner"),
 		},
 	}
 	setter := &mockSetter{}
@@ -577,17 +563,17 @@ func TestProcess_MultipleTargets_MultipleAgents(t *testing.T) {
 }
 
 func TestProcess_InsertResultError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
-		jobAgents:    map[uuid.UUID]*oapi.JobAgent{agentID: testJobAgent(agentID, "argo-cd")},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
+		resources:       map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
 	}
 	setter := &mockSetter{insertResultErr: fmt.Errorf("db error")}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -598,17 +584,17 @@ func TestProcess_InsertResultError(t *testing.T) {
 }
 
 func TestProcess_EnqueueResultError(t *testing.T) {
-	agentID := uuid.New()
+	agent := testJobAgent(uuid.New(), "argo-cd")
 	envID := uuid.New()
 	resID := uuid.New()
 
 	getter := &mockGetter{
-		plan:         testPlan(),
-		deployment:   testDeployment(agentID),
-		targets:      []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
-		environments: map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
-		resources:    map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
-		jobAgents:    map[uuid.UUID]*oapi.JobAgent{agentID: testJobAgent(agentID, "argo-cd")},
+		plan:            testPlan(),
+		deployment:      testDeployment(true),
+		workspaceAgents: []oapi.JobAgent{*agent},
+		targets:         []ReleaseTarget{{EnvironmentID: envID, ResourceID: resID}},
+		environments:    map[uuid.UUID]*oapi.Environment{envID: testEnv(envID, "prod")},
+		resources:       map[uuid.UUID]*oapi.Resource{resID: testResource(resID, "us-east-1")},
 	}
 	setter := &mockSetter{enqueueResultErr: fmt.Errorf("queue error")}
 	ctrl := NewController(getter, setter, &mockVarResolver{})
@@ -621,7 +607,7 @@ func TestProcess_EnqueueResultError(t *testing.T) {
 func TestProcess_CompletePlanError(t *testing.T) {
 	getter := &mockGetter{
 		plan:       testPlan(),
-		deployment: testDeployment(),
+		deployment: testDeployment(false),
 	}
 	setter := &mockSetter{completePlanErr: fmt.Errorf("db error")}
 	ctrl := NewController(getter, setter, &mockVarResolver{})

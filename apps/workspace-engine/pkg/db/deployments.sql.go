@@ -54,7 +54,7 @@ func (q *Queries) DeleteSystemDeploymentByDeploymentID(ctx context.Context, depl
 }
 
 const getDeploymentByID = `-- name: GetDeploymentByID :one
-SELECT id, name, description, resource_selector, metadata, workspace_id
+SELECT id, name, description, resource_selector, job_agent_selector, job_agent_config, metadata, workspace_id
 FROM deployment
 WHERE id = $1
 `
@@ -67,6 +67,8 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 		&i.Name,
 		&i.Description,
 		&i.ResourceSelector,
+		&i.JobAgentSelector,
+		&i.JobAgentConfig,
 		&i.Metadata,
 		&i.WorkspaceID,
 	)
@@ -98,7 +100,7 @@ func (q *Queries) GetDeploymentIDsForSystem(ctx context.Context, systemID uuid.U
 }
 
 const getDeploymentWithJobAgents = `-- name: GetDeploymentWithJobAgents :one
-SELECT d.id, d.name, d.description, d.resource_selector, d.metadata, d.workspace_id,
+SELECT d.id, d.name, d.description, d.resource_selector, d.job_agent_selector, d.job_agent_config, d.metadata, d.workspace_id,
   COALESCE(json_agg(json_build_object('ref', dja.job_agent_id, 'config', dja.config))
     FILTER (WHERE dja.job_agent_id IS NOT NULL), '[]') AS job_agents
 FROM deployment d
@@ -112,6 +114,8 @@ type GetDeploymentWithJobAgentsRow struct {
 	Name             string
 	Description      string
 	ResourceSelector pgtype.Text
+	JobAgentSelector string
+	JobAgentConfig   map[string]any
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
 	JobAgents        []byte
@@ -125,6 +129,8 @@ func (q *Queries) GetDeploymentWithJobAgents(ctx context.Context, id uuid.UUID) 
 		&i.Name,
 		&i.Description,
 		&i.ResourceSelector,
+		&i.JobAgentSelector,
+		&i.JobAgentConfig,
 		&i.Metadata,
 		&i.WorkspaceID,
 		&i.JobAgents,
@@ -163,15 +169,24 @@ INNER JOIN system_deployment sd ON sd.deployment_id = d.id
 WHERE sd.system_id = $1
 `
 
-func (q *Queries) ListDeploymentsBySystemID(ctx context.Context, systemID uuid.UUID) ([]Deployment, error) {
+type ListDeploymentsBySystemIDRow struct {
+	ID               uuid.UUID
+	Name             string
+	Description      string
+	ResourceSelector pgtype.Text
+	Metadata         map[string]string
+	WorkspaceID      uuid.UUID
+}
+
+func (q *Queries) ListDeploymentsBySystemID(ctx context.Context, systemID uuid.UUID) ([]ListDeploymentsBySystemIDRow, error) {
 	rows, err := q.db.Query(ctx, listDeploymentsBySystemID, systemID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Deployment
+	var items []ListDeploymentsBySystemIDRow
 	for rows.Next() {
-		var i Deployment
+		var i ListDeploymentsBySystemIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -191,7 +206,7 @@ func (q *Queries) ListDeploymentsBySystemID(ctx context.Context, systemID uuid.U
 }
 
 const listDeploymentsByWorkspaceID = `-- name: ListDeploymentsByWorkspaceID :many
-SELECT id, name, description, resource_selector, metadata, workspace_id
+SELECT id, name, description, resource_selector, job_agent_selector, job_agent_config, metadata, workspace_id
 FROM deployment
 WHERE workspace_id = $1
 LIMIT COALESCE($2::int, 5000)
@@ -216,6 +231,8 @@ func (q *Queries) ListDeploymentsByWorkspaceID(ctx context.Context, arg ListDepl
 			&i.Name,
 			&i.Description,
 			&i.ResourceSelector,
+			&i.JobAgentSelector,
+			&i.JobAgentConfig,
 			&i.Metadata,
 			&i.WorkspaceID,
 		); err != nil {
@@ -236,7 +253,7 @@ ON CONFLICT (id) DO UPDATE
 SET name = EXCLUDED.name, description = EXCLUDED.description,
     resource_selector = EXCLUDED.resource_selector,
     metadata = EXCLUDED.metadata, workspace_id = EXCLUDED.workspace_id
-RETURNING id, name, description, resource_selector, metadata, workspace_id
+RETURNING id, name, description, resource_selector, job_agent_selector, job_agent_config, metadata, workspace_id
 `
 
 type UpsertDeploymentParams struct {
@@ -263,6 +280,8 @@ func (q *Queries) UpsertDeployment(ctx context.Context, arg UpsertDeploymentPara
 		&i.Name,
 		&i.Description,
 		&i.ResourceSelector,
+		&i.JobAgentSelector,
+		&i.JobAgentConfig,
 		&i.Metadata,
 		&i.WorkspaceID,
 	)

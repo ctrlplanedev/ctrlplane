@@ -21,6 +21,7 @@ type Getter interface {
 	GetPoliciesForReleaseTarget(ctx context.Context, rt *oapi.ReleaseTarget) ([]*oapi.Policy, error)
 	GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error)
 	GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error)
+	ListJobAgentsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]oapi.JobAgent, error)
 	GetEnvironment(ctx context.Context, environmentID uuid.UUID) (*oapi.Environment, error)
 	GetResource(ctx context.Context, resourceID uuid.UUID) (*oapi.Resource, error)
 }
