@@ -37,7 +37,6 @@ export const deploymentsRouter = router({
               },
             },
           },
-          jobAgents: true,
         },
       });
 
@@ -255,17 +254,6 @@ export const deploymentsRouter = router({
         });
 
       await ctx.db
-        .insert(schema.deploymentJobAgent)
-        .values({ deploymentId, jobAgentId, config })
-        .onConflictDoUpdate({
-          target: [
-            schema.deploymentJobAgent.deploymentId,
-            schema.deploymentJobAgent.jobAgentId,
-          ],
-          set: { config },
-        });
-
-      await ctx.db
         .update(schema.deployment)
         .set({
           jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
@@ -276,7 +264,6 @@ export const deploymentsRouter = router({
       const [updated] = await Promise.all([
         ctx.db.query.deployment.findFirst({
           where: eq(schema.deployment.id, deploymentId),
-          with: { jobAgents: true },
         }),
         enqueueDeploymentSelectorEval(ctx.db, { workspaceId, deploymentId }),
         enqueueReleaseTargetsForDeployment(ctx.db, workspaceId, deploymentId),

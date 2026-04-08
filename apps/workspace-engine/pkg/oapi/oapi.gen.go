@@ -307,13 +307,11 @@ type Deployment struct {
 	Description    *string        `json:"description,omitempty"`
 	Id             string         `json:"id"`
 	JobAgentConfig JobAgentConfig `json:"jobAgentConfig"`
-	JobAgentId     *string        `json:"jobAgentId,omitempty"`
 
 	// JobAgentSelector CEL expression to match job agents
-	JobAgentSelector string                `json:"jobAgentSelector"`
-	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
-	Metadata         map[string]string     `json:"metadata"`
-	Name             string                `json:"name"`
+	JobAgentSelector string            `json:"jobAgentSelector"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -330,15 +328,6 @@ type DeploymentAndSystems struct {
 type DeploymentDependencyRule struct {
 	// DependsOn CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.
 	DependsOn string `json:"dependsOn"`
-}
-
-// DeploymentJobAgent defines model for DeploymentJobAgent.
-type DeploymentJobAgent struct {
-	Config JobAgentConfig `json:"config"`
-	Ref    string         `json:"ref"`
-
-	// Selector CEL expression to determine if the job agent should be used
-	Selector string `json:"selector"`
 }
 
 // DeploymentVariable defines model for DeploymentVariable.

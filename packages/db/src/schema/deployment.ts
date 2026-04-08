@@ -9,7 +9,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { jobAgent } from "./job-agent.js";
 import { resource } from "./resource.js";
 import { systemDeployment } from "./system.js";
 import { workspace } from "./workspace.js";
@@ -40,39 +39,7 @@ export const deployment = pgTable(
 
 export const deploymentRelations = relations(deployment, ({ many }) => ({
   systemDeployments: many(systemDeployment),
-  jobAgents: many(deploymentJobAgent),
 }));
-
-export const deploymentJobAgent = pgTable(
-  "deployment_job_agent",
-  {
-    deploymentId: uuid("deployment_id")
-      .notNull()
-      .references(() => deployment.id, { onDelete: "cascade" }),
-    jobAgentId: uuid("job_agent_id")
-      .notNull()
-      .references(() => jobAgent.id, { onDelete: "cascade" }),
-    config: jsonb("config")
-      .default("{}")
-      .$type<Record<string, any>>()
-      .notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.deploymentId, t.jobAgentId] })],
-);
-
-export const deploymentJobAgentRelations = relations(
-  deploymentJobAgent,
-  ({ one }) => ({
-    deployment: one(deployment, {
-      fields: [deploymentJobAgent.deploymentId],
-      references: [deployment.id],
-    }),
-    jobAgent: one(jobAgent, {
-      fields: [deploymentJobAgent.jobAgentId],
-      references: [jobAgent.id],
-    }),
-  }),
-);
 
 export const computedDeploymentResource = pgTable(
   "computed_deployment_resource",

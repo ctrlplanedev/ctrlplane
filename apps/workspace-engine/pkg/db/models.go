@@ -334,12 +334,6 @@ type Deployment struct {
 	WorkspaceID      uuid.UUID
 }
 
-type DeploymentJobAgent struct {
-	DeploymentID uuid.UUID
-	JobAgentID   uuid.UUID
-	Config       []byte
-}
-
 type DeploymentPlan struct {
 	ID                    uuid.UUID
 	WorkspaceID           uuid.UUID

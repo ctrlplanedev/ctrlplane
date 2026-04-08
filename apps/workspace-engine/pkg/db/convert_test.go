@@ -80,7 +80,7 @@ func TestToOapiDeployment(t *testing.T) {
 	assert.NotNil(t, dep.Description)
 	assert.Equal(t, "Main API deployment", *dep.Description)
 	assert.Equal(t, map[string]string{"team": "platform"}, dep.Metadata)
-	assert.Nil(t, dep.JobAgents, "base convert should not populate job agents")
+	assert.Empty(t, dep.JobAgentSelector, "empty selector when not set")
 }
 
 func TestToOapiDeployment_NilOptionalFields(t *testing.T) {

@@ -1,9 +1,7 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
-import _ from "lodash";
 import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
 
 import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -20,22 +18,6 @@ import { validResourceSelector } from "../valid-selector.js";
 import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
 
 const PLAN_TTL_MS = 60 * 60 * 1000;
-
-const getJobAgentsByDeploymentId = async (
-  deploymentIds: string[],
-): Promise<Record<string, { ref: string; config: Record<string, any> }[]>> => {
-  if (deploymentIds.length === 0) return {};
-  const links = await db
-    .select()
-    .from(schema.deploymentJobAgent)
-    .where(inArray(schema.deploymentJobAgent.deploymentId, deploymentIds));
-  return _.chain(links)
-    .groupBy((l) => l.deploymentId)
-    .mapValues((group) =>
-      group.map((l) => ({ ref: l.jobAgentId, config: l.config })),
-    )
-    .value();
-};
 
 const parseSelector = (raw: string | null | undefined): string | undefined => {
   if (raw == null || raw === "false") return undefined;
@@ -126,14 +108,8 @@ const listDeployments: AsyncTypedHandler<
     systemsByDeploymentId.set(link.deploymentId, arr);
   }
 
-  const agentsByDeploymentId = await getJobAgentsByDeploymentId(deploymentIds);
   const items = deployments.map((dep) => ({
-    deployment: {
-      ...formatDeployment(dep),
-      jobAgents: (agentsByDeploymentId[dep.id] ?? []).map(
-        ({ ref, config }) => ({ ref, config }),
-      ),
-    },
+    deployment: formatDeployment(dep),
     systems: (systemsByDeploymentId.get(dep.id) ?? []).map(formatSystem),
   }));
 
@@ -154,8 +130,6 @@ const getDeployment: AsyncTypedHandler<
   });
 
   if (dep == null) throw new ApiError("Deployment not found", 404);
-
-  const agentsByDeploymentId = await getJobAgentsByDeploymentId([deploymentId]);
 
   const systemRows = await db
     .select({ system: schema.system })
@@ -196,12 +170,7 @@ const getDeployment: AsyncTypedHandler<
   }
 
   res.status(200).json({
-    deployment: {
-      ...formatDeployment(dep),
-      jobAgents: (agentsByDeploymentId[dep.id] ?? []).map(
-        ({ ref, config }) => ({ ref, config }),
-      ),
-    },
+    deployment: formatDeployment(dep),
     systems: systemRows.map((r) => formatSystem(r.system)),
     variables: variables.map((v) => ({
       variable: {
@@ -234,47 +203,16 @@ const postDeployment: AsyncTypedHandler<
 
   const id = uuidv4();
 
-  const jobAgentId = body.jobAgentId ?? body.jobAgents?.[0]?.ref;
-  if (jobAgentId != null && !z.string().uuid().safeParse(jobAgentId).success)
-    throw new ApiError("Invalid job agent ID", 400);
-
-  const jobAgentConfig =
-    body.jobAgentConfig ?? body.jobAgents?.[0]?.config ?? {};
-
   await db.insert(schema.deployment).values({
     id,
     name: body.name,
     description: body.description ?? "",
     resourceSelector: body.resourceSelector ?? "false",
-    jobAgentSelector:
-      body.jobAgentSelector ??
-      (jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false"),
-    jobAgentConfig,
+    jobAgentSelector: body.jobAgentSelector ?? "false",
+    jobAgentConfig: body.jobAgentConfig ?? {},
     metadata: body.metadata ?? {},
     workspaceId,
   });
-
-  if (jobAgentId)
-    await db
-      .insert(schema.deploymentJobAgent)
-      .values({
-        deploymentId: id,
-        jobAgentId,
-        config: jobAgentConfig,
-      })
-      .onConflictDoNothing();
-
-  if (body.jobAgents != null && body.jobAgents.length > 0)
-    await db
-      .insert(schema.deploymentJobAgent)
-      .values(
-        body.jobAgents.map((agent) => ({
-          deploymentId: id,
-          jobAgentId: agent.ref,
-          config: agent.config,
-        })),
-      )
-      .onConflictDoNothing();
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, id);
 
@@ -291,12 +229,7 @@ const upsertDeployment: AsyncTypedHandler<
   const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  const jobAgentId = body.jobAgentId ?? body.jobAgents?.[0]?.ref;
-  if (jobAgentId != null && !z.string().uuid().safeParse(jobAgentId).success)
-    throw new ApiError("Invalid job agent ID", 400);
-
-  const jobAgentConfig =
-    body.jobAgentConfig ?? body.jobAgents?.[0]?.config ?? {};
+  const jobAgentConfig = body.jobAgentConfig ?? {};
 
   await db
     .insert(schema.deployment)
@@ -305,9 +238,7 @@ const upsertDeployment: AsyncTypedHandler<
       name: body.name,
       description: body.description ?? "",
       resourceSelector: body.resourceSelector ?? "false",
-      jobAgentSelector:
-        body.jobAgentSelector ??
-        (jobAgentId ? `jobAgent.id == "${jobAgentId}"` : "false"),
+      jobAgentSelector: body.jobAgentSelector ?? "false",
       jobAgentConfig,
       metadata: body.metadata ?? {},
       workspaceId,
@@ -321,48 +252,8 @@ const upsertDeployment: AsyncTypedHandler<
         metadata: body.metadata ?? {},
         ...(body.jobAgentSelector != null
           ? { jobAgentSelector: body.jobAgentSelector, jobAgentConfig }
-          : jobAgentId != null
-            ? {
-                jobAgentSelector: `jobAgent.id == "${jobAgentId}"`,
-                jobAgentConfig,
-              }
-            : {}),
+          : {}),
       },
-    });
-
-  if (jobAgentId)
-    await db
-      .insert(schema.deploymentJobAgent)
-      .values({
-        deploymentId,
-        jobAgentId,
-        config: jobAgentConfig,
-      })
-      .onConflictDoUpdate({
-        target: [
-          schema.deploymentJobAgent.deploymentId,
-          schema.deploymentJobAgent.jobAgentId,
-        ],
-        set: { config: jobAgentConfig },
-      });
-
-  if (body.jobAgents != null)
-    await db.transaction(async (tx) => {
-      await tx
-        .delete(schema.deploymentJobAgent)
-        .where(eq(schema.deploymentJobAgent.deploymentId, deploymentId));
-
-      if (body.jobAgents!.length > 0)
-        await tx
-          .insert(schema.deploymentJobAgent)
-          .values(
-            body.jobAgents!.map((agent) => ({
-              deploymentId,
-              jobAgentId: agent.ref,
-              config: agent.config,
-            })),
-          )
-          .onConflictDoNothing();
     });
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);

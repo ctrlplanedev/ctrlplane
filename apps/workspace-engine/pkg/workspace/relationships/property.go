@@ -109,11 +109,8 @@ func getDeploymentProperty(
 			return convertValue(*deployment.Description)
 		}
 		return nil, fmt.Errorf("description is nil")
-	case "job_agent_id", "jobagentid":
-		if deployment.JobAgentId != nil {
-			return convertValue(*deployment.JobAgentId)
-		}
-		return nil, fmt.Errorf("job_agent_id is nil")
+	case "job_agent_selector", "jobagentselector":
+		return convertValue(deployment.JobAgentSelector)
 	case "job_agent_config", "jobagentconfig":
 		if len(propertyPath) == 1 {
 			return convertValue(deployment.JobAgentConfig)
