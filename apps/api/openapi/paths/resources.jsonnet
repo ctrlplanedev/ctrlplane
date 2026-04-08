@@ -17,6 +17,28 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/search': {
+    post: {
+      tags: ['Resources'],
+      summary: 'Search resources',
+      operationId: 'searchResources',
+      description: 'Returns a paginated list of resources matching the given filters.',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('ListResourcesFilters'),
+          },
+        },
+      },
+      responses: openapi.paginatedResponse(openapi.schemaRef('Resource'), 'Matching resources')
+               + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/identifier/{identifier}': {
     get: {
       tags: ['Resources'],

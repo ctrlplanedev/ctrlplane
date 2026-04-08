@@ -13,18 +13,20 @@
     "test:web": "pnpm exec playwright test --project=ui-tests",
     "test:debug": "pnpm exec playwright test --debug",
     "test:resources": "pnpm exec playwright test tests/api/resources.spec.ts",
+    "test:resource-providers": "pnpm exec playwright test tests/api/resource-providers.spec.ts",
     "test:environments": "pnpm exec playwright test tests/api/environments.spec.ts",
     "test:policies": "pnpm exec playwright test tests/api/policies/",
-    "test:deployments": "pnpm exec playwright test tests/api/deployments.spec.ts",
+    "test:deployments": "pnpm exec playwright test --project=api-tests tests/api/deployments.spec.ts",
     "test:release-targets": "pnpm exec playwright test tests/api/release-targets.spec.ts",
     "test:yaml": "pnpm exec playwright test tests/api/yaml-import.spec.ts",
     "test:yaml-prefixed": "pnpm exec playwright test tests/api/random-prefix-yaml.spec.ts",
     "test:yaml-template": "pnpm exec playwright test tests/api/template-yaml.spec.ts",
     "test:systems": "pnpm exec playwright test tests/systems.spec.ts",
+    "seed": "tsx seed.ts",
     "clean": "rm -rf .turbo node_modules",
     "show-report": "pnpm exec playwright show-report",
     "install-browsers": "npx playwright install --with-deps",
-    "generate": "pnpm dlx openapi-typescript ../openapi.v1.json -o api/schema.ts"
+    "generate": "pnpm dlx openapi-typescript ../apps/api/openapi/openapi.json -o api/schema.ts"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
@@ -44,6 +46,7 @@
     "prettier": "catalog:"
   },
   "dependencies": {
+    "@ctrlplane/db": "workspace:*",
     "handlebars": "^4.7.8",
     "js-yaml": "^4.1.1",
     "lodash": "catalog:",

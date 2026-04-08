@@ -3,7 +3,18 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { evaluate } from "cel-js";
 import { Router } from "express";
 
-import { and, asc, count, eq, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+  takeFirst,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueManyDeploymentSelectorEval,
@@ -200,6 +211,9 @@ const getVariablesForResource: AsyncTypedHandler<
   const { workspaceId, identifier } = req.params;
   const resource = await findResource(workspaceId, identifier);
 
+  const limit = req.query.limit ?? 1000;
+  const offset = req.query.offset ?? 0;
+
   const rows = await db
     .select({
       resourceId: schema.resourceVariable.resourceId,
@@ -209,7 +223,10 @@ const getVariablesForResource: AsyncTypedHandler<
     .from(schema.resourceVariable)
     .where(eq(schema.resourceVariable.resourceId, resource.id));
 
-  res.status(200).json(rows);
+  const total = rows.length;
+  const items = rows.slice(offset, offset + limit);
+
+  res.status(200).json({ items, total, limit, offset });
 };
 
 const updateVariablesForResource: AsyncTypedHandler<
@@ -323,8 +340,104 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
   });
 };
 
+const searchResources: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/search",
+  "post"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+
+  const {
+    providerIds,
+    versions,
+    identifiers,
+    query,
+    kinds,
+    limit,
+    offset,
+    metadata,
+    sortBy,
+    order,
+  } = req.body;
+
+  if (!Number.isInteger(limit) || limit < 0) {
+    res.status(400).json({ error: "`limit` must be a non-negative integer" });
+    return;
+  }
+
+  if (!Number.isInteger(offset) || offset < 0) {
+    res.status(400).json({ error: "`offset` must be a non-negative integer" });
+    return;
+  }
+
+  const escapedQuery = query != null ? query.replace(/[%_\\]/g, "\\$&") : null;
+
+  function isDefined<T>(value: T | null | undefined): value is T {
+    return value != null;
+  }
+
+  const conditions = [
+    eq(schema.resource.workspaceId, workspaceId),
+    providerIds?.length
+      ? inArray(schema.resource.providerId, providerIds)
+      : undefined,
+    versions?.length ? inArray(schema.resource.version, versions) : undefined,
+    identifiers?.length
+      ? inArray(schema.resource.identifier, identifiers)
+      : undefined,
+    escapedQuery != null
+      ? or(
+          ilike(schema.resource.name, `%${escapedQuery}%`),
+          ilike(schema.resource.identifier, `%${escapedQuery}%`),
+        )
+      : undefined,
+    kinds?.length ? inArray(schema.resource.kind, kinds) : undefined,
+    ...(metadata
+      ? Object.entries(metadata).map(
+          ([key, value]) =>
+            sql`${schema.resource.metadata}->>${key} = ${value}`,
+        )
+      : []),
+  ].filter(isDefined);
+
+  const orderCol =
+    sortBy === "updatedAt"
+      ? schema.resource.updatedAt
+      : sortBy === "name"
+        ? schema.resource.name
+        : sortBy === "kind"
+          ? schema.resource.kind
+          : schema.resource.createdAt;
+
+  const orderFn = order === "desc" ? desc : asc;
+
+  const [countResult, rows] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(schema.resource)
+      .where(and(...conditions))
+      .then((r) => r[0]),
+    db
+      .select()
+      .from(schema.resource)
+      .where(and(...conditions))
+      .orderBy(orderFn(orderCol), orderFn(schema.resource.identifier))
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = countResult?.total ?? 0;
+
+  res.status(200).json({
+    items: rows.map(toResourceResponse),
+    total,
+    limit,
+    offset,
+  });
+};
+
 export const resourceRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listResources))
+  .post("/search", asyncHandler(searchResources))
   .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
   .put("/identifier/:identifier", asyncHandler(upsertResourceByIdentifier))
   .delete("/identifier/:identifier", asyncHandler(deleteResourceByIdentifier))

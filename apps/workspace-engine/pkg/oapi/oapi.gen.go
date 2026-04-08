@@ -304,13 +304,16 @@ type DeployDecision struct {
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description    *string               `json:"description,omitempty"`
-	Id             string                `json:"id"`
-	JobAgentConfig JobAgentConfig        `json:"jobAgentConfig"`
-	JobAgentId     *string               `json:"jobAgentId,omitempty"`
-	JobAgents      *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
-	Metadata       map[string]string     `json:"metadata"`
-	Name           string                `json:"name"`
+	Description    *string        `json:"description,omitempty"`
+	Id             string         `json:"id"`
+	JobAgentConfig JobAgentConfig `json:"jobAgentConfig"`
+	JobAgentId     *string        `json:"jobAgentId,omitempty"`
+
+	// JobAgentSelector CEL expression to match job agents
+	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
+	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
+	Metadata         map[string]string     `json:"metadata"`
+	Name             string                `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`

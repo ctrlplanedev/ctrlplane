@@ -54,6 +54,10 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents. Defaults to jobAgent.id == \"<jobAgentId>\" if not provided.",
+                  "type": "string"
+               },
                "jobAgents": {
                   "items": {
                      "$ref": "#/components/schemas/DeploymentJobAgent"
@@ -453,6 +457,10 @@
                   "type": "object"
                },
                "jobAgentId": {
+                  "type": "string"
+               },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents",
                   "type": "string"
                },
                "jobAgents": {
@@ -1407,6 +1415,74 @@
                "job",
                "release"
             ],
+            "type": "object"
+         },
+         "ListResourcesFilters": {
+            "properties": {
+               "identifiers": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "kinds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "limit": {
+                  "default": 500,
+                  "maximum": 1000,
+                  "minimum": 1,
+                  "type": "integer"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "Exact metadata key/value matches",
+                  "type": "object"
+               },
+               "offset": {
+                  "default": 0,
+                  "minimum": 0,
+                  "type": "integer"
+               },
+               "order": {
+                  "default": "asc",
+                  "enum": [
+                     "asc",
+                     "desc"
+                  ],
+                  "type": "string"
+               },
+               "providerIds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "query": {
+                  "description": "Text search on name or identifier",
+                  "type": "string"
+               },
+               "sortBy": {
+                  "enum": [
+                     "createdAt",
+                     "updatedAt",
+                     "name",
+                     "kind"
+                  ],
+                  "type": "string"
+               },
+               "versions": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               }
+            },
             "type": "object"
          },
          "LiteralValue": {
@@ -2517,6 +2593,10 @@
                   "type": "object"
                },
                "jobAgentId": {
+                  "type": "string"
+               },
+               "jobAgentSelector": {
+                  "description": "CEL expression to match job agents. Defaults to jobAgent.id == \"<jobAgentId>\" if not provided.",
                   "type": "string"
                },
                "jobAgents": {
@@ -7929,6 +8009,85 @@
                }
             },
             "summary": "Update variables for a resource",
+            "tags": [
+               "Resources"
+            ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/resources/search": {
+         "post": {
+            "description": "Returns a paginated list of resources matching the given filters.",
+            "operationId": "searchResources",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ListResourcesFilters"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Resource"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Matching resources"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Search resources",
             "tags": [
                "Resources"
             ]

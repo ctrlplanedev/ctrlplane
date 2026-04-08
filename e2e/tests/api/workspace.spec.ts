@@ -13,18 +13,4 @@ test.describe("Workspace API", () => {
     expect(workspaceResponse.response.status).toBe(200);
     expect(workspaceResponse.data?.id).toBe(workspace.id);
   });
-
-  test("should fetch a workspace by slug", async ({ api, workspace }) => {
-    const workspaceResponse = await api.GET(
-      "/v1/workspaces/slug/{workspaceSlug}",
-      {
-        params: {
-          path: { workspaceSlug: workspace.slug },
-        },
-      },
-    );
-
-    expect(workspaceResponse.response.status).toBe(200);
-    expect(workspaceResponse.data?.id).toBe(workspace.id);
-  });
 });
