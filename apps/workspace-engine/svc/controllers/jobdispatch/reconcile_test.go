@@ -196,7 +196,7 @@ func testDeployment() *oapi.Deployment {
 		Slug:             "test-deployment",
 		Metadata:         map[string]string{},
 		JobAgentConfig:   oapi.JobAgentConfig{},
-		JobAgentSelector: &sel,
+		JobAgentSelector: sel,
 	}
 }
 

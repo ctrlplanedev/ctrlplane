@@ -242,7 +242,7 @@ export interface components {
       jobAgentConfig: components["schemas"]["JobAgentConfig"];
       jobAgentId?: string;
       /** @description CEL expression to match job agents */
-      jobAgentSelector?: string;
+      jobAgentSelector: string;
       jobAgents?: components["schemas"]["DeploymentJobAgent"][];
       metadata: {
         [key: string]: string;

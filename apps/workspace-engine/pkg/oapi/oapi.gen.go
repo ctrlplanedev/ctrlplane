@@ -310,7 +310,7 @@ type Deployment struct {
 	JobAgentId     *string        `json:"jobAgentId,omitempty"`
 
 	// JobAgentSelector CEL expression to match job agents
-	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
+	JobAgentSelector string                `json:"jobAgentSelector"`
 	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
 	Metadata         map[string]string     `json:"metadata"`
 	Name             string                `json:"name"`

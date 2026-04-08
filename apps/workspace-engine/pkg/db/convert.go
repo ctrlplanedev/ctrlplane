@@ -10,16 +10,14 @@ import (
 
 func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
-		Id:             row.ID.String(),
-		Name:           row.Name,
-		Metadata:       row.Metadata,
-		JobAgentConfig: oapi.JobAgentConfig(row.JobAgentConfig),
+		Id:               row.ID.String(),
+		Name:             row.Name,
+		Metadata:         row.Metadata,
+		JobAgentConfig:   oapi.JobAgentConfig(row.JobAgentConfig),
+		JobAgentSelector: row.JobAgentSelector,
 	}
 	if row.Description != "" {
 		d.Description = &row.Description
-	}
-	if row.JobAgentSelector != "" {
-		d.JobAgentSelector = &row.JobAgentSelector
 	}
 	return d
 }

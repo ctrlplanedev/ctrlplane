@@ -1225,7 +1225,7 @@ export interface components {
             };
             jobAgentId?: string;
             /** @description CEL expression to match job agents */
-            jobAgentSelector?: string;
+            jobAgentSelector: string;
             jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;

@@ -67,7 +67,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("get deployment: %w", err)
 	}
 
-	if deployment.JobAgentSelector == nil || *deployment.JobAgentSelector == "" {
+	if deployment.JobAgentSelector == "" {
 		if err := c.setter.CompletePlan(ctx, planID); err != nil {
 			return reconcile.Result{}, fmt.Errorf("mark plan completed: %w", err)
 		}
@@ -79,7 +79,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("list job agents: %w", err)
 	}
 
-	matchedAgents, err := selector.MatchJobAgents(ctx, *deployment.JobAgentSelector, allAgents)
+	matchedAgents, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, allAgents)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("match job agents: %w", err)
 	}
