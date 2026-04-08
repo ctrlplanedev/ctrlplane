@@ -126,7 +126,7 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 		Name:        "my-deployment",
 		Slug:        "my-deployment-slug",
 		Description: &desc,
-		JobAgentId:  &agentID,
+		JobAgentSelector: "jobAgent.id == \"" + agentID + "\"",
 		JobAgentConfig: map[string]any{
 			"repo": "my-repo",
 			"nested": map[string]any{
@@ -146,8 +146,8 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 		{name: "name", path: []string{"name"}},
 		{name: "slug", path: []string{"slug"}},
 		{name: "description", path: []string{"description"}},
-		{name: "job_agent_id", path: []string{"job_agent_id"}},
-		{name: "jobagentid alias", path: []string{"jobagentid"}},
+		{name: "job_agent_selector", path: []string{"job_agent_selector"}},
+		{name: "jobagentselector alias", path: []string{"jobagentselector"}},
 		{
 			name:     "job_agent_config whole",
 			path:     []string{"job_agent_config"},
@@ -187,7 +187,7 @@ func TestPropertyValueExtraction_Deployment_NilFields(t *testing.T) {
 		Name:        "my-deployment",
 		Slug:        "my-slug",
 		Description: nil,
-		JobAgentId:  nil,
+		JobAgentSelector: "",
 	}
 	entity := makeDeploymentEntity(deployment)
 
@@ -195,9 +195,8 @@ func TestPropertyValueExtraction_Deployment_NilFields(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
 
-	_, err = GetPropertyValue(entity, []string{"job_agent_id"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "nil")
+	_, err = GetPropertyValue(entity, []string{"job_agent_selector"})
+	require.NoError(t, err)
 }
 
 func TestPropertyValueExtraction_Environment(t *testing.T) {
