@@ -216,7 +216,7 @@ func testDeployment(rt *ReleaseTarget) *oapi.Deployment {
 		Slug:             "test-deployment",
 		Metadata:         map[string]string{},
 		JobAgentConfig:   oapi.JobAgentConfig{},
-		JobAgentSelector: &sel,
+		JobAgentSelector: sel,
 	}
 }
 
@@ -1160,8 +1160,7 @@ func TestReconcile_NoJobAgentSelector_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
-	emptySel := ""
-	getter.deployment.JobAgentSelector = &emptySel
+	getter.deployment.JobAgentSelector = ""
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
@@ -1174,7 +1173,7 @@ func TestReconcile_NilJobAgentSelector_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
-	getter.deployment.JobAgentSelector = nil
+	getter.deployment.JobAgentSelector = ""
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
@@ -1479,7 +1478,7 @@ func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
 		Name:             "test-deployment",
 		Slug:             "test-deployment",
 		Metadata:         map[string]string{},
-		JobAgentSelector: &sel,
+		JobAgentSelector: sel,
 		JobAgentConfig: oapi.JobAgentConfig{
 			"workflowId": float64(456),
 			"timeout":    float64(60),
@@ -1563,7 +1562,7 @@ func TestReconcile_SelectorMatchesSpecificAgent(t *testing.T) {
 
 	sel := fmt.Sprintf(`jobAgent.id == "%s"`, target.Id)
 	deployment := testDeployment(rt)
-	deployment.JobAgentSelector = &sel
+	deployment.JobAgentSelector = sel
 
 	getter := &mockGetter{
 		rtExists:        true,
@@ -1620,7 +1619,7 @@ func TestReconcile_SelectorByType_MatchesMultiple(t *testing.T) {
 
 	sel := `jobAgent.type == "argo-cd"`
 	deployment := testDeployment(rt)
-	deployment.JobAgentSelector = &sel
+	deployment.JobAgentSelector = sel
 
 	getter := &mockGetter{
 		rtExists:   true,
@@ -1670,7 +1669,7 @@ func TestReconcile_SelectorFalse_NoAgentsMatched(t *testing.T) {
 	agent := testAgent()
 	sel := "false"
 	deployment := testDeployment(rt)
-	deployment.JobAgentSelector = &sel
+	deployment.JobAgentSelector = sel
 
 	getter := &mockGetter{
 		rtExists:        true,
@@ -1721,7 +1720,7 @@ func TestReconcile_SelectorByName_MatchesSingle(t *testing.T) {
 
 	sel := `jobAgent.name == "prod-deployer"`
 	deployment := testDeployment(rt)
-	deployment.JobAgentSelector = &sel
+	deployment.JobAgentSelector = sel
 
 	getter := &mockGetter{
 		rtExists:        true,

@@ -266,6 +266,7 @@
                "id",
                "name",
                "slug",
+               "jobAgentSelector",
                "jobAgentConfig",
                "metadata"
             ],

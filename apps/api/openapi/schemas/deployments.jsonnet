@@ -59,7 +59,7 @@ local jobAgentConfig = {
 
   Deployment: {
     type: 'object',
-    required: ['id', 'name', 'slug', 'jobAgentConfig'],
+    required: ['id', 'name', 'slug', 'jobAgentSelector', 'jobAgentConfig'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },

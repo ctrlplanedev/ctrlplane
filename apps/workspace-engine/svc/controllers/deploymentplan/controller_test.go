@@ -218,7 +218,7 @@ func testDeployment(hasSelector bool) *oapi.Deployment {
 	}
 	if hasSelector {
 		sel := "true"
-		dep.JobAgentSelector = &sel
+		dep.JobAgentSelector = sel
 	}
 	return dep
 }
@@ -300,8 +300,7 @@ func TestProcess_NoAgents_CompletesPlan(t *testing.T) {
 
 func TestProcess_EmptySelector_CompletesPlan(t *testing.T) {
 	dep := testDeployment(false)
-	emptySel := ""
-	dep.JobAgentSelector = &emptySel
+	dep.JobAgentSelector = ""
 
 	getter := &mockGetter{plan: testPlan(), deployment: dep}
 	setter := &mockSetter{}

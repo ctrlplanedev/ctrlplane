@@ -159,7 +159,7 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 		Deployment: &oapi.Deployment{
 			Id:               sc.DeploymentID.String(),
 			Name:             sc.DeploymentName,
-			JobAgentSelector: &sel,
+			JobAgentSelector: sel,
 			JobAgentConfig:   oapi.JobAgentConfig{},
 		},
 	}

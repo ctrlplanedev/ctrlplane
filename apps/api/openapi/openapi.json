@@ -490,6 +490,7 @@
                "id",
                "name",
                "slug",
+               "jobAgentSelector",
                "jobAgentConfig"
             ],
             "type": "object"

@@ -65,7 +65,7 @@ func getJobAgents(
 		return nil, err
 	}
 
-	if deployment.JobAgentSelector == nil || *deployment.JobAgentSelector == "" {
+	if deployment.JobAgentSelector == "" {
 		return nil, fmt.Errorf("deployment job agent selector is empty")
 	}
 
@@ -74,7 +74,7 @@ func getJobAgents(
 		return nil, fmt.Errorf("list job agents: %w", err)
 	}
 
-	matched, err := selector.MatchJobAgents(ctx, *deployment.JobAgentSelector, allAgents)
+	matched, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, allAgents)
 	if err != nil {
 		return nil, fmt.Errorf("match job agents: %w", err)
 	}

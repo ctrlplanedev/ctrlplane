@@ -200,16 +200,11 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 
 	span.SetAttributes(attribute.String("deployment.id", deployment.Id))
 	span.SetAttributes(attribute.String("deployment.name", deployment.Name))
+	span.SetAttributes(
+		attribute.String("deployment.job_agent_selector", deployment.JobAgentSelector),
+	)
 
-	selectorIsNil := deployment.JobAgentSelector == nil
-	span.SetAttributes(attribute.Bool("deployment.job_agent_selector_nil", selectorIsNil))
-	if !selectorIsNil {
-		span.SetAttributes(
-			attribute.String("deployment.job_agent_selector", *deployment.JobAgentSelector),
-		)
-	}
-
-	if selectorIsNil || *deployment.JobAgentSelector == "" {
+	if deployment.JobAgentSelector == "" {
 		msg := fmt.Sprintf("No job agents configured for deployment '%s'", deployment.Name)
 		span.AddEvent(msg)
 		return r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg)
@@ -221,7 +216,7 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 	}
 	span.SetAttributes(attribute.Int("workspace_agents.count", len(allAgents)))
 
-	matchedAgents, err := selector.MatchJobAgents(ctx, *deployment.JobAgentSelector, allAgents)
+	matchedAgents, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, allAgents)
 	if err != nil {
 		return recordErr(span, "match job agents", err)
 	}
