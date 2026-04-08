@@ -202,10 +202,10 @@ func TestCelSelector_Matches_DeploymentWithOptionalFields(t *testing.T) {
 	require.NoError(t, err)
 
 	d := &oapi.Deployment{
-		Id:          "d-1",
-		Name:        "web",
-		Slug:        "web-slug",
-		Description: &desc,
+		Id:               "d-1",
+		Name:             "web",
+		Slug:             "web-slug",
+		Description:      &desc,
 		JobAgentSelector: "jobAgent.id == \"" + agentId + "\"",
 	}
 	matched, err := condition.Matches(d)

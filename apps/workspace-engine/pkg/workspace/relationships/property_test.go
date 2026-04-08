@@ -122,10 +122,10 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 	desc := "my deployment"
 	agentID := "agent-1"
 	deployment := &oapi.Deployment{
-		Id:          "dep-1",
-		Name:        "my-deployment",
-		Slug:        "my-deployment-slug",
-		Description: &desc,
+		Id:               "dep-1",
+		Name:             "my-deployment",
+		Slug:             "my-deployment-slug",
+		Description:      &desc,
 		JobAgentSelector: "jobAgent.id == \"" + agentID + "\"",
 		JobAgentConfig: map[string]any{
 			"repo": "my-repo",
@@ -183,10 +183,10 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 
 func TestPropertyValueExtraction_Deployment_NilFields(t *testing.T) {
 	deployment := &oapi.Deployment{
-		Id:          "dep-1",
-		Name:        "my-deployment",
-		Slug:        "my-slug",
-		Description: nil,
+		Id:               "dep-1",
+		Name:             "my-deployment",
+		Slug:             "my-slug",
+		Description:      nil,
 		JobAgentSelector: "",
 	}
 	entity := makeDeploymentEntity(deployment)
