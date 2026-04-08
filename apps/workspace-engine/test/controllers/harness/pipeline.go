@@ -152,22 +152,15 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 	selectorCtrl := selectoreval.NewController(selectorGetter, selectorSetter, qs.shared)
 	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter)
 
-	var deploymentJobAgents *[]oapi.DeploymentJobAgent
-	if len(sc.JobAgents) > 0 {
-		agents := make([]oapi.DeploymentJobAgent, len(sc.JobAgents))
-		for i, a := range sc.JobAgents {
-			agents[i] = oapi.DeploymentJobAgent{Ref: a.Id}
-		}
-		deploymentJobAgents = &agents
-	}
-
+	sel := "true"
 	jobDispatchGetter := &JobDispatchGetter{
 		ReleaseSetter: releaseSetter,
 		Agents:        sc.JobAgents,
 		Deployment: &oapi.Deployment{
-			Id:        sc.DeploymentID.String(),
-			Name:      sc.DeploymentName,
-			JobAgents: deploymentJobAgents,
+			Id:               sc.DeploymentID.String(),
+			Name:             sc.DeploymentName,
+			JobAgentSelector: &sel,
+			JobAgentConfig:   oapi.JobAgentConfig{},
 		},
 	}
 	releaseSetter.JobDispatchGetter = jobDispatchGetter

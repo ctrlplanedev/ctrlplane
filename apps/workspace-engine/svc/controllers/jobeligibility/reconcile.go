@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
@@ -184,6 +185,9 @@ func (r *reconciler) createFailureJob(
 }
 
 func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "jobeligibility.buildAndDispatchJob")
+	defer span.End()
+
 	deploymentID, err := uuid.Parse(r.release.ReleaseTarget.DeploymentId)
 	if err != nil {
 		return fmt.Errorf("parse deployment id: %w", err)
@@ -191,54 +195,62 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 
 	deployment, err := r.getter.GetDeployment(ctx, deploymentID)
 	if err != nil {
-		return fmt.Errorf("get deployment: %w", err)
+		return recordErr(span, "get deployment", err)
 	}
 
-	if deployment.JobAgents == nil || len(*deployment.JobAgents) == 0 {
+	span.SetAttributes(attribute.String("deployment.id", deployment.Id))
+	span.SetAttributes(attribute.String("deployment.name", deployment.Name))
+
+	selectorIsNil := deployment.JobAgentSelector == nil
+	span.SetAttributes(attribute.Bool("deployment.job_agent_selector_nil", selectorIsNil))
+	if !selectorIsNil {
+		span.SetAttributes(
+			attribute.String("deployment.job_agent_selector", *deployment.JobAgentSelector),
+		)
+	}
+
+	if selectorIsNil || *deployment.JobAgentSelector == "" {
 		msg := fmt.Sprintf("No job agents configured for deployment '%s'", deployment.Name)
+		span.AddEvent(msg)
 		return r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg)
 	}
 
-	for _, agentRef := range *deployment.JobAgents {
-		agentID, err := uuid.Parse(agentRef.Ref)
-		if err != nil {
-			return fmt.Errorf("parse job agent id: %w", err)
-		}
+	allAgents, err := r.getter.ListJobAgentsByWorkspaceID(ctx, r.workspaceID)
+	if err != nil {
+		return recordErr(span, "list job agents", err)
+	}
+	span.SetAttributes(attribute.Int("workspace_agents.count", len(allAgents)))
 
-		jobAgent, err := r.getter.GetJobAgent(ctx, agentID)
-		if err != nil {
-			msg := fmt.Sprintf("Job agent '%s' not found", agentRef.Ref)
-			if createErr := r.createFailureJob(
-				ctx,
-				oapi.JobStatusInvalidJobAgent,
-				msg,
-			); createErr != nil {
-				return fmt.Errorf(
-					"create failure job for agent %s: %w (original: %w)",
-					agentRef.Ref,
-					createErr,
-					err,
-				)
-			}
-			continue
-		}
+	matchedAgents, err := selector.MatchJobAgents(ctx, *deployment.JobAgentSelector, allAgents)
+	if err != nil {
+		return recordErr(span, "match job agents", err)
+	}
+	span.SetAttributes(attribute.Int("matched_agents.count", len(matchedAgents)))
 
-		jobAgent.Config = oapi.DeepMergeConfigs(
-			jobAgent.Config, agentRef.Config, r.release.Version.JobAgentConfig,
+	if len(matchedAgents) == 0 {
+		msg := fmt.Sprintf("No job agents matched selector for deployment '%s'", deployment.Name)
+		span.AddEvent(msg)
+		return r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg)
+	}
+
+	for i := range matchedAgents {
+		agent := &matchedAgents[i]
+		agent.Config = oapi.DeepMergeConfigs(
+			agent.Config, deployment.JobAgentConfig, r.release.Version.JobAgentConfig,
 		)
 
 		job, err := jobs.NewFactoryFromGetters(r.getter).
-			CreateJobForRelease(ctx, r.release, jobAgent)
+			CreateJobForRelease(ctx, r.release, agent)
 		if err != nil {
-			return fmt.Errorf("build job: %w", err)
+			return recordErr(span, "build job", err)
 		}
 
 		if err := r.setter.CreateJob(ctx, job, r.release); err != nil {
-			return fmt.Errorf("create job: %w", err)
+			return recordErr(span, "create job", err)
 		}
 
 		if err := r.setter.EnqueueJobDispatch(ctx, r.workspaceID.String(), job.Id); err != nil {
-			return fmt.Errorf("enqueue job dispatch: %w", err)
+			return recordErr(span, "enqueue job dispatch", err)
 		}
 	}
 
