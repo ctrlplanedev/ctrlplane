@@ -4,6 +4,7 @@ local openapi = import '../lib/openapi.libsonnet';
   Resource: {
     type: 'object',
     required: [
+      'id',
       'name',
       'version',
       'kind',
@@ -14,6 +15,7 @@ local openapi = import '../lib/openapi.libsonnet';
       'metadata',
     ],
     properties: {
+      id: { type: 'string', format: 'uuid' },
       name: { type: 'string' },
       version: { type: 'string' },
       kind: { type: 'string' },

@@ -357,6 +357,15 @@ const searchResources: AsyncTypedHandler<
   const sortBy = body.sortBy;
   const order = body.order;
 
+  if (!Number.isInteger(limit) || limit < 0) {
+    res.status(400).json({ error: "`limit` must be a non-negative integer" });
+    return;
+  }
+
+  if (!Number.isInteger(offset) || offset < 0) {
+    res.status(400).json({ error: "`offset` must be a non-negative integer" });
+    return;
+  }
   const conditions = [eq(schema.resource.workspaceId, workspaceId)];
 
   if (providerId != null)
@@ -364,13 +373,15 @@ const searchResources: AsyncTypedHandler<
   if (version != null) conditions.push(eq(schema.resource.version, version));
   if (identifier != null)
     conditions.push(eq(schema.resource.identifier, identifier));
-  if (query != null)
+  if (query != null) {
+    const escapedQuery = query.replace(/[%_\\]/g, "\\$&");
     conditions.push(
       or(
-        ilike(schema.resource.name, `%${query}%`),
-        ilike(schema.resource.identifier, `%${query}%`),
+        ilike(schema.resource.name, `%${escapedQuery}%`),
+        ilike(schema.resource.identifier, `%${escapedQuery}%`),
       )!,
     );
+  }
   if (kinds != null && kinds.length > 0)
     conditions.push(inArray(schema.resource.kind, kinds));
   if (metadata != null) {
@@ -400,7 +411,7 @@ const searchResources: AsyncTypedHandler<
       .select()
       .from(schema.resource)
       .where(and(...conditions))
-      .orderBy(orderFn(orderCol))
+      .orderBy(orderFn(orderCol), orderFn(schema.resource.identifier))
       .limit(limit)
       .offset(offset),
   ]);

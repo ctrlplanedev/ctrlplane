@@ -1761,6 +1761,8 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             deletedAt?: string;
+            /** Format: uuid */
+            id: string;
             identifier: string;
             kind: string;
             /** Format: date-time */
