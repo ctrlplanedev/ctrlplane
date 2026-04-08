@@ -24,24 +24,6 @@ func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	return d
 }
 
-func ToOapiDeploymentWithJobAgents(row GetDeploymentWithJobAgentsRow) *oapi.Deployment {
-	d := ToOapiDeployment(Deployment{
-		ID:               row.ID,
-		Name:             row.Name,
-		Description:      row.Description,
-		ResourceSelector: row.ResourceSelector,
-		Metadata:         row.Metadata,
-		WorkspaceID:      row.WorkspaceID,
-	})
-	if row.JobAgents != nil {
-		var jobAgents []oapi.DeploymentJobAgent
-		if err := json.Unmarshal(row.JobAgents, &jobAgents); err == nil {
-			d.JobAgents = &jobAgents
-		}
-	}
-	return d
-}
-
 func ToOapiEnvironment(row Environment) *oapi.Environment {
 	e := &oapi.Environment{
 		Id:          row.ID.String(),

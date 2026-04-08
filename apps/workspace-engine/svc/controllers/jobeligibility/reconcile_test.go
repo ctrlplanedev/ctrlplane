@@ -97,7 +97,10 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 	return agent, nil
 }
 
-func (m *mockGetter) ListJobAgentsByWorkspaceID(_ context.Context, _ uuid.UUID) ([]oapi.JobAgent, error) {
+func (m *mockGetter) ListJobAgentsByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.JobAgent, error) {
 	return m.workspaceAgents, nil
 }
 
@@ -1620,12 +1623,16 @@ func TestReconcile_SelectorByType_MatchesMultiple(t *testing.T) {
 	deployment.JobAgentSelector = &sel
 
 	getter := &mockGetter{
-		rtExists:        true,
-		release:         release,
-		jobs:            []*oapi.Job{},
-		policies:        []*oapi.Policy{},
-		deployment:      deployment,
-		jobAgents:       map[string]*oapi.JobAgent{argo1.Id: argo1, argo2.Id: argo2, github.Id: github},
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents: map[string]*oapi.JobAgent{
+			argo1.Id:  argo1,
+			argo2.Id:  argo2,
+			github.Id: github,
+		},
 		workspaceAgents: []oapi.JobAgent{*argo1, *argo2, *github},
 		environment: &oapi.Environment{
 			Id:       rt.EnvironmentID.String(),

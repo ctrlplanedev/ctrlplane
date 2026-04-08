@@ -118,7 +118,14 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	}
 
 	for _, target := range targets {
-		if err := c.processTarget(ctx, plan, deployment, matchedAgents, version, target); err != nil {
+		if err := c.processTarget(
+			ctx,
+			plan,
+			deployment,
+			matchedAgents,
+			version,
+			target,
+		); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
 			return reconcile.Result{}, err

@@ -99,45 +99,6 @@ func (q *Queries) GetDeploymentIDsForSystem(ctx context.Context, systemID uuid.U
 	return items, nil
 }
 
-const getDeploymentWithJobAgents = `-- name: GetDeploymentWithJobAgents :one
-SELECT d.id, d.name, d.description, d.resource_selector, d.job_agent_selector, d.job_agent_config, d.metadata, d.workspace_id,
-  COALESCE(json_agg(json_build_object('ref', dja.job_agent_id, 'config', dja.config))
-    FILTER (WHERE dja.job_agent_id IS NOT NULL), '[]') AS job_agents
-FROM deployment d
-LEFT JOIN deployment_job_agent dja ON dja.deployment_id = d.id
-WHERE d.id = $1
-GROUP BY d.id
-`
-
-type GetDeploymentWithJobAgentsRow struct {
-	ID               uuid.UUID
-	Name             string
-	Description      string
-	ResourceSelector pgtype.Text
-	JobAgentSelector string
-	JobAgentConfig   map[string]any
-	Metadata         map[string]string
-	WorkspaceID      uuid.UUID
-	JobAgents        []byte
-}
-
-func (q *Queries) GetDeploymentWithJobAgents(ctx context.Context, id uuid.UUID) (GetDeploymentWithJobAgentsRow, error) {
-	row := q.db.QueryRow(ctx, getDeploymentWithJobAgents, id)
-	var i GetDeploymentWithJobAgentsRow
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Description,
-		&i.ResourceSelector,
-		&i.JobAgentSelector,
-		&i.JobAgentConfig,
-		&i.Metadata,
-		&i.WorkspaceID,
-		&i.JobAgents,
-	)
-	return i, err
-}
-
 const getSystemIDsForDeployment = `-- name: GetSystemIDsForDeployment :many
 SELECT system_id FROM system_deployment WHERE deployment_id = $1
 `

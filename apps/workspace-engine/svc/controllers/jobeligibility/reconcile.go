@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type ReconcileResult struct {
@@ -205,7 +204,9 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 	selectorIsNil := deployment.JobAgentSelector == nil
 	span.SetAttributes(attribute.Bool("deployment.job_agent_selector_nil", selectorIsNil))
 	if !selectorIsNil {
-		span.SetAttributes(attribute.String("deployment.job_agent_selector", *deployment.JobAgentSelector))
+		span.SetAttributes(
+			attribute.String("deployment.job_agent_selector", *deployment.JobAgentSelector),
+		)
 	}
 
 	if selectorIsNil || *deployment.JobAgentSelector == "" {

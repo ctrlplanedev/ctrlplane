@@ -51,7 +51,10 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 	return agent, nil
 }
 
-func (m *mockGetter) ListJobAgentsByWorkspaceID(_ context.Context, _ uuid.UUID) ([]oapi.JobAgent, error) {
+func (m *mockGetter) ListJobAgentsByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.JobAgent, error) {
 	return m.workspaceAgents, nil
 }
 
@@ -228,7 +231,15 @@ func TestReconcile_GetReleaseFails(t *testing.T) {
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
 
-	_, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	_, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.Error(t, err)
 	assert.Empty(t, dispatcher.dispatchCalls)
 }
@@ -239,7 +250,15 @@ func TestReconcile_NoAgentsOnDeployment(t *testing.T) {
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
 
-	result, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	result, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Empty(t, dispatcher.dispatchCalls)
@@ -255,7 +274,15 @@ func TestReconcile_DispatchesWithoutVerifications(t *testing.T) {
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
 
-	result, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	result, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -280,7 +307,15 @@ func TestReconcile_DispatchesWithPolicyVerifications(t *testing.T) {
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
 
-	result, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	result, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -306,7 +341,15 @@ func TestReconcile_DispatchesWithAgentVerifications(t *testing.T) {
 		},
 	}
 
-	result, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	result, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -341,7 +384,15 @@ func TestReconcile_MergesAndDeduplicatesPolicyAndAgentSpecs(t *testing.T) {
 		},
 	}
 
-	result, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	result, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -381,7 +432,15 @@ func TestReconcile_TemplatesConditionsFromDispatchContext(t *testing.T) {
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
 
-	_, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	_, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 
 	require.Len(t, setter.createCalls, 1)
@@ -412,7 +471,15 @@ func TestReconcile_MultipleAgentsContributeSpecs(t *testing.T) {
 		},
 	}
 
-	result, err := Reconcile(context.Background(), getter, setter, verifier, dispatcher, testWorkspaceID, job)
+	result, err := Reconcile(
+		context.Background(),
+		getter,
+		setter,
+		verifier,
+		dispatcher,
+		testWorkspaceID,
+		job,
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 

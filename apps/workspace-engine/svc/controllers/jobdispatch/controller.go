@@ -47,7 +47,16 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		attribute.String("item.scope_id", item.ScopeID),
 	)
 
-	jobID := uuid.MustParse(item.ScopeID)
+	jobID, err := uuid.Parse(item.ScopeID)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("parse job id: %w", err)
+	}
+
+	workspaceID, err := uuid.Parse(item.WorkspaceID)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("parse workspace id: %w", err)
+	}
+
 	job, err := c.getter.GetJob(ctx, jobID)
 	if err != nil {
 		span.RecordError(err)
@@ -57,7 +66,6 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	span.SetAttributes(attribute.String("job", fmt.Sprintf("%+v", job)))
 
-	workspaceID := uuid.MustParse(item.WorkspaceID)
 	result, err := c.reconcileJob(ctx, workspaceID, jobID, job)
 	if err != nil {
 		span.RecordError(err)

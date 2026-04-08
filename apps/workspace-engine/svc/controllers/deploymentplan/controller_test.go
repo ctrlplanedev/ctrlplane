@@ -80,7 +80,10 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 	return agent, nil
 }
 
-func (m *mockGetter) ListJobAgentsByWorkspaceID(_ context.Context, _ uuid.UUID) ([]oapi.JobAgent, error) {
+func (m *mockGetter) ListJobAgentsByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.JobAgent, error) {
 	return m.workspaceAgents, nil
 }
 
