@@ -2040,10 +2040,6 @@
                   "format": "date-time",
                   "type": "string"
                },
-               "id": {
-                  "format": "uuid",
-                  "type": "string"
-               },
                "identifier": {
                   "type": "string"
                },
@@ -2078,7 +2074,6 @@
                }
             },
             "required": [
-               "id",
                "name",
                "version",
                "kind",
