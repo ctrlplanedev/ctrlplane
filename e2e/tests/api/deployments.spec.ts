@@ -89,11 +89,12 @@ test.describe("Deployment API", () => {
     );
   });
 
-  test("should create a deployment with a job agent", async ({
+  test("should create a deployment with a job agent selector", async ({
     api,
     workspace,
   }) => {
     const name = `deploy-agent-${faker.string.alphanumeric(8)}`;
+    const selector = `jobAgent.id == "${jobAgentId}"`;
     const createRes = await api.POST(
       "/v1/workspaces/{workspaceId}/deployments",
       {
@@ -101,9 +102,8 @@ test.describe("Deployment API", () => {
         body: {
           name,
           slug: name,
-          jobAgents: [
-            { ref: jobAgentId, config: { repo: "my-repo" }, selector: "true" },
-          ],
+          jobAgentSelector: selector,
+          jobAgentConfig: { repo: "my-repo" },
         },
       },
     );
@@ -122,9 +122,8 @@ test.describe("Deployment API", () => {
 
     expect(getRes.response.status).toBe(200);
     const { deployment } = getRes.data!;
-    expect(deployment.jobAgents).toHaveLength(1);
-    expect(deployment.jobAgents![0]!.ref).toBe(jobAgentId);
-    expect(deployment.jobAgents![0]!.config).toEqual({ repo: "my-repo" });
+    expect(deployment.jobAgentSelector).toBe(selector);
+    expect(deployment.jobAgentConfig).toEqual({ repo: "my-repo" });
 
     await api.DELETE(
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
@@ -132,12 +131,13 @@ test.describe("Deployment API", () => {
     );
   });
 
-  test("should upsert a deployment with a job agent", async ({
+  test("should upsert a deployment with a job agent selector", async ({
     api,
     workspace,
   }) => {
     const deploymentId = uuidv4();
     const name = `deploy-upsert-${faker.string.alphanumeric(8)}`;
+    const selector = `jobAgent.id == "${jobAgentId}"`;
 
     const upsertRes = await api.PUT(
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
@@ -149,13 +149,8 @@ test.describe("Deployment API", () => {
           name,
           slug: name,
           resourceSelector: "false",
-          jobAgents: [
-            {
-              ref: jobAgentId,
-              config: { workflow: "deploy.yaml" },
-              selector: "true",
-            },
-          ],
+          jobAgentSelector: selector,
+          jobAgentConfig: { workflow: "deploy.yaml" },
         },
       },
     );
@@ -174,11 +169,8 @@ test.describe("Deployment API", () => {
     expect(getRes.response.status).toBe(200);
     const { deployment } = getRes.data!;
     expect(deployment.name).toBe(name);
-    expect(deployment.jobAgents).toHaveLength(1);
-    expect(deployment.jobAgents![0]!.ref).toBe(jobAgentId);
-    expect(deployment.jobAgents![0]!.config).toEqual({
-      workflow: "deploy.yaml",
-    });
+    expect(deployment.jobAgentSelector).toBe(selector);
+    expect(deployment.jobAgentConfig).toEqual({ workflow: "deploy.yaml" });
 
     await api.DELETE(
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
@@ -228,11 +220,12 @@ test.describe("Deployment API", () => {
     );
   });
 
-  test("should default jobAgentSelector from jobAgentId", async ({
+  test("should create deployment with jobAgentSelector and jobAgentConfig", async ({
     api,
     workspace,
   }) => {
     const name = `deploy-default-sel-${faker.string.alphanumeric(8)}`;
+    const selector = `jobAgent.id == "${jobAgentId}"`;
     const createRes = await api.POST(
       "/v1/workspaces/{workspaceId}/deployments",
       {
@@ -240,7 +233,7 @@ test.describe("Deployment API", () => {
         body: {
           name,
           slug: name,
-          jobAgentId,
+          jobAgentSelector: selector,
           jobAgentConfig: { image: "app:latest" },
         },
       },
@@ -260,9 +253,7 @@ test.describe("Deployment API", () => {
 
     expect(getRes.response.status).toBe(200);
     const { deployment } = getRes.data!;
-    expect(deployment.jobAgentSelector).toBe(
-      `jobAgent.id == "${jobAgentId}"`,
-    );
+    expect(deployment.jobAgentSelector).toBe(selector);
     expect(deployment.jobAgentConfig).toEqual({ image: "app:latest" });
 
     await api.DELETE(
