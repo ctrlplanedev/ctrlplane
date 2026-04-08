@@ -344,18 +344,20 @@ const searchResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/search",
   "post"
 > = async (req, res) => {
-  const { workspaceId } = req.params;
-  const body = req.body;
-  const providerId = body.providerId;
-  const version = body.version;
-  const identifier = body.identifier;
-  const query = body.query;
-  const kinds = body.kinds;
-  const limit = body.limit;
-  const offset = body.offset;
-  const metadata = body.metadata;
-  const sortBy = body.sortBy;
-  const order = body.order;
+const { workspaceId } = req.params;
+
+const {
+  providerId,
+  version,
+  identifier,
+  query,
+  kinds,
+  limit,
+  offset,
+  metadata,
+  sortBy,
+  order,
+} = req.body;
 
   if (!Number.isInteger(limit) || limit < 0) {
     res.status(400).json({ error: "`limit` must be a non-negative integer" });
