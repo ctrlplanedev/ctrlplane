@@ -168,6 +168,7 @@ func deploymentToMap(d *oapi.Deployment) map[string]any {
 	m["name"] = d.Name
 	m["slug"] = d.Slug
 	m["jobAgentConfig"] = d.JobAgentConfig
+	m["jobAgentSelector"] = d.JobAgentSelector
 	m["metadata"] = d.Metadata
 	if d.Metadata == nil {
 		m["metadata"] = make(map[string]any)
