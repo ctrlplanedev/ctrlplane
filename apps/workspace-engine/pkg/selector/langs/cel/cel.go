@@ -176,9 +176,6 @@ func deploymentToMap(d *oapi.Deployment) map[string]any {
 	if d.Description != nil {
 		m["description"] = *d.Description
 	}
-	if d.JobAgentId != nil {
-		m["jobAgentId"] = *d.JobAgentId
-	}
 	if d.ResourceSelector != nil {
 		m["resourceSelector"] = d.ResourceSelector
 	}

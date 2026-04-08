@@ -6,15 +6,6 @@ local jobAgentConfig = {
 };
 
 {
-  DeploymentJobAgent: {
-    type: 'object',
-    required: ['ref', 'config', 'selector'],
-    properties: {
-      ref: { type: 'string' },
-      config: openapi.schemaRef('JobAgentConfig'),
-      selector: { type: 'string', description: 'CEL expression to determine if the job agent should be used' },
-    },
-  },
 
   CreateDeploymentRequest: {
     type: 'object',
@@ -23,10 +14,8 @@ local jobAgentConfig = {
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
-      jobAgentId: { type: 'string' },
-      jobAgentSelector: { type: 'string', description: 'CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided.' },
+      jobAgentSelector: { type: 'string', description: 'CEL expression to match job agents' },
       jobAgentConfig: jobAgentConfig,
-      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: { type: 'string', description: 'CEL expression to determine if the deployment should be used' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
@@ -39,10 +28,8 @@ local jobAgentConfig = {
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
-      jobAgentId: { type: 'string' },
-      jobAgentSelector: { type: 'string', description: 'CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided.' },
+      jobAgentSelector: { type: 'string', description: 'CEL expression to match job agents' },
       jobAgentConfig: jobAgentConfig,
-      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: { type: 'string', description: 'CEL expression to determine if the deployment should be used' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
@@ -65,10 +52,8 @@ local jobAgentConfig = {
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
-      jobAgentId: { type: 'string' },
       jobAgentSelector: { type: 'string', description: 'CEL expression to match job agents' },
       jobAgentConfig: jobAgentConfig,
-      jobAgents: { type: 'array', items: openapi.schemaRef('DeploymentJobAgent') },
       resourceSelector: { type: 'string', description: 'CEL expression to determine if the deployment should be used' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },

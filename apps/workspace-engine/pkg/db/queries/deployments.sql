@@ -45,11 +45,3 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1;
 -- name: DeleteDeployment :exec
 DELETE FROM deployment WHERE id = $1;
 
--- name: UpsertDeploymentJobAgent :exec
-INSERT INTO deployment_job_agent (deployment_id, job_agent_id, config)
-VALUES ($1, $2, $3)
-ON CONFLICT (deployment_id, job_agent_id) DO UPDATE
-SET config = EXCLUDED.config;
-
--- name: DeleteDeploymentJobAgents :exec
-DELETE FROM deployment_job_agent WHERE deployment_id = $1;

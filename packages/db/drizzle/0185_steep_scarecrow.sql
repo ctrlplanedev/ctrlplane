@@ -1,0 +1,1 @@
+DROP TABLE "deployment_job_agent" CASCADE;

@@ -21,15 +21,6 @@ func (q *Queries) DeleteDeployment(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deleteDeploymentJobAgents = `-- name: DeleteDeploymentJobAgents :exec
-DELETE FROM deployment_job_agent WHERE deployment_id = $1
-`
-
-func (q *Queries) DeleteDeploymentJobAgents(ctx context.Context, deploymentID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteDeploymentJobAgents, deploymentID)
-	return err
-}
-
 const deleteSystemDeployment = `-- name: DeleteSystemDeployment :exec
 DELETE FROM system_deployment WHERE system_id = $1 AND deployment_id = $2
 `
@@ -247,24 +238,6 @@ func (q *Queries) UpsertDeployment(ctx context.Context, arg UpsertDeploymentPara
 		&i.WorkspaceID,
 	)
 	return i, err
-}
-
-const upsertDeploymentJobAgent = `-- name: UpsertDeploymentJobAgent :exec
-INSERT INTO deployment_job_agent (deployment_id, job_agent_id, config)
-VALUES ($1, $2, $3)
-ON CONFLICT (deployment_id, job_agent_id) DO UPDATE
-SET config = EXCLUDED.config
-`
-
-type UpsertDeploymentJobAgentParams struct {
-	DeploymentID uuid.UUID
-	JobAgentID   uuid.UUID
-	Config       []byte
-}
-
-func (q *Queries) UpsertDeploymentJobAgent(ctx context.Context, arg UpsertDeploymentJobAgentParams) error {
-	_, err := q.db.Exec(ctx, upsertDeploymentJobAgent, arg.DeploymentID, arg.JobAgentID, arg.Config)
-	return err
 }
 
 const upsertSystemDeployment = `-- name: UpsertSystemDeployment :exec

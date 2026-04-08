@@ -6,11 +6,8 @@ type Deployment = {
   name: string;
   resourceSelector?: string | null;
   description?: string | null;
-  jobAgents: Array<{
-    deploymentId: string;
-    jobAgentId: string;
-    config: Record<string, any>;
-  }>;
+  jobAgentSelector: string;
+  jobAgentConfig: Record<string, any> | null;
   systemDeployments: Array<{
     systemId: string;
     system: {

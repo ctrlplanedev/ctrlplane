@@ -1063,10 +1063,8 @@ export interface components {
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
-            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            /** @description CEL expression to match job agents */
             jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1223,10 +1221,8 @@ export interface components {
             jobAgentConfig: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
             /** @description CEL expression to match job agents */
             jobAgentSelector: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1242,12 +1238,6 @@ export interface components {
         DeploymentDependencyRule: {
             /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
             dependsOn: string;
-        };
-        DeploymentJobAgent: {
-            config: components["schemas"]["JobAgentConfig"];
-            ref: string;
-            /** @description CEL expression to determine if the job agent should be used */
-            selector: string;
         };
         DeploymentPlan: {
             id: string;
@@ -1961,10 +1951,8 @@ export interface components {
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
-            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            /** @description CEL expression to match job agents */
             jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
