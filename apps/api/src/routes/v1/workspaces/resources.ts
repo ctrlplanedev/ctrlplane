@@ -3,7 +3,18 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { evaluate } from "cel-js";
 import { Router } from "express";
 
-import { and, asc, count, eq, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+  takeFirst,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueManyDeploymentSelectorEval,
@@ -329,8 +340,84 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
   });
 };
 
+const searchResources: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/search",
+  "post"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const body = req.body;
+  const providerId = body.providerId;
+  const version = body.version;
+  const identifier = body.identifier;
+  const query = body.query;
+  const kinds = body.kinds;
+  const limit = body.limit;
+  const offset = body.offset;
+  const metadata = body.metadata;
+  const sortBy = body.sortBy;
+  const order = body.order;
+
+  const conditions = [eq(schema.resource.workspaceId, workspaceId)];
+
+  if (providerId != null)
+    conditions.push(eq(schema.resource.providerId, providerId));
+  if (version != null) conditions.push(eq(schema.resource.version, version));
+  if (identifier != null)
+    conditions.push(eq(schema.resource.identifier, identifier));
+  if (query != null)
+    conditions.push(
+      or(
+        ilike(schema.resource.name, `%${query}%`),
+        ilike(schema.resource.identifier, `%${query}%`),
+      )!,
+    );
+  if (kinds != null && kinds.length > 0)
+    conditions.push(inArray(schema.resource.kind, kinds));
+  if (metadata != null) {
+    for (const [key, value] of Object.entries(metadata)) {
+      conditions.push(sql`${schema.resource.metadata}->>${key} = ${value}`);
+    }
+  }
+
+  const orderCol =
+    sortBy === "updatedAt"
+      ? schema.resource.updatedAt
+      : sortBy === "name"
+        ? schema.resource.name
+        : sortBy === "kind"
+          ? schema.resource.kind
+          : schema.resource.createdAt;
+
+  const orderFn = order === "desc" ? desc : asc;
+
+  const [countResult, rows] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(schema.resource)
+      .where(and(...conditions))
+      .then((r) => r[0]),
+    db
+      .select()
+      .from(schema.resource)
+      .where(and(...conditions))
+      .orderBy(orderFn(orderCol))
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = countResult?.total ?? 0;
+
+  res.status(200).json({
+    items: rows.map(toResourceResponse),
+    total,
+    limit,
+    offset,
+  });
+};
+
 export const resourceRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listResources))
+  .post("/search", asyncHandler(searchResources))
   .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
   .put("/identifier/:identifier", asyncHandler(upsertResourceByIdentifier))
   .delete("/identifier/:identifier", asyncHandler(deleteResourceByIdentifier))

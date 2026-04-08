@@ -4,1653 +4,1584 @@
  */
 
 export interface paths {
-  "/v1/deployments/{deploymentId}/release-targets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/deployments/{deploymentId}/release-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List release targets for a deployment */
+        get: operations["listReleaseTargets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List release targets for a deployment */
-    get: operations["listReleaseTargets"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/jobs/{jobId}/verification-status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/jobs/{jobId}/verification-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get aggregate verification status for a job */
+        get: operations["getJobVerificationStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get aggregate verification status for a job */
-    get: operations["getJobVerificationStatus"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/validate/resource-selector": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/validate/resource-selector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate a resource selector */
+        post: operations["validateResourceSelector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Validate a resource selector */
-    post: operations["validateResourceSelector"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the state of a release target */
+        get: operations["getReleaseTargetState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get the state of a release target */
-    get: operations["getReleaseTargetState"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/resources/aggregates": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/resources/aggregates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute resource aggregate
+         * @description Filters resources by a CEL expression and groups them by specified properties, returning counts per group.
+         */
+        post: operations["computeAggergate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Compute resource aggregate
-     * @description Filters resources by a CEL expression and groups them by specified properties, returning counts per group.
-     */
-    post: operations["computeAggergate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/resources/query": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/resources/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query resources with CEL expression
+         * @description Returns paginated resources that match the provided CEL expression. Use the "resource" variable in your expression to access resource properties.
+         */
+        post: operations["queryResources"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Query resources with CEL expression
-     * @description Returns paginated resources that match the provided CEL expression. Use the "resource" variable in your expression to access resource properties.
-     */
-    post: operations["queryResources"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a workflow run
+         * @description Creates a new run for the specified workflow with the provided inputs.
+         */
+        post: operations["createWorkflowRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Create a workflow run
-     * @description Creates a new run for the specified workflow with the provided inputs.
-     */
-    post: operations["createWorkflowRun"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    AnyApprovalRule: {
-      /** Format: int32 */
-      minApprovals: number;
-    };
-    /** @enum {string} */
-    ApprovalStatus: "approved" | "rejected";
-    ArgoCDJobAgentConfig: {
-      /** @description ArgoCD API token. */
-      apiKey: string;
-      /** @description ArgoCD server address (host[:port] or URL). */
-      serverUrl: string;
-      /** @description ArgoCD application template. */
-      template: string;
-    };
-    /** @description WorkflowTemplate reference execution */
-    ArgoWorkflowJobAgentConfig: {
-      /** @description ArgoWorkflow API token. */
-      apiKey: string;
-      /**
-       * @description ArgoWorkClient http(s) connection configuration setting
-       * @default false
-       */
-      httpInsecure: boolean;
-      /** @description ArgoWorkflow job name */
-      name: string;
-      /** @description ArgoWorkflow server address (host[:port] or URL). */
-      serverUrl: string;
-      /** @description WorkflowTemplate name. */
-      template: string;
-      /** @description ArgoEvents webhookSecret */
-      webhookSecret: string;
-    };
-    BasicResource: {
-      id: string;
-      identifier: string;
-      kind: string;
-      name: string;
-      version: string;
-      workspaceId: string;
-    };
-    BooleanValue: boolean;
-    CelMatcher: {
-      cel: string;
-    };
-    DatadogMetricProvider: {
-      /**
-       * @description Datadog aggregator
-       * @default last
-       * @enum {string}
-       */
-      aggregator:
-        | "avg"
-        | "min"
-        | "max"
-        | "sum"
-        | "last"
-        | "percentile"
-        | "mean"
-        | "l2norm"
-        | "area";
-      /**
-       * @description Datadog API key (supports Go templates for variable references)
-       * @example {{.variables.dd_api_key}}
-       */
-      apiKey: string;
-      /**
-       * @description Datadog Application key (supports Go templates for variable references)
-       * @example {{.variables.dd_app_key}}
-       */
-      appKey: string;
-      /** @description Datadog formula (supports Go templates) */
-      formula?: string;
-      /**
-       * Format: int64
-       * @example 30
-       */
-      intervalSeconds?: number;
-      /**
-       * @description Datadog metrics queries (supports Go templates)
-       * @example {
-       *       "q": "sum:requests.error.rate{service:{{.resource.name}}}"
-       *     }
-       */
-      queries: {
-        [key: string]: string;
-      };
-      /**
-       * @description Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
-       * @default datadoghq.com
-       */
-      site: string;
-      /**
-       * @description Provider type (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "datadog";
-    };
-    DeployDecision: {
-      policyResults: components["schemas"]["PolicyEvaluation"][];
-    };
-    Deployment: {
-      description?: string;
-      id: string;
-      jobAgentConfig: components["schemas"]["JobAgentConfig"];
-      jobAgentId?: string;
-      jobAgents?: components["schemas"]["DeploymentJobAgent"][];
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      /** @description CEL expression to determine if the deployment should be used */
-      resourceSelector?: string;
-      slug: string;
-    };
-    DeploymentAndSystems: {
-      deployment: components["schemas"]["Deployment"];
-      systems: components["schemas"]["System"][];
-    };
-    DeploymentDependencyRule: {
-      /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
-      dependsOn: string;
-    };
-    DeploymentJobAgent: {
-      config: components["schemas"]["JobAgentConfig"];
-      ref: string;
-      /** @description CEL expression to determine if the job agent should be used */
-      selector: string;
-    };
-    DeploymentVariable: {
-      defaultValue?: components["schemas"]["LiteralValue"];
-      deploymentId: string;
-      description?: string;
-      id: string;
-      key: string;
-    };
-    DeploymentVariableValue: {
-      deploymentVariableId: string;
-      id: string;
-      /** Format: int64 */
-      priority: number;
-      /** @description CEL expression to determine if the deployment variable value should be used */
-      resourceSelector?: string;
-      value: components["schemas"]["Value"];
-    };
-    DeploymentVariableWithValues: {
-      values: components["schemas"]["DeploymentVariableValue"][];
-      variable: components["schemas"]["DeploymentVariable"];
-    };
-    DeploymentVersion: {
-      config: {
-        [key: string]: unknown;
-      };
-      /** Format: date-time */
-      createdAt: string;
-      deploymentId: string;
-      id: string;
-      jobAgentConfig: components["schemas"]["JobAgentConfig"];
-      message?: string;
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      status: components["schemas"]["DeploymentVersionStatus"];
-      tag: string;
-    };
-    /** @enum {string} */
-    DeploymentVersionStatus:
-      | "unspecified"
-      | "building"
-      | "ready"
-      | "failed"
-      | "rejected"
-      | "paused";
-    DeploymentWindowRule: {
-      /**
-       * @description If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
-       * @default true
-       */
-      allowWindow: boolean;
-      /**
-       * Format: int32
-       * @description Duration of each deployment window in minutes
-       */
-      durationMinutes: number;
-      /** @description RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9) */
-      rrule: string;
-      /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
-      timezone?: string;
-    };
-    DeploymentWithVariablesAndSystems: {
-      deployment: components["schemas"]["Deployment"];
-      systems: components["schemas"]["System"][];
-      variables: components["schemas"]["DeploymentVariableWithValues"][];
-    };
-    DispatchContext: {
-      deployment?: components["schemas"]["Deployment"];
-      environment?: components["schemas"]["Environment"];
-      /** @description Resolved input values for the workflow run. */
-      inputs?: {
-        [key: string]: unknown;
-      };
-      jobAgent: components["schemas"]["JobAgent"];
-      jobAgentConfig: components["schemas"]["JobAgentConfig"];
-      release?: components["schemas"]["Release"];
-      resource?: components["schemas"]["Resource"];
-      variables?: {
-        [key: string]: components["schemas"]["LiteralValue"];
-      };
-      version?: components["schemas"]["DeploymentVersion"];
-      workflow?: components["schemas"]["Workflow"];
-      workflowJob?: components["schemas"]["WorkflowJob"];
-      workflowRun?: components["schemas"]["WorkflowRun"];
-    };
-    EntityRelation: {
-      direction: components["schemas"]["RelationDirection"];
-      entity: components["schemas"]["RelatableEntity"];
-      /** @description ID of the related entity */
-      entityId: string;
-      entityType: components["schemas"]["RelatableEntityType"];
-      rule: components["schemas"]["RelationshipRule"];
-    };
-    Environment: {
-      /** Format: date-time */
-      createdAt: string;
-      description?: string;
-      id: string;
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      /** @description CEL expression to determine if the environment should be used */
-      resourceSelector?: string;
-      workspaceId: string;
-    };
-    EnvironmentProgressionRule: {
-      /** @description CEL expression to determine if the environment progression rule should be used */
-      dependsOnEnvironmentSelector: string;
-      /**
-       * Format: int32
-       * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
-       */
-      maximumAgeHours?: number;
-      /**
-       * Format: int32
-       * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
-       * @default 0
-       */
-      minimumSockTimeMinutes: number;
-      /**
-       * Format: float
-       * @default 100
-       */
-      minimumSuccessPercentage: number;
-      successStatuses?: components["schemas"]["JobStatus"][];
-    };
-    EnvironmentSummary: {
-      id: string;
-      name: string;
-    };
-    EnvironmentWithSystems: components["schemas"]["Environment"] & {
-      systems: components["schemas"]["System"][];
-    };
-    ErrorResponse: {
-      /** @example Workspace not found */
-      error?: string;
-    };
-    EvaluateReleaseTargetRequest: {
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      version: components["schemas"]["DeploymentVersion"];
-    };
-    EvaluationScope: {
-      environmentId?: string;
-      versionId?: string;
-    };
-    GithubEntity: {
-      installationId: number;
-      slug: string;
-    };
-    GithubJobAgentConfig: {
-      /**
-       * Format: int
-       * @description GitHub app installation ID.
-       */
-      installationId: number;
-      /** @description GitHub repository owner. */
-      owner: string;
-      /** @description Git ref to run the workflow on (defaults to "main" if omitted). */
-      ref?: string;
-      /** @description GitHub repository name. */
-      repo: string;
-      /**
-       * Format: int64
-       * @description GitHub Actions workflow ID.
-       */
-      workflowId: number;
-    };
-    GradualRolloutRule: {
-      /**
-       * @description Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
-       * @enum {string}
-       */
-      rolloutType: "linear" | "linear-normalized";
-      /**
-       * Format: int32
-       * @description Base time interval in seconds used to compute the delay between deployments to release targets.
-       */
-      timeScaleInterval: number;
-    };
-    HTTPMetricProvider: {
-      /** @description Request body (supports Go templates) */
-      body?: string;
-      /** @description HTTP headers (values support Go templates) */
-      headers?: {
-        [key: string]: string;
-      };
-      /**
-       * @description HTTP method
-       * @default GET
-       * @enum {string}
-       */
-      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
-      /**
-       * @description Request timeout (duration string, e.g., "30s")
-       * @default 30s
-       */
-      timeout: string;
-      /**
-       * @description Provider type (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "http";
-      /**
-       * @description HTTP endpoint URL (supports Go templates)
-       * @example http://{{ .resource.name }}.{{ .environment.name }}/health
-       */
-      url: string;
-    };
-    IntegerValue: number;
-    Job: {
-      /** Format: date-time */
-      completedAt?: string;
-      /** Format: date-time */
-      createdAt: string;
-      dispatchContext?: components["schemas"]["DispatchContext"];
-      externalId?: string;
-      id: string;
-      jobAgentConfig: components["schemas"]["JobAgentConfig"];
-      jobAgentId: string;
-      message?: string;
-      metadata: {
-        [key: string]: string;
-      };
-      releaseId: string;
-      /** Format: date-time */
-      startedAt?: string;
-      status: components["schemas"]["JobStatus"];
-      traceToken?: string;
-      /** Format: date-time */
-      updatedAt: string;
-      workflowJobId: string;
-    };
-    JobAgent: {
-      config: components["schemas"]["JobAgentConfig"];
-      id: string;
-      metadata?: {
-        [key: string]: string;
-      };
-      name: string;
-      type: string;
-      workspaceId: string;
-    };
-    JobAgentConfig: {
-      [key: string]: unknown;
-    };
-    /** @enum {string} */
-    JobStatus:
-      | "cancelled"
-      | "skipped"
-      | "inProgress"
-      | "actionRequired"
-      | "pending"
-      | "failure"
-      | "invalidJobAgent"
-      | "invalidIntegration"
-      | "externalRunNotFound"
-      | "successful";
-    JobSummary: {
-      id: string;
-      /** @description External links extracted from job metadata */
-      links?: {
-        [key: string]: string;
-      };
-      message?: string;
-      status: components["schemas"]["JobStatus"];
-      verifications: components["schemas"]["JobVerification"][];
-    };
-    JobUpdateEvent: {
-      agentId?: string;
-      externalId?: string;
-      fieldsToUpdate?: (
-        | "completedAt"
-        | "createdAt"
-        | "dispatchContext"
-        | "externalId"
-        | "id"
-        | "jobAgentConfig"
-        | "jobAgentId"
-        | "message"
-        | "metadata"
-        | "releaseId"
-        | "startedAt"
-        | "status"
-        | "traceToken"
-        | "updatedAt"
-        | "workflowJobId"
-      )[];
-      id?: string;
-      job: components["schemas"]["Job"];
-    } & (unknown | unknown);
-    JobVerification: {
-      /**
-       * Format: date-time
-       * @description When verification was created
-       */
-      createdAt: string;
-      id: string;
-      jobId: string;
-      /** @description Summary message of verification result */
-      message?: string;
-      /** @description Metrics associated with this verification */
-      metrics: components["schemas"]["VerificationMetricStatus"][];
-    };
-    /** @enum {string} */
-    JobVerificationStatus: "running" | "passed" | "failed" | "cancelled";
-    JobWithRelease: {
-      deployment?: components["schemas"]["Deployment"];
-      environment?: components["schemas"]["Environment"];
-      job: components["schemas"]["Job"];
-      release: components["schemas"]["Release"];
-      resource?: components["schemas"]["Resource"];
-    };
-    JobWithVerifications: {
-      job: components["schemas"]["Job"];
-      verifications: components["schemas"]["JobVerification"][];
-    };
-    LiteralValue:
-      | components["schemas"]["BooleanValue"]
-      | components["schemas"]["NumberValue"]
-      | components["schemas"]["IntegerValue"]
-      | components["schemas"]["StringValue"]
-      | components["schemas"]["ObjectValue"]
-      | components["schemas"]["NullValue"];
-    MetricProvider:
-      | components["schemas"]["HTTPMetricProvider"]
-      | components["schemas"]["SleepMetricProvider"]
-      | components["schemas"]["DatadogMetricProvider"]
-      | components["schemas"]["PrometheusMetricProvider"]
-      | components["schemas"]["TerraformCloudRunMetricProvider"];
-    /** @enum {boolean} */
-    NullValue: true;
-    NumberValue: number;
-    ObjectValue: {
-      object: {
-        [key: string]: unknown;
-      };
-    };
-    Policy: {
-      createdAt: string;
-      description?: string;
-      enabled: boolean;
-      id: string;
-      /** @description Arbitrary metadata for the policy (record<string, string>) */
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      priority: number;
-      rules: components["schemas"]["PolicyRule"][];
-      /** @description CEL expression for matching release targets. Use "true" to match all targets. */
-      selector: string;
-      workspaceId: string;
-    };
-    PolicyEvaluation: {
-      policy?: components["schemas"]["Policy"];
-      ruleResults: components["schemas"]["RuleEvaluation"][];
-      summary?: string;
-    };
-    PolicyRule: {
-      anyApproval?: components["schemas"]["AnyApprovalRule"];
-      createdAt: string;
-      deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
-      deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
-      environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
-      gradualRollout?: components["schemas"]["GradualRolloutRule"];
-      id: string;
-      policyId: string;
-      retry?: components["schemas"]["RetryRule"];
-      rollback?: components["schemas"]["RollbackRule"];
-      verification?: components["schemas"]["VerificationRule"];
-      versionCooldown?: components["schemas"]["VersionCooldownRule"];
-      versionSelector?: components["schemas"]["VersionSelectorRule"];
-    };
-    PolicySkip: {
-      /**
-       * Format: date-time
-       * @description When this skip was created
-       */
-      createdAt: string;
-      /** @description User ID who created this skip */
-      createdBy: string;
-      /** @description Environment this skip applies to. If null, applies to all environments. */
-      environmentId?: string;
-      /**
-       * Format: date-time
-       * @description When this skip expires. If null, skip never expires.
-       */
-      expiresAt?: string;
-      /** @description Unique identifier for the skip */
-      id: string;
-      /** @description Required reason for why this skip is needed (e.g., incident ticket, emergency situation) */
-      reason: string;
-      /** @description Resource this skip applies to. If null, applies to all resources (in the environment if specified, or globally). */
-      resourceId?: string;
-      /** @description Rule ID this skip applies to */
-      ruleId: string;
-      /** @description Deployment version this skip applies to */
-      versionId: string;
-      /** @description Workspace this skip belongs to */
-      workspaceId: string;
-    };
-    PrometheusMetricProvider: {
-      /**
-       * @description Prometheus server address (supports Go templates)
-       * @example http://prometheus.example.com:9090
-       */
-      address: string;
-      /** @description Authentication configuration for Prometheus */
-      authentication?: {
-        /**
-         * @description Bearer token for authentication (supports Go templates for variable references)
-         * @example {{.variables.prometheus_token}}
-         */
-        bearerToken?: string;
-        /** @description OAuth2 client credentials flow */
-        oauth2?: {
-          /** @description OAuth2 client ID (supports Go templates) */
-          clientId: string;
-          /** @description OAuth2 client secret (supports Go templates) */
-          clientSecret: string;
-          /** @description OAuth2 scopes */
-          scopes?: string[];
-          /** @description Token endpoint URL */
-          tokenUrl: string;
+    schemas: {
+        AnyApprovalRule: {
+            /** Format: int32 */
+            minApprovals: number;
         };
-      };
-      /** @description Additional HTTP headers for the Prometheus request (values support Go templates) */
-      headers?: {
-        /** @example X-Scope-OrgID */
-        key: string;
-        /** @example tenant_a */
-        value: string;
-      }[];
-      /**
-       * @description Skip TLS certificate verification
-       * @default false
-       */
-      insecure: boolean;
-      /**
-       * @description PromQL query expression (supports Go templates)
-       * @example sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))
-       */
-      query: string;
-      /** @description If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query) */
-      rangeQuery?: {
-        /**
-         * @description How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
-         * @example 0s
-         */
-        end?: string;
-        /**
-         * @description How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
-         * @example 5m
-         */
-        start?: string;
-        /**
-         * @description Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
-         * @example 1m
-         */
-        step: string;
-      };
-      /**
-       * Format: int64
-       * @description Query timeout in seconds
-       * @example 30
-       */
-      timeout?: number;
-      /**
-       * @description Provider type (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "prometheus";
-    };
-    PropertiesMatcher: {
-      properties: components["schemas"]["PropertyMatcher"][];
-    };
-    PropertyMatcher: {
-      fromProperty: string[];
-      /** @enum {string} */
-      operator:
-        | "equals"
-        | "notEquals"
-        | "contains"
-        | "startsWith"
-        | "endsWith"
-        | "regex";
-      toProperty: string[];
-    };
-    ReferenceValue: {
-      path: string[];
-      reference: string;
-    };
-    RelatableEntity:
-      | components["schemas"]["Deployment"]
-      | components["schemas"]["Environment"]
-      | components["schemas"]["Resource"];
-    /** @enum {string} */
-    RelatableEntityType: "deployment" | "environment" | "resource";
-    /** @enum {string} */
-    RelationDirection: "from" | "to";
-    RelationshipRule: {
-      description?: string;
-      /** @description CEL expression to determine if the relationship rule should be used */
-      fromSelector?: string;
-      fromType: components["schemas"]["RelatableEntityType"];
-      id: string;
-      matcher:
-        | components["schemas"]["CelMatcher"]
-        | components["schemas"]["PropertiesMatcher"];
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      reference: string;
-      relationshipType: string;
-      /** @description CEL expression to determine if the relationship rule should be used */
-      toSelector?: string;
-      toType: components["schemas"]["RelatableEntityType"];
-      workspaceId: string;
-    };
-    Release: {
-      createdAt: string;
-      encryptedVariables: string[];
-      /** Format: uuid */
-      id: string;
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      variables: {
-        [key: string]: components["schemas"]["LiteralValue"];
-      };
-      version: components["schemas"]["DeploymentVersion"];
-    };
-    ReleaseTarget: {
-      deploymentId: string;
-      environmentId: string;
-      resourceId: string;
-    };
-    ReleaseTargetAndState: {
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      state: components["schemas"]["ReleaseTargetState"];
-    };
-    ReleaseTargetItem: {
-      currentVersion?: {
-        id: string;
-        name: string;
-        tag: string;
-      } | null;
-      desiredVersion?: {
-        id: string;
-        name: string;
-        tag: string;
-      } | null;
-      environment: {
-        id: string;
-        name: string;
-      };
-      latestJob?: {
-        /** Format: date-time */
-        completedAt?: string;
-        /** Format: date-time */
-        createdAt: string;
-        id: string;
-        message?: string;
-        metadata: {
-          [key: string]: string;
+        /** @enum {string} */
+        ApprovalStatus: "approved" | "rejected";
+        ArgoCDJobAgentConfig: {
+            /** @description ArgoCD API token. */
+            apiKey: string;
+            /** @description ArgoCD server address (host[:port] or URL). */
+            serverUrl: string;
+            /** @description ArgoCD application template. */
+            template: string;
         };
-        status: components["schemas"]["JobStatus"];
-        verifications: {
-          id: string;
-          jobId: string;
-          metrics: {
-            count: number;
-            failureCondition: string | null;
-            failureThreshold: number | null;
-            id: string;
-            jobId?: string;
+        /** @description WorkflowTemplate reference execution */
+        ArgoWorkflowJobAgentConfig: {
+            /** @description ArgoWorkflow API token. */
+            apiKey: string;
+            /**
+             * @description ArgoWorkClient http(s) connection configuration setting
+             * @default false
+             */
+            httpInsecure: boolean;
+            /** @description ArgoWorkflow job name */
             name: string;
-            policyRuleVerificationMetricId?: string;
-            provider: {
-              [key: string]: unknown;
+            /** @description ArgoWorkflow server address (host[:port] or URL). */
+            serverUrl: string;
+            /** @description WorkflowTemplate name. */
+            template: string;
+            /** @description ArgoEvents webhookSecret */
+            webhookSecret: string;
+        };
+        BasicResource: {
+            id: string;
+            identifier: string;
+            kind: string;
+            name: string;
+            version: string;
+            workspaceId: string;
+        };
+        BooleanValue: boolean;
+        CelMatcher: {
+            cel: string;
+        };
+        DatadogMetricProvider: {
+            /**
+             * @description Datadog aggregator
+             * @default last
+             * @enum {string}
+             */
+            aggregator: "avg" | "min" | "max" | "sum" | "last" | "percentile" | "mean" | "l2norm" | "area";
+            /**
+             * @description Datadog API key (supports Go templates for variable references)
+             * @example {{.variables.dd_api_key}}
+             */
+            apiKey: string;
+            /**
+             * @description Datadog Application key (supports Go templates for variable references)
+             * @example {{.variables.dd_app_key}}
+             */
+            appKey: string;
+            /** @description Datadog formula (supports Go templates) */
+            formula?: string;
+            /**
+             * Format: int64
+             * @example 30
+             */
+            intervalSeconds?: number;
+            /**
+             * @description Datadog metrics queries (supports Go templates)
+             * @example {
+             *       "q": "sum:requests.error.rate{service:{{.resource.name}}}"
+             *     }
+             */
+            queries: {
+                [key: string]: string;
             };
+            /**
+             * @description Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
+             * @default datadoghq.com
+             */
+            site: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "datadog";
+        };
+        DeployDecision: {
+            policyResults: components["schemas"]["PolicyEvaluation"][];
+        };
+        Deployment: {
+            description?: string;
+            id: string;
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            jobAgentId?: string;
+            /** @description CEL expression to match job agents */
+            jobAgentSelector?: string;
+            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            /** @description CEL expression to determine if the deployment should be used */
+            resourceSelector?: string;
+            slug: string;
+        };
+        DeploymentAndSystems: {
+            deployment: components["schemas"]["Deployment"];
+            systems: components["schemas"]["System"][];
+        };
+        DeploymentDependencyRule: {
+            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+            dependsOn: string;
+        };
+        DeploymentJobAgent: {
+            config: components["schemas"]["JobAgentConfig"];
+            ref: string;
+            /** @description CEL expression to determine if the job agent should be used */
+            selector: string;
+        };
+        DeploymentVariable: {
+            defaultValue?: components["schemas"]["LiteralValue"];
+            deploymentId: string;
+            description?: string;
+            id: string;
+            key: string;
+        };
+        DeploymentVariableValue: {
+            deploymentVariableId: string;
+            id: string;
+            /** Format: int64 */
+            priority: number;
+            /** @description CEL expression to determine if the deployment variable value should be used */
+            resourceSelector?: string;
+            value: components["schemas"]["Value"];
+        };
+        DeploymentVariableWithValues: {
+            values: components["schemas"]["DeploymentVariableValue"][];
+            variable: components["schemas"]["DeploymentVariable"];
+        };
+        DeploymentVersion: {
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            deploymentId: string;
+            id: string;
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            message?: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            status: components["schemas"]["DeploymentVersionStatus"];
+            tag: string;
+        };
+        /** @enum {string} */
+        DeploymentVersionStatus: "unspecified" | "building" | "ready" | "failed" | "rejected" | "paused";
+        DeploymentWindowRule: {
+            /**
+             * @description If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
+             * @default true
+             */
+            allowWindow: boolean;
+            /**
+             * Format: int32
+             * @description Duration of each deployment window in minutes
+             */
+            durationMinutes: number;
+            /** @description RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9) */
+            rrule: string;
+            /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
+            timezone?: string;
+        };
+        DeploymentWithVariablesAndSystems: {
+            deployment: components["schemas"]["Deployment"];
+            systems: components["schemas"]["System"][];
+            variables: components["schemas"]["DeploymentVariableWithValues"][];
+        };
+        DispatchContext: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            /** @description Resolved input values for the workflow run. */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            jobAgent: components["schemas"]["JobAgent"];
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            release?: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+            variables?: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version?: components["schemas"]["DeploymentVersion"];
+            workflow?: components["schemas"]["Workflow"];
+            workflowJob?: components["schemas"]["WorkflowJob"];
+            workflowRun?: components["schemas"]["WorkflowRun"];
+        };
+        EntityRelation: {
+            direction: components["schemas"]["RelationDirection"];
+            entity: components["schemas"]["RelatableEntity"];
+            /** @description ID of the related entity */
+            entityId: string;
+            entityType: components["schemas"]["RelatableEntityType"];
+            rule: components["schemas"]["RelationshipRule"];
+        };
+        Environment: {
+            /** Format: date-time */
+            createdAt: string;
+            description?: string;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            /** @description CEL expression to determine if the environment should be used */
+            resourceSelector?: string;
+            workspaceId: string;
+        };
+        EnvironmentProgressionRule: {
+            /** @description CEL expression to determine if the environment progression rule should be used */
+            dependsOnEnvironmentSelector: string;
+            /**
+             * Format: int32
+             * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
+             */
+            maximumAgeHours?: number;
+            /**
+             * Format: int32
+             * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+             * @default 0
+             */
+            minimumSockTimeMinutes: number;
+            /**
+             * Format: float
+             * @default 100
+             */
+            minimumSuccessPercentage: number;
+            successStatuses?: components["schemas"]["JobStatus"][];
+        };
+        EnvironmentSummary: {
+            id: string;
+            name: string;
+        };
+        EnvironmentWithSystems: components["schemas"]["Environment"] & {
+            systems: components["schemas"]["System"][];
+        };
+        ErrorResponse: {
+            /** @example Workspace not found */
+            error?: string;
+        };
+        EvaluateReleaseTargetRequest: {
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            version: components["schemas"]["DeploymentVersion"];
+        };
+        EvaluationScope: {
+            environmentId?: string;
+            versionId?: string;
+        };
+        GithubEntity: {
+            installationId: number;
+            slug: string;
+        };
+        GithubJobAgentConfig: {
+            /**
+             * Format: int
+             * @description GitHub app installation ID.
+             */
+            installationId: number;
+            /** @description GitHub repository owner. */
+            owner: string;
+            /** @description Git ref to run the workflow on (defaults to "main" if omitted). */
+            ref?: string;
+            /** @description GitHub repository name. */
+            repo: string;
+            /**
+             * Format: int64
+             * @description GitHub Actions workflow ID.
+             */
+            workflowId: number;
+        };
+        GradualRolloutRule: {
+            /**
+             * @description Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
+             * @enum {string}
+             */
+            rolloutType: "linear" | "linear-normalized";
+            /**
+             * Format: int32
+             * @description Base time interval in seconds used to compute the delay between deployments to release targets.
+             */
+            timeScaleInterval: number;
+        };
+        HTTPMetricProvider: {
+            /** @description Request body (supports Go templates) */
+            body?: string;
+            /** @description HTTP headers (values support Go templates) */
+            headers?: {
+                [key: string]: string;
+            };
+            /**
+             * @description HTTP method
+             * @default GET
+             * @enum {string}
+             */
+            method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+            /**
+             * @description Request timeout (duration string, e.g., "30s")
+             * @default 30s
+             */
+            timeout: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "http";
+            /**
+             * @description HTTP endpoint URL (supports Go templates)
+             * @example http://{{ .resource.name }}.{{ .environment.name }}/health
+             */
+            url: string;
+        };
+        IntegerValue: number;
+        Job: {
+            /** Format: date-time */
+            completedAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            dispatchContext?: components["schemas"]["DispatchContext"];
+            externalId?: string;
+            id: string;
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            jobAgentId: string;
+            message?: string;
+            metadata: {
+                [key: string]: string;
+            };
+            releaseId: string;
+            /** Format: date-time */
+            startedAt?: string;
+            status: components["schemas"]["JobStatus"];
+            traceToken?: string;
+            /** Format: date-time */
+            updatedAt: string;
+            workflowJobId: string;
+        };
+        JobAgent: {
+            config: components["schemas"]["JobAgentConfig"];
+            id: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            type: string;
+            workspaceId: string;
+        };
+        JobAgentConfig: {
+            [key: string]: unknown;
+        };
+        /** @enum {string} */
+        JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
+        JobSummary: {
+            id: string;
+            /** @description External links extracted from job metadata */
+            links?: {
+                [key: string]: string;
+            };
+            message?: string;
+            status: components["schemas"]["JobStatus"];
+            verifications: components["schemas"]["JobVerification"][];
+        };
+        JobUpdateEvent: {
+            agentId?: string;
+            externalId?: string;
+            fieldsToUpdate?: ("completedAt" | "createdAt" | "dispatchContext" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "message" | "metadata" | "releaseId" | "startedAt" | "status" | "traceToken" | "updatedAt" | "workflowJobId")[];
+            id?: string;
+            job: components["schemas"]["Job"];
+        } & (unknown | unknown);
+        JobVerification: {
+            /**
+             * Format: date-time
+             * @description When verification was created
+             */
+            createdAt: string;
+            id: string;
+            jobId: string;
+            /** @description Summary message of verification result */
+            message?: string;
+            /** @description Metrics associated with this verification */
+            metrics: components["schemas"]["VerificationMetricStatus"][];
+        };
+        /** @enum {string} */
+        JobVerificationStatus: "running" | "passed" | "failed" | "cancelled";
+        JobWithRelease: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            job: components["schemas"]["Job"];
+            release: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+        };
+        JobWithVerifications: {
+            job: components["schemas"]["Job"];
+            verifications: components["schemas"]["JobVerification"][];
+        };
+        LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
+        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
+        /** @enum {boolean} */
+        NullValue: true;
+        NumberValue: number;
+        ObjectValue: {
+            object: {
+                [key: string]: unknown;
+            };
+        };
+        Policy: {
+            createdAt: string;
+            description?: string;
+            enabled: boolean;
+            id: string;
+            /** @description Arbitrary metadata for the policy (record<string, string>) */
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            priority: number;
+            rules: components["schemas"]["PolicyRule"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector: string;
+            workspaceId: string;
+        };
+        PolicyEvaluation: {
+            policy?: components["schemas"]["Policy"];
+            ruleResults: components["schemas"]["RuleEvaluation"][];
+            summary?: string;
+        };
+        PolicyRule: {
+            anyApproval?: components["schemas"]["AnyApprovalRule"];
+            createdAt: string;
+            deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
+            deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
+            environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
+            gradualRollout?: components["schemas"]["GradualRolloutRule"];
+            id: string;
+            policyId: string;
+            retry?: components["schemas"]["RetryRule"];
+            rollback?: components["schemas"]["RollbackRule"];
+            verification?: components["schemas"]["VerificationRule"];
+            versionCooldown?: components["schemas"]["VersionCooldownRule"];
+            versionSelector?: components["schemas"]["VersionSelectorRule"];
+        };
+        PolicySkip: {
+            /**
+             * Format: date-time
+             * @description When this skip was created
+             */
+            createdAt: string;
+            /** @description User ID who created this skip */
+            createdBy: string;
+            /** @description Environment this skip applies to. If null, applies to all environments. */
+            environmentId?: string;
+            /**
+             * Format: date-time
+             * @description When this skip expires. If null, skip never expires.
+             */
+            expiresAt?: string;
+            /** @description Unique identifier for the skip */
+            id: string;
+            /** @description Required reason for why this skip is needed (e.g., incident ticket, emergency situation) */
+            reason: string;
+            /** @description Resource this skip applies to. If null, applies to all resources (in the environment if specified, or globally). */
+            resourceId?: string;
+            /** @description Rule ID this skip applies to */
+            ruleId: string;
+            /** @description Deployment version this skip applies to */
+            versionId: string;
+            /** @description Workspace this skip belongs to */
+            workspaceId: string;
+        };
+        PrometheusMetricProvider: {
+            /**
+             * @description Prometheus server address (supports Go templates)
+             * @example http://prometheus.example.com:9090
+             */
+            address: string;
+            /** @description Authentication configuration for Prometheus */
+            authentication?: {
+                /**
+                 * @description Bearer token for authentication (supports Go templates for variable references)
+                 * @example {{.variables.prometheus_token}}
+                 */
+                bearerToken?: string;
+                /** @description OAuth2 client credentials flow */
+                oauth2?: {
+                    /** @description OAuth2 client ID (supports Go templates) */
+                    clientId: string;
+                    /** @description OAuth2 client secret (supports Go templates) */
+                    clientSecret: string;
+                    /** @description OAuth2 scopes */
+                    scopes?: string[];
+                    /** @description Token endpoint URL */
+                    tokenUrl: string;
+                };
+            };
+            /** @description Additional HTTP headers for the Prometheus request (values support Go templates) */
+            headers?: {
+                /** @example X-Scope-OrgID */
+                key: string;
+                /** @example tenant_a */
+                value: string;
+            }[];
+            /**
+             * @description Skip TLS certificate verification
+             * @default false
+             */
+            insecure: boolean;
+            /**
+             * @description PromQL query expression (supports Go templates)
+             * @example sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))
+             */
+            query: string;
+            /** @description If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query) */
+            rangeQuery?: {
+                /**
+                 * @description How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
+                 * @example 0s
+                 */
+                end?: string;
+                /**
+                 * @description How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
+                 * @example 5m
+                 */
+                start?: string;
+                /**
+                 * @description Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
+                 * @example 1m
+                 */
+                step: string;
+            };
+            /**
+             * Format: int64
+             * @description Query timeout in seconds
+             * @example 30
+             */
+            timeout?: number;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "prometheus";
+        };
+        PropertiesMatcher: {
+            properties: components["schemas"]["PropertyMatcher"][];
+        };
+        PropertyMatcher: {
+            fromProperty: string[];
+            /** @enum {string} */
+            operator: "equals" | "notEquals" | "contains" | "startsWith" | "endsWith" | "regex";
+            toProperty: string[];
+        };
+        ReferenceValue: {
+            path: string[];
+            reference: string;
+        };
+        RelatableEntity: components["schemas"]["Deployment"] | components["schemas"]["Environment"] | components["schemas"]["Resource"];
+        /** @enum {string} */
+        RelatableEntityType: "deployment" | "environment" | "resource";
+        /** @enum {string} */
+        RelationDirection: "from" | "to";
+        RelationshipRule: {
+            description?: string;
+            /** @description CEL expression to determine if the relationship rule should be used */
+            fromSelector?: string;
+            fromType: components["schemas"]["RelatableEntityType"];
+            id: string;
+            matcher: components["schemas"]["CelMatcher"] | components["schemas"]["PropertiesMatcher"];
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            reference: string;
+            relationshipType: string;
+            /** @description CEL expression to determine if the relationship rule should be used */
+            toSelector?: string;
+            toType: components["schemas"]["RelatableEntityType"];
+            workspaceId: string;
+        };
+        Release: {
+            createdAt: string;
+            encryptedVariables: string[];
+            /** Format: uuid */
+            id: string;
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            variables: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version: components["schemas"]["DeploymentVersion"];
+        };
+        ReleaseTarget: {
+            deploymentId: string;
+            environmentId: string;
+            resourceId: string;
+        };
+        ReleaseTargetAndState: {
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            state: components["schemas"]["ReleaseTargetState"];
+        };
+        ReleaseTargetItem: {
+            currentVersion?: {
+                id: string;
+                name: string;
+                tag: string;
+            } | null;
+            desiredVersion?: {
+                id: string;
+                name: string;
+                tag: string;
+            } | null;
+            environment: {
+                id: string;
+                name: string;
+            };
+            latestJob?: {
+                /** Format: date-time */
+                completedAt?: string;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                message?: string;
+                metadata: {
+                    [key: string]: string;
+                };
+                status: components["schemas"]["JobStatus"];
+                verifications: {
+                    id: string;
+                    jobId: string;
+                    metrics: {
+                        count: number;
+                        failureCondition: string | null;
+                        failureThreshold: number | null;
+                        id: string;
+                        jobId?: string;
+                        name: string;
+                        policyRuleVerificationMetricId?: string;
+                        provider: {
+                            [key: string]: unknown;
+                        };
+                        successCondition: string;
+                        successThreshold: number | null;
+                    }[];
+                }[];
+            } | null;
+            releaseTarget: {
+                deploymentId: string;
+                environmentId: string;
+                resourceId: string;
+            };
+            resource: {
+                id: string;
+                identifier: string;
+                kind: string;
+                name: string;
+                version: string;
+            };
+        };
+        ReleaseTargetPreview: {
+            deployment: components["schemas"]["Deployment"];
+            environment: components["schemas"]["Environment"];
+            system: components["schemas"]["System"];
+        };
+        ReleaseTargetState: {
+            currentRelease?: components["schemas"]["Release"];
+            desiredRelease?: components["schemas"]["Release"];
+            latestJob?: components["schemas"]["JobWithVerifications"];
+        };
+        ReleaseTargetStateResponse: {
+            currentRelease?: components["schemas"]["Release"];
+            desiredRelease?: components["schemas"]["Release"];
+            latestJob?: {
+                job: components["schemas"]["Job"];
+                verifications: {
+                    /** Format: date-time */
+                    createdAt: string;
+                    id: string;
+                    jobId: string;
+                    message?: string;
+                    metrics: components["schemas"]["VerificationMetricStatus"][];
+                    /** @description Computed aggregate status of this verification */
+                    status: string;
+                }[];
+            };
+        };
+        ReleaseTargetSummary: {
+            currentVersion?: components["schemas"]["VersionSummary"];
+            desiredVersion?: components["schemas"]["VersionSummary"];
+            environment: components["schemas"]["EnvironmentSummary"];
+            latestJob?: components["schemas"]["JobSummary"];
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            resource: components["schemas"]["ResourceSummary"];
+        };
+        ReleaseTargetWithState: {
+            deployment: components["schemas"]["Deployment"];
+            environment: components["schemas"]["Environment"];
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            resource: components["schemas"]["Resource"];
+            state: components["schemas"]["ReleaseTargetState"];
+        };
+        ResolvedPolicy: {
+            environmentIds: string[];
+            policy: components["schemas"]["Policy"];
+            releaseTargets: components["schemas"]["ReleaseTarget"][];
+        };
+        Resource: {
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            deletedAt?: string;
+            id: string;
+            identifier: string;
+            kind: string;
+            /** Format: date-time */
+            lockedAt?: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            providerId?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            version: string;
+            workspaceId: string;
+        };
+        ResourcePreviewRequest: {
+            config: {
+                [key: string]: unknown;
+            };
+            identifier: string;
+            kind: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            version: string;
+        };
+        ResourceProvider: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            /** Format: uuid */
+            workspaceId: string;
+        };
+        ResourceSummary: {
+            id: string;
+            identifier: string;
+            kind: string;
+            name: string;
+            version: string;
+        };
+        ResourceVariable: {
+            key: string;
+            resourceId: string;
+            value: components["schemas"]["Value"];
+        };
+        ResourceVariablesBulkUpdateEvent: {
+            resourceId: string;
+            variables: {
+                [key: string]: unknown;
+            };
+        };
+        RetryRule: {
+            /**
+             * Format: int32
+             * @description Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.
+             */
+            backoffSeconds?: number;
+            /**
+             * @description Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+             * @default linear
+             * @enum {string}
+             */
+            backoffStrategy: "linear" | "exponential";
+            /**
+             * Format: int32
+             * @description Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.
+             */
+            maxBackoffSeconds?: number;
+            /**
+             * Format: int32
+             * @description Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
+             */
+            maxRetries: number;
+            /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
+            retryOnStatuses?: components["schemas"]["JobStatus"][];
+        };
+        RollbackRule: {
+            /** @description Job statuses that will trigger a rollback */
+            onJobStatuses?: components["schemas"]["JobStatus"][];
+            /**
+             * @description If true, a release target will be rolled back if the verification fails
+             * @default false
+             */
+            onVerificationFailure: boolean;
+        };
+        RuleEvaluation: {
+            /** @description Whether the rule requires an action (e.g., approval, wait) */
+            actionRequired: boolean;
+            /**
+             * @description Type of action required
+             * @enum {string}
+             */
+            actionType?: "approval" | "wait";
+            /** @description Whether the rule allows the deployment */
+            allowed: boolean;
+            /** @description Additional details about the rule evaluation */
+            details: {
+                [key: string]: unknown;
+            };
+            /** @description Human-readable explanation of the rule result */
+            message: string;
+            /**
+             * Format: date-time
+             * @description The time when this rule should be re-evaluated (e.g., when soak time will be complete, when gradual rollout schedule is due)
+             */
+            nextEvaluationTime?: string;
+            /** @description The ID of the rule that was evaluated */
+            ruleId: string;
+            /**
+             * Format: date-time
+             * @description The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)
+             */
+            satisfiedAt?: string;
+        };
+        SensitiveValue: {
+            valueHash: string;
+        };
+        SleepMetricProvider: {
+            /**
+             * Format: int32
+             * @example 30
+             */
+            durationSeconds: number;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "sleep";
+        };
+        StringValue: string;
+        System: {
+            description?: string;
+            id: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            workspaceId: string;
+        };
+        SystemDeploymentLink: {
+            deploymentId: string;
+            systemId: string;
+        };
+        SystemEnvironmentLink: {
+            environmentId: string;
+            systemId: string;
+        };
+        TerraformCloudJobAgentConfig: {
+            /** @description Terraform Cloud address (e.g. https://app.terraform.io). */
+            address: string;
+            /** @description Terraform Cloud organization name. */
+            organization: string;
+            /** @description Terraform Cloud workspace template. */
+            template: string;
+            /** @description Terraform Cloud API token. */
+            token: string;
+            /**
+             * @description Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.
+             * @default true
+             */
+            triggerRunOnChange: boolean;
+            /** @description The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook). */
+            webhookUrl: string;
+        };
+        TerraformCloudRunMetricProvider: {
+            /**
+             * @description Terraform Cloud address
+             * @example https://app.terraform.io
+             */
+            address: string;
+            /**
+             * @description Terraform Cloud run ID
+             * @example run-1234567890
+             */
+            runId: string;
+            /**
+             * @description Terraform Cloud token
+             * @example {{.variables.terraform_cloud_token}}
+             */
+            token: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "terraformCloudRun";
+        };
+        TestRunnerJobAgentConfig: {
+            /**
+             * Format: int
+             * @description Delay in seconds before resolving the job.
+             */
+            delaySeconds?: number;
+            /** @description Optional message to include in the job output. */
+            message?: string;
+            /** @description Final status to set (e.g. "successful", "failure"). */
+            status?: string;
+        };
+        UserApprovalRecord: {
+            createdAt: string;
+            environmentId: string;
+            reason?: string;
+            status: components["schemas"]["ApprovalStatus"];
+            userId: string;
+            versionId: string;
+        };
+        Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
+        VariableSet: {
+            /**
+             * Format: date-time
+             * @description The timestamp when the variable set was created
+             */
+            createdAt: string;
+            /** @description The description of the variable set */
+            description: string;
+            /** Format: uuid */
+            id: string;
+            /** @description The name of the variable set */
+            name: string;
+            /**
+             * Format: int64
+             * @description The priority of the variable set
+             */
+            priority: number;
+            /** @description A CEL expression to select which resources this value applies to */
+            selector: string;
+            /**
+             * Format: date-time
+             * @description The timestamp when the variable set was last updated
+             */
+            updatedAt: string;
+        };
+        VariableSetVariable: {
+            /**
+             * Format: uuid
+             * @description The ID of the variable
+             */
+            id: string;
+            /** @description The key of the variable, unique within the variable set */
+            key: string;
+            value: components["schemas"]["Value"];
+            /**
+             * Format: uuid
+             * @description The ID of the variable set this variable belongs to
+             */
+            variableSetId: string;
+        };
+        VariableSetWithVariables: components["schemas"]["VariableSet"] & {
+            variables: components["schemas"]["VariableSetVariable"][];
+        };
+        VerificationMeasurement: {
+            /** @description Raw measurement data */
+            data: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description When measurement was taken
+             */
+            measuredAt: string;
+            /** @description Measurement result message */
+            message?: string;
+            status: components["schemas"]["VerificationMeasurementStatus"];
+        };
+        /**
+         * @description Status of a verification measurement
+         * @enum {string}
+         */
+        VerificationMeasurementStatus: "passed" | "failed" | "inconclusive";
+        VerificationMetricSpec: {
+            /** @description Number of measurements to take */
+            count: number;
+            /**
+             * @description CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+             * @example result.statusCode == 500
+             */
+            failureCondition?: string;
+            /**
+             * @description Stop after this many consecutive failures (0 = no limit)
+             * @default 0
+             */
+            failureThreshold: number;
+            /**
+             * Format: int32
+             * @description Interval between measurements in seconds
+             * @example 30
+             */
+            intervalSeconds: number;
+            /** @description Name of the verification metric */
+            name: string;
+            provider: components["schemas"]["MetricProvider"];
+            /**
+             * @description CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+             * @example result.statusCode == 200
+             */
             successCondition: string;
-            successThreshold: number | null;
-          }[];
-        }[];
-      } | null;
-      releaseTarget: {
-        deploymentId: string;
-        environmentId: string;
-        resourceId: string;
-      };
-      resource: {
-        id: string;
-        identifier: string;
-        kind: string;
-        name: string;
-        version: string;
-      };
+            /**
+             * @description Minimum number of consecutive successful measurements required to consider the metric successful
+             * @example 0
+             */
+            successThreshold?: number;
+        };
+        VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
+            id: string;
+            /** @description Individual verification measurements taken for this metric */
+            measurements: components["schemas"]["VerificationMeasurement"][];
+        };
+        VerificationRule: {
+            /** @description Metrics to verify */
+            metrics: components["schemas"]["VerificationMetricSpec"][];
+            /**
+             * @description When to trigger verification
+             * @default jobSuccess
+             * @enum {string}
+             */
+            triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
+        };
+        VersionCooldownRule: {
+            /**
+             * Format: int32
+             * @description Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
+             */
+            intervalSeconds: number;
+        };
+        VersionSelectorRule: {
+            /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
+            description?: string;
+            /** @description CEL expression to determine if the version selector should be used */
+            selector: string;
+        };
+        VersionSummary: {
+            id: string;
+            name: string;
+            tag: string;
+        };
+        Workflow: {
+            id: string;
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["WorkflowJobAgent"][];
+            name: string;
+        };
+        WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"];
+        WorkflowBooleanInput: {
+            default?: boolean;
+            key: string;
+            /** @enum {string} */
+            type: "boolean";
+        };
+        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"] | components["schemas"]["WorkflowObjectInput"];
+        WorkflowJob: {
+            /** @description Configuration for the job agent */
+            config: {
+                [key: string]: unknown;
+            };
+            id: string;
+            index: number;
+            /** @description Reference to the job agent */
+            ref: string;
+            workflowRunId: string;
+        };
+        WorkflowJobAgent: {
+            /** @description Configuration for the job agent */
+            config: {
+                [key: string]: unknown;
+            };
+            name: string;
+            /** @description Reference to the job agent */
+            ref: string;
+            /** @description CEL expression to determine if the job agent should dispatch a job */
+            selector: string;
+        };
+        WorkflowManualArrayInput: {
+            default?: {
+                [key: string]: unknown;
+            }[];
+            key: string;
+            /** @enum {string} */
+            type: "array";
+        };
+        WorkflowNumberInput: {
+            default?: number;
+            key: string;
+            /** @enum {string} */
+            type: "number";
+        };
+        WorkflowObjectInput: {
+            default?: {
+                [key: string]: unknown;
+            };
+            key: string;
+            /** @enum {string} */
+            type: "object";
+        };
+        WorkflowRun: {
+            id: string;
+            inputs: {
+                [key: string]: unknown;
+            };
+            workflowId: string;
+        };
+        WorkflowStringInput: {
+            default?: string;
+            key: string;
+            /** @enum {string} */
+            type: "string";
+        };
     };
-    ReleaseTargetPreview: {
-      deployment: components["schemas"]["Deployment"];
-      environment: components["schemas"]["Environment"];
-      system: components["schemas"]["System"];
+    responses: never;
+    parameters: {
+        /** @description Type of the entity (deployment, environment, or resource) */
+        relatableEntityType: components["schemas"]["RelatableEntityType"];
     };
-    ReleaseTargetState: {
-      currentRelease?: components["schemas"]["Release"];
-      desiredRelease?: components["schemas"]["Release"];
-      latestJob?: components["schemas"]["JobWithVerifications"];
-    };
-    ReleaseTargetStateResponse: {
-      currentRelease?: components["schemas"]["Release"];
-      desiredRelease?: components["schemas"]["Release"];
-      latestJob?: {
-        job: components["schemas"]["Job"];
-        verifications: {
-          /** Format: date-time */
-          createdAt: string;
-          id: string;
-          jobId: string;
-          message?: string;
-          metrics: components["schemas"]["VerificationMetricStatus"][];
-          /** @description Computed aggregate status of this verification */
-          status: string;
-        }[];
-      };
-    };
-    ReleaseTargetSummary: {
-      currentVersion?: components["schemas"]["VersionSummary"];
-      desiredVersion?: components["schemas"]["VersionSummary"];
-      environment: components["schemas"]["EnvironmentSummary"];
-      latestJob?: components["schemas"]["JobSummary"];
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      resource: components["schemas"]["ResourceSummary"];
-    };
-    ReleaseTargetWithState: {
-      deployment: components["schemas"]["Deployment"];
-      environment: components["schemas"]["Environment"];
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      resource: components["schemas"]["Resource"];
-      state: components["schemas"]["ReleaseTargetState"];
-    };
-    ResolvedPolicy: {
-      environmentIds: string[];
-      policy: components["schemas"]["Policy"];
-      releaseTargets: components["schemas"]["ReleaseTarget"][];
-    };
-    Resource: {
-      config: {
-        [key: string]: unknown;
-      };
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      deletedAt?: string;
-      id: string;
-      identifier: string;
-      kind: string;
-      /** Format: date-time */
-      lockedAt?: string;
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      providerId?: string;
-      /** Format: date-time */
-      updatedAt?: string;
-      version: string;
-      workspaceId: string;
-    };
-    ResourcePreviewRequest: {
-      config: {
-        [key: string]: unknown;
-      };
-      identifier: string;
-      kind: string;
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      version: string;
-    };
-    ResourceProvider: {
-      /** Format: date-time */
-      createdAt: string;
-      id: string;
-      metadata: {
-        [key: string]: string;
-      };
-      name: string;
-      /** Format: uuid */
-      workspaceId: string;
-    };
-    ResourceSummary: {
-      id: string;
-      identifier: string;
-      kind: string;
-      name: string;
-      version: string;
-    };
-    ResourceVariable: {
-      key: string;
-      resourceId: string;
-      value: components["schemas"]["Value"];
-    };
-    ResourceVariablesBulkUpdateEvent: {
-      resourceId: string;
-      variables: {
-        [key: string]: unknown;
-      };
-    };
-    RetryRule: {
-      /**
-       * Format: int32
-       * @description Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.
-       */
-      backoffSeconds?: number;
-      /**
-       * @description Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
-       * @default linear
-       * @enum {string}
-       */
-      backoffStrategy: "linear" | "exponential";
-      /**
-       * Format: int32
-       * @description Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.
-       */
-      maxBackoffSeconds?: number;
-      /**
-       * Format: int32
-       * @description Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
-       */
-      maxRetries: number;
-      /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
-      retryOnStatuses?: components["schemas"]["JobStatus"][];
-    };
-    RollbackRule: {
-      /** @description Job statuses that will trigger a rollback */
-      onJobStatuses?: components["schemas"]["JobStatus"][];
-      /**
-       * @description If true, a release target will be rolled back if the verification fails
-       * @default false
-       */
-      onVerificationFailure: boolean;
-    };
-    RuleEvaluation: {
-      /** @description Whether the rule requires an action (e.g., approval, wait) */
-      actionRequired: boolean;
-      /**
-       * @description Type of action required
-       * @enum {string}
-       */
-      actionType?: "approval" | "wait";
-      /** @description Whether the rule allows the deployment */
-      allowed: boolean;
-      /** @description Additional details about the rule evaluation */
-      details: {
-        [key: string]: unknown;
-      };
-      /** @description Human-readable explanation of the rule result */
-      message: string;
-      /**
-       * Format: date-time
-       * @description The time when this rule should be re-evaluated (e.g., when soak time will be complete, when gradual rollout schedule is due)
-       */
-      nextEvaluationTime?: string;
-      /** @description The ID of the rule that was evaluated */
-      ruleId: string;
-      /**
-       * Format: date-time
-       * @description The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)
-       */
-      satisfiedAt?: string;
-    };
-    SensitiveValue: {
-      valueHash: string;
-    };
-    SleepMetricProvider: {
-      /**
-       * Format: int32
-       * @example 30
-       */
-      durationSeconds: number;
-      /**
-       * @description Provider type (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "sleep";
-    };
-    StringValue: string;
-    System: {
-      description?: string;
-      id: string;
-      metadata?: {
-        [key: string]: string;
-      };
-      name: string;
-      workspaceId: string;
-    };
-    SystemDeploymentLink: {
-      deploymentId: string;
-      systemId: string;
-    };
-    SystemEnvironmentLink: {
-      environmentId: string;
-      systemId: string;
-    };
-    TerraformCloudJobAgentConfig: {
-      /** @description Terraform Cloud address (e.g. https://app.terraform.io). */
-      address: string;
-      /** @description Terraform Cloud organization name. */
-      organization: string;
-      /** @description Terraform Cloud workspace template. */
-      template: string;
-      /** @description Terraform Cloud API token. */
-      token: string;
-      /**
-       * @description Whether to create a TFC run on dispatch. When false, only the workspace and variables are synced.
-       * @default true
-       */
-      triggerRunOnChange: boolean;
-      /** @description The ctrlplane API endpoint for TFC webhook notifications (e.g. https://ctrlplane.example.com/api/tfe/webhook). */
-      webhookUrl: string;
-    };
-    TerraformCloudRunMetricProvider: {
-      /**
-       * @description Terraform Cloud address
-       * @example https://app.terraform.io
-       */
-      address: string;
-      /**
-       * @description Terraform Cloud run ID
-       * @example run-1234567890
-       */
-      runId: string;
-      /**
-       * @description Terraform Cloud token
-       * @example {{.variables.terraform_cloud_token}}
-       */
-      token: string;
-      /**
-       * @description Provider type (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "terraformCloudRun";
-    };
-    TestRunnerJobAgentConfig: {
-      /**
-       * Format: int
-       * @description Delay in seconds before resolving the job.
-       */
-      delaySeconds?: number;
-      /** @description Optional message to include in the job output. */
-      message?: string;
-      /** @description Final status to set (e.g. "successful", "failure"). */
-      status?: string;
-    };
-    UserApprovalRecord: {
-      createdAt: string;
-      environmentId: string;
-      reason?: string;
-      status: components["schemas"]["ApprovalStatus"];
-      userId: string;
-      versionId: string;
-    };
-    Value:
-      | components["schemas"]["LiteralValue"]
-      | components["schemas"]["ReferenceValue"]
-      | components["schemas"]["SensitiveValue"];
-    VariableSet: {
-      /**
-       * Format: date-time
-       * @description The timestamp when the variable set was created
-       */
-      createdAt: string;
-      /** @description The description of the variable set */
-      description: string;
-      /** Format: uuid */
-      id: string;
-      /** @description The name of the variable set */
-      name: string;
-      /**
-       * Format: int64
-       * @description The priority of the variable set
-       */
-      priority: number;
-      /** @description A CEL expression to select which resources this value applies to */
-      selector: string;
-      /**
-       * Format: date-time
-       * @description The timestamp when the variable set was last updated
-       */
-      updatedAt: string;
-    };
-    VariableSetVariable: {
-      /**
-       * Format: uuid
-       * @description The ID of the variable
-       */
-      id: string;
-      /** @description The key of the variable, unique within the variable set */
-      key: string;
-      value: components["schemas"]["Value"];
-      /**
-       * Format: uuid
-       * @description The ID of the variable set this variable belongs to
-       */
-      variableSetId: string;
-    };
-    VariableSetWithVariables: components["schemas"]["VariableSet"] & {
-      variables: components["schemas"]["VariableSetVariable"][];
-    };
-    VerificationMeasurement: {
-      /** @description Raw measurement data */
-      data: {
-        [key: string]: unknown;
-      };
-      /**
-       * Format: date-time
-       * @description When measurement was taken
-       */
-      measuredAt: string;
-      /** @description Measurement result message */
-      message?: string;
-      status: components["schemas"]["VerificationMeasurementStatus"];
-    };
-    /**
-     * @description Status of a verification measurement
-     * @enum {string}
-     */
-    VerificationMeasurementStatus: "passed" | "failed" | "inconclusive";
-    VerificationMetricSpec: {
-      /** @description Number of measurements to take */
-      count: number;
-      /**
-       * @description CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
-       * @example result.statusCode == 500
-       */
-      failureCondition?: string;
-      /**
-       * @description Stop after this many consecutive failures (0 = no limit)
-       * @default 0
-       */
-      failureThreshold: number;
-      /**
-       * Format: int32
-       * @description Interval between measurements in seconds
-       * @example 30
-       */
-      intervalSeconds: number;
-      /** @description Name of the verification metric */
-      name: string;
-      provider: components["schemas"]["MetricProvider"];
-      /**
-       * @description CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
-       * @example result.statusCode == 200
-       */
-      successCondition: string;
-      /**
-       * @description Minimum number of consecutive successful measurements required to consider the metric successful
-       * @example 0
-       */
-      successThreshold?: number;
-    };
-    VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
-      id: string;
-      /** @description Individual verification measurements taken for this metric */
-      measurements: components["schemas"]["VerificationMeasurement"][];
-    };
-    VerificationRule: {
-      /** @description Metrics to verify */
-      metrics: components["schemas"]["VerificationMetricSpec"][];
-      /**
-       * @description When to trigger verification
-       * @default jobSuccess
-       * @enum {string}
-       */
-      triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
-    };
-    VersionCooldownRule: {
-      /**
-       * Format: int32
-       * @description Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
-       */
-      intervalSeconds: number;
-    };
-    VersionSelectorRule: {
-      /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
-      description?: string;
-      /** @description CEL expression to determine if the version selector should be used */
-      selector: string;
-    };
-    VersionSummary: {
-      id: string;
-      name: string;
-      tag: string;
-    };
-    Workflow: {
-      id: string;
-      inputs: components["schemas"]["WorkflowInput"][];
-      jobs: components["schemas"]["WorkflowJobAgent"][];
-      name: string;
-    };
-    WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"];
-    WorkflowBooleanInput: {
-      default?: boolean;
-      key: string;
-      /** @enum {string} */
-      type: "boolean";
-    };
-    WorkflowInput:
-      | components["schemas"]["WorkflowStringInput"]
-      | components["schemas"]["WorkflowNumberInput"]
-      | components["schemas"]["WorkflowBooleanInput"]
-      | components["schemas"]["WorkflowArrayInput"]
-      | components["schemas"]["WorkflowObjectInput"];
-    WorkflowJob: {
-      /** @description Configuration for the job agent */
-      config: {
-        [key: string]: unknown;
-      };
-      id: string;
-      index: number;
-      /** @description Reference to the job agent */
-      ref: string;
-      workflowRunId: string;
-    };
-    WorkflowJobAgent: {
-      /** @description Configuration for the job agent */
-      config: {
-        [key: string]: unknown;
-      };
-      name: string;
-      /** @description Reference to the job agent */
-      ref: string;
-      /** @description CEL expression to determine if the job agent should dispatch a job */
-      selector: string;
-    };
-    WorkflowManualArrayInput: {
-      default?: {
-        [key: string]: unknown;
-      }[];
-      key: string;
-      /** @enum {string} */
-      type: "array";
-    };
-    WorkflowNumberInput: {
-      default?: number;
-      key: string;
-      /** @enum {string} */
-      type: "number";
-    };
-    WorkflowObjectInput: {
-      default?: {
-        [key: string]: unknown;
-      };
-      key: string;
-      /** @enum {string} */
-      type: "object";
-    };
-    WorkflowRun: {
-      id: string;
-      inputs: {
-        [key: string]: unknown;
-      };
-      workflowId: string;
-    };
-    WorkflowStringInput: {
-      default?: string;
-      key: string;
-      /** @enum {string} */
-      type: "string";
-    };
-  };
-  responses: never;
-  parameters: {
-    /** @description Type of the entity (deployment, environment, or resource) */
-    relatableEntityType: components["schemas"]["RelatableEntityType"];
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  listReleaseTargets: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the deployment */
-        deploymentId: string;
-      };
-      cookie?: never;
+    listReleaseTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of release targets for the deployment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ReleaseTargetItem"][];
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description List of release targets for the deployment */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getJobVerificationStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the job */
+                jobId: string;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": {
-            items: components["schemas"]["ReleaseTargetItem"][];
-          };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregate verification status for the job */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Aggregate verification status
+                         * @enum {string}
+                         */
+                        status: "passed" | "running" | "failed" | "";
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  getJobVerificationStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the job */
-        jobId: string;
-      };
-      cookie?: never;
+    validateResourceSelector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description CEL expression to validate. */
+                    resourceSelector: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The validated resource selector */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        errors: string[];
+                        valid: boolean;
+                    };
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Aggregate verification status for the job */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getReleaseTargetState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Key of the release target */
+                releaseTargetKey: string;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": {
-            /**
-             * @description Aggregate verification status
-             * @enum {string}
-             */
-            status: "passed" | "running" | "failed" | "";
-          };
+        requestBody?: never;
+        responses: {
+            /** @description Release target state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseTargetStateResponse"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  validateResourceSelector: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    computeAggergate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
+                    filter?: string;
+                    groupBy?: {
+                        /** @description Label for this grouping */
+                        name: string;
+                        /** @description Dot-path property to group by (e.g. kind, metadata.region) */
+                        property: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        groups: {
+                            /** @description Number of resources in this group */
+                            count: number;
+                            /** @description Map of grouping name to its value for this bucket */
+                            key: {
+                                [key: string]: string;
+                            };
+                        }[];
+                        /** @description Total number of matching resources */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: {
-      content: {
-        "application/json": {
-          /** @description CEL expression to validate. */
-          resourceSelector: string;
+    queryResources: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
         };
-      };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
+                    filter?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Resource"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    responses: {
-      /** @description The validated resource selector */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    createWorkflowRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the workflow */
+                workflowId: string;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": {
-            errors: string[];
-            valid: boolean;
-          };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Input values for the workflow run. */
+                    inputs: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
         };
-      };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-  };
-  getReleaseTargetState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace */
-        workspaceId: string;
-        /** @description Key of the release target */
-        releaseTargetKey: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Release target state */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ReleaseTargetStateResponse"];
-        };
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Resource not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  computeAggergate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace */
-        workspaceId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
-          filter?: string;
-          groupBy?: {
-            /** @description Label for this grouping */
-            name: string;
-            /** @description Dot-path property to group by (e.g. kind, metadata.region) */
-            property: string;
-          }[];
-        };
-      };
-    };
-    responses: {
-      /** @description OK response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            groups: {
-              /** @description Number of resources in this group */
-              count: number;
-              /** @description Map of grouping name to its value for this bucket */
-              key: {
-                [key: string]: string;
-              };
-            }[];
-            /** @description Total number of matching resources */
-            total: number;
-          };
-        };
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  queryResources: {
-    parameters: {
-      query?: {
-        /** @description Maximum number of items to return */
-        limit?: number;
-        /** @description Number of items to skip */
-        offset?: number;
-      };
-      header?: never;
-      path: {
-        /** @description ID of the workspace */
-        workspaceId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @description CEL expression to filter resources. Defaults to "true" (all resources). */
-          filter?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Paginated list of items */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            items: components["schemas"]["Resource"][];
-            /** @description Maximum number of items returned */
-            limit: number;
-            /** @description Number of items skipped */
-            offset: number;
-            /** @description Total number of items available */
-            total: number;
-          };
-        };
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  createWorkflowRun: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace */
-        workspaceId: string;
-        /** @description ID of the workflow */
-        workflowId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @description Input values for the workflow run. */
-          inputs: {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-    responses: {
-      /** @description OK response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowRun"];
-        };
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Resource not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
 }

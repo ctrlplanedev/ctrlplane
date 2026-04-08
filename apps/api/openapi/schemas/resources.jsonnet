@@ -103,4 +103,43 @@ local openapi = import '../lib/openapi.libsonnet';
       message: { type: 'string' },
     },
   },
+
+  ListResourcesFilters: {
+    type: 'object',
+    properties: {
+      providerId: { type: 'string' },
+      version: { type: 'string' },
+      identifier: { type: 'string' },
+      query: { type: 'string', description: 'Text search on name or identifier' },
+      kinds: {
+        type: 'array',
+        items: { type: 'string' },
+      },
+      limit: {
+        type: 'integer',
+        minimum: 1,
+        maximum: 1000,
+        default: 500,
+      },
+      offset: {
+        type: 'integer',
+        minimum: 0,
+        default: 0,
+      },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        description: 'Exact metadata key/value matches',
+      },
+      sortBy: {
+        type: 'string',
+        enum: ['createdAt', 'updatedAt', 'name', 'kind'],
+      },
+      order: {
+        type: 'string',
+        enum: ['asc', 'desc'],
+        default: 'asc',
+      },
+    },
+  },
 }

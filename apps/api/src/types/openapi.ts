@@ -801,6 +801,26 @@ export interface paths {
         patch: operations["requestResourceVariablesUpdate"];
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/resources/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search resources
+         * @description Returns a paginated list of resources matching the given filters.
+         */
+        post: operations["searchResources"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
         parameters: {
             query?: never;
@@ -1528,6 +1548,29 @@ export interface components {
             job: components["schemas"]["Job"];
             release: components["schemas"]["Release"];
             resource?: components["schemas"]["Resource"];
+        };
+        ListResourcesFilters: {
+            identifier?: string;
+            kinds?: string[];
+            /** @default 500 */
+            limit: number;
+            /** @description Exact metadata key/value matches */
+            metadata?: {
+                [key: string]: string;
+            };
+            /** @default 0 */
+            offset: number;
+            /**
+             * @default asc
+             * @enum {string}
+             */
+            order: "asc" | "desc";
+            providerId?: string;
+            /** @description Text search on name or identifier */
+            query?: string;
+            /** @enum {string} */
+            sortBy?: "createdAt" | "updatedAt" | "name" | "kind";
+            version?: string;
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
@@ -5129,6 +5172,50 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    searchResources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListResourcesFilters"];
+            };
+        };
+        responses: {
+            /** @description Matching resources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Resource"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
