@@ -206,7 +206,7 @@ func TestCelSelector_Matches_DeploymentWithOptionalFields(t *testing.T) {
 		Name:        "web",
 		Slug:        "web-slug",
 		Description: &desc,
-		JobAgentId:  &agentId,
+		JobAgentSelector: "jobAgent.id == \"" + agentId + "\"",
 	}
 	matched, err := condition.Matches(d)
 	require.NoError(t, err)

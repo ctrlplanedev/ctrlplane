@@ -63,7 +63,6 @@ func (m *mockGetters) GetResource(_ context.Context, id uuid.UUID) (*oapi.Resour
 func createTestDeployment(
 	t *testing.T,
 	id string,
-	jobAgentId *string,
 	jobAgentConfig oapi.JobAgentConfig,
 ) *oapi.Deployment {
 	t.Helper()
@@ -72,7 +71,6 @@ func createTestDeployment(
 		Id:               id,
 		Name:             "test-deployment",
 		Slug:             "test-deployment",
-		JobAgentId:       jobAgentId,
 		JobAgentConfig:   jobAgentConfig,
 		ResourceSelector: &resourceSelector,
 	}
@@ -203,7 +201,7 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
-	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
+	deployment := createTestDeployment(t, deployID,deploymentConfig)
 	environment := createTestEnvironment(t, envID, "production")
 	resource := createTestResource(
 		t,
@@ -261,7 +259,7 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
-	deployment := createTestDeployment(t, deployID, &jobAgentId, deploymentConfig)
+	deployment := createTestDeployment(t, deployID,deploymentConfig)
 	resource := createTestResource(
 		t,
 		resourceID,
@@ -311,7 +309,6 @@ func setupFullMock(t *testing.T) (*mockGetters, *oapi.JobAgent, string, string, 
 	deployment := createTestDeployment(
 		t,
 		deploymentId,
-		&jobAgentId,
 		mustCreateJobAgentConfig(t, `{"deploy_key": "deploy_val"}`),
 	)
 	environment := &oapi.Environment{
@@ -417,7 +414,7 @@ func TestFactory_CreateJobForRelease_UsesResolvedJobAgentConfig(t *testing.T) {
 	versionConfig := oapi.JobAgentConfig{"shared": "from_version", "version_only": "yes"}
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "custom", agentConfig)
-	deployment := createTestDeployment(t, deployID, &jobAgentId, deployConfig)
+	deployment := createTestDeployment(t, deployID,deployConfig)
 	environment := &oapi.Environment{
 		Id: envID, Name: "prod", Metadata: map[string]string{},
 	}
@@ -468,7 +465,7 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverridesAgentTemplate(t 
 	deployConfig := mustCreateJobAgentConfig(t, `{"template": "deployment-template"}`)
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "argocd", agentConfig)
-	deployment := createTestDeployment(t, deployID, &jobAgentId, deployConfig)
+	deployment := createTestDeployment(t, deployID,deployConfig)
 	environment := &oapi.Environment{
 		Id: envID, Name: "prod", Metadata: map[string]string{},
 	}
@@ -513,7 +510,7 @@ func TestFactory_CreateJobForRelease_VersionTemplateOverridesDeploymentAndAgentT
 	versionConfig := oapi.JobAgentConfig{"template": "version-template"}
 
 	jobAgent := createTestJobAgent(t, jobAgentID, "argocd", agentConfig)
-	deployment := createTestDeployment(t, deployID, &jobAgentID, deployConfig)
+	deployment := createTestDeployment(t, deployID,deployConfig)
 	environment := &oapi.Environment{
 		Id: envID, Name: "prod", Metadata: map[string]string{},
 	}
@@ -571,11 +568,7 @@ func TestFactory_CreateJobForRelease_DeploymentTemplateOverrideWithMultipleDeplo
 	deployConfig := mustCreateJobAgentConfig(t, `{"template": "deployment-template"}`)
 
 	selectedAgent := createTestJobAgent(t, selectedAgentID, "argocd", selectedAgentConfig)
-	deployment := createTestDeployment(t, deployID, &selectedAgentID, deployConfig)
-	deployment.JobAgents = &[]oapi.DeploymentJobAgent{
-		{Ref: selectedAgentID, Selector: "true", Config: oapi.JobAgentConfig{}},
-		{Ref: otherAgentID, Selector: "false", Config: oapi.JobAgentConfig{}},
-	}
+	deployment := createTestDeployment(t, deployID, deployConfig)
 
 	environment := &oapi.Environment{
 		Id: envID, Name: "prod", Metadata: map[string]string{},
@@ -618,7 +611,7 @@ func TestFactory_CreateJobForRelease_UsesResolvedConfigWithoutReMerge(t *testing
 	}`)
 
 	jobAgent := createTestJobAgent(t, jobAgentID, "argocd", resolvedConfig)
-	deployment := createTestDeployment(t, deployID, &jobAgentID, deployConfig)
+	deployment := createTestDeployment(t, deployID,deployConfig)
 	environment := &oapi.Environment{
 		Id: envID, Name: "prod", Metadata: map[string]string{},
 	}
@@ -653,7 +646,7 @@ func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testi
 	missingEnvID := newID()
 
 	agent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{}`))
-	deployment := createTestDeployment(t, deployID, &jobAgentId, mustCreateJobAgentConfig(t, `{}`))
+	deployment := createTestDeployment(t, deployID,mustCreateJobAgentConfig(t, `{}`))
 	resource := &oapi.Resource{
 		Id: resourceID, Name: "server-1", Kind: "server", Identifier: "server-1",
 		Config: map[string]any{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
@@ -682,7 +675,7 @@ func TestFactory_CreateJobForRelease_DispatchContextResourceNotFound(t *testing.
 	missingResourceID := newID()
 
 	agent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{}`))
-	deployment := createTestDeployment(t, deployID, &jobAgentId, mustCreateJobAgentConfig(t, `{}`))
+	deployment := createTestDeployment(t, deployID,mustCreateJobAgentConfig(t, `{}`))
 	environment := &oapi.Environment{
 		Id: envID, Name: "prod", Metadata: map[string]string{},
 	}
