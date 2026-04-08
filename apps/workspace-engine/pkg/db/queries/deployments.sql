@@ -3,14 +3,6 @@ SELECT *
 FROM deployment
 WHERE id = $1;
 
--- name: GetDeploymentWithJobAgents :one
-SELECT d.*,
-  COALESCE(json_agg(json_build_object('ref', dja.job_agent_id, 'config', dja.config))
-    FILTER (WHERE dja.job_agent_id IS NOT NULL), '[]') AS job_agents
-FROM deployment d
-LEFT JOIN deployment_job_agent dja ON dja.deployment_id = d.id
-WHERE d.id = $1
-GROUP BY d.id;
 
 -- name: ListDeploymentsByWorkspaceID :many
 SELECT *

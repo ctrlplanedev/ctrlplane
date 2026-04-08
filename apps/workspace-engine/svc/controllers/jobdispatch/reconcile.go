@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/svc/controllers/jobdispatch/verification"
 )
 
@@ -53,6 +54,7 @@ func getDeployment(
 func getJobAgents(
 	ctx context.Context,
 	getter Getter,
+	workspaceID uuid.UUID,
 	release *oapi.Release,
 ) ([]oapi.JobAgent, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.getJobAgents")
@@ -63,25 +65,28 @@ func getJobAgents(
 		return nil, err
 	}
 
-	if deployment.JobAgents == nil {
-		return nil, fmt.Errorf("deployment job agents are nil")
+	if deployment.JobAgentSelector == nil || *deployment.JobAgentSelector == "" {
+		return nil, fmt.Errorf("deployment job agent selector is empty")
 	}
 
-	jobAgents := make([]oapi.JobAgent, 0)
-	for _, jobAgent := range *deployment.JobAgents {
-		jobAgent, err := getter.GetJobAgent(ctx, uuid.MustParse(jobAgent.Ref))
-		if err != nil {
-			return nil, err
-		}
-		jobAgents = append(jobAgents, *jobAgent)
+	allAgents, err := getter.ListJobAgentsByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("list job agents: %w", err)
 	}
-	return jobAgents, nil
+
+	matched, err := selector.MatchJobAgents(ctx, *deployment.JobAgentSelector, allAgents)
+	if err != nil {
+		return nil, fmt.Errorf("match job agents: %w", err)
+	}
+
+	return matched, nil
 }
 
 func getAgentSpecs(
 	ctx context.Context,
 	verifier AgentVerifier,
 	getter Getter,
+	workspaceID uuid.UUID,
 	release *oapi.Release,
 ) ([]oapi.VerificationMetricSpec, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.getAgentSpecs")
@@ -91,7 +96,7 @@ func getAgentSpecs(
 		return nil, nil
 	}
 
-	agents, err := getJobAgents(ctx, getter, release)
+	agents, err := getJobAgents(ctx, getter, workspaceID, release)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +123,7 @@ func Reconcile(
 	setter Setter,
 	verifier AgentVerifier,
 	dispatcher Dispatcher,
+	workspaceID uuid.UUID,
 	job *oapi.Job,
 ) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobdispatch.Reconcile")
@@ -128,14 +134,14 @@ func Reconcile(
 		return nil, err
 	}
 
-	agents, err := getJobAgents(ctx, getter, release)
+	agents, err := getJobAgents(ctx, getter, workspaceID, release)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	if len(agents) == 0 {
-		span.AddEvent("no job agents configured for deployment")
+		span.AddEvent("no job agents matched selector for deployment")
 		return &ReconcileResult{}, nil
 	}
 
@@ -150,7 +156,7 @@ func Reconcile(
 		return nil, err
 	}
 
-	agentSpecs, err := getAgentSpecs(ctx, verifier, getter, release)
+	agentSpecs, err := getAgentSpecs(ctx, verifier, getter, workspaceID, release)
 	if err != nil {
 		return nil, err
 	}

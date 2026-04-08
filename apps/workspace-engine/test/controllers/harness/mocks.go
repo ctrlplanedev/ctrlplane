@@ -634,6 +634,13 @@ func (g *JobDispatchGetter) GetVerificationPolicies(
 	return g.VerificationPolicies, nil
 }
 
+func (g *JobDispatchGetter) ListJobAgentsByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.JobAgent, error) {
+	return g.Agents, nil
+}
+
 func (g *JobDispatchGetter) IsWorkflowJob(_ context.Context, _ uuid.UUID) (bool, error) {
 	return false, nil
 }

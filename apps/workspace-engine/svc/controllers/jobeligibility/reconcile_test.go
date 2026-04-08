@@ -36,6 +36,8 @@ type mockGetter struct {
 	jobAgents   map[string]*oapi.JobAgent
 	jobAgentErr error
 
+	workspaceAgents []oapi.JobAgent
+
 	environment    *oapi.Environment
 	environmentErr error
 
@@ -93,6 +95,13 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 		return nil, fmt.Errorf("agent %s not found", id)
 	}
 	return agent, nil
+}
+
+func (m *mockGetter) ListJobAgentsByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.JobAgent, error) {
+	return m.workspaceAgents, nil
 }
 
 func (m *mockGetter) GetEnvironment(_ context.Context, _ uuid.UUID) (*oapi.Environment, error) {
@@ -199,18 +208,15 @@ func testJobWithCompletion(
 	return job
 }
 
-func testDeployment(rt *ReleaseTarget, agentRefs ...string) *oapi.Deployment {
-	agents := make([]oapi.DeploymentJobAgent, len(agentRefs))
-	for i, ref := range agentRefs {
-		agents[i] = oapi.DeploymentJobAgent{Ref: ref, Config: oapi.JobAgentConfig{}}
-	}
+func testDeployment(rt *ReleaseTarget) *oapi.Deployment {
+	sel := "true"
 	return &oapi.Deployment{
-		Id:             rt.DeploymentID.String(),
-		Name:           "test-deployment",
-		Slug:           "test-deployment",
-		Metadata:       map[string]string{},
-		JobAgentConfig: oapi.JobAgentConfig{},
-		JobAgents:      &agents,
+		Id:               rt.DeploymentID.String(),
+		Name:             "test-deployment",
+		Slug:             "test-deployment",
+		Metadata:         map[string]string{},
+		JobAgentConfig:   oapi.JobAgentConfig{},
+		JobAgentSelector: &sel,
 	}
 }
 
@@ -244,14 +250,15 @@ func testAgent() *oapi.JobAgent {
 
 func setupHappyPath(rt *ReleaseTarget, release *oapi.Release) (*mockGetter, *mockSetter) {
 	agent := testAgent()
-	deployment := testDeployment(rt, agent.Id)
+	deployment := testDeployment(rt)
 	getter := &mockGetter{
-		rtExists:   true,
-		release:    release,
-		jobs:       []*oapi.Job{},
-		policies:   []*oapi.Policy{},
-		deployment: deployment,
-		jobAgents:  map[string]*oapi.JobAgent{agent.Id: agent},
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
 		environment: &oapi.Environment{
 			Id:       rt.EnvironmentID.String(),
 			Name:     "test-env",
@@ -414,7 +421,7 @@ func TestProcess_RequeueOnBackoff(t *testing.T) {
 	)
 
 	agent := testAgent()
-	deployment := testDeployment(rt, agent.Id)
+	deployment := testDeployment(rt)
 
 	getter := &mockGetter{
 		rtExists: true,
@@ -423,8 +430,9 @@ func TestProcess_RequeueOnBackoff(t *testing.T) {
 		policies: []*oapi.Policy{
 			testPolicy(true, &oapi.RetryRule{MaxRetries: 3, BackoffSeconds: int32Ptr(120)}),
 		},
-		deployment: deployment,
-		jobAgents:  map[string]*oapi.JobAgent{agent.Id: agent},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
 	}
 	setter := &mockSetter{}
 	ctrl := NewController(getter, setter)
@@ -1148,12 +1156,12 @@ func TestReconcile_CreatedJobHasValidUUID(t *testing.T) {
 	assert.NoError(t, parseErr, "job ID should be a valid UUID")
 }
 
-func TestReconcile_NoJobAgents_CreatesFailureJob(t *testing.T) {
+func TestReconcile_NoJobAgentSelector_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
-	emptyAgents := []oapi.DeploymentJobAgent{}
-	getter.deployment.JobAgents = &emptyAgents
+	emptySel := ""
+	getter.deployment.JobAgentSelector = &emptySel
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
@@ -1162,11 +1170,24 @@ func TestReconcile_NoJobAgents_CreatesFailureJob(t *testing.T) {
 	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
 }
 
-func TestReconcile_NilJobAgents_CreatesFailureJob(t *testing.T) {
+func TestReconcile_NilJobAgentSelector_CreatesFailureJob(t *testing.T) {
 	rt := testRT()
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
-	getter.deployment.JobAgents = nil
+	getter.deployment.JobAgentSelector = nil
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
+}
+
+func TestReconcile_NoMatchingAgents_CreatesFailureJob(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+	getter, setter := setupHappyPath(rt, release)
+	getter.workspaceAgents = []oapi.JobAgent{}
 
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.NoError(t, err)
@@ -1180,15 +1201,16 @@ func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {
 	release := testRelease(rt)
 	agent1 := testAgent()
 	agent2 := testAgent()
-	deployment := testDeployment(rt, agent1.Id, agent2.Id)
+	deployment := testDeployment(rt)
 
 	getter := &mockGetter{
-		rtExists:   true,
-		release:    release,
-		jobs:       []*oapi.Job{},
-		policies:   []*oapi.Policy{},
-		deployment: deployment,
-		jobAgents:  map[string]*oapi.JobAgent{agent1.Id: agent1, agent2.Id: agent2},
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent1.Id: agent1, agent2.Id: agent2},
+		workspaceAgents: []oapi.JobAgent{*agent1, *agent2},
 		environment: &oapi.Environment{
 			Id:       rt.EnvironmentID.String(),
 			Name:     "test-env",
@@ -1235,19 +1257,6 @@ func TestReconcile_GetDeploymentFails_Error(t *testing.T) {
 	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get deployment")
-}
-
-func TestReconcile_GetJobAgentFails_CreatesFailureJob(t *testing.T) {
-	rt := testRT()
-	release := testRelease(rt)
-	getter, setter := setupHappyPath(rt, release)
-	getter.jobAgentErr = fmt.Errorf("agent unavailable")
-
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
-	require.NoError(t, err)
-	require.Len(t, setter.createdJobs, 1)
-	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
-	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
 }
 
 func TestReconcile_GetEnvironmentFails_Error(t *testing.T) {
@@ -1440,7 +1449,7 @@ func TestReconcile_NoJobsNoPolices_FirstAttempt(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// 13. Config deep merge: agent -> deployment agent ref -> version
+// 13. Config deep merge: agent -> deployment.jobAgentConfig -> version
 // ---------------------------------------------------------------------------
 
 func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
@@ -1464,29 +1473,27 @@ func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
 		},
 	}
 
-	deploymentAgents := []oapi.DeploymentJobAgent{{
-		Ref: agent.Id,
-		Config: oapi.JobAgentConfig{
+	sel := "true"
+	deployment := &oapi.Deployment{
+		Id:               rt.DeploymentID.String(),
+		Name:             "test-deployment",
+		Slug:             "test-deployment",
+		Metadata:         map[string]string{},
+		JobAgentSelector: &sel,
+		JobAgentConfig: oapi.JobAgentConfig{
 			"workflowId": float64(456),
 			"timeout":    float64(60),
 		},
-	}}
-	deployment := &oapi.Deployment{
-		Id:             rt.DeploymentID.String(),
-		Name:           "test-deployment",
-		Slug:           "test-deployment",
-		Metadata:       map[string]string{},
-		JobAgentConfig: oapi.JobAgentConfig{},
-		JobAgents:      &deploymentAgents,
 	}
 
 	getter := &mockGetter{
-		rtExists:   true,
-		release:    release,
-		jobs:       []*oapi.Job{},
-		policies:   []*oapi.Policy{},
-		deployment: deployment,
-		jobAgents:  map[string]*oapi.JobAgent{agent.Id: agent},
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
 		environment: &oapi.Environment{
 			Id:       rt.EnvironmentID.String(),
 			Name:     "test-env",
@@ -1527,4 +1534,221 @@ func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
 		0,
 		"version-level should win over deployment and agent",
 	)
+}
+
+// ---------------------------------------------------------------------------
+// 14. Job agent selector CEL evaluation
+// ---------------------------------------------------------------------------
+
+func TestReconcile_SelectorMatchesSpecificAgent(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	target := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "target-agent",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"serverUrl": "https://argo.example.com",
+		},
+	}
+	other := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "other-agent",
+		Type: "github-app",
+		Config: oapi.JobAgentConfig{
+			"owner": "org",
+		},
+	}
+
+	sel := fmt.Sprintf(`jobAgent.id == "%s"`, target.Id)
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = &sel
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{target.Id: target, other.Id: other},
+		workspaceAgents: []oapi.JobAgent{*target, *other},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1, "should create exactly one job for the matched agent")
+	assert.Equal(t, target.Id, setter.createdJobs[0].JobAgentId)
+}
+
+func TestReconcile_SelectorByType_MatchesMultiple(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	argo1 := &oapi.JobAgent{
+		Id:     uuid.New().String(),
+		Name:   "argo-1",
+		Type:   "argo-cd",
+		Config: oapi.JobAgentConfig{},
+	}
+	argo2 := &oapi.JobAgent{
+		Id:     uuid.New().String(),
+		Name:   "argo-2",
+		Type:   "argo-cd",
+		Config: oapi.JobAgentConfig{},
+	}
+	github := &oapi.JobAgent{
+		Id:     uuid.New().String(),
+		Name:   "github-runner",
+		Type:   "github-app",
+		Config: oapi.JobAgentConfig{},
+	}
+
+	sel := `jobAgent.type == "argo-cd"`
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = &sel
+
+	getter := &mockGetter{
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents: map[string]*oapi.JobAgent{
+			argo1.Id:  argo1,
+			argo2.Id:  argo2,
+			github.Id: github,
+		},
+		workspaceAgents: []oapi.JobAgent{*argo1, *argo2, *github},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 2, "should create jobs for both argo-cd agents")
+
+	agentIDs := map[string]bool{
+		setter.createdJobs[0].JobAgentId: true,
+		setter.createdJobs[1].JobAgentId: true,
+	}
+	assert.True(t, agentIDs[argo1.Id], "argo-1 should have a job")
+	assert.True(t, agentIDs[argo2.Id], "argo-2 should have a job")
+	assert.False(t, agentIDs[github.Id], "github agent should not have a job")
+}
+
+func TestReconcile_SelectorFalse_NoAgentsMatched(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agent := testAgent()
+	sel := "false"
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = &sel
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+}
+
+func TestReconcile_SelectorByName_MatchesSingle(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	prod := &oapi.JobAgent{
+		Id:     uuid.New().String(),
+		Name:   "prod-deployer",
+		Type:   "argo-cd",
+		Config: oapi.JobAgentConfig{},
+	}
+	staging := &oapi.JobAgent{
+		Id:     uuid.New().String(),
+		Name:   "staging-deployer",
+		Type:   "argo-cd",
+		Config: oapi.JobAgentConfig{},
+	}
+
+	sel := `jobAgent.name == "prod-deployer"`
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = &sel
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{prod.Id: prod, staging.Id: staging},
+		workspaceAgents: []oapi.JobAgent{*prod, *staging},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, prod.Id, setter.createdJobs[0].JobAgentId)
 }

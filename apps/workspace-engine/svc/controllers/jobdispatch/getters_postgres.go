@@ -52,11 +52,26 @@ func (p *PostgresGetter) GetDeployment(
 	ctx context.Context,
 	deploymentID uuid.UUID,
 ) (*oapi.Deployment, error) {
-	row, err := db.GetQueries(ctx).GetDeploymentWithJobAgents(ctx, deploymentID)
+	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, deploymentID)
 	if err != nil {
 		return nil, err
 	}
-	return db.ToOapiDeploymentWithJobAgents(row), nil
+	return db.ToOapiDeployment(row), nil
+}
+
+func (p *PostgresGetter) ListJobAgentsByWorkspaceID(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]oapi.JobAgent, error) {
+	rows, err := db.GetQueries(ctx).ListJobAgentsByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	agents := make([]oapi.JobAgent, len(rows))
+	for i, row := range rows {
+		agents[i] = *db.ToOapiJobAgent(row)
+	}
+	return agents, nil
 }
 
 func (p *PostgresGetter) GetJobAgent(

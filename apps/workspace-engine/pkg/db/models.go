@@ -328,6 +328,8 @@ type Deployment struct {
 	Name             string
 	Description      string
 	ResourceSelector pgtype.Text
+	JobAgentSelector string
+	JobAgentConfig   map[string]any
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
 }

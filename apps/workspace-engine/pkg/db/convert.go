@@ -10,30 +10,16 @@ import (
 
 func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
-		Id:       row.ID.String(),
-		Name:     row.Name,
-		Metadata: row.Metadata,
+		Id:             row.ID.String(),
+		Name:           row.Name,
+		Metadata:       row.Metadata,
+		JobAgentConfig: oapi.JobAgentConfig(row.JobAgentConfig),
 	}
 	if row.Description != "" {
 		d.Description = &row.Description
 	}
-	return d
-}
-
-func ToOapiDeploymentWithJobAgents(row GetDeploymentWithJobAgentsRow) *oapi.Deployment {
-	d := ToOapiDeployment(Deployment{
-		ID:               row.ID,
-		Name:             row.Name,
-		Description:      row.Description,
-		ResourceSelector: row.ResourceSelector,
-		Metadata:         row.Metadata,
-		WorkspaceID:      row.WorkspaceID,
-	})
-	if row.JobAgents != nil {
-		var jobAgents []oapi.DeploymentJobAgent
-		if err := json.Unmarshal(row.JobAgents, &jobAgents); err == nil {
-			d.JobAgents = &jobAgents
-		}
+	if row.JobAgentSelector != "" {
+		d.JobAgentSelector = &row.JobAgentSelector
 	}
 	return d
 }
