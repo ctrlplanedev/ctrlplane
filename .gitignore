@@ -64,3 +64,17 @@ dist/
 .idea/
 
 state/
+
+# Go build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.html
+vendor/
+apps/relay/bin/
+
+# Air (hot-reload) logs
+build-errors.log

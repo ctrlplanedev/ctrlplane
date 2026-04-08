@@ -27,7 +27,7 @@
 
 Your CI builds code. Your clusters run it. Ctrlplane decides _when_ releases are ready, _where_ they should deploy, and _what gates_ they must pass—handling environment promotion, verification, approvals, and rollbacks automatically.
 
-```
+```text
 Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
  (builds)          (orchestrates)           (deploys)
 ```
@@ -86,38 +86,23 @@ For self-hosted options, see our [installation guide](https://docs.ctrlplane.dev
 
 ## 🛠️ Contributing
 
-### Prerequisites
-
-1. **Install Flox + Docker** — Run `make install-tools` (installs both via Homebrew on macOS) or follow the manual install guides for [Flox](https://flox.dev/docs/install-flox/) and [Docker](https://docs.docker.com/engine/install/)
-2. **Start Docker** — Ensure the Docker daemon is running (`docker info` should succeed) before proceeding
-
 ### Local Setup
+
+#### Prereqs
+
+- Docker engine installed and running
+- [Flox](https://flox.dev/docs/install-flox/install/) installed
 
 ```bash
 git clone https://github.com/ctrlplanedev/ctrlplane.git
 cd ctrlplane
+
+flox activate
+docker compose -f docker-compose.dev.yaml up -d
+pnpm i && pnpm build
+cd packages/db && pnpm migrate && cd ../..
+pnpm dev
 ```
-
-1. `make docker-up` — Start local services (Postgres, Kafka, Jaeger, Prometheus) via Docker Compose
-2. `pnpm i && pnpm build` — Install all Node.js dependencies and build every package in the monorepo
-3. `make db-migrate` — Apply database migrations to the local Postgres instance
-4. `pnpm dev` — Start all services (API, web, workspace-engine, relay) in development mode
-
-> **Shortcut**: `make start` runs all four steps in one command.
-
-### Validate
-
-Visit `http://localhost:5173/` to see Ctrlplane running locally.
-
-### Reset Dev Data
-
-To wipe all local state and start fresh:
-
-```bash
-make start reset=True
-```
-
-This stops all containers, removes Docker volumes (Postgres database + Prometheus metrics), and re-runs the full setup.
 
 ## :heart: Community
 

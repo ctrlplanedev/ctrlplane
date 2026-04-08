@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ctrlplane is the **orchestration layer between CI/CD pipelines and infrastructure** — it decides when releases are ready, where they should deploy, and what gates they must pass (environment promotion, verification, approvals, rollbacks).
 
-```
+```text
 Your CI/CD  →  Ctrlplane (orchestrates)  →  Your Infrastructure
 ```
 
@@ -14,24 +14,30 @@ Your CI/CD  →  Ctrlplane (orchestrates)  →  Your Infrastructure
 
 ### Setup (first time)
 ```bash
-make install-tools                              # Install Flox + Docker via Homebrew (macOS)
-make start                                      # Start services, install deps, migrate DB, run dev servers
-make start reset=True                           # Same, but wipes all Docker volumes first (clean slate)
+docker compose -f docker-compose.dev.yaml up -d   # Start local services
+pnpm i && pnpm build                              # Install deps and build
+pnpm -F @ctrlplane/db migrate                     # Apply database migrations
+pnpm dev                                          # Start all dev servers
+# Reset (wipe all Docker volumes first):
+docker compose -f docker-compose.dev.yaml down -v
+docker compose -f docker-compose.dev.yaml up -d
+pnpm -F @ctrlplane/db migrate
+pnpm dev
 ```
 
 ### Day-to-day
-- `make test` — Run all tests (TypeScript + Go)
-- `make lint` — Lint all code (TypeScript + Go)
-- `make format` — Format all code (TypeScript + Go)
+- `pnpm test` — Run all TypeScript tests
+- `pnpm lint` — Lint all TypeScript code
+- `pnpm format:fix` — Format all TypeScript code
 - `pnpm build` — Build all packages
 - `pnpm typecheck` — TypeScript type check across all packages
 - `pnpm -F <package-name> test` — Run tests for a specific package
 - `pnpm -F <package-name> test -- -t "test name"` — Run a specific test
 
 ### Database
-- `make db-migrate` — Run migrations
-- `pnpm -F db push` — Apply schema changes (dev, no migration file)
-- `pnpm -F db studio` — Open Drizzle Studio UI
+- `pnpm -F @ctrlplane/db migrate` — Run migrations
+- `pnpm -F @ctrlplane/db push` — Apply schema changes (dev, no migration file)
+- `pnpm -F @ctrlplane/db studio` — Open Drizzle Studio UI
 
 ### E2E Tests (Playwright)
 ```bash
@@ -46,16 +52,16 @@ E2E tests use YAML fixture files (`.spec.yaml` alongside `.spec.ts`) to declare 
 ### workspace-engine (Go)
 ```bash
 cd apps/workspace-engine
-make dev      # Run without building
-make build    # Build binary
-make test     # Run tests
-make lint     # golangci-lint
-make fmt      # gofmt
+go run ./...                                 # Run without building
+go build -o ./bin/workspace-engine .         # Build binary
+go test ./...                                # Run tests
+golangci-lint run                            # Lint
+go fmt ./...                                 # Format
 ```
 
 ## Monorepo Structure
 
-```
+```text
 apps/
   api/              # Node.js/Express REST API — core business logic
   web/              # React 19 + React Router frontend
@@ -101,7 +107,7 @@ Controllers use lease-based locking to prevent duplicate processing and support 
 
 ### Release & Deployment Flow
 
-```
+```text
 CI registers version
   → Release Target Planning (resource × environment fan-out)
   → Policy Evaluation (approvals, environment ordering, deploy windows)
