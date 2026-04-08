@@ -344,20 +344,20 @@ const searchResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/search",
   "post"
 > = async (req, res) => {
-const { workspaceId } = req.params;
+  const { workspaceId } = req.params;
 
-const {
-  providerId,
-  version,
-  identifier,
-  query,
-  kinds,
-  limit,
-  offset,
-  metadata,
-  sortBy,
-  order,
-} = req.body;
+  const {
+    providerIds,
+    versions,
+    identifiers,
+    query,
+    kinds,
+    limit,
+    offset,
+    metadata,
+    sortBy,
+    order,
+  } = req.body;
 
   if (!Number.isInteger(limit) || limit < 0) {
     res.status(400).json({ error: "`limit` must be a non-negative integer" });
@@ -368,29 +368,36 @@ const {
     res.status(400).json({ error: "`offset` must be a non-negative integer" });
     return;
   }
-  const conditions = [eq(schema.resource.workspaceId, workspaceId)];
 
-  if (providerId != null)
-    conditions.push(eq(schema.resource.providerId, providerId));
-  if (version != null) conditions.push(eq(schema.resource.version, version));
-  if (identifier != null)
-    conditions.push(eq(schema.resource.identifier, identifier));
-  if (query != null) {
-    const escapedQuery = query.replace(/[%_\\]/g, "\\$&");
-    conditions.push(
-      or(
-        ilike(schema.resource.name, `%${escapedQuery}%`),
-        ilike(schema.resource.identifier, `%${escapedQuery}%`),
-      )!,
-    );
+  const escapedQuery = query != null ? query.replace(/[%_\\]/g, "\\$&") : null;
+
+  function isDefined<T>(value: T | null | undefined): value is T {
+    return value != null;
   }
-  if (kinds != null && kinds.length > 0)
-    conditions.push(inArray(schema.resource.kind, kinds));
-  if (metadata != null) {
-    for (const [key, value] of Object.entries(metadata)) {
-      conditions.push(sql`${schema.resource.metadata}->>${key} = ${value}`);
-    }
-  }
+
+  const conditions = [
+    eq(schema.resource.workspaceId, workspaceId),
+    providerIds?.length
+      ? inArray(schema.resource.providerId, providerIds)
+      : undefined,
+    versions?.length ? inArray(schema.resource.version, versions) : undefined,
+    identifiers?.length
+      ? inArray(schema.resource.identifier, identifiers)
+      : undefined,
+    escapedQuery != null
+      ? or(
+          ilike(schema.resource.name, `%${escapedQuery}%`),
+          ilike(schema.resource.identifier, `%${escapedQuery}%`),
+        )
+      : undefined,
+    kinds?.length ? inArray(schema.resource.kind, kinds) : undefined,
+    ...(metadata
+      ? Object.entries(metadata).map(
+          ([key, value]) =>
+            sql`${schema.resource.metadata}->>${key} = ${value}`,
+        )
+      : []),
+  ].filter(isDefined);
 
   const orderCol =
     sortBy === "updatedAt"

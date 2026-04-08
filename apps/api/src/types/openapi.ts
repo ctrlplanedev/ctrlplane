@@ -1550,7 +1550,7 @@ export interface components {
             resource?: components["schemas"]["Resource"];
         };
         ListResourcesFilters: {
-            identifier?: string;
+            identifiers?: string[];
             kinds?: string[];
             /** @default 500 */
             limit: number;
@@ -1565,12 +1565,12 @@ export interface components {
              * @enum {string}
              */
             order: "asc" | "desc";
-            providerId?: string;
+            providerIds?: string[];
             /** @description Text search on name or identifier */
             query?: string;
             /** @enum {string} */
             sortBy?: "createdAt" | "updatedAt" | "name" | "kind";
-            version?: string;
+            versions?: string[];
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];

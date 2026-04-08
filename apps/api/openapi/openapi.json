@@ -1419,8 +1419,11 @@
          },
          "ListResourcesFilters": {
             "properties": {
-               "identifier": {
-                  "type": "string"
+               "identifiers": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
                },
                "kinds": {
                   "items": {
@@ -1454,8 +1457,11 @@
                   ],
                   "type": "string"
                },
-               "providerId": {
-                  "type": "string"
+               "providerIds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
                },
                "query": {
                   "description": "Text search on name or identifier",
@@ -1470,8 +1476,11 @@
                   ],
                   "type": "string"
                },
-               "version": {
-                  "type": "string"
+               "versions": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
                }
             },
             "type": "object"

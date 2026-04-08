@@ -107,9 +107,9 @@ local openapi = import '../lib/openapi.libsonnet';
   ListResourcesFilters: {
     type: 'object',
     properties: {
-      providerId: { type: 'string' },
-      version: { type: 'string' },
-      identifier: { type: 'string' },
+      providerIds: { type: 'array', items: { type: 'string' } },
+      versions: { type: 'array', items: { type: 'string' } },
+      identifiers: { type: 'array', items: { type: 'string' } },
       query: { type: 'string', description: 'Text search on name or identifier' },
       kinds: {
         type: 'array',
