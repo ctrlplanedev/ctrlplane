@@ -1751,3 +1751,382 @@ func TestReconcile_SelectorByName_MatchesSingle(t *testing.T) {
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, prod.Id, setter.createdJobs[0].JobAgentId)
 }
+
+// ---------------------------------------------------------------------------
+// 15. Resource-aware job agent selector
+// ---------------------------------------------------------------------------
+
+func TestReconcile_ResourceAwareSelector_MatchesAgentByResourceConfig(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	argoUS := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-us",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"server": "https://argo-us.example.com",
+		},
+	}
+	argoEU := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-eu",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"server": "https://argo-eu.example.com",
+		},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.server == resource.config.argocd.serverUrl`
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{argoUS.Id: argoUS, argoEU.Id: argoEU},
+		workspaceAgents: []oapi.JobAgent{*argoUS, *argoEU},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "us-cluster",
+			Identifier: "us-cluster",
+			Kind:       "kubernetes",
+			Metadata:   map[string]string{},
+			Config: map[string]any{
+				"argocd": map[string]any{
+					"serverUrl": "https://argo-us.example.com",
+				},
+			},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, argoUS.Id, setter.createdJobs[0].JobAgentId)
+}
+
+func TestReconcile_ResourceAwareSelector_NoMatch(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agent := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-us",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"server": "https://argo-us.example.com",
+		},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.server == resource.config.argocd.serverUrl`
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "eu-cluster",
+			Identifier: "eu-cluster",
+			Kind:       "kubernetes",
+			Metadata:   map[string]string{},
+			Config: map[string]any{
+				"argocd": map[string]any{
+					"serverUrl": "https://argo-eu.example.com",
+				},
+			},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+}
+
+func TestReconcile_ResourceAwareSelector_MatchesByMetadata(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agentProd := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "prod-agent",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"region": "us-east-1",
+		},
+	}
+	agentStaging := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "staging-agent",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"region": "eu-west-1",
+		},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.region == resource.metadata.region`
+
+	getter := &mockGetter{
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents: map[string]*oapi.JobAgent{
+			agentProd.Id:    agentProd,
+			agentStaging.Id: agentStaging,
+		},
+		workspaceAgents: []oapi.JobAgent{*agentProd, *agentStaging},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "us-east-cluster",
+			Identifier: "us-east-cluster",
+			Kind:       "kubernetes",
+			Metadata:   map[string]string{"region": "us-east-1"},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, agentProd.Id, setter.createdJobs[0].JobAgentId)
+}
+
+func TestReconcile_ResourceAwareSelector_MultipleAgentsMatch(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agent1 := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-1",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"cluster": "prod",
+		},
+	}
+	agent2 := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-2",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"cluster": "prod",
+		},
+	}
+	agent3 := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-staging",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"cluster": "staging",
+		},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.cluster == resource.metadata.cluster`
+
+	getter := &mockGetter{
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents: map[string]*oapi.JobAgent{
+			agent1.Id: agent1,
+			agent2.Id: agent2,
+			agent3.Id: agent3,
+		},
+		workspaceAgents: []oapi.JobAgent{*agent1, *agent2, *agent3},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "prod-cluster",
+			Identifier: "prod-cluster",
+			Kind:       "kubernetes",
+			Metadata:   map[string]string{"cluster": "prod"},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 2)
+
+	agentIDs := map[string]bool{
+		setter.createdJobs[0].JobAgentId: true,
+		setter.createdJobs[1].JobAgentId: true,
+	}
+	assert.True(t, agentIDs[agent1.Id], "agent1 should match")
+	assert.True(t, agentIDs[agent2.Id], "agent2 should match")
+	assert.False(t, agentIDs[agent3.Id], "staging agent should not match")
+}
+
+func TestReconcile_ResourceAwareSelector_MixedWithJobAgentFields(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	argoUS := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-us",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"server": "https://argo-us.example.com",
+		},
+	}
+	githubUS := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "github-us",
+		Type: "github-app",
+		Config: oapi.JobAgentConfig{
+			"server": "https://argo-us.example.com",
+		},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.type == "argo-cd" && jobAgent.config.server == resource.config.argocd.serverUrl`
+
+	getter := &mockGetter{
+		rtExists:   true,
+		release:    release,
+		jobs:       []*oapi.Job{},
+		policies:   []*oapi.Policy{},
+		deployment: deployment,
+		jobAgents: map[string]*oapi.JobAgent{
+			argoUS.Id:   argoUS,
+			githubUS.Id: githubUS,
+		},
+		workspaceAgents: []oapi.JobAgent{*argoUS, *githubUS},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "us-cluster",
+			Identifier: "us-cluster",
+			Kind:       "kubernetes",
+			Metadata:   map[string]string{},
+			Config: map[string]any{
+				"argocd": map[string]any{
+					"serverUrl": "https://argo-us.example.com",
+				},
+			},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, argoUS.Id, setter.createdJobs[0].JobAgentId)
+}
+
+func TestReconcile_ResourceAwareSelector_MissingResourceConfigKey(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agent := &oapi.JobAgent{
+		Id:   uuid.New().String(),
+		Name: "argo-agent",
+		Type: "argo-cd",
+		Config: oapi.JobAgentConfig{
+			"server": "https://argo.example.com",
+		},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.server == resource.config.argocd.serverUrl`
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "cluster-no-argocd",
+			Identifier: "cluster-no-argocd",
+			Kind:       "kubernetes",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+}
+
+func TestReconcile_ResourceAwareSelector_GetResourceFails(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agent := testAgent()
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.server == resource.config.argocd.serverUrl`
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resourceErr: fmt.Errorf("resource not found"),
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get resource")
+}

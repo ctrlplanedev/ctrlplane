@@ -210,13 +210,18 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 		return r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg)
 	}
 
+	resource, err := r.getter.GetResource(ctx, r.rt.ResourceID)
+	if err != nil {
+		return recordErr(span, "get resource", err)
+	}
+
 	allAgents, err := r.getter.ListJobAgentsByWorkspaceID(ctx, r.workspaceID)
 	if err != nil {
 		return recordErr(span, "list job agents", err)
 	}
 	span.SetAttributes(attribute.Int("workspace_agents.count", len(allAgents)))
 
-	matchedAgents, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, allAgents)
+	matchedAgents, err := selector.MatchJobAgentsWithResource(ctx, deployment.JobAgentSelector, allAgents, resource)
 	if err != nil {
 		return recordErr(span, "match job agents", err)
 	}

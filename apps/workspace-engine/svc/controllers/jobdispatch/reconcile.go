@@ -69,12 +69,22 @@ func getJobAgents(
 		return nil, fmt.Errorf("deployment job agent selector is empty")
 	}
 
+	resourceID, err := uuid.Parse(release.ReleaseTarget.ResourceId)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
+
+	resource, err := getter.GetResource(ctx, resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("get resource: %w", err)
+	}
+
 	allAgents, err := getter.ListJobAgentsByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("list job agents: %w", err)
 	}
 
-	matched, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, allAgents)
+	matched, err := selector.MatchJobAgentsWithResource(ctx, deployment.JobAgentSelector, allAgents, resource)
 	if err != nil {
 		return nil, fmt.Errorf("match job agents: %w", err)
 	}
