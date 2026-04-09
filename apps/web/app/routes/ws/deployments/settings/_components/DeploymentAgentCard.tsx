@@ -23,18 +23,14 @@ import {
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { ConfigEntry } from "~/components/config-entry";
-import { Skeleton } from "~/components/ui/skeleton";
-import { useJobAgent } from "../_hooks/job-agents";
 
-type DeploymentJobAgent = {
-  deploymentId: string;
-  jobAgentId: string;
+type JobAgent = {
+  id: string;
+  name: string;
+  type: string;
   config: Record<string, any>;
 };
 
-type DeploymentAgentCardProps = {
-  deploymentAgent: DeploymentJobAgent;
-};
 function TypeIcon({ type }: { type: string }) {
   if (type === "github-app") return <SiGithub className="size-8" />;
   if (type === "argo-cd")
@@ -42,26 +38,6 @@ function TypeIcon({ type }: { type: string }) {
   if (type === "tfe")
     return <SiTerraform className="size-8" color={SiTerraformHex} />;
   return <PlayIcon className="size-8" />;
-}
-
-function SkeletonCard() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <Skeleton className="h-4 w-24" />
-        </CardTitle>
-        <CardDescription>
-          <Skeleton className="h-4 w-24" />
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-      </CardContent>
-    </Card>
-  );
 }
 
 function ConfigExpanded({
@@ -120,29 +96,19 @@ function Config({
   );
 }
 
-export function DeploymentAgentCard({
-  deploymentAgent,
-}: DeploymentAgentCardProps) {
-  const { jobAgent, isLoading } = useJobAgent(deploymentAgent.jobAgentId);
-  if (isLoading) return <SkeletonCard />;
-  if (jobAgent == null) return null;
-
+export function DeploymentAgentCard({ agent }: { agent: JobAgent }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TypeIcon {...jobAgent} />
-          {jobAgent.name}
+          <TypeIcon type={agent.type} />
+          {agent.name}
         </CardTitle>
-        <CardDescription>{jobAgent.type}</CardDescription>
+        <CardDescription>{agent.type}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6 text-xs">
-        <Config config={jobAgent.config} label="Job Agent Config" />
-        <Config
-          config={deploymentAgent.config}
-          label="Deployment Agent Config"
-        />
+        <Config config={agent.config} label="Agent Config" />
       </CardContent>
     </Card>
   );

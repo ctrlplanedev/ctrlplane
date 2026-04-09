@@ -571,4 +571,28 @@ export const deploymentsRouter = router({
         };
       });
     }),
+
+  jobAgents: protectedProcedure
+    .input(z.object({ deploymentId: z.string() }))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .query(async ({ input }) => {
+      const result = await getClientFor().GET(
+        "/v1/deployments/{deploymentId}/job-agents",
+        { params: { path: { deploymentId: input.deploymentId } } },
+      );
+
+      if (result.error != null) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to list job agents for deployment: ${JSON.stringify(result.error)}`,
+        });
+      }
+
+      return result.data.items;
+    }),
 });

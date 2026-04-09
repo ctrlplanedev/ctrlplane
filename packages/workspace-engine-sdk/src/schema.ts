@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+  "/v1/deployments/{deploymentId}/job-agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get job agents matching a deployment selector */
+    get: operations["getJobAgentsForDeployment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments/{deploymentId}/release-targets": {
     parameters: {
       query?: never;
@@ -1342,6 +1359,40 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  getJobAgentsForDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the deployment */
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Job agents matching the deployment selector */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["JobAgent"][];
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   listReleaseTargets: {
     parameters: {
       query?: never;

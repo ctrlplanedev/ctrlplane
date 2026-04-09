@@ -12,7 +12,8 @@
     (import 'paths/release_targets.jsonnet') +
     (import 'paths/jobs.jsonnet') +
     (import 'paths/validate.jsonnet') +
-    (import 'paths/workflows.jsonnet'),
+    (import 'paths/workflows.jsonnet') +
+    (import 'paths/deployment.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),

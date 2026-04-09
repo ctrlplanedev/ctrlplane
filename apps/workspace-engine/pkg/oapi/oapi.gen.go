@@ -2452,6 +2452,9 @@ func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Get job agents matching a deployment selector
+	// (GET /v1/deployments/{deploymentId}/job-agents)
+	GetJobAgentsForDeployment(c *gin.Context, deploymentId string)
 	// List release targets for a deployment
 	// (GET /v1/deployments/{deploymentId}/release-targets)
 	ListReleaseTargets(c *gin.Context, deploymentId string)
@@ -2483,6 +2486,30 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// GetJobAgentsForDeployment operation middleware
+func (siw *ServerInterfaceWrapper) GetJobAgentsForDeployment(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobAgentsForDeployment(c, deploymentId)
+}
 
 // ListReleaseTargets operation middleware
 func (siw *ServerInterfaceWrapper) ListReleaseTargets(c *gin.Context) {
@@ -2705,6 +2732,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/job-agents", wrapper.GetJobAgentsForDeployment)
 	router.GET(options.BaseURL+"/v1/deployments/:deploymentId/release-targets", wrapper.ListReleaseTargets)
 	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)

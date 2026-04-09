@@ -3180,6 +3180,56 @@
    },
    "openapi": "3.0.0",
    "paths": {
+      "/v1/deployments/{deploymentId}/job-agents": {
+         "get": {
+            "operationId": "getJobAgentsForDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/JobAgent"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "required": [
+                              "items"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Job agents matching the deployment selector"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Get job agents matching a deployment selector"
+         }
+      },
       "/v1/deployments/{deploymentId}/release-targets": {
          "get": {
             "operationId": "listReleaseTargets",
