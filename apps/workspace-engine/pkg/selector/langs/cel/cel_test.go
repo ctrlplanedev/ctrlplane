@@ -15,10 +15,12 @@ func TestBuildEntityContext_AllNil(t *testing.T) {
 	require.Contains(t, ctx, "resource")
 	require.Contains(t, ctx, "deployment")
 	require.Contains(t, ctx, "environment")
+	require.Contains(t, ctx, "version")
 
 	assert.Equal(t, map[string]any{}, ctx["resource"])
 	assert.Equal(t, map[string]any{}, ctx["deployment"])
 	assert.Equal(t, map[string]any{}, ctx["environment"])
+	assert.Equal(t, map[string]any{}, ctx["version"])
 }
 
 func TestBuildEntityContext_AllPopulated(t *testing.T) {

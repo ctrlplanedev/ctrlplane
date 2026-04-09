@@ -11,7 +11,7 @@ import (
 )
 
 var compiledEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("resource", "deployment", "environment").
+	WithMapVariables("resource", "deployment", "environment", "version").
 	WithStandardExtensions().
 	BuildCached(12 * time.Hour)
 
@@ -89,6 +89,7 @@ func BuildEntityContext(r *oapi.Resource, d *oapi.Deployment, e *oapi.Environmen
 		"resource":    map[string]any{},
 		"deployment":  map[string]any{},
 		"environment": map[string]any{},
+		"version":     map[string]any{},
 	}
 	if r != nil {
 		ctx["resource"] = resourceToMap(r)
@@ -100,6 +101,11 @@ func BuildEntityContext(r *oapi.Resource, d *oapi.Deployment, e *oapi.Environmen
 		ctx["environment"] = environmentToMap(e)
 	}
 	return ctx
+}
+
+// DeploymentVersionToMap converts a DeploymentVersion to a CEL-evaluable map.
+func DeploymentVersionToMap(v *oapi.DeploymentVersion) map[string]any {
+	return deploymentVersionToMap(v)
 }
 
 // CompileProgram compiles a CEL expression into a Program using the shared
@@ -130,6 +136,10 @@ func structToMap(v any) (map[string]any, error) {
 		return jobToMap(entity), nil
 	case oapi.Job:
 		return jobToMap(&entity), nil
+	case *oapi.DeploymentVersion:
+		return deploymentVersionToMap(entity), nil
+	case oapi.DeploymentVersion:
+		return deploymentVersionToMap(&entity), nil
 	}
 
 	return celutil.EntityToMap(v)
@@ -197,6 +207,24 @@ func environmentToMap(e *oapi.Environment) map[string]any {
 	}
 	if e.ResourceSelector != nil {
 		m["resourceSelector"] = e.ResourceSelector
+	}
+	return m
+}
+
+func deploymentVersionToMap(v *oapi.DeploymentVersion) map[string]any {
+	m := make(map[string]any, 8)
+	m["id"] = v.Id
+	m["name"] = v.Name
+	m["tag"] = v.Tag
+	m["deploymentId"] = v.DeploymentId
+	m["status"] = v.Status
+	m["createdAt"] = v.CreatedAt
+	m["metadata"] = v.Metadata
+	if v.Metadata == nil {
+		m["metadata"] = make(map[string]any)
+	}
+	if v.Message != nil {
+		m["message"] = *v.Message
 	}
 	return m
 }

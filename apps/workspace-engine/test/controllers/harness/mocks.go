@@ -128,7 +128,7 @@ type DesiredReleaseGetter struct {
 	ReleaseTargetsByResource    map[string][]*oapi.ReleaseTarget
 	AllReleaseTargetsList       []*oapi.ReleaseTarget
 	JobsByReleaseTarget         map[string]map[string]*oapi.Job
-	LatestCompletedJobs         map[string]*oapi.Job
+	CurrentlyDeployedVersions   map[string]*oapi.DeploymentVersion
 	JobVerificationStatuses     map[string]oapi.JobVerificationStatus
 	Deployments                 map[string]*oapi.Deployment
 	Environments                map[string]*oapi.Environment
@@ -405,12 +405,13 @@ func (g *DesiredReleaseGetter) GetReleaseTargetsForResource(
 	return nil
 }
 
-func (g *DesiredReleaseGetter) GetLatestCompletedJobForReleaseTarget(
+func (g *DesiredReleaseGetter) GetCurrentlyDeployedVersion(
+	_ context.Context,
 	rt *oapi.ReleaseTarget,
-) *oapi.Job {
-	if g.LatestCompletedJobs != nil {
+) *oapi.DeploymentVersion {
+	if g.CurrentlyDeployedVersions != nil {
 		key := rt.DeploymentId + ":" + rt.EnvironmentId + ":" + rt.ResourceId
-		return g.LatestCompletedJobs[key]
+		return g.CurrentlyDeployedVersions[key]
 	}
 	return nil
 }

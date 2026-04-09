@@ -6,8 +6,9 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
+	cel "workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 )
@@ -48,61 +49,6 @@ func (e *DeploymentDependencyEvaluator) Complexity() int {
 	return 3
 }
 
-func (e *DeploymentDependencyEvaluator) findMatchingDeployments(
-	ctx context.Context,
-	scope evaluator.EvaluatorScope,
-) ([]*oapi.Deployment, error) {
-	deploymentSelector := e.rule.DependsOn
-	deployments, err := e.getters.GetAllDeployments(ctx, scope.Environment.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get deployments: %w", err)
-	}
-	matchingDeployments := make([]*oapi.Deployment, 0)
-	for _, deployment := range deployments {
-		matched, err := selector.Match(ctx, deploymentSelector, deployment)
-		if err != nil {
-			return nil, fmt.Errorf("failed to match deployment selector: %w", err)
-		}
-		if matched {
-			matchingDeployments = append(matchingDeployments, deployment)
-		}
-	}
-	return matchingDeployments, nil
-}
-
-func (e *DeploymentDependencyEvaluator) getUpstreamReleaseTargets(
-	ctx context.Context,
-	matchingDeployments []*oapi.Deployment,
-	resourceID string,
-) []*oapi.ReleaseTarget {
-	upstreamReleaseTargets := make([]*oapi.ReleaseTarget, 0, len(matchingDeployments))
-	resourceTargets := e.getters.GetReleaseTargetsForResource(ctx, resourceID)
-	deploymentToTargetMap := make(map[string]*oapi.ReleaseTarget)
-
-	for _, resourceTarget := range resourceTargets {
-		deploymentToTargetMap[resourceTarget.DeploymentId] = resourceTarget
-	}
-
-	for _, matchingDeployment := range matchingDeployments {
-		if target, ok := deploymentToTargetMap[matchingDeployment.Id]; ok {
-			upstreamReleaseTargets = append(upstreamReleaseTargets, target)
-		}
-	}
-
-	return upstreamReleaseTargets
-}
-
-func (e *DeploymentDependencyEvaluator) checkUpstreamTargetHasSuccessfulRelease(
-	upstreamReleaseTarget *oapi.ReleaseTarget,
-) bool {
-	latestJob := e.getters.GetLatestCompletedJobForReleaseTarget(upstreamReleaseTarget)
-	if latestJob == nil {
-		return false
-	}
-
-	return latestJob.Status == oapi.JobStatusSuccessful && latestJob.CompletedAt != nil
-}
-
 func (e *DeploymentDependencyEvaluator) Evaluate(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
@@ -117,55 +63,52 @@ func (e *DeploymentDependencyEvaluator) Evaluate(
 		attribute.String("dependsOn", dependsOn),
 	)
 
-	matchingDeployments, err := e.findMatchingDeployments(ctx, scope)
+	program, err := cel.CompileProgram(dependsOn)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(
-			fmt.Sprintf("Deployment dependency: failed to find matching deployments: %v", err),
+			fmt.Sprintf("Deployment dependency: failed to compile selector: %v", err),
 		).
 			WithDetail("error", err.Error()).
-			WithDetail("deployment_id", scope.Deployment.Id)
-	}
-
-	if len(matchingDeployments) == 0 {
-		return results.NewDeniedResult(
-			fmt.Sprintf(
-				"Deployment dependency: no matching deployments found for selector: %v",
-				dependsOn,
-			),
-		).
 			WithDetail("depends_on", dependsOn)
 	}
 
-	upstreamReleaseTargets := e.getUpstreamReleaseTargets(
-		ctx,
-		matchingDeployments,
-		scope.Resource.Id,
-	)
-	if len(upstreamReleaseTargets) != cap(upstreamReleaseTargets) {
-		return results.NewDeniedResult(
-			fmt.Sprintf(
-				"Deployment dependency: some upstream release targets not found for resource: %v",
-				scope.Resource.Id,
-			),
-		).
-			WithDetail("depends_on", dependsOn)
-	}
+	releaseTargets := e.getters.GetReleaseTargetsForResource(ctx, scope.Resource.Id)
 
-	for _, upstreamReleaseTarget := range upstreamReleaseTargets {
-		if !e.checkUpstreamTargetHasSuccessfulRelease(upstreamReleaseTarget) {
-			return results.NewDeniedResult(
+	for _, rt := range releaseTargets {
+		deployment, err := e.getters.GetDeployment(ctx, rt.DeploymentId)
+		if err != nil || deployment == nil {
+			continue
+		}
+
+		version := e.getters.GetCurrentlyDeployedVersion(ctx, rt)
+		if version == nil {
+			continue
+		}
+
+		celCtx := cel.BuildEntityContext(nil, deployment, nil)
+		celCtx["version"] = cel.DeploymentVersionToMap(version)
+		matched, err := celutil.EvalBool(program, celCtx)
+		if err != nil {
+			continue
+		}
+
+		if matched {
+			return results.NewAllowedResult(
 				fmt.Sprintf(
-					"Deployment dependency: upstream release target %s has no successful release",
-					upstreamReleaseTarget.Key(),
+					"Deployment dependency: upstream %s has matching deployed version %s",
+					deployment.Name,
+					version.Tag,
 				),
-			).
-				WithDetail("upstream_release_target_key", upstreamReleaseTarget.Key())
+			)
 		}
 	}
 
-	return results.
-		NewAllowedResult(
-			"Deployment dependency: all upstream release targets have successful releases",
-		)
+	return results.NewDeniedResult(
+		fmt.Sprintf(
+			"Deployment dependency: no upstream release target with a successful release matches selector: %s",
+			dependsOn,
+		),
+	).
+		WithDetail("depends_on", dependsOn)
 }

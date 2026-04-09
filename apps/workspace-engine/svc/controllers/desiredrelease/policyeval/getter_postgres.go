@@ -63,8 +63,9 @@ func (g *PostgresGetter) GetReleaseTargetsForResource(
 	return g.deploymentdependency.GetReleaseTargetsForResource(ctx, resourceID)
 }
 
-func (g *PostgresGetter) GetLatestCompletedJobForReleaseTarget(
-	releaseTarget *oapi.ReleaseTarget,
-) *oapi.Job {
-	return g.deploymentdependency.GetLatestCompletedJobForReleaseTarget(releaseTarget)
+func (g *PostgresGetter) GetCurrentlyDeployedVersion(
+	ctx context.Context,
+	rt *oapi.ReleaseTarget,
+) *oapi.DeploymentVersion {
+	return g.deploymentdependency.GetCurrentlyDeployedVersion(ctx, rt)
 }
