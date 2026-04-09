@@ -86,23 +86,117 @@ For self-hosted options, see our [installation guide](https://docs.ctrlplane.dev
 
 ## 🛠️ Contributing
 
-### Local Setup
+We welcome contributions! This section covers everything you need to get the project running locally and start contributing.
 
-#### Prereqs
+### Prerequisites
 
-- Docker engine installed and running
-- [Flox](https://flox.dev/docs/install-flox/install/) installed
+- [Docker](https://docs.docker.com/get-docker/) engine installed and running
+- [Flox](https://flox.dev/docs/install-flox/install/) installed (manages Node.js, pnpm, Go, and other tooling)
+- [pnpm](https://pnpm.io/installation) (if not using Flox)
+- [Go 1.22+](https://go.dev/dl/) (only needed if working on `workspace-engine` or `relay`)
+
+### First-Time Setup
 
 ```bash
 git clone https://github.com/ctrlplanedev/ctrlplane.git
 cd ctrlplane
 
+# Activate the Flox environment (installs all required tooling)
 flox activate
+
+# Start local services (PostgreSQL, etc.)
 docker compose -f docker-compose.dev.yaml up -d
+
+# Install dependencies and build all packages
 pnpm i && pnpm build
-cd packages/db && pnpm migrate && cd ../..
+
+# Apply database migrations
+pnpm -F @ctrlplane/db migrate
+
+# Start all dev servers
 pnpm dev
 ```
+
+> **Reset everything** (wipe volumes and start fresh):
+> ```bash
+> docker compose -f docker-compose.dev.yaml down -v
+> docker compose -f docker-compose.dev.yaml up -d
+> pnpm -F @ctrlplane/db migrate
+> pnpm dev
+> ```
+
+### Day-to-Day Development
+
+| Command | Description |
+|---|---|
+| `pnpm dev` | Start all dev servers |
+| `pnpm build` | Build all packages |
+| `pnpm test` | Run all TypeScript tests |
+| `pnpm lint` | Lint all TypeScript code |
+| `pnpm format:fix` | Auto-format all TypeScript code |
+| `pnpm typecheck` | TypeScript type check across all packages |
+| `pnpm -F <package> test` | Run tests for a specific package |
+| `pnpm -F <package> test -- -t "test name"` | Run a specific test by name |
+
+### Database
+
+```bash
+pnpm -F @ctrlplane/db migrate   # Run migrations
+pnpm -F @ctrlplane/db push      # Apply schema changes without a migration file (dev only)
+pnpm -F @ctrlplane/db studio    # Open Drizzle Studio UI
+```
+
+### E2E Tests (Playwright)
+
+```bash
+cd e2e
+pnpm exec playwright test                                         # Run all e2e tests
+pnpm exec playwright test tests/api/resources.spec.ts             # Run a specific file
+pnpm test:api                                                     # Run all API tests
+pnpm test:debug                                                   # Run in debug mode
+```
+
+### workspace-engine (Go)
+
+```bash
+cd apps/workspace-engine
+go run ./...                          # Run without building
+go build -o ./bin/workspace-engine .  # Build binary
+go test ./...                         # Run tests
+golangci-lint run                     # Lint
+go fmt ./...                          # Format
+```
+
+### Monorepo Structure
+
+```text
+apps/
+  api/              # Node.js/Express REST API — core business logic
+  web/              # React 19 + React Router frontend
+  workspace-engine/ # Go reconciliation engine
+  relay/            # Go WebSocket relay for agent communication
+packages/
+  db/               # Drizzle ORM schema + migrations (PostgreSQL)
+  trpc/             # tRPC server setup
+  auth/             # Authentication integration
+integrations/       # External service adapters
+e2e/                # Playwright end-to-end tests
+```
+
+### Code Style
+
+- **TypeScript**: explicit types, `interface` for public APIs, `async/await`, named imports
+- **React**: functional components only, typed as `const Foo: React.FC<Props> = () => {}`
+- **Tests**: vitest with typed fixtures
+- **Go**: follow `apps/workspace-engine/CLAUDE.md` guidelines
+- Run `pnpm lint` and `pnpm format:fix` before submitting a PR
+
+### Opening a Pull Request
+
+1. Fork the repo and create a branch from `main`
+2. Make your changes, add tests where applicable
+3. Run `pnpm test`, `pnpm lint`, and `pnpm typecheck` to verify everything passes
+4. Open a PR against `main` with a clear description of what changed and why
 
 ## :heart: Community
 
