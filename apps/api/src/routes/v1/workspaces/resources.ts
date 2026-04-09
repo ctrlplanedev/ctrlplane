@@ -36,10 +36,7 @@ const listResources: AsyncTypedHandler<
   const limit = rawLimit ?? 1000;
   const offset = rawOffset ?? 0;
 
-  const decodedCel =
-    typeof cel === "string" ? decodeURIComponent(cel.replace(/\+/g, " ")) : cel;
-
-  const isValid = validResourceSelector(decodedCel);
+  const isValid = validResourceSelector(cel);
   if (!isValid) {
     res.status(400).json({ error: "Invalid resource selector" });
     return;
@@ -51,8 +48,8 @@ const listResources: AsyncTypedHandler<
     .where(eq(schema.resource.workspaceId, workspaceId));
 
   const filteredResources = allResources.filter((resource) => {
-    if (decodedCel == null) return true;
-    const matches = evaluate(decodedCel, { resource });
+    if (cel == null) return true;
+    const matches = evaluate(cel, { resource });
     return matches;
   });
 
