@@ -21,6 +21,8 @@ type mockGetter struct {
 	releaseErr              error
 	deployment              *oapi.Deployment
 	deploymentErr           error
+	resource                *oapi.Resource
+	resourceErr             error
 	jobAgents               map[string]*oapi.JobAgent
 	jobAgentErr             error
 	workspaceAgents         []oapi.JobAgent
@@ -38,6 +40,16 @@ func (m *mockGetter) GetRelease(_ context.Context, _ uuid.UUID) (*oapi.Release, 
 
 func (m *mockGetter) GetDeployment(_ context.Context, _ uuid.UUID) (*oapi.Deployment, error) {
 	return m.deployment, m.deploymentErr
+}
+
+func (m *mockGetter) GetResource(_ context.Context, _ uuid.UUID) (*oapi.Resource, error) {
+	if m.resource != nil || m.resourceErr != nil {
+		return m.resource, m.resourceErr
+	}
+	return &oapi.Resource{
+		Config:   map[string]any{},
+		Metadata: map[string]string{},
+	}, nil
 }
 
 func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgent, error) {

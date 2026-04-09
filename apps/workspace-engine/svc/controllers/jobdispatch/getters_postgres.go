@@ -59,6 +59,17 @@ func (p *PostgresGetter) GetDeployment(
 	return db.ToOapiDeployment(row), nil
 }
 
+func (p *PostgresGetter) GetResource(
+	ctx context.Context,
+	resourceID uuid.UUID,
+) (*oapi.Resource, error) {
+	row, err := db.GetQueries(ctx).GetResourceByID(ctx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	return db.ToOapiResource(row), nil
+}
+
 func (p *PostgresGetter) ListJobAgentsByWorkspaceID(
 	ctx context.Context,
 	workspaceID uuid.UUID,

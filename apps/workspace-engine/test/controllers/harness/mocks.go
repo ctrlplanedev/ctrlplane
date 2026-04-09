@@ -615,6 +615,16 @@ func (g *JobDispatchGetter) GetDeployment(
 	return g.Deployment, nil
 }
 
+func (g *JobDispatchGetter) GetResource(
+	_ context.Context,
+	_ uuid.UUID,
+) (*oapi.Resource, error) {
+	return &oapi.Resource{
+		Config:   map[string]any{},
+		Metadata: map[string]string{},
+	}, nil
+}
+
 func (g *JobDispatchGetter) GetJobAgent(
 	_ context.Context,
 	jobAgentID uuid.UUID,

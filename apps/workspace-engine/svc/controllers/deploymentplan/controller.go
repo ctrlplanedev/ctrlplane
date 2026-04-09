@@ -79,12 +79,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("list job agents: %w", err)
 	}
 
-	matchedAgents, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, allAgents)
-	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("match job agents: %w", err)
-	}
-
-	if len(matchedAgents) == 0 {
+	if len(allAgents) == 0 {
 		if err := c.setter.CompletePlan(ctx, planID); err != nil {
 			return reconcile.Result{}, fmt.Errorf("mark plan completed: %w", err)
 		}
@@ -122,7 +117,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			ctx,
 			plan,
 			deployment,
-			matchedAgents,
+			allAgents,
 			version,
 			target,
 		); err != nil {
@@ -161,6 +156,20 @@ func (c *Controller) processTarget(
 		return fmt.Errorf("get resource %s: %w", target.ResourceID, err)
 	}
 
+	matchedAgents, err := selector.MatchJobAgentsWithResource(
+		ctx,
+		deployment.JobAgentSelector,
+		agents,
+		resource,
+	)
+	if err != nil {
+		return fmt.Errorf("match job agents for resource %s: %w", target.ResourceID, err)
+	}
+
+	if len(matchedAgents) == 0 {
+		return nil
+	}
+
 	scope := &variableresolver.Scope{
 		Resource:    resource,
 		Deployment:  deployment,
@@ -174,8 +183,8 @@ func (c *Controller) processTarget(
 		return fmt.Errorf("resolve variables: %w", err)
 	}
 
-	for i := range agents {
-		agent := &agents[i]
+	for i := range matchedAgents {
+		agent := &matchedAgents[i]
 
 		mergedConfig := oapi.DeepMergeConfigs(
 			agent.Config, deployment.JobAgentConfig, version.JobAgentConfig,

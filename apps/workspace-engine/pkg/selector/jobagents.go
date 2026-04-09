@@ -9,8 +9,8 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-var jobAgentEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariable("jobAgent").
+var jobAgentWithResourceEnv, _ = celutil.NewEnvBuilder().
+	WithMapVariables("jobAgent", "resource").
 	WithStandardExtensions().
 	BuildCached(12 * time.Hour)
 
@@ -27,13 +27,41 @@ func jobAgentToMap(a *oapi.JobAgent) map[string]any {
 	return m
 }
 
-// MatchJobAgents evaluates a CEL job agent selector against a list of job
-// agents and returns those that match. If the selector is empty or "false",
-// no agents match.
-func MatchJobAgents(
-	ctx context.Context,
+func resourceToMap(r *oapi.Resource) map[string]any {
+	m := make(map[string]any, 13)
+	m["id"] = r.Id
+	m["identifier"] = r.Identifier
+	m["name"] = r.Name
+	m["kind"] = r.Kind
+	m["version"] = r.Version
+	m["workspaceId"] = r.WorkspaceId
+	m["config"] = r.Config
+	m["metadata"] = r.Metadata
+	m["createdAt"] = r.CreatedAt
+	if r.ProviderId != nil {
+		m["providerId"] = *r.ProviderId
+	}
+	if r.UpdatedAt != nil {
+		m["updatedAt"] = *r.UpdatedAt
+	}
+	if r.DeletedAt != nil {
+		m["deletedAt"] = *r.DeletedAt
+	}
+	if r.LockedAt != nil {
+		m["lockedAt"] = *r.LockedAt
+	}
+	return m
+}
+
+// MatchJobAgentsWithResource evaluates a CEL job agent selector against a list
+// of job agents with the resource available in the CEL context, and returns
+// those that match. This allows selectors to reference resource properties,
+// e.g. "jobAgent.config.server == resource.config.argocd.serverUrl".
+func MatchJobAgentsWithResource(
+	_ context.Context,
 	selector string,
 	agents []oapi.JobAgent,
+	resource *oapi.Resource,
 ) ([]oapi.JobAgent, error) {
 	if selector == "" || selector == "false" {
 		return nil, nil
@@ -43,15 +71,18 @@ func MatchJobAgents(
 		return agents, nil
 	}
 
-	prg, err := jobAgentEnv.Compile(selector)
+	prg, err := jobAgentWithResourceEnv.Compile(selector)
 	if err != nil {
 		return nil, fmt.Errorf("compile job agent selector: %w", err)
 	}
+
+	resourceMap := resourceToMap(resource)
 
 	var matched []oapi.JobAgent
 	for i := range agents {
 		vars := map[string]any{
 			"jobAgent": jobAgentToMap(&agents[i]),
+			"resource": resourceMap,
 		}
 		ok, err := celutil.EvalBool(prg, vars)
 		if err != nil {

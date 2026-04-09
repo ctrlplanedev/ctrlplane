@@ -45,14 +45,43 @@ func (d *Deployments) GetJobAgentsForDeployment(c *gin.Context, deploymentId str
 		oapiAgents[i] = *db.ToOapiJobAgent(row)
 	}
 
-	matched, err := selector.MatchJobAgents(ctx, deployment.JobAgentSelector, oapiAgents)
+	releaseTargets, err := queries.GetReleaseTargetsForDeployment(ctx, deploymentUUID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to evaluate selector: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get release targets"})
 		return
 	}
 
-	if matched == nil {
-		matched = []oapi.JobAgent{}
+	agentSet := make(map[string]oapi.JobAgent)
+
+	for _, rt := range releaseTargets {
+		resourceRow, err := queries.GetResourceByID(ctx, rt.ResourceID)
+		if err != nil {
+			continue
+		}
+		resource := db.ToOapiResource(resourceRow)
+
+		agents, err := selector.MatchJobAgentsWithResource(
+			ctx,
+			deployment.JobAgentSelector,
+			oapiAgents,
+			resource,
+		)
+		if err != nil {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "Failed to evaluate selector: " + err.Error()},
+			)
+			return
+		}
+
+		for _, agent := range agents {
+			agentSet[agent.Id] = agent
+		}
+	}
+
+	matched := make([]oapi.JobAgent, 0, len(agentSet))
+	for _, agent := range agentSet {
+		matched = append(matched, agent)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"items": matched})
