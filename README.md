@@ -27,7 +27,7 @@
 
 Your CI builds code. Your clusters run it. Ctrlplane decides _when_ releases are ready, _where_ they should deploy, and _what gates_ they must pass—handling environment promotion, verification, approvals, and rollbacks automatically.
 
-```
+```text
 Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
  (builds)          (orchestrates)           (deploys)
 ```
@@ -80,7 +80,7 @@ For self-hosted options, see our [installation guide](https://docs.ctrlplane.dev
 ## 📚 Documentation
 
 - [Quickstart](https://docs.ctrlplane.dev/quickstart) — Deploy your first service in 15 minutes
-- [Core Concepts](https://docs.ctrlplane.dev/concepts/introduction) — Systems, deployments, environments, resources
+- [Core Concepts](https://docs.ctrlplane.dev/concepts/overview) — Systems, deployments, environments, resources
 - [Policies](https://docs.ctrlplane.dev/policies/overview) — Approvals, verification, gradual rollouts
 - [Integrations](https://docs.ctrlplane.dev/integrations/cicd) — GitHub Actions, ArgoCD, Kubernetes
 
