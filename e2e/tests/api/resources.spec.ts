@@ -284,6 +284,295 @@ test.describe("Resource API", () => {
     );
   });
 
+  test("should filter resources with CEL containing + character", async ({
+    api,
+    workspace,
+  }) => {
+    const suffix = faker.string.alphanumeric(8);
+    const identifier = `res-plus-${suffix}`;
+    const kind = `Kind+Plus-${suffix}`;
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Plus Resource",
+          kind,
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: { cel: `resource.kind == "${kind}"` },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier)).toBe(
+      true,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should filter resources with CEL containing % character", async ({
+    api,
+    workspace,
+  }) => {
+    const identifier = `res-pct-${faker.string.alphanumeric(8)}`;
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "100% Complete",
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: { cel: 'resource.name == "100% Complete"' },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier)).toBe(
+      true,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should filter resources with CEL containing literal %20", async ({
+    api,
+    workspace,
+  }) => {
+    const suffix = faker.string.alphanumeric(8);
+    const identifier = `res-pct20-${suffix}`;
+    const kind = `Kind%20Space-${suffix}`;
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name: "Pct20 Resource",
+          kind,
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: { cel: `resource.kind == "${kind}"` },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier)).toBe(
+      true,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should filter resources with CEL containing & and = characters", async ({
+    api,
+    workspace,
+  }) => {
+    const suffix = faker.string.alphanumeric(8);
+    const identifier = `res-amp-${suffix}`;
+    const name = `a&b=c-${suffix}`;
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+        body: {
+          name,
+          kind: "TestKind",
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: { cel: `resource.name == "${name}"` },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier)).toBe(
+      true,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier },
+        },
+      },
+    );
+  });
+
+  test("should return 400 for invalid CEL expression", async ({
+    api,
+    workspace,
+  }) => {
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: { cel: "this is not valid cel ===!!!" },
+      },
+    });
+
+    expect(listRes.response.status).toBe(400);
+  });
+
+  test("should return empty results when CEL matches no resources", async ({
+    api,
+    workspace,
+  }) => {
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: {
+          cel: `resource.kind == "NonExistentKind-${faker.string.alphanumeric(16)}"`,
+        },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items).toHaveLength(0);
+    expect(listRes.data!.total).toBe(0);
+  });
+
+  test("should filter resources with compound CEL expression", async ({
+    api,
+    workspace,
+  }) => {
+    const identifier1 = `res-comp-a-${faker.string.alphanumeric(8)}`;
+    const identifier2 = `res-comp-b-${faker.string.alphanumeric(8)}`;
+    const kind = `CompoundKind-${faker.string.alphanumeric(6)}`;
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier1 },
+        },
+        body: {
+          name: "Compound Match",
+          kind,
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier2 },
+        },
+        body: {
+          name: "Compound NoMatch",
+          kind,
+          version: "1.0.0",
+          config: {},
+          metadata: {},
+        },
+      },
+    );
+
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
+      params: {
+        path: { workspaceId: workspace.id },
+        query: {
+          cel: `resource.kind == "${kind}" && resource.name == "Compound Match"`,
+        },
+      },
+    });
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((r) => r.identifier === identifier1)).toBe(
+      true,
+    );
+    expect(listRes.data!.items.some((r) => r.identifier === identifier2)).toBe(
+      false,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier1 },
+        },
+      },
+    );
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier2 },
+        },
+      },
+    );
+  });
+
   test("should upsert a resource with variables", async ({
     api,
     workspace,
