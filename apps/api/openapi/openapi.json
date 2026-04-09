@@ -565,6 +565,40 @@
          },
          "DeploymentPlanTarget": {
             "properties": {
+               "environmentId": {
+                  "type": "string"
+               },
+               "environmentName": {
+                  "type": "string"
+               },
+               "hasChanges": {
+                  "description": "True if any result for this target has changes",
+                  "type": "boolean"
+               },
+               "resourceId": {
+                  "type": "string"
+               },
+               "resourceName": {
+                  "type": "string"
+               },
+               "results": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentPlanTargetResult"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "environmentId",
+               "environmentName",
+               "resourceId",
+               "resourceName",
+               "results"
+            ],
+            "type": "object"
+         },
+         "DeploymentPlanTargetResult": {
+            "properties": {
                "contentHash": {
                   "description": "Hash of the rendered output for change detection",
                   "type": "string"
@@ -573,24 +607,18 @@
                   "description": "Full rendered output of the currently deployed state",
                   "type": "string"
                },
-               "environmentId": {
-                  "type": "string"
-               },
-               "environmentName": {
-                  "type": "string"
-               },
                "hasChanges": {
-                  "nullable": true,
                   "type": "boolean"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "description": "Agent message (e.g. error explanation or summary)",
+                  "type": "string"
                },
                "proposed": {
                   "description": "Full rendered output of the proposed version",
-                  "type": "string"
-               },
-               "resourceId": {
-                  "type": "string"
-               },
-               "resourceName": {
                   "type": "string"
                },
                "status": {
@@ -604,10 +632,7 @@
                }
             },
             "required": [
-               "environmentId",
-               "environmentName",
-               "resourceId",
-               "resourceName",
+               "id",
                "status"
             ],
             "type": "object"
