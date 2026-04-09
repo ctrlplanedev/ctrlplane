@@ -18,7 +18,8 @@ local openapi = import '../lib/openapi.libsonnet';
                    },
                    required: ['items'],
                  }, 'Job agents matching the deployment selector')
-                 + openapi.badRequestResponse(),
+                 + openapi.badRequestResponse()
+                 + openapi.notFoundResponse(),
     },
   },
 }
