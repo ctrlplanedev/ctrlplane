@@ -288,9 +288,7 @@ test.describe("Resource API", () => {
     api,
     workspace,
   }) => {
-    const suffix = faker.string.alphanumeric(8);
-    const identifier = `res-plus-${suffix}`;
-    const kind = `Kind+Plus-${suffix}`;
+    const identifier = `res-plus-${faker.string.alphanumeric(8)}`;
 
     await api.PUT(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -300,10 +298,10 @@ test.describe("Resource API", () => {
         },
         body: {
           name: "Plus Resource",
-          kind,
+          kind: "TestKind",
           version: "1.0.0",
           config: {},
-          metadata: {},
+          metadata: { tag: "a+b" },
         },
       },
     );
@@ -311,7 +309,7 @@ test.describe("Resource API", () => {
     const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: {
         path: { workspaceId: workspace.id },
-        query: { cel: `resource.kind == "${kind}"` },
+        query: { cel: 'resource.metadata["tag"] == "a+b"' },
       },
     });
 
@@ -374,23 +372,38 @@ test.describe("Resource API", () => {
     );
   });
 
-  test("should filter resources with CEL containing literal %20", async ({
+  test("should skip resources where CEL references a missing metadata key", async ({
     api,
     workspace,
   }) => {
-    const suffix = faker.string.alphanumeric(8);
-    const identifier = `res-pct20-${suffix}`;
-    const kind = `Kind%20Space-${suffix}`;
+    const identifier1 = `res-haskey-${faker.string.alphanumeric(8)}`;
+    const identifier2 = `res-nokey-${faker.string.alphanumeric(8)}`;
 
     await api.PUT(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
         params: {
-          path: { workspaceId: workspace.id, identifier },
+          path: { workspaceId: workspace.id, identifier: identifier1 },
         },
         body: {
-          name: "Pct20 Resource",
-          kind,
+          name: "Has Key",
+          kind: "MissingKeyTest",
+          version: "1.0.0",
+          config: {},
+          metadata: { env: "production" },
+        },
+      },
+    );
+
+    await api.PUT(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier2 },
+        },
+        body: {
+          name: "No Key",
+          kind: "MissingKeyTest",
           version: "1.0.0",
           config: {},
           metadata: {},
@@ -401,20 +414,31 @@ test.describe("Resource API", () => {
     const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: {
         path: { workspaceId: workspace.id },
-        query: { cel: `resource.kind == "${kind}"` },
+        query: { cel: 'resource.metadata["env"] == "production"' },
       },
     });
 
     expect(listRes.response.status).toBe(200);
-    expect(listRes.data!.items.some((r) => r.identifier === identifier)).toBe(
-      true,
-    );
+    expect(
+      listRes.data!.items.some((r) => r.identifier === identifier1),
+    ).toBe(true);
+    expect(
+      listRes.data!.items.some((r) => r.identifier === identifier2),
+    ).toBe(false);
 
     await api.DELETE(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
         params: {
-          path: { workspaceId: workspace.id, identifier },
+          path: { workspaceId: workspace.id, identifier: identifier1 },
+        },
+      },
+    );
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, identifier: identifier2 },
         },
       },
     );
@@ -424,9 +448,7 @@ test.describe("Resource API", () => {
     api,
     workspace,
   }) => {
-    const suffix = faker.string.alphanumeric(8);
-    const identifier = `res-amp-${suffix}`;
-    const name = `a&b=c-${suffix}`;
+    const identifier = `res-amp-${faker.string.alphanumeric(8)}`;
 
     await api.PUT(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -435,11 +457,11 @@ test.describe("Resource API", () => {
           path: { workspaceId: workspace.id, identifier },
         },
         body: {
-          name,
+          name: "Amp Resource",
           kind: "TestKind",
           version: "1.0.0",
           config: {},
-          metadata: {},
+          metadata: { "a&b": "x=y" },
         },
       },
     );
@@ -447,7 +469,7 @@ test.describe("Resource API", () => {
     const listRes = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: {
         path: { workspaceId: workspace.id },
-        query: { cel: `resource.name == "${name}"` },
+        query: { cel: 'resource.metadata["a&b"] == "x=y"' },
       },
     });
 

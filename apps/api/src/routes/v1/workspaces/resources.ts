@@ -49,8 +49,11 @@ const listResources: AsyncTypedHandler<
 
   const filteredResources = allResources.filter((resource) => {
     if (cel == null) return true;
-    const matches = evaluate(cel, { resource });
-    return matches;
+    try {
+      return evaluate(cel, { resource });
+    } catch {
+      return false;
+    }
   });
 
   const total = filteredResources.length;
