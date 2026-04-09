@@ -166,7 +166,12 @@ export default function ReleaseTargetsPage() {
       jobStatus == null || camelCase(rt.latestJob?.status ?? "") === jobStatus;
     const isMatchingVersion =
       version === "all" || rt.currentVersion?.id === version;
-    return isMatchingJobStatus && isMatchingVersion;
+    const q = searchDebounced.toLowerCase();
+    const isMatchingSearch =
+      q === "" ||
+      rt.resource.name.toLowerCase().includes(q) ||
+      rt.resource.identifier.toLowerCase().includes(q);
+    return isMatchingJobStatus && isMatchingVersion && isMatchingSearch;
   });
 
   const groupByEnvironmentId = _.groupBy(
