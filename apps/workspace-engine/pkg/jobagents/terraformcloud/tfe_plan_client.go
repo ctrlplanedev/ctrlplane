@@ -11,6 +11,7 @@ import (
 // GoWorkspaceSetup is the production implementation of WorkspaceSetup.
 type GoWorkspaceSetup struct{}
 
+// Setup provisions the TFC workspace (upsert + variable sync) and returns its ID.
 func (g *GoWorkspaceSetup) Setup(
 	ctx context.Context,
 	dispatchCtx *oapi.DispatchContext,
@@ -47,6 +48,7 @@ func (g *GoWorkspaceSetup) Setup(
 // GoSpeculativeRunner is the production implementation of SpeculativeRunner.
 type GoSpeculativeRunner struct{}
 
+// CreateSpeculativeRun creates a plan-only run on the given workspace and returns the run ID.
 func (g *GoSpeculativeRunner) CreateSpeculativeRun(
 	ctx context.Context,
 	cfg *tfeConfig,
@@ -70,6 +72,7 @@ func (g *GoSpeculativeRunner) CreateSpeculativeRun(
 	return run.ID, nil
 }
 
+// ReadRunStatus reads the current status of a TFC run and maps it to a RunStatus.
 func (g *GoSpeculativeRunner) ReadRunStatus(
 	ctx context.Context,
 	cfg *tfeConfig,
@@ -99,13 +102,14 @@ func (g *GoSpeculativeRunner) ReadRunStatus(
 	switch run.Status {
 	case tfe.RunPlannedAndFinished:
 		status.IsFinished = true
-	case tfe.RunErrored, tfe.RunCanceled, tfe.RunDiscarded:
+	case tfe.RunErrored, tfe.RunCanceled, tfe.RunDiscarded, tfe.RunPolicySoftFailed:
 		status.IsErrored = true
 	}
 
 	return status, nil
 }
 
+// ReadPlanJSON fetches the JSON output of a completed plan.
 func (g *GoSpeculativeRunner) ReadPlanJSON(
 	ctx context.Context,
 	cfg *tfeConfig,

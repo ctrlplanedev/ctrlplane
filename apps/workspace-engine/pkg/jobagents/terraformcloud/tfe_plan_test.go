@@ -238,7 +238,7 @@ func TestPlan_PlannedAndFinished_NoChanges(t *testing.T) {
 	require.NotNil(t, result.CompletedAt)
 	assert.False(t, result.HasChanges)
 	assert.NotEmpty(t, result.ContentHash)
-	assert.Equal(t, string(planJSON), result.Proposed)
+	assert.JSONEq(t, string(planJSON), result.Proposed)
 	assert.Contains(t, result.Message, "+0 ~0 -0")
 }
 
