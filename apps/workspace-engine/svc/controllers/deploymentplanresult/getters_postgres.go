@@ -5,9 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
+	"workspace-engine/pkg/jobagents"
+	"workspace-engine/pkg/jobagents/argo"
+	"workspace-engine/pkg/jobagents/testrunner"
 )
 
 type PostgresGetter struct{}

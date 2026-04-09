@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/jobagents"
+	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 // --- mocks ---

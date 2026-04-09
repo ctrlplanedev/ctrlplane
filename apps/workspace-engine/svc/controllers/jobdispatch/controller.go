@@ -12,15 +12,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/jobagents"
+	"workspace-engine/pkg/jobagents/argo"
+	argoworkflow "workspace-engine/pkg/jobagents/argoworkflows"
+	"workspace-engine/pkg/jobagents/github"
+	"workspace-engine/pkg/jobagents/terraformcloud"
+	"workspace-engine/pkg/jobagents/testrunner"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/argo"
-	argoworkflow "workspace-engine/svc/controllers/jobdispatch/jobagents/argoworkflows"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/github"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/terraformcloud"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/testrunner"
 )
 
 var (

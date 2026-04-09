@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo")

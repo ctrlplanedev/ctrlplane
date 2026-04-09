@@ -15,12 +15,12 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentplanresult")
