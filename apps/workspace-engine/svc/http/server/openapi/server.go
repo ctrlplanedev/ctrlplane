@@ -3,6 +3,7 @@ package openapi
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/http/server/openapi/deployments"
 	release_targets "workspace-engine/svc/http/server/openapi/release_targets"
 	"workspace-engine/svc/http/server/openapi/resources"
 	"workspace-engine/svc/http/server/openapi/validators"
@@ -21,6 +22,7 @@ func New(pool *pgxpool.Pool) *Server {
 var _ oapi.ServerInterface = &Server{}
 
 type Server struct {
+	deployments.Deployments
 	resources.Resources
 	validators.Validator
 	workflows.Workflows
