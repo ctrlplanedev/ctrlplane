@@ -230,7 +230,7 @@ For environments where the CLI isn't available, use the REST API:
 POST /api/v1/deployments/{deploymentId}/versions
 
 curl -X POST \
-  "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions" \
+  "https://your-ctrlplane-instance.com/api/v1/deployments/{deploymentId}/versions" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

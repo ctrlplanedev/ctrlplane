@@ -457,7 +457,7 @@ resource.kind == "KubernetesCluster"
 Use the API to test your CEL expressions:
 
 ```bash
-curl -X POST "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources/query" \
+curl -X POST "https://your-ctrlplane-instance.com/api/v1/workspaces/{workspaceId}/resources/query" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

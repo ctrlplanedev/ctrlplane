@@ -60,9 +60,7 @@ Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
 
 ## :zap: Quick Start
 
-The fastest way to get started is with [Ctrlplane Cloud](https://app.ctrlplane.dev).
-
-For self-hosted options, see our [installation guide](https://docs.ctrlplane.dev/installation).
+See our [installation guide](https://docs.ctrlplane.dev/installation) to get started.
 
 | Method     | Link                                                                                                                                                                                           |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -64,7 +64,7 @@ const getJob = async (jobId: string): Promise<JobWithWorkspace | null> => {
 
 async function run() {
   const jobId: string = core.getInput("job_id", { required: true });
-  const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
+  const baseUrl = core.getInput("base_url", { required: true });
 
   const job = await getJob(jobId);
   if (job == null) {

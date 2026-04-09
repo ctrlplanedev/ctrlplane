@@ -260,7 +260,7 @@ fromSelector:
 ### Create a Rule
 
 ```bash
-curl -X POST "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/relationship-rules" \
+curl -X POST "https://your-ctrlplane-instance.com/api/v1/workspaces/{workspaceId}/relationship-rules" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -290,7 +290,7 @@ curl -X POST "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/relation
 ### Update a Rule
 
 ```bash
-curl -X PUT "https://app.ctrlplane.dev/api/v1/relationship-rules/{ruleId}" \
+curl -X PUT "https://your-ctrlplane-instance.com/api/v1/relationship-rules/{ruleId}" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -302,7 +302,7 @@ curl -X PUT "https://app.ctrlplane.dev/api/v1/relationship-rules/{ruleId}" \
 ### Delete a Rule
 
 ```bash
-curl -X DELETE "https://app.ctrlplane.dev/api/v1/relationship-rules/{ruleId}" \
+curl -X DELETE "https://your-ctrlplane-instance.com/api/v1/relationship-rules/{ruleId}" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY"
 ```
 

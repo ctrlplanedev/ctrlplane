@@ -330,7 +330,7 @@ For sensitive values like API keys, use deployment variables:
 1. **Create a deployment variable**:
 
 ```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables \
+curl -X POST https://your-ctrlplane-instance.com/api/v1/deployments/{deploymentId}/variables \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -d '{"key": "dd_api_key", "description": "Datadog API key"}'
 ```
@@ -338,7 +338,7 @@ curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variabl
 2. **Set the value**:
 
 ```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
+curl -X POST https://your-ctrlplane-instance.com/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -d '{"value": "your-actual-api-key"}'
 ```

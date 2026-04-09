@@ -6,11 +6,13 @@ import type { paths } from "./types/openapi.js";
 export type { operations as Operations } from "./types/openapi.js";
 export type { paths } from "./types/openapi.js";
 
-export default function createClient(
-  options: ClientOptions & { apiKey?: string },
-) {
+export interface CreateClientOptions extends ClientOptions {
+  baseUrl: string;
+  apiKey?: string;
+}
+
+export default function createClient(options: CreateClientOptions) {
   return createOClient<paths>({
-    baseUrl: options.baseUrl ?? "https://app.ctrlplane.dev",
     ...options,
     headers: {
       ...(options.apiKey ? { "x-api-key": options.apiKey } : {}),
