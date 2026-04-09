@@ -47,7 +47,7 @@ func (m *mockGetter) GetResource(_ context.Context, _ uuid.UUID) (*oapi.Resource
 		return m.resource, m.resourceErr
 	}
 	return &oapi.Resource{
-		Config:   map[string]interface{}{},
+		Config:   map[string]any{},
 		Metadata: map[string]string{},
 	}, nil
 }

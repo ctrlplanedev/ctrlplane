@@ -84,7 +84,12 @@ func getJobAgents(
 		return nil, fmt.Errorf("list job agents: %w", err)
 	}
 
-	matched, err := selector.MatchJobAgentsWithResource(ctx, deployment.JobAgentSelector, allAgents, resource)
+	matched, err := selector.MatchJobAgentsWithResource(
+		ctx,
+		deployment.JobAgentSelector,
+		allAgents,
+		resource,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("match job agents: %w", err)
 	}

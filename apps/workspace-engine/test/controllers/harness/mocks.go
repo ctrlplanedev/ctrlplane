@@ -620,7 +620,7 @@ func (g *JobDispatchGetter) GetResource(
 	_ uuid.UUID,
 ) (*oapi.Resource, error) {
 	return &oapi.Resource{
-		Config:   map[string]interface{}{},
+		Config:   map[string]any{},
 		Metadata: map[string]string{},
 	}, nil
 }

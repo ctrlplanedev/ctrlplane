@@ -156,7 +156,12 @@ func (c *Controller) processTarget(
 		return fmt.Errorf("get resource %s: %w", target.ResourceID, err)
 	}
 
-	matchedAgents, err := selector.MatchJobAgentsWithResource(ctx, deployment.JobAgentSelector, agents, resource)
+	matchedAgents, err := selector.MatchJobAgentsWithResource(
+		ctx,
+		deployment.JobAgentSelector,
+		agents,
+		resource,
+	)
 	if err != nil {
 		return fmt.Errorf("match job agents for resource %s: %w", target.ResourceID, err)
 	}

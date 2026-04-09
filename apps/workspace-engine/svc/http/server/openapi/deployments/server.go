@@ -60,9 +60,17 @@ func (d *Deployments) GetJobAgentsForDeployment(c *gin.Context, deploymentId str
 		}
 		resource := db.ToOapiResource(resourceRow)
 
-		agents, err := selector.MatchJobAgentsWithResource(ctx, deployment.JobAgentSelector, oapiAgents, resource)
+		agents, err := selector.MatchJobAgentsWithResource(
+			ctx,
+			deployment.JobAgentSelector,
+			oapiAgents,
+			resource,
+		)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to evaluate selector: " + err.Error()})
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "Failed to evaluate selector: " + err.Error()},
+			)
 			return
 		}
 

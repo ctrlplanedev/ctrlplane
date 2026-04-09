@@ -221,7 +221,12 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 	}
 	span.SetAttributes(attribute.Int("workspace_agents.count", len(allAgents)))
 
-	matchedAgents, err := selector.MatchJobAgentsWithResource(ctx, deployment.JobAgentSelector, allAgents, resource)
+	matchedAgents, err := selector.MatchJobAgentsWithResource(
+		ctx,
+		deployment.JobAgentSelector,
+		allAgents,
+		resource,
+	)
 	if err != nil {
 		return recordErr(span, "match job agents", err)
 	}
