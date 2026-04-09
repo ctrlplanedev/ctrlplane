@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/jobagents/argo"
+	"workspace-engine/pkg/jobagents/terraformcloud"
 	"workspace-engine/pkg/jobagents/testrunner"
 )
 
@@ -29,5 +30,11 @@ func newRegistry() *jobagents.Registry {
 		),
 	)
 	registry.Register(testrunner.New(nil))
+	registry.Register(
+		terraformcloud.NewTFCPlanner(
+			&terraformcloud.GoWorkspaceSetup{},
+			&terraformcloud.GoSpeculativeRunner{},
+		),
+	)
 	return registry
 }
