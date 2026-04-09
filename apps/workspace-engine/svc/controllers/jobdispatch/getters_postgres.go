@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/jobagents"
 )
 
 var _ Getter = &PostgresGetter{}

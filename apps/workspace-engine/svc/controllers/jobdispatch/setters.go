@@ -3,10 +3,10 @@ package jobdispatch
 import (
 	"context"
 
-	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/jobagents/argo"
 	"workspace-engine/pkg/jobagents/github"
 	"workspace-engine/pkg/jobagents/testrunner"
+	"workspace-engine/pkg/oapi"
 )
 
 type Setter interface {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/jobagents/types"
+	"workspace-engine/pkg/oapi"
 )
 
 var _ types.Dispatchable = &TestRunner{}

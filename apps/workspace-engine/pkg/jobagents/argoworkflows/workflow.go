@@ -11,9 +11,9 @@ import (
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
-	"workspace-engine/pkg/jobagents/types"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/argo-workflow")
