@@ -182,12 +182,7 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.ctrlplane.dev"
-    }
+    "links": []
   },
   "contextual": {
     "options": [

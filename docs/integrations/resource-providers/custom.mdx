@@ -21,7 +21,7 @@ Use custom providers when you need to sync:
 ### Create or Update a Resource
 
 ```bash
-curl -X PUT "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources" \
+curl -X PUT "https://your-ctrlplane-instance.com/api/v1/workspaces/{workspaceId}/resources" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -45,14 +45,14 @@ curl -X PUT "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources
 
 ```bash
 curl -X DELETE \
-  "https://app.ctrlplane.dev/api/v1/resources/{resourceId}" \
+  "https://your-ctrlplane-instance.com/api/v1/resources/{resourceId}" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY"
 ```
 
 ### List Resources
 
 ```bash
-curl "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources" \
+curl "https://your-ctrlplane-instance.com/api/v1/workspaces/{workspaceId}/resources" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY"
 ```
 
@@ -98,7 +98,7 @@ setInterval(syncResources, 5 * 60 * 1000); // Every 5 minutes
 # sync-resources.sh
 
 WORKSPACE_ID="your-workspace-id"
-API_URL="https://app.ctrlplane.dev/api/v1"
+API_URL="https://your-ctrlplane-instance.com/api/v1"
 
 # Discover resources (example: from cloud provider)
 INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[]')
@@ -135,7 +135,7 @@ import time
 
 API_KEY = os.environ["CTRLPLANE_API_KEY"]
 WORKSPACE_ID = os.environ["CTRLPLANE_WORKSPACE"]
-API_URL = "https://app.ctrlplane.dev/api/v1"
+API_URL = "https://your-ctrlplane-instance.com/api/v1"
 
 def sync_resource(resource):
     """Upsert a resource to Ctrlplane."""

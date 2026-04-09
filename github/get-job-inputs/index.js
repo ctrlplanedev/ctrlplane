@@ -28083,7 +28083,7 @@ function removeTrailingSlash(url) {
 
 function client_createClient(options) {
     return createClient({
-        baseUrl: options.baseUrl ?? "https://app.ctrlplane.dev",
+        baseUrl: options.baseUrl,
         ...options,
         headers: {
             ...(options.apiKey ? { "x-api-key": options.apiKey } : {}),
@@ -28105,7 +28105,7 @@ const maybeAppendApiToBaseUrl = (baseUrl) => {
     return baseUrl + "/api";
 };
 const api = client_createClient({
-    baseUrl: maybeAppendApiToBaseUrl(core.getInput("base_url") || "https://app.ctrlplane.dev"),
+    baseUrl: maybeAppendApiToBaseUrl(core.getInput("base_url", { required: true })),
     headers: { "X-API-Key": core.getInput("api_key", { required: true }) },
 });
 
@@ -28157,7 +28157,7 @@ const getJob = async (jobId) => {
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
-    const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
+    const baseUrl = core.getInput("base_url", { required: true });
     const job = await getJob(jobId);
     if (job == null) {
         core.setFailed(`Job not found: ${jobId}`);

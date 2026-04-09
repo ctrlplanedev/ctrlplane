@@ -10,7 +10,7 @@ export default function createClient(
   options: ClientOptions & { apiKey?: string },
 ) {
   return createOClient<paths>({
-    baseUrl: options.baseUrl ?? "https://app.ctrlplane.dev",
+    baseUrl: options.baseUrl,
     ...options,
     headers: {
       ...(options.apiKey ? { "x-api-key": options.apiKey } : {}),

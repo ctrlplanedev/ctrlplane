@@ -14,7 +14,7 @@ const maybeAppendApiToBaseUrl = (baseUrl: string) => {
 
 export const api = createClient({
   baseUrl: maybeAppendApiToBaseUrl(
-    core.getInput("base_url") || "https://app.ctrlplane.dev",
+    core.getInput("base_url", { required: true }),
   ),
   headers: { "X-API-Key": core.getInput("api_key", { required: true }) },
 });

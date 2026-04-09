@@ -159,7 +159,7 @@ The workflow should update job status. You can use the Ctrlplane API:
 - name: Mark job successful
   if: success()
   run: |
-    curl -X PATCH "https://app.ctrlplane.dev/api/v1/jobs/${{ inputs.job_id }}" \
+    curl -X PATCH "https://your-ctrlplane-instance.com/api/v1/jobs/${{ inputs.job_id }}" \
       -H "Authorization: Bearer ${{ secrets.CTRLPLANE_API_KEY }}" \
       -H "Content-Type: application/json" \
       -d '{"status": "successful"}'
@@ -167,7 +167,7 @@ The workflow should update job status. You can use the Ctrlplane API:
 - name: Mark job failed
   if: failure()
   run: |
-    curl -X PATCH "https://app.ctrlplane.dev/api/v1/jobs/${{ inputs.job_id }}" \
+    curl -X PATCH "https://your-ctrlplane-instance.com/api/v1/jobs/${{ inputs.job_id }}" \
       -H "Authorization: Bearer ${{ secrets.CTRLPLANE_API_KEY }}" \
       -H "Content-Type: application/json" \
       -d '{"status": "failure"}'

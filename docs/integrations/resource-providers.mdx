@@ -81,7 +81,7 @@ Create custom providers using the Ctrlplane API or SDK.
 
 ```bash
 # Create or update a resource
-curl -X PUT "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources" \
+curl -X PUT "https://your-ctrlplane-instance.com/api/v1/workspaces/{workspaceId}/resources" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -151,7 +151,7 @@ echo "$INSTANCES" | jq -c '.[]' | while read instance; do
   ENV=$(echo "$instance" | jq -r '.Tags[] | select(.Key=="Environment") | .Value')
   REGION=$(echo "$instance" | jq -r '.Placement.AvailabilityZone' | sed 's/.$//')
 
-  curl -X PUT "https://app.ctrlplane.dev/api/v1/workspaces/${WORKSPACE_ID}/resources" \
+  curl -X PUT "https://your-ctrlplane-instance.com/api/v1/workspaces/${WORKSPACE_ID}/resources" \
     -H "Authorization: Bearer ${CTRLPLANE_API_KEY}" \
     -H "Content-Type: application/json" \
     -d "{
@@ -231,7 +231,7 @@ When resource metadata or config changes, Ctrlplane:
 
 ```bash
 curl -X DELETE \
-  "https://app.ctrlplane.dev/api/v1/resources/{resourceId}" \
+  "https://your-ctrlplane-instance.com/api/v1/resources/{resourceId}" \
   -H "Authorization: Bearer $CTRLPLANE_API_KEY"
 ```
 
