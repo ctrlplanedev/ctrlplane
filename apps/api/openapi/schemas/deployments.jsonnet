@@ -110,7 +110,7 @@ local jobAgentConfig = {
 
   DeploymentPlanTargetResult: {
     type: 'object',
-    required: ['id', 'status'],
+    required: ['id', 'status', 'hasChanges', 'contentHash', 'current', 'proposed', 'message'],
     properties: {
       id: { type: 'string' },
       status: { type: 'string', enum: ['computing', 'completed', 'errored', 'unsupported'] },
@@ -124,7 +124,7 @@ local jobAgentConfig = {
 
   DeploymentPlanTarget: {
     type: 'object',
-    required: ['environmentId', 'environmentName', 'resourceId', 'resourceName', 'results'],
+    required: ['environmentId', 'environmentName', 'resourceId', 'resourceName', 'hasChanges', 'results'],
     properties: {
       environmentId: { type: 'string' },
       environmentName: { type: 'string' },

@@ -1257,22 +1257,22 @@ export interface components {
             environmentId: string;
             environmentName: string;
             /** @description True if any result for this target has changes */
-            hasChanges?: boolean;
+            hasChanges: boolean;
             resourceId: string;
             resourceName: string;
             results: components["schemas"]["DeploymentPlanTargetResult"][];
         };
         DeploymentPlanTargetResult: {
             /** @description Hash of the rendered output for change detection */
-            contentHash?: string;
+            contentHash: string;
             /** @description Full rendered output of the currently deployed state */
-            current?: string;
-            hasChanges?: boolean;
+            current: string;
+            hasChanges: boolean;
             id: string;
             /** @description Agent message (e.g. error explanation or summary) */
-            message?: string;
+            message: string;
             /** @description Full rendered output of the proposed version */
-            proposed?: string;
+            proposed: string;
             /** @enum {string} */
             status: "computing" | "completed" | "errored" | "unsupported";
         };

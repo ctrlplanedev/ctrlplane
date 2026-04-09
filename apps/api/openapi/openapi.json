@@ -593,6 +593,7 @@
                "environmentName",
                "resourceId",
                "resourceName",
+               "hasChanges",
                "results"
             ],
             "type": "object"
@@ -633,7 +634,12 @@
             },
             "required": [
                "id",
-               "status"
+               "status",
+               "hasChanges",
+               "contentHash",
+               "current",
+               "proposed",
+               "message"
             ],
             "type": "object"
          },
