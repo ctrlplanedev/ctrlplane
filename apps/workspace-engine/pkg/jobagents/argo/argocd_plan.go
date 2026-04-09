@@ -13,7 +13,7 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+	"workspace-engine/pkg/jobagents/types"
 )
 
 const (

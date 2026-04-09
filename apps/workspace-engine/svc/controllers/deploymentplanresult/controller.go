@@ -20,7 +20,7 @@ import (
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents"
+	"workspace-engine/pkg/jobagents"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/deploymentplanresult")

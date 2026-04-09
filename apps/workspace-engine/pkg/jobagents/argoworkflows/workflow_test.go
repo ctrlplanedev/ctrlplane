@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"workspace-engine/pkg/oapi"
-	argo_workflows "workspace-engine/svc/controllers/jobdispatch/jobagents/argoworkflows"
+	argo_workflows "workspace-engine/pkg/jobagents/argoworkflows"
 )
 
 // ----- Mocks -----

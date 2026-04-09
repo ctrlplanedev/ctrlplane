@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+	"workspace-engine/pkg/jobagents/types"
 )
 
 var _ types.Dispatchable = (*TFE)(nil)

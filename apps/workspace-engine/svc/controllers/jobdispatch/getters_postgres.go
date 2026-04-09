@@ -10,7 +10,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents"
+	"workspace-engine/pkg/jobagents"
 )
 
 var _ Getter = &PostgresGetter{}

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/jobdispatch/jobagents/types"
+	"workspace-engine/pkg/jobagents/types"
 )
 
 type Getter interface {
