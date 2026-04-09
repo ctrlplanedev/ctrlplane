@@ -23,7 +23,11 @@ type WorkspaceSetup interface {
 
 // SpeculativeRunner creates and reads speculative (plan-only) runs.
 type SpeculativeRunner interface {
-	CreateSpeculativeRun(ctx context.Context, cfg *tfeConfig, workspaceID string) (runID string, err error)
+	CreateSpeculativeRun(
+		ctx context.Context,
+		cfg *tfeConfig,
+		workspaceID string,
+	) (runID string, err error)
 	ReadRunStatus(ctx context.Context, cfg *tfeConfig, runID string) (*RunStatus, error)
 	ReadPlanJSON(ctx context.Context, cfg *tfeConfig, planID string) ([]byte, error)
 }

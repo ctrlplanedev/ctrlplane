@@ -11,7 +11,10 @@ import (
 // GoWorkspaceSetup is the production implementation of WorkspaceSetup.
 type GoWorkspaceSetup struct{}
 
-func (g *GoWorkspaceSetup) Setup(ctx context.Context, dispatchCtx *oapi.DispatchContext) (string, error) {
+func (g *GoWorkspaceSetup) Setup(
+	ctx context.Context,
+	dispatchCtx *oapi.DispatchContext,
+) (string, error) {
 	cfg, err := parseJobAgentConfig(dispatchCtx.JobAgentConfig)
 	if err != nil {
 		return "", err

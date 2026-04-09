@@ -34,15 +34,27 @@ type mockSpeculativeRunner struct {
 	jsonErr  error
 }
 
-func (m *mockSpeculativeRunner) CreateSpeculativeRun(_ context.Context, _ *tfeConfig, _ string) (string, error) {
+func (m *mockSpeculativeRunner) CreateSpeculativeRun(
+	_ context.Context,
+	_ *tfeConfig,
+	_ string,
+) (string, error) {
 	return m.createRunID, m.createErr
 }
 
-func (m *mockSpeculativeRunner) ReadRunStatus(_ context.Context, _ *tfeConfig, _ string) (*RunStatus, error) {
+func (m *mockSpeculativeRunner) ReadRunStatus(
+	_ context.Context,
+	_ *tfeConfig,
+	_ string,
+) (*RunStatus, error) {
 	return m.readStatus, m.readErr
 }
 
-func (m *mockSpeculativeRunner) ReadPlanJSON(_ context.Context, _ *tfeConfig, _ string) ([]byte, error) {
+func (m *mockSpeculativeRunner) ReadPlanJSON(
+	_ context.Context,
+	_ *tfeConfig,
+	_ string,
+) ([]byte, error) {
 	return m.planJSON, m.jsonErr
 }
 
