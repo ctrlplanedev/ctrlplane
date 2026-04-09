@@ -64,23 +64,43 @@ curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
 ## Properties
 
 <ParamField path="deploymentDependency.dependsOn" type="string" required>
-  CEL expression to match upstream deployment(s) that must have a successful
-  release before this deployment can proceed.
+  CEL expression to match upstream release targets that must exist before this
+  deployment can proceed. The expression can reference both **deployment** and
+  **version** properties of the currently deployed upstream release.
 </ParamField>
+
+### Available CEL Variables
+
+The `dependsOn` expression is evaluated against each release target on the same
+resource that has a successful release. Both `deployment.*` and `version.*`
+fields are available:
+
+| Variable | Type | Description |
+|---|---|---|
+| `deployment.id` | string | Deployment ID |
+| `deployment.name` | string | Deployment name |
+| `deployment.slug` | string | Deployment slug |
+| `deployment.metadata` | map | Deployment metadata key-value pairs |
+| `version.id` | string | Deployed version ID |
+| `version.tag` | string | Version tag (e.g. `v2.1.0`) |
+| `version.name` | string | Version name |
+| `version.status` | string | Version status |
+| `version.metadata` | map | Version metadata key-value pairs |
+| `version.createdAt` | timestamp | When the version was created |
 
 ## How It Works
 
 1. **Release created** - A new version is released for a deployment with
    dependency rules.
-2. **Dependency check** - Ctrlplane evaluates the `dependsOn` CEL expression to
-   find matching upstream deployments.
-3. **Same-resource resolution** - For each matching upstream deployment,
-   Ctrlplane looks for a release target on the **same resource** as the current
-   target. This means the dependency is resolved per-resource, not globally.
-4. **Status evaluation** - Each upstream release target must have a latest
-   completed job with a successful status.
-5. **Deployment allowed** - Once all upstream dependencies are satisfied, the
-   deployment can proceed.
+2. **Same-resource resolution** - Ctrlplane finds all release targets on the
+   **same resource** as the current target.
+3. **Version resolution** - For each release target, Ctrlplane resolves the
+   deployment and its currently deployed version (from the latest successful
+   job).
+4. **CEL evaluation** - The `dependsOn` expression is evaluated against each
+   `{deployment, version}` pair.
+5. **Deployment allowed** - If at least one upstream release target matches the
+   selector, the deployment can proceed.
 
 ## Common Patterns
 
@@ -185,6 +205,55 @@ resource "ctrlplane_policy" "services_require_shared_lib" {
 
   deployment_dependency {
     depends_on_selector = "deployment.metadata['type'] == 'shared-library'"
+  }
+}
+```
+
+### Version-Scoped Dependencies
+
+Require a specific version range of an upstream deployment:
+
+<Tabs>
+<Tab title="Terraform">
+```hcl
+resource "ctrlplane_policy" "api_requires_db_v2" {
+  name     = "API Requires DB Migration v2"
+  selector = "deployment.name == 'api-service'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'database-migration' && version.tag.startsWith('v2.')"
+  }
+}
+```
+</Tab>
+<Tab title="API">
+```json
+{
+  "name": "API Requires DB Migration v2",
+  "selector": "deployment.name == 'api-service'",
+  "rules": [
+    {
+      "deploymentDependency": {
+        "dependsOn": "deployment.name == 'database-migration' && version.tag.startsWith('v2.')"
+      }
+    }
+  ]
+}
+```
+</Tab>
+</Tabs>
+
+### Version Metadata Filtering
+
+Depend on an upstream deployment running a version with specific metadata:
+
+```hcl
+resource "ctrlplane_policy" "frontend_requires_stable_api" {
+  name     = "Frontend Requires Stable API"
+  selector = "deployment.name == 'frontend'"
+
+  deployment_dependency {
+    depends_on_selector = "deployment.name == 'api-service' && version.metadata.channel == 'stable'"
   }
 }
 ```

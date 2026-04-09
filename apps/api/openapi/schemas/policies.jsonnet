@@ -220,7 +220,7 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       dependsOn: {
         type: 'string',
-        description: 'CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.',
+        description: 'CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. The expression can reference both deployment properties (deployment.id, deployment.name, deployment.slug, deployment.metadata) and the currently deployed version properties (version.id, version.tag, version.name, version.status, version.metadata, version.createdAt). For example: deployment.name == \'db-migration\' && version.tag.startsWith(\'v2.\').',
       },
     },
   },
