@@ -265,6 +265,7 @@ jobs:
         uses: ctrlplanedev/get-job-inputs@v1
         id: job
         with:
+          base_url: ${{ secrets.CTRLPLANE_BASE_URL }}
           job_id: ${{ inputs.job_id }}
           api_key: ${{ secrets.CTRLPLANE_API_KEY }}
 
@@ -385,6 +386,7 @@ jobs:
         uses: ctrlplanedev/get-job-inputs@v1
         id: job
         with:
+          base_url: ${{ secrets.CTRLPLANE_BASE_URL }}
           job_id: ${{ inputs.job_id }}
           api_key: ${{ secrets.CTRLPLANE_API_KEY }}
 

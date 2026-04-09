@@ -28083,7 +28083,6 @@ function removeTrailingSlash(url) {
 
 function client_createClient(options) {
     return createClient({
-        baseUrl: options.baseUrl,
         ...options,
         headers: {
             ...(options.apiKey ? { "x-api-key": options.apiKey } : {}),
