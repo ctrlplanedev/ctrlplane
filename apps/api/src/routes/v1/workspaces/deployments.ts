@@ -396,7 +396,7 @@ const createDeploymentPlan: AsyncTypedHandler<
   res.status(202).json({
     id: planId,
     status: "computing",
-    summary: null,
+    summary: { total: 0, changed: 0, unchanged: 0, errored: 0, unsupported: 0 },
     targets: [],
   });
 };
@@ -437,11 +437,11 @@ const getDeploymentPlan: AsyncTypedHandler<
     results: t.results.map((r) => ({
       id: r.id,
       status: r.status,
-      hasChanges: r.hasChanges,
-      current: r.current,
-      proposed: r.proposed,
-      contentHash: r.contentHash,
-      message: r.message,
+      hasChanges: r.hasChanges ?? false,
+      contentHash: r.contentHash ?? "",
+      current: r.current ?? "",
+      proposed: r.proposed ?? "",
+      message: r.message ?? "",
     })),
   }));
 
@@ -455,16 +455,13 @@ const getDeploymentPlan: AsyncTypedHandler<
 
   const status =
     computing > 0 ? "computing" : errored > 0 ? "failed" : "completed";
-  const summary =
-    status === "computing"
-      ? null
-      : {
-          total: allResults.length,
-          changed,
-          unchanged,
-          errored,
-          unsupported,
-        };
+  const summary = {
+    total: allResults.length,
+    changed,
+    unchanged,
+    errored,
+    unsupported,
+  };
 
   res.status(200).json({
     id: plan.id,

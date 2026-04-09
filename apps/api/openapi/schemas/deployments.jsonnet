@@ -108,19 +108,33 @@ local jobAgentConfig = {
     },
   },
 
+  DeploymentPlanTargetResult: {
+    type: 'object',
+    required: ['id', 'status', 'hasChanges', 'contentHash', 'current', 'proposed', 'message'],
+    properties: {
+      id: { type: 'string' },
+      status: { type: 'string', enum: ['computing', 'completed', 'errored', 'unsupported'] },
+      hasChanges: { type: 'boolean' },
+      contentHash: { type: 'string', description: 'Hash of the rendered output for change detection' },
+      current: { type: 'string', description: 'Full rendered output of the currently deployed state' },
+      proposed: { type: 'string', description: 'Full rendered output of the proposed version' },
+      message: { type: 'string', description: 'Agent message (e.g. error explanation or summary)' },
+    },
+  },
+
   DeploymentPlanTarget: {
     type: 'object',
-    required: ['environmentId', 'environmentName', 'resourceId', 'resourceName', 'status'],
+    required: ['environmentId', 'environmentName', 'resourceId', 'resourceName', 'hasChanges', 'results'],
     properties: {
       environmentId: { type: 'string' },
       environmentName: { type: 'string' },
       resourceId: { type: 'string' },
       resourceName: { type: 'string' },
-      status: { type: 'string', enum: ['computing', 'completed', 'errored', 'unsupported'] },
-      hasChanges: { type: 'boolean', nullable: true },
-      contentHash: { type: 'string', description: 'Hash of the rendered output for change detection' },
-      current: { type: 'string', description: 'Full rendered output of the currently deployed state' },
-      proposed: { type: 'string', description: 'Full rendered output of the proposed version' },
+      hasChanges: { type: 'boolean', description: 'True if any result for this target has changes' },
+      results: {
+        type: 'array',
+        items: openapi.schemaRef('DeploymentPlanTargetResult'),
+      },
     },
   },
 

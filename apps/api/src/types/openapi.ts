@@ -1254,17 +1254,25 @@ export interface components {
             unsupported?: number;
         };
         DeploymentPlanTarget: {
-            /** @description Hash of the rendered output for change detection */
-            contentHash?: string;
-            /** @description Full rendered output of the currently deployed state */
-            current?: string;
             environmentId: string;
             environmentName: string;
-            hasChanges?: boolean | null;
-            /** @description Full rendered output of the proposed version */
-            proposed?: string;
+            /** @description True if any result for this target has changes */
+            hasChanges: boolean;
             resourceId: string;
             resourceName: string;
+            results: components["schemas"]["DeploymentPlanTargetResult"][];
+        };
+        DeploymentPlanTargetResult: {
+            /** @description Hash of the rendered output for change detection */
+            contentHash: string;
+            /** @description Full rendered output of the currently deployed state */
+            current: string;
+            hasChanges: boolean;
+            id: string;
+            /** @description Agent message (e.g. error explanation or summary) */
+            message: string;
+            /** @description Full rendered output of the proposed version */
+            proposed: string;
             /** @enum {string} */
             status: "computing" | "completed" | "errored" | "unsupported";
         };
