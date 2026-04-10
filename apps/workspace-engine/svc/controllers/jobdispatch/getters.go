@@ -10,10 +10,7 @@ import (
 type Getter interface {
 	GetJob(ctx context.Context, jobID uuid.UUID) (*oapi.Job, error)
 	GetRelease(ctx context.Context, releaseID uuid.UUID) (*oapi.Release, error)
-	GetDeployment(ctx context.Context, deploymentID uuid.UUID) (*oapi.Deployment, error)
-	GetResource(ctx context.Context, resourceID uuid.UUID) (*oapi.Resource, error)
 	GetJobAgent(ctx context.Context, jobAgentID uuid.UUID) (*oapi.JobAgent, error)
-	ListJobAgentsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]oapi.JobAgent, error)
 	GetVerificationPolicies(
 		ctx context.Context,
 		rt *ReleaseTarget,
