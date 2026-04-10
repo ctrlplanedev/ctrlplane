@@ -80,7 +80,7 @@ const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
           rule.environmentProgression.dependsOnEnvironmentSelector,
         maximumAgeHours: rule.environmentProgression.maximumAgeHours,
         minimumSoakTimeMinutes:
-          rule.environmentProgression.minimumSockTimeMinutes,
+          rule.environmentProgression.minimumSoakTimeMinutes,
         minimumSuccessPercentage:
           rule.environmentProgression.minimumSuccessPercentage,
         successStatuses: rule.environmentProgression.successStatuses,
@@ -192,7 +192,7 @@ const formatPolicy = (p: PolicyRow) => {
           ...(r.maximumAgeHours != null && {
             maximumAgeHours: r.maximumAgeHours,
           }),
-          minimumSockTimeMinutes: r.minimumSoakTimeMinutes,
+          minimumSoakTimeMinutes: r.minimumSoakTimeMinutes,
           minimumSuccessPercentage: r.minimumSuccessPercentage,
           ...(r.successStatuses != null && {
             successStatuses: r.successStatuses,

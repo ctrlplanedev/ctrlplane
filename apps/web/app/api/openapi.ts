@@ -1063,10 +1063,8 @@ export interface components {
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
-            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            /** @description CEL expression to match job agents */
             jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1223,10 +1221,8 @@ export interface components {
             jobAgentConfig: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
             /** @description CEL expression to match job agents */
             jobAgentSelector: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1240,14 +1236,8 @@ export interface components {
             systems: components["schemas"]["System"][];
         };
         DeploymentDependencyRule: {
-            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. The expression can reference both deployment properties (deployment.id, deployment.name, deployment.slug, deployment.metadata) and the currently deployed version properties (version.id, version.tag, version.name, version.status, version.metadata, version.createdAt). For example: deployment.name == 'db-migration' && version.tag.startsWith('v2.'). */
             dependsOn: string;
-        };
-        DeploymentJobAgent: {
-            config: components["schemas"]["JobAgentConfig"];
-            ref: string;
-            /** @description CEL expression to determine if the job agent should be used */
-            selector: string;
         };
         DeploymentPlan: {
             id: string;
@@ -1264,17 +1254,25 @@ export interface components {
             unsupported?: number;
         };
         DeploymentPlanTarget: {
-            /** @description Hash of the rendered output for change detection */
-            contentHash?: string;
-            /** @description Full rendered output of the currently deployed state */
-            current?: string;
             environmentId: string;
             environmentName: string;
-            hasChanges?: boolean | null;
-            /** @description Full rendered output of the proposed version */
-            proposed?: string;
+            /** @description True if any result for this target has changes */
+            hasChanges: boolean;
             resourceId: string;
             resourceName: string;
+            results: components["schemas"]["DeploymentPlanTargetResult"][];
+        };
+        DeploymentPlanTargetResult: {
+            /** @description Hash of the rendered output for change detection */
+            contentHash: string;
+            /** @description Full rendered output of the currently deployed state */
+            current: string;
+            hasChanges: boolean;
+            id: string;
+            /** @description Agent message (e.g. error explanation or summary) */
+            message: string;
+            /** @description Full rendered output of the proposed version */
+            proposed: string;
             /** @enum {string} */
             status: "computing" | "completed" | "errored" | "unsupported";
         };
@@ -1407,7 +1405,7 @@ export interface components {
              * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
              * @default 0
              */
-            minimumSockTimeMinutes: number;
+            minimumSoakTimeMinutes: number;
             /**
              * Format: float
              * @default 100
@@ -1961,10 +1959,8 @@ export interface components {
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
-            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            /** @description CEL expression to match job agents */
             jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };

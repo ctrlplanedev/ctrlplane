@@ -168,7 +168,7 @@ local openapi = import '../lib/openapi.libsonnet';
       minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },
       successStatuses: { type: 'array', items: openapi.schemaRef('JobStatus') },
 
-      minimumSockTimeMinutes: {
+      minimumSoakTimeMinutes: {
         type: 'integer',
         format: 'int32',
         minimum: 0,

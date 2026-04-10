@@ -187,7 +187,7 @@ resource "ctrlplane_policy" "production_soak_requirement" {
 
   environment_progression {
     depends_on_environment_selector = "environment.name == 'staging'"
-    minimum_sock_time_minutes       = 60
+    minimum_soak_time_minutes       = 60
   }
 }
 ```
@@ -201,7 +201,7 @@ resource "ctrlplane_policy" "production_soak_requirement" {
     {
       "environmentProgression": {
         "dependsOnEnvironmentSelector": "environment.name == 'staging'",
-        "minimumSockTimeMinutes": 60
+        "minimumSoakTimeMinutes": 60
       }
     }
   ]
@@ -280,7 +280,7 @@ resource "ctrlplane_policy" "production_full_gate" {
   environment_progression {
     depends_on_environment_selector = "environment.name == 'staging'"
     minimum_success_percentage      = 100
-    minimum_sock_time_minutes       = 30
+    minimum_soak_time_minutes       = 30
     maximum_age_hours               = 48
   }
 
@@ -302,7 +302,7 @@ resource "ctrlplane_policy" "production_full_gate" {
       "environmentProgression": {
         "dependsOnEnvironmentSelector": "environment.name == 'staging'",
         "minimumSuccessPercentage": 100,
-        "minimumSockTimeMinutes": 30,
+        "minimumSoakTimeMinutes": 30,
         "maximumAgeHours": 48
       }
     },

@@ -801,6 +801,26 @@ export interface paths {
         patch: operations["requestResourceVariablesUpdate"];
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/resources/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search resources
+         * @description Returns a paginated list of resources matching the given filters.
+         */
+        post: operations["searchResources"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
         parameters: {
             query?: never;
@@ -1043,10 +1063,8 @@ export interface components {
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
-            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            /** @description CEL expression to match job agents */
             jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -1203,10 +1221,8 @@ export interface components {
             jobAgentConfig: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
             /** @description CEL expression to match job agents */
-            jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
+            jobAgentSelector: string;
             metadata?: {
                 [key: string]: string;
             };
@@ -1220,14 +1236,8 @@ export interface components {
             systems: components["schemas"]["System"][];
         };
         DeploymentDependencyRule: {
-            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. The expression can reference both deployment properties (deployment.id, deployment.name, deployment.slug, deployment.metadata) and the currently deployed version properties (version.id, version.tag, version.name, version.status, version.metadata, version.createdAt). For example: deployment.name == 'db-migration' && version.tag.startsWith('v2.'). */
             dependsOn: string;
-        };
-        DeploymentJobAgent: {
-            config: components["schemas"]["JobAgentConfig"];
-            ref: string;
-            /** @description CEL expression to determine if the job agent should be used */
-            selector: string;
         };
         DeploymentPlan: {
             id: string;
@@ -1244,17 +1254,25 @@ export interface components {
             unsupported?: number;
         };
         DeploymentPlanTarget: {
-            /** @description Hash of the rendered output for change detection */
-            contentHash?: string;
-            /** @description Full rendered output of the currently deployed state */
-            current?: string;
             environmentId: string;
             environmentName: string;
-            hasChanges?: boolean | null;
-            /** @description Full rendered output of the proposed version */
-            proposed?: string;
+            /** @description True if any result for this target has changes */
+            hasChanges: boolean;
             resourceId: string;
             resourceName: string;
+            results: components["schemas"]["DeploymentPlanTargetResult"][];
+        };
+        DeploymentPlanTargetResult: {
+            /** @description Hash of the rendered output for change detection */
+            contentHash: string;
+            /** @description Full rendered output of the currently deployed state */
+            current: string;
+            hasChanges: boolean;
+            id: string;
+            /** @description Agent message (e.g. error explanation or summary) */
+            message: string;
+            /** @description Full rendered output of the proposed version */
+            proposed: string;
             /** @enum {string} */
             status: "computing" | "completed" | "errored" | "unsupported";
         };
@@ -1387,7 +1405,7 @@ export interface components {
              * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
              * @default 0
              */
-            minimumSockTimeMinutes: number;
+            minimumSoakTimeMinutes: number;
             /**
              * Format: float
              * @default 100
@@ -1528,6 +1546,29 @@ export interface components {
             job: components["schemas"]["Job"];
             release: components["schemas"]["Release"];
             resource?: components["schemas"]["Resource"];
+        };
+        ListResourcesFilters: {
+            identifiers?: string[];
+            kinds?: string[];
+            /** @default 500 */
+            limit: number;
+            /** @description Exact metadata key/value matches */
+            metadata?: {
+                [key: string]: string;
+            };
+            /** @default 0 */
+            offset: number;
+            /**
+             * @default asc
+             * @enum {string}
+             */
+            order: "asc" | "desc";
+            providerIds?: string[];
+            /** @description Text search on name or identifier */
+            query?: string;
+            /** @enum {string} */
+            sortBy?: "createdAt" | "updatedAt" | "name" | "kind";
+            versions?: string[];
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
@@ -1918,10 +1959,8 @@ export interface components {
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
-            jobAgentId?: string;
-            /** @description CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided. */
+            /** @description CEL expression to match job agents */
             jobAgentSelector?: string;
-            jobAgents?: components["schemas"]["DeploymentJobAgent"][];
             metadata?: {
                 [key: string]: string;
             };
@@ -5129,6 +5168,50 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    searchResources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListResourcesFilters"];
+            };
+        };
+        responses: {
+            /** @description Matching resources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Resource"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
