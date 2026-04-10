@@ -1,5 +1,5 @@
-import type { Tx } from "@ctrlplane/db";
 import type { AsyncTypedHandler } from "@/types/api.js";
+import type { Tx } from "@ctrlplane/db";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
@@ -7,8 +7,8 @@ import { z } from "zod";
 
 import { and, count, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
 import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
+import * as schema from "@ctrlplane/db/schema";
 
 const deleteAllRulesForPolicy = async (tx: Tx, policyId: string) => {
   await tx
@@ -42,7 +42,6 @@ const deleteAllRulesForPolicy = async (tx: Tx, policyId: string) => {
     .delete(schema.policyRuleVersionSelector)
     .where(eq(schema.policyRuleVersionSelector.policyId, policyId));
 };
-
 
 const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
   for (const rule of rules) {
