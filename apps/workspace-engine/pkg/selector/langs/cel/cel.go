@@ -47,6 +47,7 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 		"resource":    map[string]any{},
 		"deployment":  map[string]any{},
 		"environment": map[string]any{},
+		"version":     map[string]any{},
 	}
 
 	entityAsMap, err := structToMap(entity)
@@ -76,6 +77,12 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 	_, isPointerJob := entity.(*oapi.Job)
 	if isJob || isPointerJob {
 		celCtx["job"] = entityAsMap
+	}
+
+	_, isPointerVersion := entity.(*oapi.DeploymentVersion)
+	_, isVersion := entity.(oapi.DeploymentVersion)
+	if isPointerVersion || isVersion {
+		celCtx["version"] = entityAsMap
 	}
 
 	return celutil.EvalBool(s.Program, celCtx)

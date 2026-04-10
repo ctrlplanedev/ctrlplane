@@ -73,11 +73,25 @@ func (e *DeploymentDependencyEvaluator) Evaluate(
 			WithDetail("depends_on", dependsOn)
 	}
 
+	deployments, err := e.getters.GetAllDeployments(ctx, scope.Environment.WorkspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return results.NewDeniedResult(
+			fmt.Sprintf("Deployment dependency: failed to get deployments: %v", err),
+		).
+			WithDetail("error", err.Error())
+	}
+
 	releaseTargets := e.getters.GetReleaseTargetsForResource(ctx, scope.Resource.Id)
 
+	var evalErrors []string
 	for _, rt := range releaseTargets {
-		deployment, err := e.getters.GetDeployment(ctx, rt.DeploymentId)
-		if err != nil || deployment == nil {
+		if rt.DeploymentId == scope.Deployment.Id && rt.EnvironmentId == scope.Environment.Id && rt.ResourceId == scope.Resource.Id {
+			continue
+		}
+
+		deployment := deployments[rt.DeploymentId]
+		if deployment == nil {
 			continue
 		}
 
@@ -90,6 +104,8 @@ func (e *DeploymentDependencyEvaluator) Evaluate(
 		celCtx["version"] = cel.DeploymentVersionToMap(version)
 		matched, err := celutil.EvalBool(program, celCtx)
 		if err != nil {
+			span.RecordError(err)
+			evalErrors = append(evalErrors, fmt.Sprintf("rt %s: CEL evaluation error: %v", rt.Key(), err))
 			continue
 		}
 
@@ -104,11 +120,17 @@ func (e *DeploymentDependencyEvaluator) Evaluate(
 		}
 	}
 
-	return results.NewDeniedResult(
+	result := results.NewDeniedResult(
 		fmt.Sprintf(
 			"Deployment dependency: no upstream release target with a successful release matches selector: %s",
 			dependsOn,
 		),
 	).
 		WithDetail("depends_on", dependsOn)
+
+	if len(evalErrors) > 0 {
+		result = result.WithDetail("errors", fmt.Sprintf("%v", evalErrors))
+	}
+
+	return result
 }

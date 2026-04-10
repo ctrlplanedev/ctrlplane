@@ -2,9 +2,11 @@ package deploymentdependency
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -74,13 +76,15 @@ func (p *PostgresGetters) GetCurrentlyDeployedVersion(
 		},
 	)
 	if err != nil {
-		slog.Error(
-			"failed to get current release for release target",
-			"releaseTarget",
-			rt.Key(),
-			"error",
-			err,
-		)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error(
+				"failed to get current release for release target",
+				"releaseTarget",
+				rt.Key(),
+				"error",
+				err,
+			)
+		}
 		return nil
 	}
 	v := &oapi.DeploymentVersion{
