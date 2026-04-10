@@ -1402,10 +1402,15 @@ export interface components {
             maximumAgeHours?: number;
             /**
              * Format: int32
-             * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
-             * @default 0
+             * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.
              */
-            minimumSockTimeMinutes: number;
+            minimumSoakTimeMinutes?: number;
+            /**
+             * Format: int32
+             * @deprecated
+             * @description Use minimumSoakTimeMinutes instead. Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+             */
+            minimumSockTimeMinutes?: number;
             /**
              * Format: float
              * @default 100

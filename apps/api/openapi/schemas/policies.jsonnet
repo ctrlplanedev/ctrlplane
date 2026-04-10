@@ -172,8 +172,15 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'integer',
         format: 'int32',
         minimum: 0,
-        default: 0,
-        description: 'Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed',
+        deprecated: true,
+        description: 'Use minimumSoakTimeMinutes instead. Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed',
+      },
+
+      minimumSoakTimeMinutes: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.',
       },
 
       maximumAgeHours: {

@@ -224,10 +224,10 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	}
 
 	var soakTimeEvaluator *SoakTimeEvaluator
-	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
+	if e.rule.MinimumSoakTimeMinutes != nil && *e.rule.MinimumSoakTimeMinutes > 0 {
 		soakTimeEvaluator = &SoakTimeEvaluator{
 			getters:         e.getters,
-			soakMinutes:     *e.rule.MinimumSockTimeMinutes,
+			soakMinutes:     *e.rule.MinimumSoakTimeMinutes,
 			successStatuses: successStatuses,
 			timeGetter:      time.Now,
 		}

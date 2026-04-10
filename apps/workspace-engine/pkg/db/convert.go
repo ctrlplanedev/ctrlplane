@@ -148,7 +148,7 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 		rule := oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: pr.DependsOnEnvironmentSelector,
 			MaximumAgeHours:              pr.MaximumAgeHours,
-			MinimumSockTimeMinutes:       pr.MinimumSoakTimeMinutes,
+			MinimumSoakTimeMinutes:       pr.MinimumSoakTimeMinutes,
 			MinimumSuccessPercentage:     pr.MinimumSuccessPercentage,
 		}
 		if pr.SuccessStatuses != nil {
