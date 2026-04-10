@@ -235,6 +235,42 @@ func TestReconcile_AgentNotFound(t *testing.T) {
 	assert.Empty(t, dispatcher.dispatchCalls)
 }
 
+func TestReconcile_EmptyJobAgentId(t *testing.T) {
+	agentID := uuid.New().String()
+	job, getter := setupGetterWithAgents([]oapi.JobAgent{
+		{Id: agentID, Config: oapi.JobAgentConfig{}},
+	})
+	job.JobAgentId = ""
+
+	_, err := Reconcile(
+		context.Background(),
+		getter,
+		&mockSetter{},
+		&mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}},
+		&mockDispatcher{},
+		job,
+	)
+	require.Error(t, err)
+}
+
+func TestReconcile_InvalidJobAgentId(t *testing.T) {
+	agentID := uuid.New().String()
+	job, getter := setupGetterWithAgents([]oapi.JobAgent{
+		{Id: agentID, Config: oapi.JobAgentConfig{}},
+	})
+	job.JobAgentId = "not-a-uuid"
+
+	_, err := Reconcile(
+		context.Background(),
+		getter,
+		&mockSetter{},
+		&mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}},
+		&mockDispatcher{},
+		job,
+	)
+	require.Error(t, err)
+}
+
 func TestReconcile_DispatchesWithoutVerifications(t *testing.T) {
 	agentID := uuid.New().String()
 	job, getter := setupGetterWithAgents([]oapi.JobAgent{
