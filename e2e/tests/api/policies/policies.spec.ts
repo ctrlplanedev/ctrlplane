@@ -7,20 +7,17 @@ import { test } from "../../fixtures";
 test.describe("Policy API", () => {
   test("should create a policy and retrieve it", async ({ api, workspace }) => {
     const name = `policy-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          description: "Test policy",
-          priority: 10,
-          enabled: true,
-          selector: "true",
-          rules: [],
-        },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        description: "Test policy",
+        priority: 10,
+        enabled: true,
+        selector: "true",
+        rules: [],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -45,12 +42,9 @@ test.describe("Policy API", () => {
     expect(getRes.data!.priority).toBe(10);
     expect(getRes.data!.enabled).toBe(true);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with default values", async ({
@@ -58,13 +52,10 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-defaults-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: { name, rules: [] },
-      },
-    );
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: { name, rules: [] },
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -73,24 +64,18 @@ test.describe("Policy API", () => {
     expect(createRes.data!.selector).toBe("true");
     expect(createRes.data!.metadata).toEqual({});
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with metadata", async ({ api, workspace }) => {
     const name = `policy-meta-${faker.string.alphanumeric(8)}`;
     const metadata = { team: "platform", env: "production" };
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: { name, metadata, rules: [] },
-      },
-    );
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: { name, metadata, rules: [] },
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -106,12 +91,9 @@ test.describe("Policy API", () => {
     expect(getRes.response.status).toBe(200);
     expect(getRes.data!.metadata).toEqual(metadata);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should upsert (create) a policy with a specific ID", async ({
@@ -125,7 +107,14 @@ test.describe("Policy API", () => {
       "/v1/workspaces/{workspaceId}/policies/{policyId}",
       {
         params: { path: { workspaceId: workspace.id, policyId } },
-        body: { name, priority: 5, enabled: true, selector: "true", rules: [] },
+        body: {
+          name,
+          priority: 5,
+          enabled: true,
+          selector: "true",
+          rules: [],
+          metadata: {},
+        },
       },
     );
 
@@ -143,12 +132,9 @@ test.describe("Policy API", () => {
     expect(getRes.response.status).toBe(200);
     expect(getRes.data!.id).toBe(policyId);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should update a policy via upsert", async ({ api, workspace }) => {
@@ -157,7 +143,14 @@ test.describe("Policy API", () => {
 
     await api.PUT("/v1/workspaces/{workspaceId}/policies/{policyId}", {
       params: { path: { workspaceId: workspace.id, policyId } },
-      body: { name, priority: 1, enabled: true, selector: "true", rules: [] },
+      body: {
+        name,
+        priority: 1,
+        enabled: true,
+        selector: "true",
+        rules: [],
+        metadata: {},
+      },
     });
 
     const updatedName = `${name}-updated`;
@@ -171,6 +164,7 @@ test.describe("Policy API", () => {
           enabled: false,
           selector: "false",
           rules: [],
+          metadata: {},
         },
       },
     );
@@ -190,23 +184,17 @@ test.describe("Policy API", () => {
     expect(getRes.data!.enabled).toBe(false);
     expect(getRes.data!.selector).toBe("false");
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should delete a policy", async ({ api, workspace }) => {
     const name = `policy-delete-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: { name, rules: [] },
-      },
-    );
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: { name, rules: [] },
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -256,7 +244,14 @@ test.describe("Policy API", () => {
         params: {
           path: { workspaceId: workspace.id, policyId: "not-a-uuid" },
         },
-        body: { name: "test", priority: 0, enabled: true, selector: "true", rules: [] },
+        body: {
+          name: "test",
+          priority: 0,
+          enabled: true,
+          selector: "true",
+          rules: [],
+          metadata: {},
+        },
       },
     );
 
@@ -265,35 +260,26 @@ test.describe("Policy API", () => {
 
   test("should list policies", async ({ api, workspace }) => {
     const name = `policy-list-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: { name, rules: [] },
-      },
-    );
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: { name, rules: [], metadata: {} },
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
 
-    const listRes = await api.GET(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-      },
-    );
+    const listRes = await api.GET("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+    });
 
     expect(listRes.response.status).toBe(200);
     expect(listRes.data!.items.some((p) => p.id === policyId)).toBe(true);
     expect(typeof listRes.data!.total).toBe("number");
     expect(listRes.data!.total).toBeGreaterThanOrEqual(1);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should list policies with pagination", async ({ api, workspace }) => {
@@ -306,6 +292,7 @@ test.describe("Policy API", () => {
           body: {
             name: `policy-page-${i}-${faker.string.alphanumeric(8)}`,
             rules: [],
+            metadata: {},
           },
         },
       );
@@ -337,12 +324,9 @@ test.describe("Policy API", () => {
     expect(page2.data!.offset).toBe(2);
 
     for (const policyId of policyIds) {
-      await api.DELETE(
-        "/v1/workspaces/{workspaceId}/policies/{policyId}",
-        {
-          params: { path: { workspaceId: workspace.id, policyId } },
-        },
-      );
+      await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+        params: { path: { workspaceId: workspace.id, policyId } },
+      });
     }
   });
 
@@ -351,16 +335,14 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-approval-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [{ anyApproval: { minApprovals: 2 } }],
-        },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [{ anyApproval: { minApprovals: 2 } }],
+        metadata: {},
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -379,12 +361,9 @@ test.describe("Policy API", () => {
     expect(getRes.data!.rules).toHaveLength(1);
     expect(getRes.data!.rules[0]!.anyApproval).toEqual({ minApprovals: 2 });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with deploymentWindow rule", async ({
@@ -392,32 +371,29 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-window-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            {
-              deploymentWindow: {
-                allowWindow: "business-hours",
-                durationMinutes: 60,
-                rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
-                timezone: "America/New_York",
-              },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            deploymentWindow: {
+              allowWindow: true,
+              durationMinutes: 60,
+              rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+              timezone: "America/New_York",
             },
-          ],
-        },
+          },
+        ],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
     const rules = createRes.data!.rules;
     expect(rules).toHaveLength(1);
     expect(rules[0]!.deploymentWindow).toMatchObject({
-      allowWindow: "business-hours",
+      allowWindow: true,
       durationMinutes: 60,
       rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
       timezone: "America/New_York",
@@ -432,41 +408,35 @@ test.describe("Policy API", () => {
 
     expect(getRes.response.status).toBe(200);
     expect(getRes.data!.rules[0]!.deploymentWindow).toMatchObject({
-      allowWindow: "business-hours",
+      allowWindow: true,
       durationMinutes: 60,
       rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
       timezone: "America/New_York",
     });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with retry rule", async ({ api, workspace }) => {
     const name = `policy-retry-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            {
-              retry: {
-                maxRetries: 3,
-                backoffSeconds: 30,
-                backoffStrategy: "exponential",
-                maxBackoffSeconds: 300,
-              },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            retry: {
+              maxRetries: 3,
+              backoffSeconds: 30,
+              backoffStrategy: "exponential",
+              maxBackoffSeconds: 300,
             },
-          ],
-        },
+          },
+        ],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -494,12 +464,9 @@ test.describe("Policy API", () => {
       maxBackoffSeconds: 300,
     });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with versionSelector rule", async ({
@@ -507,23 +474,20 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-vs-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            {
-              versionSelector: {
-                selector: 'version.tag.startsWith("v1.")',
-                description: "Only allow v1.x releases",
-              },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            versionSelector: {
+              selector: 'version.tag.startsWith("v1.")',
+              description: "Only allow v1.x releases",
             },
-          ],
-        },
+          },
+        ],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -547,12 +511,9 @@ test.describe("Policy API", () => {
       description: "Only allow v1.x releases",
     });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with gradualRollout rule", async ({
@@ -560,23 +521,20 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-rollout-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            {
-              gradualRollout: {
-                rolloutType: "linear",
-                timeScaleInterval: 10,
-              },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            gradualRollout: {
+              rolloutType: "linear",
+              timeScaleInterval: 10,
             },
-          ],
-        },
+          },
+        ],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -600,12 +558,9 @@ test.describe("Policy API", () => {
       timeScaleInterval: 10,
     });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with versionCooldown rule", async ({
@@ -613,16 +568,13 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-cooldown-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [{ versionCooldown: { intervalSeconds: 3600 } }],
-        },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [{ versionCooldown: { intervalSeconds: 3600 } }],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -642,65 +594,9 @@ test.describe("Policy API", () => {
       intervalSeconds: 3600,
     });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
-  });
-
-  test("should create a policy with rollback rule", async ({
-    api,
-    workspace,
-  }) => {
-    const name = `policy-rollback-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            {
-              rollback: {
-                onJobStatuses: ["failed", "cancelled"],
-                onVerificationFailure: true,
-              },
-            },
-          ],
-        },
-      },
-    );
-
-    expect(createRes.response.status).toBe(202);
-    const policyId = createRes.data!.id;
-    const rules = createRes.data!.rules;
-    expect(rules).toHaveLength(1);
-    expect(rules[0]!.rollback).toMatchObject({
-      onJobStatuses: ["failed", "cancelled"],
-      onVerificationFailure: true,
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
     });
-
-    const getRes = await api.GET(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
-
-    expect(getRes.response.status).toBe(200);
-    expect(getRes.data!.rules[0]!.rollback).toMatchObject({
-      onJobStatuses: ["failed", "cancelled"],
-      onVerificationFailure: true,
-    });
-
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
   });
 
   test("should create a policy with environmentProgression rule", async ({
@@ -708,25 +604,22 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-envprog-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            {
-              environmentProgression: {
-                dependsOnEnvironmentSelector: 'environment.name == "staging"',
-                minimumSoakTimeMinutes: 30,
-                minimumSuccessPercentage: 95,
-                maximumAgeHours: 24,
-              },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            environmentProgression: {
+              dependsOnEnvironmentSelector: 'environment.name == "staging"',
+              minimumSoakTimeMinutes: 30,
+              minimumSuccessPercentage: 95,
+              maximumAgeHours: 24,
             },
-          ],
-        },
+          },
+        ],
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -754,12 +647,9 @@ test.describe("Policy API", () => {
       maximumAgeHours: 24,
     });
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a policy with multiple rules", async ({
@@ -767,20 +657,18 @@ test.describe("Policy API", () => {
     workspace,
   }) => {
     const name = `policy-multi-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: {
-          name,
-          rules: [
-            { anyApproval: { minApprovals: 1 } },
-            { retry: { maxRetries: 2 } },
-            { versionCooldown: { intervalSeconds: 1800 } },
-          ],
-        },
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          { anyApproval: { minApprovals: 1 } },
+          { retry: { maxRetries: 2, backoffStrategy: "linear" } },
+          { versionCooldown: { intervalSeconds: 1800 } },
+        ],
+        metadata: {},
       },
-    );
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -800,12 +688,9 @@ test.describe("Policy API", () => {
     expect(rules.some((r) => r.retry != null)).toBe(true);
     expect(rules.some((r) => r.versionCooldown != null)).toBe(true);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should replace rules on upsert", async ({ api, workspace }) => {
@@ -821,8 +706,9 @@ test.describe("Policy API", () => {
         selector: "true",
         rules: [
           { anyApproval: { minApprovals: 1 } },
-          { retry: { maxRetries: 3 } },
+          { retry: { maxRetries: 3, backoffStrategy: "linear" } },
         ],
+        metadata: {},
       },
     });
 
@@ -836,6 +722,7 @@ test.describe("Policy API", () => {
           enabled: true,
           selector: "true",
           rules: [{ versionCooldown: { intervalSeconds: 600 } }],
+          metadata: {},
         },
       },
     );
@@ -856,23 +743,17 @@ test.describe("Policy API", () => {
     expect(rules.some((r) => r.anyApproval != null)).toBe(false);
     expect(rules.some((r) => r.retry != null)).toBe(false);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should create a disabled policy", async ({ api, workspace }) => {
     const name = `policy-disabled-${faker.string.alphanumeric(8)}`;
-    const createRes = await api.POST(
-      "/v1/workspaces/{workspaceId}/policies",
-      {
-        params: { path: { workspaceId: workspace.id } },
-        body: { name, enabled: false, rules: [] },
-      },
-    );
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: { name, enabled: false, rules: [] },
+    });
 
     expect(createRes.response.status).toBe(202);
     const policyId = createRes.data!.id;
@@ -888,12 +769,9 @@ test.describe("Policy API", () => {
     expect(getRes.response.status).toBe(200);
     expect(getRes.data!.enabled).toBe(false);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 
   test("should preserve createdAt timestamp across upserts", async ({
@@ -907,7 +785,14 @@ test.describe("Policy API", () => {
       "/v1/workspaces/{workspaceId}/policies/{policyId}",
       {
         params: { path: { workspaceId: workspace.id, policyId } },
-        body: { name, priority: 0, enabled: true, selector: "true", rules: [] },
+        body: {
+          name,
+          priority: 0,
+          enabled: true,
+          selector: "true",
+          rules: [],
+          metadata: {},
+        },
       },
     );
 
@@ -924,6 +809,7 @@ test.describe("Policy API", () => {
           enabled: false,
           selector: "false",
           rules: [],
+          metadata: {},
         },
       },
     );
@@ -931,11 +817,8 @@ test.describe("Policy API", () => {
     expect(updateRes.response.status).toBe(202);
     expect(updateRes.data!.createdAt).toBe(originalCreatedAt);
 
-    await api.DELETE(
-      "/v1/workspaces/{workspaceId}/policies/{policyId}",
-      {
-        params: { path: { workspaceId: workspace.id, policyId } },
-      },
-    );
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
   });
 });
