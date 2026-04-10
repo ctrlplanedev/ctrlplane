@@ -446,7 +446,7 @@ func EnvProgressionMinSuccessPercentage(pct float32) EnvironmentProgressionOptio
 // wait after the dependency environment reaches a success state.
 func EnvProgressionMinSoakTimeMinutes(minutes int32) EnvironmentProgressionOption {
 	return func(r *oapi.EnvironmentProgressionRule) {
-		r.MinimumSockTimeMinutes = &minutes
+		r.MinimumSoakTimeMinutes = &minutes
 	}
 }
 

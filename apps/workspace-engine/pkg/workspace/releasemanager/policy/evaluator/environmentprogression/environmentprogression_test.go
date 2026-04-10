@@ -184,7 +184,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		Id: "rule-1",
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
-			MinimumSockTimeMinutes:       &soakTime,
+			MinimumSoakTimeMinutes:       &soakTime,
 		},
 	}
 
@@ -462,7 +462,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		Id: "rule-1",
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
-			MinimumSockTimeMinutes:       &soakMinutes,
+			MinimumSoakTimeMinutes:       &soakMinutes,
 		},
 	}
 
@@ -586,7 +586,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
 			MinimumSuccessPercentage:     &minSuccessPercentage,
-			MinimumSockTimeMinutes:       &soakMinutes,
+			MinimumSoakTimeMinutes:       &soakMinutes,
 		},
 	}
 
@@ -743,7 +743,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
 			MinimumSuccessPercentage:     &minSuccessPercentage,
-			MinimumSockTimeMinutes:       &soakMinutes,
+			MinimumSoakTimeMinutes:       &soakMinutes,
 		},
 	}
 
@@ -823,7 +823,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		Id: "rule-1",
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
-			MinimumSockTimeMinutes:       &soakMinutes,
+			MinimumSoakTimeMinutes:       &soakMinutes,
 		},
 	}
 
@@ -878,7 +878,7 @@ func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) 
 		Id: "rule-1",
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
-			MinimumSockTimeMinutes:       &soakMinutes,
+			MinimumSoakTimeMinutes:       &soakMinutes,
 		},
 	}
 

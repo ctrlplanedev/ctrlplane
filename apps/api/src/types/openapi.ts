@@ -1405,6 +1405,12 @@ export interface components {
              * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
              * @default 0
              */
+            minimumSoakTimeMinutes: number;
+            /**
+             * Format: int32
+             * @description Deprecated: Use minimumSoakTimeMinutes instead. Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+             * @default 0
+             */
             minimumSockTimeMinutes: number;
             /**
              * Format: float

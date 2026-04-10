@@ -201,7 +201,7 @@ resource "ctrlplane_policy" "production_soak_requirement" {
     {
       "environmentProgression": {
         "dependsOnEnvironmentSelector": "environment.name == 'staging'",
-        "minimumSockTimeMinutes": 60
+        "minimumSoakTimeMinutes": 60
       }
     }
   ]
@@ -302,7 +302,7 @@ resource "ctrlplane_policy" "production_full_gate" {
       "environmentProgression": {
         "dependsOnEnvironmentSelector": "environment.name == 'staging'",
         "minimumSuccessPercentage": 100,
-        "minimumSockTimeMinutes": 30,
+        "minimumSoakTimeMinutes": 30,
         "maximumAgeHours": 48
       }
     },
