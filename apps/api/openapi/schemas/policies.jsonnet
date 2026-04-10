@@ -172,7 +172,6 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'integer',
         format: 'int32',
         minimum: 0,
-        deprecated: true,
         description: 'Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.',
       },
 

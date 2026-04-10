@@ -995,7 +995,6 @@
                   "type": "integer"
                },
                "minimumSoakTimeMinutes": {
-                  "deprecated": true,
                   "description": "Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.",
                   "format": "int32",
                   "minimum": 0,
