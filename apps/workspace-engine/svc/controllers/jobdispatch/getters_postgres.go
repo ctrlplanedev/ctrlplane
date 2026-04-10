@@ -48,43 +48,6 @@ func (p *PostgresGetter) GetRelease(
 	return release, nil
 }
 
-func (p *PostgresGetter) GetDeployment(
-	ctx context.Context,
-	deploymentID uuid.UUID,
-) (*oapi.Deployment, error) {
-	row, err := db.GetQueries(ctx).GetDeploymentByID(ctx, deploymentID)
-	if err != nil {
-		return nil, err
-	}
-	return db.ToOapiDeployment(row), nil
-}
-
-func (p *PostgresGetter) GetResource(
-	ctx context.Context,
-	resourceID uuid.UUID,
-) (*oapi.Resource, error) {
-	row, err := db.GetQueries(ctx).GetResourceByID(ctx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	return db.ToOapiResource(row), nil
-}
-
-func (p *PostgresGetter) ListJobAgentsByWorkspaceID(
-	ctx context.Context,
-	workspaceID uuid.UUID,
-) ([]oapi.JobAgent, error) {
-	rows, err := db.GetQueries(ctx).ListJobAgentsByWorkspaceID(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	agents := make([]oapi.JobAgent, len(rows))
-	for i, row := range rows {
-		agents[i] = *db.ToOapiJobAgent(row)
-	}
-	return agents, nil
-}
-
 func (p *PostgresGetter) GetJobAgent(
 	ctx context.Context,
 	jobAgentID uuid.UUID,

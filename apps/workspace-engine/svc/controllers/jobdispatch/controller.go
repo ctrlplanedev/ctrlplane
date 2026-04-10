@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/jobagents/argo"
@@ -21,6 +15,13 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
+
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var (
@@ -52,11 +53,6 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("parse job id: %w", err)
 	}
 
-	workspaceID, err := uuid.Parse(item.WorkspaceID)
-	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("parse workspace id: %w", err)
-	}
-
 	job, err := c.getter.GetJob(ctx, jobID)
 	if err != nil {
 		span.RecordError(err)
@@ -66,7 +62,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 	span.SetAttributes(attribute.String("job", fmt.Sprintf("%+v", job)))
 
-	result, err := c.reconcileJob(ctx, workspaceID, jobID, job)
+	result, err := c.reconcileJob(ctx, jobID, job)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -95,7 +91,6 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 func (c *Controller) reconcileJob(
 	ctx context.Context,
-	workspaceID uuid.UUID,
 	jobID uuid.UUID,
 	job *oapi.Job,
 ) (*ReconcileResult, error) {
@@ -106,7 +101,7 @@ func (c *Controller) reconcileJob(
 	if isWorkflowJob {
 		return ReconcileWorkflowJob(ctx, c.dispatcher, job)
 	}
-	return Reconcile(ctx, c.getter, c.setter, c.verifier, c.dispatcher, workspaceID, job)
+	return Reconcile(ctx, c.getter, c.setter, c.verifier, c.dispatcher, job)
 }
 
 // NewController creates a Controller with the given dependencies.

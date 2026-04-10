@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"workspace-engine/pkg/oapi"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"workspace-engine/pkg/oapi"
 )
 
 // ---------------------------------------------------------------------------
@@ -19,13 +20,8 @@ import (
 type mockGetter struct {
 	release                 *oapi.Release
 	releaseErr              error
-	deployment              *oapi.Deployment
-	deploymentErr           error
-	resource                *oapi.Resource
-	resourceErr             error
 	jobAgents               map[string]*oapi.JobAgent
 	jobAgentErr             error
-	workspaceAgents         []oapi.JobAgent
 	verificationPolicies    []oapi.VerificationMetricSpec
 	verificationPoliciesErr error
 }
@@ -38,20 +34,6 @@ func (m *mockGetter) GetRelease(_ context.Context, _ uuid.UUID) (*oapi.Release, 
 	return m.release, m.releaseErr
 }
 
-func (m *mockGetter) GetDeployment(_ context.Context, _ uuid.UUID) (*oapi.Deployment, error) {
-	return m.deployment, m.deploymentErr
-}
-
-func (m *mockGetter) GetResource(_ context.Context, _ uuid.UUID) (*oapi.Resource, error) {
-	if m.resource != nil || m.resourceErr != nil {
-		return m.resource, m.resourceErr
-	}
-	return &oapi.Resource{
-		Config:   map[string]any{},
-		Metadata: map[string]string{},
-	}, nil
-}
-
 func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgent, error) {
 	if m.jobAgentErr != nil {
 		return nil, m.jobAgentErr
@@ -61,13 +43,6 @@ func (m *mockGetter) GetJobAgent(_ context.Context, id uuid.UUID) (*oapi.JobAgen
 		return nil, fmt.Errorf("agent %s not found", id)
 	}
 	return agent, nil
-}
-
-func (m *mockGetter) ListJobAgentsByWorkspaceID(
-	_ context.Context,
-	_ uuid.UUID,
-) ([]oapi.JobAgent, error) {
-	return m.workspaceAgents, nil
 }
 
 func (m *mockGetter) GetVerificationPolicies(
@@ -198,20 +173,6 @@ func testRelease(deploymentID string) *oapi.Release {
 	}
 }
 
-var testWorkspaceID = uuid.New()
-
-func testDeployment() *oapi.Deployment {
-	sel := "true"
-	return &oapi.Deployment{
-		Id:               uuid.New().String(),
-		Name:             "test-deployment",
-		Slug:             "test-deployment",
-		Metadata:         map[string]string{},
-		JobAgentConfig:   oapi.JobAgentConfig{},
-		JobAgentSelector: sel,
-	}
-}
-
 func setupGetterWithAgents(agents []oapi.JobAgent) (*oapi.Job, *mockGetter) {
 	agentMap := make(map[string]*oapi.JobAgent, len(agents))
 	for i := range agents {
@@ -220,14 +181,15 @@ func setupGetterWithAgents(agents []oapi.JobAgent) (*oapi.Job, *mockGetter) {
 
 	deploymentID := uuid.New().String()
 	release := testRelease(deploymentID)
-	deployment := testDeployment()
 	job := testJob(release.Id.String())
 
+	if len(agents) > 0 {
+		job.JobAgentId = agents[0].Id
+	}
+
 	getter := &mockGetter{
-		release:         release,
-		deployment:      deployment,
-		jobAgents:       agentMap,
-		workspaceAgents: agents,
+		release:   release,
+		jobAgents: agentMap,
 	}
 	return job, getter
 }
@@ -249,32 +211,28 @@ func TestReconcile_GetReleaseFails(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.Error(t, err)
 	assert.Empty(t, dispatcher.dispatchCalls)
 }
 
-func TestReconcile_NoAgentsOnDeployment(t *testing.T) {
+func TestReconcile_AgentNotFound(t *testing.T) {
 	job, getter := setupGetterWithAgents(nil)
 	setter := &mockSetter{}
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{specs: map[string][]oapi.VerificationMetricSpec{}}
 
-	result, err := Reconcile(
+	_, err := Reconcile(
 		context.Background(),
 		getter,
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
-	require.NoError(t, err)
-	assert.NotNil(t, result)
+	require.Error(t, err)
 	assert.Empty(t, dispatcher.dispatchCalls)
-	assert.Empty(t, setter.createCalls)
 }
 
 func TestReconcile_DispatchesWithoutVerifications(t *testing.T) {
@@ -292,7 +250,6 @@ func TestReconcile_DispatchesWithoutVerifications(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.NoError(t, err)
@@ -325,7 +282,6 @@ func TestReconcile_DispatchesWithPolicyVerifications(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.NoError(t, err)
@@ -359,7 +315,6 @@ func TestReconcile_DispatchesWithAgentVerifications(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.NoError(t, err)
@@ -402,7 +357,6 @@ func TestReconcile_MergesAndDeduplicatesPolicyAndAgentSpecs(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.NoError(t, err)
@@ -450,7 +404,6 @@ func TestReconcile_TemplatesConditionsFromDispatchContext(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.NoError(t, err)
@@ -464,22 +417,19 @@ func TestReconcile_TemplatesConditionsFromDispatchContext(t *testing.T) {
 	)
 }
 
-func TestReconcile_MultipleAgentsContributeSpecs(t *testing.T) {
-	agent1ID := uuid.New().String()
-	agent2ID := uuid.New().String()
+func TestReconcile_AgentContributesMultipleSpecs(t *testing.T) {
+	agentID := uuid.New().String()
 	prov := sleepProvider(t)
 
 	job, getter := setupGetterWithAgents([]oapi.JobAgent{
-		{Id: agent1ID, Type: "argo-cd", Config: oapi.JobAgentConfig{}},
-		{Id: agent2ID, Type: "github", Config: oapi.JobAgentConfig{}},
+		{Id: agentID, Type: "argo-cd", Config: oapi.JobAgentConfig{}},
 	})
 
 	setter := &mockSetter{}
 	dispatcher := &mockDispatcher{}
 	verifier := &mockVerifier{
 		specs: map[string][]oapi.VerificationMetricSpec{
-			"argo-cd": {makeSpec("argo-check", prov)},
-			"github":  {makeSpec("gh-check", prov)},
+			"argo-cd": {makeSpec("argo-check", prov), makeSpec("argo-health", prov)},
 		},
 	}
 
@@ -489,7 +439,6 @@ func TestReconcile_MultipleAgentsContributeSpecs(t *testing.T) {
 		setter,
 		verifier,
 		dispatcher,
-		testWorkspaceID,
 		job,
 	)
 	require.NoError(t, err)
