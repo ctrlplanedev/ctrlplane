@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/jobagents/argo"
@@ -15,13 +21,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/postgres"
-
-	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var (

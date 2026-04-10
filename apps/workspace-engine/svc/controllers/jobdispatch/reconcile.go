@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/oapi"
-	"workspace-engine/svc/controllers/jobdispatch/verification"
-
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/svc/controllers/jobdispatch/verification"
 )
 
 type ReconcileResult struct {
@@ -60,17 +59,17 @@ func Reconcile(
 
 	agentUUID, err := uuid.Parse(job.JobAgentId)
 	if err != nil {
-		return nil, err
+		return nil, recordErr(span, "parse job agent id", err)
 	}
 
 	agent, err := getter.GetJobAgent(ctx, agentUUID)
 	if err != nil {
-		return nil, err
+		return nil, recordErr(span, "get job agent", err)
 	}
 
 	var agentSpecs []oapi.VerificationMetricSpec
 	if verifier != nil {
-		agentSpecs, err = verifier.AgentVerifications(agent.Type, agent.Config)
+		agentSpecs, err = verifier.AgentVerifications(agent.Type, job.JobAgentConfig)
 		if err != nil {
 			return nil, err
 		}
