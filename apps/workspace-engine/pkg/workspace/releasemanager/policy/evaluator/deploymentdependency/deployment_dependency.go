@@ -86,7 +86,8 @@ func (e *DeploymentDependencyEvaluator) Evaluate(
 
 	var evalErrors []string
 	for _, rt := range releaseTargets {
-		if rt.DeploymentId == scope.Deployment.Id && rt.EnvironmentId == scope.Environment.Id && rt.ResourceId == scope.Resource.Id {
+		if rt.DeploymentId == scope.Deployment.Id && rt.EnvironmentId == scope.Environment.Id &&
+			rt.ResourceId == scope.Resource.Id {
 			continue
 		}
 
@@ -105,7 +106,10 @@ func (e *DeploymentDependencyEvaluator) Evaluate(
 		matched, err := celutil.EvalBool(program, celCtx)
 		if err != nil {
 			span.RecordError(err)
-			evalErrors = append(evalErrors, fmt.Sprintf("rt %s: CEL evaluation error: %v", rt.Key(), err))
+			evalErrors = append(
+				evalErrors,
+				fmt.Sprintf("rt %s: CEL evaluation error: %v", rt.Key(), err),
+			)
 			continue
 		}
 
