@@ -52,12 +52,13 @@ type Getters interface {
 // ReleaseTargetJob holds the minimal job fields needed by the job tracker,
 // along with the release target triple identifying which target the job belongs to.
 type ReleaseTargetJob struct {
-	JobID         string
-	Status        oapi.JobStatus
-	CompletedAt   *time.Time
-	DeploymentID  string
-	EnvironmentID string
-	ResourceID    string
+	JobID              string
+	Status             oapi.JobStatus
+	CompletedAt        *time.Time
+	DeploymentID       string
+	EnvironmentID      string
+	ResourceID         string
+	VerificationStatus string
 }
 
 // ---------------------------------------------------------------------------
@@ -208,11 +209,12 @@ func (p *PostgresGetters) GetJobsForEnvironmentAndVersion(
 	result := make([]ReleaseTargetJob, len(rows))
 	for i, row := range rows {
 		rtj := ReleaseTargetJob{
-			JobID:         row.ID.String(),
-			Status:        db.ToOapiJobStatus(row.Status),
-			DeploymentID:  row.DeploymentID.String(),
-			EnvironmentID: row.EnvironmentID.String(),
-			ResourceID:    row.ResourceID.String(),
+			JobID:              row.ID.String(),
+			Status:             db.ToOapiJobStatus(row.Status),
+			DeploymentID:       row.DeploymentID.String(),
+			EnvironmentID:      row.EnvironmentID.String(),
+			ResourceID:         row.ResourceID.String(),
+			VerificationStatus: row.VerificationStatus,
 		}
 		if row.CompletedAt.Valid {
 			t := row.CompletedAt.Time

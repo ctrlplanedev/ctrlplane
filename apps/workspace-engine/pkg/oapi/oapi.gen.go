@@ -449,6 +449,9 @@ type EnvironmentProgressionRule struct {
 	MinimumSoakTimeMinutes   *int32       `json:"minimumSoakTimeMinutes,omitempty"`
 	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
 	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
+
+	// RequireVerificationPassed If true, jobs must also have passed verification to count toward the success percentage
+	RequireVerificationPassed *bool `json:"requireVerificationPassed,omitempty"`
 }
 
 // EnvironmentSummary defines model for EnvironmentSummary.

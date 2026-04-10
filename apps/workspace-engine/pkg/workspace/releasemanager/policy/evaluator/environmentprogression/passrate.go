@@ -57,6 +57,7 @@ func (e *PassRateEvaluator) Evaluate(
 		scope.Environment,
 		scope.Version,
 		e.successStatuses,
+		false,
 	)
 	return e.EvaluateWithTracker(tracker)
 }

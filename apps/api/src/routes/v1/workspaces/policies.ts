@@ -83,6 +83,8 @@ const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
         minimumSuccessPercentage:
           rule.environmentProgression.minimumSuccessPercentage,
         successStatuses: rule.environmentProgression.successStatuses,
+        requireVerificationPassed:
+          rule.environmentProgression.requireVerificationPassed ?? false,
       });
 
     if (rule.gradualRollout != null)
@@ -196,6 +198,7 @@ const formatPolicy = (p: PolicyRow) => {
           ...(r.successStatuses != null && {
             successStatuses: r.successStatuses,
           }),
+          requireVerificationPassed: r.requireVerificationPassed,
         },
       }),
     ),

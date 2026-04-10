@@ -141,6 +141,7 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 		MinimumSoakTimeMinutes       *int32    `json:"minimumSoakTimeMinutes"`
 		MinimumSuccessPercentage     *float32  `json:"minimumSuccessPercentage"`
 		SuccessStatuses              *[]string `json:"successStatuses"`
+		RequireVerificationPassed    *bool     `json:"requireVerificationPassed"`
 	}
 	var progs []progressionJSON
 	_ = json.Unmarshal(row.EnvironmentProgressionRules, &progs)
@@ -150,6 +151,7 @@ func ToOapiPolicyWithRules(row ListPoliciesWithRulesByWorkspaceIDRow) *oapi.Poli
 			MaximumAgeHours:              pr.MaximumAgeHours,
 			MinimumSoakTimeMinutes:       pr.MinimumSoakTimeMinutes,
 			MinimumSuccessPercentage:     pr.MinimumSuccessPercentage,
+			RequireVerificationPassed:    pr.RequireVerificationPassed,
 		}
 		if pr.SuccessStatuses != nil {
 			statuses := make([]oapi.JobStatus, len(*pr.SuccessStatuses))

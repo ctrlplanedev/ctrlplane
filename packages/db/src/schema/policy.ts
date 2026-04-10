@@ -139,6 +139,9 @@ export const policyRuleEnvironmentProgression = pgTable(
     minimumSoakTimeMinutes: integer("minimum_soak_time_minutes"),
     minimumSuccessPercentage: real("minimum_success_percentage"),
     successStatuses: text("success_statuses").array(),
+    requireVerificationPassed: boolean("require_verification_passed")
+      .notNull()
+      .default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

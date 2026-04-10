@@ -511,6 +511,7 @@ type PolicyRuleEnvironmentProgression struct {
 	MinimumSoakTimeMinutes       pgtype.Int4
 	MinimumSuccessPercentage     pgtype.Float4
 	SuccessStatuses              []string
+	RequireVerificationPassed    bool
 	CreatedAt                    pgtype.Timestamptz
 }
 

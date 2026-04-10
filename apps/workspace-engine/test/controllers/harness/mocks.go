@@ -451,13 +451,20 @@ func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
 			if !ok || rel.Version.Id != versionID {
 				continue
 			}
+			verificationStatus := ""
+			if g.JobVerificationStatuses != nil {
+				if vs, ok := g.JobVerificationStatuses[job.Id]; ok {
+					verificationStatus = string(vs)
+				}
+			}
 			result = append(result, environmentprogression.ReleaseTargetJob{
-				JobID:         job.Id,
-				Status:        job.Status,
-				CompletedAt:   job.CompletedAt,
-				DeploymentID:  depID,
-				EnvironmentID: envID,
-				ResourceID:    resID,
+				JobID:              job.Id,
+				Status:             job.Status,
+				CompletedAt:        job.CompletedAt,
+				DeploymentID:       depID,
+				EnvironmentID:      envID,
+				ResourceID:         resID,
+				VerificationStatus: verificationStatus,
 			})
 		}
 	}
