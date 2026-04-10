@@ -57,7 +57,11 @@ func (r *Registry) Register(agent interface{ Type() string }) {
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
-	jobAgent, err := r.getter.GetJobAgent(ctx, uuid.MustParse(job.JobAgentId))
+	id, err := uuid.Parse(job.JobAgentId)
+	if err != nil {
+		return fmt.Errorf("failed to parse jobAgent id in Dispatch: %w", err)
+	}
+	jobAgent, err := r.getter.GetJobAgent(ctx, id)
 	if err != nil {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)
 	}

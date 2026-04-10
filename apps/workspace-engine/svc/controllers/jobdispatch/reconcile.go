@@ -159,6 +159,7 @@ func Reconcile(
 		span.AddEvent("no job agents matched selector for deployment")
 		return &ReconcileResult{}, nil
 	}
+	job.JobAgentId = agents[0].Id
 
 	releaseTarget := &ReleaseTarget{
 		DeploymentID:  uuid.MustParse(release.ReleaseTarget.DeploymentId),
