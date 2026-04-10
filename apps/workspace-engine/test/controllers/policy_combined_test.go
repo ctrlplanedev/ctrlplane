@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
@@ -417,12 +416,14 @@ func TestCombinedPolicy_DependencyAndVersionSelector(t *testing.T) {
 			},
 		},
 	}
-	completedAt := time.Now().Add(-10 * time.Minute)
-	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstreamRTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusSuccessful,
-			CompletedAt: &completedAt,
+			Id:           uuid.New().String(),
+			Tag:          "v2.0.0",
+			Name:         "upstream-v2",
+			DeploymentId: upstreamDeploymentID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
 		},
 	}
 

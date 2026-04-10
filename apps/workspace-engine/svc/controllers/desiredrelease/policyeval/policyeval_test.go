@@ -169,7 +169,11 @@ func (m *mockGetter) GetReleaseTargetsForResource(
 ) []*oapi.ReleaseTarget {
 	return nil
 }
-func (m *mockGetter) GetLatestCompletedJobForReleaseTarget(_ *oapi.ReleaseTarget) *oapi.Job {
+
+func (m *mockGetter) GetCurrentlyDeployedVersion(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) *oapi.DeploymentVersion {
 	return nil
 }
 func (m *mockGetter) GetReleaseByJobID(_ context.Context, _ string) (*oapi.Release, error) {

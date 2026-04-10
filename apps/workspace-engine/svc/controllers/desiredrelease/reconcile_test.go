@@ -201,9 +201,10 @@ func (m *mockReconcileGetter) GetReleaseTargetsForResource(
 	return nil
 }
 
-func (m *mockReconcileGetter) GetLatestCompletedJobForReleaseTarget(
+func (m *mockReconcileGetter) GetCurrentlyDeployedVersion(
+	_ context.Context,
 	_ *oapi.ReleaseTarget,
-) *oapi.Job {
+) *oapi.DeploymentVersion {
 	return nil
 }
 

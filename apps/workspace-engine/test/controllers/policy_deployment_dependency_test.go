@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
@@ -10,7 +9,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Upstream dependency has successful job -> allowed
+// Upstream dependency has successful release -> allowed
 // ---------------------------------------------------------------------------
 
 func TestDeploymentDependency_UpstreamSuccessful_Allowed(t *testing.T) {
@@ -57,12 +56,14 @@ func TestDeploymentDependency_UpstreamSuccessful_Allowed(t *testing.T) {
 		},
 	}
 
-	completedAt := time.Now().Add(-10 * time.Minute)
-	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstreamRTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusSuccessful,
-			CompletedAt: &completedAt,
+			Id:           uuid.New().String(),
+			Tag:          "v2.0.0",
+			Name:         "upstream-v2",
+			DeploymentId: upstreamDeploymentID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
 		},
 	}
 
@@ -73,10 +74,10 @@ func TestDeploymentDependency_UpstreamSuccessful_Allowed(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Upstream dependency has no job -> blocked
+// Upstream dependency has no successful release -> blocked
 // ---------------------------------------------------------------------------
 
-func TestDeploymentDependency_UpstreamNoJob_Blocked(t *testing.T) {
+func TestDeploymentDependency_UpstreamNoRelease_Blocked(t *testing.T) {
 	deploymentID := uuid.New()
 	upstreamDeploymentID := uuid.New()
 	environmentID := uuid.New()
@@ -118,71 +119,7 @@ func TestDeploymentDependency_UpstreamNoJob_Blocked(t *testing.T) {
 			},
 		},
 	}
-	// No completed jobs for the upstream target.
-	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{}
-
-	p.Run()
-
-	p.AssertNoRelease(t)
-}
-
-// ---------------------------------------------------------------------------
-// Upstream dependency has failed job -> blocked
-// ---------------------------------------------------------------------------
-
-func TestDeploymentDependency_UpstreamFailedJob_Blocked(t *testing.T) {
-	deploymentID := uuid.New()
-	upstreamDeploymentID := uuid.New()
-	environmentID := uuid.New()
-	resourceID := uuid.New()
-
-	upstreamRTKey := upstreamDeploymentID.String() + ":" + environmentID.String() + ":" + resourceID.String()
-
-	p := NewTestPipeline(t,
-		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
-		WithEnvironment(EnvironmentName("production"), EnvironmentID(environmentID)),
-		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceID(resourceID)),
-		WithVersion(VersionTag("v1.0.0")),
-		WithPolicy(
-			PolicySelector("true"),
-			PolicyEnabled(true),
-			WithPolicyRule(
-				WithDeploymentDependencyRule(`deployment.name == "upstream-app"`),
-			),
-		),
-	)
-
-	upstreamRT := &oapi.ReleaseTarget{
-		DeploymentId:  upstreamDeploymentID.String(),
-		EnvironmentId: environmentID.String(),
-		ResourceId:    resourceID.String(),
-	}
-
-	p.ReleaseGetter.Deployments = map[string]*oapi.Deployment{
-		upstreamDeploymentID.String(): {
-			Id:   upstreamDeploymentID.String(),
-			Name: "upstream-app",
-		},
-	}
-	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
-		resourceID.String(): {
-			upstreamRT,
-			{
-				DeploymentId:  deploymentID.String(),
-				EnvironmentId: environmentID.String(),
-				ResourceId:    resourceID.String(),
-			},
-		},
-	}
-
-	completedAt := time.Now().Add(-10 * time.Minute)
-	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
-		upstreamRTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusFailure,
-			CompletedAt: &completedAt,
-		},
-	}
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{}
 
 	p.Run()
 
@@ -208,7 +145,6 @@ func TestDeploymentDependency_NoMatchingDeployments_Blocked(t *testing.T) {
 		),
 	)
 
-	// Empty deployments map means no matching deployments found.
 	p.ReleaseGetter.Deployments = map[string]*oapi.Deployment{}
 
 	p.Run()
@@ -265,6 +201,133 @@ func TestDeploymentDependency_NonMatchingSelector_DoesNotBlock(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Version selector scopes the dependency
+// ---------------------------------------------------------------------------
+
+func TestDeploymentDependency_VersionSelector_Allowed(t *testing.T) {
+	deploymentID := uuid.New()
+	upstreamDeploymentID := uuid.New()
+	environmentID := uuid.New()
+	resourceID := uuid.New()
+
+	upstreamRTKey := upstreamDeploymentID.String() + ":" + environmentID.String() + ":" + resourceID.String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
+		WithEnvironment(EnvironmentName("production"), EnvironmentID(environmentID)),
+		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceID(resourceID)),
+		WithVersion(VersionTag("v1.0.0")),
+		WithPolicy(
+			PolicySelector("true"),
+			PolicyEnabled(true),
+			WithPolicyRule(
+				WithDeploymentDependencyRule(
+					`deployment.name == "upstream-app" && version.tag.startsWith("v2.")`,
+				),
+			),
+		),
+	)
+
+	p.ReleaseGetter.Deployments = map[string]*oapi.Deployment{
+		upstreamDeploymentID.String(): {
+			Id:   upstreamDeploymentID.String(),
+			Name: "upstream-app",
+		},
+	}
+	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
+		resourceID.String(): {
+			{
+				DeploymentId:  upstreamDeploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  deploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+		},
+	}
+
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
+		upstreamRTKey: {
+			Id:           uuid.New().String(),
+			Tag:          "v2.1.0",
+			Name:         "upstream-v2.1",
+			DeploymentId: upstreamDeploymentID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
+		},
+	}
+
+	p.Run()
+
+	p.AssertReleaseCreated(t)
+	p.AssertReleaseVersion(t, 0, "v1.0.0")
+}
+
+func TestDeploymentDependency_VersionSelector_WrongVersion_Blocked(t *testing.T) {
+	deploymentID := uuid.New()
+	upstreamDeploymentID := uuid.New()
+	environmentID := uuid.New()
+	resourceID := uuid.New()
+
+	upstreamRTKey := upstreamDeploymentID.String() + ":" + environmentID.String() + ":" + resourceID.String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
+		WithEnvironment(EnvironmentName("production"), EnvironmentID(environmentID)),
+		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceID(resourceID)),
+		WithVersion(VersionTag("v1.0.0")),
+		WithPolicy(
+			PolicySelector("true"),
+			PolicyEnabled(true),
+			WithPolicyRule(
+				WithDeploymentDependencyRule(
+					`deployment.name == "upstream-app" && version.tag.startsWith("v2.")`,
+				),
+			),
+		),
+	)
+
+	p.ReleaseGetter.Deployments = map[string]*oapi.Deployment{
+		upstreamDeploymentID.String(): {
+			Id:   upstreamDeploymentID.String(),
+			Name: "upstream-app",
+		},
+	}
+	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
+		resourceID.String(): {
+			{
+				DeploymentId:  upstreamDeploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+			{
+				DeploymentId:  deploymentID.String(),
+				EnvironmentId: environmentID.String(),
+				ResourceId:    resourceID.String(),
+			},
+		},
+	}
+
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
+		upstreamRTKey: {
+			Id:           uuid.New().String(),
+			Tag:          "v1.5.0",
+			Name:         "upstream-v1.5",
+			DeploymentId: upstreamDeploymentID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
+		},
+	}
+
+	p.Run()
+
+	p.AssertNoRelease(t)
+}
+
+// ---------------------------------------------------------------------------
 // Multiple upstream dependencies all successful -> allowed
 // ---------------------------------------------------------------------------
 
@@ -318,17 +381,22 @@ func TestDeploymentDependency_MultipleUpstreams_AllSuccessful_Allowed(t *testing
 		},
 	}
 
-	completedAt := time.Now().Add(-10 * time.Minute)
-	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstream1RTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusSuccessful,
-			CompletedAt: &completedAt,
+			Id:           uuid.New().String(),
+			Tag:          "v1.0.0",
+			Name:         "upstream-1-v1",
+			DeploymentId: upstream1ID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
 		},
 		upstream2RTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusSuccessful,
-			CompletedAt: &completedAt,
+			Id:           uuid.New().String(),
+			Tag:          "v1.0.0",
+			Name:         "upstream-2-v1",
+			DeploymentId: upstream2ID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
 		},
 	}
 
@@ -339,10 +407,11 @@ func TestDeploymentDependency_MultipleUpstreams_AllSuccessful_Allowed(t *testing
 }
 
 // ---------------------------------------------------------------------------
-// Multiple upstream dependencies, one fails -> blocked
+// Multiple upstreams, one has no deployed version -> still allowed
+// (ANY match semantics: at least one upstream matches the selector)
 // ---------------------------------------------------------------------------
 
-func TestDeploymentDependency_MultipleUpstreams_OneFails_Blocked(t *testing.T) {
+func TestDeploymentDependency_MultipleUpstreams_OneWithoutVersion_StillAllowed(t *testing.T) {
 	deploymentID := uuid.New()
 	upstream1ID := uuid.New()
 	upstream2ID := uuid.New()
@@ -350,7 +419,6 @@ func TestDeploymentDependency_MultipleUpstreams_OneFails_Blocked(t *testing.T) {
 	resourceID := uuid.New()
 
 	upstream1RTKey := upstream1ID.String() + ":" + environmentID.String() + ":" + resourceID.String()
-	upstream2RTKey := upstream2ID.String() + ":" + environmentID.String() + ":" + resourceID.String()
 
 	p := NewTestPipeline(t,
 		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
@@ -392,23 +460,22 @@ func TestDeploymentDependency_MultipleUpstreams_OneFails_Blocked(t *testing.T) {
 		},
 	}
 
-	completedAt := time.Now().Add(-10 * time.Minute)
-	p.ReleaseGetter.LatestCompletedJobs = map[string]*oapi.Job{
+	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstream1RTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusSuccessful,
-			CompletedAt: &completedAt,
+			Id:           uuid.New().String(),
+			Tag:          "v1.0.0",
+			Name:         "upstream-1-v1",
+			DeploymentId: upstream1ID.String(),
+			Status:       oapi.DeploymentVersionStatusReady,
+			Metadata:     map[string]string{},
 		},
-		upstream2RTKey: {
-			Id:          uuid.New().String(),
-			Status:      oapi.JobStatusFailure,
-			CompletedAt: &completedAt,
-		},
+		// upstream-2 has no deployed version
 	}
 
 	p.Run()
 
-	p.AssertNoRelease(t)
+	p.AssertReleaseCreated(t)
+	p.AssertReleaseVersion(t, 0, "v1.0.0")
 }
 
 // ---------------------------------------------------------------------------
@@ -441,7 +508,6 @@ func TestDeploymentDependency_UpstreamMissingReleaseTarget_Blocked(t *testing.T)
 			Name: "upstream-app",
 		},
 	}
-	// Resource targets don't include the upstream deployment's target.
 	p.ReleaseGetter.ReleaseTargetsByResource = map[string][]*oapi.ReleaseTarget{
 		resourceID.String(): {
 			{

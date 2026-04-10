@@ -2,9 +2,11 @@ package deploymentdependency
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store"
@@ -15,7 +17,7 @@ type deploymentGetter = store.DeploymentGetter
 type Getters interface {
 	deploymentGetter
 	GetReleaseTargetsForResource(ctx context.Context, resourceID string) []*oapi.ReleaseTarget
-	GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job
+	GetCurrentlyDeployedVersion(ctx context.Context, rt *oapi.ReleaseTarget) *oapi.DeploymentVersion
 }
 
 var _ Getters = (*PostgresGetters)(nil)
@@ -58,29 +60,46 @@ func (p *PostgresGetters) GetReleaseTargetsForResource(
 	return targets
 }
 
-func (p *PostgresGetters) GetLatestCompletedJobForReleaseTarget(
-	releaseTarget *oapi.ReleaseTarget,
-) *oapi.Job {
-	if releaseTarget == nil {
+func (p *PostgresGetters) GetCurrentlyDeployedVersion(
+	ctx context.Context,
+	rt *oapi.ReleaseTarget,
+) *oapi.DeploymentVersion {
+	if rt == nil {
 		return nil
 	}
-	row, err := p.queries.GetLatestCompletedJobForReleaseTarget(
-		context.Background(),
-		db.GetLatestCompletedJobForReleaseTargetParams{
-			DeploymentID:  uuid.MustParse(releaseTarget.DeploymentId),
-			EnvironmentID: uuid.MustParse(releaseTarget.EnvironmentId),
-			ResourceID:    uuid.MustParse(releaseTarget.ResourceId),
+	row, err := p.queries.GetCurrentReleaseByReleaseTarget(
+		ctx,
+		db.GetCurrentReleaseByReleaseTargetParams{
+			ResourceID:    uuid.MustParse(rt.ResourceId),
+			EnvironmentID: uuid.MustParse(rt.EnvironmentId),
+			DeploymentID:  uuid.MustParse(rt.DeploymentId),
 		},
 	)
 	if err != nil {
-		slog.Error(
-			"failed to get latest completed job for release target",
-			"releaseTarget",
-			releaseTarget.Key(),
-			"error",
-			err,
-		)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error(
+				"failed to get current release for release target",
+				"releaseTarget",
+				rt.Key(),
+				"error",
+				err,
+			)
+		}
 		return nil
 	}
-	return db.ToOapiJobFromLatestCompleted(row)
+	v := &oapi.DeploymentVersion{
+		Id:           row.VersionID.String(),
+		Name:         row.VersionName,
+		Tag:          row.VersionTag,
+		DeploymentId: row.DeploymentID.String(),
+		Status:       oapi.DeploymentVersionStatus(row.VersionStatus),
+		Metadata:     row.VersionMetadata,
+	}
+	if row.VersionCreatedAt.Valid {
+		v.CreatedAt = row.VersionCreatedAt.Time
+	}
+	if row.VersionMessage.Valid {
+		v.Message = &row.VersionMessage.String
+	}
+	return v
 }
