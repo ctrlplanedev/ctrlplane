@@ -599,6 +599,191 @@ test.describe("Policy API", () => {
     });
   });
 
+  test("should create a policy with deploymentDependency rule", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `policy-depdep-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            deploymentDependency: {
+              dependsOn: "deployment.name == 'db-migration'",
+            },
+          },
+        ],
+      },
+    });
+
+    expect(createRes.response.status).toBe(202);
+    const policyId = createRes.data!.id;
+    const rules = createRes.data!.rules;
+    expect(rules).toHaveLength(1);
+    expect(rules[0]!.deploymentDependency).toMatchObject({
+      dependsOn: "deployment.name == 'db-migration'",
+    });
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      {
+        params: { path: { workspaceId: workspace.id, policyId } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.rules[0]!.deploymentDependency).toMatchObject({
+      dependsOn: "deployment.name == 'db-migration'",
+    });
+
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
+  });
+
+  test("should create a policy with verification rule", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `policy-verify-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            verification: {
+              triggerOn: "jobSuccess",
+              metrics: [
+                {
+                  name: "health-check",
+                  intervalSeconds: 30,
+                  count: 3,
+                  failureThreshold: 0,
+                  successCondition: "result.statusCode == 200",
+                  provider: {
+                    type: "http",
+                    url: "http://localhost/health",
+                    method: "GET",
+                    timeout: "10s",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(createRes.response.status).toBe(202);
+    const policyId = createRes.data!.id;
+    const rules = createRes.data!.rules;
+    expect(rules).toHaveLength(1);
+    expect(rules[0]!.verification).toMatchObject({
+      triggerOn: "jobSuccess",
+      metrics: [
+        {
+          name: "health-check",
+          intervalSeconds: 30,
+          count: 3,
+          successCondition: "result.statusCode == 200",
+          provider: {
+            type: "http",
+            url: "http://localhost/health",
+            method: "GET",
+          },
+        },
+      ],
+    });
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      {
+        params: { path: { workspaceId: workspace.id, policyId } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.rules[0]!.verification).toMatchObject({
+      triggerOn: "jobSuccess",
+      metrics: [
+        {
+          name: "health-check",
+          intervalSeconds: 30,
+          count: 3,
+          successCondition: "result.statusCode == 200",
+        },
+      ],
+    });
+
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
+  });
+
+  test("should upsert a policy with description and metadata", async ({
+    api,
+    workspace,
+  }) => {
+    const policyId = uuidv4();
+    const name = `policy-desc-meta-${faker.string.alphanumeric(8)}`;
+
+    const createRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      {
+        params: { path: { workspaceId: workspace.id, policyId } },
+        body: {
+          name,
+          description: "Initial description",
+          priority: 1,
+          enabled: true,
+          selector: "true",
+          rules: [],
+          metadata: { team: "platform" },
+        },
+      },
+    );
+
+    expect(createRes.response.status).toBe(202);
+    expect(createRes.data!.description).toBe("Initial description");
+    expect(createRes.data!.metadata).toEqual({ team: "platform" });
+
+    const updateRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      {
+        params: { path: { workspaceId: workspace.id, policyId } },
+        body: {
+          name,
+          description: "Updated description",
+          priority: 1,
+          enabled: true,
+          selector: "true",
+          rules: [],
+          metadata: { team: "infra", env: "production" },
+        },
+      },
+    );
+
+    expect(updateRes.response.status).toBe(202);
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      {
+        params: { path: { workspaceId: workspace.id, policyId } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.description).toBe("Updated description");
+    expect(getRes.data!.metadata).toEqual({ team: "infra", env: "production" });
+
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
+  });
+
   test("should create a policy with environmentProgression rule", async ({
     api,
     workspace,
