@@ -332,7 +332,7 @@ resource "ctrlplane_policy" "production_policy" {
 
   environment_progression {
     depends_on_environment_selector = "environment.name == 'staging'"
-    minimum_sock_time_minutes       = 30
+    minimum_soak_time_minutes       = 30
   }
 
   gradual_rollout {

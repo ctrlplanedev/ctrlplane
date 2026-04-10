@@ -195,7 +195,6 @@ export const policiesRouter = router({
             const ep = rule.environmentProgression as {
               dependsOnEnvironmentSelector: string;
               maximumAgeHours?: number;
-              minimumSockTimeMinutes?: number;
               minimumSoakTimeMinutes?: number;
               minimumSuccessPercentage?: number;
               successStatuses?: string[];
@@ -205,8 +204,7 @@ export const policiesRouter = router({
               policyId,
               dependsOnEnvironmentSelector: ep.dependsOnEnvironmentSelector,
               maximumAgeHours: ep.maximumAgeHours,
-              minimumSoakTimeMinutes:
-                ep.minimumSoakTimeMinutes ?? ep.minimumSockTimeMinutes,
+              minimumSoakTimeMinutes: ep.minimumSoakTimeMinutes,
               minimumSuccessPercentage: ep.minimumSuccessPercentage,
               successStatuses: ep.successStatuses,
             });

@@ -1000,13 +1000,6 @@
                   "minimum": 0,
                   "type": "integer"
                },
-               "minimumSockTimeMinutes": {
-                  "deprecated": true,
-                  "description": "Use minimumSoakTimeMinutes instead. Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed",
-                  "format": "int32",
-                  "minimum": 0,
-                  "type": "integer"
-               },
                "minimumSuccessPercentage": {
                   "default": 100,
                   "format": "float",
