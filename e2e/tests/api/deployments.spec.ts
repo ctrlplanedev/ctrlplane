@@ -404,4 +404,224 @@ test.describe("Deployment API", () => {
       { params: { path: { workspaceId: workspace.id, deploymentId } } },
     );
   });
+
+  test("should filter deployments by name using CEL", async ({
+    api,
+    workspace,
+  }) => {
+    const uniqueTag = faker.string.alphanumeric(12);
+    const matchName = `cel-match-${uniqueTag}`;
+    const noMatchName = `cel-other-${faker.string.alphanumeric(12)}`;
+
+    const [matchRes, noMatchRes] = await Promise.all([
+      api.POST("/v1/workspaces/{workspaceId}/deployments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: matchName, slug: matchName },
+      }),
+      api.POST("/v1/workspaces/{workspaceId}/deployments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: noMatchName, slug: noMatchName },
+      }),
+    ]);
+
+    expect(matchRes.response.status).toBe(202);
+    expect(noMatchRes.response.status).toBe(202);
+    const matchId = matchRes.data!.id;
+    const noMatchId = noMatchRes.data!.id;
+
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: { cel: `deployment.name.contains('${uniqueTag}')` },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(200);
+    const items = listRes.data!.items;
+    expect(items.some((d) => d.deployment.id === matchId)).toBe(true);
+    expect(items.some((d) => d.deployment.id === noMatchId)).toBe(false);
+
+    await Promise.all([
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId: workspace.id, deploymentId: matchId } } },
+      ),
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId: workspace.id, deploymentId: noMatchId } } },
+      ),
+    ]);
+  });
+
+  test("should filter deployments by metadata using CEL", async ({
+    api,
+    workspace,
+  }) => {
+    const uniqueVal = faker.string.alphanumeric(12);
+    const withMeta = `cel-meta-${faker.string.alphanumeric(8)}`;
+    const withoutMeta = `cel-nometa-${faker.string.alphanumeric(8)}`;
+
+    const [metaRes, noMetaRes] = await Promise.all([
+      api.POST("/v1/workspaces/{workspaceId}/deployments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: withMeta,
+          slug: withMeta,
+          metadata: { team: uniqueVal },
+        },
+      }),
+      api.POST("/v1/workspaces/{workspaceId}/deployments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: withoutMeta,
+          slug: withoutMeta,
+          metadata: { team: "other" },
+        },
+      }),
+    ]);
+
+    expect(metaRes.response.status).toBe(202);
+    expect(noMetaRes.response.status).toBe(202);
+    const metaId = metaRes.data!.id;
+    const noMetaId = noMetaRes.data!.id;
+
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: { cel: `deployment.metadata.team == '${uniqueVal}'` },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(200);
+    const items = listRes.data!.items;
+    expect(items.some((d) => d.deployment.id === metaId)).toBe(true);
+    expect(items.some((d) => d.deployment.id === noMetaId)).toBe(false);
+
+    await Promise.all([
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId: workspace.id, deploymentId: metaId } } },
+      ),
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId: workspace.id, deploymentId: noMetaId } } },
+      ),
+    ]);
+  });
+
+  test("should return correct total when filtering with CEL", async ({
+    api,
+    workspace,
+  }) => {
+    const tag = faker.string.alphanumeric(12);
+    const names = [
+      `cel-total-${tag}-a`,
+      `cel-total-${tag}-b`,
+      `cel-total-${tag}-c`,
+    ];
+
+    const createResults = await Promise.all(
+      names.map((name) =>
+        api.POST("/v1/workspaces/{workspaceId}/deployments", {
+          params: { path: { workspaceId: workspace.id } },
+          body: { name, slug: name },
+        }),
+      ),
+    );
+
+    const ids = createResults.map((r) => {
+      expect(r.response.status).toBe(202);
+      return r.data!.id;
+    });
+
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: {
+            cel: `deployment.name.contains('${tag}')`,
+            limit: 2,
+            offset: 0,
+          },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.total).toBe(3);
+    expect(listRes.data!.items).toHaveLength(2);
+    expect(listRes.data!.limit).toBe(2);
+    expect(listRes.data!.offset).toBe(0);
+
+    await Promise.all(
+      ids.map((deploymentId) =>
+        api.DELETE(
+          "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+          { params: { path: { workspaceId: workspace.id, deploymentId } } },
+        ),
+      ),
+    );
+  });
+
+  test("should return empty list for non-matching CEL filter", async ({
+    api,
+    workspace,
+  }) => {
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: {
+            cel: `deployment.name == 'nonexistent-${faker.string.alphanumeric(20)}'`,
+          },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items).toHaveLength(0);
+    expect(listRes.data!.total).toBe(0);
+  });
+
+  test("should return all deployments when no CEL filter is provided", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `cel-nofilter-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: name },
+      },
+    );
+
+    expect(createRes.response.status).toBe(202);
+    const deploymentId = createRes.data!.id;
+
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+      },
+    );
+
+    expect(listRes.response.status).toBe(200);
+    expect(listRes.data!.items.some((d) => d.deployment.id === deploymentId)).toBe(
+      true,
+    );
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
 });

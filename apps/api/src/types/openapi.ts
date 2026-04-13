@@ -2959,6 +2959,8 @@ export interface operations {
                 limit?: number;
                 /** @description Number of items to skip */
                 offset?: number;
+                /** @description CEL expression to filter the results */
+                cel?: string;
             };
             header?: never;
             path: {

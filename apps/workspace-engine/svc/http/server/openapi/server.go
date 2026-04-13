@@ -13,6 +13,7 @@ import (
 
 func New(pool *pgxpool.Pool) *Server {
 	return &Server{
+		Deployments:    deployments.New(),
 		Workflows:      workflows.NewWorkflows(pool),
 		ReleaseTargets: release_targets.New(),
 		Verifications:  verifications.New(),

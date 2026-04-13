@@ -67,6 +67,7 @@
     name: 'cel',
     'in': 'query',
     required: false,
+    allowReserved: true,
     description: 'CEL expression to filter the results',
     schema: {
       type: 'string',

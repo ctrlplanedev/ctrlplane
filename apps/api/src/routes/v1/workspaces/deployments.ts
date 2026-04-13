@@ -11,6 +11,7 @@ import {
   enqueueReleaseTargetsForDeployment,
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 // 1 hour
 
@@ -66,54 +67,22 @@ const listDeployments: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const limit = req.query.limit ?? 50;
   const offset = req.query.offset ?? 0;
+  const cel = req.query.cel;
 
-  const [countResult] = await db
-    .select({ total: count() })
-    .from(schema.deployment)
-    .where(eq(schema.deployment.workspaceId, workspaceId));
+  const result = await getClientFor().GET(
+    "/v1/workspaces/{workspaceId}/deployments",
+    {
+      params: {
+        path: { workspaceId },
+        query: { limit, offset, cel },
+      },
+    },
+  );
 
-  const total = countResult?.total ?? 0;
+  if (result.error != null)
+    throw new ApiError(JSON.stringify(result.error), result.response.status);
 
-  const deployments = await db
-    .select()
-    .from(schema.deployment)
-    .where(eq(schema.deployment.workspaceId, workspaceId))
-    .limit(limit)
-    .offset(offset);
-
-  const deploymentIds = deployments.map((d) => d.id);
-
-  const systemLinks =
-    deploymentIds.length > 0
-      ? await db
-          .select({
-            deploymentId: schema.systemDeployment.deploymentId,
-            system: schema.system,
-          })
-          .from(schema.systemDeployment)
-          .innerJoin(
-            schema.system,
-            eq(schema.systemDeployment.systemId, schema.system.id),
-          )
-          .where(inArray(schema.systemDeployment.deploymentId, deploymentIds))
-      : [];
-
-  const systemsByDeploymentId = new Map<
-    string,
-    (typeof schema.system.$inferSelect)[]
-  >();
-  for (const link of systemLinks) {
-    const arr = systemsByDeploymentId.get(link.deploymentId) ?? [];
-    arr.push(link.system);
-    systemsByDeploymentId.set(link.deploymentId, arr);
-  }
-
-  const items = deployments.map((dep) => ({
-    deployment: formatDeployment(dep),
-    systems: (systemsByDeploymentId.get(dep.id) ?? []).map(formatSystem),
-  }));
-
-  res.status(200).json({ items, total, limit, offset });
+  res.status(200).json(result.data);
 };
 
 const getDeployment: AsyncTypedHandler<
