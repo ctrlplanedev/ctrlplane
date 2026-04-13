@@ -8,11 +8,12 @@ import (
 )
 
 // Verifications returns the ArgoCD application health check spec built from
-// the agent config. The provider URL uses the serverUrl from config; the
-// specific application path is resolved at measurement time via the
-// provider context.
+// the agent config and dispatch context. The dispatch context is used to
+// render the application template and determine the specific application
+// name to query.
 func (a *ArgoApplication) Verifications(
 	config oapi.JobAgentConfig,
+	dispatchCtx *oapi.DispatchContext,
 ) ([]oapi.VerificationMetricSpec, error) {
 	serverAddr, ok := config["serverUrl"].(string)
 	if !ok || serverAddr == "" {
@@ -22,12 +23,25 @@ func (a *ArgoApplication) Verifications(
 	if !ok || apiKey == "" {
 		return nil, nil
 	}
+	template, ok := config["template"].(string)
+	if !ok || template == "" {
+		return nil, nil
+	}
+	if dispatchCtx == nil {
+		return nil, fmt.Errorf("missing dispatch context for application template rendering")
+	}
+
+	app, err := TemplateApplication(dispatchCtx, template)
+	if err != nil {
+		return nil, fmt.Errorf("render application template: %w", err)
+	}
+	MakeApplicationK8sCompatible(app)
 
 	baseURL := serverAddr
 	if !strings.HasPrefix(baseURL, "https://") {
 		baseURL = "https://" + baseURL
 	}
-	appURL := fmt.Sprintf("%s/api/v1/applications", baseURL)
+	appURL := fmt.Sprintf("%s/api/v1/applications/%s", baseURL, app.Name)
 
 	method := oapi.GET
 	timeout := "5s"

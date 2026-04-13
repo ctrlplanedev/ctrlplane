@@ -278,12 +278,10 @@ func TestBuildArgoLinks(t *testing.T) {
 
 func TestVerifications_ValidConfig(t *testing.T) {
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
-	config := oapi.JobAgentConfig{
-		"serverUrl": "argocd.example.com",
-		"apiKey":    "test-token",
-	}
+	job := testJob()
+	config := job.DispatchContext.JobAgentConfig
 
-	specs, err := a.Verifications(config)
+	specs, err := a.Verifications(config, job.DispatchContext)
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
 	assert.Equal(t, "argocd-application-health", specs[0].Name)
@@ -293,14 +291,20 @@ func TestVerifications_ValidConfig(t *testing.T) {
 
 func TestVerifications_MissingServerUrl(t *testing.T) {
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
-	specs, err := a.Verifications(oapi.JobAgentConfig{"apiKey": "token"})
+	specs, err := a.Verifications(
+		oapi.JobAgentConfig{"apiKey": "token", "template": "yaml"},
+		testJob().DispatchContext,
+	)
 	require.NoError(t, err)
 	assert.Nil(t, specs)
 }
 
 func TestVerifications_MissingApiKey(t *testing.T) {
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
-	specs, err := a.Verifications(oapi.JobAgentConfig{"serverUrl": "addr"})
+	specs, err := a.Verifications(
+		oapi.JobAgentConfig{"serverUrl": "addr", "template": "yaml"},
+		testJob().DispatchContext,
+	)
 	require.NoError(t, err)
 	assert.Nil(t, specs)
 }

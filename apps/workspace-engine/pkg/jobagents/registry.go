@@ -85,6 +85,7 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 func (r *Registry) AgentVerifications(
 	agentType string,
 	config oapi.JobAgentConfig,
+	dispatchCtx *oapi.DispatchContext,
 ) ([]oapi.VerificationMetricSpec, error) {
 	dispatcher, ok := r.dispatchers[agentType]
 	if !ok {
@@ -96,7 +97,7 @@ func (r *Registry) AgentVerifications(
 		return nil, nil
 	}
 
-	return v.Verifications(config)
+	return v.Verifications(config, dispatchCtx)
 }
 
 func (r *Registry) Plan(

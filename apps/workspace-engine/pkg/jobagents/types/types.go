@@ -19,7 +19,10 @@ type Dispatchable interface {
 // the job.
 type Verifiable interface {
 	Type() string
-	Verifications(config oapi.JobAgentConfig) ([]oapi.VerificationMetricSpec, error)
+	Verifications(
+		config oapi.JobAgentConfig,
+		dispatchCtx *oapi.DispatchContext,
+	) ([]oapi.VerificationMetricSpec, error)
 }
 
 // Plannable is optionally implemented by a Dispatchable to compute the
