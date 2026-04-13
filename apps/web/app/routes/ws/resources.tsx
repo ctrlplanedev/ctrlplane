@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parse } from "cel-js";
 import { Plus, Search } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { useDebounce } from "react-use";
@@ -50,15 +51,30 @@ function useSearch() {
   return { search, setSearch, searchDebounced };
 }
 
+function getCleanedSearch(search: string): string {
+  if (search === "") return "true";
+
+  if (search.includes("resource.")) {
+    try {
+      const result = parse(search);
+      if (result.isSuccess) return search;
+    } catch {
+      // not valid CEL, fall through to wrapping
+    }
+  }
+
+  const escaped = search.replace(/'/g, "\\'");
+  return `resource.name.contains('${escaped}') || resource.identifier.contains('${escaped}')`;
+}
+
 export default function Resources() {
   const { workspace } = useWorkspace();
-
   const { search, setSearch, searchDebounced } = useSearch();
   const { kind } = useKindFilter();
   const { data: resources } = trpc.resource.list.useQuery(
     {
       workspaceId: workspace.id,
-      selector: `resource.name.contains('${searchDebounced}') || resource.identifier.contains('${searchDebounced}')`,
+      selector: getCleanedSearch(searchDebounced),
       kind,
       limit: 200,
       offset: 0,
