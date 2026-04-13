@@ -70,13 +70,18 @@ func (d *Deployments) ListDeployments(
 		offset = *params.Offset
 	}
 
+	if limit < 1 || limit > 1000 || offset < 0 {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "limit must be between 1 and 1000, offset must be >= 0"},
+		)
+		return
+	}
+
 	if offset > len(filtered) {
 		offset = len(filtered)
 	}
-	end := offset + limit
-	if end > len(filtered) {
-		end = len(filtered)
-	}
+	end := min(offset+limit, len(filtered))
 	page := filtered[offset:end]
 
 	deploymentIDs := make([]uuid.UUID, len(page))

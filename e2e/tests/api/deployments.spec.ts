@@ -591,6 +591,54 @@ test.describe("Deployment API", () => {
     expect(listRes.data!.total).toBe(0);
   });
 
+  test("should return 400 for negative offset", async ({
+    api,
+    workspace,
+  }) => {
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: { offset: -1 },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(400);
+  });
+
+  test("should return 400 for zero limit", async ({ api, workspace }) => {
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: { limit: 0 },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(400);
+  });
+
+  test("should return 400 for limit exceeding 1000", async ({
+    api,
+    workspace,
+  }) => {
+    const listRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: {
+          path: { workspaceId: workspace.id },
+          query: { limit: 1001 },
+        },
+      },
+    );
+
+    expect(listRes.response.status).toBe(400);
+  });
+
   test("should return all deployments when no CEL filter is provided", async ({
     api,
     workspace,
