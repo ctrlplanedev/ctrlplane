@@ -51,7 +51,7 @@ function useSearch() {
   return { search, setSearch, searchDebounced };
 }
 
-function getCleanedSearch(search: string): string {
+function buildResourceSelector(search: string): string {
   if (search === "") return "true";
 
   if (search.includes("resource.")) {
@@ -63,7 +63,7 @@ function getCleanedSearch(search: string): string {
     }
   }
 
-  const escaped = search.replace(/'/g, "\\'");
+  const escaped = search.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
   return `resource.name.contains('${escaped}') || resource.identifier.contains('${escaped}')`;
 }
 
@@ -74,7 +74,7 @@ export default function Resources() {
   const { data: resources } = trpc.resource.list.useQuery(
     {
       workspaceId: workspace.id,
-      selector: getCleanedSearch(searchDebounced),
+      selector: buildResourceSelector(searchDebounced),
       kind,
       limit: 200,
       offset: 0,
