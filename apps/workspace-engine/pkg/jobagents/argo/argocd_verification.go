@@ -27,6 +27,9 @@ func (a *ArgoApplication) Verifications(
 	if !ok || template == "" {
 		return nil, nil
 	}
+	if dispatchCtx == nil {
+		return nil, fmt.Errorf("missing dispatch context for application template rendering")
+	}
 
 	app, err := TemplateApplication(dispatchCtx, template)
 	if err != nil {
