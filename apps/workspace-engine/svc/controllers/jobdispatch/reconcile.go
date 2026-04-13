@@ -69,7 +69,11 @@ func Reconcile(
 
 	var agentSpecs []oapi.VerificationMetricSpec
 	if verifier != nil {
-		agentSpecs, err = verifier.AgentVerifications(agent.Type, job.JobAgentConfig, job.DispatchContext)
+		agentSpecs, err = verifier.AgentVerifications(
+			agent.Type,
+			job.JobAgentConfig,
+			job.DispatchContext,
+		)
 		if err != nil {
 			return nil, err
 		}

@@ -291,14 +291,20 @@ func TestVerifications_ValidConfig(t *testing.T) {
 
 func TestVerifications_MissingServerUrl(t *testing.T) {
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
-	specs, err := a.Verifications(oapi.JobAgentConfig{"apiKey": "token", "template": "yaml"}, testJob().DispatchContext)
+	specs, err := a.Verifications(
+		oapi.JobAgentConfig{"apiKey": "token", "template": "yaml"},
+		testJob().DispatchContext,
+	)
 	require.NoError(t, err)
 	assert.Nil(t, specs)
 }
 
 func TestVerifications_MissingApiKey(t *testing.T) {
 	a := New(&mockUpserter{}, &mockDeleter{}, &mockSetter{}, &mockManifestGetter{})
-	specs, err := a.Verifications(oapi.JobAgentConfig{"serverUrl": "addr", "template": "yaml"}, testJob().DispatchContext)
+	specs, err := a.Verifications(
+		oapi.JobAgentConfig{"serverUrl": "addr", "template": "yaml"},
+		testJob().DispatchContext,
+	)
 	require.NoError(t, err)
 	assert.Nil(t, specs)
 }
