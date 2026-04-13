@@ -77,6 +77,22 @@ jobs:
       - name: Seed test data
         run: pnpm -F @ctrlplane/e2e seed
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/workspace-engine/go.mod
+
+      - name: Build workspace-engine
+        run: go build -o ./bin/workspace-engine .
+        working-directory: apps/workspace-engine
+
+      - name: Start workspace-engine
+        run: ./bin/workspace-engine &
+        env:
+          POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
+          PORT: "8081"
+        working-directory: apps/workspace-engine
+
       - name: Start API server
         run: pnpm -F @ctrlplane/web-api dev &
         env:
