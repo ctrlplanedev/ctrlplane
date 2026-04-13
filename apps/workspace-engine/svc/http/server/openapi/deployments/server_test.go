@@ -3,9 +3,9 @@ package deployments
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -45,16 +45,17 @@ func setupRouter(d *Deployments) *gin.Engine {
 		workspaceId := c.Param("workspaceId")
 		var params oapi.ListDeploymentsParams
 		if v := c.Query("limit"); v != "" {
-			var i int
-			if _, err := fmt.Sscanf(v, "%d", &i); err == nil {
+			if i, err := strconv.Atoi(v); err == nil {
 				params.Limit = &i
 			}
 		}
 		if v := c.Query("offset"); v != "" {
-			var i int
-			if _, err := fmt.Sscanf(v, "%d", &i); err == nil {
+			if i, err := strconv.Atoi(v); err == nil {
 				params.Offset = &i
 			}
+		}
+		if v := c.Query("cel"); v != "" {
+			params.Cel = &v
 		}
 		d.ListDeployments(c, workspaceId, params)
 	})

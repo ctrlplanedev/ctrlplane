@@ -28,6 +28,12 @@ RETURNING *;
 -- name: GetSystemIDsForDeployment :many
 SELECT system_id FROM system_deployment WHERE deployment_id = $1;
 
+-- name: GetSystemsByDeploymentIDs :many
+SELECT sd.deployment_id, s.*
+FROM system_deployment sd
+INNER JOIN system s ON s.id = sd.system_id
+WHERE sd.deployment_id = ANY(@deployment_ids::uuid[]);
+
 -- name: UpsertSystemDeployment :exec
 INSERT INTO system_deployment (system_id, deployment_id)
 VALUES ($1, $2)

@@ -65,37 +65,45 @@ func TestToOapiEnvironment_NilOptionalFields(t *testing.T) {
 
 func TestToOapiDeployment(t *testing.T) {
 	depID := uuid.New()
+	celExpr := `resource.kind == "Service"`
 
 	row := Deployment{
-		ID:          depID,
-		Name:        "api-server",
-		Description: "Main API deployment",
-		Metadata:    map[string]string{"team": "platform"},
+		ID:               depID,
+		Name:             "api-server",
+		Description:      "Main API deployment",
+		ResourceSelector: pgtype.Text{String: celExpr, Valid: true},
+		Metadata:         map[string]string{"team": "platform"},
 	}
 
 	dep := ToOapiDeployment(row)
 
 	assert.Equal(t, depID.String(), dep.Id)
 	assert.Equal(t, "api-server", dep.Name)
+	assert.Equal(t, "api-server", dep.Slug)
 	assert.NotNil(t, dep.Description)
 	assert.Equal(t, "Main API deployment", *dep.Description)
 	assert.Equal(t, map[string]string{"team": "platform"}, dep.Metadata)
 	assert.Empty(t, dep.JobAgentSelector, "empty selector when not set")
+	require.NotNil(t, dep.ResourceSelector)
+	assert.Equal(t, celExpr, *dep.ResourceSelector)
 }
 
 func TestToOapiDeployment_NilOptionalFields(t *testing.T) {
 	depID := uuid.New()
 
 	row := Deployment{
-		ID:       depID,
-		Name:     "worker",
-		Metadata: map[string]string{},
+		ID:               depID,
+		Name:             "worker",
+		ResourceSelector: pgtype.Text{Valid: false},
+		Metadata:         map[string]string{},
 	}
 
 	dep := ToOapiDeployment(row)
 
 	assert.Equal(t, depID.String(), dep.Id)
+	assert.Equal(t, "worker", dep.Slug)
 	assert.Nil(t, dep.Description, "empty description should not be set")
+	assert.Nil(t, dep.ResourceSelector, "invalid selector should not be set")
 }
 
 // ---------------------------------------------------------------------------

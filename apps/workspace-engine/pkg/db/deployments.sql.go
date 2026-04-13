@@ -114,6 +114,49 @@ func (q *Queries) GetSystemIDsForDeployment(ctx context.Context, deploymentID uu
 	return items, nil
 }
 
+const getSystemsByDeploymentIDs = `-- name: GetSystemsByDeploymentIDs :many
+SELECT sd.deployment_id, s.id, s.name, s.description, s.workspace_id, s.metadata
+FROM system_deployment sd
+INNER JOIN system s ON s.id = sd.system_id
+WHERE sd.deployment_id = ANY($1::uuid[])
+`
+
+type GetSystemsByDeploymentIDsRow struct {
+	DeploymentID uuid.UUID
+	ID           uuid.UUID
+	Name         string
+	Description  string
+	WorkspaceID  uuid.UUID
+	Metadata     []byte
+}
+
+func (q *Queries) GetSystemsByDeploymentIDs(ctx context.Context, deploymentIds []uuid.UUID) ([]GetSystemsByDeploymentIDsRow, error) {
+	rows, err := q.db.Query(ctx, getSystemsByDeploymentIDs, deploymentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSystemsByDeploymentIDsRow
+	for rows.Next() {
+		var i GetSystemsByDeploymentIDsRow
+		if err := rows.Scan(
+			&i.DeploymentID,
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.WorkspaceID,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDeploymentsBySystemID = `-- name: ListDeploymentsBySystemID :many
 SELECT d.id, d.name, d.description, d.resource_selector, d.metadata, d.workspace_id
 FROM deployment d

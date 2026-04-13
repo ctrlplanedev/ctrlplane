@@ -49,23 +49,20 @@ func (g *PostgresGetter) GetSystemsByDeploymentIDs(
 	}
 
 	queries := db.GetQueries(ctx)
+	rows, err := queries.GetSystemsByDeploymentIDs(ctx, deploymentIDs)
+	if err != nil {
+		return nil, fmt.Errorf("get systems by deployment ids: %w", err)
+	}
+
 	result := make(map[uuid.UUID][]db.System, len(deploymentIDs))
-
-	for _, depID := range deploymentIDs {
-		systemIDs, err := queries.GetSystemIDsForDeployment(ctx, depID)
-		if err != nil {
-			return nil, fmt.Errorf("get system ids for deployment %s: %w", depID, err)
-		}
-
-		systems := make([]db.System, 0, len(systemIDs))
-		for _, sysID := range systemIDs {
-			sys, err := queries.GetSystemByID(ctx, sysID)
-			if err != nil {
-				return nil, fmt.Errorf("get system %s: %w", sysID, err)
-			}
-			systems = append(systems, sys)
-		}
-		result[depID] = systems
+	for _, row := range rows {
+		result[row.DeploymentID] = append(result[row.DeploymentID], db.System{
+			ID:          row.ID,
+			Name:        row.Name,
+			Description: row.Description,
+			WorkspaceID: row.WorkspaceID,
+			Metadata:    row.Metadata,
+		})
 	}
 
 	return result, nil

@@ -69,7 +69,7 @@ const listDeployments: AsyncTypedHandler<
   const offset = req.query.offset ?? 0;
   const cel = req.query.cel;
 
-  const result = await getClientFor().GET(
+  const { data, error, response } = await getClientFor().GET(
     "/v1/workspaces/{workspaceId}/deployments",
     {
       params: {
@@ -79,10 +79,13 @@ const listDeployments: AsyncTypedHandler<
     },
   );
 
-  if (result.error != null)
-    throw new ApiError(JSON.stringify(result.error), result.response.status);
+  if (error != null)
+    throw new ApiError(
+      error.error ?? "Failed to list deployments",
+      response.status >= 400 && response.status < 500 ? response.status : 502,
+    );
 
-  res.status(200).json(result.data);
+  res.status(200).json(data);
 };
 
 const getDeployment: AsyncTypedHandler<

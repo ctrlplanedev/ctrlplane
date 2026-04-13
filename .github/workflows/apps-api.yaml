@@ -93,6 +93,10 @@ jobs:
           PORT: "8081"
         working-directory: apps/workspace-engine
 
+      - name: Wait for workspace-engine
+        run: |
+          timeout 60s bash -c 'until curl -sf http://localhost:8081/healthz; do sleep 2; done'
+
       - name: Start API server
         run: pnpm -F @ctrlplane/web-api dev &
         env:

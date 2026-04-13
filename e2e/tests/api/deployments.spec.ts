@@ -397,7 +397,11 @@ test.describe("Deployment API", () => {
 
     expect(listRes.response.status).toBe(200);
     const items = listRes.data!.items;
-    expect(items.some((d) => d.deployment.id === deploymentId)).toBe(true);
+    const found = items.find((d) => d.deployment.id === deploymentId);
+    expect(found).toBeDefined();
+    expect(found!.deployment.name).toBe(name);
+    expect(found!.deployment.slug).toBe(name);
+    expect(found!.deployment.metadata).toEqual({});
 
     await api.DELETE(
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
@@ -500,7 +504,10 @@ test.describe("Deployment API", () => {
 
     expect(listRes.response.status).toBe(200);
     const items = listRes.data!.items;
-    expect(items.some((d) => d.deployment.id === metaId)).toBe(true);
+    const matched = items.find((d) => d.deployment.id === metaId);
+    expect(matched).toBeDefined();
+    expect(matched!.deployment.slug).toBe(withMeta);
+    expect(matched!.deployment.metadata).toEqual({ team: uniqueVal });
     expect(items.some((d) => d.deployment.id === noMetaId)).toBe(false);
 
     await Promise.all([

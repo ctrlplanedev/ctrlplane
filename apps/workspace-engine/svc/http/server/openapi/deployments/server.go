@@ -42,14 +42,23 @@ func (d *Deployments) ListDeployments(
 	filtered := allDeployments
 	if params.Cel != nil && *params.Cel != "" {
 		cel := *params.Cel
+		matchable, err := selector.Matchable(ctx, cel)
+		if err != nil {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "Invalid CEL expression: " + err.Error()},
+			)
+			return
+		}
+
 		filtered = make([]db.Deployment, 0, len(allDeployments))
 		for _, dep := range allDeployments {
 			oapiDep := db.ToOapiDeployment(dep)
-			matched, err := selector.Match(ctx, cel, oapiDep)
+			matched, err := matchable.Matches(oapiDep)
 			if err != nil {
 				c.JSON(
 					http.StatusBadRequest,
-					gin.H{"error": "Invalid CEL expression: " + err.Error()},
+					gin.H{"error": "CEL evaluation error: " + err.Error()},
 				)
 				return
 			}
