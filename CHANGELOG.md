@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.1.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.0.0...v1.1.0) (2026-04-13)
+
+
+### Features
+
+* ability to match agents to specific resources ([#963](https://github.com/ctrlplanedev/ctrlplane/issues/963)) ([d05d8bb](https://github.com/ctrlplanedev/ctrlplane/commit/d05d8bb283f6b661f2bc4ccf92e4b653a90021fe))
+* add resource search ([#933](https://github.com/ctrlplanedev/ctrlplane/issues/933)) ([77650b3](https://github.com/ctrlplanedev/ctrlplane/commit/77650b3ee859af67dda884729d3550e2249fb390))
+* **api:** adds order to list deploymentVersions ([#898](https://github.com/ctrlplanedev/ctrlplane/issues/898)) ([c62e858](https://github.com/ctrlplanedev/ctrlplane/commit/c62e8588bfc916a521bebf259383e9b06afd6f63))
+* deployment dependency can also filter by versions ([#964](https://github.com/ctrlplanedev/ctrlplane/issues/964)) ([33ebbed](https://github.com/ctrlplanedev/ctrlplane/commit/33ebbeddf578199d3e8f143cdc579a648e4458c4))
+* global variable sets ([#902](https://github.com/ctrlplanedev/ctrlplane/issues/902)) ([34dc2f3](https://github.com/ctrlplanedev/ctrlplane/commit/34dc2f3ba461426ea2c32a95bd20c8741852d7cd))
+* implement tfe plannable agent ([#956](https://github.com/ctrlplanedev/ctrlplane/issues/956)) ([54437cb](https://github.com/ctrlplanedev/ctrlplane/commit/54437cbfdf7ff1e72b2bc3d5d2047f03217ec398))
+
+
+### Bug Fixes
+
+* crud operations on var sets trigger reconciliations ([#912](https://github.com/ctrlplanedev/ctrlplane/issues/912)) ([a1b1835](https://github.com/ctrlplanedev/ctrlplane/commit/a1b1835c32ca93b0b5fd3110cfeaa9fd0b598276))
+* dont double encode cel expression ([#959](https://github.com/ctrlplanedev/ctrlplane/issues/959)) ([a6f9c3b](https://github.com/ctrlplanedev/ctrlplane/commit/a6f9c3b3d65a6910427947793172294e16f00f4c))
+* filter release targets by search query client-side ([#955](https://github.com/ctrlplanedev/ctrlplane/issues/955)) ([6a26524](https://github.com/ctrlplanedev/ctrlplane/commit/6a265246357719e0cb3b89442ce8cbb7f65433e3))
+* handle missing metadata keys in CEL resource filter ([#960](https://github.com/ctrlplanedev/ctrlplane/issues/960)) ([731605a](https://github.com/ctrlplanedev/ctrlplane/commit/731605a9592ff225c806f5b273d1898278bf55a7))
+* include agent selector in deployment CEL ctx ([#942](https://github.com/ctrlplanedev/ctrlplane/issues/942)) ([9a2a5ae](https://github.com/ctrlplanedev/ctrlplane/commit/9a2a5ae63c35ad581f8cf8fcd57ff86da91ff588))
+* include deployment agent configs in v1 responses ([#910](https://github.com/ctrlplanedev/ctrlplane/issues/910)) ([182e45b](https://github.com/ctrlplanedev/ctrlplane/commit/182e45bb44449b067d7651de1d56b319e60444c5))
+* insert job agents on deployment POST and PUT ([#922](https://github.com/ctrlplanedev/ctrlplane/issues/922)) ([7f5d02b](https://github.com/ctrlplanedev/ctrlplane/commit/7f5d02bed96eb2bab6d0d9a51bde16c962034069))
+* remove all references to Ctrlplane Cloud ([#961](https://github.com/ctrlplanedev/ctrlplane/issues/961)) ([9675cf7](https://github.com/ctrlplanedev/ctrlplane/commit/9675cf7d2f51f082d554606cab767366c60fbdfa))
+
 ## 1.0.0 (2026-04-01)
 
 
