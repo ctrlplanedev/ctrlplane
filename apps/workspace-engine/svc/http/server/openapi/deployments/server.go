@@ -12,7 +12,121 @@ import (
 	"workspace-engine/pkg/selector"
 )
 
-type Deployments struct{}
+type Deployments struct {
+	getter Getter
+}
+
+func New() Deployments {
+	return Deployments{getter: &PostgresGetter{}}
+}
+
+func (d *Deployments) ListDeployments(
+	c *gin.Context,
+	workspaceId string,
+	params oapi.ListDeploymentsParams,
+) {
+	ctx := c.Request.Context()
+
+	workspaceUUID, err := uuid.Parse(workspaceId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid workspace ID"})
+		return
+	}
+
+	allDeployments, err := d.getter.GetAllDeploymentsByWorkspaceID(ctx, workspaceUUID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list deployments"})
+		return
+	}
+
+	filtered := allDeployments
+	if params.Cel != nil && *params.Cel != "" {
+		cel := *params.Cel
+		matchable, err := selector.Matchable(ctx, cel)
+		if err != nil {
+			c.JSON(
+				http.StatusBadRequest,
+				gin.H{"error": "Invalid CEL expression: " + err.Error()},
+			)
+			return
+		}
+
+		filtered = make([]db.Deployment, 0, len(allDeployments))
+		for _, dep := range allDeployments {
+			oapiDep := db.ToOapiDeployment(dep)
+			matched, err := matchable.Matches(oapiDep)
+			if err != nil {
+				c.JSON(
+					http.StatusBadRequest,
+					gin.H{"error": "CEL evaluation error: " + err.Error()},
+				)
+				return
+			}
+			if matched {
+				filtered = append(filtered, dep)
+			}
+		}
+	}
+
+	total := len(filtered)
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	if limit < 1 || limit > 1000 || offset < 0 {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "limit must be between 1 and 1000, offset must be >= 0"},
+		)
+		return
+	}
+
+	if offset > len(filtered) {
+		offset = len(filtered)
+	}
+	end := min(offset+limit, len(filtered))
+	page := filtered[offset:end]
+
+	deploymentIDs := make([]uuid.UUID, len(page))
+	for i, dep := range page {
+		deploymentIDs[i] = dep.ID
+	}
+
+	systemsByDepID, err := d.getter.GetSystemsByDeploymentIDs(ctx, deploymentIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get systems"})
+		return
+	}
+
+	items := make([]gin.H, len(page))
+	for i, dep := range page {
+		oapiDep := db.ToOapiDeployment(dep)
+
+		systems := systemsByDepID[dep.ID]
+		oapiSystems := make([]oapi.System, len(systems))
+		for j, sys := range systems {
+			oapiSystems[j] = *db.ToOapiSystem(sys)
+		}
+
+		items[i] = gin.H{
+			"deployment": oapiDep,
+			"systems":    oapiSystems,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items":  items,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
+	})
+}
 
 func (d *Deployments) GetJobAgentsForDeployment(c *gin.Context, deploymentId string) {
 	ctx := c.Request.Context()

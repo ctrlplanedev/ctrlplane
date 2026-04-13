@@ -72,6 +72,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/deployments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List deployments
+     * @description Returns a paginated list of deployments for a workspace. Optionally filter with a CEL expression using the "deployment" variable.
+     */
+    get: operations["listDeployments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
     parameters: {
       query?: never;
@@ -1500,6 +1520,53 @@ export interface operations {
             errors: string[];
             valid: boolean;
           };
+        };
+      };
+    };
+  };
+  listDeployments: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of items to return */
+        limit?: number;
+        /** @description Number of items to skip */
+        offset?: number;
+        /** @description CEL expression to filter the results */
+        cel?: string;
+      };
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated list of items */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["DeploymentAndSystems"][];
+            /** @description Maximum number of items returned */
+            limit: number;
+            /** @description Number of items skipped */
+            offset: number;
+            /** @description Total number of items available */
+            total: number;
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };

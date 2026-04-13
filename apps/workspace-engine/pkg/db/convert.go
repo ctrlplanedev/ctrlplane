@@ -12,12 +12,16 @@ func ToOapiDeployment(row Deployment) *oapi.Deployment {
 	d := &oapi.Deployment{
 		Id:               row.ID.String(),
 		Name:             row.Name,
+		Slug:             row.Name,
 		Metadata:         row.Metadata,
 		JobAgentConfig:   oapi.JobAgentConfig(row.JobAgentConfig),
 		JobAgentSelector: row.JobAgentSelector,
 	}
 	if row.Description != "" {
 		d.Description = &row.Description
+	}
+	if row.ResourceSelector.Valid && row.ResourceSelector.String != "" {
+		d.ResourceSelector = &row.ResourceSelector.String
 	}
 	return d
 }

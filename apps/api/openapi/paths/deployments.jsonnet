@@ -9,6 +9,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.limitParam(),
         openapi.offsetParam(),
+        openapi.celParam(),
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentAndSystems')),
     },
