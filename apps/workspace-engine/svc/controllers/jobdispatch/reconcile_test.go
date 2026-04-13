@@ -113,6 +113,7 @@ type mockVerifier struct {
 func (m *mockVerifier) AgentVerifications(
 	agentType string,
 	_ oapi.JobAgentConfig,
+	_ *oapi.DispatchContext,
 ) ([]oapi.VerificationMetricSpec, error) {
 	return m.specs[agentType], nil
 }

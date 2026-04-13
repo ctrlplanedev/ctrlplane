@@ -19,6 +19,7 @@ type AgentVerifier interface {
 	AgentVerifications(
 		agentType string,
 		config oapi.JobAgentConfig,
+		dispatchCtx *oapi.DispatchContext,
 	) ([]oapi.VerificationMetricSpec, error)
 }
 
