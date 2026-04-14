@@ -132,6 +132,7 @@ const NoActiveDeployments: React.FC<NoActiveDeploymentsProps> = ({
           <span className="grow truncate overflow-ellipsis text-left">
             {displayName}
           </span>
+          <VersionDropdown version={version} />
         </div>
       </div>
     </div>

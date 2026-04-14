@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "~/components/ui/dialog";
 import {
   DropdownMenu,
@@ -57,20 +56,19 @@ const useUpdateVersionStatus = (versionId: string) => {
 
 function VersionStatusDialog({
   version,
-  children,
-  onClose,
+  open,
+  onOpenChange,
 }: {
   version: Version;
-  children: React.ReactNode;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const { updateStatus, isPending } = useUpdateVersionStatus(version.id);
   const [status, setStatus] = useState<VersionStatus>(version.status);
-  const onClick = () => updateStatus(status).then(onClose);
+  const onClick = () => updateStatus(status).then(() => onOpenChange(false));
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Update Version Status</DialogTitle>
@@ -108,30 +106,42 @@ function VersionStatusDialog({
 }
 
 export function VersionDropdown({ version }: { version: Version }) {
-  const [open, setOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0 text-muted-foreground"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <EllipsisIcon className="size-3" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <VersionStatusDialog version={version} onClose={() => setOpen(false)}>
+    <>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 text-muted-foreground"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <EllipsisIcon className="size-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
+            onSelect={(e) => {
+              e.preventDefault();
+              setDropdownOpen(false);
+              setStatusDialogOpen(true);
+            }}
             className="flex items-center gap-2"
           >
             <Flag className="h-4 w-4" />
             Update Status
           </DropdownMenuItem>
-        </VersionStatusDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <VersionStatusDialog
+        version={version}
+        open={statusDialogOpen}
+        onOpenChange={setStatusDialogOpen}
+      />
+    </>
   );
 }
