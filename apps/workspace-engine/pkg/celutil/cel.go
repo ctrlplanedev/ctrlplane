@@ -124,27 +124,36 @@ func (ce *CompiledEnv) Env() *cel.Env {
 // the boolean result. If the expression references a missing key, it returns
 // false with a nil error (treating it as a non-match).
 func EvalBool(prg cel.Program, vars map[string]any) (bool, error) {
-	val, _, err := prg.Eval(vars)
-	if err != nil {
-		if strings.Contains(err.Error(), "no such key:") {
-			return false, nil
+	ok, _, err := EvalBoolDetailed(prg, vars)
+	return ok, err
+}
+
+// EvalBoolDetailed evaluates a compiled CEL program and returns both the
+// boolean result and whether the evaluation failed due to a missing key.
+// This allows callers to distinguish between "selector evaluated to false"
+// and "selector referenced a property that doesn't exist".
+func EvalBoolDetailed(prg cel.Program, vars map[string]any) (result bool, isMissingKey bool, err error) {
+	val, _, evalErr := prg.Eval(vars)
+	if evalErr != nil {
+		if strings.Contains(evalErr.Error(), "no such key:") {
+			return false, true, nil
 		}
-		return false, err
+		return false, false, evalErr
 	}
 
 	if errVal, ok := val.Value().(error); ok {
 		if strings.Contains(errVal.Error(), "no such key:") {
-			return false, nil
+			return false, true, nil
 		}
-		return false, errVal
+		return false, false, errVal
 	}
 
-	result := val.ConvertToType(cel.BoolType)
-	boolVal, ok := result.Value().(bool)
+	converted := val.ConvertToType(cel.BoolType)
+	boolVal, ok := converted.Value().(bool)
 	if !ok {
-		return false, fmt.Errorf("CEL expression must return boolean, got: %T", result.Value())
+		return false, false, fmt.Errorf("CEL expression must return boolean, got: %T", converted.Value())
 	}
-	return boolVal, nil
+	return boolVal, false, nil
 }
 
 // EntityToMap converts a struct to a map[string]any via JSON round-trip.

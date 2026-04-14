@@ -53,6 +53,20 @@ func resourceToMap(r *oapi.Resource) map[string]any {
 	return m
 }
 
+// MatchResult contains the matched agents and diagnostic information about
+// the evaluation, useful for debugging why agents didn't match.
+type MatchResult struct {
+	Matched     []oapi.JobAgent
+	Diagnostics MatchDiagnostics
+}
+
+// MatchDiagnostics captures why agents failed to match a selector.
+type MatchDiagnostics struct {
+	TotalAgents      int
+	MatchedCount     int
+	MissingKeyAgents []string
+}
+
 // MatchJobAgentsWithResource evaluates a CEL job agent selector against a list
 // of job agents with the resource available in the CEL context, and returns
 // those that match. This allows selectors to reference resource properties,
@@ -63,17 +77,37 @@ func MatchJobAgentsWithResource(
 	agents []oapi.JobAgent,
 	resource *oapi.Resource,
 ) ([]oapi.JobAgent, error) {
+	result := MatchJobAgentsWithResourceDetailed(selector, agents, resource)
+	return result.Result.Matched, result.Err
+}
+
+// MatchJobAgentsWithResourceDetailed performs the same evaluation as
+// MatchJobAgentsWithResource but returns diagnostics explaining why agents
+// were rejected, helping debug selectors that silently fail due to missing
+// keys in the CEL context.
+func MatchJobAgentsWithResourceDetailed(
+	selector string,
+	agents []oapi.JobAgent,
+	resource *oapi.Resource,
+) MatchDetailedResult {
+	diag := MatchDiagnostics{TotalAgents: len(agents)}
+
 	if selector == "" || selector == "false" {
-		return nil, nil
+		return MatchDetailedResult{Result: MatchResult{Diagnostics: diag}}
 	}
 
 	if selector == "true" {
-		return agents, nil
+		diag.MatchedCount = len(agents)
+		return MatchDetailedResult{
+			Result: MatchResult{Matched: agents, Diagnostics: diag},
+		}
 	}
 
 	prg, err := jobAgentWithResourceEnv.Compile(selector)
 	if err != nil {
-		return nil, fmt.Errorf("compile job agent selector: %w", err)
+		return MatchDetailedResult{
+			Err: fmt.Errorf("invalid selector: %w", err),
+		}
 	}
 
 	resourceMap := resourceToMap(resource)
@@ -84,13 +118,26 @@ func MatchJobAgentsWithResource(
 			"jobAgent": jobAgentToMap(&agents[i]),
 			"resource": resourceMap,
 		}
-		ok, err := celutil.EvalBool(prg, vars)
+		ok, isMissingKey, err := celutil.EvalBoolDetailed(prg, vars)
 		if err != nil {
-			return nil, fmt.Errorf("eval job agent selector for agent %s: %w", agents[i].Id, err)
+			return MatchDetailedResult{
+				Err: fmt.Errorf("eval job agent selector for agent %s: %w", agents[i].Id, err),
+			}
 		}
 		if ok {
 			matched = append(matched, agents[i])
+		} else if isMissingKey {
+			diag.MissingKeyAgents = append(diag.MissingKeyAgents, agents[i].Name)
 		}
 	}
-	return matched, nil
+	diag.MatchedCount = len(matched)
+	return MatchDetailedResult{
+		Result: MatchResult{Matched: matched, Diagnostics: diag},
+	}
+}
+
+// MatchDetailedResult wraps the detailed match output and any error.
+type MatchDetailedResult struct {
+	Result MatchResult
+	Err    error
 }

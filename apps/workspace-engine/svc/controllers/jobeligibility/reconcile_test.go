@@ -1194,6 +1194,56 @@ func TestReconcile_NoMatchingAgents_CreatesFailureJob(t *testing.T) {
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
 	assert.NotNil(t, setter.createdJobs[0].CompletedAt)
+	require.NotNil(t, setter.createdJobs[0].Message)
+	assert.Contains(t, *setter.createdJobs[0].Message, "selector=")
+	assert.Contains(t, *setter.createdJobs[0].Message, "workspace_agents=0")
+}
+
+func TestReconcile_NoMatchingAgents_IncludesMissingKeyDiagnostic(t *testing.T) {
+	rt := testRT()
+	release := testRelease(rt)
+
+	agent := &oapi.JobAgent{
+		Id:     uuid.New().String(),
+		Name:   "my-agent",
+		Type:   "argo-cd",
+		Config: oapi.JobAgentConfig{},
+	}
+
+	deployment := testDeployment(rt)
+	deployment.JobAgentSelector = `jobAgent.config.server == resource.config.argocd.serverUrl`
+
+	getter := &mockGetter{
+		rtExists:        true,
+		release:         release,
+		jobs:            []*oapi.Job{},
+		policies:        []*oapi.Policy{},
+		deployment:      deployment,
+		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
+		workspaceAgents: []oapi.JobAgent{*agent},
+		environment: &oapi.Environment{
+			Id:       rt.EnvironmentID.String(),
+			Name:     "test-env",
+			Metadata: map[string]string{},
+		},
+		resource: &oapi.Resource{
+			Id:         rt.ResourceID.String(),
+			Name:       "test-resource",
+			Identifier: "test",
+			Kind:       "test",
+			Metadata:   map[string]string{},
+			Config:     map[string]any{},
+		},
+	}
+	setter := &mockSetter{}
+
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	require.NoError(t, err)
+	require.Len(t, setter.createdJobs, 1)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
+	require.NotNil(t, setter.createdJobs[0].Message)
+	assert.Contains(t, *setter.createdJobs[0].Message, "missing key")
+	assert.Contains(t, *setter.createdJobs[0].Message, "my-agent")
 }
 
 func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {

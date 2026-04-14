@@ -215,25 +215,59 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 		return recordErr(span, "get resource", err)
 	}
 
+	span.SetAttributes(
+		attribute.String("resource.id", resource.Id),
+		attribute.String("resource.name", resource.Name),
+		attribute.String("resource.kind", resource.Kind),
+		attribute.String("resource.identifier", resource.Identifier),
+		attribute.String("workspace.id", r.workspaceID.String()),
+	)
+
 	allAgents, err := r.getter.ListJobAgentsByWorkspaceID(ctx, r.workspaceID)
 	if err != nil {
 		return recordErr(span, "list job agents", err)
 	}
 	span.SetAttributes(attribute.Int("workspace_agents.count", len(allAgents)))
 
-	matchedAgents, err := selector.MatchJobAgentsWithResource(
-		ctx,
+	agentNames := make([]string, len(allAgents))
+	for i, a := range allAgents {
+		agentNames[i] = a.Name
+	}
+	span.SetAttributes(attribute.StringSlice("workspace_agents.names", agentNames))
+
+	matchResult := selector.MatchJobAgentsWithResourceDetailed(
 		deployment.JobAgentSelector,
 		allAgents,
 		resource,
 	)
-	if err != nil {
-		return recordErr(span, "match job agents", err)
+	if matchResult.Err != nil {
+		return recordErr(span, "match job agents", matchResult.Err)
 	}
-	span.SetAttributes(attribute.Int("matched_agents.count", len(matchedAgents)))
+
+	matchedAgents := matchResult.Result.Matched
+	diag := matchResult.Result.Diagnostics
+	span.SetAttributes(
+		attribute.Int("matched_agents.count", diag.MatchedCount),
+		attribute.StringSlice("missing_key_agents", diag.MissingKeyAgents),
+	)
 
 	if len(matchedAgents) == 0 {
-		msg := fmt.Sprintf("No job agents matched selector for deployment '%s'", deployment.Name)
+		msg := fmt.Sprintf(
+			"No job agents matched selector for deployment '%s' "+
+				"(selector=%q, workspace_agents=%d, resource=%s/%s)",
+			deployment.Name,
+			deployment.JobAgentSelector,
+			diag.TotalAgents,
+			resource.Kind,
+			resource.Identifier,
+		)
+		if len(diag.MissingKeyAgents) > 0 {
+			msg += fmt.Sprintf(
+				"; %d agent(s) rejected due to missing key in selector expression: %v",
+				len(diag.MissingKeyAgents),
+				diag.MissingKeyAgents,
+			)
+		}
 		span.AddEvent(msg)
 		return r.createFailureJob(ctx, oapi.JobStatusInvalidJobAgent, msg)
 	}
