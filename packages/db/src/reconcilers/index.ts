@@ -1,4 +1,5 @@
 export * from "./enqueue.js";
+export * from "./force-deploy.js";
 export * from "./deployment-plan.js";
 export * from "./deployment-selector-eval.js";
 export * from "./environment-selector-eval.js";
