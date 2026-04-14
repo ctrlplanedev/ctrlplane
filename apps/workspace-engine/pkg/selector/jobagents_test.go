@@ -34,7 +34,12 @@ func TestMatchJobAgentsWithResource_EmptySelector(t *testing.T) {
 	agent := testAgent("a", "test", oapi.JobAgentConfig{})
 	res := testResource("k8s", "cluster-1", map[string]any{})
 
-	matched, err := MatchJobAgentsWithResource(context.Background(), "", []oapi.JobAgent{agent}, res)
+	matched, err := MatchJobAgentsWithResource(
+		context.Background(),
+		"",
+		[]oapi.JobAgent{agent},
+		res,
+	)
 	require.NoError(t, err)
 	assert.Empty(t, matched)
 }
@@ -43,7 +48,12 @@ func TestMatchJobAgentsWithResource_FalseSelector(t *testing.T) {
 	agent := testAgent("a", "test", oapi.JobAgentConfig{})
 	res := testResource("k8s", "cluster-1", map[string]any{})
 
-	matched, err := MatchJobAgentsWithResource(context.Background(), "false", []oapi.JobAgent{agent}, res)
+	matched, err := MatchJobAgentsWithResource(
+		context.Background(),
+		"false",
+		[]oapi.JobAgent{agent},
+		res,
+	)
 	require.NoError(t, err)
 	assert.Empty(t, matched)
 }
@@ -66,7 +76,12 @@ func TestMatchJobAgentsWithResource_IDSelector(t *testing.T) {
 	res := testResource("k8s", "cluster-1", map[string]any{})
 
 	sel := `jobAgent.id == "` + target.Id + `"`
-	matched, err := MatchJobAgentsWithResource(context.Background(), sel, []oapi.JobAgent{target, other}, res)
+	matched, err := MatchJobAgentsWithResource(
+		context.Background(),
+		sel,
+		[]oapi.JobAgent{target, other},
+		res,
+	)
 	require.NoError(t, err)
 	require.Len(t, matched, 1)
 	assert.Equal(t, target.Id, matched[0].Id)

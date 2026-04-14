@@ -132,7 +132,10 @@ func EvalBool(prg cel.Program, vars map[string]any) (bool, error) {
 // boolean result and whether the evaluation failed due to a missing key.
 // This allows callers to distinguish between "selector evaluated to false"
 // and "selector referenced a property that doesn't exist".
-func EvalBoolDetailed(prg cel.Program, vars map[string]any) (result bool, isMissingKey bool, err error) {
+func EvalBoolDetailed(
+	prg cel.Program,
+	vars map[string]any,
+) (result bool, isMissingKey bool, err error) {
 	val, _, evalErr := prg.Eval(vars)
 	if evalErr != nil {
 		if strings.Contains(evalErr.Error(), "no such key:") {
@@ -151,7 +154,10 @@ func EvalBoolDetailed(prg cel.Program, vars map[string]any) (result bool, isMiss
 	converted := val.ConvertToType(cel.BoolType)
 	boolVal, ok := converted.Value().(bool)
 	if !ok {
-		return false, false, fmt.Errorf("CEL expression must return boolean, got: %T", converted.Value())
+		return false, false, fmt.Errorf(
+			"CEL expression must return boolean, got: %T",
+			converted.Value(),
+		)
 	}
 	return boolVal, false, nil
 }
