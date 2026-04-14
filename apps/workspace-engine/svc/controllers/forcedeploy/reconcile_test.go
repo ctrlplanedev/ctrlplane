@@ -88,22 +88,19 @@ type mockSetter struct {
 	createJobErr error
 
 	enqueueCalls []enqueueCall
-	enqueueErr   error
 }
 
-func (m *mockSetter) CreateJob(_ context.Context, job *oapi.Job, _ *oapi.Release) error {
+func (m *mockSetter) CreateJobAndEnqueueDispatch(
+	_ context.Context,
+	job *oapi.Job,
+	_ *oapi.Release,
+	workspaceID string,
+) error {
 	if m.createJobErr != nil {
 		return m.createJobErr
 	}
 	m.createdJobs = append(m.createdJobs, job)
-	return nil
-}
-
-func (m *mockSetter) EnqueueJobDispatch(_ context.Context, workspaceID string, jobID string) error {
-	if m.enqueueErr != nil {
-		return m.enqueueErr
-	}
-	m.enqueueCalls = append(m.enqueueCalls, enqueueCall{WorkspaceID: workspaceID, JobID: jobID})
+	m.enqueueCalls = append(m.enqueueCalls, enqueueCall{WorkspaceID: workspaceID, JobID: job.Id})
 	return nil
 }
 

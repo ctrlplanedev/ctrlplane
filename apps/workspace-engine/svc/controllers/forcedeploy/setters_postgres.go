@@ -4,28 +4,33 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/reconcile"
+	reconciledb "workspace-engine/pkg/reconcile/postgres/db"
 )
 
 var _ Setter = (*PostgresSetter)(nil)
 
-type PostgresSetter struct {
-	Queue reconcile.Queue
-}
+type PostgresSetter struct{}
 
-func (s *PostgresSetter) CreateJob(
+func (s *PostgresSetter) CreateJobAndEnqueueDispatch(
 	ctx context.Context,
 	job *oapi.Job,
 	release *oapi.Release,
+	workspaceID string,
 ) error {
 	jobID, err := uuid.Parse(job.Id)
 	if err != nil {
 		return fmt.Errorf("parse job id: %w", err)
+	}
+
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return fmt.Errorf("parse workspace id: %w", err)
 	}
 
 	var jobAgentIDParam pgtype.UUID
@@ -81,24 +86,25 @@ func (s *PostgresSetter) CreateJob(
 		return fmt.Errorf("insert release job: %w", err)
 	}
 
+	now := time.Now()
+	rq := reconciledb.New(tx)
+	if err := rq.UpsertReconcileWorkItem(ctx, reconciledb.UpsertReconcileWorkItemParams{
+		WorkspaceID: wsID,
+		Kind:        "job-dispatch",
+		ScopeType:   "job",
+		ScopeID:     job.Id,
+		EventTs:     pgtype.Timestamptz{Time: now, Valid: true},
+		Priority:    100,
+		NotBefore:   pgtype.Timestamptz{Time: now.Add(-1 * time.Second), Valid: true},
+	}); err != nil {
+		return fmt.Errorf("enqueue job dispatch: %w", err)
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
-}
-
-func (s *PostgresSetter) EnqueueJobDispatch(
-	ctx context.Context,
-	workspaceID string,
-	jobID string,
-) error {
-	return s.Queue.Enqueue(ctx, reconcile.EnqueueParams{
-		WorkspaceID: workspaceID,
-		Kind:        "job-dispatch",
-		ScopeType:   "job",
-		ScopeID:     jobID,
-	})
 }
 
 func toPgText(s *string) pgtype.Text {

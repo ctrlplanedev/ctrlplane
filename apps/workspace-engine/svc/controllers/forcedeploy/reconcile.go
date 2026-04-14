@@ -138,12 +138,13 @@ func buildAndDispatchJob(
 			return fmt.Errorf("create job for agent %s: %w", agent.Name, err)
 		}
 
-		if err := setter.CreateJob(ctx, job, release); err != nil {
-			return fmt.Errorf("persist job: %w", err)
-		}
-
-		if err := setter.EnqueueJobDispatch(ctx, workspaceID.String(), job.Id); err != nil {
-			return fmt.Errorf("enqueue job dispatch: %w", err)
+		if err := setter.CreateJobAndEnqueueDispatch(
+			ctx,
+			job,
+			release,
+			workspaceID.String(),
+		); err != nil {
+			return fmt.Errorf("create and enqueue job: %w", err)
 		}
 	}
 
