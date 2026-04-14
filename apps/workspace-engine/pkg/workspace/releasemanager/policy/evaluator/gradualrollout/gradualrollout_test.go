@@ -164,8 +164,11 @@ func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 // Test helpers
 // ---------------------------------------------------------------------------
 
-func boolPtr(b bool) *bool       { return &b }
-func stringPtr(s string) *string { return &s }
+//go:fix inline
+func boolPtr(b bool) *bool { return new(b) }
+
+//go:fix inline
+func stringPtr(s string) *string { return new(s) }
 
 func makeResources(n int) ([]*oapi.Resource, map[string]*oapi.Resource) {
 	resources := make([]*oapi.Resource, n)
@@ -1178,8 +1181,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow(t *testing.T
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 480,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(true),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(true),
 			},
 		}},
 	}}
@@ -1210,8 +1213,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 480,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(true),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(true),
 			},
 		}},
 	}}
@@ -1241,8 +1244,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVe
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 480,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(true),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(true),
 			},
 		}},
 	}}
@@ -1272,8 +1275,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart(
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=10;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 120,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(false),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(false),
 			},
 		}},
 	}}
@@ -1304,8 +1307,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange(t *t
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=10;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 120,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(false),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(false),
 			},
 		}},
 	}}
@@ -1348,8 +1351,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 480,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(true),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(true),
 			},
 		}},
 	}}
@@ -1401,8 +1404,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 			DeploymentWindow: &oapi.DeploymentWindowRule{
 				Rrule:           "FREQ=DAILY;BYHOUR=10;BYMINUTE=0;BYSECOND=0",
 				DurationMinutes: 120,
-				Timezone:        stringPtr("UTC"),
-				AllowWindow:     boolPtr(false),
+				Timezone:        new("UTC"),
+				AllowWindow:     new(false),
 			},
 		}},
 	}}

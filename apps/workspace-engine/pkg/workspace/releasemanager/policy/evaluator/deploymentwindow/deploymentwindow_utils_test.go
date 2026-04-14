@@ -44,7 +44,7 @@ func TestGetNextWindowStart(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		}
 		result, err := GetNextWindowStart(rule, time.Now())
 		require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestGetNextWindowStart(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		}
 		// Set time to 11:00 UTC (inside the 10:00-12:00 window)
 		at := time.Date(2025, 1, 15, 11, 0, 0, 0, time.UTC)
@@ -68,7 +68,7 @@ func TestGetNextWindowStart(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		}
 		// Set time to 15:00 UTC (outside the window)
 		at := time.Date(2025, 1, 15, 15, 0, 0, 0, time.UTC)
@@ -82,7 +82,7 @@ func TestGetNextWindowStart(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           "INVALID",
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		}
 		_, err := GetNextWindowStart(rule, time.Now())
 		require.Error(t, err)
@@ -93,7 +93,7 @@ func TestGetNextWindowStart(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 			Timezone:        &tz,
 		}
 		// 3:00 AM New York time - outside the window
@@ -173,7 +173,7 @@ func TestGetDenyWindowEnd(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		}
 		at := time.Date(2025, 1, 15, 11, 0, 0, 0, time.UTC)
 		result, err := GetDenyWindowEnd(rule, at)
@@ -185,7 +185,7 @@ func TestGetDenyWindowEnd(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		}
 		at := time.Date(2025, 1, 15, 11, 0, 0, 0, time.UTC)
 		result, err := GetDenyWindowEnd(rule, at)
@@ -198,7 +198,7 @@ func TestGetDenyWindowEnd(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		}
 		at := time.Date(2025, 1, 15, 15, 0, 0, 0, time.UTC)
 		result, err := GetDenyWindowEnd(rule, at)
@@ -210,7 +210,7 @@ func TestGetDenyWindowEnd(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           "INVALID",
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		}
 		_, err := GetDenyWindowEnd(rule, time.Now())
 		require.Error(t, err)
@@ -221,7 +221,7 @@ func TestGetDenyWindowEnd(t *testing.T) {
 		rule := &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 			Timezone:        &tz,
 		}
 		loc, _ := time.LoadLocation("America/New_York")

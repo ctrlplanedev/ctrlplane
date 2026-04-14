@@ -8,7 +8,8 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-func ptr[T any](v T) *T { return &v }
+//go:fix inline
+func ptr[T any](v T) *T { return new(v) }
 
 func makeDispatchContext(resource, environment string) *oapi.DispatchContext {
 	return &oapi.DispatchContext{
@@ -22,7 +23,7 @@ func TestTemplateSpecs_NoTemplateDirectives(t *testing.T) {
 		{
 			Name:             "static-check",
 			SuccessCondition: "result.statusCode == 200",
-			FailureCondition: ptr("result.statusCode == 500"),
+			FailureCondition: new("result.statusCode == 500"),
 		},
 	}
 	ctx := makeDispatchContext("my-resource", "production")

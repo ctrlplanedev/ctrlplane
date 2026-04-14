@@ -38,12 +38,13 @@ func booleanInput(key string, def *bool) oapi.WorkflowInput {
 	return input
 }
 
-func ptr[T any](v T) *T { return &v }
+//go:fix inline
+func ptr[T any](v T) *T { return new(v) }
 
 func TestResolveInputs_ProvidedInputsPassThrough(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
-			stringInput("env", ptr("staging")),
+			stringInput("env", new("staging")),
 		},
 	}
 	provided := map[string]any{"env": "production"}
@@ -57,9 +58,9 @@ func TestResolveInputs_ProvidedInputsPassThrough(t *testing.T) {
 func TestResolveInputs_MissingInputsGetDefaults(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
-			stringInput("env", ptr("staging")),
-			numberInput("retries", ptr(float32(3))),
-			booleanInput("dryRun", ptr(true)),
+			stringInput("env", new("staging")),
+			numberInput("retries", new(float32(3))),
+			booleanInput("dryRun", new(true)),
 		},
 	}
 	provided := map[string]any{}
@@ -93,9 +94,9 @@ func TestResolveInputs_InputsWithoutDefaultsStayAbsent(t *testing.T) {
 func TestResolveInputs_ProvidedOverridesDefault(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
-			stringInput("env", ptr("staging")),
-			numberInput("retries", ptr(float32(3))),
-			booleanInput("dryRun", ptr(true)),
+			stringInput("env", new("staging")),
+			numberInput("retries", new(float32(3))),
+			booleanInput("dryRun", new(true)),
 		},
 	}
 	provided := map[string]any{
@@ -115,8 +116,8 @@ func TestResolveInputs_ProvidedOverridesDefault(t *testing.T) {
 func TestResolveInputs_MixedProvidedAndDefaults(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
-			stringInput("env", ptr("staging")),
-			numberInput("retries", ptr(float32(3))),
+			stringInput("env", new("staging")),
+			numberInput("retries", new(float32(3))),
 			booleanInput("verbose", nil),
 		},
 	}
@@ -133,7 +134,7 @@ func TestResolveInputs_MixedProvidedAndDefaults(t *testing.T) {
 func TestResolveInputs_DoesNotMutateProvidedMap(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
-			stringInput("env", ptr("staging")),
+			stringInput("env", new("staging")),
 		},
 	}
 	provided := map[string]any{"existing": "value"}
@@ -160,7 +161,7 @@ func TestResolveInputs_EmptyWorkflowInputs(t *testing.T) {
 func TestResolveInputs_ExtraProvidedInputsPassThrough(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
-			stringInput("env", ptr("staging")),
+			stringInput("env", new("staging")),
 		},
 	}
 	provided := map[string]any{

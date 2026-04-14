@@ -83,7 +83,8 @@ func newTestJob(id string, config map[string]any) *oapi.Job {
 	}
 }
 
-func ptr[T any](v T) *T { return &v }
+//go:fix inline
+func ptr[T any](v T) *T { return new(v) }
 
 // ---------- Type() ----------
 
@@ -285,13 +286,13 @@ func TestGetDelay_Nil(t *testing.T) {
 
 func TestGetDelay_Custom(t *testing.T) {
 	tr := New(&mockSetter{})
-	cfg := &oapi.TestRunnerJobAgentConfig{DelaySeconds: ptr(30)}
+	cfg := &oapi.TestRunnerJobAgentConfig{DelaySeconds: new(30)}
 	assert.Equal(t, 30*time.Second, tr.getDelay(cfg))
 }
 
 func TestGetDelay_Zero(t *testing.T) {
 	tr := New(&mockSetter{})
-	cfg := &oapi.TestRunnerJobAgentConfig{DelaySeconds: ptr(0)}
+	cfg := &oapi.TestRunnerJobAgentConfig{DelaySeconds: new(0)}
 	assert.Equal(t, time.Duration(0), tr.getDelay(cfg))
 }
 
@@ -305,19 +306,19 @@ func TestGetFinalStatus_Default(t *testing.T) {
 
 func TestGetFinalStatus_Failure(t *testing.T) {
 	tr := New(&mockSetter{})
-	cfg := &oapi.TestRunnerJobAgentConfig{Status: ptr("failure")}
+	cfg := &oapi.TestRunnerJobAgentConfig{Status: new("failure")}
 	assert.Equal(t, oapi.JobStatusFailure, tr.getFinalStatus(cfg))
 }
 
 func TestGetFinalStatus_ExplicitSuccessful(t *testing.T) {
 	tr := New(&mockSetter{})
-	cfg := &oapi.TestRunnerJobAgentConfig{Status: ptr("successful")}
+	cfg := &oapi.TestRunnerJobAgentConfig{Status: new("successful")}
 	assert.Equal(t, oapi.JobStatusSuccessful, tr.getFinalStatus(cfg))
 }
 
 func TestGetFinalStatus_UnknownStatus(t *testing.T) {
 	tr := New(&mockSetter{})
-	cfg := &oapi.TestRunnerJobAgentConfig{Status: ptr("unknown")}
+	cfg := &oapi.TestRunnerJobAgentConfig{Status: new("unknown")}
 	assert.Equal(t, oapi.JobStatusSuccessful, tr.getFinalStatus(cfg),
 		"unrecognized status should default to successful")
 }

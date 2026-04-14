@@ -21,12 +21,14 @@ func (m *mockGetters) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget
 	return m.hasRelease, m.err
 }
 
+//go:fix inline
 func boolPtr(b bool) *bool {
-	return &b
+	return new(b)
 }
 
+//go:fix inline
 func stringPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 func newTestScope() (context.Context, evaluator.EvaluatorScope) {
@@ -134,7 +136,7 @@ func TestDeploymentWindowEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -179,7 +181,7 @@ func TestDeploymentWindowEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -204,7 +206,7 @@ func TestDeploymentWindowEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=YEARLY;COUNT=1;DTSTART=20200101T000000Z",
 			DurationMinutes: 1,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -228,7 +230,7 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -251,7 +253,7 @@ func TestDeploymentWindowEvaluator_NextEvaluationTime(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -273,7 +275,7 @@ func TestDeploymentWindowEvaluator_ResultDetails(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -297,8 +299,8 @@ func TestDeploymentWindowEvaluator_Timezone(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			Timezone:        stringPtr("America/New_York"),
-			AllowWindow:     boolPtr(true),
+			Timezone:        new("America/New_York"),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -310,8 +312,8 @@ func TestDeploymentWindowEvaluator_Timezone(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			Timezone:        stringPtr("Invalid/Timezone"),
-			AllowWindow:     boolPtr(true),
+			Timezone:        new("Invalid/Timezone"),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -344,8 +346,8 @@ func TestDeploymentWindowEvaluator_Timezone_VariousTimezones(t *testing.T) {
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 					DurationMinutes: 60,
-					Timezone:        stringPtr(tz),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tz),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -368,7 +370,7 @@ func TestDeploymentWindowEvaluator_Timezone_NilTimezone(t *testing.T) {
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
 			Timezone:        nil,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -389,8 +391,8 @@ func TestDeploymentWindowEvaluator_Timezone_EmptyString(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			Timezone:        stringPtr(""),
-			AllowWindow:     boolPtr(true),
+			Timezone:        new(""),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -423,8 +425,8 @@ func TestDeploymentWindowEvaluator_Timezone_InvalidTimezones(t *testing.T) {
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 					DurationMinutes: 60,
-					Timezone:        stringPtr(tz),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tz),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -458,8 +460,8 @@ func TestDeploymentWindowEvaluator_Timezone_USBusinessHours(t *testing.T) {
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 					DurationMinutes: 480,
-					Timezone:        stringPtr(tc.timezone),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tc.timezone),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -494,8 +496,8 @@ func TestDeploymentWindowEvaluator_Timezone_EuropeanBusinessHours(t *testing.T) 
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 					DurationMinutes: 540,
-					Timezone:        stringPtr(tc.timezone),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tc.timezone),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -529,8 +531,8 @@ func TestDeploymentWindowEvaluator_Timezone_AsiaPacificBusinessHours(t *testing.
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 					DurationMinutes: 480,
-					Timezone:        stringPtr(tc.timezone),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tc.timezone),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -565,8 +567,8 @@ func TestDeploymentWindowEvaluator_Timezone_MaintenanceWindowWithTimezone(t *tes
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
 					DurationMinutes: 240,
-					Timezone:        stringPtr(tc.timezone),
-					AllowWindow:     boolPtr(false),
+					Timezone:        new(tc.timezone),
+					AllowWindow:     new(false),
 				},
 			}
 
@@ -599,8 +601,8 @@ func TestDeploymentWindowEvaluator_Timezone_DSTAwareTimezones(t *testing.T) {
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=DAILY;BYHOUR=12;BYMINUTE=0;BYSECOND=0",
 					DurationMinutes: 60,
-					Timezone:        stringPtr(tz),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tz),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -633,8 +635,8 @@ func TestDeploymentWindowEvaluator_Timezone_NonDSTTimezones(t *testing.T) {
 				DeploymentWindow: &oapi.DeploymentWindowRule{
 					Rrule:           "FREQ=DAILY;BYHOUR=12;BYMINUTE=0;BYSECOND=0",
 					DurationMinutes: 60,
-					Timezone:        stringPtr(tz),
-					AllowWindow:     boolPtr(true),
+					Timezone:        new(tz),
+					AllowWindow:     new(true),
 				},
 			}
 
@@ -703,8 +705,8 @@ func TestDeploymentWindowEvaluator_WeeklyBusinessHours(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
 			DurationMinutes: 480,
-			Timezone:        stringPtr("America/New_York"),
-			AllowWindow:     boolPtr(true),
+			Timezone:        new("America/New_York"),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -725,8 +727,8 @@ func TestDeploymentWindowEvaluator_MaintenanceWindow(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
 			DurationMinutes: 240,
-			Timezone:        stringPtr("UTC"),
-			AllowWindow:     boolPtr(false),
+			Timezone:        new("UTC"),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -747,7 +749,7 @@ func TestDeploymentWindowEvaluator_ActionRequired(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -769,7 +771,7 @@ func TestDeploymentWindowEvaluator_MemoizationWorks(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -792,8 +794,8 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_AllowWindowInside(t *testing
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			Timezone:        stringPtr("America/New_York"),
-			AllowWindow:     boolPtr(true),
+			Timezone:        new("America/New_York"),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -826,8 +828,8 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowInside(t *testing.
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 60,
-			Timezone:        stringPtr("UTC"),
-			AllowWindow:     boolPtr(false),
+			Timezone:        new("UTC"),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -861,8 +863,8 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowOutside(t *testing
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=YEARLY;COUNT=1;DTSTART=20200101T000000Z",
 			DurationMinutes: 1,
-			Timezone:        stringPtr("Europe/London"),
-			AllowWindow:     boolPtr(false),
+			Timezone:        new("Europe/London"),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -897,7 +899,7 @@ func TestDeploymentWindowEvaluator_DailyBYHOUR_DetectsInsideWindow(t *testing.T)
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 240,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 
@@ -929,7 +931,7 @@ func TestDeploymentWindowEvaluator_DailyBYHOUR_DenyWindow_DetectsInsideWindow(t 
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           rruleStr,
 			DurationMinutes: 180,
-			AllowWindow:     boolPtr(false),
+			AllowWindow:     new(false),
 		},
 	}
 
@@ -956,7 +958,7 @@ func TestDeploymentWindowEvaluator_TimeRemainingFormat(t *testing.T) {
 		DeploymentWindow: &oapi.DeploymentWindowRule{
 			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
 			DurationMinutes: 120,
-			AllowWindow:     boolPtr(true),
+			AllowWindow:     new(true),
 		},
 	}
 

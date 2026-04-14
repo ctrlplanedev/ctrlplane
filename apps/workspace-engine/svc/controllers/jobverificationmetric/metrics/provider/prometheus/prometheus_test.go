@@ -12,7 +12,8 @@ import (
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
-func ptr[T any](v T) *T { return &v }
+//go:fix inline
+func ptr[T any](v T) *T { return new(v) }
 
 func TestNewPrometheusProvider(t *testing.T) {
 	tests := []struct {
@@ -82,7 +83,7 @@ func TestBuildQueryURL_InstantQuery(t *testing.T) {
 
 func TestBuildQueryURL_InstantQueryWithTimeout(t *testing.T) {
 	now := time.Date(2026, 2, 9, 12, 0, 0, 0, time.UTC)
-	config := &Config{Address: "http://prometheus:9090", Query: "up", Timeout: ptr(int64(45))}
+	config := &Config{Address: "http://prometheus:9090", Query: "up", Timeout: new(int64(45))}
 
 	u, err := buildQueryURL(config, now)
 	if err != nil {
@@ -124,7 +125,7 @@ func TestBuildQueryURL_RangeQueryWithExplicitStart(t *testing.T) {
 	config := &Config{
 		Address:    "http://prometheus:9090",
 		Query:      "up",
-		RangeQuery: &RangeQuery{Step: "15s", Start: ptr("5m")},
+		RangeQuery: &RangeQuery{Step: "15s", Start: new("5m")},
 	}
 
 	u, err := buildQueryURL(config, now)
@@ -141,7 +142,7 @@ func TestBuildQueryURL_RangeQueryWithExplicitEnd(t *testing.T) {
 	config := &Config{
 		Address:    "http://prometheus:9090",
 		Query:      "up",
-		RangeQuery: &RangeQuery{Step: "15s", End: ptr("1m")},
+		RangeQuery: &RangeQuery{Step: "15s", End: new("1m")},
 	}
 
 	u, err := buildQueryURL(config, now)
@@ -172,7 +173,7 @@ func TestBuildQueryURL_InvalidStart(t *testing.T) {
 	config := &Config{
 		Address:    "http://prometheus:9090",
 		Query:      "up",
-		RangeQuery: &RangeQuery{Step: "15s", Start: ptr("invalid")},
+		RangeQuery: &RangeQuery{Step: "15s", Start: new("invalid")},
 	}
 	_, err := buildQueryURL(config, time.Now())
 	if err == nil {
@@ -187,7 +188,7 @@ func TestBuildQueryURL_InvalidEnd(t *testing.T) {
 	config := &Config{
 		Address:    "http://prometheus:9090",
 		Query:      "up",
-		RangeQuery: &RangeQuery{Step: "15s", End: ptr("invalid")},
+		RangeQuery: &RangeQuery{Step: "15s", End: new("invalid")},
 	}
 	_, err := buildQueryURL(config, time.Now())
 	if err == nil {
@@ -210,7 +211,7 @@ func TestBuildQueryURL_TrailingSlash(t *testing.T) {
 }
 
 func TestSetHeaders_BearerToken(t *testing.T) {
-	config := &Config{Authentication: &Authentication{BearerToken: ptr("my-secret-token")}}
+	config := &Config{Authentication: &Authentication{BearerToken: new("my-secret-token")}}
 	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	if err := setHeaders(req, config, http.DefaultClient); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -262,7 +263,7 @@ func TestBuildHTTPClient_DefaultTimeout(t *testing.T) {
 }
 
 func TestBuildHTTPClient_CustomTimeout(t *testing.T) {
-	config := &Config{Timeout: ptr(int64(60))}
+	config := &Config{Timeout: new(int64(60))}
 	client := buildHTTPClient(config)
 	if client.Timeout != 60*time.Second {
 		t.Errorf("expected 60s timeout, got %v", client.Timeout)
@@ -270,7 +271,7 @@ func TestBuildHTTPClient_CustomTimeout(t *testing.T) {
 }
 
 func TestBuildHTTPClient_Insecure(t *testing.T) {
-	config := &Config{Insecure: ptr(true)}
+	config := &Config{Insecure: new(true)}
 	client := buildHTTPClient(config)
 	if client.Transport == nil {
 		t.Fatal("expected transport to be set for insecure config")
@@ -317,7 +318,7 @@ func TestResolveProviderTemplates(t *testing.T) {
 	config := &Config{
 		Address: "http://{{.variables.host}}:9090",
 		Query:   `up{job="{{.deployment.name}}"}`,
-		Timeout: ptr(int64(30)),
+		Timeout: new(int64(30)),
 		Authentication: &Authentication{
 			BearerToken: &token,
 		},
@@ -408,7 +409,7 @@ func TestMeasure_InstantQueryE2E(t *testing.T) {
 
 func TestMeasure_ConnectionRefused(t *testing.T) {
 	p, _ := NewPrometheusProvider(
-		&Config{Address: "http://localhost:1", Query: "up", Timeout: ptr(int64(1))},
+		&Config{Address: "http://localhost:1", Query: "up", Timeout: new(int64(1))},
 	)
 	_, _, err := p.Measure(context.Background(), &provider.ProviderContext{})
 	if err == nil {

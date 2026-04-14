@@ -277,7 +277,8 @@ func setupHappyPath(rt *ReleaseTarget, release *oapi.Release) (*mockGetter, *moc
 	return getter, setter
 }
 
-func int32Ptr(v int32) *int32 { return &v }
+//go:fix inline
+func int32Ptr(v int32) *int32 { return new(v) }
 
 func scopeID(rt *ReleaseTarget) string {
 	return fmt.Sprintf("%s:%s:%s", rt.DeploymentID, rt.EnvironmentID, rt.ResourceID)
