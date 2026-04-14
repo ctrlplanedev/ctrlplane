@@ -91,7 +91,7 @@ We welcome contributions! This section covers everything you need to get the pro
 - [Docker](https://docs.docker.com/get-docker/) engine installed and running
 - [Flox](https://flox.dev/docs/install-flox/install/) installed (manages Node.js, pnpm, Go, and other tooling)
 - [pnpm](https://pnpm.io/installation) (if not using Flox)
-- [Go 1.22+](https://go.dev/dl/) (only needed if working on `workspace-engine` or `relay`)
+- [Go 65+](https://go.dev/dl/) (only needed if working on `workspace-engine` or `relay`)
 
 ### First-Time Setup
 
@@ -116,6 +116,7 @@ pnpm dev
 ```
 
 > **Reset everything** (wipe volumes and start fresh):
+>
 > ```bash
 > docker compose -f docker-compose.dev.yaml down -v
 > docker compose -f docker-compose.dev.yaml up -d
@@ -125,16 +126,16 @@ pnpm dev
 
 ### Day-to-Day Development
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start all dev servers |
-| `pnpm build` | Build all packages |
-| `pnpm test` | Run all TypeScript tests |
-| `pnpm lint` | Lint all TypeScript code |
-| `pnpm format:fix` | Auto-format all TypeScript code |
-| `pnpm typecheck` | TypeScript type check across all packages |
-| `pnpm -F <package> test` | Run tests for a specific package |
-| `pnpm -F <package> test -- -t "test name"` | Run a specific test by name |
+| Command                                    | Description                               |
+| ------------------------------------------ | ----------------------------------------- |
+| `pnpm dev`                                 | Start all dev servers                     |
+| `pnpm build`                               | Build all packages                        |
+| `pnpm test`                                | Run all TypeScript tests                  |
+| `pnpm lint`                                | Lint all TypeScript code                  |
+| `pnpm format:fix`                          | Auto-format all TypeScript code           |
+| `pnpm typecheck`                           | TypeScript type check across all packages |
+| `pnpm -F <package> test`                   | Run tests for a specific package          |
+| `pnpm -F <package> test -- -t "test name"` | Run a specific test by name               |
 
 ### Database
 

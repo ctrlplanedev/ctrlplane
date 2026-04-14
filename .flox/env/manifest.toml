@@ -15,15 +15,13 @@ pnpm.version = "10.2.0"
 
 jsonnet.pkg-path = "jsonnet"
 
-go.pkg-path = "go"
-go.pkg-group = "go"
-go.version = "1.25.5"
 
 air.pkg-path = "air"
 
 golangci-lint.pkg-path = "golangci-lint"
 golangci-lint.version = "2.11.4"
 golangci-lint.pkg-group = "golangci-lint"
+go.pkg-path = "go"
 
 
 ## Environment Variables ---------------------------------------------
