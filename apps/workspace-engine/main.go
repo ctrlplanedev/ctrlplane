@@ -16,6 +16,7 @@ import (
 	"workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/environmentresourceselectoreval"
+	"workspace-engine/svc/controllers/forcedeploy"
 	"workspace-engine/svc/controllers/jobdispatch"
 	"workspace-engine/svc/controllers/jobeligibility"
 	"workspace-engine/svc/controllers/jobverificationmetric"
@@ -48,6 +49,7 @@ func main() {
 		deploymentplanresult.New(WorkerID, db.GetPool(ctx)),
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
+		forcedeploy.New(WorkerID, db.GetPool(ctx)),
 		jobdispatch.New(WorkerID, db.GetPool(ctx)),
 		jobeligibility.New(WorkerID, db.GetPool(ctx)),
 		jobverificationmetric.New(WorkerID, db.GetPool(ctx)),
