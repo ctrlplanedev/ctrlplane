@@ -58,7 +58,15 @@ func Reconcile(
 		return &ReconcileResult{RequeueAfter: requeueDelay}, nil
 	}
 
-	if err := buildAndDispatchJob(ctx, span, workspaceUUID, getter, setter, rt, release); err != nil {
+	if err := buildAndDispatchJob(
+		ctx,
+		span,
+		workspaceUUID,
+		getter,
+		setter,
+		rt,
+		release,
+	); err != nil {
 		return nil, recordErr(span, "build and dispatch job", err)
 	}
 

@@ -46,7 +46,10 @@ func (m *mockGetter) GetDesiredRelease(_ context.Context, _ *ReleaseTarget) (*oa
 	return m.release, m.releaseErr
 }
 
-func (m *mockGetter) GetActiveJobsForReleaseTarget(_ context.Context, _ *oapi.ReleaseTarget) ([]*oapi.Job, error) {
+func (m *mockGetter) GetActiveJobsForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) ([]*oapi.Job, error) {
 	return m.activeJobs, m.activeJobsErr
 }
 
@@ -62,7 +65,10 @@ func (m *mockGetter) GetResource(_ context.Context, _ uuid.UUID) (*oapi.Resource
 	return m.resource, m.resourceErr
 }
 
-func (m *mockGetter) ListJobAgentsByWorkspaceID(_ context.Context, _ uuid.UUID) ([]oapi.JobAgent, error) {
+func (m *mockGetter) ListJobAgentsByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.JobAgent, error) {
 	return m.workspaceAgents, nil
 }
 
