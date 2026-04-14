@@ -83,9 +83,6 @@ func newTestJob(id string, config map[string]any) *oapi.Job {
 	}
 }
 
-//go:fix inline
-func ptr[T any](v T) *T { return new(v) }
-
 // ---------- Type() ----------
 
 func TestType(t *testing.T) {

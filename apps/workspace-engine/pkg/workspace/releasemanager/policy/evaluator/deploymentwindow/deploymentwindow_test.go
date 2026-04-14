@@ -21,16 +21,6 @@ func (m *mockGetters) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget
 	return m.hasRelease, m.err
 }
 
-//go:fix inline
-func boolPtr(b bool) *bool {
-	return new(b)
-}
-
-//go:fix inline
-func stringPtr(s string) *string {
-	return new(s)
-}
-
 func newTestScope() (context.Context, evaluator.EvaluatorScope) {
 	return context.Background(), evaluator.EvaluatorScope{
 		Environment: &oapi.Environment{Id: "env-1"},

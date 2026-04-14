@@ -12,9 +12,6 @@ import (
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
-//go:fix inline
-func ptr[T any](v T) *T { return new(v) }
-
 func TestNewPrometheusProvider(t *testing.T) {
 	tests := []struct {
 		name      string

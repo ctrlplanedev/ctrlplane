@@ -8,9 +8,6 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-//go:fix inline
-func ptr[T any](v T) *T { return new(v) }
-
 func makeDispatchContext(resource, environment string) *oapi.DispatchContext {
 	return &oapi.DispatchContext{
 		Resource:    &oapi.Resource{Name: resource},

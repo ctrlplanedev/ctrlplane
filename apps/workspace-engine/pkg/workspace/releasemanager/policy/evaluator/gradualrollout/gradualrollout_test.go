@@ -164,12 +164,6 @@ func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 // Test helpers
 // ---------------------------------------------------------------------------
 
-//go:fix inline
-func boolPtr(b bool) *bool { return new(b) }
-
-//go:fix inline
-func stringPtr(s string) *string { return new(s) }
-
 func makeResources(n int) ([]*oapi.Resource, map[string]*oapi.Resource) {
 	resources := make([]*oapi.Resource, n)
 	resourceMap := make(map[string]*oapi.Resource, n)

@@ -38,9 +38,6 @@ func booleanInput(key string, def *bool) oapi.WorkflowInput {
 	return input
 }
 
-//go:fix inline
-func ptr[T any](v T) *T { return new(v) }
-
 func TestResolveInputs_ProvidedInputsPassThrough(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
