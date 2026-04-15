@@ -101,6 +101,17 @@ curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
   deployment is older than this, progression is blocked until redeployed.
 </ParamField>
 
+<ParamField
+  path="environmentProgression.requireVerificationPassed"
+  type="boolean"
+  default="false"
+>
+  When enabled, jobs must also have passed verification to count toward the
+  success percentage. Jobs with no verification metrics configured are still
+  counted. Jobs with verification in a running, failed, or cancelled state are
+  excluded from the success count.
+</ParamField>
+
 ## How It Works
 
 1. **Find dependency environments** - Ctrlplane finds all environments matching
@@ -108,11 +119,14 @@ curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
    This prevents cross-system dependency issues.
 2. **Evaluate pass rate** - For each dependency environment, Ctrlplane checks
    if the success percentage of release targets meets the threshold.
-3. **Check soak time** - If `minimumSoakTimeMinutes` is configured, Ctrlplane
+3. **Check verification** - If `requireVerificationPassed` is enabled,
+   only jobs that have passed verification count toward the success percentage.
+   Jobs without verification metrics are still counted.
+4. **Check soak time** - If `minimumSoakTimeMinutes` is configured, Ctrlplane
    verifies that enough time has elapsed since the most recent successful job.
-4. **Check freshness** - If `maximumAgeHours` is configured, Ctrlplane ensures
+5. **Check freshness** - If `maximumAgeHours` is configured, Ctrlplane ensures
    the dependency deployment is not too old.
-5. **OR logic across environments** - If the selector matches multiple
+6. **OR logic across environments** - If the selector matches multiple
    environments, the rule passes if **at least one** of them satisfies all
    criteria.
 
@@ -278,10 +292,11 @@ resource "ctrlplane_policy" "production_full_gate" {
   }
 
   environment_progression {
-    depends_on_environment_selector = "environment.name == 'staging'"
-    minimum_success_percentage      = 100
-    minimum_soak_time_minutes       = 30
-    maximum_age_hours               = 48
+    depends_on_environment_selector  = "environment.name == 'staging'"
+    minimum_success_percentage       = 100
+    minimum_soak_time_minutes        = 30
+    maximum_age_hours                = 48
+    require_verification_passed      = true
   }
 
   gradual_rollout {
@@ -303,7 +318,8 @@ resource "ctrlplane_policy" "production_full_gate" {
         "dependsOnEnvironmentSelector": "environment.name == 'staging'",
         "minimumSuccessPercentage": 100,
         "minimumSoakTimeMinutes": 30,
-        "maximumAgeHours": 48
+        "maximumAgeHours": 48,
+        "requireVerificationPassed": true
       }
     },
     {
@@ -334,6 +350,7 @@ Ctrlplane evaluates if the deployment meets success criteria:
 
 - Job status matches `successStatuses`
 - Success percentage meets `minimumSuccessPercentage`
+- If `requireVerificationPassed` is enabled, verification must have passed
 
 ### 4. Soak Time (if configured)
 
