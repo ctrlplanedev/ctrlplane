@@ -65,7 +65,7 @@
         "groups": [
           {
             "group": "Deployment",
-            "pages": ["deployment/overview", "integrations/cicd"]
+            "pages": ["deployment/overview", "integrations/cicd", "workflows"]
           },
           {
             "group": "Job Agents",
