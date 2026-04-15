@@ -438,7 +438,7 @@ type ListJobsByEnvironmentAndVersionRow struct {
 	DeploymentID       uuid.UUID
 	EnvironmentID      uuid.UUID
 	ResourceID         uuid.UUID
-	VerificationStatus string
+	VerificationStatus pgtype.Text
 }
 
 // Returns all jobs for a given environment and version in a single query,

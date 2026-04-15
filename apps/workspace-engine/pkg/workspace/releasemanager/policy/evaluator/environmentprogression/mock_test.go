@@ -11,15 +11,15 @@ import (
 var _ Getters = (*mockGetters)(nil)
 
 type mockGetters struct {
-	environments           map[string]*oapi.Environment
-	deployments            map[string]*oapi.Deployment
-	resources              map[string]*oapi.Resource
-	releaseTargets         []*oapi.ReleaseTarget
-	jobs                   map[string]map[string]*oapi.Job // releaseTarget.Key() -> jobID -> job
-	systemEnvs             map[string][]string             // envID -> systemIDs
-	releaseByJob           map[string]*oapi.Release        // jobID -> release
-	policies               map[string]*oapi.Policy
-	jobVerificationStatus  map[string]string // jobID -> verification status
+	environments          map[string]*oapi.Environment
+	deployments           map[string]*oapi.Deployment
+	resources             map[string]*oapi.Resource
+	releaseTargets        []*oapi.ReleaseTarget
+	jobs                  map[string]map[string]*oapi.Job // releaseTarget.Key() -> jobID -> job
+	systemEnvs            map[string][]string             // envID -> systemIDs
+	releaseByJob          map[string]*oapi.Release        // jobID -> release
+	policies              map[string]*oapi.Policy
+	jobVerificationStatus map[string]string // jobID -> verification status
 }
 
 func newMockGetters() *mockGetters {

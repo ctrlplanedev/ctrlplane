@@ -304,8 +304,16 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
 
-	requireVerificationPassed := e.rule.RequireVerificationPassed != nil && *e.rule.RequireVerificationPassed
-	tracker := NewReleaseTargetJobTracker(ctx, e.getters, environment, version, successStatuses, requireVerificationPassed)
+	requireVerificationPassed := e.rule.RequireVerificationPassed != nil &&
+		*e.rule.RequireVerificationPassed
+	tracker := NewReleaseTargetJobTracker(
+		ctx,
+		e.getters,
+		environment,
+		version,
+		successStatuses,
+		requireVerificationPassed,
+	)
 	if len(tracker.ReleaseTargets) == 0 {
 		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").
 			WithSatisfiedAt(version.CreatedAt)

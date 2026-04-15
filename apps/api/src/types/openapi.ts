@@ -1411,10 +1411,10 @@ export interface components {
              */
             minimumSuccessPercentage: number;
             /**
-             * @default false
              * @description If true, jobs must also have passed verification to count toward the success percentage
+             * @default false
              */
-            requireVerificationPassed?: boolean;
+            requireVerificationPassed: boolean;
             successStatuses?: components["schemas"]["JobStatus"][];
         };
         EnvironmentRequestAccepted: {

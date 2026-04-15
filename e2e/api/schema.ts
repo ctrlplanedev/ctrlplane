@@ -1402,7 +1402,6 @@ export interface components {
             maximumAgeHours?: number;
             /**
              * Format: int32
-             * @deprecated
              * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.
              */
             minimumSoakTimeMinutes?: number;
@@ -1411,6 +1410,11 @@ export interface components {
              * @default 100
              */
             minimumSuccessPercentage: number;
+            /**
+             * @description If true, jobs must also have passed verification to count toward the success percentage
+             * @default false
+             */
+            requireVerificationPassed: boolean;
             successStatuses?: components["schemas"]["JobStatus"][];
         };
         EnvironmentRequestAccepted: {

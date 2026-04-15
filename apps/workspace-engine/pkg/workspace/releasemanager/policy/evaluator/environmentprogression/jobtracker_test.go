@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetReleaseTargets(t *testing.T) {
@@ -666,7 +667,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	mock.addJob(rt2, job2, release2)
 
 	// Tracker for env-1 should only see job-1
-	tracker1 := NewReleaseTargetJobTracker(ctx, mock, env1, version, nil)
+	tracker1 := NewReleaseTargetJobTracker(ctx, mock, env1, version, nil, false)
 	jobs1 := tracker1.Jobs()
 	assert.Len(t, jobs1, 1, "expected 1 job for env-1")
 	if len(jobs1) > 0 {
@@ -674,7 +675,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	}
 
 	// Tracker for env-2 should only see job-2
-	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env2, version, nil)
+	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env2, version, nil, false)
 	jobs2 := tracker2.Jobs()
 	assert.Len(t, jobs2, 1, "expected 1 job for env-2")
 	if len(jobs2) > 0 {
@@ -1168,7 +1169,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	)
 }
 
-func TestReleaseTargetJobTracker_RequireVerificationPassed_ExcludesFailedVerification(t *testing.T) {
+func TestReleaseTargetJobTracker_RequireVerificationPassed_ExcludesFailedVerification(
+	t *testing.T,
+) {
 	mock, version := setupMockForJobTracker()
 	ctx := context.Background()
 
@@ -1211,7 +1214,9 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_ExcludesFailedVerific
 		"expected 0%% success when verification failed and RequireVerificationPassed=true")
 }
 
-func TestReleaseTargetJobTracker_RequireVerificationPassed_IncludesPassedVerification(t *testing.T) {
+func TestReleaseTargetJobTracker_RequireVerificationPassed_IncludesPassedVerification(
+	t *testing.T,
+) {
 	mock, version := setupMockForJobTracker()
 	ctx := context.Background()
 
