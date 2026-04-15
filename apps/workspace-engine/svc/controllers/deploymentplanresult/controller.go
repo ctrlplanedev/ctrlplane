@@ -95,11 +95,16 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			return reconcile.Result{}, fmt.Errorf("mark result unsupported: %w", updateErr)
 		}
 
-		if commentErr := MaybeCommentOnPR(ctx, &dispatchCtx, result.TargetID.String(), prCommentResult{
-			AgentName: dispatchCtx.JobAgent.Name,
-			AgentType: agentType,
-			Status:    "unsupported",
-		}); commentErr != nil {
+		if commentErr := MaybeCommentOnPR(
+			ctx,
+			&dispatchCtx,
+			result.TargetID.String(),
+			prCommentResult{
+				AgentName: dispatchCtx.JobAgent.Name,
+				AgentType: agentType,
+				Status:    "unsupported",
+			},
+		); commentErr != nil {
 			span.RecordError(commentErr)
 		}
 
@@ -127,12 +132,17 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			)
 		}
 
-		if commentErr := MaybeCommentOnPR(ctx, &dispatchCtx, result.TargetID.String(), prCommentResult{
-			AgentName: dispatchCtx.JobAgent.Name,
-			AgentType: agentType,
-			Status:    "errored",
-			Message:   err.Error(),
-		}); commentErr != nil {
+		if commentErr := MaybeCommentOnPR(
+			ctx,
+			&dispatchCtx,
+			result.TargetID.String(),
+			prCommentResult{
+				AgentName: dispatchCtx.JobAgent.Name,
+				AgentType: agentType,
+				Status:    "errored",
+				Message:   err.Error(),
+			},
+		); commentErr != nil {
 			span.RecordError(commentErr)
 		}
 

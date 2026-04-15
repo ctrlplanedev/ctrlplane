@@ -128,7 +128,16 @@ func MaybeCommentOnPR(
 	marker := commentMarker(targetID)
 	section := formatResultSection(result)
 
-	if err := upsertComment(ctx, client, owner, repo, prNumber, marker, dispatchCtx, section); err != nil {
+	if err := upsertComment(
+		ctx,
+		client,
+		owner,
+		repo,
+		prNumber,
+		marker,
+		dispatchCtx,
+		section,
+	); err != nil {
 		return fmt.Errorf("upsert comment on PR #%d: %w", prNumber, err)
 	}
 	return nil
