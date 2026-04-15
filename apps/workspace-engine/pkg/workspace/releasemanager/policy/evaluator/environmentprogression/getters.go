@@ -47,18 +47,21 @@ type Getters interface {
 		environmentID string,
 		versionID string,
 	) ([]ReleaseTargetJob, error)
+	GetVerificationStatusForJobs(
+		ctx context.Context,
+		jobIDs []string,
+	) (map[string]oapi.JobVerificationStatus, error)
 }
 
 // ReleaseTargetJob holds the minimal job fields needed by the job tracker,
 // along with the release target triple identifying which target the job belongs to.
 type ReleaseTargetJob struct {
-	JobID              string
-	Status             oapi.JobStatus
-	CompletedAt        *time.Time
-	DeploymentID       string
-	EnvironmentID      string
-	ResourceID         string
-	VerificationStatus string
+	JobID         string
+	Status        oapi.JobStatus
+	CompletedAt   *time.Time
+	DeploymentID  string
+	EnvironmentID string
+	ResourceID    string
 }
 
 // ---------------------------------------------------------------------------
@@ -209,12 +212,11 @@ func (p *PostgresGetters) GetJobsForEnvironmentAndVersion(
 	result := make([]ReleaseTargetJob, len(rows))
 	for i, row := range rows {
 		rtj := ReleaseTargetJob{
-			JobID:              row.ID.String(),
-			Status:             db.ToOapiJobStatus(row.Status),
-			DeploymentID:       row.DeploymentID.String(),
-			EnvironmentID:      row.EnvironmentID.String(),
-			ResourceID:         row.ResourceID.String(),
-			VerificationStatus: row.VerificationStatus,
+			JobID:         row.ID.String(),
+			Status:        db.ToOapiJobStatus(row.Status),
+			DeploymentID:  row.DeploymentID.String(),
+			EnvironmentID: row.EnvironmentID.String(),
+			ResourceID:    row.ResourceID.String(),
 		}
 		if row.CompletedAt.Valid {
 			t := row.CompletedAt.Time
@@ -222,6 +224,83 @@ func (p *PostgresGetters) GetJobsForEnvironmentAndVersion(
 		}
 		result[i] = rtj
 	}
+	return result, nil
+}
+
+func (p *PostgresGetters) GetVerificationStatusForJobs(
+	ctx context.Context,
+	jobIDs []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	ctx, span := gettersTracer.Start(ctx, "GetVerificationStatusForJobs")
+	defer span.End()
+
+	uuids := make([]uuid.UUID, len(jobIDs))
+	for i, id := range jobIDs {
+		uuids[i] = uuid.MustParse(id)
+	}
+
+	rows, err := p.queries.ListVerificationMetricsWithMeasurementsByJobIDs(ctx, uuids)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group rows by job -> metric -> measurements
+	type metricData struct {
+		count            int
+		failureThreshold *int
+		successThreshold *int
+		measurements     []oapi.VerificationMeasurementStatus
+	}
+	// jobID -> metricID -> metricData
+	byJob := make(map[string]map[string]*metricData)
+
+	for _, row := range rows {
+		jobKey := row.JobID.String()
+		metricKey := row.MetricID.String()
+
+		if byJob[jobKey] == nil {
+			byJob[jobKey] = make(map[string]*metricData)
+		}
+		md, exists := byJob[jobKey][metricKey]
+		if !exists {
+			md = &metricData{count: int(row.Count)}
+			if row.FailureThreshold.Valid {
+				v := int(row.FailureThreshold.Int32)
+				md.failureThreshold = &v
+			}
+			if row.SuccessThreshold.Valid {
+				v := int(row.SuccessThreshold.Int32)
+				md.successThreshold = &v
+			}
+			byJob[jobKey][metricKey] = md
+		}
+
+		if row.MeasurementStatus.Valid {
+			md.measurements = append(md.measurements,
+				oapi.VerificationMeasurementStatus(row.MeasurementStatus.JobVerificationStatus))
+		}
+	}
+
+	result := make(map[string]oapi.JobVerificationStatus, len(byJob))
+	for jobID, metrics := range byJob {
+		jv := oapi.JobVerification{}
+		for _, md := range metrics {
+			vms := oapi.VerificationMetricStatus{
+				Count:            md.count,
+				FailureThreshold: md.failureThreshold,
+				SuccessThreshold: md.successThreshold,
+			}
+			for _, ms := range md.measurements {
+				vms.Measurements = append(vms.Measurements, oapi.VerificationMeasurement{
+					Status: ms,
+				})
+			}
+			jv.Metrics = append(jv.Metrics, vms)
+		}
+		result[jobID] = jv.Status()
+	}
+
+	span.SetAttributes(attribute.Int("jobs_with_verification", len(result)))
 	return result, nil
 }
 

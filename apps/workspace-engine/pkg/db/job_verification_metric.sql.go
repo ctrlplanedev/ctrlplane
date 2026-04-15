@@ -362,3 +362,56 @@ func (q *Queries) InsertJobVerificationMetricMeasurement(ctx context.Context, ar
 	)
 	return err
 }
+
+const listVerificationMetricsWithMeasurementsByJobIDs = `-- name: ListVerificationMetricsWithMeasurementsByJobIDs :many
+SELECT
+  jvm.job_id,
+  jvm.id AS metric_id,
+  jvm.count,
+  jvm.failure_threshold,
+  jvm.success_threshold,
+  mm.status AS measurement_status
+FROM job_verification_metric jvm
+LEFT JOIN job_verification_metric_measurement mm
+  ON mm.job_verification_metric_status_id = jvm.id
+WHERE jvm.job_id = ANY($1::uuid[])
+ORDER BY jvm.job_id, jvm.id, mm.measured_at ASC
+`
+
+type ListVerificationMetricsWithMeasurementsByJobIDsRow struct {
+	JobID             uuid.UUID
+	MetricID          uuid.UUID
+	Count             int32
+	FailureThreshold  pgtype.Int4
+	SuccessThreshold  pgtype.Int4
+	MeasurementStatus NullJobVerificationStatus
+}
+
+// Returns verification metrics with their individual measurement statuses for a batch of jobs.
+// Used to compute verification status in Go via JobVerification.Status().
+func (q *Queries) ListVerificationMetricsWithMeasurementsByJobIDs(ctx context.Context, jobIds []uuid.UUID) ([]ListVerificationMetricsWithMeasurementsByJobIDsRow, error) {
+	rows, err := q.db.Query(ctx, listVerificationMetricsWithMeasurementsByJobIDs, jobIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListVerificationMetricsWithMeasurementsByJobIDsRow
+	for rows.Next() {
+		var i ListVerificationMetricsWithMeasurementsByJobIDsRow
+		if err := rows.Scan(
+			&i.JobID,
+			&i.MetricID,
+			&i.Count,
+			&i.FailureThreshold,
+			&i.SuccessThreshold,
+			&i.MeasurementStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

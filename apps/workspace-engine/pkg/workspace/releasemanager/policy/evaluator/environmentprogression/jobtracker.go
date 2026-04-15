@@ -123,6 +123,16 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 		rtKeys[rt.Key()] = true
 	}
 
+	// Fetch verification statuses only when required
+	var verificationStatuses map[string]oapi.JobVerificationStatus
+	if t.RequireVerificationPassed {
+		jobIDs := make([]string, len(rows))
+		for i, row := range rows {
+			jobIDs[i] = row.JobID
+		}
+		verificationStatuses, _ = t.getters.GetVerificationStatusForJobs(ctx, jobIDs)
+	}
+
 	for _, row := range rows {
 		rt := oapi.ReleaseTarget{
 			DeploymentId:  row.DeploymentID,
@@ -140,9 +150,13 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 			CompletedAt: row.CompletedAt,
 		}
 
-		isVerificationOk := !t.RequireVerificationPassed ||
-			row.VerificationStatus == "" ||
-			row.VerificationStatus == string(oapi.JobVerificationStatusPassed)
+		isVerificationOk := true
+		if t.RequireVerificationPassed && verificationStatuses != nil {
+			if status, exists := verificationStatuses[row.JobID]; exists {
+				isVerificationOk = status == oapi.JobVerificationStatusPassed
+			}
+			// Job not in the map means no verification metrics configured — ok
+		}
 		if t.SuccessStatuses[row.Status] && row.CompletedAt != nil && isVerificationOk {
 			if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists ||
 				row.CompletedAt.Before(existingTime) {

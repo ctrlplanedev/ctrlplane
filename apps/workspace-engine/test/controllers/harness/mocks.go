@@ -451,21 +451,30 @@ func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
 			if !ok || rel.Version.Id != versionID {
 				continue
 			}
-			verificationStatus := ""
-			if g.JobVerificationStatuses != nil {
-				if vs, ok := g.JobVerificationStatuses[job.Id]; ok {
-					verificationStatus = string(vs)
-				}
-			}
 			result = append(result, environmentprogression.ReleaseTargetJob{
-				JobID:              job.Id,
-				Status:             job.Status,
-				CompletedAt:        job.CompletedAt,
-				DeploymentID:       depID,
-				EnvironmentID:      envID,
-				ResourceID:         resID,
-				VerificationStatus: verificationStatus,
+				JobID:         job.Id,
+				Status:        job.Status,
+				CompletedAt:   job.CompletedAt,
+				DeploymentID:  depID,
+				EnvironmentID: envID,
+				ResourceID:    resID,
 			})
+		}
+	}
+	return result, nil
+}
+
+func (g *DesiredReleaseGetter) GetVerificationStatusForJobs(
+	_ context.Context,
+	jobIDs []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	if g.JobVerificationStatuses == nil {
+		return nil, nil
+	}
+	result := make(map[string]oapi.JobVerificationStatus, len(jobIDs))
+	for _, id := range jobIDs {
+		if s, ok := g.JobVerificationStatuses[id]; ok {
+			result[id] = s
 		}
 	}
 	return result, nil

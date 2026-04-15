@@ -146,14 +146,26 @@ func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 				continue
 			}
 			result = append(result, ReleaseTargetJob{
-				JobID:              job.Id,
-				Status:             job.Status,
-				CompletedAt:        job.CompletedAt,
-				DeploymentID:       rel.ReleaseTarget.DeploymentId,
-				EnvironmentID:      rel.ReleaseTarget.EnvironmentId,
-				ResourceID:         rel.ReleaseTarget.ResourceId,
-				VerificationStatus: m.jobVerificationStatus[job.Id],
+				JobID:         job.Id,
+				Status:        job.Status,
+				CompletedAt:   job.CompletedAt,
+				DeploymentID:  rel.ReleaseTarget.DeploymentId,
+				EnvironmentID: rel.ReleaseTarget.EnvironmentId,
+				ResourceID:    rel.ReleaseTarget.ResourceId,
 			})
+		}
+	}
+	return result, nil
+}
+
+func (m *mockGetters) GetVerificationStatusForJobs(
+	_ context.Context,
+	jobIDs []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	result := make(map[string]oapi.JobVerificationStatus)
+	for _, id := range jobIDs {
+		if status, ok := m.jobVerificationStatus[id]; ok {
+			result[id] = oapi.JobVerificationStatus(status)
 		}
 	}
 	return result, nil

@@ -130,6 +130,22 @@ FROM job_verification_metric jvm
 WHERE jvm.job_id = @job_id
 ORDER BY jvm.id;
 
+-- name: ListVerificationMetricsWithMeasurementsByJobIDs :many
+-- Returns verification metrics with their individual measurement statuses for a batch of jobs.
+-- Used to compute verification status in Go via JobVerification.Status().
+SELECT
+  jvm.job_id,
+  jvm.id AS metric_id,
+  jvm.count,
+  jvm.failure_threshold,
+  jvm.success_threshold,
+  mm.status AS measurement_status
+FROM job_verification_metric jvm
+LEFT JOIN job_verification_metric_measurement mm
+  ON mm.job_verification_metric_status_id = jvm.id
+WHERE jvm.job_id = ANY(@job_ids::uuid[])
+ORDER BY jvm.job_id, jvm.id, mm.measured_at ASC;
+
 -- name: GetJobDispatchContext :one
 SELECT j.dispatch_context
 FROM job j

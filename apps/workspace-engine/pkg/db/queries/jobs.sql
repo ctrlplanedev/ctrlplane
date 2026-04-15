@@ -235,29 +235,7 @@ SELECT
   j.completed_at,
   r.deployment_id,
   r.environment_id,
-  r.resource_id,
-  COALESCE(
-    (
-      SELECT
-        CASE
-          WHEN COUNT(*) = 0 THEN ''
-          WHEN bool_or(COALESCE(mc.failures, 0) > COALESCE(jvm.failure_threshold, 0)) THEN 'failed'
-          WHEN bool_or(COALESCE(mc.total, 0) < jvm.count
-                       AND COALESCE(mc.failures, 0) <= COALESCE(jvm.failure_threshold, 0)) THEN 'running'
-          ELSE 'passed'
-        END
-      FROM job_verification_metric jvm
-      LEFT JOIN LATERAL (
-        SELECT
-          COUNT(*)::int AS total,
-          COUNT(*) FILTER (WHERE mm.status = 'failed')::int AS failures
-        FROM job_verification_metric_measurement mm
-        WHERE mm.job_verification_metric_status_id = jvm.id
-      ) mc ON true
-      WHERE jvm.job_id = j.id
-    ),
-    ''
-  ) AS verification_status
+  r.resource_id
 FROM job j
 JOIN release_job rj ON rj.job_id = j.id
 JOIN release r ON r.id = rj.release_id

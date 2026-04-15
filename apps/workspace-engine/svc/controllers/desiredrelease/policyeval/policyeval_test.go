@@ -186,6 +186,11 @@ func (m *mockGetter) GetJobsForEnvironmentAndVersion(
 ) ([]environmentprogression.ReleaseTargetJob, error) {
 	return nil, nil
 }
+func (m *mockGetter) GetVerificationStatusForJobs(
+	_ context.Context, _ []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	return nil, nil
+}
 
 // compile-time check.
 var _ Getter = (*mockGetter)(nil)
