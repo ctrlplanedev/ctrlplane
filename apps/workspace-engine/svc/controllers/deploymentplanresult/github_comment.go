@@ -18,6 +18,7 @@ const (
 )
 
 type prCommentResult struct {
+	AgentID    string
 	AgentName  string
 	AgentType  string
 	Status     string
@@ -29,6 +30,31 @@ type prCommentResult struct {
 
 func commentMarker(targetID string) string {
 	return fmt.Sprintf("<!-- ctrlplane-plan-target:%s -->", targetID)
+}
+
+func agentSectionStart(agentID string) string {
+	return fmt.Sprintf("<!-- agent:%s:start -->", agentID)
+}
+
+func agentSectionEnd(agentID string) string {
+	return fmt.Sprintf("<!-- agent:%s:end -->", agentID)
+}
+
+func wrapAgentSection(agentID, content string) string {
+	return agentSectionStart(agentID) + "\n" + content + agentSectionEnd(agentID) + "\n"
+}
+
+func replaceOrAppendAgentSection(body, agentID, section string) string {
+	start := agentSectionStart(agentID)
+	end := agentSectionEnd(agentID)
+
+	startIdx := strings.Index(body, start)
+	endIdx := strings.Index(body, end)
+	if startIdx >= 0 && endIdx >= 0 && endIdx > startIdx {
+		return body[:startIdx] + wrapAgentSection(agentID, section) + body[endIdx+len(end):]
+	}
+
+	return body + "\n" + wrapAgentSection(agentID, section)
 }
 
 func formatResultSection(r prCommentResult) string {
@@ -90,8 +116,14 @@ func buildComment(marker string, dispatchCtx *oapi.DispatchContext, sections []s
 }
 
 // MaybeCommentOnPR posts or updates a PR comment with plan results for a
-// resource. Returns nil if the version metadata lacks GitHub info, the bot
-// is not configured, or no PR is found for the SHA.
+// resource. It requires the following keys in DeploymentVersion.Metadata:
+//
+//   - "github/owner" — GitHub repository owner (e.g. "wandb")
+//   - "github/repo"  — GitHub repository name (e.g. "deployments")
+//   - "git/sha"      — full commit SHA used to find the associated PR
+//
+// Returns nil (no-op) if any key is missing, the GitHub bot is not
+// configured, or no PR is found for the SHA.
 func MaybeCommentOnPR(
 	ctx context.Context,
 	dispatchCtx *oapi.DispatchContext,
@@ -136,6 +168,7 @@ func MaybeCommentOnPR(
 		prNumber,
 		marker,
 		dispatchCtx,
+		result.AgentID,
 		section,
 	); err != nil {
 		return fmt.Errorf("upsert comment on PR #%d: %w", prNumber, err)
@@ -165,6 +198,35 @@ func findPRForSHA(
 	return 0, nil
 }
 
+func findMarkerComment(
+	ctx context.Context,
+	client *github.Client,
+	owner, repo string,
+	prNumber int,
+	marker string,
+) (*github.IssueComment, error) {
+	opts := &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	for {
+		comments, resp, err := client.Issues.ListComments(
+			ctx, owner, repo, prNumber, opts,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("list comments: %w", err)
+		}
+		for _, c := range comments {
+			if strings.Contains(c.GetBody(), marker) {
+				return c, nil
+			}
+		}
+		if resp.NextPage == 0 {
+			return nil, nil
+		}
+		opts.Page = resp.NextPage
+	}
+}
+
 func upsertComment(
 	ctx context.Context,
 	client *github.Client,
@@ -172,26 +234,18 @@ func upsertComment(
 	prNumber int,
 	marker string,
 	dispatchCtx *oapi.DispatchContext,
+	agentID string,
 	newSection string,
 ) error {
-	comments, _, err := client.Issues.ListComments(
-		ctx, owner, repo, prNumber, &github.IssueListCommentsOptions{
-			ListOptions: github.ListOptions{PerPage: 100},
-		},
-	)
+	existing, err := findMarkerComment(ctx, client, owner, repo, prNumber, marker)
 	if err != nil {
-		return fmt.Errorf("list comments: %w", err)
+		return err
 	}
 
-	for _, c := range comments {
-		body := c.GetBody()
-		if !strings.Contains(body, marker) {
-			continue
-		}
-
-		updated := appendSection(body, newSection)
+	if existing != nil {
+		updated := replaceOrAppendAgentSection(existing.GetBody(), agentID, newSection)
 		_, _, err := client.Issues.EditComment(
-			ctx, owner, repo, c.GetID(),
+			ctx, owner, repo, existing.GetID(),
 			&github.IssueComment{Body: &updated},
 		)
 		if err != nil {
@@ -200,7 +254,8 @@ func upsertComment(
 		return nil
 	}
 
-	body := buildComment(marker, dispatchCtx, []string{newSection})
+	wrapped := wrapAgentSection(agentID, newSection)
+	body := buildComment(marker, dispatchCtx, []string{wrapped})
 	_, _, err = client.Issues.CreateComment(
 		ctx, owner, repo, prNumber,
 		&github.IssueComment{Body: &body},
@@ -209,8 +264,4 @@ func upsertComment(
 		return fmt.Errorf("create comment: %w", err)
 	}
 	return nil
-}
-
-func appendSection(existingBody, newSection string) string {
-	return existingBody + "\n" + newSection
 }

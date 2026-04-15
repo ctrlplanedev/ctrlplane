@@ -100,6 +100,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			&dispatchCtx,
 			result.TargetID.String(),
 			prCommentResult{
+				AgentID:   dispatchCtx.JobAgent.Id,
 				AgentName: dispatchCtx.JobAgent.Name,
 				AgentType: agentType,
 				Status:    "unsupported",
@@ -137,6 +138,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			&dispatchCtx,
 			result.TargetID.String(),
 			prCommentResult{
+				AgentID:   dispatchCtx.JobAgent.Id,
 				AgentName: dispatchCtx.JobAgent.Name,
 				AgentType: agentType,
 				Status:    "errored",
@@ -197,6 +199,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	}
 
 	if commentErr := MaybeCommentOnPR(ctx, &dispatchCtx, result.TargetID.String(), prCommentResult{
+		AgentID:    dispatchCtx.JobAgent.Id,
 		AgentName:  dispatchCtx.JobAgent.Name,
 		AgentType:  agentType,
 		Status:     "completed",
