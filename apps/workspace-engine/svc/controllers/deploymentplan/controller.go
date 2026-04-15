@@ -183,6 +183,19 @@ func (c *Controller) processTarget(
 		return fmt.Errorf("resolve variables: %w", err)
 	}
 
+	release := &oapi.Release{
+		CreatedAt: plan.CreatedAt.Time.Format(time.RFC3339),
+		Id:        uuid.New(),
+		ReleaseTarget: oapi.ReleaseTarget{
+			DeploymentId:  plan.DeploymentID.String(),
+			EnvironmentId: target.EnvironmentID.String(),
+			ResourceId:    target.ResourceID.String(),
+		},
+		Variables:          variables,
+		Version:            *version,
+		EncryptedVariables: []string{},
+	}
+
 	for i := range matchedAgents {
 		agent := &matchedAgents[i]
 
@@ -195,6 +208,7 @@ func (c *Controller) processTarget(
 			Environment:    env,
 			Resource:       resource,
 			Version:        version,
+			Release:        release,
 			Variables:      &variables,
 			JobAgent:       *agent,
 			JobAgentConfig: mergedConfig,
