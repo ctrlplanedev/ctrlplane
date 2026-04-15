@@ -188,6 +188,10 @@ func (p *ArgoCDPlanner) Plan(
 		return nil, fmt.Errorf("get current manifests: %w", err)
 	}
 
+	for i, m := range proposedManifests {
+		proposedManifests[i] = strings.ReplaceAll(m, s.TmpAppName, originalName)
+	}
+
 	sort.Strings(currentManifests)
 	sort.Strings(proposedManifests)
 
