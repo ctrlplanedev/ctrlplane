@@ -1209,7 +1209,7 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_ExcludesFailedVerific
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
-	assert.Equal(t, float32(0.0), tracker.GetSuccessPercentage(),
+	assert.InDelta(t, float32(0.0), tracker.GetSuccessPercentage(), 0,
 		"expected 0%% success when verification failed and RequireVerificationPassed=true")
 }
 
@@ -1254,7 +1254,7 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_IncludesPassedVerific
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
-	assert.Equal(t, float32(100.0), tracker.GetSuccessPercentage(),
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
 		"expected 100%% success when verification passed and RequireVerificationPassed=true")
 }
 
@@ -1295,7 +1295,7 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_IncludesNoVerificatio
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
-	assert.Equal(t, float32(100.0), tracker.GetSuccessPercentage(),
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
 		"expected 100%% success when no verification metrics and RequireVerificationPassed=true")
 }
 
@@ -1338,7 +1338,7 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_False_IgnoresVerifica
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
-	assert.Equal(t, float32(100.0), tracker.GetSuccessPercentage(),
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
 		"expected 100%% success when RequireVerificationPassed=false even with failed verification")
 }
 
@@ -1607,7 +1607,7 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_RunningAndCancelledEx
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
-	assert.Equal(t, float32(0.0), tracker.GetSuccessPercentage(),
+	assert.InDelta(t, float32(0.0), tracker.GetSuccessPercentage(), 0,
 		"running and cancelled verification statuses should not count as passed")
 }
 
@@ -1656,7 +1656,7 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed_MultipleJobsPerTarget
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
 	// The target should still count as successful because job-2 passed verification
-	assert.Equal(t, float32(100.0), tracker.GetSuccessPercentage(),
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
 		"target should be successful when at least one job has passed verification")
 
 	// Both jobs should still appear in the jobs list
