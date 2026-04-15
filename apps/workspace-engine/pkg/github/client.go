@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/google/go-github/v66/github"
 	"workspace-engine/pkg/config"
 )
+
+var httpClient = &http.Client{Timeout: 30 * time.Second}
 
 func generateJWT() (string, error) {
 	appIDStr := config.Global.GithubBotAppID
@@ -47,7 +50,7 @@ func appClient() (*github.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return github.NewClient(nil).WithAuthToken(jwtStr), nil
+	return github.NewClient(httpClient).WithAuthToken(jwtStr), nil
 }
 
 // CreateClientForInstallation returns a GitHub client authenticated as the
@@ -67,7 +70,7 @@ func CreateClientForInstallation(
 		return nil, fmt.Errorf("create installation token: %w", err)
 	}
 
-	return github.NewClient(nil).WithAuthToken(token.GetToken()), nil
+	return github.NewClient(httpClient).WithAuthToken(token.GetToken()), nil
 }
 
 // CreateClientForRepo returns a GitHub client authenticated for the
