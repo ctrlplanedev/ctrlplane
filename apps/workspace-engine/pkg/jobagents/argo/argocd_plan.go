@@ -12,6 +12,7 @@ import (
 
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/charmbracelet/log"
+	sigsyaml "sigs.k8s.io/yaml"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
 )
@@ -190,8 +191,8 @@ func (p *ArgoCDPlanner) Plan(
 	sort.Strings(currentManifests)
 	sort.Strings(proposedManifests)
 
-	current := strings.Join(currentManifests, "---\n")
-	proposed := strings.Join(proposedManifests, "---\n")
+	current := strings.Join(jsonManifestsToYAML(currentManifests), "---\n")
+	proposed := strings.Join(jsonManifestsToYAML(proposedManifests), "---\n")
 
 	hasChanges := current != proposed
 	contentHash := sha256.Sum256([]byte(current + proposed))
@@ -204,4 +205,17 @@ func (p *ArgoCDPlanner) Plan(
 		HasChanges:  hasChanges,
 		CompletedAt: &completedAt,
 	}, nil
+}
+
+func jsonManifestsToYAML(manifests []string) []string {
+	result := make([]string, 0, len(manifests))
+	for _, m := range manifests {
+		y, err := sigsyaml.JSONToYAML([]byte(m))
+		if err != nil {
+			result = append(result, m)
+			continue
+		}
+		result = append(result, string(y))
+	}
+	return result
 }

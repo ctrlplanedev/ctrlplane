@@ -336,8 +336,8 @@ func TestPlan_HasChanges(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result.HasChanges)
 	assert.NotEmpty(t, result.ContentHash)
-	assert.Equal(t, current[0], result.Current)
-	assert.Equal(t, proposed[0], result.Proposed)
+	assert.Contains(t, result.Current, "replicas: 1")
+	assert.Contains(t, result.Proposed, "replicas: 3")
 }
 
 func TestPlan_NoChanges(t *testing.T) {
