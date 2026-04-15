@@ -7,6 +7,9 @@ import (
 
 	"github.com/google/go-github/v66/github"
 	"github.com/pmezard/go-difflib/difflib"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	gh "workspace-engine/pkg/github"
 	"workspace-engine/pkg/oapi"
 )
@@ -130,32 +133,61 @@ func MaybeCommentOnPR(
 	targetID string,
 	result prCommentResult,
 ) error {
+	ctx, span := tracer.Start(ctx, "MaybeCommentOnPR")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("target_id", targetID))
+
 	if dispatchCtx.Version == nil {
+		span.AddEvent("skipped: no version in dispatch context")
 		return nil
 	}
 	meta := dispatchCtx.Version.Metadata
 	owner := meta[metaGitHubOwner]
 	repo := meta[metaGitHubRepo]
 	sha := meta[metaGitSHA]
+
+	span.SetAttributes(
+		attribute.String("github.owner", owner),
+		attribute.String("github.repo", repo),
+		attribute.String("git.sha", sha),
+	)
+
 	if owner == "" || repo == "" || sha == "" {
+		span.AddEvent("skipped: missing github metadata",
+			trace.WithAttributes(
+				attribute.Bool("has_owner", owner != ""),
+				attribute.Bool("has_repo", repo != ""),
+				attribute.Bool("has_sha", sha != ""),
+			),
+		)
 		return nil
 	}
 
 	client, err := gh.CreateClientForRepo(ctx, owner, repo)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "create github client")
 		return fmt.Errorf("create github client: %w", err)
 	}
 	if client == nil {
+		span.AddEvent("skipped: github bot not configured")
 		return nil
 	}
+	span.AddEvent("github client created")
 
 	prNumber, err := findPRForSHA(ctx, client, owner, repo, sha)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "find PR for SHA")
 		return fmt.Errorf("find PR for SHA %s: %w", sha, err)
 	}
 	if prNumber == 0 {
+		span.AddEvent("skipped: no PR found for SHA")
 		return nil
 	}
+	span.SetAttributes(attribute.Int("github.pr_number", prNumber))
+	span.AddEvent("found PR")
 
 	marker := commentMarker(targetID)
 	section := formatResultSection(result)
@@ -171,8 +203,12 @@ func MaybeCommentOnPR(
 		result.AgentID,
 		section,
 	); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "upsert comment")
 		return fmt.Errorf("upsert comment on PR #%d: %w", prNumber, err)
 	}
+
+	span.AddEvent("comment upserted")
 	return nil
 }
 
@@ -237,23 +273,32 @@ func upsertComment(
 	agentID string,
 	newSection string,
 ) error {
+	ctx, span := tracer.Start(ctx, "upsertComment")
+	defer span.End()
+
 	existing, err := findMarkerComment(ctx, client, owner, repo, prNumber, marker)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
 
 	if existing != nil {
+		span.AddEvent("updating existing comment",
+			trace.WithAttributes(attribute.Int64("comment_id", existing.GetID())),
+		)
 		updated := replaceOrAppendAgentSection(existing.GetBody(), agentID, newSection)
 		_, _, err := client.Issues.EditComment(
 			ctx, owner, repo, existing.GetID(),
 			&github.IssueComment{Body: &updated},
 		)
 		if err != nil {
+			span.RecordError(err)
 			return fmt.Errorf("edit comment: %w", err)
 		}
 		return nil
 	}
 
+	span.AddEvent("creating new comment")
 	wrapped := wrapAgentSection(agentID, newSection)
 	body := buildComment(marker, dispatchCtx, []string{wrapped})
 	_, _, err = client.Issues.CreateComment(
@@ -261,6 +306,7 @@ func upsertComment(
 		&github.IssueComment{Body: &body},
 	)
 	if err != nil {
+		span.RecordError(err)
 		return fmt.Errorf("create comment: %w", err)
 	}
 	return nil
