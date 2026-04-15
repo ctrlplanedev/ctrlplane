@@ -47,6 +47,10 @@ type Getters interface {
 		environmentID string,
 		versionID string,
 	) ([]ReleaseTargetJob, error)
+	GetVerificationStatusForJobs(
+		ctx context.Context,
+		jobIDs []string,
+	) (map[string]oapi.JobVerificationStatus, error)
 }
 
 // ReleaseTargetJob holds the minimal job fields needed by the job tracker,
@@ -221,6 +225,103 @@ func (p *PostgresGetters) GetJobsForEnvironmentAndVersion(
 		result[i] = rtj
 	}
 	return result, nil
+}
+
+type metricData struct {
+	count            int
+	failureThreshold *int
+	successThreshold *int
+	measurements     []oapi.VerificationMeasurementStatus
+}
+
+func (p *PostgresGetters) GetVerificationStatusForJobs(
+	ctx context.Context,
+	jobIDs []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	ctx, span := gettersTracer.Start(ctx, "GetVerificationStatusForJobs")
+	defer span.End()
+
+	uuids := stringsToUUIDs(jobIDs)
+
+	rows, err := p.queries.ListVerificationMetricsWithMeasurementsByJobIDs(ctx, uuids)
+	if err != nil {
+		return nil, err
+	}
+
+	byJob := groupRowsByJobAndMetric(rows)
+	result := computeVerificationStatuses(byJob)
+
+	span.SetAttributes(attribute.Int("jobs_with_verification", len(result)))
+	return result, nil
+}
+
+func stringsToUUIDs(ids []string) []uuid.UUID {
+	uuids := make([]uuid.UUID, len(ids))
+	for i, id := range ids {
+		uuids[i] = uuid.MustParse(id)
+	}
+	return uuids
+}
+
+func groupRowsByJobAndMetric(
+	rows []db.ListVerificationMetricsWithMeasurementsByJobIDsRow,
+) map[string]map[string]*metricData {
+	byJob := make(map[string]map[string]*metricData)
+	for _, row := range rows {
+		jobKey := row.JobID.String()
+		metricKey := row.MetricID.String()
+
+		if byJob[jobKey] == nil {
+			byJob[jobKey] = make(map[string]*metricData)
+		}
+		md, exists := byJob[jobKey][metricKey]
+		if !exists {
+			md = &metricData{count: int(row.Count)}
+			if row.FailureThreshold.Valid {
+				v := int(row.FailureThreshold.Int32)
+				md.failureThreshold = &v
+			}
+			if row.SuccessThreshold.Valid {
+				v := int(row.SuccessThreshold.Int32)
+				md.successThreshold = &v
+			}
+			byJob[jobKey][metricKey] = md
+		}
+
+		if row.MeasurementStatus.Valid {
+			md.measurements = append(md.measurements,
+				oapi.VerificationMeasurementStatus(row.MeasurementStatus.JobVerificationStatus))
+		}
+	}
+	return byJob
+}
+
+func computeVerificationStatuses(
+	byJob map[string]map[string]*metricData,
+) map[string]oapi.JobVerificationStatus {
+	result := make(map[string]oapi.JobVerificationStatus, len(byJob))
+	for jobID, metrics := range byJob {
+		result[jobID] = buildJobVerification(metrics).Status()
+	}
+	return result
+}
+
+func buildJobVerification(metrics map[string]*metricData) *oapi.JobVerification {
+	jv := &oapi.JobVerification{}
+	for _, md := range metrics {
+		vms := oapi.VerificationMetricStatus{
+			Count:            md.count,
+			FailureThreshold: md.failureThreshold,
+			SuccessThreshold: md.successThreshold,
+		}
+		for _, ms := range md.measurements {
+			vms.Measurements = append(vms.Measurements, oapi.VerificationMeasurement{
+				Status: ms,
+			})
+		}
+		jv.Metrics = append(jv.Metrics, vms)
+	}
+	return jv
 }
 
 func (p *PostgresGetters) GetReleaseByJobID(

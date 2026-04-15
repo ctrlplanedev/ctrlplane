@@ -11,26 +11,28 @@ import (
 var _ Getters = (*mockGetters)(nil)
 
 type mockGetters struct {
-	environments   map[string]*oapi.Environment
-	deployments    map[string]*oapi.Deployment
-	resources      map[string]*oapi.Resource
-	releaseTargets []*oapi.ReleaseTarget
-	jobs           map[string]map[string]*oapi.Job // releaseTarget.Key() -> jobID -> job
-	systemEnvs     map[string][]string             // envID -> systemIDs
-	releaseByJob   map[string]*oapi.Release        // jobID -> release
-	policies       map[string]*oapi.Policy
+	environments          map[string]*oapi.Environment
+	deployments           map[string]*oapi.Deployment
+	resources             map[string]*oapi.Resource
+	releaseTargets        []*oapi.ReleaseTarget
+	jobs                  map[string]map[string]*oapi.Job // releaseTarget.Key() -> jobID -> job
+	systemEnvs            map[string][]string             // envID -> systemIDs
+	releaseByJob          map[string]*oapi.Release        // jobID -> release
+	policies              map[string]*oapi.Policy
+	jobVerificationStatus map[string]string // jobID -> verification status
 }
 
 func newMockGetters() *mockGetters {
 	return &mockGetters{
-		environments:   make(map[string]*oapi.Environment),
-		deployments:    make(map[string]*oapi.Deployment),
-		resources:      make(map[string]*oapi.Resource),
-		releaseTargets: make([]*oapi.ReleaseTarget, 0),
-		jobs:           make(map[string]map[string]*oapi.Job),
-		systemEnvs:     make(map[string][]string),
-		releaseByJob:   make(map[string]*oapi.Release),
-		policies:       make(map[string]*oapi.Policy),
+		environments:          make(map[string]*oapi.Environment),
+		deployments:           make(map[string]*oapi.Deployment),
+		resources:             make(map[string]*oapi.Resource),
+		releaseTargets:        make([]*oapi.ReleaseTarget, 0),
+		jobs:                  make(map[string]map[string]*oapi.Job),
+		systemEnvs:            make(map[string][]string),
+		releaseByJob:          make(map[string]*oapi.Release),
+		policies:              make(map[string]*oapi.Policy),
+		jobVerificationStatus: make(map[string]string),
 	}
 }
 
@@ -151,6 +153,19 @@ func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 				EnvironmentID: rel.ReleaseTarget.EnvironmentId,
 				ResourceID:    rel.ReleaseTarget.ResourceId,
 			})
+		}
+	}
+	return result, nil
+}
+
+func (m *mockGetters) GetVerificationStatusForJobs(
+	_ context.Context,
+	jobIDs []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	result := make(map[string]oapi.JobVerificationStatus)
+	for _, id := range jobIDs {
+		if status, ok := m.jobVerificationStatus[id]; ok {
+			result[id] = oapi.JobVerificationStatus(status)
 		}
 	}
 	return result, nil

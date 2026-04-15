@@ -159,6 +159,11 @@ func (m *mockGetters) GetJobsForEnvironmentAndVersion(
 ) ([]environmentprogression.ReleaseTargetJob, error) {
 	return nil, nil
 }
+func (m *mockGetters) GetVerificationStatusForJobs(
+	_ context.Context, _ []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	return nil, nil
+}
 
 // ---------------------------------------------------------------------------
 // Test helpers

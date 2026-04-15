@@ -178,6 +178,7 @@ CREATE TABLE policy_rule_environment_progression (
     minimum_soak_time_minutes INTEGER,
     minimum_success_percentage REAL,
     success_statuses TEXT[],
+    require_verification_passed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

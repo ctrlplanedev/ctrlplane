@@ -245,7 +245,8 @@ func (q *Queries) ListDeploymentWindowRulesByPolicyID(ctx context.Context, polic
 const listEnvironmentProgressionRulesByPolicyID = `-- name: ListEnvironmentProgressionRulesByPolicyID :many
 
 SELECT id, policy_id, depends_on_environment_selector, maximum_age_hours,
-       minimum_soak_time_minutes, minimum_success_percentage, success_statuses, created_at
+       minimum_soak_time_minutes, minimum_success_percentage, success_statuses,
+       require_verification_passed, created_at
 FROM policy_rule_environment_progression
 WHERE policy_id = $1
 `
@@ -270,6 +271,7 @@ func (q *Queries) ListEnvironmentProgressionRulesByPolicyID(ctx context.Context,
 			&i.MinimumSoakTimeMinutes,
 			&i.MinimumSuccessPercentage,
 			&i.SuccessStatuses,
+			&i.RequireVerificationPassed,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -367,7 +369,7 @@ SELECT
   COALESCE((SELECT json_agg(json_build_object('id', r.id, 'minApprovals', r.min_approvals)) FROM policy_rule_any_approval r WHERE r.policy_id = p.id), '[]'::json) AS approval_rules,
   COALESCE((SELECT json_agg(json_build_object('id', r.id, 'allowWindow', r.allow_window, 'durationMinutes', r.duration_minutes, 'rrule', r.rrule, 'timezone', r.timezone)) FROM policy_rule_deployment_window r WHERE r.policy_id = p.id), '[]'::json) AS deployment_window_rules,
   COALESCE((SELECT json_agg(json_build_object('id', r.id, 'dependsOn', r.depends_on)) FROM policy_rule_deployment_dependency r WHERE r.policy_id = p.id), '[]'::json) AS deployment_dependency_rules,
-  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'dependsOnEnvironmentSelector', r.depends_on_environment_selector, 'maximumAgeHours', r.maximum_age_hours, 'minimumSoakTimeMinutes', r.minimum_soak_time_minutes, 'minimumSuccessPercentage', r.minimum_success_percentage, 'successStatuses', r.success_statuses)) FROM policy_rule_environment_progression r WHERE r.policy_id = p.id), '[]'::json) AS environment_progression_rules,
+  COALESCE((SELECT json_agg(json_build_object('id', r.id, 'dependsOnEnvironmentSelector', r.depends_on_environment_selector, 'maximumAgeHours', r.maximum_age_hours, 'minimumSoakTimeMinutes', r.minimum_soak_time_minutes, 'minimumSuccessPercentage', r.minimum_success_percentage, 'successStatuses', r.success_statuses, 'requireVerificationPassed', r.require_verification_passed)) FROM policy_rule_environment_progression r WHERE r.policy_id = p.id), '[]'::json) AS environment_progression_rules,
   COALESCE((SELECT json_agg(json_build_object('id', r.id, 'rolloutType', r.rollout_type, 'timeScaleInterval', r.time_scale_interval)) FROM policy_rule_gradual_rollout r WHERE r.policy_id = p.id), '[]'::json) AS gradual_rollout_rules,
   COALESCE((SELECT json_agg(json_build_object('id', r.id, 'intervalSeconds', r.interval_seconds)) FROM policy_rule_version_cooldown r WHERE r.policy_id = p.id), '[]'::json) AS version_cooldown_rules,
   COALESCE((SELECT json_agg(json_build_object('id', r.id, 'description', r.description, 'selector', r.selector)) FROM policy_rule_version_selector r WHERE r.policy_id = p.id), '[]'::json) AS version_selector_rules
@@ -730,14 +732,16 @@ func (q *Queries) UpsertDeploymentWindowRule(ctx context.Context, arg UpsertDepl
 const upsertEnvironmentProgressionRule = `-- name: UpsertEnvironmentProgressionRule :exec
 INSERT INTO policy_rule_environment_progression (
     id, policy_id, depends_on_environment_selector, maximum_age_hours,
-    minimum_soak_time_minutes, minimum_success_percentage, success_statuses, created_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, NOW()))
+    minimum_soak_time_minutes, minimum_success_percentage, success_statuses,
+    require_verification_passed, created_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9::timestamptz, NOW()))
 ON CONFLICT (id) DO UPDATE
 SET depends_on_environment_selector = EXCLUDED.depends_on_environment_selector,
     maximum_age_hours = EXCLUDED.maximum_age_hours,
     minimum_soak_time_minutes = EXCLUDED.minimum_soak_time_minutes,
     minimum_success_percentage = EXCLUDED.minimum_success_percentage,
-    success_statuses = EXCLUDED.success_statuses
+    success_statuses = EXCLUDED.success_statuses,
+    require_verification_passed = EXCLUDED.require_verification_passed
 `
 
 type UpsertEnvironmentProgressionRuleParams struct {
@@ -748,6 +752,7 @@ type UpsertEnvironmentProgressionRuleParams struct {
 	MinimumSoakTimeMinutes       pgtype.Int4
 	MinimumSuccessPercentage     pgtype.Float4
 	SuccessStatuses              []string
+	RequireVerificationPassed    bool
 	CreatedAt                    pgtype.Timestamptz
 }
 
@@ -760,6 +765,7 @@ func (q *Queries) UpsertEnvironmentProgressionRule(ctx context.Context, arg Upse
 		arg.MinimumSoakTimeMinutes,
 		arg.MinimumSuccessPercentage,
 		arg.SuccessStatuses,
+		arg.RequireVerificationPassed,
 		arg.CreatedAt,
 	)
 	return err

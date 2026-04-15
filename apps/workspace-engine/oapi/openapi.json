@@ -621,6 +621,11 @@
                   "minimum": 0,
                   "type": "number"
                },
+               "requireVerificationPassed": {
+                  "default": false,
+                  "description": "If true, jobs must also have passed verification to count toward the success percentage",
+                  "type": "boolean"
+               },
                "successStatuses": {
                   "items": {
                      "$ref": "#/components/schemas/JobStatus"

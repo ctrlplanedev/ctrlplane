@@ -1303,6 +1303,13 @@
       "when": 1775686833517,
       "tag": "0185_steep_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 186,
+      "version": "7",
+      "when": 1776272131457,
+      "tag": "0186_cooing_doomsday",
+      "breakpoints": true
     }
   ]
 }

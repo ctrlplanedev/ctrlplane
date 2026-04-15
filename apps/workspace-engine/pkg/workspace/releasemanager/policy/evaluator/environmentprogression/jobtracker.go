@@ -35,10 +35,11 @@ func getReleaseTargets(
 type ReleaseTargetJobTracker struct {
 	getters Getters
 
-	Environment     *oapi.Environment
-	Version         *oapi.DeploymentVersion
-	ReleaseTargets  []oapi.ReleaseTarget
-	SuccessStatuses map[oapi.JobStatus]bool
+	Environment               *oapi.Environment
+	Version                   *oapi.DeploymentVersion
+	ReleaseTargets            []oapi.ReleaseTarget
+	SuccessStatuses           map[oapi.JobStatus]bool
+	RequireVerificationPassed bool
 
 	// Cached computed values
 	jobsByStatus             map[oapi.JobStatus]int
@@ -55,6 +56,7 @@ func NewReleaseTargetJobTracker(
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 	successStatuses map[oapi.JobStatus]bool,
+	requireVerificationPassed bool,
 ) *ReleaseTargetJobTracker {
 	ctx, span := jobTrackerTracer.Start(ctx, "NewReleaseTargetJobTracker", trace.WithAttributes(
 		attribute.String("environment.id", environment.Id),
@@ -75,11 +77,12 @@ func NewReleaseTargetJobTracker(
 	span.SetAttributes(attribute.Int("release_targets.count", len(releaseTargets)))
 
 	rtt := &ReleaseTargetJobTracker{
-		getters:         getters,
-		Environment:     environment,
-		Version:         version,
-		ReleaseTargets:  releaseTargets,
-		SuccessStatuses: successStatuses,
+		getters:                   getters,
+		Environment:               environment,
+		Version:                   version,
+		ReleaseTargets:            releaseTargets,
+		SuccessStatuses:           successStatuses,
+		RequireVerificationPassed: requireVerificationPassed,
 
 		jobs:                     make([]*oapi.Job, 0),
 		jobsByStatus:             make(map[oapi.JobStatus]int, 0),
@@ -120,6 +123,13 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 		rtKeys[rt.Key()] = true
 	}
 
+	verificationStatuses, verificationErr := t.fetchVerificationStatuses(ctx, rows)
+	if verificationErr != nil {
+		span.AddEvent("GetVerificationStatusForJobs error",
+			trace.WithAttributes(attribute.String("error", verificationErr.Error())),
+		)
+	}
+
 	for _, row := range rows {
 		rt := oapi.ReleaseTarget{
 			DeploymentId:  row.DeploymentID,
@@ -137,7 +147,13 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 			CompletedAt: row.CompletedAt,
 		}
 
-		if t.SuccessStatuses[row.Status] && row.CompletedAt != nil {
+		isVerificationOk := !t.RequireVerificationPassed || verificationErr == nil
+		if t.RequireVerificationPassed && verificationErr == nil {
+			if status, exists := verificationStatuses[row.JobID]; exists {
+				isVerificationOk = status == oapi.JobVerificationStatusPassed
+			}
+		}
+		if t.SuccessStatuses[row.Status] && row.CompletedAt != nil && isVerificationOk {
 			if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists ||
 				row.CompletedAt.Before(existingTime) {
 				t.successfulReleaseTargets[targetKey] = *row.CompletedAt
@@ -157,6 +173,20 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	)
 
 	return t.jobs
+}
+
+func (t *ReleaseTargetJobTracker) fetchVerificationStatuses(
+	ctx context.Context,
+	rows []ReleaseTargetJob,
+) (map[string]oapi.JobVerificationStatus, error) {
+	if !t.RequireVerificationPassed {
+		return nil, nil
+	}
+	jobIDs := make([]string, len(rows))
+	for i, row := range rows {
+		jobIDs[i] = row.JobID
+	}
+	return t.getters.GetVerificationStatusForJobs(ctx, jobIDs)
 }
 
 // GetSuccessPercentage returns the percentage of release targets that have at least one successful job (0-100).

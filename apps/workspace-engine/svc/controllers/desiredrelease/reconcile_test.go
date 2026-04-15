@@ -221,6 +221,11 @@ func (m *mockReconcileGetter) GetJobsForEnvironmentAndVersion(
 ) ([]environmentprogression.ReleaseTargetJob, error) {
 	return nil, nil
 }
+func (m *mockReconcileGetter) GetVerificationStatusForJobs(
+	_ context.Context, _ []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	return nil, nil
+}
 
 func (m *mockReconcileGetter) GetVariableSetsWithVariables(
 	ctx context.Context,

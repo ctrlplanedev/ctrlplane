@@ -37,7 +37,7 @@ func TestNewReleaseTargetJobTracker(t *testing.T) {
 	env := mock.environments["env-1"]
 
 	// Test with default success statuses
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	assert.NotNil(t, tracker, "expected non-nil tracker")
 	assert.Equal(t, "env-1", tracker.Environment.Id)
@@ -54,7 +54,7 @@ func TestNewReleaseTargetJobTracker(t *testing.T) {
 		oapi.JobStatusSuccessful: true,
 		oapi.JobStatusInProgress: true,
 	}
-	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env, version, customStatuses)
+	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env, version, customStatuses, false)
 
 	assert.True(
 		t,
@@ -74,7 +74,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_NoTargets(t *testing.T) {
 
 	env := mock.environments["env-1"]
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	percentage := tracker.GetSuccessPercentage()
 	assert.InDelta(t, float32(0.0), percentage, 0, "expected 0%% success with no targets")
@@ -144,7 +144,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	}
 	mock.addJob(rt2, job2, release2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
@@ -212,7 +212,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
@@ -227,7 +227,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_NoJobs(t *testing.T) {
 
 	env := mock.environments["env-1"]
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	// With no successful jobs, soak time requirement should return true (0 duration remaining)
 	// Actually, looking at the code, with no successful jobs mostRecentSuccess is zero time
@@ -280,7 +280,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 	}
 	mock.addJob(rt1, job1, release1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	// Soak time of 10 minutes should be met (job completed 15 minutes ago)
 	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
@@ -351,7 +351,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
@@ -399,7 +399,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 	}
 	mock.addJob(rt1, job1, release1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	// Test zero duration
 	remaining := tracker.GetSoakTimeRemaining(0)
@@ -427,7 +427,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 
 	env := mock.environments["env-1"]
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	// With no successful jobs, should be zero time
 	assert.True(
@@ -465,7 +465,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	}
 	mock.addJob(rt1, job1, release1)
 
-	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	mostRecent := tracker2.GetMostRecentSuccess()
 	assert.False(t, mostRecent.IsZero(), "expected non-zero time with successful job")
@@ -481,7 +481,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_NoSuccesses(t *testing.T) {
 
 	env := mock.environments["env-1"]
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	// With no successful jobs, should return false
 	assert.False(
@@ -525,7 +525,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 	}
 	mock.addJob(rt1, job1, release1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	// Should be within 10 minutes
 	assert.True(t, tracker.IsWithinMaxAge(10*time.Minute),
@@ -592,7 +592,7 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	jobs := tracker.Jobs()
 	assert.Len(t, jobs, 2, "expected 2 jobs")
@@ -666,7 +666,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	mock.addJob(rt2, job2, release2)
 
 	// Tracker for env-1 should only see job-1
-	tracker1 := NewReleaseTargetJobTracker(ctx, mock, env1, version, nil)
+	tracker1 := NewReleaseTargetJobTracker(ctx, mock, env1, version, nil, false)
 	jobs1 := tracker1.Jobs()
 	assert.Len(t, jobs1, 1, "expected 1 job for env-1")
 	if len(jobs1) > 0 {
@@ -674,7 +674,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 	}
 
 	// Tracker for env-2 should only see job-2
-	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env2, version, nil)
+	tracker2 := NewReleaseTargetJobTracker(ctx, mock, env2, version, nil, false)
 	jobs2 := tracker2.Jobs()
 	assert.Len(t, jobs2, 1, "expected 1 job for env-2")
 	if len(jobs2) > 0 {
@@ -731,7 +731,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt1, job2, release1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	// Manually set the ReleaseTargets since we're not setting up the full resource/environment/deployment selectors
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
 
@@ -838,7 +838,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	}
 	mock.addJob(rt3, job3, release3)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
@@ -916,7 +916,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 	}
 	mock.addJob(rt1, job1, release1)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
@@ -938,7 +938,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTarget
 
 	env := mock.environments["env-1"]
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{}
 
 	// With no release targets, should return zero time
@@ -964,7 +964,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJob
 		DeploymentId:  "deploy-1",
 	}
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
 	// With no successful jobs, should return zero time
@@ -1032,7 +1032,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 	mock.addJob(rt1, job1, release1)
 	mock.addJob(rt2, job2, release2)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
 
 	// With zero or negative minimum percentage, should default to 100%
@@ -1151,7 +1151,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	}
 	mock.addJob(rt3, job3, release3)
 
-	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil)
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
 
 	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
@@ -1166,4 +1166,499 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		satisfiedAt,
 		"expected satisfiedAt to be the timestamp of the 2nd success chronologically (completedAt1)",
 	)
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_ExcludesFailedVerification(
+	t *testing.T,
+) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	completedAt := time.Now().Add(-10 * time.Minute)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      completedAt,
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+
+	// Set verification status to failed
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusFailed)
+
+	// With RequireVerificationPassed=true, the failed verification job should not count
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
+
+	assert.InDelta(t, float32(0.0), tracker.GetSuccessPercentage(), 0,
+		"expected 0%% success when verification failed and RequireVerificationPassed=true")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_IncludesPassedVerification(
+	t *testing.T,
+) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	completedAt := time.Now().Add(-10 * time.Minute)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      completedAt,
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+
+	// Set verification status to passed
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusPassed)
+
+	// With RequireVerificationPassed=true, the passed verification job should count
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
+
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
+		"expected 100%% success when verification passed and RequireVerificationPassed=true")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_IncludesNoVerification(t *testing.T) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	completedAt := time.Now().Add(-10 * time.Minute)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      completedAt,
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+
+	// No verification status set (empty string = no verification metrics)
+	// With RequireVerificationPassed=true, job with no verification should still count
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
+
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
+		"expected 100%% success when no verification metrics and RequireVerificationPassed=true")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_False_IgnoresVerification(t *testing.T) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	completedAt := time.Now().Add(-10 * time.Minute)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		JobAgentId:     "agent-1",
+		Status:         oapi.JobStatusSuccessful,
+		CreatedAt:      completedAt,
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+
+	// Set verification status to failed
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusFailed)
+
+	// With RequireVerificationPassed=false (default), failed verification should not block success
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
+
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
+		"expected 100%% success when RequireVerificationPassed=false even with failed verification")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_MixedVerificationAcrossTargets(
+	t *testing.T,
+) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+	mock.addReleaseTarget(rt2)
+	mock.addReleaseTarget(rt3)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *rt3, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	completedAt1 := time.Now().Add(-10 * time.Minute)
+	completedAt2 := time.Now().Add(-8 * time.Minute)
+	completedAt3 := time.Now().Add(-6 * time.Minute)
+
+	job1 := &oapi.Job{
+		Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt1, UpdatedAt: completedAt1, CompletedAt: &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	job2 := &oapi.Job{
+		Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt2, UpdatedAt: completedAt2, CompletedAt: &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	job3 := &oapi.Job{
+		Id: "job-3", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt3, UpdatedAt: completedAt3, CompletedAt: &completedAt3,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt2, job2, release2)
+	mock.addJob(rt3, job3, release3)
+
+	// rt1: passed verification, rt2: failed verification, rt3: no verification
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusPassed)
+	mock.jobVerificationStatus["job-2"] = string(oapi.JobVerificationStatusFailed)
+	// job-3 has no verification status (empty string)
+
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2, *rt3}
+
+	// 2 out of 3 targets should count (rt1=passed, rt3=no verification)
+	// rt2 should be excluded (failed verification)
+	expected := float32(2.0) / float32(3.0) * 100
+	assert.InDelta(t, expected, tracker.GetSuccessPercentage(), 0.1,
+		"expected ~66.67%% success: passed and no-verification count, failed does not")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_AffectsSuccessPercentageSatisfiedAt(
+	t *testing.T,
+) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+	mock.addReleaseTarget(rt2)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
+
+	job1 := &oapi.Job{
+		Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt1, UpdatedAt: completedAt1, CompletedAt: &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	job2 := &oapi.Job{
+		Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt2, UpdatedAt: completedAt2, CompletedAt: &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt2, job2, release2)
+
+	// rt1 passed verification, rt2 failed
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusPassed)
+	mock.jobVerificationStatus["job-2"] = string(oapi.JobVerificationStatusFailed)
+
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
+
+	// Only 1 of 2 targets qualifies, so 100% requirement should never be satisfied
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(100.0)
+	assert.True(t, satisfiedAt.IsZero(),
+		"100%% should not be satisfied when verification excludes one target")
+
+	// 50% requirement needs 1 success — should be satisfied at completedAt1
+	satisfiedAt50 := tracker.GetSuccessPercentageSatisfiedAt(50.0)
+	assert.False(t, satisfiedAt50.IsZero(),
+		"50%% should be satisfied with 1 of 2 targets passing")
+	assert.Equal(t, completedAt1, satisfiedAt50,
+		"satisfiedAt should be the completion time of the only qualifying job")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_AffectsSoakTime(t *testing.T) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+	mock.addReleaseTarget(rt2)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	// rt1: completed 30 min ago, failed verification
+	// rt2: completed 5 min ago, passed verification
+	completedAt1 := time.Now().Add(-30 * time.Minute)
+	completedAt2 := time.Now().Add(-5 * time.Minute)
+
+	job1 := &oapi.Job{
+		Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt1, UpdatedAt: completedAt1, CompletedAt: &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	job2 := &oapi.Job{
+		Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt2, UpdatedAt: completedAt2, CompletedAt: &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt2, job2, release2)
+
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusFailed)
+	mock.jobVerificationStatus["job-2"] = string(oapi.JobVerificationStatusPassed)
+
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
+
+	// Most recent qualifying success should be rt2 (5 min ago), not rt1 (30 min ago)
+	mostRecent := tracker.GetMostRecentSuccess()
+	assert.InDelta(t, float64(completedAt2.Unix()), float64(mostRecent.Unix()), 1.0,
+		"most recent success should be the passed-verification job, not the failed one")
+
+	// Soak time of 3 min should NOT be met (most recent qualifying success was 5 min ago,
+	// but we need the most recent across all successful targets for soak — 5 > 3 so it IS met)
+	assert.True(t, tracker.MeetsSoakTimeRequirement(3*time.Minute),
+		"3 min soak should be met (qualifying success was 5 min ago)")
+
+	// Soak time of 10 min should NOT be met (most recent qualifying success was only 5 min ago)
+	assert.False(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
+		"10 min soak should not be met (qualifying success was only 5 min ago)")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_RunningAndCancelledExcluded(
+	t *testing.T,
+) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+	mock.addReleaseTarget(rt2)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	completedAt1 := time.Now().Add(-10 * time.Minute)
+	completedAt2 := time.Now().Add(-8 * time.Minute)
+
+	job1 := &oapi.Job{
+		Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt1, UpdatedAt: completedAt1, CompletedAt: &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	job2 := &oapi.Job{
+		Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt2, UpdatedAt: completedAt2, CompletedAt: &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt2, job2, release2)
+
+	// "running" verification is not "passed" — should not count
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusRunning)
+	// "cancelled" verification is not "passed" — should not count
+	mock.jobVerificationStatus["job-2"] = string(oapi.JobVerificationStatusCancelled)
+
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1, *rt2}
+
+	assert.InDelta(t, float32(0.0), tracker.GetSuccessPercentage(), 0,
+		"running and cancelled verification statuses should not count as passed")
+}
+
+func TestReleaseTargetJobTracker_RequireVerificationPassed_MultipleJobsPerTargetMixedVerification(
+	t *testing.T,
+) {
+	mock, version := setupMockForJobTracker()
+	ctx := context.Background()
+
+	env := mock.environments["env-1"]
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	mock.addReleaseTarget(rt1)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1, Version: *version,
+		Variables: map[string]oapi.LiteralValue{}, CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	// First job: successful but verification failed
+	completedAt1 := time.Now().Add(-20 * time.Minute)
+	job1 := &oapi.Job{
+		Id: "job-1", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt1, UpdatedAt: completedAt1, CompletedAt: &completedAt1,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+
+	// Second job: successful and verification passed
+	completedAt2 := time.Now().Add(-5 * time.Minute)
+	job2 := &oapi.Job{
+		Id: "job-2", JobAgentId: "agent-1", Status: oapi.JobStatusSuccessful,
+		CreatedAt: completedAt2, UpdatedAt: completedAt2, CompletedAt: &completedAt2,
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	mock.addJob(rt1, job1, release1)
+	mock.addJob(rt1, job2, release1)
+
+	mock.jobVerificationStatus["job-1"] = string(oapi.JobVerificationStatusFailed)
+	mock.jobVerificationStatus["job-2"] = string(oapi.JobVerificationStatusPassed)
+
+	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, true)
+	tracker.ReleaseTargets = []oapi.ReleaseTarget{*rt1}
+
+	// The target should still count as successful because job-2 passed verification
+	assert.InDelta(t, float32(100.0), tracker.GetSuccessPercentage(), 0,
+		"target should be successful when at least one job has passed verification")
+
+	// Both jobs should still appear in the jobs list
+	assert.Len(t, tracker.Jobs(), 2, "both jobs should be tracked regardless of verification")
 }

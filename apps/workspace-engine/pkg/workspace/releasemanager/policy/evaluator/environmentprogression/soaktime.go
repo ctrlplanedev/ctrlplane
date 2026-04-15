@@ -66,7 +66,14 @@ func (e *SoakTimeEvaluator) Evaluate(
 	environment := scope.Environment
 	version := scope.Version
 
-	tracker := NewReleaseTargetJobTracker(ctx, e.getters, environment, version, e.successStatuses)
+	tracker := NewReleaseTargetJobTracker(
+		ctx,
+		e.getters,
+		environment,
+		version,
+		e.successStatuses,
+		false,
+	)
 	return e.EvaluateWithTracker(tracker)
 }
 

@@ -181,6 +181,12 @@ local openapi = import '../lib/openapi.libsonnet';
         minimum: 0,
         description: 'Maximum age of dependency deployment before blocking progression (prevents stale promotions)',
       },
+
+      requireVerificationPassed: {
+        type: 'boolean',
+        default: false,
+        description: 'If true, jobs must also have passed verification to count toward the success percentage',
+      },
     },
   },
 

@@ -464,6 +464,22 @@ func (g *DesiredReleaseGetter) GetJobsForEnvironmentAndVersion(
 	return result, nil
 }
 
+func (g *DesiredReleaseGetter) GetVerificationStatusForJobs(
+	_ context.Context,
+	jobIDs []string,
+) (map[string]oapi.JobVerificationStatus, error) {
+	if g.JobVerificationStatuses == nil {
+		return nil, nil
+	}
+	result := make(map[string]oapi.JobVerificationStatus, len(jobIDs))
+	for _, id := range jobIDs {
+		if s, ok := g.JobVerificationStatuses[id]; ok {
+			result[id] = s
+		}
+	}
+	return result, nil
+}
+
 func (g *DesiredReleaseGetter) GetVariableSetsWithVariables(
 	ctx context.Context,
 	workspaceID uuid.UUID,
