@@ -123,12 +123,11 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 		rtKeys[rt.Key()] = true
 	}
 
-	verificationStatuses, err := t.fetchVerificationStatuses(ctx, rows)
-	if err != nil {
+	verificationStatuses, verificationErr := t.fetchVerificationStatuses(ctx, rows)
+	if verificationErr != nil {
 		span.AddEvent("GetVerificationStatusForJobs error",
-			trace.WithAttributes(attribute.String("error", err.Error())),
+			trace.WithAttributes(attribute.String("error", verificationErr.Error())),
 		)
-		return t.jobs
 	}
 
 	for _, row := range rows {
@@ -148,8 +147,8 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 			CompletedAt: row.CompletedAt,
 		}
 
-		isVerificationOk := true
-		if t.RequireVerificationPassed && verificationStatuses != nil {
+		isVerificationOk := !t.RequireVerificationPassed || verificationErr == nil
+		if t.RequireVerificationPassed && verificationErr == nil {
 			if status, exists := verificationStatuses[row.JobID]; exists {
 				isVerificationOk = status == oapi.JobVerificationStatusPassed
 			}
