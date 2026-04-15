@@ -183,24 +183,25 @@ func (c *Controller) processTarget(
 		return fmt.Errorf("resolve variables: %w", err)
 	}
 
+	release := &oapi.Release{
+		CreatedAt: plan.CreatedAt.Time.Format(time.RFC3339),
+		Id:        uuid.New(),
+		ReleaseTarget: oapi.ReleaseTarget{
+			DeploymentId:  plan.DeploymentID.String(),
+			EnvironmentId: target.EnvironmentID.String(),
+			ResourceId:    target.ResourceID.String(),
+		},
+		Variables:          variables,
+		Version:            *version,
+		EncryptedVariables: []string{},
+	}
+
 	for i := range matchedAgents {
 		agent := &matchedAgents[i]
 
 		mergedConfig := oapi.DeepMergeConfigs(
 			agent.Config, deployment.JobAgentConfig, version.JobAgentConfig,
 		)
-
-		release := &oapi.Release{
-			CreatedAt: time.Now().Format(time.RFC3339),
-			Id:        uuid.New(),
-			ReleaseTarget: oapi.ReleaseTarget{
-				DeploymentId:  plan.DeploymentID.String(),
-				EnvironmentId: target.EnvironmentID.String(),
-				ResourceId:    target.ResourceID.String(),
-			},
-			Variables: variables,
-			Version:   *version,
-		}
 
 		dispatchCtx := &oapi.DispatchContext{
 			Deployment:     deployment,
