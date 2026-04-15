@@ -190,11 +190,24 @@ func (c *Controller) processTarget(
 			agent.Config, deployment.JobAgentConfig, version.JobAgentConfig,
 		)
 
+		release := &oapi.Release{
+			CreatedAt: time.Now().Format(time.RFC3339),
+			Id:        uuid.New(),
+			ReleaseTarget: oapi.ReleaseTarget{
+				DeploymentId:  plan.DeploymentID.String(),
+				EnvironmentId: target.EnvironmentID.String(),
+				ResourceId:    target.ResourceID.String(),
+			},
+			Variables: variables,
+			Version:   *version,
+		}
+
 		dispatchCtx := &oapi.DispatchContext{
 			Deployment:     deployment,
 			Environment:    env,
 			Resource:       resource,
 			Version:        version,
+			Release:        release,
 			Variables:      &variables,
 			JobAgent:       *agent,
 			JobAgentConfig: mergedConfig,
