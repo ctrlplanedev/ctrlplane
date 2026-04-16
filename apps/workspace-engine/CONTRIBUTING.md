@@ -1,6 +1,6 @@
 # Contributing to `apps/workspace-engine`
 
-This is the service guide for `apps/workspace-engine` — the Go reconciliation engine that turns user intent (a new version, a changed selector, a policy update) into concrete jobs dispatched to job agents. It assumes you've completed the root [CONTRIBUTING.md](../../CONTRIBUTING.md) setup and can run `pnpm dev` or `go run ./...` in this directory.
+This is the service guide for `apps/workspace-engine` — the Go reconciliation engine that turns user intent (a new version, a changed selector, a policy update) into concrete jobs dispatched to job agents. It assumes you've completed the root [CONTRIBUTING.md](../../CONTRIBUTING.md) setup and can run `pnpm dev` (or `go run .`) in this directory.
 
 ## Table of Contents
 
@@ -110,11 +110,11 @@ apps/workspace-engine/
 ├── main.go                    # Entry point — registers every controller
 ├── otel.go                    # OpenTelemetry setup
 ├── go.mod / go.sum
-├── oapi/                      # OpenAPI-generated types (shared domain objects)
+├── oapi/                      # OpenAPI spec inputs (spec/, cfg.yaml) + generated openapi.json
 ├── pkg/
 │   ├── config/                # env var config (incl. SERVICES filter)
 │   ├── db/                    # pgx pool, sqlc-generated queries
-│   ├── oapi/                  # Domain types (Deployment, Release, etc.)
+│   ├── oapi/                  # Generated Go types (oapi.gen.go) + domain helpers
 │   ├── reconcile/             # Work queue + worker loop (generic, reusable)
 │   │   ├── workqueue.go       # Queue interface, Item, EnqueueParams, …
 │   │   ├── worker.go          # Claim → process → ack/retry loop
@@ -411,11 +411,11 @@ Use `testify/require` when a failure should abort the test (setup invariants) an
 Controllers are expensive — running all of them locally spins up N polling goroutines against Postgres. While developing one, set `SERVICES` in `.env` to just the kinds you need:
 
 ```bash
-# Only the two you're iterating on, plus the infra services
+# Only the two you're iterating on
 SERVICES=deployment-plan,policy-eval
 ```
 
-The kind names match the `Name()` returned by each worker (which comes from the `Kind` constant in `events/`).
+`IsServiceEnabled` does an exact string match against the `Kind` constants in `pkg/reconcile/events/` — they're hyphenated (`deployment-plan`, `policy-eval`, `job-dispatch`, `desired-release`, `relationship-eval`, `force-deploy`, `deployment-resource-selector-eval`, `environment-resource-selector-eval`, `deployment-plan-target-result`, `job-eligibility`, `job-verification-metric`). Mismatched names silently skip the controller — check `pkg/reconcile/events/*.go` if you're unsure.
 
 Use [air](https://github.com/cosmtrek/air) for hot reload — `.air.toml` is already configured:
 

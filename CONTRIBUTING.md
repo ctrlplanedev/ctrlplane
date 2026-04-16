@@ -122,7 +122,7 @@ pnpm -F @ctrlplane/db studio    # Open Drizzle Studio UI
 
 ```bash
 cd apps/workspace-engine
-go run ./...                         # Run without building
+go run .                             # Run the service binary (without building)
 go test ./...                        # Run tests
 golangci-lint run                    # Lint
 go fmt ./...                         # Format
@@ -131,7 +131,7 @@ go fmt ./...                         # Format
 By default `workspace-engine` runs all controllers. To run a subset (useful when debugging one), set `SERVICES` in `.env`:
 
 ```bash
-SERVICES=deploymentplan,policyeval
+SERVICES=deployment-plan,policy-eval
 ```
 
 ## Repository Structure
@@ -145,7 +145,7 @@ packages/
   db/                  # Drizzle ORM schema + migrations (PostgreSQL)
   trpc/                # tRPC server setup
   auth/                # better-auth integration
-  workspace-engine-sdk/# Published TypeScript SDK for external integrations
+  workspace-engine-sdk/ # Published TypeScript SDK for external integrations
 integrations/          # External service adapters (GitHub, ArgoCD, Terraform Cloud, …)
 e2e/                   # Playwright end-to-end tests (API + UI)
 tooling/               # Shared ESLint, Prettier, TypeScript configs
