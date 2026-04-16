@@ -553,6 +553,45 @@ func TestVariable_ReferenceVariable_ResolvesFromRelatedResourceVariables(t *test
 }
 
 // ---------------------------------------------------------------------------
+// Reference variable walks into a nested object variable on a related resource
+// ---------------------------------------------------------------------------
+
+func TestVariable_ReferenceVariable_NestedObjectResourceVariable(t *testing.T) {
+	dbResource := &oapi.Resource{
+		Id:          uuid.New().String(),
+		Name:        "db-primary",
+		Kind:        "Database",
+		Version:     "v1",
+		Identifier:  "db-primary",
+		WorkspaceId: uuid.New().String(),
+		Metadata:    map[string]string{},
+		Config:      map[string]any{},
+		Variables: &map[string]oapi.Value{
+			"connection": LiteralValue(map[string]any{
+				"host": "db.internal",
+				"port": 5432,
+			}),
+		},
+	}
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true")),
+		WithEnvironment(EnvironmentName("production")),
+		WithResource(ResourceName("srv"), ResourceKind("Server")),
+		WithVersion(VersionTag("v1.0.0")),
+		WithDeploymentVariable("db_host",
+			WithVariableValue(ReferenceValue("database", "variables", "connection", "host")),
+		),
+		WithRelatedResource("database", dbResource),
+	)
+
+	p.Run()
+
+	p.AssertReleaseCreated(t)
+	p.AssertReleaseVariableEquals(t, 0, "db_host", "db.internal")
+}
+
+// ---------------------------------------------------------------------------
 // Multiple related resources — each referenced by different variables
 // ---------------------------------------------------------------------------
 
