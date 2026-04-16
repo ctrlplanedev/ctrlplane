@@ -214,13 +214,17 @@ func (g *PostgresGetter) LoadCandidates(
 		if err != nil {
 			return nil, fmt.Errorf("list resources for workspace %s: %w", workspaceID, err)
 		}
+		varsByResource, err := loadResourceVariablesByWorkspace(ctx, q, workspaceID)
+		if err != nil {
+			return nil, err
+		}
 		candidates := make([]eval.EntityData, 0, len(rows))
 		for _, r := range rows {
 			candidates = append(candidates, eval.EntityData{
 				ID:          r.ID,
 				WorkspaceID: r.WorkspaceID,
 				EntityType:  "resource",
-				Raw:         resourceRowToMap(r),
+				Raw:         resourceRowToMap(r, varsByResource[r.ID]),
 			})
 		}
 		return candidates, nil
@@ -275,11 +279,15 @@ func (g *PostgresGetter) GetEntityByID(
 		if err != nil {
 			return nil, fmt.Errorf("get resource %s: %w", entityID, err)
 		}
+		vars, err := loadResourceVariables(ctx, q, r.ID)
+		if err != nil {
+			return nil, err
+		}
 		return &eval.EntityData{
 			ID:          r.ID,
 			WorkspaceID: r.WorkspaceID,
 			EntityType:  "resource",
-			Raw:         resourceRowToMap(db.ListActiveResourcesByWorkspaceRow(r)),
+			Raw:         resourceRowToMap(db.ListActiveResourcesByWorkspaceRow(r), vars),
 		}, nil
 
 	case "deployment":
@@ -311,7 +319,10 @@ func (g *PostgresGetter) GetEntityByID(
 	}
 }
 
-func resourceRowToMap(r db.ListActiveResourcesByWorkspaceRow) map[string]any {
+func resourceRowToMap(
+	r db.ListActiveResourcesByWorkspaceRow,
+	vars map[string]oapi.Value,
+) map[string]any {
 	m := map[string]any{
 		"type":       "resource",
 		"id":         r.ID.String(),
@@ -325,7 +336,52 @@ func resourceRowToMap(r db.ListActiveResourcesByWorkspaceRow) map[string]any {
 	if r.ProviderID != uuid.Nil {
 		m["providerId"] = r.ProviderID.String()
 	}
+	if len(vars) > 0 {
+		m["variables"] = vars
+	}
 	return m
+}
+
+func loadResourceVariables(
+	ctx context.Context,
+	q *db.Queries,
+	resourceID uuid.UUID,
+) (map[string]oapi.Value, error) {
+	rows, err := q.ListResourceVariablesByResourceID(ctx, resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("list variables for resource %s: %w", resourceID, err)
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	vars := make(map[string]oapi.Value, len(rows))
+	for _, row := range rows {
+		v := db.ToOapiResourceVariable(row)
+		vars[v.Key] = v.Value
+	}
+	return vars, nil
+}
+
+func loadResourceVariablesByWorkspace(
+	ctx context.Context,
+	q *db.Queries,
+	workspaceID uuid.UUID,
+) (map[uuid.UUID]map[string]oapi.Value, error) {
+	rows, err := q.ListResourceVariablesByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("list variables for workspace %s: %w", workspaceID, err)
+	}
+	result := make(map[uuid.UUID]map[string]oapi.Value)
+	for _, row := range rows {
+		v := db.ToOapiResourceVariable(row)
+		m := result[row.ResourceID]
+		if m == nil {
+			m = make(map[string]oapi.Value)
+			result[row.ResourceID] = m
+		}
+		m[v.Key] = v.Value
+	}
+	return result, nil
 }
 
 func deploymentRowToMap(r db.ListDeploymentsByWorkspaceRow) map[string]any {

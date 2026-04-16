@@ -53,6 +53,10 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'object',
         additionalProperties: { type: 'string' },
       },
+      variables: {
+        type: 'object',
+        additionalProperties: openapi.schemaRef('Value'),
+      },
     },
   },
 

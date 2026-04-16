@@ -410,6 +410,9 @@ func mapToResource(data *eval.EntityData) oapi.Resource {
 		}
 		r.Metadata = md
 	}
+	if v, ok := raw["variables"].(map[string]oapi.Value); ok && len(v) > 0 {
+		r.Variables = &v
+	}
 	return r
 }
 

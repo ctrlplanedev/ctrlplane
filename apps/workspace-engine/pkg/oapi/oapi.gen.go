@@ -1016,6 +1016,7 @@ type Resource struct {
 	Name        string                 `json:"name"`
 	ProviderId  *string                `json:"providerId,omitempty"`
 	UpdatedAt   *time.Time             `json:"updatedAt,omitempty"`
+	Variables   *map[string]Value      `json:"variables,omitempty"`
 	Version     string                 `json:"version"`
 	WorkspaceId string                 `json:"workspaceId"`
 }

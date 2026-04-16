@@ -2166,6 +2166,12 @@
                   "format": "date-time",
                   "type": "string"
                },
+               "variables": {
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/Value"
+                  },
+                  "type": "object"
+               },
                "version": {
                   "type": "string"
                },

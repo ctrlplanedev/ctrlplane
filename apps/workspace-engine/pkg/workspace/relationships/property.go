@@ -82,9 +82,47 @@ func getResourceProperty(
 			return nil, err
 		}
 		return convertValue(value)
+	case "variables":
+		return getResourceVariableProperty(resource, propertyPath)
 	default:
 		return getPropertyReflection(resource, propertyPath)
 	}
+}
+
+func getResourceVariableProperty(
+	resource *oapi.Resource,
+	propertyPath []string,
+) (*oapi.LiteralValue, error) {
+	if resource.Variables == nil {
+		return nil, fmt.Errorf("variables not set on resource")
+	}
+	if len(propertyPath) < 2 {
+		return nil, fmt.Errorf("variables path requires a key")
+	}
+
+	vars := *resource.Variables
+	v, ok := vars[propertyPath[1]]
+	if !ok {
+		return nil, fmt.Errorf("variable %s not found", propertyPath[1])
+	}
+
+	lv, err := v.AsLiteralValue()
+	if err != nil {
+		return nil, fmt.Errorf("variable %s is not a literal: %w", propertyPath[1], err)
+	}
+	if len(propertyPath) == 2 {
+		return &lv, nil
+	}
+
+	obj, err := lv.AsObjectValue()
+	if err != nil {
+		return nil, fmt.Errorf("cannot traverse into non-object variable %s", propertyPath[1])
+	}
+	value, err := getMapValue(obj.Object, propertyPath[2:])
+	if err != nil {
+		return nil, err
+	}
+	return convertValue(value)
 }
 
 // getDeploymentProperty gets a property from a Deployment entity.
