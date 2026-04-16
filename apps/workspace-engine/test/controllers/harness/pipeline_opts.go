@@ -630,20 +630,24 @@ func WithRelatedResource(reference string, res *oapi.Resource) PipelineOption {
 		for k, v := range res.Metadata {
 			metadata[k] = v
 		}
+		raw := map[string]any{
+			"type":       "resource",
+			"id":         relatedID.String(),
+			"name":       res.Name,
+			"kind":       res.Kind,
+			"version":    res.Version,
+			"identifier": res.Identifier,
+			"config":     res.Config,
+			"metadata":   metadata,
+		}
+		if res.Variables != nil && len(*res.Variables) > 0 {
+			raw["variables"] = *res.Variables
+		}
 		sc.Candidates["resource"] = append(sc.Candidates["resource"], eval.EntityData{
 			ID:          relatedID,
 			WorkspaceID: sc.WorkspaceID,
 			EntityType:  "resource",
-			Raw: map[string]any{
-				"type":       "resource",
-				"id":         relatedID.String(),
-				"name":       res.Name,
-				"kind":       res.Kind,
-				"version":    res.Version,
-				"identifier": res.Identifier,
-				"config":     res.Config,
-				"metadata":   metadata,
-			},
+			Raw:         raw,
 		})
 	}
 }

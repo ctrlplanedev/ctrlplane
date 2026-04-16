@@ -84,7 +84,7 @@ const listResourceVariablesByWorkspaceID = `-- name: ListResourceVariablesByWork
 SELECT rv.resource_id, rv.key, rv.value
 FROM resource_variable rv
 INNER JOIN resource r ON r.id = rv.resource_id
-WHERE r.workspace_id = $1
+WHERE r.workspace_id = $1 AND r.deleted_at IS NULL
 `
 
 func (q *Queries) ListResourceVariablesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ResourceVariable, error) {
