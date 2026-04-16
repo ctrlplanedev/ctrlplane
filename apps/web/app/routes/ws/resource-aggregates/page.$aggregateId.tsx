@@ -152,7 +152,7 @@ export default function AggregateDetailPage() {
                 onClick={() => {
                   const cel = buildCelForGroup(group);
                   navigate(
-                    `/${workspace.slug}/resources?cel=${encodeURIComponent(cel)}`,
+                    `/${workspace.slug}/resources?query=${encodeURIComponent(cel)}`,
                   );
                 }}
               >
