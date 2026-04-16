@@ -116,7 +116,11 @@ func getResourceVariableProperty(
 
 	obj, err := lv.AsObjectValue()
 	if err != nil {
-		return nil, fmt.Errorf("cannot traverse into non-object variable %s", propertyPath[1])
+		return nil, fmt.Errorf(
+			"cannot traverse into non-object variable %s: %w",
+			propertyPath[1],
+			err,
+		)
 	}
 	value, err := getMapValue(obj.Object, propertyPath[2:])
 	if err != nil {

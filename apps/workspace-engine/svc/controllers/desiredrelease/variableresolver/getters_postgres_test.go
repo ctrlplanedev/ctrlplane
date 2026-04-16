@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
@@ -392,5 +393,108 @@ func TestPostgresGetter_GetEntityByID(t *testing.T) {
 		desc, ok := entity.Raw["description"]
 		assert.True(t, ok, "description should be present when non-empty")
 		assert.Equal(t, "a test environment", desc)
+	})
+}
+
+func TestPostgresGetter_ResourceVariablesAttachedToRaw(t *testing.T) {
+	pool := requireTestDB(t)
+	f := setupFixture(t, pool)
+	ctx := context.Background()
+
+	getter := variableresolver.NewPostgresGetter(nil)
+
+	_, err := pool.Exec(ctx,
+		`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
+		f.resourceID, "db_url", []byte(`"postgres://db.internal/app"`))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(),
+			`DELETE FROM resource_variable WHERE resource_id = $1 AND key = $2`,
+			f.resourceID, "db_url")
+	})
+
+	assertDBURL := func(t *testing.T, raw map[string]any) {
+		t.Helper()
+		vars, ok := raw["variables"].(map[string]oapi.Value)
+		require.True(
+			t,
+			ok,
+			"Raw[\"variables\"] should be map[string]oapi.Value, got %T",
+			raw["variables"],
+		)
+		require.Contains(t, vars, "db_url")
+
+		lv, err := vars["db_url"].AsLiteralValue()
+		require.NoError(t, err)
+		s, err := lv.AsStringValue()
+		require.NoError(t, err)
+		assert.Equal(t, "postgres://db.internal/app", s)
+	}
+
+	t.Run("GetEntityByID attaches resource variables", func(t *testing.T) {
+		entity, err := getter.GetEntityByID(ctx, f.resourceID, "resource")
+		require.NoError(t, err)
+		assertDBURL(t, entity.Raw)
+	})
+
+	t.Run("LoadCandidates attaches resource variables", func(t *testing.T) {
+		candidates, err := getter.LoadCandidates(ctx, f.workspaceID, "resource")
+		require.NoError(t, err)
+
+		var found bool
+		for _, c := range candidates {
+			if c.ID == f.resourceID {
+				found = true
+				assertDBURL(t, c.Raw)
+			}
+		}
+		assert.True(t, found, "fixture resource should be in candidates")
+	})
+
+	t.Run("LoadCandidates excludes variables from soft-deleted resources", func(t *testing.T) {
+		deletedID := uuid.New()
+		metadata, _ := json.Marshal(map[string]string{})
+		_, err := pool.Exec(
+			ctx,
+			`INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, metadata, deleted_at)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, '{}'::jsonb, $8::jsonb, NOW())`,
+			deletedID,
+			"v1",
+			"deleted-with-var",
+			"Server",
+			"urn:test:deleted-var",
+			f.providerID,
+			f.workspaceID,
+			metadata,
+		)
+		require.NoError(t, err)
+
+		_, err = pool.Exec(ctx,
+			`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
+			deletedID, "ghost", []byte(`"should-not-appear"`))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			cleanCtx := context.Background()
+			_, _ = pool.Exec(
+				cleanCtx,
+				`DELETE FROM resource_variable WHERE resource_id = $1`,
+				deletedID,
+			)
+			_, _ = pool.Exec(cleanCtx, `DELETE FROM resource WHERE id = $1`, deletedID)
+		})
+
+		candidates, err := getter.LoadCandidates(ctx, f.workspaceID, "resource")
+		require.NoError(t, err)
+
+		for _, c := range candidates {
+			assert.NotEqual(t, deletedID, c.ID,
+				"soft-deleted resource should not appear in candidates")
+			if vars, ok := c.Raw["variables"].(map[string]oapi.Value); ok {
+				_, hasGhost := vars["ghost"]
+				assert.False(t, hasGhost,
+					"variables from soft-deleted resources should not leak into active ones")
+			}
+		}
 	})
 }

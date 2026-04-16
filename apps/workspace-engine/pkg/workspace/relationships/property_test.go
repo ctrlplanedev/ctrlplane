@@ -106,6 +106,104 @@ func TestPropertyValueExtraction_Resource(t *testing.T) {
 	}
 }
 
+func TestPropertyValueExtraction_Resource_Variables(t *testing.T) {
+	stringVar := *oapi.NewValueFromLiteral(oapi.NewLiteralValue("postgres://db.internal/app"))
+	intVar := *oapi.NewValueFromLiteral(oapi.NewLiteralValue(5432))
+	objectVar := *oapi.NewValueFromLiteral(oapi.NewLiteralValue(map[string]any{
+		"host": "db.internal",
+		"port": 5432,
+		"meta": map[string]any{"primary": true},
+	}))
+
+	variables := map[string]oapi.Value{
+		"db_url":     stringVar,
+		"db_port":    intVar,
+		"connection": objectVar,
+	}
+
+	resource := &oapi.Resource{
+		Id:          "res-1",
+		Name:        "srv",
+		Kind:        "Server",
+		WorkspaceId: "ws-1",
+		Variables:   &variables,
+	}
+	entity := makeResourceEntity(resource)
+
+	t.Run("string variable by key", func(t *testing.T) {
+		val, err := GetPropertyValue(entity, []string{"variables", "db_url"})
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		s, err := val.AsStringValue()
+		require.NoError(t, err)
+		assert.Equal(t, "postgres://db.internal/app", s)
+	})
+
+	t.Run("integer variable by key", func(t *testing.T) {
+		val, err := GetPropertyValue(entity, []string{"variables", "db_port"})
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		i, err := val.AsIntegerValue()
+		require.NoError(t, err)
+		assert.Equal(t, 5432, i)
+	})
+
+	t.Run("nested object variable - one level deep", func(t *testing.T) {
+		val, err := GetPropertyValue(entity, []string{"variables", "connection", "host"})
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		s, err := val.AsStringValue()
+		require.NoError(t, err)
+		assert.Equal(t, "db.internal", s)
+	})
+
+	t.Run("nested object variable - two levels deep", func(t *testing.T) {
+		val, err := GetPropertyValue(entity, []string{"variables", "connection", "meta", "primary"})
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		b, err := val.AsBooleanValue()
+		require.NoError(t, err)
+		assert.True(t, b)
+	})
+
+	t.Run("missing key returns not-found error", func(t *testing.T) {
+		_, err := GetPropertyValue(entity, []string{"variables", "does_not_exist"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
+
+	t.Run("variables path without key errors", func(t *testing.T) {
+		_, err := GetPropertyValue(entity, []string{"variables"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "requires a key")
+	})
+
+	t.Run("cannot traverse into non-object variable", func(t *testing.T) {
+		_, err := GetPropertyValue(entity, []string{"variables", "db_url", "host"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "non-object")
+	})
+
+	t.Run("missing nested key in object variable errors", func(t *testing.T) {
+		_, err := GetPropertyValue(entity, []string{"variables", "connection", "missing"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
+}
+
+func TestPropertyValueExtraction_Resource_Variables_NilMap(t *testing.T) {
+	resource := &oapi.Resource{
+		Id:        "res-1",
+		Name:      "srv",
+		Variables: nil,
+	}
+	entity := makeResourceEntity(resource)
+
+	_, err := GetPropertyValue(entity, []string{"variables", "anything"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not set")
+}
+
 func TestPropertyValueExtraction_Resource_NilProviderId(t *testing.T) {
 	resource := &oapi.Resource{
 		Id:         "res-1",
