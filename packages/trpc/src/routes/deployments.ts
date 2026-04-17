@@ -14,8 +14,11 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
+import { deploymentPlansRouter } from "./deployment-plans.js";
 
 export const deploymentsRouter = router({
+  plans: deploymentPlansRouter,
+
   get: protectedProcedure
     .input(z.object({ deploymentId: z.uuid() }))
     .meta({

@@ -34,6 +34,14 @@ export default [
           "routes/ws/deployments/page.$deploymentId.policies.tsx",
         ),
         route(
+          ":deploymentId/plans",
+          "routes/ws/deployments/page.$deploymentId.plans.tsx",
+        ),
+        route(
+          ":deploymentId/plans/:planId",
+          "routes/ws/deployments/page.$deploymentId.plans.$planId.tsx",
+        ),
+        route(
           ":deploymentId/settings",
           "routes/ws/deployments/settings/_layout.tsx",
           [

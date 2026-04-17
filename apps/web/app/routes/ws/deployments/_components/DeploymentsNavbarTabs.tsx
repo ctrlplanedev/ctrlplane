@@ -9,18 +9,18 @@ type DeploymentTab =
   | "resources"
   | "settings"
   | "release-targets"
-  | "traces"
   | "variables"
-  | "policies";
+  | "policies"
+  | "plans";
 
 const useDeploymentTab = (baseUrl: string): DeploymentTab => {
   const { pathname } = useLocation();
   if (pathname === baseUrl) return "environments";
   if (pathname.startsWith(`${baseUrl}/resources`)) return "resources";
   if (pathname.startsWith(`${baseUrl}/settings/general`)) return "settings";
-  if (pathname.startsWith(`${baseUrl}/traces`)) return "traces";
   if (pathname.startsWith(`${baseUrl}/variables`)) return "variables";
   if (pathname.startsWith(`${baseUrl}/policies`)) return "policies";
+  if (pathname.startsWith(`${baseUrl}/plans`)) return "plans";
   if (pathname.startsWith(`${baseUrl}/release-targets`))
     return "release-targets";
   return "environments";
@@ -44,14 +44,14 @@ export const DeploymentsNavbarTabs = () => {
         <TabsTrigger value="variables" asChild>
           <Link to={`${baseUrl}/variables`}>Variables</Link>
         </TabsTrigger>
-        <TabsTrigger value="traces" asChild>
-          <Link to={`${baseUrl}/traces`}>Traces</Link>
-        </TabsTrigger>
         <TabsTrigger value="release-targets" asChild>
           <Link to={`${baseUrl}/release-targets`}>Targets</Link>
         </TabsTrigger>
         <TabsTrigger value="policies" asChild>
           <Link to={`${baseUrl}/policies`}>Policies</Link>
+        </TabsTrigger>
+        <TabsTrigger value="plans" asChild>
+          <Link to={`${baseUrl}/plans`}>Plans</Link>
         </TabsTrigger>
         <TabsTrigger value="settings" asChild>
           <Link to={`${baseUrl}/settings/general`}>Settings</Link>
