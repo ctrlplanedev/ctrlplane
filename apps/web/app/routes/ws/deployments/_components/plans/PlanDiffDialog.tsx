@@ -71,6 +71,12 @@ export function PlanDiffDialog({
                 minimap: { enabled: true },
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
+                hideUnchangedRegions: {
+                  enabled: true,
+                  contextLineCount: 3,
+                  minimumLineCount: 3,
+                  revealLineCount: 20,
+                },
               }}
             />
           )}
