@@ -1,0 +1,27 @@
+export const PlanStatusDisplayName: Record<string, string> = {
+  computing: "Computing",
+  completed: "Completed",
+  failed: "Failed",
+};
+
+const PlanStatusBadgeColor: Record<string, string> = {
+  computing:
+    "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800",
+  completed:
+    "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800",
+  failed:
+    "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800",
+};
+
+export function PlanStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${
+        PlanStatusBadgeColor[status] ??
+        "border-neutral-200 bg-neutral-100 text-neutral-700"
+      }`}
+    >
+      {PlanStatusDisplayName[status] ?? status}
+    </span>
+  );
+}
