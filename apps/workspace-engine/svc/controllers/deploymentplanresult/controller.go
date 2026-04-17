@@ -95,20 +95,6 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			return reconcile.Result{}, fmt.Errorf("mark result unsupported: %w", updateErr)
 		}
 
-		if commentErr := MaybeCommentOnPR(
-			ctx,
-			&dispatchCtx,
-			result.TargetID.String(),
-			prCommentResult{
-				AgentID:   dispatchCtx.JobAgent.Id,
-				AgentName: dispatchCtx.JobAgent.Name,
-				AgentType: agentType,
-				Status:    "unsupported",
-			},
-		); commentErr != nil {
-			span.RecordError(commentErr)
-		}
-
 		return reconcile.Result{}, nil
 	}
 
@@ -131,21 +117,6 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 				updateErr,
 				err,
 			)
-		}
-
-		if commentErr := MaybeCommentOnPR(
-			ctx,
-			&dispatchCtx,
-			result.TargetID.String(),
-			prCommentResult{
-				AgentID:   dispatchCtx.JobAgent.Id,
-				AgentName: dispatchCtx.JobAgent.Name,
-				AgentType: agentType,
-				Status:    "errored",
-				Message:   err.Error(),
-			},
-		); commentErr != nil {
-			span.RecordError(commentErr)
 		}
 
 		return reconcile.Result{}, nil
@@ -196,19 +167,6 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		},
 	); err != nil {
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
-	}
-
-	if commentErr := MaybeCommentOnPR(ctx, &dispatchCtx, result.TargetID.String(), prCommentResult{
-		AgentID:    dispatchCtx.JobAgent.Id,
-		AgentName:  dispatchCtx.JobAgent.Name,
-		AgentType:  agentType,
-		Status:     "completed",
-		HasChanges: planResult.HasChanges,
-		Current:    planResult.Current,
-		Proposed:   planResult.Proposed,
-		Message:    planResult.Message,
-	}); commentErr != nil {
-		span.RecordError(commentErr)
 	}
 
 	return reconcile.Result{}, nil

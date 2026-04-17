@@ -35,6 +35,9 @@ type Config struct {
 	GithubBotAppID      string `default:"" envconfig:"GITHUB_BOT_APP_ID"`
 	GithubBotPrivateKey string `default:"" envconfig:"GITHUB_BOT_PRIVATE_KEY"`
 
+	// Public URL of the ctrlplane web app, used in PR comment links.
+	BaseURL string `default:"https://app.ctrlplane.dev" envconfig:"BASE_URL"`
+
 	PostgresURL             string `default:"postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane" envconfig:"POSTGRES_URL"`
 	PostgresMaxPoolSize     int    `default:"50"                                                        envconfig:"POSTGRES_MAX_POOL_SIZE"`
 	PostgresApplicationName string `default:"workspace-engine"                                          envconfig:"POSTGRES_APPLICATION_NAME"`

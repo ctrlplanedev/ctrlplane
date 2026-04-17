@@ -24,6 +24,7 @@ type Getter interface {
 	GetResource(ctx context.Context, id uuid.UUID) (*oapi.Resource, error)
 	GetJobAgent(ctx context.Context, id uuid.UUID) (*oapi.JobAgent, error)
 	ListJobAgentsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]oapi.JobAgent, error)
+	GetWorkspaceByID(ctx context.Context, id uuid.UUID) (db.Workspace, error)
 }
 
 // VarResolver resolves deployment variables for a release target.
