@@ -115,7 +115,7 @@ export const deploymentPlansRouter = router({
           summary.computing > 0
             ? "computing"
             : summary.errored > 0
-              ? "failed"
+              ? "errored"
               : "completed";
         return { ...p, status, summary };
       });

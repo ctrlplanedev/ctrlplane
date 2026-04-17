@@ -19,7 +19,6 @@ import { deploymentPlansRouter } from "./deployment-plans.js";
 export const deploymentsRouter = router({
   plans: deploymentPlansRouter,
 
-
   get: protectedProcedure
     .input(z.object({ deploymentId: z.uuid() }))
     .meta({

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DiffEditor } from "@monaco-editor/react";
 
 import { trpc } from "~/api/trpc";
+import { useTheme } from "~/components/ThemeProvider";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export function PlanDiffDialog({
 }: PlanDiffDialogProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<DiffView>("split");
+  const { theme } = useTheme();
 
   const diffQuery = trpc.deployment.plans.resultDiff.useQuery(
     { deploymentId, resultId },
@@ -60,7 +62,7 @@ export function PlanDiffDialog({
             <DiffEditor
               height="100%"
               language="yaml"
-              theme="vs-dark"
+              theme={theme === "dark" ? "vs-dark" : "vs"}
               original={diffQuery.data.current}
               modified={diffQuery.data.proposed}
               options={{
