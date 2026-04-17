@@ -86,6 +86,13 @@ func (g *PostgresGetter) GetJobAgent(ctx context.Context, id uuid.UUID) (*oapi.J
 	return db.ToOapiJobAgent(row), nil
 }
 
+func (g *PostgresGetter) GetWorkspaceByID(
+	ctx context.Context,
+	id uuid.UUID,
+) (db.Workspace, error) {
+	return db.GetQueries(ctx).GetWorkspaceByID(ctx, id)
+}
+
 type PostgresVarResolver struct {
 	getter variableresolver.Getter
 }

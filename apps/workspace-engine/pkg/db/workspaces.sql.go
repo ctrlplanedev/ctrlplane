@@ -11,6 +11,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const getWorkspaceByID = `-- name: GetWorkspaceByID :one
+SELECT id, name, slug, created_at FROM workspace WHERE id = $1
+`
+
+func (q *Queries) GetWorkspaceByID(ctx context.Context, id uuid.UUID) (Workspace, error) {
+	row := q.db.QueryRow(ctx, getWorkspaceByID, id)
+	var i Workspace
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listWorkspaceIDs = `-- name: ListWorkspaceIDs :many
 SELECT id FROM workspace
 `

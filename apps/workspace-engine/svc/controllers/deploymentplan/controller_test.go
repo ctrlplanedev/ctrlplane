@@ -87,6 +87,13 @@ func (m *mockGetter) ListJobAgentsByWorkspaceID(
 	return m.workspaceAgents, nil
 }
 
+func (m *mockGetter) GetWorkspaceByID(
+	_ context.Context,
+	id uuid.UUID,
+) (db.Workspace, error) {
+	return db.Workspace{ID: id, Slug: "test-workspace"}, nil
+}
+
 type insertTargetCall struct {
 	PlanID, EnvID, ResourceID uuid.UUID
 }

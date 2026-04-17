@@ -127,7 +127,22 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		}
 	}
 
+	if commentErr := c.commentPlanLink(ctx, plan); commentErr != nil {
+		span.RecordError(commentErr)
+	}
+
 	return reconcile.Result{}, nil
+}
+
+func (c *Controller) commentPlanLink(
+	ctx context.Context,
+	plan db.DeploymentPlan,
+) error {
+	workspace, err := c.getter.GetWorkspaceByID(ctx, plan.WorkspaceID)
+	if err != nil {
+		return fmt.Errorf("get workspace: %w", err)
+	}
+	return MaybeCommentPlanLink(ctx, plan, workspace.Slug)
 }
 
 func (c *Controller) processTarget(
