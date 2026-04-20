@@ -2,9 +2,9 @@
 title: "RFC 0012: First-Class GitHub Installations"
 ---
 
-| Category    | Status                            | Created    | Author           |
-| ----------- | --------------------------------- | ---------- | ---------------- |
-| Integration | <Badge color="gray">Draft</Badge> | 2026-04-20 | Aditya Choudhari |
+| Category     | Status                            | Created    | Author           |
+| ------------ | --------------------------------- | ---------- | ---------------- |
+| Integrations | <Badge color="gray">Draft</Badge> | 2026-04-20 | Aditya Choudhari |
 
 ## Summary
 
@@ -86,7 +86,7 @@ when a workspace first claims an installation.
   that plugs into the same backend handler.
 - Supporting user-level GitHub OAuth as a general-purpose login mechanism. The
   OAuth token acquired during linking is used only to verify installation
-  access for that single request.
+  access for that single request and is discarded immediately after.
 - Terraform-based creation of installation rows. Linking requires a human
   browser session; a data-source or CLI-assisted workflow will follow.
 
@@ -96,7 +96,7 @@ when a workspace first claims an installation.
 
 ```sql
 CREATE TABLE github_installation (
-    id                 uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id       uuid NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
 
     installation_id    bigint NOT NULL,   -- GitHub's numeric ID
@@ -155,9 +155,12 @@ URL with `?installation_id=<id>&setup_action=install&state=<jwt>`.
 
 1. Verify `state` JWT signature, expiry, and single-use nonce.
 2. Confirm the signed-in ctrlplane session matches `userId` in the state.
-3. If the user does not have a fresh GitHub OAuth token on file, redirect
-   through the GitHub OAuth authorize endpoint to obtain one (scope: minimal,
-   enough to call `GET /user/installations`).
+3. Redirect the user through the GitHub OAuth authorize endpoint to obtain a
+   GitHub user access token (scope: minimal, enough to call
+   `GET /user/installations`). The token is held only for the duration of the
+   current linking request — it is **not persisted**. Once verification
+   completes (success or failure), the token is discarded along with the
+   request context.
 4. Call `GET /user/installations` with the user's OAuth token. If the
    `installation_id` from the redirect is not in the returned list, **reject
    the link**. This is the teeth of the check: even if a malicious user
@@ -279,19 +282,22 @@ automated backfill.
 1. Add the `github_installation` table as a purely additive schema change.
    Nothing else in the system references it yet.
 2. Ship the UI + Setup URL handler so new links go through the verified flow.
-3. **Manually insert rows** for the handful of existing internal workspaces
-   that already have a GitHub installation in their `job_agent.config`. One
-   SQL statement per workspace, run out-of-band.
+3. **Manually re-link each existing installation through the UI.** For the
+   handful of existing internal workspaces that have a GitHub installation
+   in their `job_agent.config` today, an authorized user in each workspace
+   clicks "Connect GitHub" and completes the same verified flow. This
+   produces a `github_installation` row with correct `created_by_user_id`
+   and audit metadata — no raw SQL inserts, no nullable-column carve-outs.
 4. Once all known installations have corresponding `github_installation`
    rows, flip the job agent config schema to require `githubInstallationId`
    (the FK) and update the workspace-engine dispatcher to resolve via getter.
    At this point the raw `installationId` free-text path is removed.
 5. Remove the old `{ installationId, owner }` JSON shape from `job_agent.config`.
 
-The manual-insert step is acceptable precisely because the enforcement check
-in step 4 is gated on every known installation being present in the table.
-If we were public or had many installations, we'd want an automated backfill
-instead; at current scale, a script for two or three rows is overkill.
+Manual re-linking is acceptable precisely because the population is tiny and
+each re-link takes less than a minute. If ctrlplane were public or had many
+installations, we'd want an automated backfill instead; at current scale,
+going through the UI is simpler than writing migration code.
 
 ## Open Questions
 
@@ -299,17 +305,10 @@ instead; at current scale, a script for two or three rows is overkill.
    configured (`GITHUB_BOT_CLIENT_ID`/`_CLIENT_SECRET`), or do we need a
    separate OAuth app registration? If the App's OAuth surface is sufficient,
    we avoid an extra credential.
-2. **Session storage for OAuth tokens.** Do we persist the user's GitHub
-   OAuth token after linking, or discard it post-verification? Persisting
-   simplifies future re-verification but adds a token-storage concern.
-3. **Attribution on manual inserts.** For the handful of rows we hand-insert
-   during migration, `created_by_user_id` should be nullable, or we pick the
-   workspace creator as a sensible default. Worth deciding before the column
-   lands.
-4. **Unlink semantics.** When a workspace disconnects an installation, should
+2. **Unlink semantics.** When a workspace disconnects an installation, should
    linked job agents be disabled, deleted, or left in a broken state pointing
    at a now-missing FK? Soft-disable seems safest.
-5. **Reinstall handling.** If a user uninstalls the App on GitHub and
+3. **Reinstall handling.** If a user uninstalls the App on GitHub and
    reinstalls it later, GitHub may issue a new `installation_id`. Should
    ctrlplane detect this (via `installation.deleted` + subsequent
    `installation.created` events from the same `account.id`) and offer a
