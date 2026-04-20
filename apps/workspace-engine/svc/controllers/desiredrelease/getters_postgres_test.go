@@ -319,25 +319,23 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 	t.Run("multiple variables each get their own values", func(t *testing.T) {
 		varA := uuid.New()
 		varB := uuid.New()
-		valA, _ := json.Marshal("a-default")
-		valB, _ := json.Marshal("b-default")
 
 		_, err := pool.Exec(ctx,
-			`INSERT INTO deployment_variable (id, deployment_id, key, default_value)
-			 VALUES ($1, $2, $3, $4)`,
-			varA, f.deploymentID, "VAR_A", valA)
+			`INSERT INTO variable (id, scope, deployment_id, key)
+			 VALUES ($1, 'deployment', $2, $3)`,
+			varA, f.deploymentID, "VAR_A")
 		require.NoError(t, err)
 		_, err = pool.Exec(ctx,
-			`INSERT INTO deployment_variable (id, deployment_id, key, default_value)
-			 VALUES ($1, $2, $3, $4)`,
-			varB, f.deploymentID, "VAR_B", valB)
+			`INSERT INTO variable (id, scope, deployment_id, key)
+			 VALUES ($1, 'deployment', $2, $3)`,
+			varB, f.deploymentID, "VAR_B")
 		require.NoError(t, err)
 
 		overrideA, _ := json.Marshal("a-override")
 		_, err = pool.Exec(
 			ctx,
-			`INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
-			 VALUES ($1, $2, $3, $4, $5)`,
+			`INSERT INTO variable_value (id, variable_id, literal_value, resource_selector, priority, kind)
+			 VALUES ($1, $2, $3, $4, $5, 'literal')`,
 			uuid.New(),
 			varA,
 			overrideA,
@@ -349,8 +347,8 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 		overrideB, _ := json.Marshal("b-override")
 		_, err = pool.Exec(
 			ctx,
-			`INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
-			 VALUES ($1, $2, $3, $4, $5)`,
+			`INSERT INTO variable_value (id, variable_id, literal_value, resource_selector, priority, kind)
+			 VALUES ($1, $2, $3, $4, $5, 'literal')`,
 			uuid.New(),
 			varB,
 			overrideB,

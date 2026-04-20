@@ -403,15 +403,24 @@ func TestPostgresGetter_ResourceVariablesAttachedToRaw(t *testing.T) {
 
 	getter := variableresolver.NewPostgresGetter(nil)
 
-	_, err := pool.Exec(ctx,
-		`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
-		f.resourceID, "db_url", []byte(`"postgres://db.internal/app"`))
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, _ = pool.Exec(context.Background(),
-			`DELETE FROM resource_variable WHERE resource_id = $1 AND key = $2`,
-			f.resourceID, "db_url")
-	})
+	insertResourceVar := func(t *testing.T, resourceID uuid.UUID, key string, literal []byte) {
+		t.Helper()
+		varID := uuid.New()
+		_, err := pool.Exec(ctx,
+			`INSERT INTO variable (id, scope, resource_id, key) VALUES ($1, 'resource', $2, $3)`,
+			varID, resourceID, key)
+		require.NoError(t, err)
+		_, err = pool.Exec(ctx,
+			`INSERT INTO variable_value (variable_id, priority, kind, literal_value) VALUES ($1, 0, 'literal', $2)`,
+			varID, literal)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			_, _ = pool.Exec(context.Background(),
+				`DELETE FROM variable WHERE id = $1`, varID)
+		})
+	}
+
+	insertResourceVar(t, f.resourceID, "db_url", []byte(`"postgres://db.internal/app"`))
 
 	assertDBURL := func(t *testing.T, raw map[string]any) {
 		t.Helper()
@@ -469,18 +478,10 @@ func TestPostgresGetter_ResourceVariablesAttachedToRaw(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		_, err = pool.Exec(ctx,
-			`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
-			deletedID, "ghost", []byte(`"should-not-appear"`))
-		require.NoError(t, err)
+		insertResourceVar(t, deletedID, "ghost", []byte(`"should-not-appear"`))
 
 		t.Cleanup(func() {
 			cleanCtx := context.Background()
-			_, _ = pool.Exec(
-				cleanCtx,
-				`DELETE FROM resource_variable WHERE resource_id = $1`,
-				deletedID,
-			)
 			_, _ = pool.Exec(cleanCtx, `DELETE FROM resource WHERE id = $1`, deletedID)
 		})
 
