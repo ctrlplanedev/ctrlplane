@@ -156,7 +156,9 @@
               "rfc/0006-secret-provider-integration",
               "rfc/0007-manual-action-job-agent",
               "rfc/0008-deployment-freeze",
-              "rfc/0009-global-variable-sets"
+              "rfc/0009-global-variable-sets",
+              "rfc/0010-variable-storage",
+              "rfc/0011-github-releases"
             ]
           }
         ]
