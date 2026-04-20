@@ -4,8 +4,7 @@ type VariableValueRow = typeof schema.variableValue.$inferSelect;
 
 export const flattenVariableValue = (v: VariableValueRow): unknown => {
   if (v.kind === "literal") return v.literalValue;
-  if (v.kind === "ref")
-    return { reference: v.refKey, path: v.refPath ?? [] };
+  if (v.kind === "ref") return { reference: v.refKey, path: v.refPath ?? [] };
   return {
     provider: v.secretProvider,
     key: v.secretKey,
