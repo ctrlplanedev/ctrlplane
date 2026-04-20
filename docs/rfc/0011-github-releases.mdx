@@ -1,0 +1,70 @@
+# RFC 0011: Auto-create versions from GitHub releases
+
+| Category | Status | Created | Author |
+| --- | --- | --- | --- |
+| Integrations | <Badge color="gray">Draft</Badge> | 2026-04-20 | Aditya Choudhari |
+
+**Issue:** [#993](https://github.com/ctrlplanedev/ctrlplane/issues/993)
+
+## Problem
+
+How do we know which Ctrlplane deployment a GitHub release belongs to?
+
+`owner/repo` alone fails for monorepos (e.g. `ctrlplanedev/deployments` produces releases for `wandb`, `shared-tenant`, `k8s`, etc.). Naming-convention approaches (`<service>/v<version>`) fight existing tools — release-please emits `<service>-v<ver>`, changesets emits `<pkg>@<ver>`, semantic-release emits `v<ver>`.
+
+## Proposal
+
+A single CEL selector on deployment metadata.
+
+```
+git/release-selector: "repository.full_name == 'ctrlplanedev/deployments' && changedPaths.exists(p, p.startsWith('wandb/'))"
+```
+
+### Flow
+
+1. `release` webhook hits `apps/api/src/routes/github/release.ts`.
+2. Verify signature, resolve installation.
+3. Build CEL context.
+4. For every deployment with `git/release-selector` in metadata, evaluate.
+5. Match → create deployment version with `release.tag_name` as the version.
+
+### CEL context
+
+```
+action: string
+release: ReleaseObject           // webhook payload
+repository: RepositoryObject     // webhook payload (topics, custom_properties included)
+sender: User                     // webhook payload
+
+previousTag: string | null       // compare API
+changedPaths: string[]           // compare API
+commits: { sha, message, author }[]  // compare API
+```
+
+Only the bottom block requires an API call (`GET /repos/{o}/{r}/compare/{prev}...{tag}`).
+
+### Metadata keys
+
+| Key | Required | Purpose |
+| --- | --- | --- |
+| `git/release-selector` | yes | CEL returning bool |
+
+No `git/repo` key — repo check lives inside the selector.
+
+### GitHub App permissions
+
+- Metadata: Read
+- Contents: Read
+- Events: `Release`, `Installation`, `Installation repositories`
+
+### Error handling
+
+- Selector throws → log, skip deployment.
+- Compare API fails → evaluate without enriched fields (selectors referencing them evaluate false).
+- Zero matches → log + 200.
+
+## Out of scope (v1)
+
+- Selector prefilter / indexing
+- Draft / prerelease handling beyond what selectors express
+- Backfilling historical releases
