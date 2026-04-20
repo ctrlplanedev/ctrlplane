@@ -410,9 +410,12 @@ func TestPostgresGetter_ResourceVariablesAttachedToRaw(t *testing.T) {
 			`INSERT INTO variable (id, scope, resource_id, key) VALUES ($1, 'resource', $2, $3)`,
 			varID, resourceID, key)
 		require.NoError(t, err)
-		_, err = pool.Exec(ctx,
+		_, err = pool.Exec(
+			ctx,
 			`INSERT INTO variable_value (variable_id, priority, kind, literal_value) VALUES ($1, 0, 'literal', $2)`,
-			varID, literal)
+			varID,
+			literal,
+		)
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			_, _ = pool.Exec(context.Background(),
