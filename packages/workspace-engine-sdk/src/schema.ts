@@ -287,7 +287,6 @@ export interface components {
             dependsOn: string;
         };
         DeploymentVariable: {
-            defaultValue?: components["schemas"]["LiteralValue"];
             deploymentId: string;
             description?: string;
             id: string;
@@ -941,7 +940,11 @@ export interface components {
         };
         ResourceVariable: {
             key: string;
+            /** Format: int64 */
+            priority: number;
             resourceId: string;
+            /** @description A CEL expression to select which resources this value applies to */
+            resourceSelector?: string;
             value: components["schemas"]["Value"];
         };
         ResourceVariablesBulkUpdateEvent: {
