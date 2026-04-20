@@ -260,19 +260,18 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 
 	t.Run("returns variable with values", func(t *testing.T) {
 		varID := uuid.New()
-		defaultVal, _ := json.Marshal("default-value")
 		_, err := pool.Exec(ctx,
-			`INSERT INTO deployment_variable (id, deployment_id, key, description, default_value)
-			 VALUES ($1, $2, $3, $4, $5)`,
-			varID, f.deploymentID, "IMAGE_TAG", "The image tag", defaultVal)
+			`INSERT INTO variable (id, scope, deployment_id, key, description)
+			 VALUES ($1, 'deployment', $2, $3, $4)`,
+			varID, f.deploymentID, "IMAGE_TAG", "The image tag")
 		require.NoError(t, err)
 
 		valID := uuid.New()
 		valData, _ := json.Marshal("override-value")
 		_, err = pool.Exec(
 			ctx,
-			`INSERT INTO deployment_variable_value (id, deployment_variable_id, value, resource_selector, priority)
-			 VALUES ($1, $2, $3, $4, $5)`,
+			`INSERT INTO variable_value (id, variable_id, literal_value, resource_selector, priority, kind)
+			 VALUES ($1, $2, $3, $4, $5, 'literal')`,
 			valID,
 			varID,
 			valData,
@@ -287,7 +286,6 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 		assert.Len(t, vars, 1)
 		assert.Equal(t, "IMAGE_TAG", vars[0].Variable.Key)
 		assert.Equal(t, f.deploymentID.String(), vars[0].Variable.DeploymentId)
-		require.NotNil(t, vars[0].Variable.DefaultValue)
 
 		desc := "The image tag"
 		assert.Equal(t, &desc, vars[0].Variable.Description)
@@ -299,11 +297,10 @@ func TestPostgresGetter_GetDeploymentVariables(t *testing.T) {
 
 	t.Run("variable with no values returns empty values slice", func(t *testing.T) {
 		varID := uuid.New()
-		defaultVal, _ := json.Marshal("solo-default")
 		_, err := pool.Exec(ctx,
-			`INSERT INTO deployment_variable (id, deployment_id, key, description, default_value)
-			 VALUES ($1, $2, $3, $4, $5)`,
-			varID, f.deploymentID, "STANDALONE_VAR", "no overrides", defaultVal)
+			`INSERT INTO variable (id, scope, deployment_id, key, description)
+			 VALUES ($1, 'deployment', $2, $3, $4)`,
+			varID, f.deploymentID, "STANDALONE_VAR", "no overrides")
 		require.NoError(t, err)
 
 		vars, err := getter.GetDeploymentVariables(ctx, f.deploymentID.String())
@@ -400,34 +397,41 @@ func TestPostgresGetter_GetResourceVariables(t *testing.T) {
 		assert.Empty(t, vars)
 	})
 
+	insertResourceVar := func(key string, literal []byte) {
+		varID := uuid.New()
+		_, err := pool.Exec(ctx,
+			`INSERT INTO variable (id, scope, resource_id, key) VALUES ($1, 'resource', $2, $3)`,
+			varID, f.resourceID, key)
+		require.NoError(t, err)
+		_, err = pool.Exec(
+			ctx,
+			`INSERT INTO variable_value (variable_id, priority, kind, literal_value) VALUES ($1, 0, 'literal', $2)`,
+			varID,
+			literal,
+		)
+		require.NoError(t, err)
+	}
+
 	t.Run("returns variables keyed by their key", func(t *testing.T) {
 		valData, _ := json.Marshal("my-resource-value")
-		_, err := pool.Exec(ctx,
-			`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
-			f.resourceID, "REGION", valData)
-		require.NoError(t, err)
+		insertResourceVar("REGION", valData)
 
 		vars, err := getter.GetResourceVariables(ctx, f.resourceID.String())
 		require.NoError(t, err)
 
 		assert.Len(t, vars, 1)
-		rv, ok := vars["REGION"]
+		rvs, ok := vars["REGION"]
 		require.True(t, ok)
-		assert.Equal(t, f.resourceID.String(), rv.ResourceId)
-		assert.Equal(t, "REGION", rv.Key)
+		require.Len(t, rvs, 1)
+		assert.Equal(t, f.resourceID.String(), rvs[0].ResourceId)
+		assert.Equal(t, "REGION", rvs[0].Key)
 	})
 
 	t.Run("returns multiple variables each under their own key", func(t *testing.T) {
 		valA, _ := json.Marshal("us-east-1")
 		valB, _ := json.Marshal("prod")
-		_, err := pool.Exec(ctx,
-			`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
-			f.resourceID, "AWS_REGION", valA)
-		require.NoError(t, err)
-		_, err = pool.Exec(ctx,
-			`INSERT INTO resource_variable (resource_id, key, value) VALUES ($1, $2, $3)`,
-			f.resourceID, "STAGE", valB)
-		require.NoError(t, err)
+		insertResourceVar("AWS_REGION", valA)
+		insertResourceVar("STAGE", valB)
 
 		vars, err := getter.GetResourceVariables(ctx, f.resourceID.String())
 		require.NoError(t, err)

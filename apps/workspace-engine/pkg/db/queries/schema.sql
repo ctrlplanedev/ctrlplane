@@ -261,22 +261,6 @@ CREATE TABLE user_approval_record (
     PRIMARY KEY (version_id, user_id, environment_id)
 );
 
-CREATE TABLE deployment_variable (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
-    key TEXT NOT NULL,
-    description TEXT,
-    default_value JSONB
-);
-
-CREATE TABLE deployment_variable_value (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    deployment_variable_id UUID NOT NULL REFERENCES deployment_variable(id) ON DELETE CASCADE,
-    value JSONB NOT NULL,
-    resource_selector TEXT,
-    priority BIGINT NOT NULL DEFAULT 0
-);
-
 CREATE TABLE workflow (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -295,13 +279,6 @@ CREATE TABLE workflow_job (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workflow_run_id UUID NOT NULL REFERENCES workflow_run(id) ON DELETE CASCADE,
     job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE
-);
-
-CREATE TABLE resource_variable (
-    resource_id UUID NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
-    key TEXT NOT NULL,
-    value JSONB NOT NULL,
-    PRIMARY KEY (resource_id, key)
 );
 
 CREATE TABLE computed_deployment_resource (
@@ -507,6 +484,39 @@ CREATE TABLE variable_set (
     metadata JSONB NOT NULL DEFAULT '{}',
     priority INTEGER NOT NULL DEFAULT 0,
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TYPE variable_scope AS ENUM ('resource', 'deployment', 'job_agent');
+
+CREATE TYPE variable_value_kind AS ENUM ('literal', 'ref', 'secret_ref');
+
+CREATE TABLE variable (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scope variable_scope NOT NULL,
+    resource_id UUID REFERENCES resource(id) ON DELETE CASCADE,
+    deployment_id UUID REFERENCES deployment(id) ON DELETE CASCADE,
+    job_agent_id UUID REFERENCES job_agent(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    is_sensitive BOOLEAN NOT NULL DEFAULT FALSE,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE variable_value (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    variable_id UUID NOT NULL REFERENCES variable(id) ON DELETE CASCADE,
+    resource_selector TEXT,
+    priority BIGINT NOT NULL DEFAULT 0,
+    kind variable_value_kind NOT NULL,
+    literal_value JSONB,
+    ref_key TEXT,
+    ref_path TEXT[],
+    secret_provider TEXT,
+    secret_key TEXT,
+    secret_path TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

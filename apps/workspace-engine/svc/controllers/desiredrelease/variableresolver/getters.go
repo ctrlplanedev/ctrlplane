@@ -19,7 +19,7 @@ type Getter interface {
 	GetResourceVariables(
 		ctx context.Context,
 		resourceID string,
-	) (map[string]oapi.ResourceVariable, error)
+	) (map[string][]oapi.ResourceVariable, error)
 	GetVariableSetsWithVariables(
 		ctx context.Context,
 		workspaceID uuid.UUID,

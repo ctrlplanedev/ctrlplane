@@ -117,7 +117,7 @@ type DesiredReleaseGetter struct {
 	PolicySkips     []*oapi.PolicySkip
 
 	DeploymentVars    []oapi.DeploymentVariableWithValues
-	ResourceVars      map[string]oapi.ResourceVariable
+	ResourceVars      map[string][]oapi.ResourceVariable
 	VariableSets      []oapi.VariableSetWithVariables
 	RelationshipRules []eval.Rule
 	Candidates        map[string][]eval.EntityData
@@ -222,7 +222,7 @@ func (g *DesiredReleaseGetter) GetDeploymentVariables(
 func (g *DesiredReleaseGetter) GetResourceVariables(
 	_ context.Context,
 	_ string,
-) (map[string]oapi.ResourceVariable, error) {
+) (map[string][]oapi.ResourceVariable, error) {
 	return g.ResourceVars, nil
 }
 

@@ -38,7 +38,6 @@ type VariableWithValues = {
     deploymentId: string;
     key: string;
     description: string | null;
-    defaultValue: unknown;
   };
   values: VariableValue[];
 };

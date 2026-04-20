@@ -224,56 +224,100 @@ func TestToOapiPolicyWithRules_EnvironmentProgressionPlainCEL(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ToOapiDeploymentVariableValue — resource selector
+// flattenVariableValue + ToOapiDeploymentVariableValueFromAgg
 // ---------------------------------------------------------------------------
 
-func TestToOapiDeploymentVariableValue_PlainCELSelector(t *testing.T) {
-	id := uuid.New()
-	dvID := uuid.New()
-	celExpr := `resource.kind == "Cluster"`
-
-	row := DeploymentVariableValue{
-		ID:                   id,
-		DeploymentVariableID: dvID,
-		Value:                []byte(`{"string":"hello"}`),
-		ResourceSelector:     pgtype.Text{String: celExpr, Valid: true},
-		Priority:             1,
+func TestFlattenVariableValue_Literal(t *testing.T) {
+	agg := VariableValueAggRow{
+		ID:           uuid.New(),
+		VariableID:   uuid.New(),
+		Priority:     5,
+		Kind:         "literal",
+		LiteralValue: json.RawMessage(`"hi"`),
 	}
+	v, err := flattenVariableValue(agg)
+	require.NoError(t, err)
+	lv, err := v.AsLiteralValue()
+	require.NoError(t, err)
+	s, err := lv.AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "hi", string(s))
+}
 
-	v := ToOapiDeploymentVariableValue(row)
+func TestFlattenVariableValue_Ref(t *testing.T) {
+	refKey := "db.config"
+	agg := VariableValueAggRow{
+		ID:         uuid.New(),
+		VariableID: uuid.New(),
+		Priority:   0,
+		Kind:       "ref",
+		RefKey:     &refKey,
+		RefPath:    []string{"host"},
+	}
+	v, err := flattenVariableValue(agg)
+	require.NoError(t, err)
+	rv, err := v.AsReferenceValue()
+	require.NoError(t, err)
+	assert.Equal(t, "db.config", rv.Reference)
+	assert.Equal(t, []string{"host"}, rv.Path)
+}
+
+func TestFlattenVariableValue_SecretRefUnsupported(t *testing.T) {
+	provider := "vault"
+	key := "kv/data/prod/db"
+	agg := VariableValueAggRow{
+		ID:             uuid.New(),
+		VariableID:     uuid.New(),
+		Priority:       0,
+		Kind:           "secret_ref",
+		SecretProvider: &provider,
+		SecretKey:      &key,
+	}
+	_, err := flattenVariableValue(agg)
+	require.Error(t, err)
+}
+
+func TestToOapiDeploymentVariableValueFromAgg_CELSelector(t *testing.T) {
+	celExpr := `resource.kind == "Cluster"`
+	agg := VariableValueAggRow{
+		ID:               uuid.New(),
+		VariableID:       uuid.New(),
+		ResourceSelector: &celExpr,
+		Priority:         1,
+		Kind:             "literal",
+		LiteralValue:     json.RawMessage(`"hello"`),
+	}
+	v, err := ToOapiDeploymentVariableValueFromAgg(agg)
+	require.NoError(t, err)
 	require.NotNil(t, v.ResourceSelector)
 	assert.Equal(t, celExpr, *v.ResourceSelector)
 }
 
-func TestToOapiDeploymentVariableValue_EmptySelector(t *testing.T) {
-	id := uuid.New()
-	dvID := uuid.New()
-
-	row := DeploymentVariableValue{
-		ID:                   id,
-		DeploymentVariableID: dvID,
-		Value:                []byte(`{"string":"hello"}`),
-		ResourceSelector:     pgtype.Text{Valid: false},
-		Priority:             1,
+func TestToOapiDeploymentVariableValueFromAgg_EmptySelector(t *testing.T) {
+	agg := VariableValueAggRow{
+		ID:           uuid.New(),
+		VariableID:   uuid.New(),
+		Priority:     1,
+		Kind:         "literal",
+		LiteralValue: json.RawMessage(`"hello"`),
 	}
-
-	v := ToOapiDeploymentVariableValue(row)
+	v, err := ToOapiDeploymentVariableValueFromAgg(agg)
+	require.NoError(t, err)
 	assert.Nil(t, v.ResourceSelector)
 }
 
-func TestToOapiDeploymentVariableValue_EmptyStringSelector(t *testing.T) {
-	id := uuid.New()
-	dvID := uuid.New()
-
-	row := DeploymentVariableValue{
-		ID:                   id,
-		DeploymentVariableID: dvID,
-		Value:                []byte(`{"string":"hello"}`),
-		ResourceSelector:     pgtype.Text{String: "", Valid: true},
-		Priority:             1,
+func TestToOapiDeploymentVariableValueFromAgg_EmptyStringSelector(t *testing.T) {
+	empty := ""
+	agg := VariableValueAggRow{
+		ID:               uuid.New(),
+		VariableID:       uuid.New(),
+		ResourceSelector: &empty,
+		Priority:         1,
+		Kind:             "literal",
+		LiteralValue:     json.RawMessage(`"hello"`),
 	}
-
-	v := ToOapiDeploymentVariableValue(row)
+	v, err := ToOapiDeploymentVariableValueFromAgg(agg)
+	require.NoError(t, err)
 	assert.Nil(t, v.ResourceSelector)
 }
 

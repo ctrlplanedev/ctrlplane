@@ -15,6 +15,7 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 import { deploymentPlansRouter } from "./deployment-plans.js";
+import { toClientVariableValue } from "./_variables.js";
 
 export const deploymentsRouter = router({
   plans: deploymentPlansRouter,
@@ -278,34 +279,39 @@ export const deploymentsRouter = router({
   variables: protectedProcedure
     .input(z.object({ workspaceId: z.uuid(), deploymentId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const variables = await ctx.db.query.deploymentVariable.findMany({
-        where: eq(schema.deploymentVariable.deploymentId, input.deploymentId),
+      const variables = await ctx.db.query.variable.findMany({
+        where: and(
+          eq(schema.variable.scope, "deployment"),
+          eq(schema.variable.deploymentId, input.deploymentId),
+        ),
       });
 
       const variableIds = variables.map((v) => v.id);
       const values =
         variableIds.length > 0
-          ? await ctx.db.query.deploymentVariableValue.findMany({
-              where: inArray(
-                schema.deploymentVariableValue.deploymentVariableId,
-                variableIds,
-              ),
+          ? await ctx.db.query.variableValue.findMany({
+              where: inArray(schema.variableValue.variableId, variableIds),
             })
           : [];
 
       const valuesByVarId = new Map<
         string,
-        (typeof schema.deploymentVariableValue.$inferSelect)[]
+        (typeof schema.variableValue.$inferSelect)[]
       >();
       for (const val of values) {
-        const arr = valuesByVarId.get(val.deploymentVariableId) ?? [];
+        const arr = valuesByVarId.get(val.variableId) ?? [];
         arr.push(val);
-        valuesByVarId.set(val.deploymentVariableId, arr);
+        valuesByVarId.set(val.variableId, arr);
       }
 
-      return variables.map((variable) => ({
-        variable,
-        values: valuesByVarId.get(variable.id) ?? [],
+      return variables.map((v) => ({
+        variable: {
+          id: v.id,
+          deploymentId: v.deploymentId!,
+          key: v.key,
+          description: v.description,
+        },
+        values: (valuesByVarId.get(v.id) ?? []).map(toClientVariableValue),
       }));
     }),
 
@@ -375,10 +381,11 @@ export const deploymentsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { workspaceId, deploymentId, variableId } = input;
 
-      const variable = await ctx.db.query.deploymentVariable.findFirst({
+      const variable = await ctx.db.query.variable.findFirst({
         where: and(
-          eq(schema.deploymentVariable.id, variableId),
-          eq(schema.deploymentVariable.deploymentId, deploymentId),
+          eq(schema.variable.id, variableId),
+          eq(schema.variable.scope, "deployment"),
+          eq(schema.variable.deploymentId, deploymentId),
         ),
       });
 
@@ -389,8 +396,8 @@ export const deploymentsRouter = router({
         });
 
       await ctx.db
-        .delete(schema.deploymentVariable)
-        .where(eq(schema.deploymentVariable.id, variableId));
+        .delete(schema.variable)
+        .where(eq(schema.variable.id, variableId));
 
       await enqueueReleaseTargetsForDeployment(
         ctx.db,

@@ -33,10 +33,34 @@ func (m *mockResolver) ResolveRelated(
 
 type mockGetter struct {
 	deploymentVars []oapi.DeploymentVariableWithValues
-	resourceVars   map[string]oapi.ResourceVariable
+	resourceVars   map[string][]oapi.ResourceVariable
 	variableSets   []oapi.VariableSetWithVariables
 	rules          []eval.Rule
 	candidates     map[string][]eval.EntityData
+}
+
+// defaultOnlyVar synthesizes a DeploymentVariableWithValues whose only value
+// is a null-selector, priority-0 literal — the post-migration substitute for
+// the dropped `deployment_variable.default_value` column.
+func defaultOnlyVar(
+	key string,
+	lv *oapi.LiteralValue,
+	deploymentID string,
+) oapi.DeploymentVariableWithValues {
+	depVarID := uuid.New().String()
+	return oapi.DeploymentVariableWithValues{
+		Variable: oapi.DeploymentVariable{
+			Id:           depVarID,
+			DeploymentId: deploymentID,
+			Key:          key,
+		},
+		Values: []oapi.DeploymentVariableValue{{
+			Id:                   uuid.New().String(),
+			DeploymentVariableId: depVarID,
+			Value:                *oapi.NewValueFromLiteral(lv),
+			Priority:             0,
+		}},
+	}
 }
 
 func (m *mockGetter) GetDeploymentVariables(
@@ -49,7 +73,7 @@ func (m *mockGetter) GetDeploymentVariables(
 func (m *mockGetter) GetResourceVariables(
 	_ context.Context,
 	_ string,
-) (map[string]oapi.ResourceVariable, error) {
+) (map[string][]oapi.ResourceVariable, error) {
 	return m.resourceVars, nil
 }
 
@@ -345,6 +369,60 @@ func TestResolveValue_Reference_BadPath(t *testing.T) {
 // Resolve tests — priority: resource var wins
 // ---------------------------------------------------------------------------
 
+// TestResolve_ResourceVariableSelectorPriority asserts the post-migration
+// behavior: resource variables carry a resource selector + priority, and the
+// highest-priority matching value wins over a lower-priority null-selector
+// fallback.
+func TestResolve_ResourceVariableSelectorPriority(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"region": "us-east-1"}
+
+	matchingSelector := `resource.metadata.region == "us-east-1"`
+	depVarID := uuid.New().String()
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           depVarID,
+				DeploymentId: scope.Deployment.Id,
+				Key:          "tier",
+			},
+			Values: []oapi.DeploymentVariableValue{},
+		}},
+		resourceVars: map[string][]oapi.ResourceVariable{
+			"tier": {
+				{
+					Key:              "tier",
+					ResourceId:       scope.Resource.Id,
+					Value:            literalStringValue("fallback"),
+					Priority:         0,
+					ResourceSelector: nil,
+				},
+				{
+					Key:              "tier",
+					ResourceId:       scope.Resource.Id,
+					Value:            literalStringValue("winner"),
+					Priority:         10,
+					ResourceSelector: &matchingSelector,
+				},
+			},
+		},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	require.Contains(t, resolved, "tier")
+	s, err := resolved["tier"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "winner", s)
+}
+
 func TestResolve_ResourceVarWins(t *testing.T) {
 	scope := newScope()
 	depVarID := uuid.New().String()
@@ -355,7 +433,6 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 				Id:           depVarID,
 				DeploymentId: scope.Deployment.Id,
 				Key:          "region",
-				DefaultValue: oapi.NewLiteralValue("default-region"),
 			},
 			Values: []oapi.DeploymentVariableValue{{
 				Id:                   uuid.New().String(),
@@ -364,12 +441,12 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 				Priority:             1,
 			}},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{
-			"region": {
+		resourceVars: map[string][]oapi.ResourceVariable{
+			"region": {{
 				Key:        "region",
 				ResourceId: scope.Resource.Id,
 				Value:      literalStringValue("resource-region"),
-			},
+			}},
 		},
 	}
 
@@ -401,7 +478,6 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 				Id:           depVarID,
 				DeploymentId: scope.Deployment.Id,
 				Key:          "image",
-				DefaultValue: oapi.NewLiteralValue("default-image"),
 			},
 			Values: []oapi.DeploymentVariableValue{{
 				Id:                   uuid.New().String(),
@@ -410,7 +486,7 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 				Priority:             10,
 			}},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
 	resolved, err := Resolve(
@@ -433,18 +509,23 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 
 func TestResolve_DefaultValueFallback(t *testing.T) {
 	scope := newScope()
+	depVarID := uuid.New().String()
 
 	getter := &mockGetter{
 		deploymentVars: []oapi.DeploymentVariableWithValues{{
 			Variable: oapi.DeploymentVariable{
-				Id:           uuid.New().String(),
+				Id:           depVarID,
 				DeploymentId: scope.Deployment.Id,
 				Key:          "replicas",
-				DefaultValue: oapi.NewLiteralValue(3),
 			},
-			Values: []oapi.DeploymentVariableValue{},
+			Values: []oapi.DeploymentVariableValue{{
+				Id:                   uuid.New().String(),
+				DeploymentVariableId: depVarID,
+				Value:                *oapi.NewValueFromLiteral(oapi.NewLiteralValue(3)),
+				Priority:             0,
+			}},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
 	resolved, err := Resolve(
@@ -477,7 +558,7 @@ func TestResolve_NoMatchNoDefault_KeyAbsent(t *testing.T) {
 			},
 			Values: []oapi.DeploymentVariableValue{},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
 	resolved, err := Resolve(
@@ -527,7 +608,7 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 				},
 			},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
 	resolved, err := Resolve(
@@ -552,35 +633,11 @@ func TestResolve_MultipleVariables(t *testing.T) {
 
 	getter := &mockGetter{
 		deploymentVars: []oapi.DeploymentVariableWithValues{
-			{
-				Variable: oapi.DeploymentVariable{
-					Id:           uuid.New().String(),
-					DeploymentId: scope.Deployment.Id,
-					Key:          "region",
-					DefaultValue: oapi.NewLiteralValue("us-west-2"),
-				},
-				Values: []oapi.DeploymentVariableValue{},
-			},
-			{
-				Variable: oapi.DeploymentVariable{
-					Id:           uuid.New().String(),
-					DeploymentId: scope.Deployment.Id,
-					Key:          "replicas",
-					DefaultValue: oapi.NewLiteralValue(2),
-				},
-				Values: []oapi.DeploymentVariableValue{},
-			},
-			{
-				Variable: oapi.DeploymentVariable{
-					Id:           uuid.New().String(),
-					DeploymentId: scope.Deployment.Id,
-					Key:          "debug",
-					DefaultValue: oapi.NewLiteralValue(false),
-				},
-				Values: []oapi.DeploymentVariableValue{},
-			},
+			defaultOnlyVar("region", oapi.NewLiteralValue("us-west-2"), scope.Deployment.Id),
+			defaultOnlyVar("replicas", oapi.NewLiteralValue(2), scope.Deployment.Id),
+			defaultOnlyVar("debug", oapi.NewLiteralValue(false), scope.Deployment.Id),
 		},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
 	resolved, err := Resolve(
@@ -643,12 +700,12 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 				Key:          "db_host",
 			},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{
-			"db_host": {
+		resourceVars: map[string][]oapi.ResourceVariable{
+			"db_host": {{
 				Key:        "db_host",
 				ResourceId: scope.Resource.Id,
 				Value:      referenceValue("database", "metadata", "host"),
-			},
+			}},
 		},
 		rules: []eval.Rule{
 			{
@@ -730,7 +787,7 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 				Priority:             1,
 			}},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 		rules: []eval.Rule{
 			{
 				ID:        ruleID,
@@ -827,7 +884,7 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 				}},
 			},
 		},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 		rules: []eval.Rule{
 			{
 				ID:        ruleID,
@@ -908,12 +965,12 @@ func TestResolve_ResourceVarRefFails_FallsToDeploymentValue(t *testing.T) {
 				Priority:             1,
 			}},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{
-			"db_host": {
+		resourceVars: map[string][]oapi.ResourceVariable{
+			"db_host": {{
 				Key:        "db_host",
 				ResourceId: scope.Resource.Id,
 				Value:      referenceValue("nonexistent_ref", "name"),
-			},
+			}},
 		},
 		rules: []eval.Rule{},
 	}
@@ -1019,7 +1076,7 @@ func TestResolve_VariableSet_SimpleInjection(t *testing.T) {
 			},
 			Values: []oapi.DeploymentVariableValue{},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
 			makeVariableSet(
 				"prod-defaults",
@@ -1063,12 +1120,12 @@ func TestResolve_VariableSet_DoesNotOverwriteResourceVar(t *testing.T) {
 			},
 			Values: []oapi.DeploymentVariableValue{},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{
-			"log_level": {
+		resourceVars: map[string][]oapi.ResourceVariable{
+			"log_level": {{
 				Key:        "log_level",
 				ResourceId: scope.Resource.Id,
 				Value:      literalStringValue("debug"),
-			},
+			}},
 		},
 		variableSets: []oapi.VariableSetWithVariables{
 			makeVariableSet(
@@ -1119,7 +1176,7 @@ func TestResolve_VariableSet_DoesNotOverwriteDeploymentVarValue(t *testing.T) {
 				Priority:             1,
 			}},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
 			makeVariableSet(
 				"prod-defaults",
@@ -1163,7 +1220,7 @@ func TestResolve_VariableSet_HighestPriorityWins(t *testing.T) {
 			},
 			Values: []oapi.DeploymentVariableValue{},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
 			makeVariableSet(
 				"low-priority",
@@ -1223,7 +1280,7 @@ func TestResolve_VariableSet_UnrelatedDoNotMatch(t *testing.T) {
 			},
 			Values: []oapi.DeploymentVariableValue{},
 		}},
-		resourceVars: map[string]oapi.ResourceVariable{},
+		resourceVars: map[string][]oapi.ResourceVariable{},
 		variableSets: []oapi.VariableSetWithVariables{
 			makeVariableSet(
 				"prod-only",

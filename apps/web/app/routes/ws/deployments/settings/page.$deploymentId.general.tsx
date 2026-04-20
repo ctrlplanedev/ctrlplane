@@ -147,12 +147,6 @@ export default function DeploymentsSettingsPage() {
                                 <span className="font-semibold">
                                   {variable.key}
                                 </span>
-                                {variable.defaultValue != null && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Default:{" "}
-                                    {formatValue(variable.defaultValue)}
-                                  </Badge>
-                                )}
                                 {values.length > 0 && (
                                   <Badge
                                     variant="secondary"

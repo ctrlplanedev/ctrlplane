@@ -295,9 +295,6 @@
          },
          "DeploymentVariable": {
             "properties": {
-               "defaultValue": {
-                  "$ref": "#/components/schemas/LiteralValue"
-               },
                "deploymentId": {
                   "type": "string"
                },
@@ -2291,7 +2288,15 @@
                "key": {
                   "type": "string"
                },
+               "priority": {
+                  "format": "int64",
+                  "type": "integer"
+               },
                "resourceId": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "description": "A CEL expression to select which resources this value applies to",
                   "type": "string"
                },
                "value": {
@@ -2301,7 +2306,8 @@
             "required": [
                "resourceId",
                "key",
-               "value"
+               "value",
+               "priority"
             ],
             "type": "object"
          },

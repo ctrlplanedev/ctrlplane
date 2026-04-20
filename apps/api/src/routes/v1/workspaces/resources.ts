@@ -139,18 +139,40 @@ const upsertResourceByIdentifier: AsyncTypedHandler<
     if (variables != null)
       await db.transaction(async (tx) => {
         await tx
-          .delete(schema.resourceVariable)
-          .where(eq(schema.resourceVariable.resourceId, upsertedResource.id));
+          .delete(schema.variable)
+          .where(
+            and(
+              eq(schema.variable.scope, "resource"),
+              eq(schema.variable.resourceId, upsertedResource.id),
+            ),
+          );
 
         const entries = Object.entries(variables);
-        if (entries.length > 0)
-          await tx.insert(schema.resourceVariable).values(
+        if (entries.length > 0) {
+          const inserted = await tx
+            .insert(schema.variable)
+            .values(
+              entries.map(([key]) => ({
+                scope: "resource" as const,
+                resourceId: upsertedResource.id,
+                key,
+              })),
+            )
+            .returning({
+              id: schema.variable.id,
+              key: schema.variable.key,
+            });
+
+          const byKey = new Map(inserted.map((v) => [v.key, v.id]));
+          await tx.insert(schema.variableValue).values(
             entries.map(([key, value]) => ({
-              resourceId: upsertedResource.id,
-              key,
-              value,
+              variableId: byKey.get(key)!,
+              priority: 0,
+              kind: "literal" as const,
+              literalValue: value,
             })),
           );
+        }
       });
 
     enqueueReleaseTargetsForResource(db, workspaceId, upsertedResource.id);
@@ -216,12 +238,22 @@ const getVariablesForResource: AsyncTypedHandler<
 
   const rows = await db
     .select({
-      resourceId: schema.resourceVariable.resourceId,
-      key: schema.resourceVariable.key,
-      value: schema.resourceVariable.value,
+      resourceId: schema.variable.resourceId,
+      key: schema.variable.key,
+      value: schema.variableValue.literalValue,
     })
-    .from(schema.resourceVariable)
-    .where(eq(schema.resourceVariable.resourceId, resource.id));
+    .from(schema.variable)
+    .innerJoin(
+      schema.variableValue,
+      eq(schema.variableValue.variableId, schema.variable.id),
+    )
+    .where(
+      and(
+        eq(schema.variable.scope, "resource"),
+        eq(schema.variable.resourceId, resource.id),
+        eq(schema.variableValue.kind, "literal"),
+      ),
+    );
 
   const total = rows.length;
   const items = rows.slice(offset, offset + limit);
@@ -242,17 +274,39 @@ const updateVariablesForResource: AsyncTypedHandler<
 
     await db.transaction(async (tx) => {
       await tx
-        .delete(schema.resourceVariable)
-        .where(eq(schema.resourceVariable.resourceId, resource.id));
+        .delete(schema.variable)
+        .where(
+          and(
+            eq(schema.variable.scope, "resource"),
+            eq(schema.variable.resourceId, resource.id),
+          ),
+        );
       const entries = Object.entries(body);
-      if (entries.length > 0)
-        await tx.insert(schema.resourceVariable).values(
+      if (entries.length > 0) {
+        const inserted = await tx
+          .insert(schema.variable)
+          .values(
+            entries.map(([key]) => ({
+              scope: "resource" as const,
+              resourceId,
+              key,
+            })),
+          )
+          .returning({
+            id: schema.variable.id,
+            key: schema.variable.key,
+          });
+
+        const byKey = new Map(inserted.map((v) => [v.key, v.id]));
+        await tx.insert(schema.variableValue).values(
           entries.map(([key, value]) => ({
-            resourceId,
-            key,
-            value,
+            variableId: byKey.get(key)!,
+            priority: 0,
+            kind: "literal" as const,
+            literalValue: value,
           })),
         );
+      }
     });
 
     enqueueReleaseTargetsForResource(db, workspaceId, resourceId);

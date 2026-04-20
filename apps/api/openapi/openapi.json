@@ -690,9 +690,6 @@
          },
          "DeploymentVariable": {
             "properties": {
-               "defaultValue": {
-                  "$ref": "#/components/schemas/LiteralValue"
-               },
                "deploymentId": {
                   "type": "string"
                },
@@ -2619,9 +2616,6 @@
          },
          "UpsertDeploymentVariableRequest": {
             "properties": {
-               "defaultValue": {
-                  "$ref": "#/components/schemas/LiteralValue"
-               },
                "deploymentId": {
                   "type": "string"
                },

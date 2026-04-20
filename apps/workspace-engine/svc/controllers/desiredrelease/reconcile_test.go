@@ -24,7 +24,7 @@ type mockReconcileGetter struct {
 
 	policySkips []*oapi.PolicySkip
 	deployVars  []oapi.DeploymentVariableWithValues
-	resourceVar map[string]oapi.ResourceVariable
+	resourceVar map[string][]oapi.ResourceVariable
 
 	rtExists bool
 }
@@ -74,7 +74,7 @@ func (m *mockReconcileGetter) GetDeploymentVariables(
 func (m *mockReconcileGetter) GetResourceVariables(
 	_ context.Context,
 	_ string,
-) (map[string]oapi.ResourceVariable, error) {
+) (map[string][]oapi.ResourceVariable, error) {
 	return m.resourceVar, nil
 }
 

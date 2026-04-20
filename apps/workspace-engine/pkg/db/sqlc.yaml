@@ -20,8 +20,7 @@ sql:
       - queries/changelog.sql
       - queries/policies.sql
       - queries/user_approval_records.sql
-      - queries/resource_variables.sql
-      - queries/deployment_variables.sql
+      - queries/variables.sql
       - queries/workflows.sql
       - queries/policy_skips.sql
       - queries/computed_resources.sql
@@ -138,10 +137,16 @@ sql:
             go_type:
               type: "map[string]any"
 
-          # ResourceVariable
-          - column: "resource_variable.value"
+          # VariableValue
+          - column: "variable_value.literal_value"
             go_type:
               type: "[]byte"
+          - column: "variable_value.ref_path"
+            go_type:
+              type: "[]string"
+          - column: "variable_value.secret_path"
+            go_type:
+              type: "[]string"
 
           # VariableSet
           - column: "variable_set.metadata"
@@ -150,16 +155,6 @@ sql:
 
           # VariableSetVariable
           - column: "variable_set_variable.value"
-            go_type:
-              type: "[]byte"
-
-          # DeploymentVariable
-          - column: "deployment_variable.default_value"
-            go_type:
-              type: "[]byte"
-
-          # DeploymentVariableValue
-          - column: "deployment_variable_value.value"
             go_type:
               type: "[]byte"
 

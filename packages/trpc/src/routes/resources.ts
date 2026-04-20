@@ -455,12 +455,22 @@ export const resourcesRouter = router({
 
       const rows = await ctx.db
         .select({
-          resourceId: schema.resourceVariable.resourceId,
-          key: schema.resourceVariable.key,
-          value: schema.resourceVariable.value,
+          resourceId: schema.variable.resourceId,
+          key: schema.variable.key,
+          value: schema.variableValue.literalValue,
         })
-        .from(schema.resourceVariable)
-        .where(eq(schema.resourceVariable.resourceId, resource.id));
+        .from(schema.variable)
+        .innerJoin(
+          schema.variableValue,
+          eq(schema.variableValue.variableId, schema.variable.id),
+        )
+        .where(
+          and(
+            eq(schema.variable.scope, "resource"),
+            eq(schema.variable.resourceId, resource.id),
+            eq(schema.variableValue.kind, "literal"),
+          ),
+        );
 
       return rows;
     }),
@@ -485,15 +495,39 @@ export const resourcesRouter = router({
       const formattedValue =
         typeof value === "object" ? { object: value } : value;
 
-      const resourceVariable = await ctx.db
-        .insert(schema.resourceVariable)
-        .values({
+      const resourceVariable = await ctx.db.transaction(async (tx) => {
+        const v = await tx
+          .insert(schema.variable)
+          .values({ scope: "resource" as const, resourceId, key })
+          .onConflictDoUpdate({
+            target: [schema.variable.resourceId, schema.variable.key],
+            targetWhere: sql`${schema.variable.resourceId} is not null`,
+            set: { key },
+          })
+          .returning()
+          .then(takeFirst);
+
+        await tx
+          .delete(schema.variableValue)
+          .where(eq(schema.variableValue.variableId, v.id));
+
+        const val = await tx
+          .insert(schema.variableValue)
+          .values({
+            variableId: v.id,
+            priority: 0,
+            kind: "literal" as const,
+            literalValue: formattedValue,
+          })
+          .returning()
+          .then(takeFirst);
+
+        return {
           resourceId,
           key,
-          value: formattedValue,
-        })
-        .returning()
-        .then(takeFirst);
+          value: val.literalValue,
+        };
+      });
 
       await enqueueReleaseTargetsForResource(ctx.db, workspaceId, resourceId);
 
