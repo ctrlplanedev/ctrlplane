@@ -278,19 +278,38 @@ export const deploymentsRouter = router({
 
   variables: protectedProcedure
     .input(z.object({ workspaceId: z.uuid(), deploymentId: z.string() }))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
     .query(async ({ input, ctx }) => {
-      const variables = await ctx.db.query.variable.findMany({
-        where: and(
-          eq(schema.variable.scope, "deployment"),
-          eq(schema.variable.deploymentId, input.deploymentId),
-        ),
-      });
+      const rows = await ctx.db
+        .select({ variable: schema.variable })
+        .from(schema.variable)
+        .innerJoin(
+          schema.deployment,
+          eq(schema.variable.deploymentId, schema.deployment.id),
+        )
+        .where(
+          and(
+            eq(schema.variable.scope, "deployment"),
+            eq(schema.variable.deploymentId, input.deploymentId),
+            eq(schema.deployment.workspaceId, input.workspaceId),
+          ),
+        );
+      const variables = rows.map((r) => r.variable);
 
       const variableIds = variables.map((v) => v.id);
       const values =
         variableIds.length > 0
           ? await ctx.db.query.variableValue.findMany({
               where: inArray(schema.variableValue.variableId, variableIds),
+              orderBy: [
+                desc(schema.variableValue.priority),
+                asc(schema.variableValue.id),
+              ],
             })
           : [];
 
@@ -378,18 +397,33 @@ export const deploymentsRouter = router({
         variableId: z.string(),
       }),
     )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentVariableDelete)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
     .mutation(async ({ input, ctx }) => {
       const { workspaceId, deploymentId, variableId } = input;
 
-      const variable = await ctx.db.query.variable.findFirst({
-        where: and(
-          eq(schema.variable.id, variableId),
-          eq(schema.variable.scope, "deployment"),
-          eq(schema.variable.deploymentId, deploymentId),
-        ),
-      });
+      const row = await ctx.db
+        .select({ variable: schema.variable })
+        .from(schema.variable)
+        .innerJoin(
+          schema.deployment,
+          eq(schema.variable.deploymentId, schema.deployment.id),
+        )
+        .where(
+          and(
+            eq(schema.variable.id, variableId),
+            eq(schema.variable.scope, "deployment"),
+            eq(schema.variable.deploymentId, deploymentId),
+            eq(schema.deployment.workspaceId, workspaceId),
+          ),
+        )
+        .limit(1);
 
-      if (variable == null)
+      if (row.length === 0)
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Deployment variable not found",

@@ -12,6 +12,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
+import { flattenVariableValue } from "./_variables.js";
 
 export const resourcesRouter = router({
   create: protectedProcedure
@@ -457,7 +458,13 @@ export const resourcesRouter = router({
         .select({
           resourceId: schema.variable.resourceId,
           key: schema.variable.key,
-          value: schema.variableValue.literalValue,
+          kind: schema.variableValue.kind,
+          literalValue: schema.variableValue.literalValue,
+          refKey: schema.variableValue.refKey,
+          refPath: schema.variableValue.refPath,
+          secretProvider: schema.variableValue.secretProvider,
+          secretKey: schema.variableValue.secretKey,
+          secretPath: schema.variableValue.secretPath,
         })
         .from(schema.variable)
         .innerJoin(
@@ -468,11 +475,22 @@ export const resourcesRouter = router({
           and(
             eq(schema.variable.scope, "resource"),
             eq(schema.variable.resourceId, resource.id),
-            eq(schema.variableValue.kind, "literal"),
           ),
         );
 
-      return rows;
+      return rows.map((r) => ({
+        resourceId: r.resourceId,
+        key: r.key,
+        value: flattenVariableValue({
+          kind: r.kind,
+          literalValue: r.literalValue,
+          refKey: r.refKey,
+          refPath: r.refPath,
+          secretProvider: r.secretProvider,
+          secretKey: r.secretKey,
+          secretPath: r.secretPath,
+        } as typeof schema.variableValue.$inferSelect),
+      }));
     }),
 
   setVariable: protectedProcedure

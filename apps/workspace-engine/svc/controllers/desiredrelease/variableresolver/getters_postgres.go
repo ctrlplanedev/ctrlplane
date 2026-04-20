@@ -359,7 +359,12 @@ func resourceRowToMap(
 // projecting a resource variable into the CEL evaluation context. Selector
 // matching is not available here because the CEL context is built without a
 // target resource.
-func effectiveValue(aggs []db.VariableValueAggRow) (oapi.Value, bool) {
+//
+// Returns (value, found, err):
+//   - found=false, err=nil: no null-selector candidate exists (normal absence).
+//   - found=false, err!=nil: a candidate was selected but conversion failed;
+//     callers must propagate rather than silently drop.
+func effectiveValue(aggs []db.VariableValueAggRow) (oapi.Value, bool, error) {
 	var best *db.VariableValueAggRow
 	for i := range aggs {
 		a := &aggs[i]
@@ -371,13 +376,13 @@ func effectiveValue(aggs []db.VariableValueAggRow) (oapi.Value, bool) {
 		}
 	}
 	if best == nil {
-		return oapi.Value{}, false
+		return oapi.Value{}, false, nil
 	}
 	v, err := db.ToOapiDeploymentVariableValueFromAgg(*best)
 	if err != nil {
-		return oapi.Value{}, false
+		return oapi.Value{}, false, err
 	}
-	return v.Value, true
+	return v.Value, true, nil
 }
 
 func loadResourceVariables(
@@ -398,7 +403,11 @@ func loadResourceVariables(
 		if err := json.Unmarshal(row.Values, &aggs); err != nil {
 			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
 		}
-		if v, ok := effectiveValue(aggs); ok {
+		v, ok, err := effectiveValue(aggs)
+		if err != nil {
+			return nil, fmt.Errorf("effective value for variable %s: %w", row.ID, err)
+		}
+		if ok {
 			vars[row.Key] = v
 		}
 	}
@@ -420,7 +429,10 @@ func loadResourceVariablesByWorkspace(
 		if err := json.Unmarshal(row.Values, &aggs); err != nil {
 			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
 		}
-		v, ok := effectiveValue(aggs)
+		v, ok, err := effectiveValue(aggs)
+		if err != nil {
+			return nil, fmt.Errorf("effective value for variable %s: %w", row.ID, err)
+		}
 		if !ok {
 			continue
 		}

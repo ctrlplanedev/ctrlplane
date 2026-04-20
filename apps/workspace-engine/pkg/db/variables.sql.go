@@ -35,6 +35,7 @@ SELECT
           'secretKey', vv.secret_key,
           'secretPath', vv.secret_path
         )
+        ORDER BY vv.priority DESC, vv.id ASC
       )
       FROM variable_value vv
       WHERE vv.variable_id = v.id
@@ -108,6 +109,7 @@ SELECT
           'secretKey', vv.secret_key,
           'secretPath', vv.secret_path
         )
+        ORDER BY vv.priority DESC, vv.id ASC
       )
       FROM variable_value vv
       WHERE vv.variable_id = v.id
@@ -186,6 +188,7 @@ SELECT
           'secretKey', vv.secret_key,
           'secretPath', vv.secret_path
         )
+        ORDER BY vv.priority DESC, vv.id ASC
       )
       FROM variable_value vv
       WHERE vv.variable_id = v.id

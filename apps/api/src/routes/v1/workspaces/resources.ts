@@ -26,6 +26,27 @@ import * as schema from "@ctrlplane/db/schema";
 import { validResourceSelector } from "../valid-selector.js";
 import { extractMessageFromError } from "./utils.js";
 
+type VariableValueShape = {
+  kind: typeof schema.variableValue.kind.enumValues[number];
+  literalValue: unknown;
+  refKey: string | null;
+  refPath: string[] | null;
+  secretProvider: string | null;
+  secretKey: string | null;
+  secretPath: string[] | null;
+};
+
+const flattenResourceVariableValue = (r: VariableValueShape): unknown => {
+  if (r.kind === "literal") return r.literalValue;
+  if (r.kind === "ref")
+    return { reference: r.refKey, path: r.refPath ?? [] };
+  return {
+    provider: r.secretProvider,
+    key: r.secretKey,
+    path: r.secretPath ?? [],
+  };
+};
+
 const listResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources",
   "get"
@@ -169,7 +190,10 @@ const upsertResourceByIdentifier: AsyncTypedHandler<
               variableId: byKey.get(key)!,
               priority: 0,
               kind: "literal" as const,
-              literalValue: value,
+              literalValue:
+                value != null && typeof value === "object"
+                  ? { object: value }
+                  : value,
             })),
           );
         }
@@ -240,7 +264,13 @@ const getVariablesForResource: AsyncTypedHandler<
     .select({
       resourceId: schema.variable.resourceId,
       key: schema.variable.key,
-      value: schema.variableValue.literalValue,
+      kind: schema.variableValue.kind,
+      literalValue: schema.variableValue.literalValue,
+      refKey: schema.variableValue.refKey,
+      refPath: schema.variableValue.refPath,
+      secretProvider: schema.variableValue.secretProvider,
+      secretKey: schema.variableValue.secretKey,
+      secretPath: schema.variableValue.secretPath,
     })
     .from(schema.variable)
     .innerJoin(
@@ -251,14 +281,16 @@ const getVariablesForResource: AsyncTypedHandler<
       and(
         eq(schema.variable.scope, "resource"),
         eq(schema.variable.resourceId, resource.id),
-        eq(schema.variableValue.kind, "literal"),
       ),
     );
 
-  const total = rows.length;
-  const items = rows.slice(offset, offset + limit);
+  const items = rows.slice(offset, offset + limit).map((r) => ({
+    resourceId: r.resourceId,
+    key: r.key,
+    value: flattenResourceVariableValue(r),
+  }));
 
-  res.status(200).json({ items, total, limit, offset });
+  res.status(200).json({ items, total: rows.length, limit, offset });
 };
 
 const updateVariablesForResource: AsyncTypedHandler<
@@ -303,7 +335,10 @@ const updateVariablesForResource: AsyncTypedHandler<
             variableId: byKey.get(key)!,
             priority: 0,
             kind: "literal" as const,
-            literalValue: value,
+            literalValue:
+              value != null && typeof value === "object"
+                ? { object: value }
+                : value,
           })),
         );
       }

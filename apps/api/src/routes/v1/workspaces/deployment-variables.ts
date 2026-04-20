@@ -13,8 +13,7 @@ type VariableValueRow = typeof variableValue.$inferSelect;
 
 const flattenVariableValue = (v: VariableValueRow): unknown => {
   if (v.kind === "literal") return v.literalValue;
-  if (v.kind === "ref")
-    return { reference: v.refKey, path: v.refPath ?? [] };
+  if (v.kind === "ref") return { reference: v.refKey, path: v.refPath ?? [] };
   return {
     provider: v.secretProvider,
     key: v.secretKey,
@@ -79,19 +78,24 @@ const getDeploymentVariable: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}",
   "get"
 > = async (req, res) => {
-  const { variableId } = req.params;
+  const { workspaceId, variableId } = req.params;
 
-  const v = await db
-    .select()
+  const row = await db
+    .select({ variable })
     .from(variable)
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
     .where(
-      and(eq(variable.id, variableId), eq(variable.scope, "deployment")),
+      and(
+        eq(variable.id, variableId),
+        eq(variable.scope, "deployment"),
+        eq(deployment.workspaceId, workspaceId),
+      ),
     )
     .then(takeFirstOrNull);
 
-  if (v == null)
-    throw new ApiError("Deployment variable not found", 404);
+  if (row == null) throw new ApiError("Deployment variable not found", 404);
 
+  const v = row.variable;
   const values = await db
     .select()
     .from(variableValue)
@@ -192,18 +196,25 @@ const getDeploymentVariableValue: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}",
   "get"
 > = async (req, res) => {
-  const { valueId } = req.params;
+  const { workspaceId, valueId } = req.params;
 
-  const val = await db
-    .select()
+  const row = await db
+    .select({ variableValue })
     .from(variableValue)
-    .where(eq(variableValue.id, valueId))
+    .innerJoin(variable, eq(variableValue.variableId, variable.id))
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
+    .where(
+      and(
+        eq(variableValue.id, valueId),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
     .then(takeFirstOrNull);
 
-  if (val == null)
+  if (row == null)
     throw new ApiError("Deployment variable value not found", 404);
 
-  res.json(toApiVariableValue(val));
+  res.json(toApiVariableValue(row.variableValue));
 };
 
 const upsertDeploymentVariableValue: AsyncTypedHandler<
@@ -239,6 +250,19 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
     return;
   }
 
+  const existing = await db
+    .select({ variableId: variableValue.variableId })
+    .from(variableValue)
+    .where(eq(variableValue.id, valueId))
+    .then(takeFirstOrNull);
+
+  if (existing != null && existing.variableId !== deploymentVariableId) {
+    res.status(409).json({
+      error: "Value id already belongs to a different deployment variable",
+    });
+    return;
+  }
+
   await db
     .insert(variableValue)
     .values({
@@ -256,6 +280,11 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
         resourceSelector: body.resourceSelector ?? null,
         kind: "literal",
         literalValue: body.value,
+        refKey: null,
+        refPath: null,
+        secretProvider: null,
+        secretKey: null,
+        secretPath: null,
       },
     });
 
