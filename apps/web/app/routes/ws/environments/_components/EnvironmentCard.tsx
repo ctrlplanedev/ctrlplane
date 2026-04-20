@@ -79,10 +79,10 @@ export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
   return (
     <>
       <Link to={environmentUrl} className="block">
-        <Card className="h-56 transition-all hover:border-primary/50 hover:shadow-md">
+        <Card className="h-56 overflow-hidden transition-all hover:border-primary/50 hover:shadow-md">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span className="truncate">{environment.name}</span>
+              <span className="min-w-0 truncate">{environment.name}</span>
               <DropdownMenu>
                 <DropdownMenuTrigger
                   asChild
@@ -120,7 +120,7 @@ export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
             </CardDescription>
 
             {environment.description && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
                 {environment.description}
               </p>
             )}
@@ -128,7 +128,7 @@ export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
           <CardContent className="space-y-3">
             <div className="flex items-start gap-2">
               <Layers className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              <code className="block truncate rounded bg-muted px-2 py-1 text-xs">
+              <code className="block min-w-0 truncate rounded bg-muted px-2 py-1 text-xs">
                 {environment.resourceSelector}
               </code>
             </div>
