@@ -625,6 +625,103 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Resolve tests — null-selector default with selector-gated override.
+// Covers the "default everywhere unless resource matches selector" pattern.
+// ---------------------------------------------------------------------------
+
+func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_MatchingResource(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "special"}
+
+	depVarID := uuid.New().String()
+	matchSpecial := `resource.metadata.env == "special"`
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           depVarID,
+				DeploymentId: scope.Deployment.Id,
+				Key:          "region",
+			},
+			Values: []oapi.DeploymentVariableValue{
+				{
+					Id:                   uuid.New().String(),
+					DeploymentVariableId: depVarID,
+					Value:                literalStringValue("default"),
+					Priority:             0,
+				},
+				{
+					Id:                   uuid.New().String(),
+					DeploymentVariableId: depVarID,
+					Value:                literalStringValue("override"),
+					Priority:             10,
+					ResourceSelector:     &matchSpecial,
+				},
+			},
+		}},
+		resourceVars: map[string][]oapi.ResourceVariable{},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	s, err := resolved["region"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "override", s, "matching-selector higher-priority override must win")
+}
+
+func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_NonMatchingResource(t *testing.T) {
+	scope := newScope()
+	scope.Resource.Metadata = map[string]string{"env": "normal"}
+
+	depVarID := uuid.New().String()
+	matchSpecial := `resource.metadata.env == "special"`
+
+	getter := &mockGetter{
+		deploymentVars: []oapi.DeploymentVariableWithValues{{
+			Variable: oapi.DeploymentVariable{
+				Id:           depVarID,
+				DeploymentId: scope.Deployment.Id,
+				Key:          "region",
+			},
+			Values: []oapi.DeploymentVariableValue{
+				{
+					Id:                   uuid.New().String(),
+					DeploymentVariableId: depVarID,
+					Value:                literalStringValue("default"),
+					Priority:             0,
+				},
+				{
+					Id:                   uuid.New().String(),
+					DeploymentVariableId: depVarID,
+					Value:                literalStringValue("override"),
+					Priority:             10,
+					ResourceSelector:     &matchSpecial,
+				},
+			},
+		}},
+		resourceVars: map[string][]oapi.ResourceVariable{},
+	}
+
+	resolved, err := Resolve(
+		context.Background(),
+		getter,
+		scope,
+		scope.Deployment.Id,
+		scope.Resource.Id,
+	)
+	require.NoError(t, err)
+	s, err := resolved["region"].AsStringValue()
+	require.NoError(t, err)
+	assert.Equal(t, "default", s, "non-matching resource must fall back to null-selector default")
+}
+
+// ---------------------------------------------------------------------------
 // Resolve tests — multiple variables resolved together
 // ---------------------------------------------------------------------------
 
