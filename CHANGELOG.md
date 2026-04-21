@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.2.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.1.0...v1.2.0) (2026-04-17)
+
+
+### Features
+
+* add cel filtering to v1 deployment list endpoint ([#984](https://github.com/ctrlplanedev/ctrlplane/issues/984)) ([062825c](https://github.com/ctrlplanedev/ctrlplane/commit/062825c25a21fd9d2cdf804b502ca35d5e71b343))
+* add requireVerificationPassed to EnvironmentProgressionRule ([#991](https://github.com/ctrlplanedev/ctrlplane/issues/991)) ([3dc45b6](https://github.com/ctrlplanedev/ctrlplane/commit/3dc45b65dbf46dbc8cbbf3986aa9e99211b18b59))
+* deployment plan dry runs comment back to associated version creation pull request ([#999](https://github.com/ctrlplanedev/ctrlplane/issues/999)) ([8d6eb2f](https://github.com/ctrlplanedev/ctrlplane/commit/8d6eb2ff54402bbe6d11633c140e35cd7d2c4a4e))
+* deployment plan ui ([#1008](https://github.com/ctrlplanedev/ctrlplane/issues/1008)) ([6d8789c](https://github.com/ctrlplanedev/ctrlplane/commit/6d8789cbf15782a2029179f29e6ff058b01264ce))
+* enhance CEL evaluation with detailed diagnostics for missing keys in job agent selectors ([1284828](https://github.com/ctrlplanedev/ctrlplane/commit/12848285249fb3af87e1f11f2bbb1a206e9903e2))
+* redeploy controller ([#990](https://github.com/ctrlplanedev/ctrlplane/issues/990)) ([97219f0](https://github.com/ctrlplanedev/ctrlplane/commit/97219f0ef261681c3a4b4a65684bbddb97c0162e))
+* reference variables can path into related resource's variables ([#1005](https://github.com/ctrlplanedev/ctrlplane/issues/1005)) ([7c209a8](https://github.com/ctrlplanedev/ctrlplane/commit/7c209a8eefca3b60a3edda17239385f9c584f19f))
+
+
+### Bug Fixes
+
+* aggregate page uses correct param ([#1004](https://github.com/ctrlplanedev/ctrlplane/issues/1004)) ([7204759](https://github.com/ctrlplanedev/ctrlplane/commit/7204759258a26ddf3ef644c3e3160b4b1c5089ae))
+* default argocd verification hits application specific endpoint for health check ([#987](https://github.com/ctrlplanedev/ctrlplane/issues/987)) ([e4f31e9](https://github.com/ctrlplanedev/ctrlplane/commit/e4f31e9483b01318dd3c045f2e7b8b68cc95659e))
+* dry run dispatch ctx includes synthetic release ([#1000](https://github.com/ctrlplanedev/ctrlplane/issues/1000)) ([d95bf55](https://github.com/ctrlplanedev/ctrlplane/commit/d95bf557fb0f3c6bd719b42a982db56e4b826081))
+* resource search supports direct CEL expressions ([#981](https://github.com/ctrlplanedev/ctrlplane/issues/981)) ([55ca816](https://github.com/ctrlplanedev/ctrlplane/commit/55ca8168e9dd6b692db567449fd161ddfa2166b5))
+
 ## [1.1.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.0.0...v1.1.0) (2026-04-13)
 
 
