@@ -15,14 +15,12 @@ import (
 
 // --- helpers ---
 
-func ptrBool(v bool) *bool { return &v }
-
 func completedResult(name string, hasChanges bool, current, proposed string) agentResult {
 	return agentResult{
 		AgentName:  name,
 		AgentType:  "argo-cd",
 		Status:     db.DeploymentPlanTargetStatusCompleted,
-		HasChanges: ptrBool(hasChanges),
+		HasChanges: &hasChanges,
 		Current:    current,
 		Proposed:   proposed,
 	}
