@@ -626,103 +626,206 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 
 // ---------------------------------------------------------------------------
 // Resolve tests — null-selector default with selector-gated override.
-// Covers the "default everywhere unless resource matches selector" pattern.
+// Covers the "default everywhere unless resource matches selector" pattern
+// and the post-migration shape (MIN_BIGINT default + selector-gated ref).
 // ---------------------------------------------------------------------------
 
-func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_MatchingResource(
-	t *testing.T,
-) {
-	scope := newScope()
-	scope.Resource.Metadata = map[string]string{"env": "special"}
+const minBigInt int64 = -9223372036854775808
 
-	depVarID := uuid.New().String()
+func TestResolve_DeploymentVarValue_DefaultAndSelectorGatedOverride(t *testing.T) {
 	matchSpecial := `resource.metadata.env == "special"`
+	matchCluster := `resource.version == 'ctrlplane.dev/kubernetes/cluster/v1'`
 
-	getter := &mockGetter{
-		deploymentVars: []oapi.DeploymentVariableWithValues{{
-			Variable: oapi.DeploymentVariable{
-				Id:           depVarID,
-				DeploymentId: scope.Deployment.Id,
-				Key:          "region",
-			},
-			Values: []oapi.DeploymentVariableValue{
-				{
-					Id:                   uuid.New().String(),
-					DeploymentVariableId: depVarID,
-					Value:                literalStringValue("default"),
-					Priority:             0,
-				},
-				{
-					Id:                   uuid.New().String(),
-					DeploymentVariableId: depVarID,
-					Value:                literalStringValue("override"),
-					Priority:             10,
-					ResourceSelector:     &matchSpecial,
-				},
-			},
-		}},
-		resourceVars: map[string][]oapi.ResourceVariable{},
+	type override struct {
+		value    oapi.Value
+		priority int64
+		selector *string
 	}
 
-	resolved, err := Resolve(
-		context.Background(),
-		getter,
-		scope,
-		scope.Deployment.Id,
-		scope.Resource.Id,
-	)
-	require.NoError(t, err)
-	s, err := resolved["region"].AsStringValue()
-	require.NoError(t, err)
-	assert.Equal(t, "override", s, "matching-selector higher-priority override must win")
-}
-
-func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_NonMatchingResource(
-	t *testing.T,
-) {
-	scope := newScope()
-	scope.Resource.Metadata = map[string]string{"env": "normal"}
-
-	depVarID := uuid.New().String()
-	matchSpecial := `resource.metadata.env == "special"`
-
-	getter := &mockGetter{
-		deploymentVars: []oapi.DeploymentVariableWithValues{{
-			Variable: oapi.DeploymentVariable{
-				Id:           depVarID,
-				DeploymentId: scope.Deployment.Id,
-				Key:          "region",
+	cases := []struct {
+		name             string
+		resourceVersion  string
+		resourceMetadata map[string]string
+		defaultValue     oapi.Value
+		defaultPriority  int64
+		override         *override
+		rules            []eval.Rule
+		buildCandidates  func(scope *Scope) map[string][]eval.EntityData
+		expected         string
+	}{
+		{
+			name:             "literal override wins when selector matches",
+			resourceVersion:  "v1",
+			resourceMetadata: map[string]string{"env": "special"},
+			defaultValue:     literalStringValue("default"),
+			defaultPriority:  0,
+			override: &override{
+				value:    literalStringValue("override"),
+				priority: 10,
+				selector: &matchSpecial,
 			},
-			Values: []oapi.DeploymentVariableValue{
+			expected: "override",
+		},
+		{
+			name:             "default wins when selector does not match",
+			resourceVersion:  "v1",
+			resourceMetadata: map[string]string{"env": "normal"},
+			defaultValue:     literalStringValue("default"),
+			defaultPriority:  0,
+			override: &override{
+				value:    literalStringValue("override"),
+				priority: 10,
+				selector: &matchSpecial,
+			},
+			expected: "default",
+		},
+		// Migrated shape: default preserved at MIN_BIGINT literal, override is
+		// a priority-0 ref gated by cluster/v1 selector. Mirrors exactly the
+		// rows produced by 0188_backfill_variables.sql for a deployment var
+		// with a default_value plus a ref-kind deployment_variable_value.
+		{
+			name:             "migrated ref + MIN_BIGINT default: ref resolves on cluster target",
+			resourceVersion:  "ctrlplane.dev/kubernetes/cluster/v1",
+			resourceMetadata: map[string]string{},
+			defaultValue:     literalStringValue("small"),
+			defaultPriority:  minBigInt,
+			override: &override{
+				value:    referenceValue("workspace", "metadata", "size"),
+				priority: 0,
+				selector: &matchCluster,
+			},
+			rules: []eval.Rule{
 				{
-					Id:                   uuid.New().String(),
-					DeploymentVariableId: depVarID,
-					Value:                literalStringValue("default"),
-					Priority:             0,
-				},
-				{
-					Id:                   uuid.New().String(),
-					DeploymentVariableId: depVarID,
-					Value:                literalStringValue("override"),
-					Priority:             10,
-					ResourceSelector:     &matchSpecial,
+					ID:        uuid.New(),
+					Reference: "workspace",
+					Cel:       `from.type == "resource" && to.type == "resource" && to.kind == "Workspace"`,
 				},
 			},
-		}},
-		resourceVars: map[string][]oapi.ResourceVariable{},
+			buildCandidates: func(scope *Scope) map[string][]eval.EntityData {
+				resID := uuid.MustParse(scope.Resource.Id)
+				wsResID := uuid.New()
+				return map[string][]eval.EntityData{
+					"resource": {
+						{
+							ID:          resID,
+							WorkspaceID: uuid.MustParse(scope.Resource.WorkspaceId),
+							EntityType:  "resource",
+							Raw: map[string]any{
+								"type":       "resource",
+								"id":         resID.String(),
+								"name":       scope.Resource.Name,
+								"kind":       scope.Resource.Kind,
+								"version":    scope.Resource.Version,
+								"identifier": scope.Resource.Identifier,
+								"config":     scope.Resource.Config,
+								"metadata":   map[string]any{},
+							},
+						},
+						{
+							ID:          wsResID,
+							WorkspaceID: uuid.MustParse(scope.Resource.WorkspaceId),
+							EntityType:  "resource",
+							Raw: map[string]any{
+								"type":       "resource",
+								"id":         wsResID.String(),
+								"name":       "my-workspace",
+								"kind":       "Workspace",
+								"version":    "v1",
+								"identifier": "my-workspace",
+								"config":     map[string]any{},
+								"metadata":   map[string]any{"size": "large"},
+							},
+						},
+					},
+				}
+			},
+			expected: "large",
+		},
+		{
+			name:             "migrated ref + MIN_BIGINT default: ref has no related entity, falls back",
+			resourceVersion:  "ctrlplane.dev/kubernetes/cluster/v1",
+			resourceMetadata: map[string]string{},
+			defaultValue:     literalStringValue("small"),
+			defaultPriority:  minBigInt,
+			override: &override{
+				value:    referenceValue("workspace", "metadata", "size"),
+				priority: 0,
+				selector: &matchCluster,
+			},
+			expected: "small",
+		},
+		{
+			name:             "migrated ref + MIN_BIGINT default: non-cluster target falls back",
+			resourceVersion:  "ctrlplane.dev/kubernetes/node/v1",
+			resourceMetadata: map[string]string{},
+			defaultValue:     literalStringValue("small"),
+			defaultPriority:  minBigInt,
+			override: &override{
+				value:    referenceValue("workspace", "metadata", "size"),
+				priority: 0,
+				selector: &matchCluster,
+			},
+			expected: "small",
+		},
 	}
 
-	resolved, err := Resolve(
-		context.Background(),
-		getter,
-		scope,
-		scope.Deployment.Id,
-		scope.Resource.Id,
-	)
-	require.NoError(t, err)
-	s, err := resolved["region"].AsStringValue()
-	require.NoError(t, err)
-	assert.Equal(t, "default", s, "non-matching resource must fall back to null-selector default")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			scope := newScope()
+			scope.Resource.Kind = "Server"
+			scope.Resource.Version = tc.resourceVersion
+			scope.Resource.Metadata = tc.resourceMetadata
+
+			depVarID := uuid.New().String()
+			values := []oapi.DeploymentVariableValue{{
+				Id:                   uuid.New().String(),
+				DeploymentVariableId: depVarID,
+				Value:                tc.defaultValue,
+				Priority:             tc.defaultPriority,
+			}}
+			if tc.override != nil {
+				values = append(values, oapi.DeploymentVariableValue{
+					Id:                   uuid.New().String(),
+					DeploymentVariableId: depVarID,
+					Value:                tc.override.value,
+					Priority:             tc.override.priority,
+					ResourceSelector:     tc.override.selector,
+				})
+			}
+
+			var candidates map[string][]eval.EntityData
+			if tc.buildCandidates != nil {
+				candidates = tc.buildCandidates(scope)
+			}
+
+			getter := &mockGetter{
+				deploymentVars: []oapi.DeploymentVariableWithValues{{
+					Variable: oapi.DeploymentVariable{
+						Id:           depVarID,
+						DeploymentId: scope.Deployment.Id,
+						Key:          "size",
+					},
+					Values: values,
+				}},
+				resourceVars: map[string][]oapi.ResourceVariable{},
+				rules:        tc.rules,
+				candidates:   candidates,
+			}
+
+			resolved, err := Resolve(
+				context.Background(),
+				getter,
+				scope,
+				scope.Deployment.Id,
+				scope.Resource.Id,
+			)
+			require.NoError(t, err)
+			require.Contains(t, resolved, "size")
+			got, err := resolved["size"].AsStringValue()
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, string(got))
+		})
+	}
 }
 
 // ---------------------------------------------------------------------------
