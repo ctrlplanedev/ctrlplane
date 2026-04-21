@@ -59,13 +59,15 @@ func (a *ArgoApplication) Verifications(
 		return nil, fmt.Errorf("build argocd health check provider: %w", err)
 	}
 
-	successThreshold := 1
+	successThreshold := 2
+	failureThreshold := 10
 	failureCondition := "result.statusCode != 200 || result.json.status.health.status == 'Degraded' || result.json.status.health.status == 'Missing'"
 	spec := oapi.VerificationMetricSpec{
 		Name:             "argocd-application-health",
 		IntervalSeconds:  60,
-		Count:            10,
+		Count:            15,
 		SuccessThreshold: &successThreshold,
+		FailureThreshold: &failureThreshold,
 		SuccessCondition: "result.statusCode == 200 && result.json.status.sync.status == 'Synced' && result.json.status.health.status == 'Healthy'",
 		FailureCondition: &failureCondition,
 		Provider:         provider,
