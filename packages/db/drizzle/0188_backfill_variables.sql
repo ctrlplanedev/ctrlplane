@@ -10,6 +10,25 @@ FROM deployment_variable dv
 ON CONFLICT (id) DO NOTHING;
 --> statement-breakpoint
 
+-- Preserve deployment_variable.default_value as a null-selector literal at
+-- MIN_BIGINT priority so any real variable_value shadows it while non-matching
+-- resources still fall through to the old default.
+INSERT INTO "variable_value" (variable_id, priority, kind, literal_value)
+SELECT
+  dv.id,
+  -9223372036854775808,
+  'literal'::variable_value_kind,
+  dv.default_value
+FROM deployment_variable dv
+WHERE dv.default_value IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM "variable_value" vv
+    WHERE vv.variable_id = dv.id
+      AND vv.resource_selector IS NULL
+      AND vv.priority = -9223372036854775808
+  );
+--> statement-breakpoint
+
 WITH dvv_classified AS (
   SELECT
     dvv.id,
