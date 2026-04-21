@@ -629,7 +629,9 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 // Covers the "default everywhere unless resource matches selector" pattern.
 // ---------------------------------------------------------------------------
 
-func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_MatchingResource(t *testing.T) {
+func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_MatchingResource(
+	t *testing.T,
+) {
 	scope := newScope()
 	scope.Resource.Metadata = map[string]string{"env": "special"}
 
@@ -675,7 +677,9 @@ func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_MatchingRes
 	assert.Equal(t, "override", s, "matching-selector higher-priority override must win")
 }
 
-func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_NonMatchingResource(t *testing.T) {
+func TestResolve_DeploymentVarValue_DefaultWithSelectorGatedOverride_NonMatchingResource(
+	t *testing.T,
+) {
 	scope := newScope()
 	scope.Resource.Metadata = map[string]string{"env": "normal"}
 
