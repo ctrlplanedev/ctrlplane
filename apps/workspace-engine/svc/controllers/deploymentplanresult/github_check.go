@@ -12,6 +12,7 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	gh "workspace-engine/pkg/github"
@@ -93,9 +94,23 @@ type agentResult struct {
 	Message    string
 }
 
-func agentResultFromRow(row db.ListDeploymentPlanTargetResultsByTargetIDRow) agentResult {
+// agentResultFromRow builds an agentResult from a DB row. If the row's
+// dispatch context cannot be unmarshalled, placeholder values are used
+// for the agent's name/type and the parse error is returned so the
+// caller can record it on the trace. The returned agentResult is
+// always safe to render.
+func agentResultFromRow(
+	row db.ListDeploymentPlanTargetResultsByTargetIDRow,
+) (agentResult, error) {
 	var dc oapi.DispatchContext
-	_ = json.Unmarshal(row.DispatchContext, &dc)
+	parseErr := json.Unmarshal(row.DispatchContext, &dc)
+
+	agentName := dc.JobAgent.Name
+	agentType := dc.JobAgent.Type
+	if parseErr != nil {
+		agentName = "(unknown agent)"
+		agentType = "unknown"
+	}
 
 	var hasChanges *bool
 	if row.HasChanges.Valid {
@@ -104,14 +119,14 @@ func agentResultFromRow(row db.ListDeploymentPlanTargetResultsByTargetIDRow) age
 	}
 
 	return agentResult{
-		AgentName:  dc.JobAgent.Name,
-		AgentType:  dc.JobAgent.Type,
+		AgentName:  agentName,
+		AgentType:  agentType,
 		Status:     row.Status,
 		HasChanges: hasChanges,
 		Current:    row.Current.String,
 		Proposed:   row.Proposed.String,
 		Message:    row.Message.String,
-	}
+	}, parseErr
 }
 
 // aggregate describes the overall state of all agents for one target.
@@ -439,7 +454,9 @@ func MaybeUpdateTargetCheck(
 }
 
 // loadTargetContext fetches the target metadata and all its results
-// needed to render a check run.
+// needed to render a check run. Rows with unparseable dispatch context
+// are rendered with placeholder agent names and the parse error is
+// recorded on the current span.
 func loadTargetContext(
 	ctx context.Context,
 	getter Getter,
@@ -456,9 +473,17 @@ func loadTargetContext(
 		return targetContext{}, nil, fmt.Errorf("list target results: %w", err)
 	}
 
+	span := trace.SpanFromContext(ctx)
 	results := make([]agentResult, len(rows))
 	for i, r := range rows {
-		results[i] = agentResultFromRow(r)
+		result, parseErr := agentResultFromRow(r)
+		if parseErr != nil {
+			span.RecordError(fmt.Errorf(
+				"parse dispatch context for result %s: %w",
+				r.ID, parseErr,
+			))
+		}
+		results[i] = result
 	}
 	return tc, results, nil
 }
