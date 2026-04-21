@@ -17,14 +17,8 @@ SELECT
   CASE
     WHEN COUNT(*) = 0 THEN ''
     WHEN bool_or(COALESCE(mc.failures, 0) > COALESCE(jvm.failure_threshold, 0)) THEN 'failed'
-    WHEN bool_or(
-      COALESCE(mc.total, 0) < jvm.count
-      AND COALESCE(mc.failures, 0) <= COALESCE(jvm.failure_threshold, 0)
-      AND NOT (
-        COALESCE(jvm.success_threshold, 0) > 0
-        AND COALESCE(cp.consecutive_passes, 0) >= jvm.success_threshold
-      )
-    ) THEN 'running'
+    WHEN bool_or(COALESCE(mc.total, 0) < jvm.count
+                 AND COALESCE(mc.failures, 0) <= COALESCE(jvm.failure_threshold, 0)) THEN 'running'
     ELSE 'passed'
   END::text AS status
 FROM job_verification_metric jvm
@@ -35,27 +29,11 @@ LEFT JOIN LATERAL (
   FROM job_verification_metric_measurement mm
   WHERE mm.job_verification_metric_status_id = jvm.id
 ) mc ON true
-LEFT JOIN LATERAL (
-  SELECT COUNT(*)::int AS consecutive_passes
-  FROM job_verification_metric_measurement mm
-  WHERE mm.job_verification_metric_status_id = jvm.id
-    AND mm.status = 'passed'
-    AND mm.measured_at > COALESCE(
-      (SELECT MAX(measured_at)
-       FROM job_verification_metric_measurement
-       WHERE job_verification_metric_status_id = jvm.id
-         AND status <> 'passed'),
-      '-infinity'::timestamptz
-    )
-) cp ON true
 WHERE jvm.job_id = $1
 `
 
 // Returns the aggregate verification status for a job:
-// 'passed' if all metrics have completed (either by reaching count, hitting the success_threshold
-//
-//	consecutive-pass early-termination, or by exhausting count without exceeding failure_threshold),
-//
+// 'passed' if all metrics have completed with enough measurements and no failures above threshold,
 // 'running' if any metric is still incomplete,
 // 'failed' if any metric has exceeded its failure threshold.
 // Returns ” (empty string) if the job has no verification metrics.
@@ -202,10 +180,6 @@ SELECT
   (
     COALESCE(mc.total, 0) >= m.count
     OR COALESCE(mc.failures, 0) > COALESCE(m.failure_threshold, 0)
-    OR (
-      COALESCE(m.success_threshold, 0) > 0
-      AND COALESCE(cp.consecutive_passes, 0) >= m.success_threshold
-    )
   )::boolean AS is_terminal,
   (COALESCE(mc.failures, 0) > COALESCE(m.failure_threshold, 0))::boolean AS is_failed
 FROM job_verification_metric m
@@ -216,19 +190,6 @@ LEFT JOIN LATERAL (
   FROM job_verification_metric_measurement mm
   WHERE mm.job_verification_metric_status_id = m.id
 ) mc ON true
-LEFT JOIN LATERAL (
-  SELECT COUNT(*)::int AS consecutive_passes
-  FROM job_verification_metric_measurement mm
-  WHERE mm.job_verification_metric_status_id = m.id
-    AND mm.status = 'passed'
-    AND mm.measured_at > COALESCE(
-      (SELECT MAX(measured_at)
-       FROM job_verification_metric_measurement
-       WHERE job_verification_metric_status_id = m.id
-         AND status <> 'passed'),
-      '-infinity'::timestamptz
-    )
-) cp ON true
 WHERE m.job_id = (SELECT job_id FROM job_verification_metric WHERE id = $1)
 `
 
