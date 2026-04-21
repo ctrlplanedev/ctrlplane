@@ -95,6 +95,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			return reconcile.Result{}, fmt.Errorf("mark result unsupported: %w", updateErr)
 		}
 
+		if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+			span.RecordError(checkErr)
+		}
+
 		return reconcile.Result{}, nil
 	}
 
@@ -117,6 +121,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 				updateErr,
 				err,
 			)
+		}
+
+		if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+			span.RecordError(checkErr)
 		}
 
 		return reconcile.Result{}, nil
@@ -167,6 +175,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		},
 	); err != nil {
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
+	}
+
+	if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+		span.RecordError(checkErr)
 	}
 
 	return reconcile.Result{}, nil

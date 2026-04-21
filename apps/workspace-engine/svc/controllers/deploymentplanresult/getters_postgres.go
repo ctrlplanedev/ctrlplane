@@ -20,6 +20,20 @@ func (g *PostgresGetter) GetDeploymentPlanTargetResult(
 	return db.GetQueries(ctx).GetDeploymentPlanTargetResult(ctx, id)
 }
 
+func (g *PostgresGetter) GetTargetContextByResultID(
+	ctx context.Context,
+	resultID uuid.UUID,
+) (db.GetTargetContextByResultIDRow, error) {
+	return db.GetQueries(ctx).GetTargetContextByResultID(ctx, resultID)
+}
+
+func (g *PostgresGetter) ListDeploymentPlanTargetResultsByTargetID(
+	ctx context.Context,
+	targetID uuid.UUID,
+) ([]db.ListDeploymentPlanTargetResultsByTargetIDRow, error) {
+	return db.GetQueries(ctx).ListDeploymentPlanTargetResultsByTargetID(ctx, targetID)
+}
+
 func newRegistry() *jobagents.Registry {
 	registry := jobagents.NewRegistry(nil, nil)
 	registry.Register(

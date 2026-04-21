@@ -62,3 +62,38 @@ WHERE id = $1;
 UPDATE deployment_plan
 SET completed_at = NOW()
 WHERE id = $1;
+
+-- name: GetTargetContextByResultID :one
+SELECT
+  t.id AS target_id,
+  t.plan_id,
+  dp.deployment_id,
+  dp.workspace_id,
+  dp.version_tag,
+  dp.version_metadata,
+  w.slug AS workspace_slug,
+  e.name AS environment_name,
+  res.name AS resource_name
+FROM deployment_plan_target_result r
+JOIN deployment_plan_target t ON t.id = r.target_id
+JOIN deployment_plan dp ON dp.id = t.plan_id
+JOIN workspace w ON w.id = dp.workspace_id
+JOIN environment e ON e.id = t.environment_id
+JOIN resource res ON res.id = t.resource_id
+WHERE r.id = $1;
+
+-- name: ListDeploymentPlanTargetResultsByTargetID :many
+SELECT
+  r.id,
+  r.target_id,
+  r.dispatch_context,
+  r.status,
+  r.has_changes,
+  r.current,
+  r.proposed,
+  r.message,
+  r.started_at,
+  r.completed_at
+FROM deployment_plan_target_result r
+WHERE r.target_id = $1
+ORDER BY r.started_at;
