@@ -88,6 +88,55 @@ func (q *Queries) GetDeploymentPlanTargetResult(ctx context.Context, id uuid.UUI
 	return i, err
 }
 
+const getTargetContextByResultID = `-- name: GetTargetContextByResultID :one
+SELECT
+  t.id AS target_id,
+  t.plan_id,
+  dp.deployment_id,
+  dp.workspace_id,
+  dp.version_tag,
+  dp.version_metadata,
+  w.slug AS workspace_slug,
+  e.name AS environment_name,
+  res.name AS resource_name
+FROM deployment_plan_target_result r
+JOIN deployment_plan_target t ON t.id = r.target_id
+JOIN deployment_plan dp ON dp.id = t.plan_id
+JOIN workspace w ON w.id = dp.workspace_id
+JOIN environment e ON e.id = t.environment_id
+JOIN resource res ON res.id = t.resource_id
+WHERE r.id = $1
+`
+
+type GetTargetContextByResultIDRow struct {
+	TargetID        uuid.UUID
+	PlanID          uuid.UUID
+	DeploymentID    uuid.UUID
+	WorkspaceID     uuid.UUID
+	VersionTag      string
+	VersionMetadata map[string]string
+	WorkspaceSlug   string
+	EnvironmentName string
+	ResourceName    string
+}
+
+func (q *Queries) GetTargetContextByResultID(ctx context.Context, id uuid.UUID) (GetTargetContextByResultIDRow, error) {
+	row := q.db.QueryRow(ctx, getTargetContextByResultID, id)
+	var i GetTargetContextByResultIDRow
+	err := row.Scan(
+		&i.TargetID,
+		&i.PlanID,
+		&i.DeploymentID,
+		&i.WorkspaceID,
+		&i.VersionTag,
+		&i.VersionMetadata,
+		&i.WorkspaceSlug,
+		&i.EnvironmentName,
+		&i.ResourceName,
+	)
+	return i, err
+}
+
 const insertDeploymentPlanTarget = `-- name: InsertDeploymentPlanTarget :one
 INSERT INTO deployment_plan_target (id, plan_id, environment_id, resource_id)
 VALUES ($1, $2, $3, $4)
@@ -128,6 +177,67 @@ type InsertDeploymentPlanTargetResultParams struct {
 func (q *Queries) InsertDeploymentPlanTargetResult(ctx context.Context, arg InsertDeploymentPlanTargetResultParams) error {
 	_, err := q.db.Exec(ctx, insertDeploymentPlanTargetResult, arg.ID, arg.TargetID, arg.DispatchContext)
 	return err
+}
+
+const listDeploymentPlanTargetResultsByTargetID = `-- name: ListDeploymentPlanTargetResultsByTargetID :many
+SELECT
+  r.id,
+  r.target_id,
+  r.dispatch_context,
+  r.status,
+  r.has_changes,
+  r.current,
+  r.proposed,
+  r.message,
+  r.started_at,
+  r.completed_at
+FROM deployment_plan_target_result r
+WHERE r.target_id = $1
+ORDER BY r.started_at
+`
+
+type ListDeploymentPlanTargetResultsByTargetIDRow struct {
+	ID              uuid.UUID
+	TargetID        uuid.UUID
+	DispatchContext []byte
+	Status          DeploymentPlanTargetStatus
+	HasChanges      pgtype.Bool
+	Current         pgtype.Text
+	Proposed        pgtype.Text
+	Message         pgtype.Text
+	StartedAt       pgtype.Timestamptz
+	CompletedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) ListDeploymentPlanTargetResultsByTargetID(ctx context.Context, targetID uuid.UUID) ([]ListDeploymentPlanTargetResultsByTargetIDRow, error) {
+	rows, err := q.db.Query(ctx, listDeploymentPlanTargetResultsByTargetID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDeploymentPlanTargetResultsByTargetIDRow
+	for rows.Next() {
+		var i ListDeploymentPlanTargetResultsByTargetIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TargetID,
+			&i.DispatchContext,
+			&i.Status,
+			&i.HasChanges,
+			&i.Current,
+			&i.Proposed,
+			&i.Message,
+			&i.StartedAt,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateDeploymentPlanCompleted = `-- name: UpdateDeploymentPlanCompleted :exec
