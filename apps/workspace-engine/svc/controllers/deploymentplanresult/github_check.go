@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/go-github/v66/github"
 	"github.com/google/uuid"
@@ -23,6 +24,16 @@ const (
 	metaGitHubOwner = "github/owner"
 	metaGitHubRepo  = "github/repo"
 	metaGitSHA      = "git/sha"
+
+	// githubCallTimeout caps how long the full GitHub interaction
+	// (client creation + check run upsert) can take before aborting.
+	githubCallTimeout = 30 * time.Second
+
+	// maxCheckRunTextBytes is GitHub's hard limit on the check run
+	// `output.text` field. We leave a small margin for a truncation
+	// sentinel so the API call never fails on size.
+	maxCheckRunTextBytes = 65_000
+	truncationSentinel   = "\n\n_...output truncated..._\n"
 )
 
 // checkRunName returns the GitHub check run name for a given target.
@@ -190,6 +201,9 @@ func (a aggregate) checkConclusion() string {
 	if a.Errored > 0 {
 		return "failure"
 	}
+	if a.Total > 0 && a.Unsupported == a.Total {
+		return "skipped"
+	}
 	if a.Changed > 0 {
 		return "neutral"
 	}
@@ -200,22 +214,36 @@ func (a aggregate) checkConclusion() string {
 func (a aggregate) checkTitle() string {
 	done := a.Completed + a.Errored + a.Unsupported
 
-	if a.Errored > 0 && !a.allDone() {
-		return fmt.Sprintf("%d errored (%d/%d agents complete)", a.Errored, done, a.Total)
-	}
 	if !a.allDone() {
+		if a.Errored > 0 {
+			return fmt.Sprintf(
+				"%d errored, %d unsupported (%d/%d agents complete)",
+				a.Errored, a.Unsupported, done, a.Total,
+			)
+		}
 		return fmt.Sprintf("Computing... (%d/%d agents)", done, a.Total)
+	}
+
+	if a.Total > 0 && a.Unsupported == a.Total {
+		return "All agents unsupported"
 	}
 	if a.Errored > 0 {
 		return fmt.Sprintf(
-			"%d errored, %d changed, %d unchanged",
-			a.Errored,
-			a.Changed,
-			a.Unchanged,
+			"%d errored, %d changed, %d unchanged, %d unsupported",
+			a.Errored, a.Changed, a.Unchanged, a.Unsupported,
 		)
 	}
 	if a.Changed > 0 {
-		return fmt.Sprintf("%d changed, %d unchanged", a.Changed, a.Unchanged)
+		return fmt.Sprintf(
+			"%d changed, %d unchanged, %d unsupported",
+			a.Changed, a.Unchanged, a.Unsupported,
+		)
+	}
+	if a.Unsupported > 0 {
+		return fmt.Sprintf(
+			"No changes (%d unsupported)",
+			a.Unsupported,
+		)
 	}
 	return "No changes"
 }
@@ -260,6 +288,23 @@ func formatAgentSection(r agentResult) string {
 	return sb.String()
 }
 
+// truncateText trims s to fit within maxBytes (accounting for a trailing
+// truncation sentinel). It rolls back to the last valid UTF-8 rune
+// boundary so multi-byte characters are never cut in half.
+func truncateText(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+
+	cutoff := max(maxBytes-len(truncationSentinel), 0)
+
+	// Walk back to a rune boundary so the output remains valid UTF-8.
+	for cutoff > 0 && !utf8.RuneStart(s[cutoff]) {
+		cutoff--
+	}
+	return s[:cutoff] + truncationSentinel
+}
+
 // buildCheckOutput builds the full check output (title + summary + text)
 // from the target's current state and all its agents' results.
 func buildCheckOutput(
@@ -282,7 +327,7 @@ func buildCheckOutput(
 	}
 
 	summaryStr := summary.String()
-	textStr := text.String()
+	textStr := truncateText(text.String(), maxCheckRunTextBytes)
 	return &github.CheckRunOutput{
 		Title:   &title,
 		Summary: &summaryStr,
@@ -429,7 +474,12 @@ func MaybeUpdateTargetCheck(
 		attribute.String("target_id", tc.TargetID.String()),
 	)
 
-	client, err := gh.CreateClientForRepo(ctx, tc.Owner, tc.Repo)
+	// Bound GitHub API interactions so a slow GitHub response can't
+	// block the reconcile worker's lease.
+	ghCtx, cancel := context.WithTimeout(ctx, githubCallTimeout)
+	defer cancel()
+
+	client, err := gh.CreateClientForRepo(ghCtx, tc.Owner, tc.Repo)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "create github client")
@@ -443,7 +493,7 @@ func MaybeUpdateTargetCheck(
 	agg := aggregateResults(results)
 	output := buildCheckOutput(tc, results, agg)
 
-	if err := upsertCheckRun(ctx, client, tc, agg, output); err != nil {
+	if err := upsertCheckRun(ghCtx, client, tc, agg, output); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "upsert check run")
 		return err

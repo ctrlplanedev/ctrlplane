@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -120,8 +121,14 @@ func TestAggregate_CheckConclusion(t *testing.T) {
 		conclusion string
 	}{
 		{"any errored -> failure", aggregate{Total: 2, Completed: 1, Errored: 1}, "failure"},
+		{"all unsupported -> skipped", aggregate{Total: 2, Unsupported: 2}, "skipped"},
 		{"has changes -> neutral", aggregate{Total: 2, Completed: 2, Changed: 1}, "neutral"},
 		{"all clean -> success", aggregate{Total: 2, Completed: 2, Unchanged: 2}, "success"},
+		{
+			"unsupported + success -> success (some agent ran cleanly)",
+			aggregate{Total: 2, Completed: 1, Unchanged: 1, Unsupported: 1},
+			"success",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -143,23 +150,33 @@ func TestAggregate_CheckTitle(t *testing.T) {
 		},
 		{
 			"errored while others still running",
-			aggregate{Total: 3, Completed: 1, Errored: 1},
-			"1 errored (2/3 agents complete)",
+			aggregate{Total: 3, Completed: 1, Errored: 1, Unsupported: 0},
+			"1 errored, 0 unsupported (2/3 agents complete)",
 		},
 		{
-			"final errored summary",
+			"final errored summary includes unsupported",
 			aggregate{Total: 3, Completed: 1, Errored: 1, Unsupported: 1, Changed: 1},
-			"1 errored, 1 changed, 0 unchanged",
+			"1 errored, 1 changed, 0 unchanged, 1 unsupported",
 		},
 		{
-			"final with changes",
-			aggregate{Total: 2, Completed: 2, Changed: 1, Unchanged: 1},
-			"1 changed, 1 unchanged",
+			"final with changes includes unsupported",
+			aggregate{Total: 3, Completed: 2, Changed: 1, Unchanged: 1, Unsupported: 1},
+			"1 changed, 1 unchanged, 1 unsupported",
+		},
+		{
+			"final no changes with some unsupported",
+			aggregate{Total: 3, Completed: 2, Unchanged: 2, Unsupported: 1},
+			"No changes (1 unsupported)",
 		},
 		{
 			"final no changes",
 			aggregate{Total: 2, Completed: 2, Unchanged: 2},
 			"No changes",
+		},
+		{
+			"all unsupported",
+			aggregate{Total: 2, Unsupported: 2},
+			"All agents unsupported",
 		},
 	}
 	for _, tc := range tests {
@@ -167,6 +184,28 @@ func TestAggregate_CheckTitle(t *testing.T) {
 			assert.Equal(t, tc.title, tc.agg.checkTitle())
 		})
 	}
+}
+
+func TestTruncateText(t *testing.T) {
+	t.Run("short input passes through untouched", func(t *testing.T) {
+		in := "hello world"
+		assert.Equal(t, in, truncateText(in, maxCheckRunTextBytes))
+	})
+
+	t.Run("long input is trimmed with sentinel", func(t *testing.T) {
+		in := strings.Repeat("x", maxCheckRunTextBytes+10)
+		out := truncateText(in, maxCheckRunTextBytes)
+		assert.LessOrEqual(t, len(out), maxCheckRunTextBytes)
+		assert.True(t, strings.HasSuffix(out, truncationSentinel))
+	})
+
+	t.Run("respects utf-8 rune boundaries", func(t *testing.T) {
+		// 'é' is two bytes (C3 A9). Fill with enough 'é' to exceed limit.
+		rune2Byte := "é"
+		in := strings.Repeat(rune2Byte, maxCheckRunTextBytes)
+		out := truncateText(in, maxCheckRunTextBytes)
+		assert.True(t, utf8.ValidString(out), "truncated output should be valid UTF-8")
+	})
 }
 
 // --- formatAgentSection ---
