@@ -20,7 +20,7 @@ func ParseJobAgentConfig(
 		return oapi.GithubJobAgentConfig{}, fmt.Errorf("installationId is required")
 	}
 
-	owner, err := resolveOwner(ctx, jobAgentConfig)
+	owner, err := resolveOwner(ctx, jobAgentConfig, int64(installationId))
 	if err != nil {
 		return oapi.GithubJobAgentConfig{}, err
 	}
@@ -51,8 +51,13 @@ func ParseJobAgentConfig(
 
 // resolveOwner returns the GitHub owner/org login from the config.
 // If "owner" is present it is used directly; otherwise "organizationId"
-// is looked up via the GitHub API. Returns an error if neither is set.
-func resolveOwner(ctx context.Context, cfg oapi.JobAgentConfig) (string, error) {
+// is resolved via the GitHub API using an installation-authenticated
+// client (App JWT auth can't hit /organizations/{id}).
+func resolveOwner(
+	ctx context.Context,
+	cfg oapi.JobAgentConfig,
+	installationID int64,
+) (string, error) {
 	if owner, ok := cfg["owner"].(string); ok && owner != "" {
 		return owner, nil
 	}
@@ -62,9 +67,9 @@ func resolveOwner(ctx context.Context, cfg oapi.JobAgentConfig) (string, error) 
 		return "", fmt.Errorf("owner or organizationId is required")
 	}
 
-	client, err := gh.AppClient()
+	client, err := gh.CreateClientForInstallation(ctx, installationID)
 	if err != nil {
-		return "", fmt.Errorf("create github app client: %w", err)
+		return "", fmt.Errorf("create github installation client: %w", err)
 	}
 
 	org, _, err := client.Organizations.GetByID(ctx, orgID)
