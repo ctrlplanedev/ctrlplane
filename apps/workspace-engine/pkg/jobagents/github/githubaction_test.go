@@ -207,7 +207,7 @@ func TestDispatch_InvalidConfig_ReturnsError(t *testing.T) {
 // ----- ParseJobAgentConfig -----
 
 func TestParseJobAgentConfig_Valid(t *testing.T) {
-	cfg, err := ParseJobAgentConfig(validConfig())
+	cfg, err := ParseJobAgentConfig(context.Background(), validConfig())
 	require.NoError(t, err)
 	assert.Equal(t, 12345, cfg.InstallationId)
 	assert.Equal(t, "my-org", cfg.Owner)
@@ -219,7 +219,7 @@ func TestParseJobAgentConfig_Valid(t *testing.T) {
 func TestParseJobAgentConfig_WithRef(t *testing.T) {
 	raw := validConfig()
 	raw["ref"] = "develop"
-	cfg, err := ParseJobAgentConfig(raw)
+	cfg, err := ParseJobAgentConfig(context.Background(), raw)
 	require.NoError(t, err)
 	require.NotNil(t, cfg.Ref)
 	assert.Equal(t, "develop", *cfg.Ref)
@@ -228,7 +228,7 @@ func TestParseJobAgentConfig_WithRef(t *testing.T) {
 func TestParseJobAgentConfig_MissingInstallationId(t *testing.T) {
 	raw := validConfig()
 	delete(raw, "installationId")
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "installationId")
 }
@@ -236,7 +236,7 @@ func TestParseJobAgentConfig_MissingInstallationId(t *testing.T) {
 func TestParseJobAgentConfig_MissingOwner(t *testing.T) {
 	raw := validConfig()
 	delete(raw, "owner")
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "owner")
 }
@@ -244,7 +244,7 @@ func TestParseJobAgentConfig_MissingOwner(t *testing.T) {
 func TestParseJobAgentConfig_MissingRepo(t *testing.T) {
 	raw := validConfig()
 	delete(raw, "repo")
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "repo")
 }
@@ -252,7 +252,7 @@ func TestParseJobAgentConfig_MissingRepo(t *testing.T) {
 func TestParseJobAgentConfig_MissingWorkflowId(t *testing.T) {
 	raw := validConfig()
 	delete(raw, "workflowId")
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "workflowId")
 }
@@ -260,7 +260,7 @@ func TestParseJobAgentConfig_MissingWorkflowId(t *testing.T) {
 func TestParseJobAgentConfig_EmptyOwner(t *testing.T) {
 	raw := validConfig()
 	raw["owner"] = ""
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "owner")
 }
@@ -268,7 +268,7 @@ func TestParseJobAgentConfig_EmptyOwner(t *testing.T) {
 func TestParseJobAgentConfig_EmptyRepo(t *testing.T) {
 	raw := validConfig()
 	raw["repo"] = ""
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "repo")
 }
@@ -276,7 +276,7 @@ func TestParseJobAgentConfig_EmptyRepo(t *testing.T) {
 func TestParseJobAgentConfig_EmptyRefIgnored(t *testing.T) {
 	raw := validConfig()
 	raw["ref"] = ""
-	cfg, err := ParseJobAgentConfig(raw)
+	cfg, err := ParseJobAgentConfig(context.Background(), raw)
 	require.NoError(t, err)
 	assert.Nil(t, cfg.Ref)
 }
@@ -284,7 +284,7 @@ func TestParseJobAgentConfig_EmptyRefIgnored(t *testing.T) {
 func TestParseJobAgentConfig_ZeroInstallationId(t *testing.T) {
 	raw := validConfig()
 	raw["installationId"] = float64(0)
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "installationId")
 }
@@ -292,7 +292,7 @@ func TestParseJobAgentConfig_ZeroInstallationId(t *testing.T) {
 func TestParseJobAgentConfig_ZeroWorkflowId(t *testing.T) {
 	raw := validConfig()
 	raw["workflowId"] = float64(0)
-	_, err := ParseJobAgentConfig(raw)
+	_, err := ParseJobAgentConfig(context.Background(), raw)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "workflowId")
 }

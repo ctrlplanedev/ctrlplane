@@ -45,7 +45,10 @@ func generateJWT() (string, error) {
 	return token.SignedString(key)
 }
 
-func appClient() (*github.Client, error) {
+// AppClient returns a GitHub client authenticated as the GitHub App
+// itself (JWT auth, no installation context). Use this for App-level
+// operations like looking up organizations or installations.
+func AppClient() (*github.Client, error) {
 	jwtStr, err := generateJWT()
 	if err != nil {
 		return nil, err
@@ -60,7 +63,7 @@ func CreateClientForInstallation(
 	ctx context.Context,
 	installationID int64,
 ) (*github.Client, error) {
-	app, err := appClient()
+	app, err := AppClient()
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +80,7 @@ func CreateClientForInstallation(
 // installation that covers owner/repo. It discovers the installation via
 // the GitHub API. Returns (nil, nil) if the GitHub bot is not configured.
 func CreateClientForRepo(ctx context.Context, owner, repo string) (*github.Client, error) {
-	app, err := appClient()
+	app, err := AppClient()
 	if err != nil {
 		if config.Global.GithubBotAppID == "" || config.Global.GithubBotPrivateKey == "" {
 			return nil, nil
