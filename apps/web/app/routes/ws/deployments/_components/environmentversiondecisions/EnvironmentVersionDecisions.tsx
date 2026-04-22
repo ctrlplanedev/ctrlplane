@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-import { ShieldOffIcon } from "lucide-react";
+import { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
+import { Loader2, SearchIcon, ShieldOffIcon } from "lucide-react";
+import { useDebounce } from "react-use";
 
 import type { DeploymentVersionStatus } from "../types";
+import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -9,17 +13,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
 import { DeploymentVersion } from "./DeploymentVersion";
 import { PolicySkipDialog } from "./policy-skip/PolicySkipDialog";
 import { usePolicyRulesForVersion } from "./usePolicyRulesForVersion";
 
+const PAGE_SIZE = 20;
+
+type Version = {
+  id: string;
+  name?: string;
+  tag?: string;
+  status: DeploymentVersionStatus;
+};
+
 type VersionRowProps = {
-  version: {
-    id: string;
-    name?: string;
-    tag?: string;
-    status: DeploymentVersionStatus;
-  };
+  version: Version;
   environment: { id: string; name: string };
 };
 
@@ -57,22 +66,40 @@ function VersionRow({ version, environment }: VersionRowProps) {
 type EnvironmentVersionDecisionsProps = {
   environment: { id: string; name: string };
   deploymentId: string;
-  versions: {
-    id: string;
-    name?: string;
-    tag?: string;
-    status: DeploymentVersionStatus;
-  }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
 export function EnvironmentVersionDecisions({
   environment,
-  versions,
+  deploymentId,
   open,
   onOpenChange,
 }: EnvironmentVersionDecisionsProps) {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useDebounce(() => setDebouncedSearch(search), 250, [search]);
+
+  const versionsQuery = trpc.deployment.searchVersions.useInfiniteQuery(
+    {
+      deploymentId,
+      query: debouncedSearch || undefined,
+      limit: PAGE_SIZE,
+    },
+    {
+      initialCursor: 0,
+      getNextPageParam: (lastPage: Version[], allPages: Version[][]) =>
+        lastPage.length < PAGE_SIZE ? undefined : allPages.length * PAGE_SIZE,
+      refetchInterval: 5000,
+      placeholderData: keepPreviousData,
+    } as Parameters<typeof trpc.deployment.searchVersions.useInfiniteQuery>[1],
+  );
+
+  const versions = versionsQuery.data?.pages.flat() ?? [];
+  const isInitialLoading = versionsQuery.isLoading;
+  const isEmpty = !isInitialLoading && versions.length === 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
@@ -80,16 +107,62 @@ export function EnvironmentVersionDecisions({
           <DialogTitle className="text-base">{environment.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-4 pb-4">
-          <div className="space-y-4">
-            {versions.map((version) => (
-              <VersionRow
-                key={version.id}
-                version={version}
-                environment={environment}
-              />
-            ))}
+        <div className="max-h-[calc(85vh-180px)] overflow-y-auto px-4 pb-4">
+          <div className="relative">
+            <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by version name or tag..."
+              className="pl-8"
+            />
           </div>
+          {isInitialLoading && (
+            <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Loading versions...
+            </div>
+          )}
+
+          {isEmpty && (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {debouncedSearch
+                ? `No versions match "${debouncedSearch}"`
+                : "No versions found"}
+            </div>
+          )}
+
+          {!isInitialLoading && versions.length > 0 && (
+            <div className="space-y-4 pt-4">
+              {versions.map((version) => (
+                <VersionRow
+                  key={version.id}
+                  version={version}
+                  environment={environment}
+                />
+              ))}
+
+              {versionsQuery.hasNextPage && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => versionsQuery.fetchNextPage()}
+                    disabled={versionsQuery.isFetchingNextPage}
+                  >
+                    {versionsQuery.isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="mr-2 size-3 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Load more"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
