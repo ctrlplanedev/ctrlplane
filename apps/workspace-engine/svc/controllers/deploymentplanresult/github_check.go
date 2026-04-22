@@ -43,16 +43,17 @@ func checkRunName(environmentName, resourceName string) string {
 	return fmt.Sprintf("ctrlplane / %s / %s", environmentName, resourceName)
 }
 
-// targetDetailsURL returns the ctrlplane UI link for a specific target
-// within a plan (used as the check's "Details" link).
-func targetDetailsURL(ctx targetContext) string {
+// resultDetailsURL returns the ctrlplane UI link for a specific plan
+// result (used as the check's "Details" link). The URL opens the diff
+// dialog for that result on page load.
+func resultDetailsURL(ctx targetContext, resultID uuid.UUID) string {
 	return fmt.Sprintf(
-		"%s/%s/deployments/%s/plans/%s?target=%s",
+		"%s/%s/deployments/%s/plans/%s?resultId=%s",
 		strings.TrimRight(config.Global.BaseURL, "/"),
 		ctx.WorkspaceSlug,
 		ctx.DeploymentID,
 		ctx.PlanID,
-		ctx.TargetID,
+		resultID,
 	)
 }
 
@@ -309,6 +310,7 @@ func truncateText(s string, maxBytes int) string {
 // from the target's current state and all its agents' results.
 func buildCheckOutput(
 	tc targetContext,
+	resultID uuid.UUID,
 	results []agentResult,
 	agg aggregate,
 ) *github.CheckRunOutput {
@@ -316,7 +318,7 @@ func buildCheckOutput(
 
 	var summary strings.Builder
 	fmt.Fprintf(&summary, "**Version:** `%s`\n\n", tc.VersionTag)
-	fmt.Fprintf(&summary, "[View full plan →](%s)\n", targetDetailsURL(tc))
+	fmt.Fprintf(&summary, "[View diff →](%s)\n", resultDetailsURL(tc, resultID))
 
 	var text strings.Builder
 	for i, r := range results {
@@ -369,12 +371,13 @@ func upsertCheckRun(
 	ctx context.Context,
 	client *github.Client,
 	tc targetContext,
+	resultID uuid.UUID,
 	agg aggregate,
 	output *github.CheckRunOutput,
 ) error {
 	name := checkRunName(tc.EnvironmentName, tc.ResourceName)
 	status := agg.checkStatus()
-	detailsURL := targetDetailsURL(tc)
+	detailsURL := resultDetailsURL(tc, resultID)
 
 	existing, err := findCheckRunByName(ctx, client, tc.Owner, tc.Repo, tc.SHA, name)
 	if err != nil {
@@ -491,9 +494,9 @@ func MaybeUpdateTargetCheck(
 	}
 
 	agg := aggregateResults(results)
-	output := buildCheckOutput(tc, results, agg)
+	output := buildCheckOutput(tc, resultID, results, agg)
 
-	if err := upsertCheckRun(ghCtx, client, tc, agg, output); err != nil {
+	if err := upsertCheckRun(ghCtx, client, tc, resultID, agg, output); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "upsert check run")
 		return err
