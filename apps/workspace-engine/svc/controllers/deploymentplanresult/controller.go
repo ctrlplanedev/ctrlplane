@@ -74,6 +74,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	agentType := dispatchCtx.JobAgent.Type
 	span.SetAttributes(attribute.String("agent.type", agentType))
 
+	if len(result.AgentState) == 0 {
+		if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+			span.RecordError(checkErr)
+		}
+	}
+
 	planCtx, cancel := context.WithTimeout(ctx, planTimeout)
 	defer cancel()
 
