@@ -165,7 +165,7 @@ export const deploymentsRouter = router({
         deploymentId: z.uuid(),
         query: z.string().optional(),
         limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
+        cursor: z.number().min(0).default(0),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -181,7 +181,7 @@ export const deploymentsRouter = router({
             : undefined,
         ),
         limit: input.limit,
-        offset: input.offset,
+        offset: input.cursor,
         orderBy: desc(schema.deploymentVersion.createdAt),
       });
     }),

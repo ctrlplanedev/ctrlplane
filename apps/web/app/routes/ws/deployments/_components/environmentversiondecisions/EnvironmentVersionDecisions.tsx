@@ -78,29 +78,25 @@ export function EnvironmentVersionDecisions({
 }: EnvironmentVersionDecisionsProps) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pageCount, setPageCount] = useState(1);
 
-  useDebounce(
-    () => {
-      setDebouncedSearch(search);
-      setPageCount(1);
-    },
-    250,
-    [search],
-  );
+  useDebounce(() => setDebouncedSearch(search), 250, [search]);
 
-  const versionsQuery = trpc.deployment.searchVersions.useQuery(
+  const versionsQuery = trpc.deployment.searchVersions.useInfiniteQuery(
     {
       deploymentId,
       query: debouncedSearch || undefined,
-      limit: PAGE_SIZE * pageCount,
-      offset: 0,
+      limit: PAGE_SIZE,
     },
-    { refetchInterval: 5000, placeholderData: keepPreviousData },
+    {
+      initialCursor: 0,
+      getNextPageParam: (lastPage: Version[], allPages: Version[][]) =>
+        lastPage.length < PAGE_SIZE ? undefined : allPages.length * PAGE_SIZE,
+      refetchInterval: 5000,
+      placeholderData: keepPreviousData,
+    } as Parameters<typeof trpc.deployment.searchVersions.useInfiniteQuery>[1],
   );
 
-  const versions = versionsQuery.data ?? [];
-  const hasMore = versions.length === PAGE_SIZE * pageCount;
+  const versions = versionsQuery.data?.pages.flat() ?? [];
   const isInitialLoading = versionsQuery.isLoading;
   const isEmpty = !isInitialLoading && versions.length === 0;
 
@@ -146,15 +142,15 @@ export function EnvironmentVersionDecisions({
                 />
               ))}
 
-              {hasMore && (
+              {versionsQuery.hasNextPage && (
                 <div className="flex justify-center pt-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPageCount((c) => c + 1)}
-                    disabled={versionsQuery.isFetching}
+                    onClick={() => versionsQuery.fetchNextPage()}
+                    disabled={versionsQuery.isFetchingNextPage}
                   >
-                    {versionsQuery.isFetching ? (
+                    {versionsQuery.isFetchingNextPage ? (
                       <>
                         <Loader2 className="mr-2 size-3 animate-spin" />
                         Loading...
