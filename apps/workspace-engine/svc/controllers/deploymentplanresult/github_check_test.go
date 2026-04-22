@@ -268,7 +268,7 @@ func TestBuildCheckOutput_IncludesAllSections(t *testing.T) {
 	}
 	agg := aggregateResults(results)
 
-	out := buildCheckOutput(tc, results, agg)
+	out := buildCheckOutput(tc, uuid.New(), results, agg)
 
 	require.NotNil(t, out)
 	require.NotNil(t, out.Title)
