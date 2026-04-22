@@ -8,15 +8,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "~/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
 type PlanDiffDialogProps = {
   deploymentId: string;
-  resultId: string;
+  resultId: string | undefined;
   title: string;
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
 type DiffView = "split" | "unified";
@@ -25,20 +25,19 @@ export function PlanDiffDialog({
   deploymentId,
   resultId,
   title,
-  children,
+  open,
+  onOpenChange,
 }: PlanDiffDialogProps) {
-  const [open, setOpen] = useState(false);
   const [view, setView] = useState<DiffView>("split");
   const { theme } = useTheme();
 
   const diffQuery = trpc.deployment.plans.resultDiff.useQuery(
-    { deploymentId, resultId },
-    { enabled: open },
+    { deploymentId, resultId: resultId ?? "" },
+    { enabled: open && resultId != null },
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[90vh] w-[95vw] max-w-[95vw] flex-col p-0 sm:max-w-[95vw]">
         <DialogHeader className="flex-row items-center justify-between border-b p-4 pr-12">
           <DialogTitle>{title}</DialogTitle>
