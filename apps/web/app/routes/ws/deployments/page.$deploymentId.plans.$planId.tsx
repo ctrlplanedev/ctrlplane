@@ -26,6 +26,7 @@ import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { PlanDiffDialog } from "./_components/plans/PlanDiffDialog";
 import { PlanStatusBadge } from "./_components/plans/PlanStatusBadge";
+import { usePlanResultParam } from "./_hooks/usePlanResultParam";
 
 export function meta() {
   return [
@@ -36,12 +37,16 @@ export function meta() {
 
 type Result = RouterOutputs["deployment"]["plans"]["results"][number];
 
+function resultTitle(result: Result) {
+  return `${result.environment.name} · ${result.resource.name} · ${result.agent.name}`;
+}
+
 function ChangesCell({
   result,
-  deploymentId,
+  onViewDiff,
 }: {
   result: Result;
-  deploymentId: string;
+  onViewDiff: (resultId: string) => void;
 }) {
   if (result.status === "computing")
     return <span className="text-muted-foreground">—</span>;
@@ -58,19 +63,14 @@ function ChangesCell({
     return <span className="text-muted-foreground">Unsupported</span>;
   if (result.hasChanges === true)
     return (
-      <PlanDiffDialog
-        deploymentId={deploymentId}
-        resultId={result.resultId}
-        title={`${result.environment.name} · ${result.resource.name} · ${result.agent.name}`}
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+        onClick={() => onViewDiff(result.resultId)}
       >
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 cursor-pointer hover:bg-accent hover:text-accent-foreground"
-        >
-          View diff
-        </Button>
-      </PlanDiffDialog>
+        View diff
+      </Button>
     );
   if (result.hasChanges === false)
     return <span className="text-muted-foreground">No changes</span>;
@@ -93,10 +93,10 @@ function ResultsTableHeader() {
 
 function ResultsTableRow({
   result,
-  deploymentId,
+  onViewDiff,
 }: {
   result: Result;
-  deploymentId: string;
+  onViewDiff: (resultId: string) => void;
 }) {
   return (
     <TableRow className="hover:bg-muted/50">
@@ -107,7 +107,7 @@ function ResultsTableRow({
         <PlanStatusBadge status={result.status} />
       </TableCell>
       <TableCell>
-        <ChangesCell result={result} deploymentId={deploymentId} />
+        <ChangesCell result={result} onViewDiff={onViewDiff} />
       </TableCell>
     </TableRow>
   );
@@ -135,6 +135,7 @@ export default function DeploymentPlanDetail() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
   const { planId } = useParams<{ planId: string }>();
+  const { resultId, openResult, closeResult } = usePlanResultParam();
 
   const resultsQuery = trpc.deployment.plans.results.useQuery(
     { deploymentId: deployment.id, planId: planId! },
@@ -142,6 +143,7 @@ export default function DeploymentPlanDetail() {
   );
 
   const results = resultsQuery.data ?? [];
+  const activeResult = results.find((r) => r.resultId === resultId);
 
   return (
     <>
@@ -192,12 +194,22 @@ export default function DeploymentPlanDetail() {
               <ResultsTableRow
                 key={r.resultId}
                 result={r}
-                deploymentId={deployment.id}
+                onViewDiff={openResult}
               />
             ))}
           </TableBody>
         </Table>
       )}
+
+      <PlanDiffDialog
+        deploymentId={deployment.id}
+        resultId={resultId}
+        title={activeResult ? resultTitle(activeResult) : ""}
+        open={resultId != null}
+        onOpenChange={(o) => {
+          if (!o) closeResult();
+        }}
+      />
     </>
   );
 }
