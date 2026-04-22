@@ -196,8 +196,8 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentage() float32 {
 
 	numRt := len(t.ReleaseTargets)
 	if numRt == 0 {
-		span.SetAttributes(attribute.Float64("success_percentage", 0.0))
-		return 0.0 // If no targets, consider it 100% successful
+		span.SetAttributes(attribute.Float64("success_percentage", 100.0))
+		return 100.0 // vacuous truth: 0/0 targets successful
 	}
 
 	// Build a set of release target keys for filtering
@@ -242,7 +242,7 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentageSatisfiedAt(
 	}
 	numRt := len(t.ReleaseTargets)
 	if numRt == 0 {
-		return time.Time{}
+		return t.Version.CreatedAt
 	}
 
 	// Build a set of release target keys for filtering
