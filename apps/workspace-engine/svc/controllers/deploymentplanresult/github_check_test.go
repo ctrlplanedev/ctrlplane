@@ -71,6 +71,53 @@ func TestAggregateResults_Counts(t *testing.T) {
 	assert.Equal(t, 1, agg.Unsupported)
 	assert.Equal(t, 1, agg.Changed)
 	assert.Equal(t, 1, agg.Unchanged)
+	assert.Equal(t, 1, agg.Additions)
+	assert.Equal(t, 1, agg.Deletions)
+}
+
+func TestAggregateResults_AdditionsDeletionsSumAcrossAgents(t *testing.T) {
+	// Two changed agents contribute their own diff counts; unchanged,
+	// errored, and unsupported agents must not contribute.
+	results := []agentResult{
+		completedResult("a", true, "a\nb\nc\n", "a\nX\nc\nd\n"), // 2 adds, 1 del
+		completedResult("b", true, "x\ny\nz\n", "x\nz\n"),       // 0 adds, 1 del
+		completedResult("unchanged", false, "same\n", "same\n"), // ignored
+		erroredResult("errored", "boom"),                        // ignored
+		unsupportedResult("unsupported"),                        // ignored
+	}
+
+	agg := aggregateResults(results)
+
+	assert.Equal(t, 2, agg.Changed)
+	assert.Equal(t, 2, agg.Additions)
+	assert.Equal(t, 2, agg.Deletions)
+}
+
+func TestCountDiffLines(t *testing.T) {
+	tests := []struct {
+		name          string
+		current       string
+		proposed      string
+		wantAdditions int
+		wantDeletions int
+	}{
+		{"identical", "a\nb\nc\n", "a\nb\nc\n", 0, 0},
+		{"pure insert", "a\nb\n", "a\nb\nc\n", 1, 0},
+		{"pure delete", "a\nb\nc\n", "a\n", 0, 2},
+		{"single-line replace", "foo\n", "bar\n", 1, 1},
+		{"multi-line mixed (replace + insert)", "a\nb\nc\n", "a\nX\nc\nd\n", 2, 1},
+		{"empty both", "", "", 0, 0},
+		{"empty current, content proposed", "", "a\nb\n", 2, 0},
+		{"content current, empty proposed", "a\nb\n", "", 0, 2},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			adds, dels := countDiffLines(tc.current, tc.proposed)
+			assert.Equal(t, tc.wantAdditions, adds, "additions")
+			assert.Equal(t, tc.wantDeletions, dels, "deletions")
+		})
+	}
 }
 
 func TestAggregateResults_Empty(t *testing.T) {
@@ -154,24 +201,40 @@ func TestAggregate_CheckTitle(t *testing.T) {
 			"1 errored, 0 unsupported (2/3 agents complete)",
 		},
 		{
-			"final errored summary includes unsupported",
-			aggregate{Total: 3, Completed: 1, Errored: 1, Unsupported: 1, Changed: 1},
-			"1 errored, 1 changed, 0 unchanged, 1 unsupported",
+			"final errored summary shows diff counts and errored count",
+			aggregate{
+				Total:       3,
+				Completed:   1,
+				Errored:     1,
+				Unsupported: 1,
+				Changed:     1,
+				Additions:   7,
+				Deletions:   3,
+			},
+			"+7 -3 (1 errored)",
 		},
 		{
-			"final with changes includes unsupported",
-			aggregate{Total: 3, Completed: 2, Changed: 1, Unchanged: 1, Unsupported: 1},
-			"1 changed, 1 unchanged, 1 unsupported",
+			"final with changes shows diff counts",
+			aggregate{
+				Total:       3,
+				Completed:   2,
+				Changed:     1,
+				Unchanged:   1,
+				Unsupported: 1,
+				Additions:   12,
+				Deletions:   4,
+			},
+			"+12 -4",
 		},
 		{
-			"final no changes with some unsupported",
+			"final no changes shows zero diff counts",
 			aggregate{Total: 3, Completed: 2, Unchanged: 2, Unsupported: 1},
-			"No changes (1 unsupported)",
+			"+0 -0",
 		},
 		{
-			"final no changes",
+			"final all clean",
 			aggregate{Total: 2, Completed: 2, Unchanged: 2},
-			"No changes",
+			"+0 -0",
 		},
 		{
 			"all unsupported",

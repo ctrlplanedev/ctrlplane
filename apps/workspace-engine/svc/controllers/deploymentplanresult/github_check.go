@@ -150,6 +150,27 @@ type aggregate struct {
 	Unsupported int
 	Changed     int
 	Unchanged   int
+	Additions   int
+	Deletions   int
+}
+
+func countDiffLines(current, proposed string) (int, int) {
+	a := difflib.SplitLines(current)
+	b := difflib.SplitLines(proposed)
+	m := difflib.NewMatcher(a, b)
+	var adds, dels int
+	for _, op := range m.GetOpCodes() {
+		switch op.Tag {
+		case 'r':
+			dels += op.I2 - op.I1
+			adds += op.J2 - op.J1
+		case 'd':
+			dels += op.I2 - op.I1
+		case 'i':
+			adds += op.J2 - op.J1
+		}
+	}
+	return adds, dels
 }
 
 func aggregateResults(results []agentResult) aggregate {
@@ -166,6 +187,10 @@ func aggregateResults(results []agentResult) aggregate {
 		}
 		if r.HasChanges != nil && *r.HasChanges {
 			a.Changed++
+			adds, dels := countDiffLines(r.Current, r.Proposed)
+			a.Additions += adds
+			a.Deletions += dels
+			continue
 		}
 		if r.HasChanges != nil && !*r.HasChanges {
 			a.Unchanged++
@@ -228,25 +253,12 @@ func (a aggregate) checkTitle() string {
 	if a.Total > 0 && a.Unsupported == a.Total {
 		return "All agents unsupported"
 	}
+
+	diffSummary := fmt.Sprintf("+%d -%d", a.Additions, a.Deletions)
 	if a.Errored > 0 {
-		return fmt.Sprintf(
-			"%d errored, %d changed, %d unchanged, %d unsupported",
-			a.Errored, a.Changed, a.Unchanged, a.Unsupported,
-		)
+		return fmt.Sprintf("%s (%d errored)", diffSummary, a.Errored)
 	}
-	if a.Changed > 0 {
-		return fmt.Sprintf(
-			"%d changed, %d unchanged, %d unsupported",
-			a.Changed, a.Unchanged, a.Unsupported,
-		)
-	}
-	if a.Unsupported > 0 {
-		return fmt.Sprintf(
-			"No changes (%d unsupported)",
-			a.Unsupported,
-		)
-	}
-	return "No changes"
+	return diffSummary
 }
 
 // formatAgentSection renders the markdown block for one agent in the
