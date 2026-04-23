@@ -165,7 +165,7 @@ const deleteRelationshipRule: AsyncTypedHandler<
 
   enqueueRelationshipReconciliation(workspaceId);
 
-  res.status(202).json({ id: relationshipRuleId });
+  res.status(202).json(toRuleResponse(rule));
 };
 
 const upsertRelationshipRule: AsyncTypedHandler<
