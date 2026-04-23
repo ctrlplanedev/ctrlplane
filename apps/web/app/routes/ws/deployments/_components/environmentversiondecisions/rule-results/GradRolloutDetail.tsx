@@ -1,6 +1,5 @@
 import type { AppRouter } from "@ctrlplane/trpc";
 import { useMemo } from "react";
-import { formatDistanceToNowStrict, isFuture } from "date-fns";
 import _ from "lodash";
 import {
   CheckCircle2Icon,
@@ -12,6 +11,10 @@ import {
 import { trpc } from "~/api/trpc";
 import { Progress } from "~/components/ui/progress";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import {
+  safeFormatDistanceToNowStrict,
+  safeIsFuture,
+} from "~/lib/date";
 
 type RolloutEvaluation = NonNullable<
   Awaited<ReturnType<AppRouter["deploymentVersions"]["evaulate"]>>
@@ -126,19 +129,27 @@ function RolloutRow({
       {!isComplete && (
         <span className="shrink-0 text-muted-foreground">
           {isWaiting && "Waiting for other policies to pass"}
-          {!isWaiting && nextDeployment != null && isFuture(nextDeployment) && (
-            <>next in {formatDistanceToNowStrict(nextDeployment)}</>
-          )}
           {!isWaiting &&
             nextDeployment != null &&
-            isFuture(nextDeployment) &&
+            safeIsFuture(nextDeployment) && (
+              <>
+                next in{" "}
+                {safeFormatDistanceToNowStrict(nextDeployment) ?? "?"}
+              </>
+            )}
+          {!isWaiting &&
+            nextDeployment != null &&
+            safeIsFuture(nextDeployment) &&
             estimatedCompletion != null &&
-            isFuture(estimatedCompletion) &&
+            safeIsFuture(estimatedCompletion) &&
             " · "}
           {!isWaiting &&
             estimatedCompletion != null &&
-            isFuture(estimatedCompletion) && (
-              <>done in {formatDistanceToNowStrict(estimatedCompletion)}</>
+            safeIsFuture(estimatedCompletion) && (
+              <>
+                done in{" "}
+                {safeFormatDistanceToNowStrict(estimatedCompletion) ?? "?"}
+              </>
             )}
         </span>
       )}

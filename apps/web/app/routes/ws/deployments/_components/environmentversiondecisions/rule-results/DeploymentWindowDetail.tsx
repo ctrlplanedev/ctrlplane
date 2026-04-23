@@ -146,15 +146,15 @@ function WindowRow({
             {timeOpen != null &&
               ` (${timeOpen}${totalDuration != null ? ` of ${totalDuration}` : ""})`}
             {timeRemaining != null && ` · closes in ${timeRemaining}`}
-            {isPast(nextEnd) &&
-              ` · ended ${formatDistanceToNowStrict(nextEnd)} ago`}
+            {safeIsPast(nextEnd) &&
+              ` · ended ${safeFormatDistanceToNowStrict(nextEnd) ?? "?"} ago`}
           </span>
         ) : (
           <span>
             {windowLabel} Closed · next{" "}
-            {isPast(nextStart)
-              ? `${formatDistanceToNowStrict(nextStart)} ago`
-              : `in ${formatDistanceToNowStrict(nextStart)}`}
+            {safeIsPast(nextStart)
+              ? `${safeFormatDistanceToNowStrict(nextStart) ?? "?"} ago`
+              : `in ${safeFormatDistanceToNowStrict(nextStart) ?? "?"}`}
           </span>
         )}
       </div>

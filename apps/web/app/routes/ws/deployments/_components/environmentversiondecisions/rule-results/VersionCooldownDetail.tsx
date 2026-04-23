@@ -1,6 +1,5 @@
 import type { AppRouter } from "@ctrlplane/trpc";
 import { useMemo } from "react";
-import { formatDistanceToNowStrict, isFuture } from "date-fns";
 import _ from "lodash";
 import {
   CheckCircle2Icon,
@@ -11,6 +10,10 @@ import {
 
 import { trpc } from "~/api/trpc";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import {
+  safeFormatDistanceToNowStrict,
+  safeIsFuture,
+} from "~/lib/date";
 
 type CooldownEvaluation = NonNullable<
   Awaited<ReturnType<AppRouter["deploymentVersions"]["evaulate"]>>
@@ -101,15 +104,18 @@ function CooldownDescription({
         {details.time_remaining} remaining
         {details.required_interval != null &&
           ` of ${details.required_interval}`}
-        {earliest != null && isFuture(earliest) && (
-          <> · deploys in {formatDistanceToNowStrict(earliest)}</>
+        {earliest != null && safeIsFuture(earliest) && (
+          <>
+            {" "}
+            · deploys in {safeFormatDistanceToNowStrict(earliest) ?? "?"}
+          </>
         )}
       </>
     );
   }
 
-  if (earliest != null && isFuture(earliest))
-    return <>next in {formatDistanceToNowStrict(earliest)}</>;
+  if (earliest != null && safeIsFuture(earliest))
+    return <>next in {safeFormatDistanceToNowStrict(earliest) ?? "?"}</>;
 
   return null;
 }

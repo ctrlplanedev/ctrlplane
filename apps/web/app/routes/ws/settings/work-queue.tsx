@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { formatDistanceToNowStrict } from "date-fns";
+
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
