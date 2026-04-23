@@ -137,6 +137,17 @@
     },
   },
 
+  conflictResponse(description='Resource already exists'):: {
+    '409': {
+      description: description,
+      content: {
+        'application/json': {
+          schema: { '$ref': '#/components/schemas/ErrorResponse' },
+        },
+      },
+    },
+  },
+
   internalServerError():: {
     '500': {
       description: 'Internal server error',

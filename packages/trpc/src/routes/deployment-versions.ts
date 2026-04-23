@@ -41,12 +41,6 @@ export const deploymentVersionsRouter = router({
 
       const { deployment } = data;
 
-      if (deployment.workspaceId == null)
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Deployment does not have a workspace.",
-        });
-
       const [record] = await ctx.db
         .insert(schema.userApprovalRecord)
         .values({
@@ -145,11 +139,6 @@ export const deploymentVersionsRouter = router({
           message: "Deployment version not found",
         });
       const { deployment } = data;
-      if (deployment.workspaceId == null)
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Deployment does not have a workspace.",
-        });
 
       enqueuePolicyEval(ctx.db, deployment.workspaceId, versionId);
 

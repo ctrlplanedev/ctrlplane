@@ -2,7 +2,7 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { and, count, eq } from "@ctrlplane/db";
+import { and, count, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueAllReleaseTargetsDesiredVersion,
@@ -129,7 +129,7 @@ const createEnvironment: AsyncTypedHandler<
   const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  const [created] = await db
+  const created = await db
     .insert(schema.environment)
     .values({
       name: body.name,
@@ -138,13 +138,23 @@ const createEnvironment: AsyncTypedHandler<
       metadata: body.metadata ?? {},
       workspaceId,
     })
-    .returning();
+    .returning()
+    .then(takeFirst)
+    .catch((error: any) => {
+      if (error.code === "23505")
+        throw new ApiError(
+          "Environment name already exists in this workspace",
+          409,
+          "DUPLICATE_NAME",
+        );
+      throw error;
+    });
 
-  enqueueReleaseTargetsForEnvironment(db, workspaceId, created!.id);
+  enqueueReleaseTargetsForEnvironment(db, workspaceId, created.id);
 
   res
     .status(202)
-    .json({ id: created!.id, message: "Environment creation requested" });
+    .json({ id: created.id, message: "Environment creation requested" });
 };
 
 export const upsertEnvironmentById: AsyncTypedHandler<
@@ -157,25 +167,35 @@ export const upsertEnvironmentById: AsyncTypedHandler<
   const isValid = validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  await db
-    .insert(schema.environment)
-    .values({
-      id: environmentId,
-      name: body.name,
-      description: body.description ?? "",
-      resourceSelector: body.resourceSelector ?? "false",
-      metadata: body.metadata ?? {},
-      workspaceId,
-    })
-    .onConflictDoUpdate({
-      target: schema.environment.id,
-      set: {
+  try {
+    await db
+      .insert(schema.environment)
+      .values({
+        id: environmentId,
         name: body.name,
         description: body.description ?? "",
         resourceSelector: body.resourceSelector ?? "false",
         metadata: body.metadata ?? {},
-      },
-    });
+        workspaceId,
+      })
+      .onConflictDoUpdate({
+        target: schema.environment.id,
+        set: {
+          name: body.name,
+          description: body.description ?? "",
+          resourceSelector: body.resourceSelector ?? "false",
+          metadata: body.metadata ?? {},
+        },
+      });
+  } catch (error: any) {
+    if (error.code === "23505")
+      throw new ApiError(
+        "Environment name already exists in this workspace",
+        409,
+        "DUPLICATE_NAME",
+      );
+    throw error;
+  }
 
   enqueueReleaseTargetsForEnvironment(db, workspaceId, environmentId);
 

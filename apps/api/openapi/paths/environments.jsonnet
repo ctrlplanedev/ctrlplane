@@ -26,7 +26,9 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted'))
+                 + openapi.badRequestResponse()
+                 + openapi.conflictResponse('Environment name already exists in this workspace'),
     },
   },
   '/v1/workspaces/{workspaceId}/environments/{environmentId}': {
@@ -69,7 +71,8 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted'))
                  + openapi.notFoundResponse()
-                 + openapi.badRequestResponse(),
+                 + openapi.badRequestResponse()
+                 + openapi.conflictResponse('Environment name already exists in this workspace'),
     },
   },
 }

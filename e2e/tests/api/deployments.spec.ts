@@ -646,6 +646,79 @@ test.describe("Deployment API", () => {
     expect(listRes.response.status).toBe(400);
   });
 
+  test("should reject creating a deployment with a duplicate name in the same workspace", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `deploy-dup-${faker.string.alphanumeric(8)}`;
+    const firstRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: name },
+      },
+    );
+    expect(firstRes.response.status).toBe(202);
+    const deploymentId = firstRes.data!.id;
+
+    const dupRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: `${name}-other` },
+      },
+    );
+    expect(dupRes.response.status).toBe(409);
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
+  test("should reject upserting a deployment to an existing name in the same workspace", async ({
+    api,
+    workspace,
+  }) => {
+    const nameA = `deploy-upsert-dup-a-${faker.string.alphanumeric(8)}`;
+    const nameB = `deploy-upsert-dup-b-${faker.string.alphanumeric(8)}`;
+
+    const [resA, resB] = await Promise.all([
+      api.POST("/v1/workspaces/{workspaceId}/deployments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: nameA, slug: nameA },
+      }),
+      api.POST("/v1/workspaces/{workspaceId}/deployments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: nameB, slug: nameB },
+      }),
+    ]);
+    expect(resA.response.status).toBe(202);
+    expect(resB.response.status).toBe(202);
+    const idA = resA.data!.id;
+    const idB = resB.data!.id;
+
+    const renameRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: { path: { workspaceId: workspace.id, deploymentId: idB } },
+        body: { name: nameA, slug: nameB },
+      },
+    );
+    expect(renameRes.response.status).toBe(409);
+
+    await Promise.all([
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId: workspace.id, deploymentId: idA } } },
+      ),
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId: workspace.id, deploymentId: idB } } },
+      ),
+    ]);
+  });
+
   test("should return all deployments when no CEL filter is provided", async ({
     api,
     workspace,
