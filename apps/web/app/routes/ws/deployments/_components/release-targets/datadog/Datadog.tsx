@@ -1,11 +1,10 @@
-import { formatDistanceToNowStrict } from "date-fns";
-
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { Spinner } from "~/components/ui/spinner";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { cn } from "~/lib/utils";
 import { useMetricMeasurements } from "../useMetricMeasurements";
 import {
@@ -151,7 +150,7 @@ function MeasurementRow({ measurement }: { measurement: MetricMeasurement }) {
   const isPassed = measurement.status === "passed";
   const isFailed = measurement.status === "failed";
 
-  const timeAgo = formatDistanceToNowStrict(new Date(measurement.measuredAt), {
+  const timeAgo = safeFormatDistanceToNowStrict(measurement.measuredAt, {
     addSuffix: true,
   });
 
@@ -168,7 +167,7 @@ function MeasurementRow({ measurement }: { measurement: MetricMeasurement }) {
             !isPassed && !isFailed && "bg-muted-foreground",
           )}
         />
-        <span className="text-muted-foreground">{timeAgo}</span>
+        <span className="text-muted-foreground">{timeAgo ?? "—"}</span>
       </div>
       <div className="flex items-center gap-3 font-mono">
         {queryEntries.length > 0 ? (

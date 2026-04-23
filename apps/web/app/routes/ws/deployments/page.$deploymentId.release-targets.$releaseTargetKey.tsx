@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { formatDistanceToNow } from "date-fns";
 import _ from "lodash";
 import {
   AlertCircleIcon,
@@ -17,6 +16,7 @@ import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
+import { safeFormatDistanceToNow } from "~/lib/date";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import {
@@ -245,18 +245,21 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
           <span className="flex items-center gap-1">
             <Clock className="size-3" />
             Evaluated{" "}
-            {formatDistanceToNow(new Date(evaluation.evaluatedAt), {
+            {safeFormatDistanceToNow(evaluation.evaluatedAt, {
               addSuffix: true,
-            })}
+            }) ?? "unknown"}
           </span>
-          {evaluation.satisfiedAt != null && (
-            <span>
-              Satisfied{" "}
-              {formatDistanceToNow(new Date(evaluation.satisfiedAt), {
-                addSuffix: true,
-              })}
-            </span>
-          )}
+          {evaluation.satisfiedAt != null &&
+            safeFormatDistanceToNow(evaluation.satisfiedAt, {
+              addSuffix: true,
+            }) != null && (
+              <span>
+                Satisfied{" "}
+                {safeFormatDistanceToNow(evaluation.satisfiedAt, {
+                  addSuffix: true,
+                })}
+              </span>
+            )}
         </div>
         {windowDetails != null && <WindowInfo details={windowDetails} />}
         {approvalDetails != null && <ApprovalInfo details={approvalDetails} />}

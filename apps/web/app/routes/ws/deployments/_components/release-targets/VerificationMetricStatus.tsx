@@ -1,6 +1,5 @@
-import { formatDistanceToNowStrict } from "date-fns";
-
 import { Skeleton } from "~/components/ui/skeleton";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { cn } from "~/lib/utils";
 
 import { useMetricMeasurements } from "./useMetricMeasurements";
@@ -127,7 +126,7 @@ export function VerificationMetricStatus({
   )[0];
 
   const timeAgo = latestMeasurement
-    ? formatDistanceToNowStrict(new Date(latestMeasurement.measuredAt), {
+    ? safeFormatDistanceToNowStrict(latestMeasurement.measuredAt, {
         addSuffix: true,
       })
     : null;

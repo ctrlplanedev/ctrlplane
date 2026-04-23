@@ -1,7 +1,7 @@
-import { formatDistanceToNowStrict } from "date-fns";
 import { Check, Loader2, X } from "lucide-react";
 
 import { Spinner } from "~/components/ui/spinner";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { cn } from "~/lib/utils";
 import { useMetricMeasurements } from "../useMetricMeasurements";
 import {
@@ -140,9 +140,9 @@ export function ArgoCDVerificationDisplay({
           <div className="flex justify-between">
             <div className="text-muted-foreground">Last Synced</div>
             <div>
-              {formatDistanceToNowStrict(new Date(status.reconciledAt), {
+              {safeFormatDistanceToNowStrict(status.reconciledAt, {
                 addSuffix: true,
-              })}
+              }) ?? "unknown"}
             </div>
           </div>
         )}

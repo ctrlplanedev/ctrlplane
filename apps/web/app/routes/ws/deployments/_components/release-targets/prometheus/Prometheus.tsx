@@ -1,6 +1,5 @@
-import { formatDistanceToNowStrict } from "date-fns";
-
 import { Spinner } from "~/components/ui/spinner";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { cn } from "~/lib/utils";
 import { useMetricMeasurements } from "../useMetricMeasurements";
 import {
@@ -115,10 +114,9 @@ function MeasurementRow({ measurement }: { measurement: MetricMeasurement }) {
   const isPassed = measurement.status === "passed";
   const isFailed = measurement.status === "failed";
 
-  const timeAgo = formatDistanceToNowStrict(
-    new Date(measurement.measuredAt),
-    { addSuffix: true },
-  );
+  const timeAgo = safeFormatDistanceToNowStrict(measurement.measuredAt, {
+    addSuffix: true,
+  });
 
   return (
     <div className="flex items-center justify-between rounded px-1 py-0.5 text-xs">
@@ -131,7 +129,7 @@ function MeasurementRow({ measurement }: { measurement: MetricMeasurement }) {
             !isPassed && !isFailed && "bg-muted-foreground",
           )}
         />
-        <span className="text-muted-foreground">{timeAgo}</span>
+        <span className="text-muted-foreground">{timeAgo ?? "—"}</span>
       </div>
       <span className="font-mono">
         {parsed?.value != null ? parsed.value : "—"}

@@ -1,6 +1,5 @@
 import type { AppRouter } from "@ctrlplane/trpc";
 import { useMemo } from "react";
-import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import {
   CheckCircle2Icon,
@@ -20,6 +19,7 @@ import {
 } from "~/components/ui/dialog";
 import { Progress } from "~/components/ui/progress";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { cn } from "~/lib/utils";
 
 type RuleEvaluation = NonNullable<
@@ -40,15 +40,6 @@ type ProgressionDetails = {
   successful_environments?: number;
   failed_environments?: number;
 };
-
-function safeFormatDistanceToNowStrict(
-  value: Date | string | null | undefined,
-) {
-  if (value == null) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) return null;
-  return formatDistanceToNowStrict(date);
-}
 
 function extractEnvDetails(details: Record<string, unknown>): PerEnvDetail[] {
   const envDetails: PerEnvDetail[] = [];

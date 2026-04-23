@@ -1,10 +1,5 @@
 import type { AppRouter } from "@ctrlplane/trpc";
 import { useMemo } from "react";
-import {
-  formatDistanceStrict,
-  formatDistanceToNowStrict,
-  isPast,
-} from "date-fns";
 import _ from "lodash";
 import {
   CheckCircle2Icon,
@@ -15,6 +10,11 @@ import { rrulestr } from "rrule";
 
 import { trpc } from "~/api/trpc";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import {
+  safeFormatDistanceStrict,
+  safeFormatDistanceToNowStrict,
+  safeIsPast,
+} from "~/lib/date";
 
 type DeploymentWindow = NonNullable<
   Awaited<ReturnType<AppRouter["deploymentVersions"]["evaulate"]>>
@@ -111,14 +111,12 @@ function WindowRow({
   const windowOpenedAt = isOpen
     ? new Date(nextEnd.getTime() - durationMs)
     : null;
-  const timeOpen =
-    windowOpenedAt != null ? formatDistanceToNowStrict(windowOpenedAt) : null;
+  const timeOpen = safeFormatDistanceToNowStrict(windowOpenedAt);
   const timeRemaining =
-    isOpen && !isPast(nextEnd) ? formatDistanceToNowStrict(nextEnd) : null;
-  const totalDuration =
-    windowOpenedAt != null
-      ? formatDistanceStrict(windowOpenedAt, nextEnd)
+    isOpen && !safeIsPast(nextEnd)
+      ? safeFormatDistanceToNowStrict(nextEnd)
       : null;
+  const totalDuration = safeFormatDistanceStrict(windowOpenedAt, nextEnd);
 
   const windowLabel =
     policyName ?? (isAllowWindow ? "Allow Window" : "Deny Window");
