@@ -6,6 +6,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -34,7 +35,7 @@ export const deployment = pgTable(
 
     workspaceId: uuid("workspace_id").references(() => workspace.id),
   },
-  (t) => [index().on(t.workspaceId)],
+  (t) => [index().on(t.workspaceId), unique().on(t.workspaceId, t.name)],
 );
 
 export const deploymentRelations = relations(deployment, ({ many }) => ({

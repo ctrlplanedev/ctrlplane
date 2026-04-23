@@ -1,0 +1,2 @@
+ALTER TABLE "deployment" ADD CONSTRAINT "deployment_workspace_id_name_unique" UNIQUE("workspace_id","name");--> statement-breakpoint
+ALTER TABLE "environment" ADD CONSTRAINT "environment_workspace_id_name_unique" UNIQUE("workspace_id","name");
