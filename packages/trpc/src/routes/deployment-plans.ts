@@ -190,7 +190,7 @@ export const deploymentPlansRouter = router({
 
       return {
         version: { tag: plan.versionTag, name: plan.versionName },
-        results: rows.map((r) => {
+        items: rows.map((r) => {
           const agent = r.dispatchContext.jobAgent ?? {};
           return {
             resultId: r.resultId,

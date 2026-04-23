@@ -36,7 +36,7 @@ export function meta() {
 }
 
 type Result =
-  RouterOutputs["deployment"]["plans"]["results"]["results"][number];
+  RouterOutputs["deployment"]["plans"]["results"]["items"][number];
 
 function resultTitle(result: Result) {
   return `${result.environment.name} · ${result.resource.name} · ${result.agent.name}`;
@@ -144,7 +144,7 @@ export default function DeploymentPlanDetail() {
   );
 
   const version = resultsQuery.data?.version;
-  const results = resultsQuery.data?.results ?? [];
+  const results = resultsQuery.data?.items ?? [];
   const activeResult = results.find((r) => r.resultId === resultId);
 
   return (
@@ -176,8 +176,8 @@ export default function DeploymentPlanDetail() {
                 </Link>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
-              <BreadcrumbPage className="font-mono">
-                {version?.tag ?? version?.name ?? planId}
+              <BreadcrumbPage className="max-w-xs truncate font-mono">
+                {version?.name ?? version?.tag ?? planId}
               </BreadcrumbPage>
             </BreadcrumbList>
           </Breadcrumb>
