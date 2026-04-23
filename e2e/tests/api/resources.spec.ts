@@ -145,7 +145,7 @@ test.describe("Resource API", () => {
       },
     );
 
-    expect(deleteRes.response.status).toBe(200);
+    expect(deleteRes.response.status).toBe(202);
 
     const getRes = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",

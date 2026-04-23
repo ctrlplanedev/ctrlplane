@@ -198,7 +198,7 @@ const deleteResourceByIdentifier: AsyncTypedHandler<
     ),
   ]);
 
-  res.status(200).json({
+  res.status(202).json({
     id: resource.id,
     message: "Resource deleted",
   });

@@ -106,7 +106,7 @@ const updateDeploymentVersion: AsyncTypedHandler<
     updatedVersion.deploymentId,
   );
 
-  res.status(200).json(updatedVersion);
+  res.status(202).json(updatedVersion);
 };
 
 export const deploymentVersionsRouter = Router({ mergeParams: true })
