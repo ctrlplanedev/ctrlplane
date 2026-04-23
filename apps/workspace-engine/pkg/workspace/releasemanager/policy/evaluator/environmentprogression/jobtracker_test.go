@@ -77,7 +77,13 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_NoTargets(t *testing.T) {
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	percentage := tracker.GetSuccessPercentage()
-	assert.InDelta(t, float32(100.0), percentage, 0, "expected 100%% success with no targets (vacuous truth)")
+	assert.InDelta(
+		t,
+		float32(100.0),
+		percentage,
+		0,
+		"expected 100%% success with no targets (vacuous truth)",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T) {
