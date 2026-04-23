@@ -365,7 +365,7 @@ const createDeploymentVersion: AsyncTypedHandler<
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
   enqueuePolicyEval(db, workspaceId, version.id);
 
-  res.status(200).json(formatDeploymentVersion(version));
+  res.status(202).json(formatDeploymentVersion(version));
 };
 
 const createDeploymentPlan: AsyncTypedHandler<
