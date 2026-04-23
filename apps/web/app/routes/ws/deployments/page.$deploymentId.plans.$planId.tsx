@@ -3,6 +3,7 @@ import { FileText } from "lucide-react";
 import { Link, useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
+import { cn } from "~/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,7 +11,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
-import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import {
@@ -65,13 +65,7 @@ function DiffStats({
   );
 }
 
-function ChangesCell({
-  result,
-  onViewDiff,
-}: {
-  result: Result;
-  onViewDiff: (resultId: string) => void;
-}) {
+function ChangesCell({ result }: { result: Result }) {
   if (result.status === "computing")
     return <span className="text-muted-foreground">—</span>;
   if (result.status === "errored")
@@ -86,19 +80,7 @@ function ChangesCell({
   if (result.status === "unsupported")
     return <span className="text-muted-foreground">Unsupported</span>;
   if (result.hasChanges === true)
-    return (
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 cursor-pointer hover:bg-accent hover:text-accent-foreground"
-          onClick={() => onViewDiff(result.resultId)}
-        >
-          View diff
-        </Button>
-        <DiffStats stats={result.diffStats} />
-      </div>
-    );
+    return <DiffStats stats={result.diffStats} />;
   if (result.hasChanges === false)
     return <span className="text-muted-foreground">No changes</span>;
   return <span className="text-muted-foreground">—</span>;
@@ -125,8 +107,12 @@ function ResultsTableRow({
   result: Result;
   onViewDiff: (resultId: string) => void;
 }) {
+  const isClickable = result.hasChanges === true;
   return (
-    <TableRow className="hover:bg-muted/50">
+    <TableRow
+      className={cn("hover:bg-muted/50", isClickable && "cursor-pointer")}
+      onClick={isClickable ? () => onViewDiff(result.resultId) : undefined}
+    >
       <TableCell>{result.environment.name}</TableCell>
       <TableCell>{result.resource.name}</TableCell>
       <TableCell>{result.agent.name}</TableCell>
@@ -134,7 +120,7 @@ function ResultsTableRow({
         <PlanStatusBadge status={result.status} />
       </TableCell>
       <TableCell>
-        <ChangesCell result={result} onViewDiff={onViewDiff} />
+        <ChangesCell result={result} />
       </TableCell>
     </TableRow>
   );
