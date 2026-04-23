@@ -461,9 +461,9 @@ func TestPassRateEvaluator_NoReleaseTargets(t *testing.T) {
 	}
 	result := eval.Evaluate(ctx, scope)
 
-	// With no release targets, success percentage is 0%
-	assert.False(t, result.Allowed, "expected denied with no release targets")
-	assert.Contains(t, result.Message, "Success rate 0.0% below required 50.0%")
+	// Vacuous truth: 0/0 release targets is treated as 100% pass rate.
+	assert.True(t, result.Allowed, "expected allowed with no release targets (vacuous truth)")
+	assert.Contains(t, result.Message, "Success rate 100.0% meets required 50.0%")
 }
 
 // TestPassRateEvaluator_CustomSuccessStatuses tests that custom success statuses can be used.
