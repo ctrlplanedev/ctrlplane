@@ -3,7 +3,16 @@ import { parse } from "cel-js";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, asc, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  takeFirst,
+} from "@ctrlplane/db";
 import {
   enqueueDeploymentSelectorEval,
   enqueuePolicyEval,
@@ -143,6 +152,39 @@ export const deploymentsRouter = router({
       });
 
       return versions;
+    }),
+
+  searchVersions: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentVersionList)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .input(
+      z.object({
+        deploymentId: z.uuid(),
+        query: z.string().optional(),
+        limit: z.number().min(1).max(100).default(20),
+        cursor: z.number().min(0).default(0),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const search = input.query?.trim();
+      return ctx.db.query.deploymentVersion.findMany({
+        where: and(
+          eq(schema.deploymentVersion.deploymentId, input.deploymentId),
+          search
+            ? or(
+                ilike(schema.deploymentVersion.name, `%${search}%`),
+                ilike(schema.deploymentVersion.tag, `%${search}%`),
+              )
+            : undefined,
+        ),
+        limit: input.limit,
+        offset: input.cursor,
+        orderBy: desc(schema.deploymentVersion.createdAt),
+      });
     }),
 
   create: protectedProcedure

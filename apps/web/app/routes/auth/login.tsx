@@ -88,7 +88,7 @@ function LoginEmailPassword() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input {...field} type="password" autoComplete="current-password" />
               </FormControl>
               <FormMessage />
             </FormItem>

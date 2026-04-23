@@ -1,5 +1,6 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
+import { evaluate } from "cel-js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
@@ -258,6 +259,19 @@ const deleteDeployment: AsyncTypedHandler<
     .json({ id: deploymentId, message: "Deployment delete requested" });
 };
 
+function filterDeploymentVersions(
+  versions: (typeof schema.deploymentVersion.$inferSelect)[],
+  cel: string,
+) {
+  return versions.filter((version) => {
+    try {
+      return evaluate(cel, { deploymentVersion: version });
+    } catch {
+      return false;
+    }
+  });
+}
+
 const listDeploymentVersions: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
   "get"
@@ -266,29 +280,54 @@ const listDeploymentVersions: AsyncTypedHandler<
   const limit = req.query.limit ?? 50;
   const offset = req.query.offset ?? 0;
   const order = req.query.order ?? "desc";
+  const { cel } = req.query;
 
-  const [countResult] = await db
-    .select({ total: count() })
-    .from(schema.deploymentVersion)
-    .where(eq(schema.deploymentVersion.deploymentId, deploymentId));
+  const orderBy =
+    order === "asc"
+      ? asc(schema.deploymentVersion.createdAt)
+      : desc(schema.deploymentVersion.createdAt);
 
-  const total = countResult?.total ?? 0;
+  if (cel == null) {
+    const { total } = await db
+      .select({ total: count() })
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
+      .then(takeFirst);
 
-  const versions = await db
+    const versions = await db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+
+    res.status(200).json({
+      items: versions.map(formatDeploymentVersion),
+      total,
+      limit,
+      offset,
+    });
+    return;
+  }
+
+  if (!validResourceSelector(cel))
+    throw new ApiError("Invalid CEL expression", 400);
+
+  // CEL is evaluated in-memory, so cap the candidate set to bound cost.
+  // Filtering applies to the 1000 most-recent (or oldest, for asc) versions.
+  const candidates = await db
     .select()
     .from(schema.deploymentVersion)
     .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-    .orderBy(
-      order === "asc"
-        ? asc(schema.deploymentVersion.createdAt)
-        : desc(schema.deploymentVersion.createdAt),
-    )
-    .limit(limit)
-    .offset(offset);
+    .orderBy(orderBy)
+    .limit(1000);
+
+  const filtered = filterDeploymentVersions(candidates, cel);
 
   res.status(200).json({
-    items: versions.map(formatDeploymentVersion),
-    total,
+    items: filtered.slice(offset, offset + limit).map(formatDeploymentVersion),
+    total: filtered.length,
     limit,
     offset,
   });

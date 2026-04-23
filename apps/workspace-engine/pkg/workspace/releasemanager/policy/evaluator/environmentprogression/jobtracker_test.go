@@ -77,7 +77,13 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_NoTargets(t *testing.T) {
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 
 	percentage := tracker.GetSuccessPercentage()
-	assert.InDelta(t, float32(0.0), percentage, 0, "expected 0%% success with no targets")
+	assert.InDelta(
+		t,
+		float32(100.0),
+		percentage,
+		0,
+		"expected 100%% success with no targets (vacuous truth)",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T) {
@@ -941,9 +947,14 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTarget
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{}
 
-	// With no release targets, should return zero time
+	// Vacuous truth: 0/0 targets successful is treated as 100% pass, satisfied at version creation.
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
-	assert.True(t, satisfiedAt.IsZero(), "expected zero satisfiedAt with no release targets")
+	assert.Equal(
+		t,
+		version.CreatedAt,
+		satisfiedAt,
+		"expected satisfiedAt to equal version.CreatedAt with no release targets",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJobs(t *testing.T) {

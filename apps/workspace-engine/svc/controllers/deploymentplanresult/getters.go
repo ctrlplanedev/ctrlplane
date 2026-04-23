@@ -13,4 +13,14 @@ type Getter interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) (db.DeploymentPlanTargetResult, error)
+
+	GetTargetContextByResultID(
+		ctx context.Context,
+		resultID uuid.UUID,
+	) (db.GetTargetContextByResultIDRow, error)
+
+	ListDeploymentPlanTargetResultsByTargetID(
+		ctx context.Context,
+		targetID uuid.UUID,
+	) ([]db.ListDeploymentPlanTargetResultsByTargetIDRow, error)
 }

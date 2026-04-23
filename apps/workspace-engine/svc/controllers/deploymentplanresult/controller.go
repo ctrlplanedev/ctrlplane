@@ -74,6 +74,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	agentType := dispatchCtx.JobAgent.Type
 	span.SetAttributes(attribute.String("agent.type", agentType))
 
+	if len(result.AgentState) == 0 {
+		if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+			span.RecordError(checkErr)
+		}
+	}
+
 	planCtx, cancel := context.WithTimeout(ctx, planTimeout)
 	defer cancel()
 
@@ -93,6 +99,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 			},
 		); updateErr != nil {
 			return reconcile.Result{}, fmt.Errorf("mark result unsupported: %w", updateErr)
+		}
+
+		if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+			span.RecordError(checkErr)
 		}
 
 		return reconcile.Result{}, nil
@@ -117,6 +127,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 				updateErr,
 				err,
 			)
+		}
+
+		if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+			span.RecordError(checkErr)
 		}
 
 		return reconcile.Result{}, nil
@@ -167,6 +181,10 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		},
 	); err != nil {
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
+	}
+
+	if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
+		span.RecordError(checkErr)
 	}
 
 	return reconcile.Result{}, nil

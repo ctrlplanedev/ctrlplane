@@ -233,7 +233,6 @@ export default function DeploymentDetail() {
                 <EnvironmentVersionDecisions
                   environment={selectedEnvironment}
                   deploymentId={deployment.id}
-                  versions={versions}
                   open={selectedEnvironmentId !== null}
                   onOpenChange={(open: boolean) => {
                     if (!open) setSearchParams({});

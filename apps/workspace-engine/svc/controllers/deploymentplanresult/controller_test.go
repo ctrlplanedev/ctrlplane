@@ -53,6 +53,20 @@ func (m *mockGetter) GetDeploymentPlanTargetResult(
 	return m.result, m.err
 }
 
+func (m *mockGetter) GetTargetContextByResultID(
+	_ context.Context,
+	_ uuid.UUID,
+) (db.GetTargetContextByResultIDRow, error) {
+	return db.GetTargetContextByResultIDRow{}, nil
+}
+
+func (m *mockGetter) ListDeploymentPlanTargetResultsByTargetID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]db.ListDeploymentPlanTargetResultsByTargetIDRow, error) {
+	return nil, nil
+}
+
 type completedCall struct {
 	ID     uuid.UUID
 	Status db.DeploymentPlanTargetStatus

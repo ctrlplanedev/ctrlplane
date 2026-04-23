@@ -5000,6 +5000,16 @@
                      ],
                      "type": "string"
                   }
+               },
+               {
+                  "allowReserved": true,
+                  "description": "CEL expression to filter the results",
+                  "in": "query",
+                  "name": "cel",
+                  "required": false,
+                  "schema": {
+                     "type": "string"
+                  }
                }
             ],
             "responses": {

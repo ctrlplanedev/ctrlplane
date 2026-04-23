@@ -3283,6 +3283,8 @@ export interface operations {
                 offset?: number;
                 /** @description Sort order for results */
                 order?: "asc" | "desc";
+                /** @description CEL expression to filter the results */
+                cel?: string;
             };
             header?: never;
             path: {

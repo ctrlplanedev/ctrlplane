@@ -41,6 +41,15 @@ type ProgressionDetails = {
   failed_environments?: number;
 };
 
+function safeFormatDistanceToNowStrict(
+  value: Date | string | null | undefined,
+) {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return null;
+  return formatDistanceToNowStrict(date);
+}
+
 function extractEnvDetails(details: Record<string, unknown>): PerEnvDetail[] {
   const envDetails: PerEnvDetail[] = [];
   for (const [key, value] of Object.entries(details)) {
@@ -127,6 +136,35 @@ function SoakTimeStatus({ detail }: { detail: PerEnvDetail }) {
   );
 }
 
+function LastSuccessLine({
+  mostRecentSuccess,
+}: {
+  mostRecentSuccess?: string;
+}) {
+  const formatted = safeFormatDistanceToNowStrict(mostRecentSuccess);
+  if (formatted == null) return null;
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Clock className="size-3" />
+      <span>Last success: {formatted} ago</span>
+    </div>
+  );
+}
+
+function NextEvaluationLine({
+  nextEvaluationAt,
+}: {
+  nextEvaluationAt: Date | null;
+}) {
+  const formatted = safeFormatDistanceToNowStrict(nextEvaluationAt);
+  if (formatted == null) return null;
+  return (
+    <span className="shrink-0 text-muted-foreground">
+      re-check in {formatted}
+    </span>
+  );
+}
+
 function EnvironmentCard({ detail }: { detail: PerEnvDetail }) {
   const minRequired = detail.minimum_success_percentage ?? 100;
   const passRatePassed =
@@ -167,16 +205,7 @@ function EnvironmentCard({ detail }: { detail: PerEnvDetail }) {
         </div>
       )}
 
-      {detail.most_recent_success && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="size-3" />
-          <span>
-            Last success:{" "}
-            {formatDistanceToNowStrict(new Date(detail.most_recent_success))}{" "}
-            ago
-          </span>
-        </div>
-      )}
+      <LastSuccessLine mostRecentSuccess={detail.most_recent_success} />
     </div>
   );
 }
@@ -292,12 +321,7 @@ function ProgressionRow({
           allPassed={allPassed}
           isPending={isPending}
         />
-        {!allPassed && rule.nextEvaluationAt != null && (
-          <span className="shrink-0 text-muted-foreground">
-            re-check in{" "}
-            {formatDistanceToNowStrict(new Date(rule.nextEvaluationAt))}
-          </span>
-        )}
+        {!allPassed && <NextEvaluationLine {...rule} />}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

@@ -286,7 +286,11 @@ func TestVerifications_ValidConfig(t *testing.T) {
 	require.Len(t, specs, 1)
 	assert.Equal(t, "argocd-application-health", specs[0].Name)
 	assert.Equal(t, int32(60), specs[0].IntervalSeconds)
-	assert.Equal(t, 10, specs[0].Count)
+	assert.Equal(t, 15, specs[0].Count)
+	require.NotNil(t, specs[0].SuccessThreshold)
+	assert.Equal(t, 2, *specs[0].SuccessThreshold)
+	require.NotNil(t, specs[0].FailureThreshold)
+	assert.Equal(t, 10, *specs[0].FailureThreshold)
 }
 
 func TestVerifications_MissingServerUrl(t *testing.T) {
