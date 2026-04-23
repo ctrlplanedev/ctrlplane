@@ -1,4 +1,6 @@
 import { TRPCError } from "@trpc/server";
+import { diffLines } from "diff";
+import _ from "lodash";
 import { z } from "zod";
 
 import { and, count, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
@@ -6,6 +8,18 @@ import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
+
+function computeDiffStats(
+  current: string | null,
+  proposed: string | null,
+): { added: number; removed: number } | null {
+  if (current == null || proposed == null) return null;
+  const parts = diffLines(current, proposed);
+  return {
+    added: _.sumBy(parts, (p) => (p.added ? p.count : 0)),
+    removed: _.sumBy(parts, (p) => (p.removed ? p.count : 0)),
+  };
+}
 
 type PlanSummary = {
   total: number;
@@ -136,7 +150,11 @@ export const deploymentPlansRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const plan = await ctx.db
-        .select({ id: schema.deploymentPlan.id })
+        .select({
+          id: schema.deploymentPlan.id,
+          versionTag: schema.deploymentPlan.versionTag,
+          versionName: schema.deploymentPlan.versionName,
+        })
         .from(schema.deploymentPlan)
         .where(
           and(
@@ -161,6 +179,8 @@ export const deploymentPlansRouter = router({
           hasChanges: schema.deploymentPlanTargetResult.hasChanges,
           message: schema.deploymentPlanTargetResult.message,
           contentHash: schema.deploymentPlanTargetResult.contentHash,
+          current: schema.deploymentPlanTargetResult.current,
+          proposed: schema.deploymentPlanTargetResult.proposed,
           startedAt: schema.deploymentPlanTargetResult.startedAt,
           completedAt: schema.deploymentPlanTargetResult.completedAt,
           dispatchContext: schema.deploymentPlanTargetResult.dispatchContext,
@@ -184,26 +204,30 @@ export const deploymentPlansRouter = router({
         .where(eq(schema.deploymentPlanTarget.planId, input.planId))
         .orderBy(schema.environment.name, schema.resource.name);
 
-      return rows.map((r) => {
-        const agent = r.dispatchContext.jobAgent ?? {};
-        return {
-          resultId: r.resultId,
-          targetId: r.targetId,
-          environment: { id: r.environmentId, name: r.environmentName },
-          resource: { id: r.resourceId, name: r.resourceName },
-          agent: {
-            id: (agent.id as string | undefined) ?? "",
-            name: (agent.name as string | undefined) ?? "",
-            type: (agent.type as string | undefined) ?? "",
-          },
-          status: r.status,
-          hasChanges: r.hasChanges,
-          message: r.message,
-          contentHash: r.contentHash,
-          startedAt: r.startedAt,
-          completedAt: r.completedAt,
-        };
-      });
+      return {
+        version: { tag: plan.versionTag, name: plan.versionName },
+        items: rows.map((r) => {
+          const agent = r.dispatchContext.jobAgent ?? {};
+          return {
+            resultId: r.resultId,
+            targetId: r.targetId,
+            environment: { id: r.environmentId, name: r.environmentName },
+            resource: { id: r.resourceId, name: r.resourceName },
+            agent: {
+              id: (agent.id as string | undefined) ?? "",
+              name: (agent.name as string | undefined) ?? "",
+              type: (agent.type as string | undefined) ?? "",
+            },
+            status: r.status,
+            hasChanges: r.hasChanges,
+            message: r.message,
+            diffStats: computeDiffStats(r.current, r.proposed),
+            contentHash: r.contentHash,
+            startedAt: r.startedAt,
+            completedAt: r.completedAt,
+          };
+        }),
+      };
     }),
 
   resultDiff: protectedProcedure
