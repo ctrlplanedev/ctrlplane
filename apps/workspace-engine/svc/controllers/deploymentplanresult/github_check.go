@@ -155,27 +155,19 @@ type aggregate struct {
 }
 
 func countDiffLines(current, proposed string) (int, int) {
-	diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(current),
-		B:        difflib.SplitLines(proposed),
-		FromFile: "current",
-		ToFile:   "proposed",
-		Context:  0,
-	})
-	if err != nil {
-		return 0, 0
-	}
+	a := difflib.SplitLines(current)
+	b := difflib.SplitLines(proposed)
+	m := difflib.NewMatcher(a, b)
 	var adds, dels int
-	for line := range strings.SplitSeq(diff, "\n") {
-		if strings.HasPrefix(line, "+++") || strings.HasPrefix(line, "---") {
-			continue
-		}
-		if strings.HasPrefix(line, "+") {
-			adds++
-			continue
-		}
-		if strings.HasPrefix(line, "-") {
-			dels++
+	for _, op := range m.GetOpCodes() {
+		switch op.Tag {
+		case 'r':
+			dels += op.I2 - op.I1
+			adds += op.J2 - op.J1
+		case 'd':
+			dels += op.I2 - op.I1
+		case 'i':
+			adds += op.J2 - op.J1
 		}
 	}
 	return adds, dels
