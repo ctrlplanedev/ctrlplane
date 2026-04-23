@@ -1,3 +1,12 @@
+import { AlertCircle } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+
 export const PlanStatusDisplayName: Record<string, string> = {
   computing: "Computing",
   completed: "Completed",
@@ -16,7 +25,13 @@ const PlanStatusBadgeColor: Record<string, string> = {
     "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800",
 };
 
-export function PlanStatusBadge({ status }: { status: string }) {
+function PlanStatusBadgeInner({
+  status,
+  hasMessage = false,
+}: {
+  status: string;
+  hasMessage?: boolean;
+}) {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${
@@ -25,6 +40,37 @@ export function PlanStatusBadge({ status }: { status: string }) {
       }`}
     >
       {PlanStatusDisplayName[status] ?? status}
+      {hasMessage && <AlertCircle className="size-2.5" />}
     </span>
   );
+}
+
+export function PlanStatusBadge({
+  status,
+  message,
+}: {
+  status: string;
+  message?: string | null;
+}) {
+  if (message != null && message !== "") {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <PlanStatusBadgeInner status={status} hasMessage />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="wrap-break-word flex max-w-sm items-start gap-1.5 whitespace-pre-wrap">
+            {message}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return <PlanStatusBadgeInner status={status} />;
 }
