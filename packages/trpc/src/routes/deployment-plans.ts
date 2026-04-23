@@ -136,7 +136,11 @@ export const deploymentPlansRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const plan = await ctx.db
-        .select({ id: schema.deploymentPlan.id })
+        .select({
+          id: schema.deploymentPlan.id,
+          versionTag: schema.deploymentPlan.versionTag,
+          versionName: schema.deploymentPlan.versionName,
+        })
         .from(schema.deploymentPlan)
         .where(
           and(
@@ -184,26 +188,29 @@ export const deploymentPlansRouter = router({
         .where(eq(schema.deploymentPlanTarget.planId, input.planId))
         .orderBy(schema.environment.name, schema.resource.name);
 
-      return rows.map((r) => {
-        const agent = r.dispatchContext.jobAgent ?? {};
-        return {
-          resultId: r.resultId,
-          targetId: r.targetId,
-          environment: { id: r.environmentId, name: r.environmentName },
-          resource: { id: r.resourceId, name: r.resourceName },
-          agent: {
-            id: (agent.id as string | undefined) ?? "",
-            name: (agent.name as string | undefined) ?? "",
-            type: (agent.type as string | undefined) ?? "",
-          },
-          status: r.status,
-          hasChanges: r.hasChanges,
-          message: r.message,
-          contentHash: r.contentHash,
-          startedAt: r.startedAt,
-          completedAt: r.completedAt,
-        };
-      });
+      return {
+        version: { tag: plan.versionTag, name: plan.versionName },
+        items: rows.map((r) => {
+          const agent = r.dispatchContext.jobAgent ?? {};
+          return {
+            resultId: r.resultId,
+            targetId: r.targetId,
+            environment: { id: r.environmentId, name: r.environmentName },
+            resource: { id: r.resourceId, name: r.resourceName },
+            agent: {
+              id: (agent.id as string | undefined) ?? "",
+              name: (agent.name as string | undefined) ?? "",
+              type: (agent.type as string | undefined) ?? "",
+            },
+            status: r.status,
+            hasChanges: r.hasChanges,
+            message: r.message,
+            contentHash: r.contentHash,
+            startedAt: r.startedAt,
+            completedAt: r.completedAt,
+          };
+        }),
+      };
     }),
 
   resultDiff: protectedProcedure
