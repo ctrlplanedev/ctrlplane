@@ -3,7 +3,6 @@ import { FileText } from "lucide-react";
 import { Link, useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
-import { cn } from "~/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,6 +21,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { cn } from "~/lib/utils";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { PlanDiffDialog } from "./_components/plans/PlanDiffDialog";
@@ -35,8 +35,7 @@ export function meta() {
   ];
 }
 
-type Result =
-  RouterOutputs["deployment"]["plans"]["results"]["items"][number];
+type Result = RouterOutputs["deployment"]["plans"]["results"]["items"][number];
 
 function resultTitle(result: Result) {
   return `${result.environment.name} · ${result.resource.name} · ${result.agent.name}`;
@@ -69,18 +68,10 @@ function ChangesCell({ result }: { result: Result }) {
   if (result.status === "computing")
     return <span className="text-muted-foreground">—</span>;
   if (result.status === "errored")
-    return (
-      <span
-        className="text-red-600 dark:text-red-400"
-        title={result.message ?? undefined}
-      >
-        Errored
-      </span>
-    );
+    return <span className="text-red-600 dark:text-red-400">Errored</span>;
   if (result.status === "unsupported")
     return <span className="text-muted-foreground">Unsupported</span>;
-  if (result.hasChanges === true)
-    return <DiffStats stats={result.diffStats} />;
+  if (result.hasChanges === true) return <DiffStats stats={result.diffStats} />;
   if (result.hasChanges === false)
     return <span className="text-muted-foreground">No changes</span>;
   return <span className="text-muted-foreground">—</span>;
@@ -117,7 +108,7 @@ function ResultsTableRow({
       <TableCell>{result.resource.name}</TableCell>
       <TableCell>{result.agent.name}</TableCell>
       <TableCell>
-        <PlanStatusBadge status={result.status} />
+        <PlanStatusBadge {...result} />
       </TableCell>
       <TableCell>
         <ChangesCell result={result} />
