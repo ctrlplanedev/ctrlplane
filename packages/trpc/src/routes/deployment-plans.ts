@@ -1,4 +1,6 @@
 import { TRPCError } from "@trpc/server";
+import { diffLines } from "diff";
+import _ from "lodash";
 import { z } from "zod";
 
 import { and, count, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
@@ -12,23 +14,11 @@ function computeDiffStats(
   proposed: string | null,
 ): { added: number; removed: number } | null {
   if (current == null || proposed == null) return null;
-  const a = current.split("\n");
-  const b = proposed.split("\n");
-  const m = a.length;
-  const n = b.length;
-  let prev = new Array<number>(n + 1).fill(0);
-  for (let i = 1; i <= m; i++) {
-    const curr = new Array<number>(n + 1).fill(0);
-    for (let j = 1; j <= n; j++) {
-      curr[j] =
-        a[i - 1] === b[j - 1]
-          ? (prev[j - 1] ?? 0) + 1
-          : Math.max(prev[j] ?? 0, curr[j - 1] ?? 0);
-    }
-    prev = curr;
-  }
-  const lcs = prev[n] ?? 0;
-  return { added: n - lcs, removed: m - lcs };
+  const parts = diffLines(current, proposed);
+  return {
+    added: _.sumBy(parts, (p) => (p.added ? p.count : 0)),
+    removed: _.sumBy(parts, (p) => (p.removed ? p.count : 0)),
+  };
 }
 
 type PlanSummary = {
