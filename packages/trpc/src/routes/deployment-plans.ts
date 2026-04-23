@@ -7,6 +7,30 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
 
+function computeDiffStats(
+  current: string | null,
+  proposed: string | null,
+): { added: number; removed: number } | null {
+  if (current == null || proposed == null) return null;
+  const a = current.split("\n");
+  const b = proposed.split("\n");
+  const m = a.length;
+  const n = b.length;
+  let prev = new Array<number>(n + 1).fill(0);
+  for (let i = 1; i <= m; i++) {
+    const curr = new Array<number>(n + 1).fill(0);
+    for (let j = 1; j <= n; j++) {
+      curr[j] =
+        a[i - 1] === b[j - 1]
+          ? (prev[j - 1] ?? 0) + 1
+          : Math.max(prev[j] ?? 0, curr[j - 1] ?? 0);
+    }
+    prev = curr;
+  }
+  const lcs = prev[n] ?? 0;
+  return { added: n - lcs, removed: m - lcs };
+}
+
 type PlanSummary = {
   total: number;
   computing: number;
@@ -161,6 +185,8 @@ export const deploymentPlansRouter = router({
           hasChanges: schema.deploymentPlanTargetResult.hasChanges,
           message: schema.deploymentPlanTargetResult.message,
           contentHash: schema.deploymentPlanTargetResult.contentHash,
+          current: schema.deploymentPlanTargetResult.current,
+          proposed: schema.deploymentPlanTargetResult.proposed,
           startedAt: schema.deploymentPlanTargetResult.startedAt,
           completedAt: schema.deploymentPlanTargetResult.completedAt,
           dispatchContext: schema.deploymentPlanTargetResult.dispatchContext,
@@ -198,6 +224,7 @@ export const deploymentPlansRouter = router({
           },
           status: r.status,
           hasChanges: r.hasChanges,
+          diffStats: computeDiffStats(r.current, r.proposed),
           message: r.message,
           contentHash: r.contentHash,
           startedAt: r.startedAt,

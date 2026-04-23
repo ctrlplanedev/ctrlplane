@@ -41,6 +41,29 @@ function resultTitle(result: Result) {
   return `${result.environment.name} · ${result.resource.name} · ${result.agent.name}`;
 }
 
+function DiffStats({
+  stats,
+}: {
+  stats: { added: number; removed: number } | null;
+}) {
+  if (stats == null) return null;
+  return (
+    <span className="font-mono text-xs">
+      {stats.added > 0 && (
+        <span className="text-green-600 dark:text-green-400">
+          +{stats.added}
+        </span>
+      )}
+      {stats.added > 0 && stats.removed > 0 && (
+        <span className="text-muted-foreground"> </span>
+      )}
+      {stats.removed > 0 && (
+        <span className="text-red-600 dark:text-red-400">-{stats.removed}</span>
+      )}
+    </span>
+  );
+}
+
 function ChangesCell({
   result,
   onViewDiff,
@@ -63,14 +86,17 @@ function ChangesCell({
     return <span className="text-muted-foreground">Unsupported</span>;
   if (result.hasChanges === true)
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-6 cursor-pointer hover:bg-accent hover:text-accent-foreground"
-        onClick={() => onViewDiff(result.resultId)}
-      >
-        View diff
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+          onClick={() => onViewDiff(result.resultId)}
+        >
+          View diff
+        </Button>
+        <DiffStats stats={result.diffStats} />
+      </div>
     );
   if (result.hasChanges === false)
     return <span className="text-muted-foreground">No changes</span>;
