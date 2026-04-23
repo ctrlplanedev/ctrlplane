@@ -27,20 +27,41 @@ export type DeploymentWindowDetailProps = {
 
 type DeploymentWindowProperties = {
   rrule: string;
-  timezone: string;
   duration_minutes: number;
   next_window_start: string;
   next_window_end: string;
   window_type: string;
-  time_until_window: string;
 };
+
+function isValidDateString(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  return !isNaN(new Date(value).getTime());
+}
 
 function parseWindowDetails(
   window: DeploymentWindow,
 ): DeploymentWindowProperties | null {
-  const details = window.details as Partial<DeploymentWindowProperties>;
-  if (details.rrule == null || details.window_type == null) return null;
-  return details as DeploymentWindowProperties;
+  const details = window.details;
+  if (details == null || typeof details !== "object") return null;
+  const {
+    rrule,
+    window_type,
+    duration_minutes,
+    next_window_start,
+    next_window_end,
+  } = details as Record<string, unknown>;
+  if (typeof rrule !== "string") return null;
+  if (typeof window_type !== "string") return null;
+  if (typeof duration_minutes !== "number") return null;
+  if (!isValidDateString(next_window_start)) return null;
+  if (!isValidDateString(next_window_end)) return null;
+  return {
+    rrule,
+    window_type,
+    duration_minutes,
+    next_window_start,
+    next_window_end,
+  };
 }
 
 function usePolicyNameByRuleId(): Map<string, string> {
