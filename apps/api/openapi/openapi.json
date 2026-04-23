@@ -4542,6 +4542,16 @@
                      }
                   },
                   "description": "Accepted response"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Deployment name already exists in this workspace"
                }
             },
             "summary": "Create deployment"
@@ -4702,6 +4712,16 @@
                      }
                   },
                   "description": "Accepted response"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Deployment name already exists in this workspace"
                }
             },
             "summary": "Upsert deployment"
@@ -5297,6 +5317,16 @@
                      }
                   },
                   "description": "Accepted response"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Environment name already exists in this workspace"
                }
             },
             "summary": "Create environment"
@@ -5477,6 +5507,16 @@
                      }
                   },
                   "description": "Resource not found"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Environment name already exists in this workspace"
                }
             },
             "summary": "Upsert environment"

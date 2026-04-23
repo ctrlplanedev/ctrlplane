@@ -176,16 +176,26 @@ const postDeployment: AsyncTypedHandler<
 
   const id = uuidv4();
 
-  await db.insert(schema.deployment).values({
-    id,
-    name: body.name,
-    description: body.description ?? "",
-    resourceSelector: body.resourceSelector ?? "false",
-    jobAgentSelector: body.jobAgentSelector ?? "false",
-    jobAgentConfig: body.jobAgentConfig ?? {},
-    metadata: body.metadata ?? {},
-    workspaceId,
-  });
+  try {
+    await db.insert(schema.deployment).values({
+      id,
+      name: body.name,
+      description: body.description ?? "",
+      resourceSelector: body.resourceSelector ?? "false",
+      jobAgentSelector: body.jobAgentSelector ?? "false",
+      jobAgentConfig: body.jobAgentConfig ?? {},
+      metadata: body.metadata ?? {},
+      workspaceId,
+    });
+  } catch (error: any) {
+    if (error.code === "23505")
+      throw new ApiError(
+        "Deployment name already exists in this workspace",
+        409,
+        "DUPLICATE_NAME",
+      );
+    throw error;
+  }
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, id);
 
@@ -204,30 +214,40 @@ const upsertDeployment: AsyncTypedHandler<
 
   const jobAgentConfig = body.jobAgentConfig ?? {};
 
-  await db
-    .insert(schema.deployment)
-    .values({
-      id: deploymentId,
-      name: body.name,
-      description: body.description ?? "",
-      resourceSelector: body.resourceSelector ?? "false",
-      jobAgentSelector: body.jobAgentSelector ?? "false",
-      jobAgentConfig,
-      metadata: body.metadata ?? {},
-      workspaceId,
-    })
-    .onConflictDoUpdate({
-      target: schema.deployment.id,
-      set: {
+  try {
+    await db
+      .insert(schema.deployment)
+      .values({
+        id: deploymentId,
         name: body.name,
         description: body.description ?? "",
         resourceSelector: body.resourceSelector ?? "false",
+        jobAgentSelector: body.jobAgentSelector ?? "false",
+        jobAgentConfig,
         metadata: body.metadata ?? {},
-        ...(body.jobAgentSelector != null
-          ? { jobAgentSelector: body.jobAgentSelector, jobAgentConfig }
-          : {}),
-      },
-    });
+        workspaceId,
+      })
+      .onConflictDoUpdate({
+        target: schema.deployment.id,
+        set: {
+          name: body.name,
+          description: body.description ?? "",
+          resourceSelector: body.resourceSelector ?? "false",
+          metadata: body.metadata ?? {},
+          ...(body.jobAgentSelector != null
+            ? { jobAgentSelector: body.jobAgentSelector, jobAgentConfig }
+            : {}),
+        },
+      });
+  } catch (error: any) {
+    if (error.code === "23505")
+      throw new ApiError(
+        "Deployment name already exists in this workspace",
+        409,
+        "DUPLICATE_NAME",
+      );
+    throw error;
+  }
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 

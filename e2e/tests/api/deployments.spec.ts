@@ -646,6 +646,36 @@ test.describe("Deployment API", () => {
     expect(listRes.response.status).toBe(400);
   });
 
+  test("should reject creating a deployment with a duplicate name in the same workspace", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `deploy-dup-${faker.string.alphanumeric(8)}`;
+    const firstRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: name },
+      },
+    );
+    expect(firstRes.response.status).toBe(202);
+    const deploymentId = firstRes.data!.id;
+
+    const dupRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: `${name}-other` },
+      },
+    );
+    expect(dupRes.response.status).toBe(409);
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
   test("should return all deployments when no CEL filter is provided", async ({
     api,
     workspace,
