@@ -941,9 +941,14 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTarget
 	tracker := NewReleaseTargetJobTracker(ctx, mock, env, version, nil, false)
 	tracker.ReleaseTargets = []oapi.ReleaseTarget{}
 
-	// With no release targets, should return zero time
+	// Vacuous truth: 0/0 targets successful is treated as 100% pass, satisfied at version creation.
 	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
-	assert.True(t, satisfiedAt.IsZero(), "expected zero satisfiedAt with no release targets")
+	assert.Equal(
+		t,
+		version.CreatedAt,
+		satisfiedAt,
+		"expected satisfiedAt to equal version.CreatedAt with no release targets",
+	)
 }
 
 func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJobs(t *testing.T) {
