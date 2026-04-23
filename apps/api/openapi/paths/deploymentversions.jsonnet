@@ -11,6 +11,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
         openapi.orderParam(),
+        openapi.celParam(),
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentVersion'))
                  + openapi.notFoundResponse()
