@@ -1,4 +1,6 @@
 import { TRPCError } from "@trpc/server";
+import { diffLines } from "diff";
+import _ from "lodash";
 import { z } from "zod";
 
 import { and, count, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
@@ -6,6 +8,18 @@ import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
+
+function computeDiffStats(
+  current: string | null,
+  proposed: string | null,
+): { added: number; removed: number } | null {
+  if (current == null || proposed == null) return null;
+  const parts = diffLines(current, proposed);
+  return {
+    added: _.sumBy(parts, (p) => (p.added ? p.count : 0)),
+    removed: _.sumBy(parts, (p) => (p.removed ? p.count : 0)),
+  };
+}
 
 type PlanSummary = {
   total: number;
@@ -165,6 +179,8 @@ export const deploymentPlansRouter = router({
           hasChanges: schema.deploymentPlanTargetResult.hasChanges,
           message: schema.deploymentPlanTargetResult.message,
           contentHash: schema.deploymentPlanTargetResult.contentHash,
+          current: schema.deploymentPlanTargetResult.current,
+          proposed: schema.deploymentPlanTargetResult.proposed,
           startedAt: schema.deploymentPlanTargetResult.startedAt,
           completedAt: schema.deploymentPlanTargetResult.completedAt,
           dispatchContext: schema.deploymentPlanTargetResult.dispatchContext,
@@ -205,6 +221,7 @@ export const deploymentPlansRouter = router({
             status: r.status,
             hasChanges: r.hasChanges,
             message: r.message,
+            diffStats: computeDiffStats(r.current, r.proposed),
             contentHash: r.contentHash,
             startedAt: r.startedAt,
             completedAt: r.completedAt,
