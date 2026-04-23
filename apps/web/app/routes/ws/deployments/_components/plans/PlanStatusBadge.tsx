@@ -56,10 +56,15 @@ export function PlanStatusBadge({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger>
-            <PlanStatusBadgeInner status={status} hasMessage />
+          <TooltipTrigger asChild>
+            <span
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <PlanStatusBadgeInner status={status} hasMessage />
+            </span>
           </TooltipTrigger>
-          <TooltipContent className="wrap-break-word flex max-w-sm items-center gap-1.5">
+          <TooltipContent className="wrap-break-word flex max-w-sm items-start gap-1.5 whitespace-pre-wrap">
             {message}
           </TooltipContent>
         </Tooltip>
