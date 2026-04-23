@@ -35,11 +35,19 @@ type DeploymentWindowProperties = {
   time_until_window: string;
 };
 
+function isValidDateString(value: string | undefined | null): value is string {
+  if (value == null) return false;
+  return !isNaN(new Date(value).getTime());
+}
+
 function parseWindowDetails(
   window: DeploymentWindow,
 ): DeploymentWindowProperties | null {
   const details = window.details as Partial<DeploymentWindowProperties>;
   if (details.rrule == null || details.window_type == null) return null;
+  if (typeof details.duration_minutes !== "number") return null;
+  if (!isValidDateString(details.next_window_start)) return null;
+  if (!isValidDateString(details.next_window_end)) return null;
   return details as DeploymentWindowProperties;
 }
 
