@@ -4,7 +4,7 @@ import { evaluate } from "cel-js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
-import { and, asc, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueDeploymentPlan,
@@ -282,29 +282,52 @@ const listDeploymentVersions: AsyncTypedHandler<
   const order = req.query.order ?? "desc";
   const { cel } = req.query;
 
-  if (cel != null && !validResourceSelector(cel))
+  const orderBy =
+    order === "asc"
+      ? asc(schema.deploymentVersion.createdAt)
+      : desc(schema.deploymentVersion.createdAt);
+
+  if (cel == null) {
+    const { total } = await db
+      .select({ total: count() })
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
+      .then(takeFirst);
+
+    const versions = await db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+
+    res.status(200).json({
+      items: versions.map(formatDeploymentVersion),
+      total,
+      limit,
+      offset,
+    });
+    return;
+  }
+
+  if (!validResourceSelector(cel))
     throw new ApiError("Invalid CEL expression", 400);
 
-  const allVersions = await db
+  // CEL is evaluated in-memory, so cap the candidate set to bound cost.
+  // Filtering applies to the 1000 most-recent (or oldest, for asc) versions.
+  const candidates = await db
     .select()
     .from(schema.deploymentVersion)
     .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-    .orderBy(
-      order === "asc"
-        ? asc(schema.deploymentVersion.createdAt)
-        : desc(schema.deploymentVersion.createdAt),
-    )
+    .orderBy(orderBy)
     .limit(1000);
 
-  const filtered =
-    cel != null ? filterDeploymentVersions(allVersions, cel) : allVersions;
-
-  const total = filtered.length;
-  const items = filtered.slice(offset, offset + limit);
+  const filtered = filterDeploymentVersions(candidates, cel);
 
   res.status(200).json({
-    items: items.map(formatDeploymentVersion),
-    total,
+    items: filtered.slice(offset, offset + limit).map(formatDeploymentVersion),
+    total: filtered.length,
     limit,
     offset,
   });
