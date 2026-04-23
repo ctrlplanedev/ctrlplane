@@ -237,14 +237,14 @@ function WorkScopeTable() {
                   {scope.claimedBy ?? "-"}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {formatDistanceToNowStrict(new Date(scope.notBefore), {
+                  {safeFormatDistanceToNowStrict(scope.notBefore, {
                     addSuffix: true,
-                  })}
+                  }) ?? "—"}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {formatDistanceToNowStrict(new Date(scope.eventTs), {
+                  {safeFormatDistanceToNowStrict(scope.eventTs, {
                     addSuffix: true,
-                  })}
+                  }) ?? "—"}
                 </TableCell>
               </TableRow>
             ))}

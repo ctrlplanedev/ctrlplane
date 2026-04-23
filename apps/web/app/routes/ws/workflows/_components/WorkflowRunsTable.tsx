@@ -1,5 +1,4 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
-import { formatDistanceToNowStrict } from "date-fns";
 import { useNavigate, useParams } from "react-router";
 
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -11,14 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { WorkflowRunStatusBadge } from "./WorkflowRunStatusBadge";
 
 type WorkflowRun = RouterOutputs["workflows"]["runs"]["list"][number];
 
 function timeAgo(date: Date | string | null) {
   if (date == null) return "-";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return formatDistanceToNowStrict(d, { addSuffix: true });
+  return safeFormatDistanceToNowStrict(date, { addSuffix: true }) ?? "-";
 }
 
 function WorkflowRunRow({ run }: { run: WorkflowRun }) {

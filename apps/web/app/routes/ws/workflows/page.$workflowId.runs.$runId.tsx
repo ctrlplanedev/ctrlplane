@@ -1,6 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
 import { Fragment } from "react";
-import { formatDistanceToNowStrict } from "date-fns";
 import { ExternalLink } from "lucide-react";
 import { Link, useParams } from "react-router";
 
@@ -26,6 +25,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { safeFormatDistanceToNowStrict } from "~/lib/date";
 import { cn } from "~/lib/utils";
 import { JobStatusBadge } from "../_components/JobStatusBadge";
 
@@ -33,8 +33,7 @@ type WorkflowRunJob = RouterOutputs["workflows"]["runs"]["get"]["jobs"][number];
 
 function timeAgo(date: Date | string | null) {
   if (date == null) return "-";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return formatDistanceToNowStrict(d, { addSuffix: true });
+  return safeFormatDistanceToNowStrict(date, { addSuffix: true }) ?? "-";
 }
 
 function RunPageHeader({

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
+
+import { safeFormatDistanceToNow } from "~/lib/date";
 import { BarChart3, Plus, Search, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 
@@ -166,9 +167,9 @@ export default function ResourceAggregates() {
                     )}
                     <span>
                       Created{" "}
-                      {formatDistanceToNow(new Date(agg.createdAt), {
+                      {safeFormatDistanceToNow(agg.createdAt, {
                         addSuffix: true,
-                      })}
+                      }) ?? "unknown"}
                     </span>
                   </div>
                 </div>
