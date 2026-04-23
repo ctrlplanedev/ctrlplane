@@ -1,5 +1,5 @@
 {
-  "id": "c1bbea8e-9fd7-4435-a7b0-4e46d316b14e",
+  "id": "4f53d406-eb4f-48e4-93af-2cb7bf837c2d",
   "prevId": "a3bc781d-0c9b-4a72-a20a-0892ee85973b",
   "version": "7",
   "dialect": "postgresql",
@@ -1866,26 +1866,10 @@
           "name": "workspace_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
-      "indexes": {
-        "deployment_workspace_id_index": {
-          "name": "deployment_workspace_id_index",
-          "columns": [
-            {
-              "expression": "workspace_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "deployment_workspace_id_workspace_id_fk": {
           "name": "deployment_workspace_id_workspace_id_fk",
@@ -2020,26 +2004,10 @@
           "name": "workspace_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
-      "indexes": {
-        "environment_workspace_id_index": {
-          "name": "environment_workspace_id_index",
-          "columns": [
-            {
-              "expression": "workspace_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "environment_workspace_id_workspace_id_fk": {
           "name": "environment_workspace_id_workspace_id_fk",

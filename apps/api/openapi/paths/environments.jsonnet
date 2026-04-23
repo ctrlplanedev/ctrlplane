@@ -27,6 +27,7 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted'))
+                 + openapi.badRequestResponse()
                  + openapi.conflictResponse('Environment name already exists in this workspace'),
     },
   },

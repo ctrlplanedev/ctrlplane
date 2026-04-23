@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm";
 import {
-  index,
   jsonb,
   pgTable,
   primaryKey,
@@ -33,9 +32,11 @@ export const deployment = pgTable(
       .$type<Record<string, string>>()
       .notNull(),
 
-    workspaceId: uuid("workspace_id").references(() => workspace.id),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspace.id)
+      .notNull(),
   },
-  (t) => [index().on(t.workspaceId), unique().on(t.workspaceId, t.name)],
+  (t) => [unique().on(t.workspaceId, t.name)],
 );
 
 export const deploymentRelations = relations(deployment, ({ many }) => ({

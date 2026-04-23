@@ -4543,6 +4543,16 @@
                   },
                   "description": "Accepted response"
                },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
                "409": {
                   "content": {
                      "application/json": {
@@ -4712,6 +4722,16 @@
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
                },
                "409": {
                   "content": {
@@ -5317,6 +5337,16 @@
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
                },
                "409": {
                   "content": {

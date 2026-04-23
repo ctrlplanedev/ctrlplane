@@ -28,6 +28,7 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted'))
+                 + openapi.badRequestResponse()
                  + openapi.conflictResponse('Deployment name already exists in this workspace'),
     },
   },
@@ -59,6 +60,7 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted'))
+                 + openapi.badRequestResponse()
                  + openapi.conflictResponse('Deployment name already exists in this workspace'),
     },
     delete: {

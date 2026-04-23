@@ -337,6 +337,49 @@ test.describe("Environment API", () => {
     );
   });
 
+  test("should reject upserting an environment to an existing name in the same workspace", async ({
+    api,
+    workspace,
+  }) => {
+    const nameA = `env-upsert-dup-a-${faker.string.alphanumeric(8)}`;
+    const nameB = `env-upsert-dup-b-${faker.string.alphanumeric(8)}`;
+
+    const [resA, resB] = await Promise.all([
+      api.POST("/v1/workspaces/{workspaceId}/environments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: nameA },
+      }),
+      api.POST("/v1/workspaces/{workspaceId}/environments", {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: nameB },
+      }),
+    ]);
+    expect(resA.response.status).toBe(202);
+    expect(resB.response.status).toBe(202);
+    const idA = resA.data!.id;
+    const idB = resB.data!.id;
+
+    const renameRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+      {
+        params: { path: { workspaceId: workspace.id, environmentId: idB } },
+        body: { name: nameA },
+      },
+    );
+    expect(renameRes.response.status).toBe(409);
+
+    await Promise.all([
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        { params: { path: { workspaceId: workspace.id, environmentId: idA } } },
+      ),
+      api.DELETE(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        { params: { path: { workspaceId: workspace.id, environmentId: idB } } },
+      ),
+    ]);
+  });
+
   test("should link and unlink an environment to a system", async ({
     api,
     workspace,

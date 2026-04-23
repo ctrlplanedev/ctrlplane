@@ -3018,6 +3018,15 @@ export interface operations {
                     "application/json": components["schemas"]["DeploymentRequestAccepted"];
                 };
             };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Deployment name already exists in this workspace */
             409: {
                 headers: {
@@ -3097,6 +3106,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeploymentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Deployment name already exists in this workspace */
@@ -3487,6 +3505,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvironmentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Environment name already exists in this workspace */

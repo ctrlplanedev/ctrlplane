@@ -1,7 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
-  index,
   jsonb,
   pgTable,
   primaryKey,
@@ -32,9 +31,11 @@ export const environment = pgTable(
       .default("{}")
       .$type<Record<string, string>>(),
 
-    workspaceId: uuid("workspace_id").references(() => workspace.id),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspace.id)
+      .notNull(),
   },
-  (t) => [index().on(t.workspaceId), unique().on(t.workspaceId, t.name)],
+  (t) => [unique().on(t.workspaceId, t.name)],
 );
 
 export const environmentRelations = relations(environment, ({ many }) => ({
