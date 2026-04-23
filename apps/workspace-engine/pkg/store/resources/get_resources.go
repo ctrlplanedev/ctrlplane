@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/cel-go/cel"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/celutil"
@@ -71,9 +72,12 @@ func (p *PostgresGetResources) GetResources(
 	}
 	defer rows.Close()
 
-	program, err := celEnv.Compile(options.CEL)
-	if err != nil {
-		return nil, fmt.Errorf("compile CEL program: %w", err)
+	var program cel.Program
+	if options.CEL != "" {
+		program, err = celEnv.Compile(options.CEL)
+		if err != nil {
+			return nil, fmt.Errorf("compile CEL program: %w", err)
+		}
 	}
 
 	var resources []*oapi.Resource
@@ -88,7 +92,7 @@ func (p *PostgresGetResources) GetResources(
 		}
 		resource := db.ToOapiResource(r)
 
-		if options.CEL == "" {
+		if program == nil {
 			resources = append(resources, resource)
 			continue
 		}

@@ -350,14 +350,21 @@ func TestVariable_Dynamic_ChangeVariableBetweenRuns(t *testing.T) {
 	p.AssertReleaseCreated(t)
 	p.AssertReleaseVariableEquals(t, 0, "image", "nginx:1.0")
 
-	// Change the default value and re-run.
+	// Change the default value and re-run. A null-selector priority-0 value is
+	// the post-migration substitute for the dropped `default_value` column.
+	depVarID := uuid.New().String()
 	p.ReleaseGetter.DeploymentVars = []oapi.DeploymentVariableWithValues{{
 		Variable: oapi.DeploymentVariable{
-			Id:           uuid.New().String(),
+			Id:           depVarID,
 			DeploymentId: p.Scenario.DeploymentID.String(),
 			Key:          "image",
-			DefaultValue: oapi.NewLiteralValue("nginx:2.0"),
 		},
+		Values: []oapi.DeploymentVariableValue{{
+			Id:                   uuid.New().String(),
+			DeploymentVariableId: depVarID,
+			Value:                *oapi.NewValueFromLiteral(oapi.NewLiteralValue("nginx:2.0")),
+			Priority:             0,
+		}},
 	}}
 
 	p.EnqueueSelectorEval()
@@ -385,12 +392,12 @@ func TestVariable_Dynamic_AddResourceVarOverride(t *testing.T) {
 	p.AssertReleaseVariableEquals(t, 0, "region", "us-west-2")
 
 	// Round 2: add resource variable override.
-	p.ReleaseGetter.ResourceVars = map[string]oapi.ResourceVariable{
-		"region": {
+	p.ReleaseGetter.ResourceVars = map[string][]oapi.ResourceVariable{
+		"region": {{
 			Key:        "region",
 			ResourceId: p.Scenario.Resources[0].ID.String(),
 			Value:      LiteralValue("eu-central-1"),
-		},
+		}},
 	}
 
 	p.EnqueueSelectorEval()

@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -287,7 +288,59 @@ func ToOapiPolicySkip(row PolicySkip) *oapi.PolicySkip {
 	return s
 }
 
-func ToOapiDeploymentVariable(row DeploymentVariable) oapi.DeploymentVariable {
+// VariableValueAggRow matches the json_build_object shape produced by
+// queries/variables.sql. json_agg yields a slice of these per variable row.
+type VariableValueAggRow struct {
+	ID               uuid.UUID       `json:"id"`
+	VariableID       uuid.UUID       `json:"variableId"`
+	ResourceSelector *string         `json:"resourceSelector"`
+	Priority         int64           `json:"priority"`
+	Kind             string          `json:"kind"`
+	LiteralValue     json.RawMessage `json:"literalValue"`
+	RefKey           *string         `json:"refKey"`
+	RefPath          []string        `json:"refPath"`
+	SecretProvider   *string         `json:"secretProvider"`
+	SecretKey        *string         `json:"secretKey"`
+	SecretPath       []string        `json:"secretPath"`
+}
+
+func flattenVariableValue(r VariableValueAggRow) (oapi.Value, error) {
+	var v oapi.Value
+	switch r.Kind {
+	case "literal":
+		var lv oapi.LiteralValue
+		if err := lv.UnmarshalJSON(r.LiteralValue); err != nil {
+			return v, fmt.Errorf("unmarshal literal: %w", err)
+		}
+		if err := v.FromLiteralValue(lv); err != nil {
+			return v, err
+		}
+	case "ref":
+		ref := oapi.ReferenceValue{Reference: derefString(r.RefKey)}
+		if len(r.RefPath) > 0 {
+			ref.Path = append([]string(nil), r.RefPath...)
+		}
+		if err := v.FromReferenceValue(ref); err != nil {
+			return v, err
+		}
+	case "secret_ref":
+		return v, fmt.Errorf("secret_ref variable values are not yet supported")
+	default:
+		return v, fmt.Errorf("unknown variable_value kind: %q", r.Kind)
+	}
+	return v, nil
+}
+
+func derefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func ToOapiDeploymentVariable(
+	row ListVariablesWithValuesByDeploymentIDRow,
+) oapi.DeploymentVariable {
 	v := oapi.DeploymentVariable{
 		Id:           row.ID.String(),
 		DeploymentId: row.DeploymentID.String(),
@@ -296,28 +349,51 @@ func ToOapiDeploymentVariable(row DeploymentVariable) oapi.DeploymentVariable {
 	if row.Description.Valid {
 		v.Description = &row.Description.String
 	}
-	if len(row.DefaultValue) > 0 {
-		var lv oapi.LiteralValue
-		if err := json.Unmarshal(row.DefaultValue, &lv); err == nil {
-			v.DefaultValue = &lv
-		}
-	}
 	return v
 }
 
-func ToOapiDeploymentVariableValue(row DeploymentVariableValue) oapi.DeploymentVariableValue {
-	v := oapi.DeploymentVariableValue{
-		Id:                   row.ID.String(),
-		DeploymentVariableId: row.DeploymentVariableID.String(),
-		Priority:             row.Priority,
+func ToOapiDeploymentVariableValueFromAgg(
+	r VariableValueAggRow,
+) (oapi.DeploymentVariableValue, error) {
+	val, err := flattenVariableValue(r)
+	if err != nil {
+		return oapi.DeploymentVariableValue{}, err
 	}
-	if len(row.Value) > 0 {
-		_ = json.Unmarshal(row.Value, &v.Value)
+	out := oapi.DeploymentVariableValue{
+		Id:                   r.ID.String(),
+		DeploymentVariableId: r.VariableID.String(),
+		Priority:             r.Priority,
+		Value:                val,
 	}
-	if row.ResourceSelector.Valid && row.ResourceSelector.String != "" {
-		v.ResourceSelector = &row.ResourceSelector.String
+	if r.ResourceSelector != nil && *r.ResourceSelector != "" {
+		out.ResourceSelector = r.ResourceSelector
 	}
-	return v
+	return out, nil
+}
+
+func ToOapiResourceVariablesFromAgg(
+	resourceID uuid.UUID,
+	key string,
+	aggs []VariableValueAggRow,
+) ([]oapi.ResourceVariable, error) {
+	out := make([]oapi.ResourceVariable, 0, len(aggs))
+	for _, a := range aggs {
+		val, err := flattenVariableValue(a)
+		if err != nil {
+			return nil, err
+		}
+		rv := oapi.ResourceVariable{
+			ResourceId: resourceID.String(),
+			Key:        key,
+			Value:      val,
+			Priority:   a.Priority,
+		}
+		if a.ResourceSelector != nil && *a.ResourceSelector != "" {
+			rv.ResourceSelector = a.ResourceSelector
+		}
+		out = append(out, rv)
+	}
+	return out, nil
 }
 
 func ToOapiVariableSetWithVariables(
@@ -361,17 +437,6 @@ func ToOapiVariableSetWithVariables(
 		})
 	}
 	return vs
-}
-
-func ToOapiResourceVariable(row ResourceVariable) oapi.ResourceVariable {
-	v := oapi.ResourceVariable{
-		ResourceId: row.ResourceID.String(),
-		Key:        row.Key,
-	}
-	if len(row.Value) > 0 {
-		_ = json.Unmarshal(row.Value, &v.Value)
-	}
-	return v
 }
 
 func ToOapiSystem(row System) *oapi.System {

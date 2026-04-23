@@ -12,6 +12,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
+import { flattenVariableValue } from "./_variables.js";
 
 export const resourcesRouter = router({
   create: protectedProcedure
@@ -455,14 +456,41 @@ export const resourcesRouter = router({
 
       const rows = await ctx.db
         .select({
-          resourceId: schema.resourceVariable.resourceId,
-          key: schema.resourceVariable.key,
-          value: schema.resourceVariable.value,
+          resourceId: schema.variable.resourceId,
+          key: schema.variable.key,
+          kind: schema.variableValue.kind,
+          literalValue: schema.variableValue.literalValue,
+          refKey: schema.variableValue.refKey,
+          refPath: schema.variableValue.refPath,
+          secretProvider: schema.variableValue.secretProvider,
+          secretKey: schema.variableValue.secretKey,
+          secretPath: schema.variableValue.secretPath,
         })
-        .from(schema.resourceVariable)
-        .where(eq(schema.resourceVariable.resourceId, resource.id));
+        .from(schema.variable)
+        .innerJoin(
+          schema.variableValue,
+          eq(schema.variableValue.variableId, schema.variable.id),
+        )
+        .where(
+          and(
+            eq(schema.variable.scope, "resource"),
+            eq(schema.variable.resourceId, resource.id),
+          ),
+        );
 
-      return rows;
+      return rows.map((r) => ({
+        resourceId: r.resourceId,
+        key: r.key,
+        value: flattenVariableValue({
+          kind: r.kind,
+          literalValue: r.literalValue,
+          refKey: r.refKey,
+          refPath: r.refPath,
+          secretProvider: r.secretProvider,
+          secretKey: r.secretKey,
+          secretPath: r.secretPath,
+        } as typeof schema.variableValue.$inferSelect),
+      }));
     }),
 
   setVariable: protectedProcedure
@@ -485,15 +513,39 @@ export const resourcesRouter = router({
       const formattedValue =
         typeof value === "object" ? { object: value } : value;
 
-      const resourceVariable = await ctx.db
-        .insert(schema.resourceVariable)
-        .values({
+      const resourceVariable = await ctx.db.transaction(async (tx) => {
+        const v = await tx
+          .insert(schema.variable)
+          .values({ scope: "resource" as const, resourceId, key })
+          .onConflictDoUpdate({
+            target: [schema.variable.resourceId, schema.variable.key],
+            targetWhere: sql`${schema.variable.resourceId} is not null`,
+            set: { key },
+          })
+          .returning()
+          .then(takeFirst);
+
+        await tx
+          .delete(schema.variableValue)
+          .where(eq(schema.variableValue.variableId, v.id));
+
+        const val = await tx
+          .insert(schema.variableValue)
+          .values({
+            variableId: v.id,
+            priority: 0,
+            kind: "literal" as const,
+            literalValue: formattedValue,
+          })
+          .returning()
+          .then(takeFirst);
+
+        return {
           resourceId,
           key,
-          value: formattedValue,
-        })
-        .returning()
-        .then(takeFirst);
+          value: val.literalValue,
+        };
+      });
 
       await enqueueReleaseTargetsForResource(ctx.db, workspaceId, resourceId);
 

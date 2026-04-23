@@ -104,7 +104,7 @@ func Resolve(
 	entity := NewResourceEntity(scope.Resource)
 
 	resolved := make(map[string]oapi.LiteralValue, len(deploymentVars))
-	var fromResource, fromValue, fromVariableSet, fromDefault int
+	var fromResource, fromValue, fromVariableSet int
 
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
@@ -115,6 +115,7 @@ func Resolve(
 			resourceID,
 			key,
 			resourceVars,
+			scope.Resource,
 			entity,
 		); lv != nil {
 			resolved[key] = *lv
@@ -148,10 +149,6 @@ func Resolve(
 			continue
 		}
 
-		if dv.Variable.DefaultValue != nil {
-			resolved[key] = *dv.Variable.DefaultValue
-			fromDefault++
-		}
 	}
 
 	span.SetAttributes(
@@ -159,7 +156,6 @@ func Resolve(
 		attribute.Int("resolved.from_resource", fromResource),
 		attribute.Int("resolved.from_value", fromValue),
 		attribute.Int("resolved.from_variable_set", fromVariableSet),
-		attribute.Int("resolved.from_default", fromDefault),
 	)
 	return resolved, nil
 }
@@ -246,25 +242,48 @@ func (r *realtimeResolver) ResolveRelated(
 	return result, nil
 }
 
-// resolveFromResource checks if a resource variable exists for the given key
-// and resolves it.
+// resolveFromResource finds the highest-priority resource-variable value
+// whose resource selector matches the target resource, then resolves it.
+// A nil/empty selector always matches.
 func resolveFromResource(
 	ctx context.Context,
 	resolver RelatedEntityResolver,
 	resourceID string,
 	key string,
-	resourceVars map[string]oapi.ResourceVariable,
+	resourceVars map[string][]oapi.ResourceVariable,
+	resource *oapi.Resource,
 	entity *oapi.RelatableEntity,
 ) *oapi.LiteralValue {
-	rv, ok := resourceVars[key]
-	if !ok {
+	candidates, ok := resourceVars[key]
+	if !ok || len(candidates) == 0 {
 		return nil
 	}
-	lv, err := ResolveValue(ctx, resolver, resourceID, entity, &rv.Value)
-	if err != nil {
+
+	matched := make([]oapi.ResourceVariable, 0, len(candidates))
+	for _, rv := range candidates {
+		if rv.ResourceSelector == nil || *rv.ResourceSelector == "" {
+			matched = append(matched, rv)
+			continue
+		}
+		if ok, _ := selector.Match(ctx, *rv.ResourceSelector, resource); ok {
+			matched = append(matched, rv)
+		}
+	}
+	if len(matched) == 0 {
 		return nil
 	}
-	return lv
+
+	sort.Slice(matched, func(i, j int) bool {
+		return matched[i].Priority > matched[j].Priority
+	})
+
+	for _, rv := range matched {
+		lv, err := ResolveValue(ctx, resolver, resourceID, entity, &rv.Value)
+		if err == nil && lv != nil {
+			return lv
+		}
+	}
+	return nil
 }
 
 // resolveFromValues finds the highest-priority deployment variable value

@@ -332,11 +332,10 @@ type DeploymentDependencyRule struct {
 
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
-	DefaultValue *LiteralValue `json:"defaultValue,omitempty"`
-	DeploymentId string        `json:"deploymentId"`
-	Description  *string       `json:"description,omitempty"`
-	Id           string        `json:"id"`
-	Key          string        `json:"key"`
+	DeploymentId string  `json:"deploymentId"`
+	Description  *string `json:"description,omitempty"`
+	Id           string  `json:"id"`
+	Key          string  `json:"key"`
 }
 
 // DeploymentVariableValue defines model for DeploymentVariableValue.
@@ -1052,8 +1051,12 @@ type ResourceSummary struct {
 // ResourceVariable defines model for ResourceVariable.
 type ResourceVariable struct {
 	Key        string `json:"key"`
+	Priority   int64  `json:"priority"`
 	ResourceId string `json:"resourceId"`
-	Value      Value  `json:"value"`
+
+	// ResourceSelector A CEL expression to select which resources this value applies to
+	ResourceSelector *string `json:"resourceSelector,omitempty"`
+	Value            Value   `json:"value"`
 }
 
 // ResourceVariablesBulkUpdateEvent defines model for ResourceVariablesBulkUpdateEvent.

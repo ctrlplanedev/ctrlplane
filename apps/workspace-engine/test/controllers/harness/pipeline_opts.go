@@ -512,10 +512,20 @@ func WithDeploymentVariable(key string, opts ...DeploymentVarOption) PipelineOpt
 	}
 }
 
-// DefaultValue sets the default literal value on a deployment variable.
+// DefaultValue appends a null-selector, negative-priority literal value to
+// the deployment variable. The negative priority ensures any other value
+// (including WithVariableValue's default priority 0) shadows it, matching
+// the pre-migration semantics of `deployment_variable.default_value` being
+// a last-resort fallback.
 func DefaultValue(val any) DeploymentVarOption {
 	return func(dv *oapi.DeploymentVariableWithValues) {
-		dv.Variable.DefaultValue = oapi.NewLiteralValue(val)
+		lv := oapi.NewLiteralValue(val)
+		dv.Values = append(dv.Values, oapi.DeploymentVariableValue{
+			Id:                   uuid.New().String(),
+			DeploymentVariableId: dv.Variable.Id,
+			Value:                *oapi.NewValueFromLiteral(lv),
+			Priority:             -1,
+		})
 	}
 }
 
@@ -550,20 +560,23 @@ func ValueSelector(cel string) VariableValueOption {
 
 // WithResourceVariable adds a resource variable to the scenario. The variable
 // is keyed by the given key and applies to the first resource in the scenario.
+// The value uses null selector + priority 0 (equivalent to the old flat
+// key/value model).
 func WithResourceVariable(key string, value oapi.Value) PipelineOption {
 	return func(sc *ScenarioState) {
 		if sc.ResourceVars == nil {
-			sc.ResourceVars = make(map[string]oapi.ResourceVariable)
+			sc.ResourceVars = make(map[string][]oapi.ResourceVariable)
 		}
 		resourceID := ""
 		if len(sc.Resources) > 0 {
 			resourceID = sc.Resources[0].ID.String()
 		}
-		sc.ResourceVars[key] = oapi.ResourceVariable{
+		sc.ResourceVars[key] = append(sc.ResourceVars[key], oapi.ResourceVariable{
 			Key:        key,
 			ResourceId: resourceID,
 			Value:      value,
-		}
+			Priority:   0,
+		})
 	}
 }
 

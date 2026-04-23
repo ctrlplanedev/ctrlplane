@@ -283,6 +283,92 @@ func (ns NullJobVerificationTriggerOn) Value() (driver.Value, error) {
 	return string(ns.JobVerificationTriggerOn), nil
 }
 
+type VariableScope string
+
+const (
+	VariableScopeResource   VariableScope = "resource"
+	VariableScopeDeployment VariableScope = "deployment"
+	VariableScopeJobAgent   VariableScope = "job_agent"
+)
+
+func (e *VariableScope) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VariableScope(s)
+	case string:
+		*e = VariableScope(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VariableScope: %T", src)
+	}
+	return nil
+}
+
+type NullVariableScope struct {
+	VariableScope VariableScope
+	Valid         bool // Valid is true if VariableScope is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVariableScope) Scan(value interface{}) error {
+	if value == nil {
+		ns.VariableScope, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VariableScope.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVariableScope) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VariableScope), nil
+}
+
+type VariableValueKind string
+
+const (
+	VariableValueKindLiteral   VariableValueKind = "literal"
+	VariableValueKindRef       VariableValueKind = "ref"
+	VariableValueKindSecretRef VariableValueKind = "secret_ref"
+)
+
+func (e *VariableValueKind) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VariableValueKind(s)
+	case string:
+		*e = VariableValueKind(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VariableValueKind: %T", src)
+	}
+	return nil
+}
+
+type NullVariableValueKind struct {
+	VariableValueKind VariableValueKind
+	Valid             bool // Valid is true if VariableValueKind is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVariableValueKind) Scan(value interface{}) error {
+	if value == nil {
+		ns.VariableValueKind, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VariableValueKind.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVariableValueKind) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VariableValueKind), nil
+}
+
 type ChangelogEntry struct {
 	WorkspaceID uuid.UUID
 	EntityType  string
@@ -370,22 +456,6 @@ type DeploymentPlanTargetResult struct {
 	Message         pgtype.Text
 	StartedAt       pgtype.Timestamptz
 	CompletedAt     pgtype.Timestamptz
-}
-
-type DeploymentVariable struct {
-	ID           uuid.UUID
-	DeploymentID uuid.UUID
-	Key          string
-	Description  pgtype.Text
-	DefaultValue []byte
-}
-
-type DeploymentVariableValue struct {
-	ID                   uuid.UUID
-	DeploymentVariableID uuid.UUID
-	Value                []byte
-	ResourceSelector     pgtype.Text
-	Priority             int64
 }
 
 type DeploymentVersion struct {
@@ -673,12 +743,6 @@ type ResourceProvider struct {
 	Metadata    map[string]string
 }
 
-type ResourceVariable struct {
-	ResourceID uuid.UUID
-	Key        string
-	Value      []byte
-}
-
 type System struct {
 	ID          uuid.UUID
 	Name        string
@@ -708,6 +772,19 @@ type UserApprovalRecord struct {
 	CreatedAt     pgtype.Timestamptz
 }
 
+type Variable struct {
+	ID           uuid.UUID
+	Scope        VariableScope
+	ResourceID   uuid.UUID
+	DeploymentID uuid.UUID
+	JobAgentID   uuid.UUID
+	Key          string
+	IsSensitive  bool
+	Description  pgtype.Text
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+}
+
 type VariableSet struct {
 	ID          uuid.UUID
 	Name        string
@@ -725,6 +802,22 @@ type VariableSetVariable struct {
 	VariableSetID uuid.UUID
 	Key           string
 	Value         []byte
+}
+
+type VariableValue struct {
+	ID               uuid.UUID
+	VariableID       uuid.UUID
+	ResourceSelector pgtype.Text
+	Priority         int64
+	Kind             VariableValueKind
+	LiteralValue     []byte
+	RefKey           pgtype.Text
+	RefPath          []string
+	SecretProvider   pgtype.Text
+	SecretKey        pgtype.Text
+	SecretPath       []string
+	CreatedAt        pgtype.Timestamptz
+	UpdatedAt        pgtype.Timestamptz
 }
 
 type Workflow struct {

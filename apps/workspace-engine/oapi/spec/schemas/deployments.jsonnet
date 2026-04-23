@@ -44,7 +44,6 @@ local openapi = import '../lib/openapi.libsonnet';
       key: { type: 'string' },
       description: { type: 'string' },
       deploymentId: { type: 'string' },
-      defaultValue: openapi.schemaRef('LiteralValue'),
     },
   },
 

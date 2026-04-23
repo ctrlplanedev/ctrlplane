@@ -1296,7 +1296,6 @@ export interface components {
             message: string;
         };
         DeploymentVariable: {
-            defaultValue?: components["schemas"]["LiteralValue"];
             deploymentId: string;
             description?: string;
             id: string;
@@ -1974,7 +1973,6 @@ export interface components {
             slug: string;
         };
         UpsertDeploymentVariableRequest: {
-            defaultValue?: components["schemas"]["LiteralValue"];
             deploymentId: string;
             description?: string;
             key: string;

@@ -26,6 +26,27 @@ import * as schema from "@ctrlplane/db/schema";
 import { validResourceSelector } from "../valid-selector.js";
 import { extractMessageFromError } from "./utils.js";
 
+type VariableValueShape = {
+  kind: typeof schema.variableValue.kind.enumValues[number];
+  literalValue: unknown;
+  refKey: string | null;
+  refPath: string[] | null;
+  secretProvider: string | null;
+  secretKey: string | null;
+  secretPath: string[] | null;
+};
+
+const flattenResourceVariableValue = (r: VariableValueShape): unknown => {
+  if (r.kind === "literal") return r.literalValue;
+  if (r.kind === "ref")
+    return { reference: r.refKey, path: r.refPath ?? [] };
+  return {
+    provider: r.secretProvider,
+    key: r.secretKey,
+    path: r.secretPath ?? [],
+  };
+};
+
 const listResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources",
   "get"
@@ -139,18 +160,43 @@ const upsertResourceByIdentifier: AsyncTypedHandler<
     if (variables != null)
       await db.transaction(async (tx) => {
         await tx
-          .delete(schema.resourceVariable)
-          .where(eq(schema.resourceVariable.resourceId, upsertedResource.id));
+          .delete(schema.variable)
+          .where(
+            and(
+              eq(schema.variable.scope, "resource"),
+              eq(schema.variable.resourceId, upsertedResource.id),
+            ),
+          );
 
         const entries = Object.entries(variables);
-        if (entries.length > 0)
-          await tx.insert(schema.resourceVariable).values(
+        if (entries.length > 0) {
+          const inserted = await tx
+            .insert(schema.variable)
+            .values(
+              entries.map(([key]) => ({
+                scope: "resource" as const,
+                resourceId: upsertedResource.id,
+                key,
+              })),
+            )
+            .returning({
+              id: schema.variable.id,
+              key: schema.variable.key,
+            });
+
+          const byKey = new Map(inserted.map((v) => [v.key, v.id]));
+          await tx.insert(schema.variableValue).values(
             entries.map(([key, value]) => ({
-              resourceId: upsertedResource.id,
-              key,
-              value,
+              variableId: byKey.get(key)!,
+              priority: 0,
+              kind: "literal" as const,
+              literalValue:
+                value != null && typeof value === "object"
+                  ? { object: value }
+                  : value,
             })),
           );
+        }
       });
 
     enqueueReleaseTargetsForResource(db, workspaceId, upsertedResource.id);
@@ -216,17 +262,35 @@ const getVariablesForResource: AsyncTypedHandler<
 
   const rows = await db
     .select({
-      resourceId: schema.resourceVariable.resourceId,
-      key: schema.resourceVariable.key,
-      value: schema.resourceVariable.value,
+      resourceId: schema.variable.resourceId,
+      key: schema.variable.key,
+      kind: schema.variableValue.kind,
+      literalValue: schema.variableValue.literalValue,
+      refKey: schema.variableValue.refKey,
+      refPath: schema.variableValue.refPath,
+      secretProvider: schema.variableValue.secretProvider,
+      secretKey: schema.variableValue.secretKey,
+      secretPath: schema.variableValue.secretPath,
     })
-    .from(schema.resourceVariable)
-    .where(eq(schema.resourceVariable.resourceId, resource.id));
+    .from(schema.variable)
+    .innerJoin(
+      schema.variableValue,
+      eq(schema.variableValue.variableId, schema.variable.id),
+    )
+    .where(
+      and(
+        eq(schema.variable.scope, "resource"),
+        eq(schema.variable.resourceId, resource.id),
+      ),
+    );
 
-  const total = rows.length;
-  const items = rows.slice(offset, offset + limit);
+  const items = rows.slice(offset, offset + limit).map((r) => ({
+    resourceId: r.resourceId,
+    key: r.key,
+    value: flattenResourceVariableValue(r),
+  }));
 
-  res.status(200).json({ items, total, limit, offset });
+  res.status(200).json({ items, total: rows.length, limit, offset });
 };
 
 const updateVariablesForResource: AsyncTypedHandler<
@@ -242,17 +306,42 @@ const updateVariablesForResource: AsyncTypedHandler<
 
     await db.transaction(async (tx) => {
       await tx
-        .delete(schema.resourceVariable)
-        .where(eq(schema.resourceVariable.resourceId, resource.id));
+        .delete(schema.variable)
+        .where(
+          and(
+            eq(schema.variable.scope, "resource"),
+            eq(schema.variable.resourceId, resource.id),
+          ),
+        );
       const entries = Object.entries(body);
-      if (entries.length > 0)
-        await tx.insert(schema.resourceVariable).values(
+      if (entries.length > 0) {
+        const inserted = await tx
+          .insert(schema.variable)
+          .values(
+            entries.map(([key]) => ({
+              scope: "resource" as const,
+              resourceId,
+              key,
+            })),
+          )
+          .returning({
+            id: schema.variable.id,
+            key: schema.variable.key,
+          });
+
+        const byKey = new Map(inserted.map((v) => [v.key, v.id]));
+        await tx.insert(schema.variableValue).values(
           entries.map(([key, value]) => ({
-            resourceId,
-            key,
-            value,
+            variableId: byKey.get(key)!,
+            priority: 0,
+            kind: "literal" as const,
+            literalValue:
+              value != null && typeof value === "object"
+                ? { object: value }
+                : value,
           })),
         );
+      }
     });
 
     enqueueReleaseTargetsForResource(db, workspaceId, resourceId);

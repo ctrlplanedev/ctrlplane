@@ -2,6 +2,7 @@ package variableresolver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -115,25 +116,29 @@ func (g *PostgresGetter) GetDeploymentVariables(
 	if err != nil {
 		return nil, fmt.Errorf("parse deployment id: %w", err)
 	}
-	vars, err := q.ListDeploymentVariablesByDeploymentID(ctx, deploymentIDUUID)
+	rows, err := q.ListVariablesWithValuesByDeploymentID(ctx, deploymentIDUUID)
 	if err != nil {
 		return nil, fmt.Errorf("list deployment variables for %s: %w", deploymentID, err)
 	}
 
-	result := make([]oapi.DeploymentVariableWithValues, 0, len(vars))
-	for _, v := range vars {
-		values, err := q.ListDeploymentVariableValuesByVariableID(ctx, v.ID)
-		if err != nil {
-			return nil, fmt.Errorf("list values for variable %s: %w", v.ID, err)
+	result := make([]oapi.DeploymentVariableWithValues, 0, len(rows))
+	for _, row := range rows {
+		var aggs []db.VariableValueAggRow
+		if err := json.Unmarshal(row.Values, &aggs); err != nil {
+			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
 		}
 
-		oapiValues := make([]oapi.DeploymentVariableValue, 0, len(values))
-		for _, val := range values {
-			oapiValues = append(oapiValues, db.ToOapiDeploymentVariableValue(val))
+		oapiValues := make([]oapi.DeploymentVariableValue, 0, len(aggs))
+		for _, a := range aggs {
+			val, err := db.ToOapiDeploymentVariableValueFromAgg(a)
+			if err != nil {
+				return nil, fmt.Errorf("map value %s: %w", a.ID, err)
+			}
+			oapiValues = append(oapiValues, val)
 		}
 
 		result = append(result, oapi.DeploymentVariableWithValues{
-			Variable: db.ToOapiDeploymentVariable(v),
+			Variable: db.ToOapiDeploymentVariable(row),
 			Values:   oapiValues,
 		})
 	}
@@ -143,19 +148,27 @@ func (g *PostgresGetter) GetDeploymentVariables(
 func (g *PostgresGetter) GetResourceVariables(
 	ctx context.Context,
 	resourceID string,
-) (map[string]oapi.ResourceVariable, error) {
+) (map[string][]oapi.ResourceVariable, error) {
 	resourceIDUUID, err := uuid.Parse(resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("parse resource id: %w", err)
 	}
-	rows, err := db.GetQueries(ctx).ListResourceVariablesByResourceID(ctx, resourceIDUUID)
+	rows, err := db.GetQueries(ctx).ListVariablesWithValuesByResourceID(ctx, resourceIDUUID)
 	if err != nil {
 		return nil, fmt.Errorf("list resource variables for %s: %w", resourceID, err)
 	}
 
-	result := make(map[string]oapi.ResourceVariable, len(rows))
+	result := make(map[string][]oapi.ResourceVariable, len(rows))
 	for _, row := range rows {
-		result[row.Key] = db.ToOapiResourceVariable(row)
+		var aggs []db.VariableValueAggRow
+		if err := json.Unmarshal(row.Values, &aggs); err != nil {
+			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
+		}
+		rvs, err := db.ToOapiResourceVariablesFromAgg(row.ResourceID, row.Key, aggs)
+		if err != nil {
+			return nil, fmt.Errorf("map resource variable %s: %w", row.ID, err)
+		}
+		result[row.Key] = rvs
 	}
 	return result, nil
 }
@@ -342,12 +355,42 @@ func resourceRowToMap(
 	return m
 }
 
+// effectiveValue picks the null-selector, highest-priority value for
+// projecting a resource variable into the CEL evaluation context. Selector
+// matching is not available here because the CEL context is built without a
+// target resource.
+//
+// Returns (value, found, err):
+//   - found=false, err=nil: no null-selector candidate exists (normal absence).
+//   - found=false, err!=nil: a candidate was selected but conversion failed;
+//     callers must propagate rather than silently drop.
+func effectiveValue(aggs []db.VariableValueAggRow) (oapi.Value, bool, error) {
+	var best *db.VariableValueAggRow
+	for i := range aggs {
+		a := &aggs[i]
+		if a.ResourceSelector != nil && *a.ResourceSelector != "" {
+			continue
+		}
+		if best == nil || a.Priority > best.Priority {
+			best = a
+		}
+	}
+	if best == nil {
+		return oapi.Value{}, false, nil
+	}
+	v, err := db.ToOapiDeploymentVariableValueFromAgg(*best)
+	if err != nil {
+		return oapi.Value{}, false, err
+	}
+	return v.Value, true, nil
+}
+
 func loadResourceVariables(
 	ctx context.Context,
 	q *db.Queries,
 	resourceID uuid.UUID,
 ) (map[string]oapi.Value, error) {
-	rows, err := q.ListResourceVariablesByResourceID(ctx, resourceID)
+	rows, err := q.ListVariablesWithValuesByResourceID(ctx, resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("list variables for resource %s: %w", resourceID, err)
 	}
@@ -356,8 +399,17 @@ func loadResourceVariables(
 	}
 	vars := make(map[string]oapi.Value, len(rows))
 	for _, row := range rows {
-		v := db.ToOapiResourceVariable(row)
-		vars[v.Key] = v.Value
+		var aggs []db.VariableValueAggRow
+		if err := json.Unmarshal(row.Values, &aggs); err != nil {
+			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
+		}
+		v, ok, err := effectiveValue(aggs)
+		if err != nil {
+			return nil, fmt.Errorf("effective value for variable %s: %w", row.ID, err)
+		}
+		if ok {
+			vars[row.Key] = v
+		}
 	}
 	return vars, nil
 }
@@ -367,19 +419,29 @@ func loadResourceVariablesByWorkspace(
 	q *db.Queries,
 	workspaceID uuid.UUID,
 ) (map[uuid.UUID]map[string]oapi.Value, error) {
-	rows, err := q.ListResourceVariablesByWorkspaceID(ctx, workspaceID)
+	rows, err := q.ListResourceVariablesWithValuesByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("list variables for workspace %s: %w", workspaceID, err)
 	}
 	result := make(map[uuid.UUID]map[string]oapi.Value)
 	for _, row := range rows {
-		v := db.ToOapiResourceVariable(row)
+		var aggs []db.VariableValueAggRow
+		if err := json.Unmarshal(row.Values, &aggs); err != nil {
+			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
+		}
+		v, ok, err := effectiveValue(aggs)
+		if err != nil {
+			return nil, fmt.Errorf("effective value for variable %s: %w", row.ID, err)
+		}
+		if !ok {
+			continue
+		}
 		m := result[row.ResourceID]
 		if m == nil {
 			m = make(map[string]oapi.Value)
 			result[row.ResourceID] = m
 		}
-		m[v.Key] = v.Value
+		m[row.Key] = v
 	}
 	return result, nil
 }

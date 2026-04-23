@@ -76,7 +76,7 @@ type ScenarioState struct {
 	JobAgents       []oapi.JobAgent
 
 	DeploymentVars    []oapi.DeploymentVariableWithValues
-	ResourceVars      map[string]oapi.ResourceVariable
+	ResourceVars      map[string][]oapi.ResourceVariable
 	RelationshipRules []eval.Rule
 	Candidates        map[string][]eval.EntityData
 }

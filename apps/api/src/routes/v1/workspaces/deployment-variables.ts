@@ -2,16 +2,32 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { and, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, sql, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
-import {
-  deployment,
-  deploymentVariable,
-  deploymentVariableValue,
-} from "@ctrlplane/db/schema";
+import { deployment, variable, variableValue } from "@ctrlplane/db/schema";
 
 import { validResourceSelector } from "../valid-selector.js";
+
+type VariableValueRow = typeof variableValue.$inferSelect;
+
+const flattenVariableValue = (v: VariableValueRow): unknown => {
+  if (v.kind === "literal") return v.literalValue;
+  if (v.kind === "ref") return { reference: v.refKey, path: v.refPath ?? [] };
+  return {
+    provider: v.secretProvider,
+    key: v.secretKey,
+    path: v.secretPath ?? [],
+  };
+};
+
+const toApiVariableValue = (v: VariableValueRow) => ({
+  id: v.id,
+  deploymentVariableId: v.variableId,
+  value: flattenVariableValue(v),
+  resourceSelector: v.resourceSelector ?? undefined,
+  priority: v.priority,
+});
 
 const listDeploymentVariablesByDeployment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables",
@@ -23,8 +39,13 @@ const listDeploymentVariablesByDeployment: AsyncTypedHandler<
 
   const allVariables = await db
     .select()
-    .from(deploymentVariable)
-    .where(eq(deploymentVariable.deploymentId, deploymentId));
+    .from(variable)
+    .where(
+      and(
+        eq(variable.scope, "deployment"),
+        eq(variable.deploymentId, deploymentId),
+      ),
+    );
 
   const total = allVariables.length;
   const paginatedVariables = allVariables.slice(offset, offset + limit);
@@ -34,29 +55,20 @@ const listDeploymentVariablesByDeployment: AsyncTypedHandler<
     variableIds.length > 0
       ? await db
           .select()
-          .from(deploymentVariableValue)
-          .where(
-            inArray(deploymentVariableValue.deploymentVariableId, variableIds),
-          )
+          .from(variableValue)
+          .where(inArray(variableValue.variableId, variableIds))
       : [];
 
-  const items = paginatedVariables.map((variable) => ({
+  const items = paginatedVariables.map((v) => ({
     variable: {
-      id: variable.id,
-      deploymentId: variable.deploymentId,
-      key: variable.key,
-      description: variable.description ?? "",
-      defaultValue: variable.defaultValue ?? undefined,
+      id: v.id,
+      deploymentId: v.deploymentId!,
+      key: v.key,
+      description: v.description ?? "",
     },
     values: values
-      .filter((v) => v.deploymentVariableId === variable.id)
-      .map((v) => ({
-        id: v.id,
-        deploymentVariableId: v.deploymentVariableId,
-        value: v.value,
-        resourceSelector: v.resourceSelector ?? undefined,
-        priority: v.priority,
-      })),
+      .filter((val) => val.variableId === v.id)
+      .map(toApiVariableValue),
   }));
 
   res.json({ items, total, limit, offset });
@@ -66,37 +78,37 @@ const getDeploymentVariable: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-variables/{variableId}",
   "get"
 > = async (req, res) => {
-  const { variableId } = req.params;
+  const { workspaceId, variableId } = req.params;
 
-  const variable = await db
-    .select()
-    .from(deploymentVariable)
-    .where(eq(deploymentVariable.id, variableId))
+  const row = await db
+    .select({ variable })
+    .from(variable)
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
+    .where(
+      and(
+        eq(variable.id, variableId),
+        eq(variable.scope, "deployment"),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
     .then(takeFirstOrNull);
 
-  if (variable == null)
-    throw new ApiError("Deployment variable not found", 404);
+  if (row == null) throw new ApiError("Deployment variable not found", 404);
 
+  const v = row.variable;
   const values = await db
     .select()
-    .from(deploymentVariableValue)
-    .where(eq(deploymentVariableValue.deploymentVariableId, variableId));
+    .from(variableValue)
+    .where(eq(variableValue.variableId, variableId));
 
   res.json({
     variable: {
-      id: variable.id,
-      deploymentId: variable.deploymentId,
-      key: variable.key,
-      description: variable.description ?? "",
-      defaultValue: variable.defaultValue ?? undefined,
-    },
-    values: values.map((v) => ({
       id: v.id,
-      deploymentVariableId: v.deploymentVariableId,
-      value: v.value,
-      resourceSelector: v.resourceSelector ?? undefined,
-      priority: v.priority,
-    })),
+      deploymentId: v.deploymentId!,
+      key: v.key,
+      description: v.description ?? "",
+    },
+    values: values.map(toApiVariableValue),
   });
 };
 
@@ -105,8 +117,7 @@ const upsertDeploymentVariable: AsyncTypedHandler<
   "put"
 > = async (req, res) => {
   const { workspaceId, variableId } = req.params;
-  const { body } = req;
-  const { deploymentId } = req.body;
+  const { deploymentId, key, description } = req.body;
 
   const dep = await db
     .select()
@@ -125,15 +136,18 @@ const upsertDeploymentVariable: AsyncTypedHandler<
   }
 
   await db
-    .insert(deploymentVariable)
-    .values({ id: variableId, ...body })
+    .insert(variable)
+    .values({
+      id: variableId,
+      scope: "deployment",
+      deploymentId,
+      key,
+      description: description ?? null,
+    })
     .onConflictDoUpdate({
-      target: [deploymentVariable.deploymentId, deploymentVariable.key],
-      set: {
-        id: variableId,
-        description: body.description ?? "",
-        defaultValue: body.defaultValue ?? undefined,
-      },
+      target: [variable.deploymentId, variable.key],
+      targetWhere: sql`${variable.deploymentId} is not null`,
+      set: { description: description ?? null },
     });
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
@@ -150,33 +164,27 @@ const deleteDeploymentVariable: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, variableId } = req.params;
 
-  const variable = await db
-    .select()
-    .from(deploymentVariable)
-    .innerJoin(deployment, eq(deploymentVariable.deploymentId, deployment.id))
+  const v = await db
+    .select({ deploymentId: variable.deploymentId })
+    .from(variable)
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
     .where(
       and(
-        eq(deploymentVariable.id, variableId),
+        eq(variable.id, variableId),
+        eq(variable.scope, "deployment"),
         eq(deployment.workspaceId, workspaceId),
       ),
     )
-    .then(takeFirstOrNull)
-    .then((row) => row?.deployment_variable ?? null);
+    .then(takeFirstOrNull);
 
-  if (variable == null) {
+  if (v == null) {
     res.status(404).json({ error: "Deployment variable not found" });
     return;
   }
 
-  await db
-    .delete(deploymentVariable)
-    .where(eq(deploymentVariable.id, variableId));
+  await db.delete(variable).where(eq(variable.id, variableId));
 
-  enqueueReleaseTargetsForDeployment(
-    db,
-    workspaceId,
-    variable.deploymentId,
-  );
+  enqueueReleaseTargetsForDeployment(db, workspaceId, v.deploymentId!);
 
   res.status(202).json({
     id: variableId,
@@ -188,21 +196,25 @@ const getDeploymentVariableValue: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-variable-values/{valueId}",
   "get"
 > = async (req, res) => {
-  const { valueId } = req.params;
+  const { workspaceId, valueId } = req.params;
 
-  const value = await db
-    .select()
-    .from(deploymentVariableValue)
-    .where(eq(deploymentVariableValue.id, valueId))
+  const row = await db
+    .select({ variableValue })
+    .from(variableValue)
+    .innerJoin(variable, eq(variableValue.variableId, variable.id))
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
+    .where(
+      and(
+        eq(variableValue.id, valueId),
+        eq(deployment.workspaceId, workspaceId),
+      ),
+    )
     .then(takeFirstOrNull);
 
-  if (value == null)
+  if (row == null)
     throw new ApiError("Deployment variable value not found", 404);
 
-  res.json({
-    ...value,
-    resourceSelector: value.resourceSelector ?? undefined,
-  });
+  res.json(toApiVariableValue(row.variableValue));
 };
 
 const upsertDeploymentVariableValue: AsyncTypedHandler<
@@ -211,7 +223,6 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, valueId } = req.params;
   const { body } = req;
-
   const { deploymentVariableId } = body;
 
   const isValidCel = validResourceSelector(body.resourceSelector);
@@ -221,47 +232,63 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
     return;
   }
 
-  const variable = await db
-    .select()
-    .from(deploymentVariable)
-    .innerJoin(deployment, eq(deploymentVariable.deploymentId, deployment.id))
+  const owner = await db
+    .select({ deploymentId: variable.deploymentId })
+    .from(variable)
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
     .where(
       and(
-        eq(deploymentVariable.id, deploymentVariableId),
+        eq(variable.id, deploymentVariableId),
+        eq(variable.scope, "deployment"),
         eq(deployment.workspaceId, workspaceId),
       ),
     )
-    .then(takeFirstOrNull)
-    .then((row) => row?.deployment_variable ?? null);
+    .then(takeFirstOrNull);
 
-  if (variable == null) {
+  if (owner == null) {
     res.status(404).json({ error: "Deployment variable not found" });
     return;
   }
 
+  const existing = await db
+    .select({ variableId: variableValue.variableId })
+    .from(variableValue)
+    .where(eq(variableValue.id, valueId))
+    .then(takeFirstOrNull);
+
+  if (existing != null && existing.variableId !== deploymentVariableId) {
+    res.status(409).json({
+      error: "Value id already belongs to a different deployment variable",
+    });
+    return;
+  }
+
   await db
-    .insert(deploymentVariableValue)
+    .insert(variableValue)
     .values({
       id: valueId,
-      deploymentVariableId,
+      variableId: deploymentVariableId,
       priority: body.priority,
-      resourceSelector: body.resourceSelector ?? undefined,
-      value: body.value,
+      resourceSelector: body.resourceSelector ?? null,
+      kind: "literal",
+      literalValue: body.value,
     })
     .onConflictDoUpdate({
-      target: [deploymentVariableValue.id],
+      target: [variableValue.id],
       set: {
         priority: body.priority,
-        resourceSelector: body.resourceSelector ?? undefined,
-        value: body.value,
+        resourceSelector: body.resourceSelector ?? null,
+        kind: "literal",
+        literalValue: body.value,
+        refKey: null,
+        refPath: null,
+        secretProvider: null,
+        secretKey: null,
+        secretPath: null,
       },
     });
 
-  enqueueReleaseTargetsForDeployment(
-    db,
-    workspaceId,
-    variable.deploymentId,
-  );
+  enqueueReleaseTargetsForDeployment(db, workspaceId, owner.deploymentId!);
 
   res.status(202).json({
     id: valueId,
@@ -276,16 +303,13 @@ const deleteDeploymentVariableValue: AsyncTypedHandler<
   const { workspaceId, valueId } = req.params;
 
   const entry = await db
-    .select()
-    .from(deploymentVariableValue)
-    .innerJoin(
-      deploymentVariable,
-      eq(deploymentVariableValue.deploymentVariableId, deploymentVariable.id),
-    )
-    .innerJoin(deployment, eq(deploymentVariable.deploymentId, deployment.id))
+    .select({ deploymentId: variable.deploymentId })
+    .from(variableValue)
+    .innerJoin(variable, eq(variableValue.variableId, variable.id))
+    .innerJoin(deployment, eq(variable.deploymentId, deployment.id))
     .where(
       and(
-        eq(deploymentVariableValue.id, valueId),
+        eq(variableValue.id, valueId),
         eq(deployment.workspaceId, workspaceId),
       ),
     )
@@ -296,13 +320,9 @@ const deleteDeploymentVariableValue: AsyncTypedHandler<
     return;
   }
 
-  const { deployment: dep } = entry;
+  await db.delete(variableValue).where(eq(variableValue.id, valueId));
 
-  await db
-    .delete(deploymentVariableValue)
-    .where(eq(deploymentVariableValue.id, valueId));
-
-  enqueueReleaseTargetsForDeployment(db, workspaceId, dep.id);
+  enqueueReleaseTargetsForDeployment(db, workspaceId, entry.deploymentId!);
 
   res.status(202).json({
     id: valueId,
