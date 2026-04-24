@@ -32,6 +32,19 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.conflictResponse('Deployment name already exists in this workspace'),
     },
   },
+  '/v1/workspaces/{workspaceId}/deployments/name/{name}': {
+    get: {
+      summary: 'Get deployment by name',
+      operationId: 'getDeploymentByName',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.stringParam('name', 'Name of the deployment'),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('DeploymentWithVariablesAndSystems'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
     get: {
       summary: 'Get deployment',
