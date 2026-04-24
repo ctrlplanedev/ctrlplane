@@ -58,6 +58,30 @@ const listEnvironments: AsyncTypedHandler<
   });
 };
 
+const getEnvironmentWithSystems = async (
+  env: typeof schema.environment.$inferSelect,
+) => {
+  const systemRows = await db
+    .select({ system: schema.system })
+    .from(schema.systemEnvironment)
+    .innerJoin(
+      schema.system,
+      eq(schema.systemEnvironment.systemId, schema.system.id),
+    )
+    .where(eq(schema.systemEnvironment.environmentId, env.id));
+
+  const systems = systemRows.map((r) => ({
+    id: r.system.id,
+    workspaceId: r.system.workspaceId,
+    name: r.system.name,
+    slug: r.system.name,
+    description: r.system.description,
+    metadata: r.system.metadata,
+  }));
+
+  return { ...formatEnvironment(env), systems };
+};
+
 const getEnvironment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/environments/{environmentId}",
   "get"
@@ -73,25 +97,25 @@ const getEnvironment: AsyncTypedHandler<
 
   if (env == null) throw new ApiError("Environment not found", 404);
 
-  const systemRows = await db
-    .select({ system: schema.system })
-    .from(schema.systemEnvironment)
-    .innerJoin(
-      schema.system,
-      eq(schema.systemEnvironment.systemId, schema.system.id),
-    )
-    .where(eq(schema.systemEnvironment.environmentId, environmentId));
+  res.status(200).json(await getEnvironmentWithSystems(env));
+};
 
-  const systems = systemRows.map((r) => ({
-    id: r.system.id,
-    workspaceId: r.system.workspaceId,
-    name: r.system.name,
-    slug: r.system.name,
-    description: r.system.description,
-    metadata: r.system.metadata,
-  }));
+const getEnvironmentByName: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/environments/name/{name}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, name } = req.params;
 
-  res.status(200).json({ ...formatEnvironment(env), systems });
+  const env = await db.query.environment.findFirst({
+    where: and(
+      eq(schema.environment.name, name),
+      eq(schema.environment.workspaceId, workspaceId),
+    ),
+  });
+
+  if (env == null) throw new ApiError("Environment not found", 404);
+
+  res.status(200).json(await getEnvironmentWithSystems(env));
 };
 
 const deleteEnvironment: AsyncTypedHandler<
@@ -207,6 +231,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
 export const environmentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listEnvironments))
   .post("/", asyncHandler(createEnvironment))
+  .get("/name/:name", asyncHandler(getEnvironmentByName))
   .get("/:environmentId", asyncHandler(getEnvironment))
   .put("/:environmentId", asyncHandler(upsertEnvironmentById))
   .delete("/:environmentId", asyncHandler(deleteEnvironment));

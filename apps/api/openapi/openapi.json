@@ -5362,6 +5362,64 @@
             "summary": "Create environment"
          }
       },
+      "/v1/workspaces/{workspaceId}/environments/name/{name}": {
+         "get": {
+            "operationId": "getEnvironmentByName",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Name of the environment",
+                  "in": "path",
+                  "name": "name",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/EnvironmentWithSystems"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get environment by name"
+         }
+      },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
          "delete": {
             "operationId": "requestEnvironmentDeletion",
