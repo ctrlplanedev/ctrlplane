@@ -89,21 +89,9 @@ const listDeployments: AsyncTypedHandler<
   res.status(200).json(data);
 };
 
-const getDeployment: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-  "get"
-> = async (req, res) => {
-  const { workspaceId, deploymentId } = req.params;
-
-  const dep = await db.query.deployment.findFirst({
-    where: and(
-      eq(schema.deployment.id, deploymentId),
-      eq(schema.deployment.workspaceId, workspaceId),
-    ),
-  });
-
-  if (dep == null) throw new ApiError("Deployment not found", 404);
-
+const getDeploymentWithVariablesAndSystems = async (
+  dep: typeof schema.deployment.$inferSelect,
+) => {
   const systemRows = await db
     .select({ system: schema.system })
     .from(schema.systemDeployment)
@@ -111,12 +99,12 @@ const getDeployment: AsyncTypedHandler<
       schema.system,
       eq(schema.systemDeployment.systemId, schema.system.id),
     )
-    .where(eq(schema.systemDeployment.deploymentId, deploymentId));
+    .where(eq(schema.systemDeployment.deploymentId, dep.id));
 
   const variables = await db
     .select()
     .from(schema.deploymentVariable)
-    .where(eq(schema.deploymentVariable.deploymentId, deploymentId));
+    .where(eq(schema.deploymentVariable.deploymentId, dep.id));
 
   const variableIds = variables.map((v) => v.id);
   const variableValues =
@@ -142,7 +130,7 @@ const getDeployment: AsyncTypedHandler<
     valuesByVariableId.set(val.deploymentVariableId, arr);
   }
 
-  res.status(200).json({
+  return {
     deployment: formatDeployment(dep),
     systems: systemRows.map((r) => formatSystem(r.system)),
     variables: variables.map((v) => ({
@@ -161,7 +149,43 @@ const getDeployment: AsyncTypedHandler<
         resourceSelector: parseSelector(val.resourceSelector),
       })),
     })),
+  };
+};
+
+const getDeployment: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, deploymentId } = req.params;
+
+  const dep = await db.query.deployment.findFirst({
+    where: and(
+      eq(schema.deployment.id, deploymentId),
+      eq(schema.deployment.workspaceId, workspaceId),
+    ),
   });
+
+  if (dep == null) throw new ApiError("Deployment not found", 404);
+
+  res.status(200).json(await getDeploymentWithVariablesAndSystems(dep));
+};
+
+const getDeploymentByName: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/name/{name}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, name } = req.params;
+
+  const dep = await db.query.deployment.findFirst({
+    where: and(
+      eq(schema.deployment.name, name),
+      eq(schema.deployment.workspaceId, workspaceId),
+    ),
+  });
+
+  if (dep == null) throw new ApiError("Deployment not found", 404);
+
+  res.status(200).json(await getDeploymentWithVariablesAndSystems(dep));
 };
 
 const postDeployment: AsyncTypedHandler<
@@ -505,6 +529,7 @@ const getDeploymentPlan: AsyncTypedHandler<
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
   .post("/", asyncHandler(postDeployment))
+  .get("/name/:name", asyncHandler(getDeploymentByName))
   .get("/:deploymentId", asyncHandler(getDeployment))
   .put("/:deploymentId", asyncHandler(upsertDeployment))
   .delete("/:deploymentId", asyncHandler(deleteDeployment))
