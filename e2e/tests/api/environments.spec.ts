@@ -209,6 +209,55 @@ test.describe("Environment API", () => {
     expect(getRes.response.status).toBe(404);
   });
 
+  test("should get an environment by name", async ({ api, workspace }) => {
+    const name = `env-by-name-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/environments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, description: "Fetch-by-name target" },
+      },
+    );
+    expect(createRes.response.status).toBe(202);
+    const environmentId = createRes.data!.id;
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/environments/name/{name}",
+      {
+        params: { path: { workspaceId: workspace.id, name } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.id).toBe(environmentId);
+    expect(getRes.data!.name).toBe(name);
+    expect(getRes.data!.description).toBe("Fetch-by-name target");
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+      { params: { path: { workspaceId: workspace.id, environmentId } } },
+    );
+  });
+
+  test("should return 404 when getting an environment by a non-existent name", async ({
+    api,
+    workspace,
+  }) => {
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/environments/name/{name}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            name: `missing-${faker.string.alphanumeric(12)}`,
+          },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(404);
+  });
+
   test("should return 404 for a non-existent environment", async ({
     api,
     workspace,

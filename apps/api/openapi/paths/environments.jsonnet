@@ -31,6 +31,19 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.conflictResponse('Environment name already exists in this workspace'),
     },
   },
+  '/v1/workspaces/{workspaceId}/environments/name/{name}': {
+    get: {
+      summary: 'Get environment by name',
+      operationId: 'getEnvironmentByName',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.stringParam('name', 'Name of the environment'),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('EnvironmentWithSystems'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/environments/{environmentId}': {
     get: {
       summary: 'Get environment',
