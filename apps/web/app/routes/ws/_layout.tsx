@@ -196,11 +196,7 @@ export default function WorkspaceLayout() {
           <SidebarMenu>
             <SidebarMenuItem>
               {viewer != null && (
-                <WorkspaceSelector
-                  viewer={viewer}
-                  activeWorkspaceId={viewer.activeWorkspaceId}
-                  workspaces={workspaces}
-                />
+                <WorkspaceSelector viewer={viewer} workspaces={workspaces} />
               )}
             </SidebarMenuItem>
           </SidebarMenu>

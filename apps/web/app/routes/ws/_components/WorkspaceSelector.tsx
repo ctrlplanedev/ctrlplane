@@ -1,6 +1,7 @@
 import { Check, ChevronDown } from "lucide-react";
 import { NavLink } from "react-router";
 
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -18,12 +19,9 @@ import {
 
 export const WorkspaceSelector: React.FC<{
   viewer: { email: string };
-  activeWorkspaceId?: string | null;
   workspaces: Array<{ id: string; slug: string; name: string }>;
-}> = ({ viewer, activeWorkspaceId, workspaces }) => {
-  const workspace =
-    workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces.at(0);
-  if (workspace == null) return;
+}> = ({ viewer, workspaces }) => {
+  const { workspace } = useWorkspace();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
