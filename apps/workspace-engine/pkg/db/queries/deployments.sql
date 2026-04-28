@@ -54,5 +54,6 @@ DELETE FROM deployment WHERE id = $1;
 -- name: GetDeploymentDependenciesByDeploymentID :many
 SELECT dependency_deployment_id, version_selector
 FROM deployment_dependency
-WHERE deployment_id = $1;
+WHERE deployment_id = $1
+ORDER BY dependency_deployment_id;
 

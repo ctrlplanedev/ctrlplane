@@ -546,19 +546,26 @@ func TestCollectEvaluators(t *testing.T) {
 	getter := &mockGetter{}
 	rt := &oapi.ReleaseTarget{EnvironmentId: "env-1", ResourceId: "r-1", DeploymentId: "d-1"}
 
-	// baseCount captures evaluators that are always added regardless of
-	// policies (e.g. non-rule evaluators like deploymentversiondependency).
-	baseCount := len(CollectEvaluators(ctx, getter, rt, nil))
+	expectedAlwaysOn := []string{deploymentversiondependency.RuleType}
 
-	t.Run("returns base set for nil policies", func(t *testing.T) {
-		evals := CollectEvaluators(ctx, getter, rt, nil)
-		assert.Len(t, evals, baseCount)
+	assertContainsAlwaysOnEvaluators := func(t *testing.T, evals []evaluator.Evaluator) {
+		t.Helper()
+		require.Len(t, evals, len(expectedAlwaysOn),
+			"only the pinned always-on evaluators should be present")
+		got := make([]string, len(evals))
+		for i, e := range evals {
+			got[i] = e.RuleType()
+		}
+		assert.ElementsMatch(t, expectedAlwaysOn, got)
+	}
+
+	t.Run("returns the always-on evaluator set for nil policies", func(t *testing.T) {
+		assertContainsAlwaysOnEvaluators(t, CollectEvaluators(ctx, getter, rt, nil))
 	})
 
-	t.Run("skips nil policies", func(t *testing.T) {
+	t.Run("returns the always-on evaluator set when all policies are nil", func(t *testing.T) {
 		policies := []*oapi.Policy{nil, nil}
-		evals := CollectEvaluators(ctx, getter, rt, policies)
-		assert.Len(t, evals, baseCount, "should still be base set with only nil policies")
+		assertContainsAlwaysOnEvaluators(t, CollectEvaluators(ctx, getter, rt, policies))
 	})
 
 	ruleWithApproval := func(id string) oapi.PolicyRule {

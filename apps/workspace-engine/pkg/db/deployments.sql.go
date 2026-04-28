@@ -70,6 +70,7 @@ const getDeploymentDependenciesByDeploymentID = `-- name: GetDeploymentDependenc
 SELECT dependency_deployment_id, version_selector
 FROM deployment_dependency
 WHERE deployment_id = $1
+ORDER BY dependency_deployment_id
 `
 
 type GetDeploymentDependenciesByDeploymentIDRow struct {

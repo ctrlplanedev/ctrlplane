@@ -3,6 +3,7 @@ package deploymentversiondependency
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -24,10 +25,11 @@ func (p *PostgresGetters) GetDependencies(
 	ctx context.Context,
 	deploymentID string,
 ) ([]DependencyEdge, error) {
-	rows, err := p.queries.GetDeploymentDependenciesByDeploymentID(
-		ctx,
-		uuid.MustParse(deploymentID),
-	)
+	depID, err := uuid.Parse(deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
+	rows, err := p.queries.GetDeploymentDependenciesByDeploymentID(ctx, depID)
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +48,19 @@ func (p *PostgresGetters) GetReleaseTargetForDeploymentResource(
 	deploymentID string,
 	resourceID string,
 ) (*oapi.ReleaseTarget, error) {
+	depID, err := uuid.Parse(deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
+	resID, err := uuid.Parse(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
 	row, err := p.queries.GetReleaseTargetForDeploymentResource(
 		ctx,
 		db.GetReleaseTargetForDeploymentResourceParams{
-			DeploymentID: uuid.MustParse(deploymentID),
-			ResourceID:   uuid.MustParse(resourceID),
+			DeploymentID: depID,
+			ResourceID:   resID,
 		},
 	)
 	if err != nil {
@@ -73,12 +83,24 @@ func (p *PostgresGetters) GetCurrentVersionForReleaseTarget(
 	if rt == nil {
 		return nil, nil
 	}
+	resID, err := uuid.Parse(rt.ResourceId)
+	if err != nil {
+		return nil, fmt.Errorf("parse resource id: %w", err)
+	}
+	envID, err := uuid.Parse(rt.EnvironmentId)
+	if err != nil {
+		return nil, fmt.Errorf("parse environment id: %w", err)
+	}
+	depID, err := uuid.Parse(rt.DeploymentId)
+	if err != nil {
+		return nil, fmt.Errorf("parse deployment id: %w", err)
+	}
 	row, err := p.queries.GetCurrentReleaseByReleaseTarget(
 		ctx,
 		db.GetCurrentReleaseByReleaseTargetParams{
-			ResourceID:    uuid.MustParse(rt.ResourceId),
-			EnvironmentID: uuid.MustParse(rt.EnvironmentId),
-			DeploymentID:  uuid.MustParse(rt.DeploymentId),
+			ResourceID:    resID,
+			EnvironmentID: envID,
+			DeploymentID:  depID,
 		},
 	)
 	if err != nil {
