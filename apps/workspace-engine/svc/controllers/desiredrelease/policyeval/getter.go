@@ -3,6 +3,7 @@ package policyeval
 import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
@@ -15,6 +16,7 @@ type deploymentwindowGetter = deploymentwindow.Getters
 type gradualrolloutGetter = gradualrollout.Getters
 type versioncooldownGetter = versioncooldown.Getters
 type deploymentdependencyGetter = deploymentdependency.Getters
+type deploymentversiondependencyGetter = deploymentversiondependency.Getters
 
 type Getter interface {
 	approvalGetter
@@ -23,4 +25,5 @@ type Getter interface {
 	gradualrolloutGetter
 	versioncooldownGetter
 	deploymentdependencyGetter
+	deploymentversiondependencyGetter
 }

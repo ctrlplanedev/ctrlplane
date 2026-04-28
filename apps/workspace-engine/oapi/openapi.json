@@ -281,6 +281,18 @@
             ],
             "type": "object"
          },
+         "DeploymentDependency": {
+            "properties": {
+               "versionSelector": {
+                  "description": "CEL expression evaluated against the dependency deployment's current release version on the same resource.",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "versionSelector"
+            ],
+            "type": "object"
+         },
          "DeploymentDependencyRule": {
             "properties": {
                "dependsOn": {

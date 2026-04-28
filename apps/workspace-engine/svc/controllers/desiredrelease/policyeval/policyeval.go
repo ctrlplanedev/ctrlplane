@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
@@ -46,6 +47,14 @@ func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []e
 	)
 }
 
+// nonRuleEvaluators returns evaluators that are not backed by a policy rule
+// and should run once per release target regardless of how many policies exist.
+func nonRuleEvaluators(getter Getter) []evaluator.Evaluator {
+	return evaluator.CollectEvaluators(
+		deploymentversiondependency.NewEvaluator(getter),
+	)
+}
+
 // CollectEvaluators builds and sorts the full evaluator set for the given
 // policies. Evaluators are sorted by Complexity (cheapest first) so that
 // fast-failing checks run before expensive ones.
@@ -65,6 +74,8 @@ func CollectEvaluators(
 			evals = append(evals, ruleEvaluators(ctx, getter, &rule)...)
 		}
 	}
+
+	evals = append(evals, nonRuleEvaluators(getter)...)
 
 	slices.SortFunc(evals, func(a, b evaluator.Evaluator) int {
 		return cmp.Compare(a.Complexity(), b.Complexity())

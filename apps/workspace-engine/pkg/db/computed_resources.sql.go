@@ -11,6 +11,45 @@ import (
 	"github.com/google/uuid"
 )
 
+const getReleaseTargetForDeploymentResource = `-- name: GetReleaseTargetForDeploymentResource :one
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cdr.deployment_id = $1
+  AND cdr.resource_id = $2
+LIMIT 1
+`
+
+type GetReleaseTargetForDeploymentResourceParams struct {
+	DeploymentID uuid.UUID
+	ResourceID   uuid.UUID
+}
+
+type GetReleaseTargetForDeploymentResourceRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns one release target for a (deployment, resource) pair across any
+// environment. Used by the deployment-version-dependency evaluator, which
+// only needs to identify some environment in which the dependency lives.
+func (q *Queries) GetReleaseTargetForDeploymentResource(ctx context.Context, arg GetReleaseTargetForDeploymentResourceParams) (GetReleaseTargetForDeploymentResourceRow, error) {
+	row := q.db.QueryRow(ctx, getReleaseTargetForDeploymentResource, arg.DeploymentID, arg.ResourceID)
+	var i GetReleaseTargetForDeploymentResourceRow
+	err := row.Scan(&i.DeploymentID, &i.EnvironmentID, &i.ResourceID)
+	return i, err
+}
+
 const getReleaseTargetsForDeployment = `-- name: GetReleaseTargetsForDeployment :many
 SELECT DISTINCT
     cdr.deployment_id,

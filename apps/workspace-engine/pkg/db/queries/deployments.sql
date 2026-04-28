@@ -51,3 +51,9 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1;
 -- name: DeleteDeployment :exec
 DELETE FROM deployment WHERE id = $1;
 
+-- name: GetDeploymentDependenciesByDeploymentID :many
+SELECT dependency_deployment_id, version_selector
+FROM deployment_dependency
+WHERE deployment_id = $1
+ORDER BY dependency_deployment_id;
+

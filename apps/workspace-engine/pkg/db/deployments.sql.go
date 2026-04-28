@@ -66,6 +66,38 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 	return i, err
 }
 
+const getDeploymentDependenciesByDeploymentID = `-- name: GetDeploymentDependenciesByDeploymentID :many
+SELECT dependency_deployment_id, version_selector
+FROM deployment_dependency
+WHERE deployment_id = $1
+ORDER BY dependency_deployment_id
+`
+
+type GetDeploymentDependenciesByDeploymentIDRow struct {
+	DependencyDeploymentID uuid.UUID
+	VersionSelector        string
+}
+
+func (q *Queries) GetDeploymentDependenciesByDeploymentID(ctx context.Context, dollar_1 uuid.UUID) ([]GetDeploymentDependenciesByDeploymentIDRow, error) {
+	rows, err := q.db.Query(ctx, getDeploymentDependenciesByDeploymentID, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDeploymentDependenciesByDeploymentIDRow
+	for rows.Next() {
+		var i GetDeploymentDependenciesByDeploymentIDRow
+		if err := rows.Scan(&i.DependencyDeploymentID, &i.VersionSelector); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDeploymentIDsForSystem = `-- name: GetDeploymentIDsForSystem :many
 SELECT deployment_id FROM system_deployment WHERE system_id = $1
 `

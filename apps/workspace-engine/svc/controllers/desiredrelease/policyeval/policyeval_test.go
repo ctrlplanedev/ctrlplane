@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 )
 
@@ -189,6 +190,28 @@ func (m *mockGetter) GetJobsForEnvironmentAndVersion(
 func (m *mockGetter) GetVerificationStatusForJobs(
 	_ context.Context, _ []string,
 ) (map[string]oapi.JobVerificationStatus, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetCurrentVersionForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (*oapi.DeploymentVersion, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetDependencies(
+	_ context.Context,
+	_ string,
+) ([]deploymentversiondependency.DependencyEdge, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetReleaseTargetForDeploymentResource(
+	_ context.Context,
+	_ string,
+	_ string,
+) (*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
 
@@ -523,15 +546,26 @@ func TestCollectEvaluators(t *testing.T) {
 	getter := &mockGetter{}
 	rt := &oapi.ReleaseTarget{EnvironmentId: "env-1", ResourceId: "r-1", DeploymentId: "d-1"}
 
-	t.Run("returns empty for nil policies", func(t *testing.T) {
-		evals := CollectEvaluators(ctx, getter, rt, nil)
-		assert.Empty(t, evals)
+	expectedAlwaysOn := []string{deploymentversiondependency.RuleType}
+
+	assertContainsAlwaysOnEvaluators := func(t *testing.T, evals []evaluator.Evaluator) {
+		t.Helper()
+		require.Len(t, evals, len(expectedAlwaysOn),
+			"only the pinned always-on evaluators should be present")
+		got := make([]string, len(evals))
+		for i, e := range evals {
+			got[i] = e.RuleType()
+		}
+		assert.ElementsMatch(t, expectedAlwaysOn, got)
+	}
+
+	t.Run("returns the always-on evaluator set for nil policies", func(t *testing.T) {
+		assertContainsAlwaysOnEvaluators(t, CollectEvaluators(ctx, getter, rt, nil))
 	})
 
-	t.Run("skips nil policies", func(t *testing.T) {
+	t.Run("returns the always-on evaluator set when all policies are nil", func(t *testing.T) {
 		policies := []*oapi.Policy{nil, nil}
-		evals := CollectEvaluators(ctx, getter, rt, policies)
-		assert.Empty(t, evals, "should still be empty with only nil policies")
+		assertContainsAlwaysOnEvaluators(t, CollectEvaluators(ctx, getter, rt, policies))
 	})
 
 	ruleWithApproval := func(id string) oapi.PolicyRule {

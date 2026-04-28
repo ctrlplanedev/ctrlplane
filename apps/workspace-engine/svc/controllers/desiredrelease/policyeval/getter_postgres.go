@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 )
@@ -21,8 +22,9 @@ var _ Getter = (*PostgresGetter)(nil)
 // deploymentdependency.
 type PostgresGetter struct {
 	gradualrolloutGetter
-	versioncooldown      *versioncooldown.PostgresGetters
-	deploymentdependency *deploymentdependency.PostgresGetters
+	versioncooldown             *versioncooldown.PostgresGetters
+	deploymentdependency        *deploymentdependency.PostgresGetters
+	deploymentversiondependency *deploymentversiondependency.PostgresGetters
 }
 
 func NewPostgresGetter(
@@ -40,8 +42,9 @@ func NewPostgresGetter(
 			policiesForRT,
 			jobsForRT,
 		),
-		versioncooldown:      versioncooldown.NewPostgresGetters(queries, jobsForRT),
-		deploymentdependency: deploymentdependency.NewPostgresGetters(queries),
+		versioncooldown:             versioncooldown.NewPostgresGetters(queries, jobsForRT),
+		deploymentdependency:        deploymentdependency.NewPostgresGetters(queries),
+		deploymentversiondependency: deploymentversiondependency.NewPostgresGetters(queries),
 	}
 }
 
@@ -68,4 +71,30 @@ func (g *PostgresGetter) GetCurrentlyDeployedVersion(
 	rt *oapi.ReleaseTarget,
 ) *oapi.DeploymentVersion {
 	return g.deploymentdependency.GetCurrentlyDeployedVersion(ctx, rt)
+}
+
+func (g *PostgresGetter) GetDependencies(
+	ctx context.Context,
+	deploymentID string,
+) ([]deploymentversiondependency.DependencyEdge, error) {
+	return g.deploymentversiondependency.GetDependencies(ctx, deploymentID)
+}
+
+func (g *PostgresGetter) GetReleaseTargetForDeploymentResource(
+	ctx context.Context,
+	deploymentID string,
+	resourceID string,
+) (*oapi.ReleaseTarget, error) {
+	return g.deploymentversiondependency.GetReleaseTargetForDeploymentResource(
+		ctx,
+		deploymentID,
+		resourceID,
+	)
+}
+
+func (g *PostgresGetter) GetCurrentVersionForReleaseTarget(
+	ctx context.Context,
+	rt *oapi.ReleaseTarget,
+) (*oapi.DeploymentVersion, error) {
+	return g.deploymentversiondependency.GetCurrentVersionForReleaseTarget(ctx, rt)
 }
