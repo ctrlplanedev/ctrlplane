@@ -111,8 +111,10 @@ func (e *Evaluator) evaluateEdge(
 	}
 	if version == nil {
 		return results.NewDeniedResult(
-			fmt.Sprintf("Deployment dependency: dependency %s has no successful release on this resource",
-				edge.DependencyDeploymentID),
+			fmt.Sprintf(
+				"Deployment dependency: dependency %s has no successful release on this resource",
+				edge.DependencyDeploymentID,
+			),
 		).WithDetail("dependency_deployment_id", edge.DependencyDeploymentID)
 	}
 

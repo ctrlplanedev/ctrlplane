@@ -94,7 +94,9 @@ func TestEvaluator_SingleDependencySatisfied_Allows(t *testing.T) {
 	depID := uuid.New().String()
 	mock := &mockGetters{
 		getDependencies: func() ([]DependencyEdge, error) {
-			return []DependencyEdge{{DependencyDeploymentID: depID, VersionSelector: "version.tag == 'v2.0'"}}, nil
+			return []DependencyEdge{
+				{DependencyDeploymentID: depID, VersionSelector: "version.tag == 'v2.0'"},
+			}, nil
 		},
 		getReleaseTargetForDeploymentResource: alwaysReturnsRT,
 		getCurrentVersionForReleaseTarget: func(_ *oapi.ReleaseTarget) (*oapi.DeploymentVersion, error) {
@@ -109,7 +111,9 @@ func TestEvaluator_SingleDependencyUnsatisfied_Denies(t *testing.T) {
 	depID := uuid.New().String()
 	mock := &mockGetters{
 		getDependencies: func() ([]DependencyEdge, error) {
-			return []DependencyEdge{{DependencyDeploymentID: depID, VersionSelector: "version.tag == 'v2.0'"}}, nil
+			return []DependencyEdge{
+				{DependencyDeploymentID: depID, VersionSelector: "version.tag == 'v2.0'"},
+			}, nil
 		},
 		getReleaseTargetForDeploymentResource: alwaysReturnsRT,
 		getCurrentVersionForReleaseTarget: func(_ *oapi.ReleaseTarget) (*oapi.DeploymentVersion, error) {

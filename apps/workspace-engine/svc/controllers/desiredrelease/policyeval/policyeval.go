@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
@@ -17,8 +18,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
-
-	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace/desiredrelease/policyeval")
