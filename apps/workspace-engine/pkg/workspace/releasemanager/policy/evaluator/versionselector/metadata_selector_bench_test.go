@@ -112,7 +112,10 @@ func BenchmarkMetadataSelector_Eval(b *testing.B) {
 					for range b.N {
 						matches = 0
 						for _, ctx := range contexts {
-							ok, _ := evaluate(program, ctx)
+							ok, err := evaluate(program, ctx)
+							if err != nil {
+								b.Fatalf("evaluate shape=%q: %v", shape.label, err)
+							}
 							if ok {
 								matches++
 							}
@@ -167,8 +170,9 @@ func BenchmarkMetadataSelector_NativeEq(b *testing.B) {
 }
 
 // BenchmarkMetadataSelector_Compile measures compile-only cost, bypassing the
-// ristretto cache in compiledEnv by building a fresh env per run. Useful to
-// size cache-miss impact separately from the steady-state Eval cost.
+// ristretto program cache in compiledEnv (the *cel.Env itself is reused — we
+// only want to measure compile-and-Program cost, not env construction).
+// Useful to size cache-miss impact separately from the steady-state Eval cost.
 func BenchmarkMetadataSelector_Compile(b *testing.B) {
 	for _, shape := range metadataSelectorShapes {
 		b.Run("shape="+shape.label, func(b *testing.B) {
