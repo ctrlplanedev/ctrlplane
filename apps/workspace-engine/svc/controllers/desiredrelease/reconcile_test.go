@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/planvalidation"
 )
 
 // ---------------------------------------------------------------------------
@@ -231,6 +232,13 @@ func (m *mockReconcileGetter) GetVariableSetsWithVariables(
 	ctx context.Context,
 	workspaceID uuid.UUID,
 ) ([]oapi.VariableSetWithVariables, error) {
+	return nil, nil
+}
+
+func (m *mockReconcileGetter) GetPlanValidationResultsForTarget(
+	_ context.Context,
+	_, _, _ string,
+) ([]planvalidation.ValidationResult, error) {
 	return nil, nil
 }
 

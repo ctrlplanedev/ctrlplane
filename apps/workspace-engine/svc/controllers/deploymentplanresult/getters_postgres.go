@@ -57,6 +57,13 @@ func (g *PostgresValidatorGetter) ListPlanValidationRulesByWorkspaceID(
 	return db.GetQueries(ctx).ListPlanValidationRulesByWorkspaceID(ctx, workspaceID)
 }
 
+func (g *PostgresValidatorGetter) GetVersionByReleaseID(
+	ctx context.Context,
+	releaseID uuid.UUID,
+) (db.VersionByReleaseIDRow, error) {
+	return db.GetQueries(ctx).GetVersionByReleaseID(ctx, releaseID)
+}
+
 func newRegistry() *jobagents.Registry {
 	registry := jobagents.NewRegistry(nil, nil)
 	registry.Register(

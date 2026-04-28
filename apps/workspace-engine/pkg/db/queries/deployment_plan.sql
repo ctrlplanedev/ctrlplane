@@ -67,6 +67,7 @@ WHERE id = $1;
 SELECT
   t.id AS target_id,
   t.plan_id,
+  t.current_release_id,
   dp.deployment_id,
   dp.workspace_id,
   dp.version_tag,
@@ -173,6 +174,19 @@ WHERE t.environment_id = $1
   AND t.resource_id = $2
   AND dp.deployment_id = $3
 ORDER BY v.evaluated_at DESC;
+
+-- name: GetVersionByReleaseID :one
+SELECT
+  dv.id,
+  dv.tag,
+  dv.name,
+  dv.metadata,
+  dv.config,
+  dv.created_at,
+  dv.status
+FROM deployment_version dv
+JOIN release r ON r.version_id = dv.id
+WHERE r.id = $1;
 
 -- name: ListPlanValidationRulesByWorkspaceID :many
 SELECT r.id, r.policy_id, r.name, r.description, r.rego, r.severity, r.created_at,

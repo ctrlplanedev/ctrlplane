@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/planvalidation"
 )
 
 // ---------------------------------------------------------------------------
@@ -189,6 +190,13 @@ func (m *mockGetter) GetJobsForEnvironmentAndVersion(
 func (m *mockGetter) GetVerificationStatusForJobs(
 	_ context.Context, _ []string,
 ) (map[string]oapi.JobVerificationStatus, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetPlanValidationResultsForTarget(
+	_ context.Context,
+	_, _, _ string,
+) ([]planvalidation.ValidationResult, error) {
 	return nil, nil
 }
 

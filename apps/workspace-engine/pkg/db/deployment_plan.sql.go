@@ -92,6 +92,7 @@ const getTargetContextByResultID = `-- name: GetTargetContextByResultID :one
 SELECT
   t.id AS target_id,
   t.plan_id,
+  t.current_release_id,
   dp.deployment_id,
   dp.workspace_id,
   dp.version_tag,
@@ -109,15 +110,16 @@ WHERE r.id = $1
 `
 
 type GetTargetContextByResultIDRow struct {
-	TargetID        uuid.UUID
-	PlanID          uuid.UUID
-	DeploymentID    uuid.UUID
-	WorkspaceID     uuid.UUID
-	VersionTag      string
-	VersionMetadata map[string]string
-	WorkspaceSlug   string
-	EnvironmentName string
-	ResourceName    string
+	TargetID         uuid.UUID
+	PlanID           uuid.UUID
+	CurrentReleaseID pgtype.UUID
+	DeploymentID     uuid.UUID
+	WorkspaceID      uuid.UUID
+	VersionTag       string
+	VersionMetadata  map[string]string
+	WorkspaceSlug    string
+	EnvironmentName  string
+	ResourceName     string
 }
 
 func (q *Queries) GetTargetContextByResultID(ctx context.Context, id uuid.UUID) (GetTargetContextByResultIDRow, error) {
@@ -126,6 +128,7 @@ func (q *Queries) GetTargetContextByResultID(ctx context.Context, id uuid.UUID) 
 	err := row.Scan(
 		&i.TargetID,
 		&i.PlanID,
+		&i.CurrentReleaseID,
 		&i.DeploymentID,
 		&i.WorkspaceID,
 		&i.VersionTag,

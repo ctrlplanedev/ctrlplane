@@ -189,8 +189,13 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		if err != nil {
 			span.RecordError(fmt.Errorf("get target context for validation: %w", err))
 		} else {
+			var currentReleaseID uuid.UUID
+			if tc.CurrentReleaseID.Valid {
+				currentReleaseID = uuid.UUID(tc.CurrentReleaseID.Bytes)
+			}
 			if valErr := c.validator.ValidatePlanResult(
-				ctx, resultID, tc.WorkspaceID, &dispatchCtx,
+				ctx, resultID, tc.WorkspaceID, currentReleaseID,
+				&dispatchCtx,
 				planResult.Current, planResult.Proposed, planResult.HasChanges,
 			); valErr != nil {
 				span.RecordError(valErr)

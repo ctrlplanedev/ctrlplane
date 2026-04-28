@@ -28,7 +28,11 @@ type Input struct {
 	Environment any    `json:"environment,omitempty"`
 	Resource    any    `json:"resource,omitempty"`
 	Deployment  any    `json:"deployment,omitempty"`
-	Version     any    `json:"version,omitempty"`
+
+	// ProposedVersion is the deployment version being planned (the new version).
+	ProposedVersion any `json:"proposedVersion,omitempty"`
+	// CurrentVersion is the deployment version currently deployed to this target (if any).
+	CurrentVersion any `json:"currentVersion,omitempty"`
 }
 
 // Result holds the outcome of evaluating a single Rego policy.
@@ -37,11 +41,13 @@ type Result struct {
 	Violations []Violation
 }
 
-// Evaluate compiles and runs a Rego policy module against the given input,
+// Evaluate compiles and runs a Rego v1 policy module against the given input,
 // collecting all violations. The package declaration in the Rego source is
 // auto-detected so callers don't need to know it.
 func Evaluate(ctx context.Context, regoSource string, input Input) (*Result, error) {
-	module, err := ast.ParseModuleWithOpts("policy.rego", regoSource, ast.ParserOptions{})
+	module, err := ast.ParseModuleWithOpts("policy.rego", regoSource, ast.ParserOptions{
+		RegoVersion: ast.RegoV1,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("parse rego module: %w", err)
 	}
@@ -78,6 +84,7 @@ func queryRuleSet(ctx context.Context, regoSource, query string, input map[strin
 		rego.Query(query),
 		rego.Module("policy.rego", regoSource),
 		rego.Input(input),
+		rego.SetRegoVersion(ast.RegoV1),
 	)
 
 	rs, err := r.Eval(ctx)

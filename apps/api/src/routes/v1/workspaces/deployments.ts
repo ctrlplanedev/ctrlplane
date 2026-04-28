@@ -526,6 +526,40 @@ const getDeploymentPlan: AsyncTypedHandler<
   });
 };
 
+const getPlanTargetValidations = asyncHandler(async (req, res) => {
+  const params = req.params as Record<string, string>;
+  const planId = params.planId!;
+  const targetId = params.targetId!;
+
+  const target = await db.query.deploymentPlanTarget.findFirst({
+    where: and(
+      eq(schema.deploymentPlanTarget.id, targetId),
+      eq(schema.deploymentPlanTarget.planId, planId),
+    ),
+    with: {
+      results: {
+        with: { validations: true },
+      },
+    },
+  });
+
+  if (target == null)
+    throw new ApiError("Plan target not found", 404);
+
+  const validations = target.results.flatMap((r) =>
+    r.validations.map((v) => ({
+      id: v.id,
+      resultId: v.resultId,
+      ruleId: v.ruleId,
+      passed: v.passed,
+      violations: v.violations,
+      evaluatedAt: v.evaluatedAt.toISOString(),
+    })),
+  );
+
+  res.status(200).json({ items: validations });
+});
+
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
   .post("/", asyncHandler(postDeployment))
@@ -537,4 +571,8 @@ export const deploymentsRouter = Router({ mergeParams: true })
   .post("/:deploymentId/versions", asyncHandler(createDeploymentVersion))
   .post("/:deploymentId/plan", asyncHandler(createDeploymentPlan))
   .get("/:deploymentId/plan/:planId", asyncHandler(getDeploymentPlan))
+  .get(
+    "/:deploymentId/plan/:planId/targets/:targetId/validations",
+    getPlanTargetValidations,
+  )
   .use("/:deploymentId/variables", listDeploymentVariablesByDeploymentRouter);

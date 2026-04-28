@@ -7,6 +7,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getVersionByReleaseID = `-- name: GetVersionByReleaseID :one
+SELECT
+  dv.id,
+  dv.tag,
+  dv.name,
+  dv.metadata,
+  dv.config,
+  dv.created_at,
+  dv.status
+FROM deployment_version dv
+JOIN release r ON r.version_id = dv.id
+WHERE r.id = $1
+`
+
+type VersionByReleaseIDRow struct {
+	ID        uuid.UUID
+	Tag       string
+	Name      string
+	Metadata  map[string]string
+	Config    map[string]any
+	CreatedAt pgtype.Timestamptz
+	Status    string
+}
+
+func (q *Queries) GetVersionByReleaseID(ctx context.Context, releaseID uuid.UUID) (VersionByReleaseIDRow, error) {
+	row := q.db.QueryRow(ctx, getVersionByReleaseID, releaseID)
+	var i VersionByReleaseIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Tag,
+		&i.Name,
+		&i.Metadata,
+		&i.Config,
+		&i.CreatedAt,
+		&i.Status,
+	)
+	return i, err
+}
+
 const upsertPlanTargetResultValidation = `-- name: UpsertPlanTargetResultValidation :exec
 INSERT INTO deployment_plan_target_result_validation (result_id, rule_id, passed, violations, evaluated_at)
 VALUES ($1, $2, $3, $4, NOW())

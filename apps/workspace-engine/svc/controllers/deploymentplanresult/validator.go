@@ -24,6 +24,11 @@ type ValidatorGetter interface {
 		ctx context.Context,
 		workspaceID uuid.UUID,
 	) ([]db.ListPlanValidationRulesByWorkspaceIDRow, error)
+
+	GetVersionByReleaseID(
+		ctx context.Context,
+		releaseID uuid.UUID,
+	) (db.VersionByReleaseIDRow, error)
 }
 
 // ValidatorSetter abstracts writes needed for plan validation.
@@ -44,6 +49,7 @@ func (v *Validator) ValidatePlanResult(
 	ctx context.Context,
 	resultID uuid.UUID,
 	workspaceID uuid.UUID,
+	currentReleaseID uuid.UUID,
 	dispatchCtx *oapi.DispatchContext,
 	current, proposed string,
 	hasChanges bool,
@@ -79,7 +85,24 @@ func (v *Validator) ValidatePlanResult(
 		input.Deployment = dispatchCtx.Deployment
 	}
 	if dispatchCtx.Version != nil {
-		input.Version = dispatchCtx.Version
+		input.ProposedVersion = dispatchCtx.Version
+	}
+
+	if currentReleaseID != uuid.Nil {
+		ver, err := v.getter.GetVersionByReleaseID(ctx, currentReleaseID)
+		if err == nil {
+			input.CurrentVersion = map[string]any{
+				"id":        ver.ID.String(),
+				"tag":       ver.Tag,
+				"name":      ver.Name,
+				"metadata":  ver.Metadata,
+				"config":    ver.Config,
+				"createdAt": ver.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+				"status":    ver.Status,
+			}
+		} else {
+			span.RecordError(fmt.Errorf("get current version: %w", err))
+		}
 	}
 
 	for _, rule := range rules {

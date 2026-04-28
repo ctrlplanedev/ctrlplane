@@ -67,6 +67,27 @@ func (m *mockGetter) ListDeploymentPlanTargetResultsByTargetID(
 	return nil, nil
 }
 
+func (m *mockGetter) ListPlanTargetResultValidationsByTargetID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]db.PlanTargetResultValidation, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) ListPlanValidationRulesByWorkspaceID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]db.ListPlanValidationRulesByWorkspaceIDRow, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetVersionByReleaseID(
+	_ context.Context,
+	_ uuid.UUID,
+) (db.VersionByReleaseIDRow, error) {
+	return db.VersionByReleaseIDRow{}, nil
+}
+
 type completedCall struct {
 	ID     uuid.UUID
 	Status db.DeploymentPlanTargetStatus
@@ -160,7 +181,7 @@ func testResultRow(
 // --- tests ---
 
 func TestProcess_InvalidScopeID(t *testing.T) {
-	ctrl := NewController(testRegistry(), &mockGetter{}, &mockSetter{})
+	ctrl := NewController(testRegistry(), &mockGetter{}, &mockSetter{}, nil)
 	item := reconcile.Item{ScopeID: "not-a-uuid"}
 
 	_, err := ctrl.Process(context.Background(), item)
@@ -171,7 +192,7 @@ func TestProcess_InvalidScopeID(t *testing.T) {
 func TestProcess_GetResultError(t *testing.T) {
 	resultID := uuid.New()
 	getter := &mockGetter{err: fmt.Errorf("db connection failed")}
-	ctrl := NewController(testRegistry(), getter, &mockSetter{})
+	ctrl := NewController(testRegistry(), getter, &mockSetter{}, nil)
 
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 	require.Error(t, err)
@@ -188,7 +209,7 @@ func TestProcess_InvalidDispatchContext(t *testing.T) {
 			Status:          db.DeploymentPlanTargetStatusComputing,
 		},
 	}
-	ctrl := NewController(testRegistry(), getter, &mockSetter{})
+	ctrl := NewController(testRegistry(), getter, &mockSetter{}, nil)
 
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 	require.Error(t, err)
@@ -200,7 +221,7 @@ func TestProcess_AgentNotPlannable(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "unknown-agent", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(), getter, setter)
+	ctrl := NewController(testRegistry(), getter, setter, nil)
 	res, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -217,7 +238,7 @@ func TestProcess_AgentNotPlannable_UpdateError(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "unknown-agent", nil)}
 	setter := &mockSetter{completedErr: fmt.Errorf("update failed")}
 
-	ctrl := NewController(testRegistry(), getter, setter)
+	ctrl := NewController(testRegistry(), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.Error(t, err)
@@ -230,7 +251,7 @@ func TestProcess_AgentPlanError(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	res, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -248,7 +269,7 @@ func TestProcess_AgentPlanError_UpdateError(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", nil)}
 	setter := &mockSetter{completedErr: fmt.Errorf("update failed")}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.Error(t, err)
@@ -266,7 +287,7 @@ func TestProcess_Incomplete_SavesStateAndRequeues(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	res, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -287,7 +308,7 @@ func TestProcess_Incomplete_SaveStateError(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", nil)}
 	setter := &mockSetter{stateErr: fmt.Errorf("write failed")}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.Error(t, err)
@@ -311,7 +332,7 @@ func TestProcess_Completed_WithChanges(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	res, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -347,7 +368,7 @@ func TestProcess_Completed_NoChanges(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "test-runner", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	res, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -371,7 +392,7 @@ func TestProcess_Completed_SaveError(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", nil)}
 	setter := &mockSetter{completedErr: fmt.Errorf("write failed")}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.Error(t, err)
@@ -389,7 +410,7 @@ func TestProcess_PassesExistingAgentState(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "argo-cd", savedState)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -406,7 +427,7 @@ func TestProcess_ExtractsAgentTypeFromDispatchContext(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "test-runner", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
@@ -424,7 +445,7 @@ func TestProcess_ContentHash_EmptyIsNotStored(t *testing.T) {
 	getter := &mockGetter{result: testResultRow(resultID, "test-runner", nil)}
 	setter := &mockSetter{}
 
-	ctrl := NewController(testRegistry(agent), getter, setter)
+	ctrl := NewController(testRegistry(agent), getter, setter, nil)
 	_, err := ctrl.Process(context.Background(), testItem(resultID))
 
 	require.NoError(t, err)
