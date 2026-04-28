@@ -12,6 +12,8 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"workspace-engine/pkg/oapi"
 )
 
@@ -433,6 +435,32 @@ func TestPlan_GetProposedManifestsFailure_ReturnsIncomplete(t *testing.T) {
 	assert.Equal(t, 1, s.ManifestChecks)
 	assert.NotNil(t, s.FirstCheckedAt)
 	assert.NotNil(t, s.LastCheckedAt)
+}
+
+func TestPlan_GetCurrentManifestsNotFound_FirstVersion(t *testing.T) {
+	proposed := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
+	getter := &mockManifestGetter{
+		fn: func(_ context.Context, _, _, appName string) ([]string, error) {
+			if strings.Contains(appName, "-plan-") {
+				return proposed, nil
+			}
+			return nil, status.Error(codes.NotFound, "application not found")
+		},
+	}
+	deleter := &mockDeleter{}
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, result.CompletedAt)
+	assert.True(t, result.HasChanges)
+	assert.Empty(t, result.Current)
+	assert.Contains(t, result.Proposed, "replicas: 1")
+	assert.NotEmpty(t, result.ContentHash)
+
+	calls := deleter.getCalls()
+	require.Len(t, calls, 1)
+	assert.Contains(t, calls[0], "-plan-")
 }
 
 func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
