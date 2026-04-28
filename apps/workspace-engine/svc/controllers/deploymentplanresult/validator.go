@@ -131,31 +131,31 @@ func (v *Validator) evaluateRule(
 
 	result, err := planvalidation.Evaluate(ctx, rule.Rego, input)
 	if err != nil {
-		violationsJSON, _ := json.Marshal([]planvalidation.Violation{
-			{Msg: fmt.Sprintf("Rego evaluation error: %s", err.Error())},
+		denialsJSON, _ := json.Marshal([]string{
+			fmt.Sprintf("Rego evaluation error: %s", err.Error()),
 		})
 		return v.setter.UpsertPlanTargetResultValidation(ctx, db.UpsertPlanTargetResultValidationParams{
 			ResultID:   resultID,
 			RuleID:     rule.ID,
 			Passed:     false,
-			Violations: violationsJSON,
+			Violations: denialsJSON,
 		})
 	}
 
 	span.SetAttributes(
 		attribute.Bool("result.passed", result.Passed),
-		attribute.Int("result.violations", len(result.Violations)),
+		attribute.Int("result.denials", len(result.Denials)),
 	)
 
-	violationsJSON, err := json.Marshal(result.Violations)
+	denialsJSON, err := json.Marshal(result.Denials)
 	if err != nil {
-		return fmt.Errorf("marshal violations: %w", err)
+		return fmt.Errorf("marshal denials: %w", err)
 	}
 
 	return v.setter.UpsertPlanTargetResultValidation(ctx, db.UpsertPlanTargetResultValidationParams{
 		ResultID:   resultID,
 		RuleID:     rule.ID,
 		Passed:     result.Passed,
-		Violations: violationsJSON,
+		Violations: denialsJSON,
 	})
 }

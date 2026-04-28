@@ -110,12 +110,10 @@ func (e *PlanValidationEvaluator) Evaluate(
 		}
 		errorCount++
 
-		var violations []struct {
-			Msg string `json:"msg"`
-		}
-		if err := json.Unmarshal(v.Violations, &violations); err == nil {
-			for _, viol := range violations {
-				failures = append(failures, fmt.Sprintf("[%s] %s", v.RuleName, viol.Msg))
+		var denials []string
+		if err := json.Unmarshal(v.Violations, &denials); err == nil {
+			for _, msg := range denials {
+				failures = append(failures, fmt.Sprintf("[%s] %s", v.RuleName, msg))
 			}
 		} else {
 			failures = append(failures, fmt.Sprintf("[%s] validation failed", v.RuleName))

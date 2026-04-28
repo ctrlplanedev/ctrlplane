@@ -14,7 +14,7 @@ package ctrlplane.plan_validation
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     input.proposed == ""
     msg := "proposed is empty"
 }
@@ -29,7 +29,7 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.True(t, result.Passed)
-	assert.Empty(t, result.Violations)
+	assert.Empty(t, result.Denials)
 }
 
 func TestEvaluate_WithViolations(t *testing.T) {
@@ -38,7 +38,7 @@ package ctrlplane.plan_validation
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     input.hasChanges == true
     msg := "changes detected"
 }
@@ -53,8 +53,8 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Equal(t, "changes detected", result.Violations[0].Msg)
+	require.Len(t, result.Denials, 1)
+	assert.Equal(t, "changes detected", result.Denials[0])
 }
 
 func TestEvaluate_YAMLParsing(t *testing.T) {
@@ -68,7 +68,7 @@ proposed_docs contains doc if {
     doc := yaml.unmarshal(raw)
 }
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     some m in proposed_docs
     m.kind == "Deployment"
     some c in m.spec.template.spec.containers
@@ -97,9 +97,9 @@ spec:
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Contains(t, result.Violations[0].Msg, "app")
-	assert.Contains(t, result.Violations[0].Msg, "missing resource limits")
+	require.Len(t, result.Denials, 1)
+	assert.Contains(t, result.Denials[0], "app")
+	assert.Contains(t, result.Denials[0], "missing resource limits")
 }
 
 func TestEvaluate_YAMLParsing_Pass(t *testing.T) {
@@ -113,7 +113,7 @@ proposed_docs contains doc if {
     doc := yaml.unmarshal(raw)
 }
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     some m in proposed_docs
     m.kind == "Deployment"
     some c in m.spec.template.spec.containers
@@ -146,7 +146,7 @@ spec:
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.True(t, result.Passed)
-	assert.Empty(t, result.Violations)
+	assert.Empty(t, result.Denials)
 }
 
 func TestEvaluate_DiffAware(t *testing.T) {
@@ -165,7 +165,7 @@ proposed_docs contains doc if {
     doc := yaml.unmarshal(raw)
 }
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     some curr in current_docs
     some prop in proposed_docs
     curr.kind == "Deployment"
@@ -201,9 +201,9 @@ spec:
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Contains(t, result.Violations[0].Msg, "web")
-	assert.Contains(t, result.Violations[0].Msg, "50%")
+	require.Len(t, result.Denials, 1)
+	assert.Contains(t, result.Denials[0], "web")
+	assert.Contains(t, result.Denials[0], "50%")
 }
 
 func TestEvaluate_EnvironmentAware(t *testing.T) {
@@ -212,7 +212,7 @@ package ctrlplane.plan_validation
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     input.environment.name == "production"
     input.hasChanges == true
     msg := "production changes require manual approval"
@@ -232,8 +232,8 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Equal(t, "production changes require manual approval", result.Violations[0].Msg)
+	require.Len(t, result.Denials, 1)
+	assert.Equal(t, "production changes require manual approval", result.Denials[0])
 }
 
 func TestEvaluate_CustomPackage(t *testing.T) {
@@ -242,7 +242,7 @@ package terraform.security
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     input.hasChanges == true
     msg := "custom package detected changes"
 }
@@ -257,11 +257,11 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Equal(t, "custom package detected changes", result.Violations[0].Msg)
+	require.Len(t, result.Denials, 1)
+	assert.Equal(t, "custom package detected changes", result.Denials[0])
 }
 
-func TestEvaluate_DenyRule(t *testing.T) {
+func TestEvaluate_DenyStringMsg(t *testing.T) {
 	regoPolicy := `
 package conftest.resource_limits
 
@@ -282,8 +282,8 @@ deny contains msg if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Equal(t, "deny rule triggered", result.Violations[0].Msg)
+	require.Len(t, result.Denials, 1)
+	assert.Equal(t, "deny rule triggered", result.Denials[0])
 }
 
 func TestEvaluate_JSONParsing(t *testing.T) {
@@ -294,7 +294,7 @@ import rego.v1
 
 plan := json.unmarshal(input.proposed)
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     some rc in plan.resource_changes
     some action in rc.change.actions
     action == "delete"
@@ -319,8 +319,8 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Contains(t, result.Violations[0].Msg, "aws_instance.web")
+	require.Len(t, result.Denials, 1)
+	assert.Contains(t, result.Denials[0], "aws_instance.web")
 }
 
 func TestEvaluate_VersionComparison(t *testing.T) {
@@ -329,7 +329,7 @@ package ctrlplane.plan_validation
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     input.currentVersion
     input.proposedVersion
     input.currentVersion.tag > input.proposedVersion.tag
@@ -354,9 +354,9 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Contains(t, result.Violations[0].Msg, "Rollback detected")
-	assert.Contains(t, result.Violations[0].Msg, "v2.0.0 -> v1.0.0")
+	require.Len(t, result.Denials, 1)
+	assert.Contains(t, result.Denials[0], "Rollback detected")
+	assert.Contains(t, result.Denials[0], "v2.0.0 -> v1.0.0")
 }
 
 func TestEvaluate_VersionComparison_NoCurrentVersion(t *testing.T) {
@@ -365,7 +365,7 @@ package ctrlplane.plan_validation
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     not input.currentVersion
     msg := "first deployment to this target"
 }
@@ -384,8 +384,8 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Equal(t, "first deployment to this target", result.Violations[0].Msg)
+	require.Len(t, result.Denials, 1)
+	assert.Equal(t, "first deployment to this target", result.Denials[0])
 }
 
 func TestEvaluate_VersionMetadata(t *testing.T) {
@@ -394,7 +394,7 @@ package ctrlplane.plan_validation
 
 import rego.v1
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     input.proposedVersion.metadata["requires-approval"] == "true"
     input.environment.name == "production"
     msg := "version requires manual approval for production"
@@ -424,11 +424,11 @@ violation contains {"msg": msg} if {
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	require.Len(t, result.Violations, 1)
-	assert.Equal(t, "version requires manual approval for production", result.Violations[0].Msg)
+	require.Len(t, result.Denials, 1)
+	assert.Equal(t, "version requires manual approval for production", result.Denials[0])
 }
 
-func TestEvaluate_DenyContainsIf(t *testing.T) {
+func TestEvaluate_DenyContainsIf_LoadBalancer(t *testing.T) {
 	regoPolicy := `
 package kubernetes.validation
 
@@ -466,8 +466,8 @@ spec:
 		result, err := Evaluate(context.Background(), regoPolicy, input)
 		require.NoError(t, err)
 		assert.False(t, result.Passed)
-		require.Len(t, result.Violations, 1)
-		assert.Contains(t, result.Violations[0].Msg, "my-svc")
+		require.Len(t, result.Denials, 1)
+		assert.Contains(t, result.Denials[0], "my-svc")
 	})
 
 	t.Run("pass when label present", func(t *testing.T) {
@@ -488,7 +488,7 @@ spec:
 		result, err := Evaluate(context.Background(), regoPolicy, input)
 		require.NoError(t, err)
 		assert.True(t, result.Passed)
-		assert.Empty(t, result.Violations)
+		assert.Empty(t, result.Denials)
 	})
 }
 
@@ -512,7 +512,7 @@ proposed_docs contains doc if {
     doc := yaml.unmarshal(raw)
 }
 
-violation contains {"msg": msg} if {
+deny contains msg if {
     some m in proposed_docs
     m.kind == "Deployment"
     some c in m.spec.template.spec.containers
@@ -543,7 +543,7 @@ spec:
 	result, err := Evaluate(context.Background(), regoPolicy, input)
 	require.NoError(t, err)
 	assert.False(t, result.Passed)
-	assert.Len(t, result.Violations, 2)
+	assert.Len(t, result.Denials, 2)
 }
 
 func TestEvaluate_RegoV0_Rejected(t *testing.T) {

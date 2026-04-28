@@ -145,13 +145,10 @@ func agentResultFromRow(
 
 // validationSummary holds the result of a single plan validation rule.
 type validationSummary struct {
-	RuleName   string
-	Severity   string
-	Passed     bool
-	Violations []struct {
-		Msg  string `json:"msg"`
-		Path string `json:"path,omitempty"`
-	}
+	RuleName string
+	Severity string
+	Passed   bool
+	Denials  []string
 }
 
 // aggregate describes the overall state of all agents for one target.
@@ -362,12 +359,8 @@ func formatValidationSection(validations []validationSummary) string {
 			continue
 		}
 
-		for _, viol := range v.Violations {
-			fmt.Fprintf(&sb, "- %s", viol.Msg)
-			if viol.Path != "" {
-				fmt.Fprintf(&sb, " (`%s`)", viol.Path)
-			}
-			sb.WriteString("\n")
+		for _, msg := range v.Denials {
+			fmt.Fprintf(&sb, "- %s\n", msg)
 		}
 		sb.WriteString("\n")
 	}
@@ -625,19 +618,16 @@ func loadValidationSummaries(
 			severity = rule.Severity
 		}
 
-		var violations []struct {
-			Msg  string `json:"msg"`
-			Path string `json:"path,omitempty"`
-		}
-		if err := json.Unmarshal(v.Violations, &violations); err != nil {
-			violations = nil
+		var denials []string
+		if err := json.Unmarshal(v.Violations, &denials); err != nil {
+			denials = nil
 		}
 
 		summaries = append(summaries, validationSummary{
-			RuleName:   name,
-			Severity:   severity,
-			Passed:     v.Passed,
-			Violations: violations,
+			RuleName: name,
+			Severity: severity,
+			Passed:   v.Passed,
+			Denials:  denials,
 		})
 	}
 	return summaries, nil

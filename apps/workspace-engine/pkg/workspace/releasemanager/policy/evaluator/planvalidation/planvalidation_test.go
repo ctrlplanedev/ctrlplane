@@ -55,8 +55,8 @@ func TestPlanValidationEvaluator_AllPassed(t *testing.T) {
 }
 
 func TestPlanValidationEvaluator_ErrorSeverityFails(t *testing.T) {
-	violations, _ := json.Marshal([]map[string]string{
-		{"msg": "Container missing limits"},
+	violations, _ := json.Marshal([]string{
+		"Container missing limits",
 	})
 	getter := &mockGetters{
 		results: []ValidationResult{
@@ -73,8 +73,8 @@ func TestPlanValidationEvaluator_ErrorSeverityFails(t *testing.T) {
 }
 
 func TestPlanValidationEvaluator_WarningDoesNotBlock(t *testing.T) {
-	violations, _ := json.Marshal([]map[string]string{
-		{"msg": "Missing optional label"},
+	violations, _ := json.Marshal([]string{
+		"Missing optional label",
 	})
 	getter := &mockGetters{
 		results: []ValidationResult{
@@ -89,11 +89,11 @@ func TestPlanValidationEvaluator_WarningDoesNotBlock(t *testing.T) {
 }
 
 func TestPlanValidationEvaluator_MixedSeverity(t *testing.T) {
-	errorViolations, _ := json.Marshal([]map[string]string{
-		{"msg": "Critical error"},
+	errorViolations, _ := json.Marshal([]string{
+		"Critical error",
 	})
-	warningViolations, _ := json.Marshal([]map[string]string{
-		{"msg": "Minor warning"},
+	warningViolations, _ := json.Marshal([]string{
+		"Minor warning",
 	})
 	getter := &mockGetters{
 		results: []ValidationResult{
