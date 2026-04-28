@@ -528,3 +528,27 @@ CREATE TABLE variable_set_variable (
     value JSONB NOT NULL,
     UNIQUE (variable_set_id, key)
 );
+
+CREATE TABLE policy_rule_plan_validation (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    policy_id UUID NOT NULL REFERENCES policy(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    rego TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'error',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE deployment_plan_target_result_validation (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    result_id UUID NOT NULL REFERENCES deployment_plan_target_result(id) ON DELETE CASCADE,
+    rule_id UUID NOT NULL,
+    passed BOOLEAN NOT NULL,
+    violations JSONB NOT NULL DEFAULT '[]',
+    evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX deployment_plan_target_result_validation_result_rule_idx
+    ON deployment_plan_target_result_validation (result_id, rule_id);
+CREATE INDEX deployment_plan_target_result_validation_result_idx
+    ON deployment_plan_target_result_validation (result_id);

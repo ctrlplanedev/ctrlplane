@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/planvalidation"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 )
 
@@ -15,6 +16,7 @@ type deploymentwindowGetter = deploymentwindow.Getters
 type gradualrolloutGetter = gradualrollout.Getters
 type versioncooldownGetter = versioncooldown.Getters
 type deploymentdependencyGetter = deploymentdependency.Getters
+type planvalidationGetter = planvalidation.Getters
 
 type Getter interface {
 	approvalGetter
@@ -23,4 +25,5 @@ type Getter interface {
 	gradualrolloutGetter
 	versioncooldownGetter
 	deploymentdependencyGetter
+	planvalidationGetter
 }

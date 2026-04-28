@@ -21,3 +21,12 @@ func (s *PostgresSetter) UpdateDeploymentPlanTargetResultState(
 ) error {
 	return db.GetQueries(ctx).UpdateDeploymentPlanTargetResultState(ctx, arg)
 }
+
+type PostgresValidatorSetter struct{}
+
+func (s *PostgresValidatorSetter) UpsertPlanTargetResultValidation(
+	ctx context.Context,
+	arg db.UpsertPlanTargetResultValidationParams,
+) error {
+	return db.GetQueries(ctx).UpsertPlanTargetResultValidation(ctx, arg)
+}

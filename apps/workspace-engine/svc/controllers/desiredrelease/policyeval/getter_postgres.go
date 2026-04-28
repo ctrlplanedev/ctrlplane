@@ -3,12 +3,14 @@ package policyeval
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/planvalidation"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 )
 
@@ -68,4 +70,45 @@ func (g *PostgresGetter) GetCurrentlyDeployedVersion(
 	rt *oapi.ReleaseTarget,
 ) *oapi.DeploymentVersion {
 	return g.deploymentdependency.GetCurrentlyDeployedVersion(ctx, rt)
+}
+
+func (g *PostgresGetter) GetPlanValidationResultsForTarget(
+	ctx context.Context,
+	environmentID, resourceID, deploymentID string,
+) ([]planvalidation.ValidationResult, error) {
+	q := db.GetQueries(ctx)
+
+	envID, err := uuid.Parse(environmentID)
+	if err != nil {
+		return nil, err
+	}
+	resID, err := uuid.Parse(resourceID)
+	if err != nil {
+		return nil, err
+	}
+	depID, err := uuid.Parse(deploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := q.GetLatestPlanValidationsForTarget(ctx, db.GetLatestPlanValidationsForTargetParams{
+		EnvironmentID: envID,
+		ResourceID:    resID,
+		DeploymentID:  depID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]planvalidation.ValidationResult, len(rows))
+	for i, r := range rows {
+		results[i] = planvalidation.ValidationResult{
+			RuleID:     r.RuleID.String(),
+			RuleName:   r.RuleName,
+			Severity:   r.Severity,
+			Passed:     r.Passed,
+			Violations: r.Violations,
+		}
+	}
+	return results, nil
 }

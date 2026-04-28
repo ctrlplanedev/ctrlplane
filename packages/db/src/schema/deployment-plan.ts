@@ -154,10 +154,41 @@ export const deploymentPlanTargetResult = pgTable(
 
 export const deploymentPlanTargetResultRelations = relations(
   deploymentPlanTargetResult,
-  ({ one }) => ({
+  ({ one, many }) => ({
     target: one(deploymentPlanTarget, {
       fields: [deploymentPlanTargetResult.targetId],
       references: [deploymentPlanTarget.id],
+    }),
+    validations: many(deploymentPlanTargetResultValidation),
+  }),
+);
+
+export const deploymentPlanTargetResultValidation = pgTable(
+  "deployment_plan_target_result_validation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resultId: uuid("result_id")
+      .notNull()
+      .references(() => deploymentPlanTargetResult.id, { onDelete: "cascade" }),
+    ruleId: uuid("rule_id").notNull(),
+    passed: boolean("passed").notNull(),
+    violations: jsonb("violations")
+      .notNull()
+      .default("[]")
+      .$type<Array<{ msg: string; path?: string }>>(),
+    evaluatedAt: timestamp("evaluated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex().on(t.resultId, t.ruleId), index().on(t.resultId)],
+);
+
+export const deploymentPlanTargetResultValidationRelations = relations(
+  deploymentPlanTargetResultValidation,
+  ({ one }) => ({
+    result: one(deploymentPlanTargetResult, {
+      fields: [deploymentPlanTargetResultValidation.resultId],
+      references: [deploymentPlanTargetResult.id],
     }),
   }),
 );

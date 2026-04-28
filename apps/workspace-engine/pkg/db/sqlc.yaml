@@ -205,3 +205,8 @@ sql:
           - column: "deployment_plan_target_result.agent_state"
             go_type:
               type: "[]byte"
+
+          # DeploymentPlanTargetResultValidation
+          - column: "deployment_plan_target_result_validation.violations"
+            go_type:
+              type: "[]byte"

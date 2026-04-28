@@ -34,6 +34,29 @@ func (g *PostgresGetter) ListDeploymentPlanTargetResultsByTargetID(
 	return db.GetQueries(ctx).ListDeploymentPlanTargetResultsByTargetID(ctx, targetID)
 }
 
+func (g *PostgresGetter) ListPlanTargetResultValidationsByTargetID(
+	ctx context.Context,
+	targetID uuid.UUID,
+) ([]db.PlanTargetResultValidation, error) {
+	return db.GetQueries(ctx).ListPlanTargetResultValidationsByTargetID(ctx, targetID)
+}
+
+func (g *PostgresGetter) ListPlanValidationRulesByWorkspaceID(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]db.ListPlanValidationRulesByWorkspaceIDRow, error) {
+	return db.GetQueries(ctx).ListPlanValidationRulesByWorkspaceID(ctx, workspaceID)
+}
+
+type PostgresValidatorGetter struct{}
+
+func (g *PostgresValidatorGetter) ListPlanValidationRulesByWorkspaceID(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+) ([]db.ListPlanValidationRulesByWorkspaceIDRow, error) {
+	return db.GetQueries(ctx).ListPlanValidationRulesByWorkspaceID(ctx, workspaceID)
+}
+
 func newRegistry() *jobagents.Registry {
 	registry := jobagents.NewRegistry(nil, nil)
 	registry.Register(

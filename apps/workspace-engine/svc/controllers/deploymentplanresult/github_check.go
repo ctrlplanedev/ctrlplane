@@ -62,6 +62,7 @@ type targetContext struct {
 	TargetID        uuid.UUID
 	PlanID          uuid.UUID
 	DeploymentID    uuid.UUID
+	WorkspaceID     uuid.UUID
 	WorkspaceSlug   string
 	EnvironmentName string
 	ResourceName    string
@@ -78,6 +79,7 @@ func targetContextFromRow(row db.GetTargetContextByResultIDRow) targetContext {
 		TargetID:        row.TargetID,
 		PlanID:          row.PlanID,
 		DeploymentID:    row.DeploymentID,
+		WorkspaceID:     row.WorkspaceID,
 		WorkspaceSlug:   row.WorkspaceSlug,
 		EnvironmentName: row.EnvironmentName,
 		ResourceName:    row.ResourceName,
@@ -141,6 +143,17 @@ func agentResultFromRow(
 	}, parseErr
 }
 
+// validationSummary holds the result of a single plan validation rule.
+type validationSummary struct {
+	RuleName   string
+	Severity   string
+	Passed     bool
+	Violations []struct {
+		Msg  string `json:"msg"`
+		Path string `json:"path,omitempty"`
+	}
+}
+
 // aggregate describes the overall state of all agents for one target.
 // Used to pick the check run's status, conclusion, and title.
 type aggregate struct {
@@ -152,6 +165,9 @@ type aggregate struct {
 	Unchanged   int
 	Additions   int
 	Deletions   int
+
+	ValidationErrors   int
+	ValidationWarnings int
 }
 
 func countDiffLines(current, proposed string) (int, int) {
@@ -224,7 +240,7 @@ func (a aggregate) checkStatus() string {
 // checkConclusion returns the GitHub "conclusion" field. Only
 // meaningful when shouldFinalize() is true.
 func (a aggregate) checkConclusion() string {
-	if a.Errored > 0 {
+	if a.Errored > 0 || a.ValidationErrors > 0 {
 		return "failure"
 	}
 	if a.Total > 0 && a.Unsupported == a.Total {
@@ -257,6 +273,9 @@ func (a aggregate) checkTitle() string {
 	diffSummary := fmt.Sprintf("+%d -%d", a.Additions, a.Deletions)
 	if a.Errored > 0 {
 		return fmt.Sprintf("%s (%d errored)", diffSummary, a.Errored)
+	}
+	if a.ValidationErrors > 0 {
+		return fmt.Sprintf("%s (%d validation failures)", diffSummary, a.ValidationErrors)
 	}
 	return diffSummary
 }
@@ -318,12 +337,51 @@ func truncateText(s string, maxBytes int) string {
 	return s[:cutoff] + truncationSentinel
 }
 
+// formatValidationSection renders the markdown block for plan validation
+// results in the check's "text" body.
+func formatValidationSection(validations []validationSummary) string {
+	if len(validations) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("\n---\n\n## Plan Validations\n\n")
+
+	for _, v := range validations {
+		icon := "✅"
+		if !v.Passed && v.Severity == "error" {
+			icon = "❌"
+		} else if !v.Passed && v.Severity == "warning" {
+			icon = "⚠️"
+		}
+
+		fmt.Fprintf(&sb, "### %s %s (`%s`)\n\n", icon, v.RuleName, v.Severity)
+
+		if v.Passed {
+			sb.WriteString("Passed\n\n")
+			continue
+		}
+
+		for _, viol := range v.Violations {
+			fmt.Fprintf(&sb, "- %s", viol.Msg)
+			if viol.Path != "" {
+				fmt.Fprintf(&sb, " (`%s`)", viol.Path)
+			}
+			sb.WriteString("\n")
+		}
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
+
 // buildCheckOutput builds the full check output (title + summary + text)
 // from the target's current state and all its agents' results.
 func buildCheckOutput(
 	tc targetContext,
 	resultID uuid.UUID,
 	results []agentResult,
+	validations []validationSummary,
 	agg aggregate,
 ) *github.CheckRunOutput {
 	title := agg.checkTitle()
@@ -339,6 +397,8 @@ func buildCheckOutput(
 		}
 		text.WriteString(formatAgentSection(r))
 	}
+
+	text.WriteString(formatValidationSection(validations))
 
 	summaryStr := summary.String()
 	textStr := truncateText(text.String(), maxCheckRunTextBytes)
@@ -505,8 +565,20 @@ func MaybeUpdateTargetCheck(
 		return nil
 	}
 
+	validations, valErr := loadValidationSummaries(ghCtx, getter, tc)
+	if valErr != nil {
+		span.RecordError(fmt.Errorf("load validation summaries: %w", valErr))
+	}
+
 	agg := aggregateResults(results)
-	output := buildCheckOutput(tc, resultID, results, agg)
+	for _, v := range validations {
+		if !v.Passed && v.Severity == "error" {
+			agg.ValidationErrors++
+		} else if !v.Passed && v.Severity == "warning" {
+			agg.ValidationWarnings++
+		}
+	}
+	output := buildCheckOutput(tc, resultID, results, validations, agg)
 
 	if err := upsertCheckRun(ghCtx, client, tc, resultID, agg, output); err != nil {
 		span.RecordError(err)
@@ -516,6 +588,59 @@ func MaybeUpdateTargetCheck(
 
 	span.AddEvent("check run upserted")
 	return nil
+}
+
+// loadValidationSummaries builds validationSummary entries from the DB
+// for a given target, enriched with rule names from the workspace's
+// plan validation rules.
+func loadValidationSummaries(
+	ctx context.Context,
+	getter Getter,
+	tc targetContext,
+) ([]validationSummary, error) {
+	dbVals, err := getter.ListPlanTargetResultValidationsByTargetID(ctx, tc.TargetID)
+	if err != nil {
+		return nil, err
+	}
+	if len(dbVals) == 0 {
+		return nil, nil
+	}
+
+	rules, err := getter.ListPlanValidationRulesByWorkspaceID(ctx, tc.WorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	ruleMap := make(map[string]db.ListPlanValidationRulesByWorkspaceIDRow, len(rules))
+	for _, r := range rules {
+		ruleMap[r.ID.String()] = r
+	}
+
+	summaries := make([]validationSummary, 0, len(dbVals))
+	for _, v := range dbVals {
+		rule, ok := ruleMap[v.RuleID.String()]
+		name := v.RuleID.String()
+		severity := "error"
+		if ok {
+			name = rule.Name
+			severity = rule.Severity
+		}
+
+		var violations []struct {
+			Msg  string `json:"msg"`
+			Path string `json:"path,omitempty"`
+		}
+		if err := json.Unmarshal(v.Violations, &violations); err != nil {
+			violations = nil
+		}
+
+		summaries = append(summaries, validationSummary{
+			RuleName:   name,
+			Severity:   severity,
+			Passed:     v.Passed,
+			Violations: violations,
+		})
+	}
+	return summaries, nil
 }
 
 // loadTargetContext fetches the target metadata and all its results

@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/planvalidation"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versioncooldown"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 )
@@ -30,6 +31,7 @@ func RuleTypes() []string {
 		(&deploymentdependency.DeploymentDependencyEvaluator{}).RuleType(),
 		(&deploymentwindow.DeploymentWindowEvaluator{}).RuleType(),
 		(&versioncooldown.VersionCooldownEvaluator{}).RuleType(),
+		planvalidation.RuleTypePlanValidation,
 	}
 }
 
@@ -43,6 +45,7 @@ func ruleEvaluators(_ context.Context, getter Getter, rule *oapi.PolicyRule) []e
 		deploymentdependency.NewEvaluator(getter, rule),
 		deploymentwindow.NewEvaluator(getter, rule),
 		versioncooldown.NewEvaluator(getter, rule),
+		planvalidation.NewEvaluator(getter, rule),
 	)
 }
 

@@ -487,6 +487,13 @@ func (g *DesiredReleaseGetter) GetVariableSetsWithVariables(
 	return g.VariableSets, nil
 }
 
+func (g *DesiredReleaseGetter) GetPlanValidationResultsForTarget(
+	_ context.Context,
+	_, _, _ string,
+) ([]planvalidation.ValidationResult, error) {
+	return nil, nil
+}
+
 type eligibilityCall struct {
 	WorkspaceID string
 	RT          *desiredrelease.ReleaseTarget

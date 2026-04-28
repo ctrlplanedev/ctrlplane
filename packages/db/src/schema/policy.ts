@@ -51,6 +51,7 @@ export const policyRelations = relations(policy, ({ many }) => ({
   verificationRules: many(policyRuleVerification),
   versionCooldownRules: many(policyRuleVersionCooldown),
   versionSelectorRules: many(policyRuleVersionSelector),
+  planValidationRules: many(policyRulePlanValidation),
 }));
 
 export const policyRuleAnyApproval = pgTable("policy_rule_any_approval", {
@@ -293,6 +294,33 @@ export const policyRuleVersionSelectorRelations = relations(
   ({ one }) => ({
     policy: one(policy, {
       fields: [policyRuleVersionSelector.policyId],
+      references: [policy.id],
+    }),
+  }),
+);
+
+export const policyRulePlanValidation = pgTable(
+  "policy_rule_plan_validation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    rego: text("rego").notNull(),
+    severity: text("severity").notNull().default("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+export const policyRulePlanValidationRelations = relations(
+  policyRulePlanValidation,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRulePlanValidation.policyId],
       references: [policy.id],
     }),
   }),

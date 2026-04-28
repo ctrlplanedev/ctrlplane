@@ -33,14 +33,15 @@ const (
 var _ reconcile.Processor = (*Controller)(nil)
 
 type Controller struct {
-	registry *jobagents.Registry
-	getter   Getter
-	setter   Setter
+	registry  *jobagents.Registry
+	getter    Getter
+	setter    Setter
+	validator *Validator
 }
 
 // NewController creates a Controller with injected dependencies.
-func NewController(registry *jobagents.Registry, getter Getter, setter Setter) *Controller {
-	return &Controller{registry: registry, getter: getter, setter: setter}
+func NewController(registry *jobagents.Registry, getter Getter, setter Setter, validator *Validator) *Controller {
+	return &Controller{registry: registry, getter: getter, setter: setter, validator: validator}
 }
 
 // Process executes a single plan-result work item by calling the appropriate
@@ -183,6 +184,20 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
 	}
 
+	if c.validator != nil {
+		tc, err := c.getter.GetTargetContextByResultID(ctx, resultID)
+		if err != nil {
+			span.RecordError(fmt.Errorf("get target context for validation: %w", err))
+		} else {
+			if valErr := c.validator.ValidatePlanResult(
+				ctx, resultID, tc.WorkspaceID, &dispatchCtx,
+				planResult.Current, planResult.Proposed, planResult.HasChanges,
+			); valErr != nil {
+				span.RecordError(valErr)
+			}
+		}
+	}
+
 	if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
 		span.RecordError(checkErr)
 	}
@@ -214,10 +229,15 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	}
 	queue := postgres.NewForKinds(pgxPool, kind)
 
+	validatorGetter := &PostgresValidatorGetter{}
+	validatorSetter := &PostgresValidatorSetter{}
+	validator := NewValidator(validatorGetter, validatorSetter)
+
 	controller := &Controller{
-		registry: newRegistry(),
-		getter:   &PostgresGetter{},
-		setter:   &PostgresSetter{},
+		registry:  newRegistry(),
+		getter:    &PostgresGetter{},
+		setter:    &PostgresSetter{},
+		validator: validator,
 	}
 
 	worker, err := reconcile.NewWorker(

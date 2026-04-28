@@ -23,4 +23,14 @@ type Getter interface {
 		ctx context.Context,
 		targetID uuid.UUID,
 	) ([]db.ListDeploymentPlanTargetResultsByTargetIDRow, error)
+
+	ListPlanTargetResultValidationsByTargetID(
+		ctx context.Context,
+		targetID uuid.UUID,
+	) ([]db.PlanTargetResultValidation, error)
+
+	ListPlanValidationRulesByWorkspaceID(
+		ctx context.Context,
+		workspaceID uuid.UUID,
+	) ([]db.ListPlanValidationRulesByWorkspaceIDRow, error)
 }

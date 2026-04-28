@@ -708,6 +708,7 @@ type PolicyRule struct {
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
+	PlanValidation         *PlanValidationRule         `json:"planValidation,omitempty"`
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Rollback               *RollbackRule               `json:"rollback,omitempty"`
