@@ -109,7 +109,7 @@ func BenchmarkMetadataSelector_Eval(b *testing.B) {
 					b.ResetTimer()
 
 					var matches int
-					for i := 0; i < b.N; i++ {
+					for range b.N {
 						matches = 0
 						for _, ctx := range contexts {
 							ok, _ := evaluate(program, ctx)
@@ -145,7 +145,7 @@ func BenchmarkMetadataSelector_NativeEq(b *testing.B) {
 				b.ResetTimer()
 
 				var matches int
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					matches = 0
 					for _, ctx := range contexts {
 						meta := ctx["version"].(map[string]any)["metadata"].(map[string]any)
@@ -174,7 +174,7 @@ func BenchmarkMetadataSelector_Compile(b *testing.B) {
 		b.Run("shape="+shape.label, func(b *testing.B) {
 			b.ReportAllocs()
 			var prg cel.Program
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				var err error
 				prg, err = compileUncached(shape.expr)
 				if err != nil {
