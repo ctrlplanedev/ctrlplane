@@ -12,6 +12,8 @@ import (
 
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/charmbracelet/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	sigsyaml "sigs.k8s.io/yaml"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
@@ -185,7 +187,10 @@ func (p *ArgoCDPlanner) Plan(
 
 	currentManifests, err := p.manifestGetter.GetManifests(ctx, serverAddr, apiKey, originalName)
 	if err != nil {
-		return nil, fmt.Errorf("get current manifests: %w", err)
+		if status.Code(err) != codes.NotFound {
+			return nil, fmt.Errorf("get current manifests: %w", err)
+		}
+		currentManifests = nil
 	}
 
 	for i, m := range proposedManifests {
