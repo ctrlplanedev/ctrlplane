@@ -16,6 +16,7 @@ import (
 	"workspace-engine/pkg/store/resources"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
@@ -414,6 +415,36 @@ func (g *DesiredReleaseGetter) GetCurrentlyDeployedVersion(
 		return g.CurrentlyDeployedVersions[key]
 	}
 	return nil
+}
+
+func (g *DesiredReleaseGetter) GetDependencies(
+	_ context.Context,
+	_ string,
+) ([]deploymentversiondependency.DependencyEdge, error) {
+	return nil, nil
+}
+
+func (g *DesiredReleaseGetter) GetReleaseTargetForDeploymentResource(
+	_ context.Context,
+	deploymentID, resourceID string,
+) (*oapi.ReleaseTarget, error) {
+	for _, rt := range g.ReleaseTargetsList {
+		if rt.DeploymentId == deploymentID && rt.ResourceId == resourceID {
+			return rt, nil
+		}
+	}
+	return nil, nil
+}
+
+func (g *DesiredReleaseGetter) GetCurrentVersionForReleaseTarget(
+	_ context.Context,
+	rt *oapi.ReleaseTarget,
+) (*oapi.DeploymentVersion, error) {
+	if g.CurrentlyDeployedVersions != nil {
+		key := rt.DeploymentId + ":" + rt.EnvironmentId + ":" + rt.ResourceId
+		return g.CurrentlyDeployedVersions[key], nil
+	}
+	return nil, nil
 }
 
 func (g *DesiredReleaseGetter) GetReleaseByJobID(

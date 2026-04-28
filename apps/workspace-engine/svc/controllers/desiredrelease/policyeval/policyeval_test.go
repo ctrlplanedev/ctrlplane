@@ -6,11 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -189,6 +191,28 @@ func (m *mockGetter) GetJobsForEnvironmentAndVersion(
 func (m *mockGetter) GetVerificationStatusForJobs(
 	_ context.Context, _ []string,
 ) (map[string]oapi.JobVerificationStatus, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetCurrentVersionForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (*oapi.DeploymentVersion, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetDependencies(
+	_ context.Context,
+	_ string,
+) ([]deploymentversiondependency.DependencyEdge, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetReleaseTargetForDeploymentResource(
+	_ context.Context,
+	_ string,
+	_ string,
+) (*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
 
@@ -523,15 +547,19 @@ func TestCollectEvaluators(t *testing.T) {
 	getter := &mockGetter{}
 	rt := &oapi.ReleaseTarget{EnvironmentId: "env-1", ResourceId: "r-1", DeploymentId: "d-1"}
 
-	t.Run("returns empty for nil policies", func(t *testing.T) {
+	// baseCount captures evaluators that are always added regardless of
+	// policies (e.g. non-rule evaluators like deploymentversiondependency).
+	baseCount := len(CollectEvaluators(ctx, getter, rt, nil))
+
+	t.Run("returns base set for nil policies", func(t *testing.T) {
 		evals := CollectEvaluators(ctx, getter, rt, nil)
-		assert.Empty(t, evals)
+		assert.Len(t, evals, baseCount)
 	})
 
 	t.Run("skips nil policies", func(t *testing.T) {
 		policies := []*oapi.Policy{nil, nil}
 		evals := CollectEvaluators(ctx, getter, rt, policies)
-		assert.Empty(t, evals, "should still be empty with only nil policies")
+		assert.Len(t, evals, baseCount, "should still be base set with only nil policies")
 	})
 
 	ruleWithApproval := func(id string) oapi.PolicyRule {

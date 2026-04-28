@@ -4,13 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -231,6 +233,28 @@ func (m *mockReconcileGetter) GetVariableSetsWithVariables(
 	ctx context.Context,
 	workspaceID uuid.UUID,
 ) ([]oapi.VariableSetWithVariables, error) {
+	return nil, nil
+}
+
+func (m *mockReconcileGetter) GetCurrentVersionForReleaseTarget(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (*oapi.DeploymentVersion, error) {
+	return nil, nil
+}
+
+func (m *mockReconcileGetter) GetDependencies(
+	_ context.Context,
+	_ string,
+) ([]deploymentversiondependency.DependencyEdge, error) {
+	return nil, nil
+}
+
+func (m *mockReconcileGetter) GetReleaseTargetForDeploymentResource(
+	_ context.Context,
+	_ string,
+	_ string,
+) (*oapi.ReleaseTarget, error) {
 	return nil, nil
 }
 

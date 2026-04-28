@@ -16,6 +16,17 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  DeploymentDependency: {
+    type: 'object',
+    required: ['versionSelector'],
+    properties: {
+      versionSelector: {
+        type: 'string',
+        description: "CEL expression evaluated against the dependency deployment's current release version on the same resource.",
+      },
+    },
+  },
+
 
   DeploymentWithVariablesAndSystems: {
     type: 'object',
