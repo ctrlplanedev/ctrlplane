@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.3.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.2.0...v1.3.0) (2026-04-28)
+
+
+### Features
+
+* add diff line count to plans table results view ([#1054](https://github.com/ctrlplanedev/ctrlplane/issues/1054)) ([f9620bb](https://github.com/ctrlplanedev/ctrlplane/commit/f9620bb456083c84469352b0a7be0ac8c246aa1f))
+* dry run commit check links back to individual plan result ([#1038](https://github.com/ctrlplanedev/ctrlplane/issues/1038)) ([42c7d92](https://github.com/ctrlplanedev/ctrlplane/commit/42c7d929954b0fb3891b635ac993a1cf44ea10f9))
+* enable scroll and search for version decisions dialog ([#1029](https://github.com/ctrlplanedev/ctrlplane/issues/1029)) ([f686569](https://github.com/ctrlplanedev/ctrlplane/commit/f68656975a5cb13c31ac13ca28ce344179bb1b87))
+* open single plan result from url ([#1034](https://github.com/ctrlplanedev/ctrlplane/issues/1034)) ([a7fdee7](https://github.com/ctrlplanedev/ctrlplane/commit/a7fdee751e8e289b5a873c5e33bf3ac709b14ea4))
+* post checks to PR commit for dry run results ([#1023](https://github.com/ctrlplanedev/ctrlplane/issues/1023)) ([6cb9fc7](https://github.com/ctrlplanedev/ctrlplane/commit/6cb9fc7ec3fb9d0ba9c951f5096755a2ff3be29d))
+* **variable-schema:** add refactored db tables ([#1010](https://github.com/ctrlplanedev/ctrlplane/issues/1010)) ([135b539](https://github.com/ctrlplanedev/ctrlplane/commit/135b5395d94c937af4f8ba7908ba455e50e3296f))
+* version list endpoint can filter with CEL expression ([#1047](https://github.com/ctrlplanedev/ctrlplane/issues/1047)) ([a3fa8f2](https://github.com/ctrlplanedev/ctrlplane/commit/a3fa8f20f5a88a386ebba9a2a72ef1c848066509))
+
+
+### Bug Fixes
+
+* actually grab metric measurements in UI verifications query ([#1022](https://github.com/ctrlplanedev/ctrlplane/issues/1022)) ([46198ea](https://github.com/ctrlplanedev/ctrlplane/commit/46198ea16fe29ac9c50e880e35e51fd3f8bce4a3))
+* add type guards when rendering env progression dates ([#1030](https://github.com/ctrlplanedev/ctrlplane/issues/1030)) ([c5ed0d8](https://github.com/ctrlplanedev/ctrlplane/commit/c5ed0d89730c2ef69bb30d4d6df82b33496c4da4))
+* add typeguards for deployment window date rendering ([#1050](https://github.com/ctrlplanedev/ctrlplane/issues/1050)) ([60ff787](https://github.com/ctrlplanedev/ctrlplane/commit/60ff787dc432e421783afd27b970e0f35b633e2c))
+* align API status codes with OpenAPI specs ([#1056](https://github.com/ctrlplanedev/ctrlplane/issues/1056)) ([be4825d](https://github.com/ctrlplanedev/ctrlplane/commit/be4825ddef670f2d4ed1e8d070ae2642688ec549))
+* mark password inputs with type="password" and autoComplete attributes ([#1048](https://github.com/ctrlplanedev/ctrlplane/issues/1048)) ([a487ff6](https://github.com/ctrlplanedev/ctrlplane/commit/a487ff61789d7b2d18518994c9b8d6dae64c7669))
+* prevent text overflow in environment cards ([#1015](https://github.com/ctrlplanedev/ctrlplane/issues/1015)) ([42b7993](https://github.com/ctrlplanedev/ctrlplane/commit/42b799347d365c977f26887c8ec8d036de5d7705))
+* show version tag/name in Plans page breadcrumb instead of UUID ([#1051](https://github.com/ctrlplanedev/ctrlplane/issues/1051)) ([ee4f0c8](https://github.com/ctrlplanedev/ctrlplane/commit/ee4f0c8bc034110047eb7821f9240d16bccf1fe8))
+* sort measurements correctly to align ui components ([7b8db28](https://github.com/ctrlplanedev/ctrlplane/commit/7b8db284501084cc8e2893c8110764dd5ad530bb))
+* treat 0/0 release targets as 100% pass rate in policy evaluation ([#1049](https://github.com/ctrlplanedev/ctrlplane/issues/1049)) ([677ff01](https://github.com/ctrlplanedev/ctrlplane/commit/677ff017fbdb11c470b2d9b8399dfb12f11aa07f))
+
 ## [1.2.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.1.0...v1.2.0) (2026-04-17)
 
 
