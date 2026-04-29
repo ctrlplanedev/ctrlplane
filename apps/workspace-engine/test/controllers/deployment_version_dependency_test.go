@@ -233,13 +233,27 @@ func TestDeploymentVersionDependency_MultipleDependenciesAllSatisfied_Allowed(t 
 
 	p.ReleaseGetter.DeploymentVersionDependencies = map[string][]deploymentversiondependency.DependencyEdge{
 		versionID: {
-			{DependencyDeploymentID: upstream1ID.String(), VersionSelector: `version.tag == "v1.0.0"`},
-			{DependencyDeploymentID: upstream2ID.String(), VersionSelector: `version.tag == "v2.0.0"`},
+			{
+				DependencyDeploymentID: upstream1ID.String(),
+				VersionSelector:        `version.tag == "v1.0.0"`,
+			},
+			{
+				DependencyDeploymentID: upstream2ID.String(),
+				VersionSelector:        `version.tag == "v2.0.0"`,
+			},
 		},
 	}
 	p.ReleaseGetter.ReleaseTargetsList = []*oapi.ReleaseTarget{
-		{DeploymentId: upstream1ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-		{DeploymentId: upstream2ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+		{
+			DeploymentId:  upstream1ID.String(),
+			EnvironmentId: environmentID.String(),
+			ResourceId:    resourceID.String(),
+		},
+		{
+			DeploymentId:  upstream2ID.String(),
+			EnvironmentId: environmentID.String(),
+			ResourceId:    resourceID.String(),
+		},
 	}
 	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstream1Key: {
@@ -286,13 +300,27 @@ func TestDeploymentVersionDependency_MultipleDependenciesOneFails_Blocked(t *tes
 
 	p.ReleaseGetter.DeploymentVersionDependencies = map[string][]deploymentversiondependency.DependencyEdge{
 		versionID: {
-			{DependencyDeploymentID: upstream1ID.String(), VersionSelector: `version.tag == "v1.0.0"`},
-			{DependencyDeploymentID: upstream2ID.String(), VersionSelector: `version.tag == "v2.0.0"`},
+			{
+				DependencyDeploymentID: upstream1ID.String(),
+				VersionSelector:        `version.tag == "v1.0.0"`,
+			},
+			{
+				DependencyDeploymentID: upstream2ID.String(),
+				VersionSelector:        `version.tag == "v2.0.0"`,
+			},
 		},
 	}
 	p.ReleaseGetter.ReleaseTargetsList = []*oapi.ReleaseTarget{
-		{DeploymentId: upstream1ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
-		{DeploymentId: upstream2ID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+		{
+			DeploymentId:  upstream1ID.String(),
+			EnvironmentId: environmentID.String(),
+			ResourceId:    resourceID.String(),
+		},
+		{
+			DeploymentId:  upstream2ID.String(),
+			EnvironmentId: environmentID.String(),
+			ResourceId:    resourceID.String(),
+		},
 	}
 	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstream1Key: {
@@ -343,14 +371,24 @@ func TestDeploymentVersionDependency_PerVersionPinning_OldVersionStaysBlocked(t 
 
 	p.ReleaseGetter.DeploymentVersionDependencies = map[string][]deploymentversiondependency.DependencyEdge{
 		v1ID: {
-			{DependencyDeploymentID: upstreamDeploymentID.String(), VersionSelector: `version.tag.startsWith("v1")`},
+			{
+				DependencyDeploymentID: upstreamDeploymentID.String(),
+				VersionSelector:        `version.tag.startsWith("v1")`,
+			},
 		},
 		v2ID: {
-			{DependencyDeploymentID: upstreamDeploymentID.String(), VersionSelector: `version.tag.startsWith("v2")`},
+			{
+				DependencyDeploymentID: upstreamDeploymentID.String(),
+				VersionSelector:        `version.tag.startsWith("v2")`,
+			},
 		},
 	}
 	p.ReleaseGetter.ReleaseTargetsList = []*oapi.ReleaseTarget{
-		{DeploymentId: upstreamDeploymentID.String(), EnvironmentId: environmentID.String(), ResourceId: resourceID.String()},
+		{
+			DeploymentId:  upstreamDeploymentID.String(),
+			EnvironmentId: environmentID.String(),
+			ResourceId:    resourceID.String(),
+		},
 	}
 	p.ReleaseGetter.CurrentlyDeployedVersions = map[string]*oapi.DeploymentVersion{
 		upstreamRTKey: {

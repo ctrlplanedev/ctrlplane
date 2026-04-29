@@ -56,7 +56,7 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies': {
+  '/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies': {
     get: {
       summary: 'List deployment-version dependencies',
       description: "Returns the dependency edges declared by this deployment version.",
@@ -72,7 +72,7 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.notFoundResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}': {
+  '/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}': {
     put: {
       summary: 'Upsert deployment-version dependency',
       description: 'Declare or update a version-selector dependency from this deployment version to another deployment. Identified by the (deploymentVersionId, dependencyDeploymentId) pair.',

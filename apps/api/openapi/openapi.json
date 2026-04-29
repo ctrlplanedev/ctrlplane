@@ -4386,6 +4386,201 @@
             "summary": "Upsert deployment variable"
          }
       },
+      "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies": {
+         "get": {
+            "description": "Returns the dependency edges declared by this deployment version.",
+            "operationId": "listDeploymentVersionDependencies",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "items": {
+                              "$ref": "#/components/schemas/DeploymentVersionDependency"
+                           },
+                           "type": "array"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List deployment-version dependencies"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}": {
+         "delete": {
+            "operationId": "requestDeploymentVersionDependencyDeletion",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the dependency deployment",
+                  "in": "path",
+                  "name": "dependencyDeploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Delete deployment-version dependency"
+         },
+         "put": {
+            "description": "Declare or update a version-selector dependency from this deployment version to another deployment. Identified by the (deploymentVersionId, dependencyDeploymentId) pair.",
+            "operationId": "requestDeploymentVersionDependencyUpsert",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the dependency deployment",
+                  "in": "path",
+                  "name": "dependencyDeploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertDeploymentVersionDependencyRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert deployment-version dependency"
+         }
+      },
       "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records": {
          "put": {
             "operationId": "requestUserApprovalRecordUpsert",
@@ -5315,201 +5510,6 @@
                }
             },
             "summary": "Update deployment version"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies": {
-         "get": {
-            "description": "Returns the dependency edges declared by this deployment version.",
-            "operationId": "listDeploymentVersionDependencies",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment version",
-                  "in": "path",
-                  "name": "deploymentVersionId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "items": {
-                              "$ref": "#/components/schemas/DeploymentVersionDependency"
-                           },
-                           "type": "array"
-                        }
-                     }
-                  },
-                  "description": "OK response"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "List deployment-version dependencies"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}": {
-         "delete": {
-            "operationId": "requestDeploymentVersionDependencyDeletion",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment version",
-                  "in": "path",
-                  "name": "deploymentVersionId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the dependency deployment",
-                  "in": "path",
-                  "name": "dependencyDeploymentId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Delete deployment-version dependency"
-         },
-         "put": {
-            "description": "Declare or update a version-selector dependency from this deployment version to another deployment. Identified by the (deploymentVersionId, dependencyDeploymentId) pair.",
-            "operationId": "requestDeploymentVersionDependencyUpsert",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment version",
-                  "in": "path",
-                  "name": "deploymentVersionId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the dependency deployment",
-                  "in": "path",
-                  "name": "dependencyDeploymentId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/UpsertDeploymentVersionDependencyRequest"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Upsert deployment-version dependency"
          }
       },
       "/v1/workspaces/{workspaceId}/environments": {

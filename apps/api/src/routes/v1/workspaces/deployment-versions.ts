@@ -135,7 +135,7 @@ const loadVersionInWorkspace = async (
     .then(takeFirstOrNull);
 
 const listDeploymentVersionDependencies: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies",
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies",
   "get"
 > = async (req, res) => {
   const { workspaceId, deploymentVersionId } = req.params;
@@ -158,7 +158,7 @@ const listDeploymentVersionDependencies: AsyncTypedHandler<
 };
 
 const upsertDeploymentVersionDependency: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}",
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}",
   "put"
 > = async (req, res) => {
   const { workspaceId, deploymentVersionId, dependencyDeploymentId } =
@@ -220,7 +220,7 @@ const upsertDeploymentVersionDependency: AsyncTypedHandler<
 };
 
 const deleteDeploymentVersionDependency: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}",
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}",
   "delete"
 > = async (req, res) => {
   const { workspaceId, deploymentVersionId, dependencyDeploymentId } =
