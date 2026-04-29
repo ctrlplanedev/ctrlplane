@@ -12,7 +12,9 @@ type DependencyEdge struct {
 }
 
 type Getters interface {
-	GetDependencies(ctx context.Context, deploymentID string) ([]DependencyEdge, error)
+	// GetDependencies returns the dep edges declared by a single
+	// deployment_version row. Edges are pinned per version.
+	GetDependencies(ctx context.Context, deploymentVersionID string) ([]DependencyEdge, error)
 	GetReleaseTargetForDeploymentResource(
 		ctx context.Context,
 		deploymentID string,

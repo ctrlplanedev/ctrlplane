@@ -51,9 +51,21 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1;
 -- name: DeleteDeployment :exec
 DELETE FROM deployment WHERE id = $1;
 
--- name: GetDeploymentDependenciesByDeploymentID :many
+-- name: GetDeploymentDependenciesByVersionID :many
+-- Dependencies are pinned per deployment_version, so this returns the dep
+-- edges that belong to a single deployment_version row.
 SELECT dependency_deployment_id, version_selector
-FROM deployment_dependency
-WHERE deployment_id = $1
+FROM deployment_version_dependency
+WHERE deployment_version_id = $1
 ORDER BY dependency_deployment_id;
+
+-- name: GetDeploymentsWithVersionsDependingOn :many
+-- Returns the distinct set of deployment IDs that have at least one version
+-- declaring a dependency on the given deployment. Used by the job-dispatch
+-- downstream trigger to identify which downstream deployments need to
+-- re-evaluate when this deployment's current release on a resource changes.
+SELECT DISTINCT dv.deployment_id
+FROM deployment_version_dependency dvd
+JOIN deployment_version dv ON dv.id = dvd.deployment_version_id
+WHERE dvd.dependency_deployment_id = $1;
 

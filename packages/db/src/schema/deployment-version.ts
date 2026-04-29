@@ -4,6 +4,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -63,4 +64,20 @@ export const deploymentVersionRelations = relations(
       references: [deployment.id],
     }),
   }),
+);
+
+export const deploymentVersionDependency = pgTable(
+  "deployment_version_dependency",
+  {
+    deploymentVersionId: uuid("deployment_version_id")
+      .references(() => deploymentVersion.id, { onDelete: "cascade" })
+      .notNull(),
+    dependencyDeploymentId: uuid("dependency_deployment_id")
+      .references(() => deployment.id, { onDelete: "cascade" })
+      .notNull(),
+    versionSelector: text("version_selector").notNull().default("false"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.deploymentVersionId, t.dependencyDeploymentId] }),
+  ],
 );

@@ -66,27 +66,29 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 	return i, err
 }
 
-const getDeploymentDependenciesByDeploymentID = `-- name: GetDeploymentDependenciesByDeploymentID :many
+const getDeploymentDependenciesByVersionID = `-- name: GetDeploymentDependenciesByVersionID :many
 SELECT dependency_deployment_id, version_selector
-FROM deployment_dependency
-WHERE deployment_id = $1
+FROM deployment_version_dependency
+WHERE deployment_version_id = $1
 ORDER BY dependency_deployment_id
 `
 
-type GetDeploymentDependenciesByDeploymentIDRow struct {
+type GetDeploymentDependenciesByVersionIDRow struct {
 	DependencyDeploymentID uuid.UUID
 	VersionSelector        string
 }
 
-func (q *Queries) GetDeploymentDependenciesByDeploymentID(ctx context.Context, dollar_1 uuid.UUID) ([]GetDeploymentDependenciesByDeploymentIDRow, error) {
-	rows, err := q.db.Query(ctx, getDeploymentDependenciesByDeploymentID, dollar_1)
+// Dependencies are pinned per deployment_version, so this returns the dep
+// edges that belong to a single deployment_version row.
+func (q *Queries) GetDeploymentDependenciesByVersionID(ctx context.Context, dollar_1 uuid.UUID) ([]GetDeploymentDependenciesByVersionIDRow, error) {
+	rows, err := q.db.Query(ctx, getDeploymentDependenciesByVersionID, dollar_1)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetDeploymentDependenciesByDeploymentIDRow
+	var items []GetDeploymentDependenciesByVersionIDRow
 	for rows.Next() {
-		var i GetDeploymentDependenciesByDeploymentIDRow
+		var i GetDeploymentDependenciesByVersionIDRow
 		if err := rows.Scan(&i.DependencyDeploymentID, &i.VersionSelector); err != nil {
 			return nil, err
 		}
@@ -104,6 +106,37 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1
 
 func (q *Queries) GetDeploymentIDsForSystem(ctx context.Context, systemID uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getDeploymentIDsForSystem, systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var deployment_id uuid.UUID
+		if err := rows.Scan(&deployment_id); err != nil {
+			return nil, err
+		}
+		items = append(items, deployment_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDeploymentsWithVersionsDependingOn = `-- name: GetDeploymentsWithVersionsDependingOn :many
+SELECT DISTINCT dv.deployment_id
+FROM deployment_version_dependency dvd
+JOIN deployment_version dv ON dv.id = dvd.deployment_version_id
+WHERE dvd.dependency_deployment_id = $1
+`
+
+// Returns the distinct set of deployment IDs that have at least one version
+// declaring a dependency on the given deployment. Used by the job-dispatch
+// downstream trigger to identify which downstream deployments need to
+// re-evaluate when this deployment's current release on a resource changes.
+func (q *Queries) GetDeploymentsWithVersionsDependingOn(ctx context.Context, dollar_1 uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getDeploymentsWithVersionsDependingOn, dollar_1)
 	if err != nil {
 		return nil, err
 	}

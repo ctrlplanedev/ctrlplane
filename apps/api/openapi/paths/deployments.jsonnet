@@ -88,57 +88,6 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies': {
-    get: {
-      summary: 'List deployment dependencies',
-      description: "Returns the dependency edges declared by this deployment.",
-      operationId: 'listDeploymentDependencies',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.deploymentIdParam(),
-      ],
-      responses: openapi.okResponse({
-                   type: 'array',
-                   items: openapi.schemaRef('DeploymentDependency'),
-                 })
-                 + openapi.notFoundResponse(),
-    },
-  },
-  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies/{dependencyDeploymentId}': {
-    put: {
-      summary: 'Upsert deployment dependency',
-      description: 'Declare or update a version-selector dependency from this deployment to another deployment. Identified by the (deploymentId, dependencyDeploymentId) pair.',
-      operationId: 'requestDeploymentDependencyUpsert',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.deploymentIdParam(),
-        openapi.stringParam('dependencyDeploymentId', 'ID of the dependency deployment'),
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: openapi.schemaRef('UpsertDeploymentDependencyRequest'),
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted'))
-                 + openapi.notFoundResponse()
-                 + openapi.badRequestResponse(),
-    },
-    delete: {
-      summary: 'Delete deployment dependency',
-      operationId: 'requestDeploymentDependencyDeletion',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.deploymentIdParam(),
-        openapi.stringParam('dependencyDeploymentId', 'ID of the dependency deployment'),
-      ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted'))
-                 + openapi.notFoundResponse()
-                 + openapi.badRequestResponse(),
-    },
-  },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan': {
     post: {
       summary: 'Create a deployment plan',

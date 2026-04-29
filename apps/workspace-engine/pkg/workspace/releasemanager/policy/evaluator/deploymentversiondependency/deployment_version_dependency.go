@@ -29,7 +29,7 @@ func NewEvaluator(getters Getters) evaluator.Evaluator {
 }
 
 func (e *Evaluator) ScopeFields() evaluator.ScopeFields {
-	return evaluator.ScopeDeployment | evaluator.ScopeResource
+	return evaluator.ScopeVersion | evaluator.ScopeResource
 }
 
 func (e *Evaluator) RuleType() string { return RuleType }
@@ -46,11 +46,11 @@ func (e *Evaluator) Evaluate(
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("deployment.id", scope.Deployment.Id),
+		attribute.String("version.id", scope.Version.Id),
 		attribute.String("resource.id", scope.Resource.Id),
 	)
 
-	edges, err := e.getters.GetDependencies(ctx, scope.Deployment.Id)
+	edges, err := e.getters.GetDependencies(ctx, scope.Version.Id)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(
