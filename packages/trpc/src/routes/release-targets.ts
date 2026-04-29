@@ -320,10 +320,7 @@ export const releaseTargetsRouter = router({
               schema.releaseTargetDesiredRelease.environmentId,
               input.environmentId,
             ),
-            eq(
-              schema.releaseTargetDesiredRelease.resourceId,
-              input.resourceId,
-            ),
+            eq(schema.releaseTargetDesiredRelease.resourceId, input.resourceId),
           ),
         )
         .limit(1);
@@ -366,11 +363,15 @@ export const releaseTargetsRouter = router({
             version.id,
           ),
         )
-        .orderBy(asc(schema.deploymentVersionDependency.dependencyDeploymentId));
+        .orderBy(
+          asc(schema.deploymentVersionDependency.dependencyDeploymentId),
+        );
 
       if (edges.length === 0) return { version, dependencies: [] };
 
-      const dependencyDeploymentIds = edges.map((e) => e.dependencyDeploymentId);
+      const dependencyDeploymentIds = edges.map(
+        (e) => e.dependencyDeploymentId,
+      );
 
       const dependencyDeployments = await ctx.db
         .select({
@@ -399,10 +400,7 @@ export const releaseTargetsRouter = router({
               schema.releaseJob,
               eq(schema.releaseJob.releaseId, schema.release.id),
             )
-            .innerJoin(
-              schema.job,
-              eq(schema.job.id, schema.releaseJob.jobId),
-            )
+            .innerJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
             .innerJoin(
               schema.deploymentVersion,
               eq(schema.deploymentVersion.id, schema.release.versionId),
