@@ -4932,6 +4932,16 @@
                   },
                   "description": "Accepted response"
                },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
                "404": {
                   "content": {
                      "application/json": {

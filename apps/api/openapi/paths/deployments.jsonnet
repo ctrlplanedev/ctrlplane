@@ -135,7 +135,8 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.stringParam('dependencyDeploymentId', 'ID of the dependency deployment'),
       ],
       responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted'))
-                 + openapi.notFoundResponse(),
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan': {

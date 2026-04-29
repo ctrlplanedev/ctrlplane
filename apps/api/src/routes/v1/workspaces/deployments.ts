@@ -381,20 +381,28 @@ const upsertDeploymentDependency: AsyncTypedHandler<
   if (!found.has(dependencyDeploymentId))
     throw new ApiError("Dependency deployment not found", 404);
 
-  await db
-    .insert(schema.deploymentDependency)
-    .values({
-      deploymentId,
-      dependencyDeploymentId,
-      versionSelector,
-    })
-    .onConflictDoUpdate({
-      target: [
-        schema.deploymentDependency.deploymentId,
-        schema.deploymentDependency.dependencyDeploymentId,
-      ],
-      set: { versionSelector },
-    });
+  try {
+    await db
+      .insert(schema.deploymentDependency)
+      .values({
+        deploymentId,
+        dependencyDeploymentId,
+        versionSelector,
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.deploymentDependency.deploymentId,
+          schema.deploymentDependency.dependencyDeploymentId,
+        ],
+        set: { versionSelector },
+      });
+  } catch (error: any) {
+    // Rare race: a referenced deployment was deleted between the preflight
+    // check and the insert. Surface as 404 to match the preflight outcome.
+    if (error.code === "23503")
+      throw new ApiError("Deployment not found", 404);
+    throw error;
+  }
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
 
