@@ -76,17 +76,3 @@ export const computedDeploymentResourceRelations = relations(
     }),
   }),
 );
-
-export const deploymentDependency = pgTable(
-  "deployment_dependency",
-  {
-    deploymentId: uuid("deployment_id")
-      .references(() => deployment.id, { onDelete: "cascade" })
-      .notNull(),
-    dependencyDeploymentId: uuid("dependency_deployment_id")
-      .references(() => deployment.id, { onDelete: "cascade" })
-      .notNull(),
-    versionSelector: text("version_selector").notNull().default("false"),
-  },
-  (t) => [primaryKey({ columns: [t.deploymentId, t.dependencyDeploymentId] })],
-);

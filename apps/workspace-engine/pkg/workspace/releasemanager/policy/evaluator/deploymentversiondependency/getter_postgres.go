@@ -23,13 +23,13 @@ func NewPostgresGetters(queries *db.Queries) *PostgresGetters {
 
 func (p *PostgresGetters) GetDependencies(
 	ctx context.Context,
-	deploymentID string,
+	deploymentVersionID string,
 ) ([]DependencyEdge, error) {
-	depID, err := uuid.Parse(deploymentID)
+	versionID, err := uuid.Parse(deploymentVersionID)
 	if err != nil {
-		return nil, fmt.Errorf("parse deployment id: %w", err)
+		return nil, fmt.Errorf("parse deployment version id: %w", err)
 	}
-	rows, err := p.queries.GetDeploymentDependenciesByDeploymentID(ctx, depID)
+	rows, err := p.queries.GetDeploymentDependenciesByVersionID(ctx, versionID)
 	if err != nil {
 		return nil, err
 	}

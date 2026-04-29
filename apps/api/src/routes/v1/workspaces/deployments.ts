@@ -4,16 +4,7 @@ import { evaluate } from "cel-js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  inArray,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueDeploymentPlan,
@@ -289,129 +280,6 @@ const upsertDeployment: AsyncTypedHandler<
     .json({ id: deploymentId, message: "Deployment update requested" });
 };
 
-const listDeploymentDependencies: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies",
-  "get"
-> = async (req, res) => {
-  const { workspaceId, deploymentId } = req.params;
-
-  const dep = await db.query.deployment.findFirst({
-    where: and(
-      eq(schema.deployment.id, deploymentId),
-      eq(schema.deployment.workspaceId, workspaceId),
-    ),
-  });
-
-  if (dep == null) throw new ApiError("Deployment not found", 404);
-
-  const rows = await db
-    .select()
-    .from(schema.deploymentDependency)
-    .where(eq(schema.deploymentDependency.deploymentId, deploymentId))
-    .orderBy(asc(schema.deploymentDependency.dependencyDeploymentId));
-
-  res.status(200).json(rows);
-};
-
-const deleteDeploymentDependency: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies/{dependencyDeploymentId}",
-  "delete"
-> = async (req, res) => {
-  const { workspaceId, deploymentId, dependencyDeploymentId } = req.params;
-
-  const dep = await db.query.deployment.findFirst({
-    where: and(
-      eq(schema.deployment.id, deploymentId),
-      eq(schema.deployment.workspaceId, workspaceId),
-    ),
-  });
-
-  if (dep == null) throw new ApiError("Deployment not found", 404);
-
-  const deleted = await db
-    .delete(schema.deploymentDependency)
-    .where(
-      and(
-        eq(schema.deploymentDependency.deploymentId, deploymentId),
-        eq(
-          schema.deploymentDependency.dependencyDeploymentId,
-          dependencyDeploymentId,
-        ),
-      ),
-    )
-    .returning()
-    .then(takeFirstOrNull);
-
-  if (deleted == null)
-    throw new ApiError("Deployment dependency not found", 404);
-
-  enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
-
-  res.status(202).json({
-    id: deploymentId,
-    message: "Deployment dependency delete requested",
-  });
-};
-
-const upsertDeploymentDependency: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies/{dependencyDeploymentId}",
-  "put"
-> = async (req, res) => {
-  const { workspaceId, deploymentId, dependencyDeploymentId } = req.params;
-  const { versionSelector } = req.body;
-
-  if (deploymentId === dependencyDeploymentId)
-    throw new ApiError("A deployment cannot depend on itself", 400);
-
-  if (!validResourceSelector(versionSelector))
-    throw new ApiError("Invalid versionSelector CEL expression", 400);
-
-  const deployments = await db
-    .select({ id: schema.deployment.id })
-    .from(schema.deployment)
-    .where(
-      and(
-        eq(schema.deployment.workspaceId, workspaceId),
-        inArray(schema.deployment.id, [deploymentId, dependencyDeploymentId]),
-      ),
-    );
-
-  const found = new Set(deployments.map((d) => d.id));
-  if (!found.has(deploymentId)) throw new ApiError("Deployment not found", 404);
-  if (!found.has(dependencyDeploymentId))
-    throw new ApiError("Dependency deployment not found", 404);
-
-  try {
-    await db
-      .insert(schema.deploymentDependency)
-      .values({
-        deploymentId,
-        dependencyDeploymentId,
-        versionSelector,
-      })
-      .onConflictDoUpdate({
-        target: [
-          schema.deploymentDependency.deploymentId,
-          schema.deploymentDependency.dependencyDeploymentId,
-        ],
-        set: { versionSelector },
-      });
-  } catch (error: any) {
-    // Rare race: a referenced deployment was deleted between the preflight
-    // check and the insert. Surface as 404 to match the preflight outcome.
-    if (error.code === "23503")
-      throw new ApiError("Deployment not found", 404);
-    throw error;
-  }
-
-  enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);
-
-  res.status(202).json({
-    id: deploymentId,
-    message: "Deployment dependency upsert requested",
-  });
-};
-
 const deleteDeployment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
   "delete"
@@ -664,15 +532,6 @@ export const deploymentsRouter = Router({ mergeParams: true })
   .get("/name/:name", asyncHandler(getDeploymentByName))
   .get("/:deploymentId", asyncHandler(getDeployment))
   .put("/:deploymentId", asyncHandler(upsertDeployment))
-  .get("/:deploymentId/dependencies", asyncHandler(listDeploymentDependencies))
-  .put(
-    "/:deploymentId/dependencies/:dependencyDeploymentId",
-    asyncHandler(upsertDeploymentDependency),
-  )
-  .delete(
-    "/:deploymentId/dependencies/:dependencyDeploymentId",
-    asyncHandler(deleteDeploymentDependency),
-  )
   .delete("/:deploymentId", asyncHandler(deleteDeployment))
   .get("/:deploymentId/versions", asyncHandler(listDeploymentVersions))
   .post("/:deploymentId/versions", asyncHandler(createDeploymentVersion))

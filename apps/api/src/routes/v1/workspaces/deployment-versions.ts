@@ -2,10 +2,12 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, asc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { enqueueReleaseTargetsForDeployment } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
+
+import { validResourceSelector } from "../valid-selector.js";
 
 const upsertUserApprovalRecord: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records",
@@ -109,9 +111,171 @@ const updateDeploymentVersion: AsyncTypedHandler<
   res.status(200).json(updatedVersion);
 };
 
+// loadVersionInWorkspace returns the deployment_version row joined with its
+// owning deployment, scoped to the requested workspace. Used by the dependency
+// endpoints to enforce tenant isolation: a version is reachable only via its
+// deployment's workspace_id.
+const loadVersionInWorkspace = async (
+  workspaceId: string,
+  deploymentVersionId: string,
+) =>
+  db
+    .select({ version: schema.deploymentVersion, deployment: schema.deployment })
+    .from(schema.deploymentVersion)
+    .innerJoin(
+      schema.deployment,
+      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
+    )
+    .where(
+      and(
+        eq(schema.deploymentVersion.id, deploymentVersionId),
+        eq(schema.deployment.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+const listDeploymentVersionDependencies: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, deploymentVersionId } = req.params;
+
+  const found = await loadVersionInWorkspace(workspaceId, deploymentVersionId);
+  if (found == null) throw new ApiError("Deployment version not found", 404);
+
+  const rows = await db
+    .select()
+    .from(schema.deploymentVersionDependency)
+    .where(
+      eq(
+        schema.deploymentVersionDependency.deploymentVersionId,
+        deploymentVersionId,
+      ),
+    )
+    .orderBy(asc(schema.deploymentVersionDependency.dependencyDeploymentId));
+
+  res.status(200).json(rows);
+};
+
+const upsertDeploymentVersionDependency: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}",
+  "put"
+> = async (req, res) => {
+  const { workspaceId, deploymentVersionId, dependencyDeploymentId } =
+    req.params;
+  const { versionSelector } = req.body;
+
+  if (!validResourceSelector(versionSelector))
+    throw new ApiError("Invalid versionSelector CEL expression", 400);
+
+  const found = await loadVersionInWorkspace(workspaceId, deploymentVersionId);
+  if (found == null) throw new ApiError("Deployment version not found", 404);
+
+  if (found.deployment.id === dependencyDeploymentId)
+    throw new ApiError(
+      "A deployment version cannot depend on its own deployment",
+      400,
+    );
+
+  const targetDeployment = await db.query.deployment.findFirst({
+    where: and(
+      eq(schema.deployment.id, dependencyDeploymentId),
+      eq(schema.deployment.workspaceId, workspaceId),
+    ),
+  });
+  if (targetDeployment == null)
+    throw new ApiError("Dependency deployment not found", 404);
+
+  try {
+    await db
+      .insert(schema.deploymentVersionDependency)
+      .values({
+        deploymentVersionId,
+        dependencyDeploymentId,
+        versionSelector,
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.deploymentVersionDependency.deploymentVersionId,
+          schema.deploymentVersionDependency.dependencyDeploymentId,
+        ],
+        set: { versionSelector },
+      });
+  } catch (error: any) {
+    if (error.code === "23503")
+      throw new ApiError("Deployment version or deployment not found", 404);
+    throw error;
+  }
+
+  void enqueueReleaseTargetsForDeployment(
+    db,
+    workspaceId,
+    found.deployment.id,
+  ).catch(console.error);
+
+  res.status(202).json({
+    id: deploymentVersionId,
+    message: "Deployment version dependency upsert requested",
+  });
+};
+
+const deleteDeploymentVersionDependency: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/dependencies/{dependencyDeploymentId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, deploymentVersionId, dependencyDeploymentId } =
+    req.params;
+
+  const found = await loadVersionInWorkspace(workspaceId, deploymentVersionId);
+  if (found == null) throw new ApiError("Deployment version not found", 404);
+
+  const deleted = await db
+    .delete(schema.deploymentVersionDependency)
+    .where(
+      and(
+        eq(
+          schema.deploymentVersionDependency.deploymentVersionId,
+          deploymentVersionId,
+        ),
+        eq(
+          schema.deploymentVersionDependency.dependencyDeploymentId,
+          dependencyDeploymentId,
+        ),
+      ),
+    )
+    .returning()
+    .then(takeFirstOrNull);
+
+  if (deleted == null)
+    throw new ApiError("Deployment version dependency not found", 404);
+
+  void enqueueReleaseTargetsForDeployment(
+    db,
+    workspaceId,
+    found.deployment.id,
+  ).catch(console.error);
+
+  res.status(202).json({
+    id: deploymentVersionId,
+    message: "Deployment version dependency delete requested",
+  });
+};
+
 export const deploymentVersionsRouter = Router({ mergeParams: true })
   .put(
     "/:deploymentVersionId/user-approval-records",
     asyncHandler(upsertUserApprovalRecord),
   )
-  .patch("/:deploymentVersionId", asyncHandler(updateDeploymentVersion));
+  .patch("/:deploymentVersionId", asyncHandler(updateDeploymentVersion))
+  .get(
+    "/:deploymentVersionId/dependencies",
+    asyncHandler(listDeploymentVersionDependencies),
+  )
+  .put(
+    "/:deploymentVersionId/dependencies/:dependencyDeploymentId",
+    asyncHandler(upsertDeploymentVersionDependency),
+  )
+  .delete(
+    "/:deploymentVersionId/dependencies/:dependencyDeploymentId",
+    asyncHandler(deleteDeploymentVersionDependency),
+  );

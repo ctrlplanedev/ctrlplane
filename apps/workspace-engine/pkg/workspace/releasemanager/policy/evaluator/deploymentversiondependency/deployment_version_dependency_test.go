@@ -36,6 +36,7 @@ func (m *mockGetters) GetCurrentVersionForReleaseTarget(
 func makeScope() evaluator.EvaluatorScope {
 	return evaluator.EvaluatorScope{
 		Deployment: &oapi.Deployment{Id: uuid.New().String(), Name: "downstream"},
+		Version:    &oapi.DeploymentVersion{Id: uuid.New().String(), Tag: "candidate"},
 		Resource:   &oapi.Resource{Id: uuid.New().String(), Name: "resource"},
 	}
 }

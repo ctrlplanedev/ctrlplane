@@ -35,7 +35,7 @@ local jobAgentConfig = {
     },
   },
 
-  UpsertDeploymentDependencyRequest: {
+  UpsertDeploymentVersionDependencyRequest: {
     type: 'object',
     required: ['versionSelector'],
     properties: {
@@ -46,11 +46,11 @@ local jobAgentConfig = {
     },
   },
 
-  DeploymentDependency: {
+  DeploymentVersionDependency: {
     type: 'object',
-    required: ['deploymentId', 'dependencyDeploymentId', 'versionSelector'],
+    required: ['deploymentVersionId', 'dependencyDeploymentId', 'versionSelector'],
     properties: {
-      deploymentId: { type: 'string' },
+      deploymentVersionId: { type: 'string' },
       dependencyDeploymentId: { type: 'string' },
       versionSelector: {
         type: 'string',

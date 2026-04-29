@@ -1,0 +1,1 @@
+CREATE INDEX "deployment_version_dependency_target_idx" ON "deployment_version_dependency" USING btree ("dependency_deployment_id");

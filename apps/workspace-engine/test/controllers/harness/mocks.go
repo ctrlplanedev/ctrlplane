@@ -138,6 +138,10 @@ type DesiredReleaseGetter struct {
 	SystemIDsByEnvironment      map[string][]string
 	AllPoliciesMap              map[string]*oapi.Policy
 
+	// DeploymentVersionDependencies is keyed by deployment_version_id and
+	// contains the dependency edges declared by that version.
+	DeploymentVersionDependencies map[string][]deploymentversiondependency.DependencyEdge
+
 	// ApprovalRecordsFn allows per-version/per-environment logic when set.
 	ApprovalRecordsFn func(versionID, environmentID string) []*oapi.UserApprovalRecord
 
@@ -419,9 +423,12 @@ func (g *DesiredReleaseGetter) GetCurrentlyDeployedVersion(
 
 func (g *DesiredReleaseGetter) GetDependencies(
 	_ context.Context,
-	_ string,
+	deploymentVersionID string,
 ) ([]deploymentversiondependency.DependencyEdge, error) {
-	return nil, nil
+	if g.DeploymentVersionDependencies == nil {
+		return nil, nil
+	}
+	return g.DeploymentVersionDependencies[deploymentVersionID], nil
 }
 
 func (g *DesiredReleaseGetter) GetReleaseTargetForDeploymentResource(

@@ -1338,6 +1338,20 @@
       "when": 1777394798226,
       "tag": "0190_handy_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 191,
+      "version": "7",
+      "when": 1777486936352,
+      "tag": "0191_equal_talisman",
+      "breakpoints": true
+    },
+    {
+      "idx": 192,
+      "version": "7",
+      "when": 1777489197047,
+      "tag": "0192_sharp_jackpot",
+      "breakpoints": true
     }
   ]
 }
