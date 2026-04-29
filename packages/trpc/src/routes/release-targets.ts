@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { and, desc, eq, inArray, sql } from "@ctrlplane/db";
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -277,5 +277,169 @@ export const releaseTargetsRouter = router({
         const p = policyId ? (policyMap.get(policyId) ?? null) : null;
         return { ...r, policy: p };
       });
+    }),
+
+  dependencies: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.uuid(),
+        environmentId: z.uuid(),
+        resourceId: z.uuid(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const desired = await ctx.db
+        .select({
+          version: {
+            id: schema.deploymentVersion.id,
+            tag: schema.deploymentVersion.tag,
+            name: schema.deploymentVersion.name,
+            status: schema.deploymentVersion.status,
+            createdAt: schema.deploymentVersion.createdAt,
+          },
+        })
+        .from(schema.releaseTargetDesiredRelease)
+        .innerJoin(
+          schema.release,
+          eq(
+            schema.releaseTargetDesiredRelease.desiredReleaseId,
+            schema.release.id,
+          ),
+        )
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.release.versionId, schema.deploymentVersion.id),
+        )
+        .where(
+          and(
+            eq(
+              schema.releaseTargetDesiredRelease.deploymentId,
+              input.deploymentId,
+            ),
+            eq(
+              schema.releaseTargetDesiredRelease.environmentId,
+              input.environmentId,
+            ),
+            eq(
+              schema.releaseTargetDesiredRelease.resourceId,
+              input.resourceId,
+            ),
+          ),
+        )
+        .limit(1);
+
+      const desiredVersion = desired[0]?.version ?? null;
+      const latestVersion =
+        desiredVersion != null
+          ? null
+          : ((
+              await ctx.db
+                .select({
+                  id: schema.deploymentVersion.id,
+                  tag: schema.deploymentVersion.tag,
+                  name: schema.deploymentVersion.name,
+                  status: schema.deploymentVersion.status,
+                  createdAt: schema.deploymentVersion.createdAt,
+                })
+                .from(schema.deploymentVersion)
+                .where(
+                  eq(schema.deploymentVersion.deploymentId, input.deploymentId),
+                )
+                .orderBy(desc(schema.deploymentVersion.createdAt))
+                .limit(1)
+            )[0] ?? null);
+
+      const version = desiredVersion ?? latestVersion;
+
+      if (version == null) return { version: null, dependencies: [] };
+
+      const edges = await ctx.db
+        .select({
+          dependencyDeploymentId:
+            schema.deploymentVersionDependency.dependencyDeploymentId,
+          versionSelector: schema.deploymentVersionDependency.versionSelector,
+        })
+        .from(schema.deploymentVersionDependency)
+        .where(
+          eq(
+            schema.deploymentVersionDependency.deploymentVersionId,
+            version.id,
+          ),
+        )
+        .orderBy(asc(schema.deploymentVersionDependency.dependencyDeploymentId));
+
+      if (edges.length === 0) return { version, dependencies: [] };
+
+      const dependencyDeploymentIds = edges.map((e) => e.dependencyDeploymentId);
+
+      const dependencyDeployments = await ctx.db
+        .select({
+          id: schema.deployment.id,
+          name: schema.deployment.name,
+        })
+        .from(schema.deployment)
+        .where(inArray(schema.deployment.id, dependencyDeploymentIds));
+      const deploymentById = new Map(
+        dependencyDeployments.map((d) => [d.id, d]),
+      );
+
+      const dependencies = await Promise.all(
+        edges.map(async (edge) => {
+          const upstream = await ctx.db
+            .select({
+              versionId: schema.release.versionId,
+              versionTag: schema.deploymentVersion.tag,
+              versionName: schema.deploymentVersion.name,
+              versionStatus: schema.deploymentVersion.status,
+              environmentId: schema.release.environmentId,
+              completedAt: schema.job.completedAt,
+            })
+            .from(schema.release)
+            .innerJoin(
+              schema.releaseJob,
+              eq(schema.releaseJob.releaseId, schema.release.id),
+            )
+            .innerJoin(
+              schema.job,
+              eq(schema.job.id, schema.releaseJob.jobId),
+            )
+            .innerJoin(
+              schema.deploymentVersion,
+              eq(schema.deploymentVersion.id, schema.release.versionId),
+            )
+            .where(
+              and(
+                eq(schema.release.deploymentId, edge.dependencyDeploymentId),
+                eq(schema.release.resourceId, input.resourceId),
+                eq(schema.job.status, "successful"),
+                isNotNull(schema.job.completedAt),
+              ),
+            )
+            .orderBy(desc(schema.job.completedAt))
+            .limit(1);
+
+          const cur = upstream[0] ?? null;
+          const dep = deploymentById.get(edge.dependencyDeploymentId) ?? null;
+
+          return {
+            dependencyDeploymentId: edge.dependencyDeploymentId,
+            dependencyDeploymentName: dep?.name ?? null,
+            versionSelector: edge.versionSelector,
+            currentVersion:
+              cur == null
+                ? null
+                : {
+                    id: cur.versionId,
+                    tag: cur.versionTag,
+                    name: cur.versionName,
+                    status: cur.versionStatus,
+                    environmentId: cur.environmentId,
+                    completedAt: cur.completedAt?.toISOString() ?? null,
+                  },
+          };
+        }),
+      );
+
+      return { version, dependencies };
     }),
 });

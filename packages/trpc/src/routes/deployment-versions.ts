@@ -1,7 +1,15 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   enqueuePolicyEval,
   enqueueReleaseTargetsForDeployment,
@@ -155,5 +163,179 @@ export const deploymentVersionsRouter = router({
         });
 
       return policyEvaluations;
+    }),
+
+  dependencies: protectedProcedure
+    .input(z.object({ versionId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const versionRow = await ctx.db.query.deploymentVersion.findFirst({
+        where: eq(schema.deploymentVersion.id, input.versionId),
+      });
+      if (versionRow == null) return null;
+
+      const edges = await ctx.db
+        .select({
+          dependencyDeploymentId:
+            schema.deploymentVersionDependency.dependencyDeploymentId,
+          versionSelector: schema.deploymentVersionDependency.versionSelector,
+        })
+        .from(schema.deploymentVersionDependency)
+        .where(
+          eq(
+            schema.deploymentVersionDependency.deploymentVersionId,
+            input.versionId,
+          ),
+        )
+        .orderBy(
+          asc(schema.deploymentVersionDependency.dependencyDeploymentId),
+        );
+
+      const version = {
+        id: versionRow.id,
+        tag: versionRow.tag,
+        name: versionRow.name,
+        deploymentId: versionRow.deploymentId,
+      };
+
+      if (edges.length === 0) return { version, dependencies: [] };
+
+      const targets = await ctx.db
+        .selectDistinct({
+          environmentId: schema.computedEnvironmentResource.environmentId,
+          environmentName: schema.environment.name,
+          resourceId: schema.computedDeploymentResource.resourceId,
+          resourceName: schema.resource.name,
+        })
+        .from(schema.computedDeploymentResource)
+        .innerJoin(
+          schema.computedEnvironmentResource,
+          eq(
+            schema.computedEnvironmentResource.resourceId,
+            schema.computedDeploymentResource.resourceId,
+          ),
+        )
+        .innerJoin(
+          schema.systemDeployment,
+          eq(
+            schema.systemDeployment.deploymentId,
+            schema.computedDeploymentResource.deploymentId,
+          ),
+        )
+        .innerJoin(
+          schema.systemEnvironment,
+          and(
+            eq(
+              schema.systemEnvironment.environmentId,
+              schema.computedEnvironmentResource.environmentId,
+            ),
+            eq(
+              schema.systemEnvironment.systemId,
+              schema.systemDeployment.systemId,
+            ),
+          ),
+        )
+        .innerJoin(
+          schema.resource,
+          eq(schema.resource.id, schema.computedDeploymentResource.resourceId),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(
+            schema.environment.id,
+            schema.computedEnvironmentResource.environmentId,
+          ),
+        )
+        .where(
+          eq(
+            schema.computedDeploymentResource.deploymentId,
+            versionRow.deploymentId,
+          ),
+        );
+
+      const dependencyDeploymentIds = edges.map(
+        (e) => e.dependencyDeploymentId,
+      );
+      const dependencyDeployments = await ctx.db
+        .select({ id: schema.deployment.id, name: schema.deployment.name })
+        .from(schema.deployment)
+        .where(inArray(schema.deployment.id, dependencyDeploymentIds));
+      const depNameById = new Map(
+        dependencyDeployments.map((d) => [d.id, d.name]),
+      );
+
+      const resourceIds = targets.map((t) => t.resourceId);
+      const currentByDepResource = new Map<
+        string,
+        Map<string, { id: string; tag: string; name: string; status: string }>
+      >();
+      if (resourceIds.length > 0) {
+        await Promise.all(
+          edges.map(async (edge) => {
+            const rows = await ctx.db
+              .select({
+                resourceId: schema.release.resourceId,
+                versionId: schema.release.versionId,
+                tag: schema.deploymentVersion.tag,
+                name: schema.deploymentVersion.name,
+                status: schema.deploymentVersion.status,
+              })
+              .from(schema.release)
+              .innerJoin(
+                schema.releaseJob,
+                eq(schema.releaseJob.releaseId, schema.release.id),
+              )
+              .innerJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
+              .innerJoin(
+                schema.deploymentVersion,
+                eq(schema.deploymentVersion.id, schema.release.versionId),
+              )
+              .where(
+                and(
+                  eq(schema.release.deploymentId, edge.dependencyDeploymentId),
+                  inArray(schema.release.resourceId, resourceIds),
+                  eq(schema.job.status, "successful"),
+                  isNotNull(schema.job.completedAt),
+                ),
+              )
+              .orderBy(desc(schema.job.completedAt));
+
+            const byResource = new Map<
+              string,
+              { id: string; tag: string; name: string; status: string }
+            >();
+            for (const row of rows) {
+              if (byResource.has(row.resourceId)) continue;
+              byResource.set(row.resourceId, {
+                id: row.versionId,
+                tag: row.tag,
+                name: row.name,
+                status: row.status,
+              });
+            }
+            currentByDepResource.set(edge.dependencyDeploymentId, byResource);
+          }),
+        );
+      }
+
+      const dependencies = edges.map((edge) => {
+        const byResource = currentByDepResource.get(
+          edge.dependencyDeploymentId,
+        );
+        return {
+          dependencyDeploymentId: edge.dependencyDeploymentId,
+          dependencyDeploymentName:
+            depNameById.get(edge.dependencyDeploymentId) ?? null,
+          versionSelector: edge.versionSelector,
+          targets: targets.map((t) => ({
+            resourceId: t.resourceId,
+            resourceName: t.resourceName,
+            environmentId: t.environmentId,
+            environmentName: t.environmentName,
+            currentVersion: byResource?.get(t.resourceId) ?? null,
+          })),
+        };
+      });
+
+      return { version, dependencies };
     }),
 });

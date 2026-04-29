@@ -6,6 +6,7 @@ import type { ApprovalDetailProps } from "./rule-results/ApprovalDetail";
 import { trpc } from "~/api/trpc";
 import { Spinner } from "~/components/ui/spinner";
 import { ApprovalDetail } from "./rule-results/ApprovalDetail";
+import { DependencyDetail } from "./rule-results/DependencyDetail";
 import { DeploymentWindowDetail } from "./rule-results/DeploymentWindowDetail";
 import { EnvironmentProgressionDetail } from "./rule-results/EnvironmentProgressionDetail";
 import { GradRolloutDetail } from "./rule-results/GradRolloutDetail";
@@ -14,7 +15,7 @@ import { VersionStatusDetail } from "./rule-results/VersionStatusDetail";
 
 type DeploymentVersionProps = {
   version: { id: string; status: DeploymentVersionStatus };
-  environment: { id: string };
+  environment: { id: string; name: string };
 };
 
 export function DeploymentVersion(props: DeploymentVersionProps) {
@@ -45,9 +46,8 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
       </div>
     );
 
-  if (data == null) return null;
-
-  const approvalEval = "approval" in rules ? rules.approval[0] : undefined;
+  const approvalEval =
+    data != null && "approval" in rules ? rules.approval[0] : undefined;
   const approvalDetail = approvalEval?.details as
     | ApprovalDetailProps
     | undefined;
@@ -83,6 +83,7 @@ export function DeploymentVersion(props: DeploymentVersionProps) {
           skippedRuleIds={skippedRuleIds}
         />
       )}
+      <DependencyDetail versionId={version.id} environment={environment} />
       <VersionStatusDetail version={version} />
     </div>
   );

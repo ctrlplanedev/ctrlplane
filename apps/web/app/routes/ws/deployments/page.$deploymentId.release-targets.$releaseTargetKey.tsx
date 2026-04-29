@@ -38,6 +38,7 @@ import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
+import { Dependencies } from "./_components/release-targets/Dependencies";
 
 function parseReleaseTargetKey(key: string) {
   if (key.length !== 110) return null;
@@ -547,6 +548,15 @@ export default function ReleaseTargetEvaluationsPage() {
             Reconcile
           </Button>
         </div>
+
+        {parsed != null && (
+          <Dependencies
+            workspaceSlug={workspace.slug}
+            deploymentId={parsed.deploymentId}
+            environmentId={parsed.environmentId}
+            resourceId={parsed.resourceId}
+          />
+        )}
 
         {evaluationsQuery.isLoading && (
           <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
