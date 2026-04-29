@@ -35,6 +35,30 @@ local jobAgentConfig = {
     },
   },
 
+  UpsertDeploymentDependencyRequest: {
+    type: 'object',
+    required: ['versionSelector'],
+    properties: {
+      versionSelector: {
+        type: 'string',
+        description: "CEL expression evaluated against the dependency deployment's current release version on the same resource.",
+      },
+    },
+  },
+
+  DeploymentDependency: {
+    type: 'object',
+    required: ['deploymentId', 'dependencyDeploymentId', 'versionSelector'],
+    properties: {
+      deploymentId: { type: 'string' },
+      dependencyDeploymentId: { type: 'string' },
+      versionSelector: {
+        type: 'string',
+        description: "CEL expression evaluated against the dependency deployment's current release version on the same resource.",
+      },
+    },
+  },
+
   DeploymentRequestAccepted: {
     type: 'object',
     required: ['id', 'message'],
