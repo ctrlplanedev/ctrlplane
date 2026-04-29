@@ -52,8 +52,6 @@ SELECT deployment_id FROM system_deployment WHERE system_id = $1;
 DELETE FROM deployment WHERE id = $1;
 
 -- name: GetDeploymentDependenciesByVersionID :many
--- Dependencies are pinned per deployment_version, so this returns the dep
--- edges that belong to a single deployment_version row.
 SELECT dependency_deployment_id, version_selector
 FROM deployment_version_dependency
 WHERE deployment_version_id = $1
@@ -67,5 +65,6 @@ ORDER BY dependency_deployment_id;
 SELECT DISTINCT dv.deployment_id
 FROM deployment_version_dependency dvd
 JOIN deployment_version dv ON dv.id = dvd.deployment_version_id
-WHERE dvd.dependency_deployment_id = $1;
+WHERE dvd.dependency_deployment_id = $1
+ORDER BY dv.deployment_id;
 

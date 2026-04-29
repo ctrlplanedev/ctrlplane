@@ -78,8 +78,6 @@ type GetDeploymentDependenciesByVersionIDRow struct {
 	VersionSelector        string
 }
 
-// Dependencies are pinned per deployment_version, so this returns the dep
-// edges that belong to a single deployment_version row.
 func (q *Queries) GetDeploymentDependenciesByVersionID(ctx context.Context, dollar_1 uuid.UUID) ([]GetDeploymentDependenciesByVersionIDRow, error) {
 	rows, err := q.db.Query(ctx, getDeploymentDependenciesByVersionID, dollar_1)
 	if err != nil {
@@ -129,6 +127,7 @@ SELECT DISTINCT dv.deployment_id
 FROM deployment_version_dependency dvd
 JOIN deployment_version dv ON dv.id = dvd.deployment_version_id
 WHERE dvd.dependency_deployment_id = $1
+ORDER BY dv.deployment_id
 `
 
 // Returns the distinct set of deployment IDs that have at least one version
