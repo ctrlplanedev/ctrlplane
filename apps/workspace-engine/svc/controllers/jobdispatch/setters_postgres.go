@@ -107,6 +107,14 @@ func (s *PostgresSetter) UpdateJob(
 		return fmt.Errorf("dispatch progression targets: %w", err)
 	}
 
+	// Deployment-version dependency gates only react to "current release"
+	// changes, which only happen when a job becomes successful.
+	if status == oapi.JobStatusSuccessful {
+		if err := dispatchDependencyDownstreamTargets(ctx, s.Queue, jobIDUUID); err != nil {
+			return fmt.Errorf("dispatch dependency downstream targets: %w", err)
+		}
+	}
+
 	return nil
 }
 
