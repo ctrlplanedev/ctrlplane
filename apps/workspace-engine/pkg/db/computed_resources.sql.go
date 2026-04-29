@@ -143,6 +143,58 @@ func (q *Queries) GetReleaseTargetsForDeploymentAndEnvironment(ctx context.Conte
 	return items, nil
 }
 
+const getReleaseTargetsForDeploymentAndResource = `-- name: GetReleaseTargetsForDeploymentAndResource :many
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cdr.deployment_id = $1
+  AND cdr.resource_id = $2
+`
+
+type GetReleaseTargetsForDeploymentAndResourceParams struct {
+	DeploymentID uuid.UUID
+	ResourceID   uuid.UUID
+}
+
+type GetReleaseTargetsForDeploymentAndResourceRow struct {
+	DeploymentID  uuid.UUID
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+}
+
+// Returns all release targets for a (deployment, resource) pair across every
+// environment in which the deployment-resource combination is valid. Used by
+// the dependency-downstream dispatcher to fan out reconciliation events to
+// every downstream release target on the same resource.
+func (q *Queries) GetReleaseTargetsForDeploymentAndResource(ctx context.Context, arg GetReleaseTargetsForDeploymentAndResourceParams) ([]GetReleaseTargetsForDeploymentAndResourceRow, error) {
+	rows, err := q.db.Query(ctx, getReleaseTargetsForDeploymentAndResource, arg.DeploymentID, arg.ResourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReleaseTargetsForDeploymentAndResourceRow
+	for rows.Next() {
+		var i GetReleaseTargetsForDeploymentAndResourceRow
+		if err := rows.Scan(&i.DeploymentID, &i.EnvironmentID, &i.ResourceID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReleaseTargetsForEnvironment = `-- name: GetReleaseTargetsForEnvironment :many
 SELECT DISTINCT
     cdr.deployment_id,

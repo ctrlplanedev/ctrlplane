@@ -92,6 +92,26 @@ WHERE cdr.deployment_id = @deployment_id
   AND cdr.resource_id = @resource_id
 LIMIT 1;
 
+-- name: GetReleaseTargetsForDeploymentAndResource :many
+-- Returns all release targets for a (deployment, resource) pair across every
+-- environment in which the deployment-resource combination is valid. Used by
+-- the dependency-downstream dispatcher to fan out reconciliation events to
+-- every downstream release target on the same resource.
+SELECT DISTINCT
+    cdr.deployment_id,
+    cer.environment_id,
+    cdr.resource_id
+FROM computed_deployment_resource cdr
+JOIN computed_environment_resource cer
+    ON cer.resource_id = cdr.resource_id
+JOIN system_deployment sd
+    ON sd.deployment_id = cdr.deployment_id
+JOIN system_environment se
+    ON se.environment_id = cer.environment_id
+    AND se.system_id = sd.system_id
+WHERE cdr.deployment_id = @deployment_id
+  AND cdr.resource_id = @resource_id;
+
 -- name: GetReleaseTargetsForEnvironment :many
 -- Returns all valid release targets for an environment by joining computed
 -- resource tables through the system link tables.

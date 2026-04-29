@@ -122,6 +122,36 @@ func (q *Queries) GetDeploymentIDsForSystem(ctx context.Context, systemID uuid.U
 	return items, nil
 }
 
+const getDeploymentsDependingOn = `-- name: GetDeploymentsDependingOn :many
+SELECT deployment_id
+FROM deployment_dependency
+WHERE dependency_deployment_id = $1
+`
+
+// Returns the IDs of deployments that declare a dependency on the given
+// deployment. Used by the job-dispatch downstream trigger to identify which
+// downstream deployments should re-evaluate when this deployment's release
+// on a resource changes.
+func (q *Queries) GetDeploymentsDependingOn(ctx context.Context, dollar_1 uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getDeploymentsDependingOn, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var deployment_id uuid.UUID
+		if err := rows.Scan(&deployment_id); err != nil {
+			return nil, err
+		}
+		items = append(items, deployment_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSystemIDsForDeployment = `-- name: GetSystemIDsForDeployment :many
 SELECT system_id FROM system_deployment WHERE deployment_id = $1
 `

@@ -89,12 +89,12 @@ func (s *PostgresSetter) UpdateJob(
 	span.SetAttributes(attribute.Bool("job.status_changed", statusChanged))
 
 	if existingJob != nil && existingJob.Status == status {
-		span.AddEvent("skipping progression dispatch - status unchanged")
+		span.AddEvent("skipping downstream dispatches - status unchanged")
 		return nil
 	}
 
 	if existingJob == nil {
-		span.AddEvent("skipping progression dispatch - no existing job found")
+		span.AddEvent("skipping downstream dispatches - no existing job found")
 		return nil
 	}
 
@@ -105,6 +105,14 @@ func (s *PostgresSetter) UpdateJob(
 
 	if err := dispatchProgressionTargets(ctx, s.Queue, jobIDUUID); err != nil {
 		return fmt.Errorf("dispatch progression targets: %w", err)
+	}
+
+	// Deployment-version dependency gates only react to "current release"
+	// changes, which only happen when a job becomes successful.
+	if status == oapi.JobStatusSuccessful {
+		if err := dispatchDependencyDownstreamTargets(ctx, s.Queue, jobIDUUID); err != nil {
+			return fmt.Errorf("dispatch dependency downstream targets: %w", err)
+		}
 	}
 
 	return nil

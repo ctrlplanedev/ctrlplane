@@ -57,3 +57,12 @@ FROM deployment_dependency
 WHERE deployment_id = $1
 ORDER BY dependency_deployment_id;
 
+-- name: GetDeploymentsDependingOn :many
+-- Returns the IDs of deployments that declare a dependency on the given
+-- deployment. Used by the job-dispatch downstream trigger to identify which
+-- downstream deployments should re-evaluate when this deployment's release
+-- on a resource changes.
+SELECT deployment_id
+FROM deployment_dependency
+WHERE dependency_deployment_id = $1;
+
