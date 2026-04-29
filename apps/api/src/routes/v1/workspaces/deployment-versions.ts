@@ -207,11 +207,11 @@ const upsertDeploymentVersionDependency: AsyncTypedHandler<
     throw error;
   }
 
-  enqueueReleaseTargetsForDeployment(
+  void enqueueReleaseTargetsForDeployment(
     db,
     workspaceId,
     found.deployment.id,
-  );
+  ).catch(console.error);
 
   res.status(202).json({
     id: deploymentVersionId,
@@ -249,11 +249,11 @@ const deleteDeploymentVersionDependency: AsyncTypedHandler<
   if (deleted == null)
     throw new ApiError("Deployment version dependency not found", 404);
 
-  enqueueReleaseTargetsForDeployment(
+  void enqueueReleaseTargetsForDeployment(
     db,
     workspaceId,
     found.deployment.id,
-  );
+  ).catch(console.error);
 
   res.status(202).json({
     id: deploymentVersionId,

@@ -79,5 +79,8 @@ export const deploymentVersionDependency = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.deploymentVersionId, t.dependencyDeploymentId] }),
+    index("deployment_version_dependency_target_idx").on(
+      t.dependencyDeploymentId,
+    ),
   ],
 );
