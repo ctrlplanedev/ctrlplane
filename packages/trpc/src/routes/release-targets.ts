@@ -384,59 +384,84 @@ export const releaseTargetsRouter = router({
         dependencyDeployments.map((d) => [d.id, d]),
       );
 
-      const dependencies = await Promise.all(
-        edges.map(async (edge) => {
-          const upstream = await ctx.db
-            .select({
-              versionId: schema.release.versionId,
-              versionTag: schema.deploymentVersion.tag,
-              versionName: schema.deploymentVersion.name,
-              versionStatus: schema.deploymentVersion.status,
-              environmentId: schema.release.environmentId,
-              completedAt: schema.job.completedAt,
-            })
-            .from(schema.release)
-            .innerJoin(
-              schema.releaseJob,
-              eq(schema.releaseJob.releaseId, schema.release.id),
-            )
-            .innerJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
-            .innerJoin(
-              schema.deploymentVersion,
-              eq(schema.deploymentVersion.id, schema.release.versionId),
-            )
-            .where(
-              and(
-                eq(schema.release.deploymentId, edge.dependencyDeploymentId),
-                eq(schema.release.resourceId, input.resourceId),
-                eq(schema.job.status, "successful"),
-                isNotNull(schema.job.completedAt),
-              ),
-            )
-            .orderBy(desc(schema.job.completedAt))
-            .limit(1);
+      // Fetch the latest successful release across all dep deployments in one
+      // round-trip, scoped to the target's resource AND environment so the UI
+      // shows the dep's release in the same env as the target being inspected.
+      // Ordering by completedAt DESC + dedupe-on-first per dep gives us the
+      // "latest successful" per dep deployment.
+      type CurrentRelease = {
+        versionId: string;
+        versionTag: string;
+        versionName: string;
+        versionStatus: string;
+        environmentId: string;
+        completedAt: Date | null;
+      };
+      const currentByDep = new Map<string, CurrentRelease>();
 
-          const cur = upstream[0] ?? null;
-          const dep = deploymentById.get(edge.dependencyDeploymentId) ?? null;
+      const upstreamRows = await ctx.db
+        .select({
+          deploymentId: schema.release.deploymentId,
+          versionId: schema.release.versionId,
+          versionTag: schema.deploymentVersion.tag,
+          versionName: schema.deploymentVersion.name,
+          versionStatus: schema.deploymentVersion.status,
+          environmentId: schema.release.environmentId,
+          completedAt: schema.job.completedAt,
+        })
+        .from(schema.release)
+        .innerJoin(
+          schema.releaseJob,
+          eq(schema.releaseJob.releaseId, schema.release.id),
+        )
+        .innerJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.deploymentVersion.id, schema.release.versionId),
+        )
+        .where(
+          and(
+            inArray(schema.release.deploymentId, dependencyDeploymentIds),
+            eq(schema.release.resourceId, input.resourceId),
+            eq(schema.release.environmentId, input.environmentId),
+            eq(schema.job.status, "successful"),
+            isNotNull(schema.job.completedAt),
+          ),
+        )
+        .orderBy(desc(schema.job.completedAt));
 
-          return {
-            dependencyDeploymentId: edge.dependencyDeploymentId,
-            dependencyDeploymentName: dep?.name ?? null,
-            versionSelector: edge.versionSelector,
-            currentVersion:
-              cur == null
-                ? null
-                : {
-                    id: cur.versionId,
-                    tag: cur.versionTag,
-                    name: cur.versionName,
-                    status: cur.versionStatus,
-                    environmentId: cur.environmentId,
-                    completedAt: cur.completedAt?.toISOString() ?? null,
-                  },
-          };
-        }),
-      );
+      for (const row of upstreamRows) {
+        if (currentByDep.has(row.deploymentId)) continue;
+        currentByDep.set(row.deploymentId, {
+          versionId: row.versionId,
+          versionTag: row.versionTag,
+          versionName: row.versionName,
+          versionStatus: row.versionStatus,
+          environmentId: row.environmentId,
+          completedAt: row.completedAt,
+        });
+      }
+
+      const dependencies = edges.map((edge) => {
+        const cur = currentByDep.get(edge.dependencyDeploymentId) ?? null;
+        const dep = deploymentById.get(edge.dependencyDeploymentId) ?? null;
+        return {
+          dependencyDeploymentId: edge.dependencyDeploymentId,
+          dependencyDeploymentName: dep?.name ?? null,
+          versionSelector: edge.versionSelector,
+          currentVersion:
+            cur == null
+              ? null
+              : {
+                  id: cur.versionId,
+                  tag: cur.versionTag,
+                  name: cur.versionName,
+                  status: cur.versionStatus,
+                  environmentId: cur.environmentId,
+                  completedAt: cur.completedAt?.toISOString() ?? null,
+                },
+        };
+      });
 
       return { version, dependencies };
     }),

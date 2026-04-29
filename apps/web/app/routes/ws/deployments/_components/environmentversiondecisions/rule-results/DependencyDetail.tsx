@@ -166,18 +166,21 @@ function DependencyGroupHeader({
 }: DependencyGroupHeaderProps) {
   const Caret = open ? ChevronDown : ChevronRight;
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent"
-    >
-      <Caret className="size-3.5 text-muted-foreground" />
-      <StatusIcon satisfied={dependency.allSatisfied} />
+    <div className="flex items-center gap-2 px-3 py-2 hover:bg-accent">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex shrink-0 items-center gap-2"
+        aria-expanded={open}
+        aria-label={open ? "Collapse" : "Expand"}
+      >
+        <Caret className="size-3.5 text-muted-foreground" />
+        <StatusIcon satisfied={dependency.allSatisfied} />
+      </button>
       <Link
         to={`/${workspaceSlug}/deployments/${dependency.dependencyDeploymentId}`}
         target="_blank"
         className="text-sm font-medium hover:underline"
-        onClick={(e) => e.stopPropagation()}
       >
         {dependency.dependencyDeploymentName ??
           dependency.dependencyDeploymentId}
@@ -191,7 +194,7 @@ function DependencyGroupHeader({
       >
         {dependency.satisfiedCount} / {dependency.total} satisfied
       </span>
-    </button>
+    </div>
   );
 }
 
@@ -289,8 +292,8 @@ function DependencyDialogContent({
       </DialogHeader>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          {versionLabel} declares {evaluated.length} dependenc
-          {evaluated.length === 1 ? "y" : "ies"}.{" "}
+          {versionLabel} declares {evaluated.length}{" "}
+          {evaluated.length === 1 ? "dependency" : "dependencies"}.{" "}
           {blocked === 0
             ? `All ${total} release target${total === 1 ? "" : "s"} in ${environmentName} are satisfied.`
             : `${blocked} of ${total} release target${total === 1 ? "" : "s"} in ${environmentName} blocked.`}

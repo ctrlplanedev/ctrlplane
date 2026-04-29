@@ -263,78 +263,91 @@ export const deploymentVersionsRouter = router({
         dependencyDeployments.map((d) => [d.id, d.name]),
       );
 
-      const resourceIds = targets.map((t) => t.resourceId);
-      const currentByDepResource = new Map<
-        string,
-        Map<string, { id: string; tag: string; name: string; status: string }>
-      >();
-      if (resourceIds.length > 0) {
-        await Promise.all(
-          edges.map(async (edge) => {
-            const rows = await ctx.db
-              .select({
-                resourceId: schema.release.resourceId,
-                versionId: schema.release.versionId,
-                tag: schema.deploymentVersion.tag,
-                name: schema.deploymentVersion.name,
-                status: schema.deploymentVersion.status,
-              })
-              .from(schema.release)
-              .innerJoin(
-                schema.releaseJob,
-                eq(schema.releaseJob.releaseId, schema.release.id),
-              )
-              .innerJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
-              .innerJoin(
-                schema.deploymentVersion,
-                eq(schema.deploymentVersion.id, schema.release.versionId),
-              )
-              .where(
-                and(
-                  eq(schema.release.deploymentId, edge.dependencyDeploymentId),
-                  inArray(schema.release.resourceId, resourceIds),
-                  eq(schema.job.status, "successful"),
-                  isNotNull(schema.job.completedAt),
-                ),
-              )
-              .orderBy(desc(schema.job.completedAt));
+      // Fetch the latest successful release per (depDeployment, env, resource)
+      // for every dep edge × every release target in a single round-trip.
+      // Ordering by completedAt DESC + dedupe-on-first per composite key
+      // gives us "latest successful release in this env on this resource."
+      type CurrentVersion = {
+        id: string;
+        tag: string;
+        name: string;
+        status: string;
+      };
+      const currentReleaseKey = (
+        depDeploymentId: string,
+        environmentId: string,
+        resourceId: string,
+      ) => `${depDeploymentId}:${environmentId}:${resourceId}`;
+      const currentByKey = new Map<string, CurrentVersion>();
 
-            const byResource = new Map<
-              string,
-              { id: string; tag: string; name: string; status: string }
-            >();
-            for (const row of rows) {
-              if (byResource.has(row.resourceId)) continue;
-              byResource.set(row.resourceId, {
-                id: row.versionId,
-                tag: row.tag,
-                name: row.name,
-                status: row.status,
-              });
-            }
-            currentByDepResource.set(edge.dependencyDeploymentId, byResource);
-          }),
-        );
+      const resourceIds = targets.map((t) => t.resourceId);
+      if (resourceIds.length > 0 && dependencyDeploymentIds.length > 0) {
+        const rows = await ctx.db
+          .select({
+            deploymentId: schema.release.deploymentId,
+            environmentId: schema.release.environmentId,
+            resourceId: schema.release.resourceId,
+            versionId: schema.release.versionId,
+            tag: schema.deploymentVersion.tag,
+            name: schema.deploymentVersion.name,
+            status: schema.deploymentVersion.status,
+          })
+          .from(schema.release)
+          .innerJoin(
+            schema.releaseJob,
+            eq(schema.releaseJob.releaseId, schema.release.id),
+          )
+          .innerJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
+          .innerJoin(
+            schema.deploymentVersion,
+            eq(schema.deploymentVersion.id, schema.release.versionId),
+          )
+          .where(
+            and(
+              inArray(schema.release.deploymentId, dependencyDeploymentIds),
+              inArray(schema.release.resourceId, resourceIds),
+              eq(schema.job.status, "successful"),
+              isNotNull(schema.job.completedAt),
+            ),
+          )
+          .orderBy(desc(schema.job.completedAt));
+
+        for (const row of rows) {
+          const key = currentReleaseKey(
+            row.deploymentId,
+            row.environmentId,
+            row.resourceId,
+          );
+          if (currentByKey.has(key)) continue;
+          currentByKey.set(key, {
+            id: row.versionId,
+            tag: row.tag,
+            name: row.name,
+            status: row.status,
+          });
+        }
       }
 
-      const dependencies = edges.map((edge) => {
-        const byResource = currentByDepResource.get(
-          edge.dependencyDeploymentId,
-        );
-        return {
-          dependencyDeploymentId: edge.dependencyDeploymentId,
-          dependencyDeploymentName:
-            depNameById.get(edge.dependencyDeploymentId) ?? null,
-          versionSelector: edge.versionSelector,
-          targets: targets.map((t) => ({
-            resourceId: t.resourceId,
-            resourceName: t.resourceName,
-            environmentId: t.environmentId,
-            environmentName: t.environmentName,
-            currentVersion: byResource?.get(t.resourceId) ?? null,
-          })),
-        };
-      });
+      const dependencies = edges.map((edge) => ({
+        dependencyDeploymentId: edge.dependencyDeploymentId,
+        dependencyDeploymentName:
+          depNameById.get(edge.dependencyDeploymentId) ?? null,
+        versionSelector: edge.versionSelector,
+        targets: targets.map((t) => ({
+          resourceId: t.resourceId,
+          resourceName: t.resourceName,
+          environmentId: t.environmentId,
+          environmentName: t.environmentName,
+          currentVersion:
+            currentByKey.get(
+              currentReleaseKey(
+                edge.dependencyDeploymentId,
+                t.environmentId,
+                t.resourceId,
+              ),
+            ) ?? null,
+        })),
+      }));
 
       return { version, dependencies };
     }),
