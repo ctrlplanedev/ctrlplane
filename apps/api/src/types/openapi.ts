@@ -209,6 +209,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List deployment dependencies
+         * @description Returns the dependency edges declared by this deployment.
+         */
+        get: operations["listDeploymentDependencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/dependencies/{dependencyDeploymentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upsert deployment dependency
+         * @description Declare or update a version-selector dependency from this deployment to another deployment. Identified by the (deploymentId, dependencyDeploymentId) pair.
+         */
+        put: operations["requestDeploymentDependencyUpsert"];
+        post?: never;
+        /** Delete deployment dependency */
+        delete: operations["requestDeploymentDependencyDeletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/plan": {
         parameters: {
             query?: never;
@@ -1269,6 +1310,12 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             systems: components["schemas"]["System"][];
         };
+        DeploymentDependency: {
+            dependencyDeploymentId: string;
+            deploymentId: string;
+            /** @description CEL expression evaluated against the dependency deployment's current release version on the same resource. */
+            versionSelector: string;
+        };
         DeploymentDependencyRule: {
             /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. The expression can reference both deployment properties (deployment.id, deployment.name, deployment.slug, deployment.metadata) and the currently deployed version properties (version.id, version.tag, version.name, version.status, version.metadata, version.createdAt). For example: deployment.name == 'db-migration' && version.tag.startsWith('v2.'). */
             dependsOn: string;
@@ -1990,6 +2037,10 @@ export interface components {
             name?: string;
             /** @description URL-friendly unique identifier (lowercase, no spaces) */
             slug?: string;
+        };
+        UpsertDeploymentDependencyRequest: {
+            /** @description CEL expression evaluated against the dependency deployment's current release version on the same resource. */
+            versionSelector: string;
         };
         UpsertDeploymentRequest: {
             description?: string;
@@ -3235,6 +3286,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDeploymentDependencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentDependency"][];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestDeploymentDependencyUpsert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+                /** @description ID of the dependency deployment */
+                dependencyDeploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertDeploymentDependencyRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestDeploymentDependencyDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+                /** @description ID of the dependency deployment */
+                dependencyDeploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
                 };
             };
             /** @description Resource not found */
