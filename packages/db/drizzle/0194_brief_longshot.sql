@@ -1,0 +1,1 @@
+ALTER TABLE "policy_rule_plan_validation_opa" DROP COLUMN "severity";
