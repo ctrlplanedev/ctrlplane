@@ -1154,6 +1154,13 @@ export interface components {
             };
             /** Format: date-time */
             createdAt?: string;
+            /** @description Map of dependency deployment ID to a CEL version selector evaluated against that deployment's current release on the same resource. Inserted atomically with the version so reconciliation cannot fire before edges are attached. */
+            dependencies?: {
+                [key: string]: {
+                    /** @description CEL expression evaluated against the dependency deployment's current release version on the same resource. */
+                    versionSelector: string;
+                };
+            };
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
@@ -3644,8 +3651,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description Deployment version created */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3655,6 +3662,15 @@ export interface operations {
             };
             /** @description Invalid request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

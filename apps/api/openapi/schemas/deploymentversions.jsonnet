@@ -23,6 +23,20 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'object',
         additionalProperties: { type: 'string' },
       },
+      dependencies: {
+        type: 'object',
+        description: "Map of dependency deployment ID to a CEL version selector evaluated against that deployment's current release on the same resource. Inserted atomically with the version so reconciliation cannot fire before edges are attached.",
+        additionalProperties: {
+          type: 'object',
+          required: ['versionSelector'],
+          properties: {
+            versionSelector: {
+              type: 'string',
+              description: "CEL expression evaluated against the dependency deployment's current release version on the same resource.",
+            },
+          },
+        },
+      },
     },
   },
 

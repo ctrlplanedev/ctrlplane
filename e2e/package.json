@@ -17,6 +17,7 @@
     "test:environments": "pnpm exec playwright test tests/api/environments.spec.ts",
     "test:policies": "pnpm exec playwright test tests/api/policies/",
     "test:deployments": "pnpm exec playwright test --project=api-tests tests/api/deployments.spec.ts",
+    "test:deployment-version-deps": "pnpm exec playwright test --project=api-tests tests/api/deployment-version-dependencies.spec.ts",
     "test:release-targets": "pnpm exec playwright test tests/api/release-targets.spec.ts",
     "test:yaml": "pnpm exec playwright test tests/api/yaml-import.spec.ts",
     "test:yaml-prefixed": "pnpm exec playwright test tests/api/random-prefix-yaml.spec.ts",
