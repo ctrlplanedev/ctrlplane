@@ -13,6 +13,7 @@ import {
 
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
+import { policy } from "./policy.js";
 import { release } from "./release.js";
 import { resource } from "./resource.js";
 import { workspace } from "./workspace.js";
@@ -154,11 +155,12 @@ export const deploymentPlanTargetResult = pgTable(
 
 export const deploymentPlanTargetResultRelations = relations(
   deploymentPlanTargetResult,
-  ({ one }) => ({
+  ({ one, many }) => ({
     target: one(deploymentPlanTarget, {
       fields: [deploymentPlanTargetResult.targetId],
       references: [deploymentPlanTarget.id],
     }),
+    validations: many(deploymentPlanTargetResultValidation),
   }),
 );
 
@@ -182,6 +184,63 @@ export const deploymentPlanTargetVariableRelations = relations(
     target: one(deploymentPlanTarget, {
       fields: [deploymentPlanTargetVariable.targetId],
       references: [deploymentPlanTarget.id],
+    }),
+  }),
+);
+
+export const policyRulePlanValidationOpa = pgTable(
+  "policy_rule_plan_validation_opa",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    rego: text("rego").notNull(),
+    severity: text("severity").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index().on(t.policyId)],
+);
+
+export const policyRulePlanValidationOpaRelations = relations(
+  policyRulePlanValidationOpa,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRulePlanValidationOpa.policyId],
+      references: [policy.id],
+    }),
+  }),
+);
+
+type Violation = { message: string };
+
+export const deploymentPlanTargetResultValidation = pgTable(
+  "deployment_plan_target_result_validation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resultId: uuid("result_id")
+      .notNull()
+      .references(() => deploymentPlanTargetResult.id, { onDelete: "cascade" }),
+    ruleId: uuid("rule_id").notNull(),
+    passed: boolean("passed").notNull(),
+    violations: jsonb("violations").$type<Violation[]>().notNull().default([]),
+    evaluatedAt: timestamp("evaluated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex().on(t.resultId, t.ruleId)],
+);
+
+export const deploymentPlanTargetResultValidationRelations = relations(
+  deploymentPlanTargetResultValidation,
+  ({ one }) => ({
+    result: one(deploymentPlanTargetResult, {
+      fields: [deploymentPlanTargetResultValidation.resultId],
+      references: [deploymentPlanTargetResult.id],
     }),
   }),
 );
