@@ -32,7 +32,11 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
+      responses: openapi.okResponse(
+                   openapi.schemaRef('DeploymentVersion'),
+                   'Deployment version created',
+                 )
+                 + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
   },

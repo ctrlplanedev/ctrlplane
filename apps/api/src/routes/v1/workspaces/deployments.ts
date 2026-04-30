@@ -383,27 +383,69 @@ const createDeploymentVersion: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, deploymentId } = req.params;
   const { body } = req;
+  const { dependencies, ...versionFields } = body;
+
+  const dependencyEntries = Object.entries(dependencies ?? {});
+  if (dependencyEntries.length > 0) {
+    for (const [depDeploymentId, edge] of dependencyEntries) {
+      if (depDeploymentId === deploymentId)
+        throw new ApiError(
+          "A deployment version cannot depend on its own deployment",
+          400,
+        );
+      if (!validResourceSelector(edge.versionSelector))
+        throw new ApiError(
+          `Invalid versionSelector CEL expression for dependency ${depDeploymentId}`,
+          400,
+        );
+    }
+
+    const dependencyDeploymentIds = dependencyEntries.map(([id]) => id);
+    const found = await db
+      .select({ id: schema.deployment.id })
+      .from(schema.deployment)
+      .where(
+        and(
+          eq(schema.deployment.workspaceId, workspaceId),
+          inArray(schema.deployment.id, dependencyDeploymentIds),
+        ),
+      );
+    const foundIds = new Set(found.map((d) => d.id));
+    for (const id of dependencyDeploymentIds) {
+      if (!foundIds.has(id))
+        throw new ApiError(`Dependency deployment ${id} not found`, 404);
+    }
+  }
 
   const data = {
-    ...body,
-    name: body.name === "" ? body.tag : body.name,
-    config: body.config ?? {},
-    jobAgentConfig: body.jobAgentConfig ?? {},
-    metadata: body.metadata ?? {},
+    ...versionFields,
+    name: versionFields.name === "" ? versionFields.tag : versionFields.name,
+    config: versionFields.config ?? {},
+    jobAgentConfig: versionFields.jobAgentConfig ?? {},
+    metadata: versionFields.metadata ?? {},
     deploymentId,
     createdAt: new Date(),
     id: uuidv4(),
   };
 
   const version = await db.transaction(async (tx) => {
-    const version = await tx
+    const inserted = await tx
       .insert(schema.deploymentVersion)
       .values(data)
       .onConflictDoNothing()
       .returning()
       .then(takeFirst);
 
-    return version;
+    if (dependencyEntries.length > 0)
+      await tx.insert(schema.deploymentVersionDependency).values(
+        dependencyEntries.map(([dependencyDeploymentId, edge]) => ({
+          deploymentVersionId: inserted.id,
+          dependencyDeploymentId,
+          versionSelector: edge.versionSelector,
+        })),
+      );
+
+    return inserted;
   });
 
   enqueueReleaseTargetsForDeployment(db, workspaceId, deploymentId);

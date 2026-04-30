@@ -1154,6 +1154,13 @@ export interface components {
             };
             /** Format: date-time */
             createdAt?: string;
+            /** @description Map of dependency deployment ID to a CEL version selector evaluated against that deployment's current release on the same resource. Inserted atomically with the version so reconciliation cannot fire before edges are attached. */
+            dependencies?: {
+                [key: string]: {
+                    /** @description CEL expression evaluated against the dependency deployment's current release version on the same resource. */
+                    versionSelector: string;
+                };
+            };
             jobAgentConfig?: {
                 [key: string]: unknown;
             };
