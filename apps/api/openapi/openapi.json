@@ -5446,7 +5446,7 @@
                "required": true
             },
             "responses": {
-               "202": {
+               "200": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -5454,7 +5454,7 @@
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "Deployment version created"
                },
                "400": {
                   "content": {
@@ -5465,6 +5465,16 @@
                      }
                   },
                   "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Create a deployment version"

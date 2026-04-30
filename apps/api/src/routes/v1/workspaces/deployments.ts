@@ -3,7 +3,9 @@ import { ApiError, asyncHandler } from "@/types/api.js";
 import { evaluate } from "cel-js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 
+import type { Tx } from "@ctrlplane/db";
 import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
@@ -13,8 +15,6 @@ import {
 } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
-
-// 1 hour
 
 import { validResourceSelector } from "../valid-selector.js";
 import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variables.js";
@@ -377,6 +377,88 @@ const listDeploymentVersions: AsyncTypedHandler<
   });
 };
 
+const assertDeploymentExistsInWorkspace = async (
+  workspaceId: string,
+  deploymentId: string,
+) => {
+  const found = await db.query.deployment.findFirst({
+    where: and(
+      eq(schema.deployment.id, deploymentId),
+      eq(schema.deployment.workspaceId, workspaceId),
+    ),
+  });
+  if (found == null) throw new ApiError("Deployment not found", 404);
+};
+
+const validateDependencyEntries = (
+  entries: [string, { versionSelector: string }][],
+  parentDeploymentId: string,
+) => {
+  for (const [depDeploymentId, edge] of entries) {
+    if (!z.string().uuid().safeParse(depDeploymentId).success)
+      throw new ApiError(
+        `Invalid dependency deployment id "${depDeploymentId}"`,
+        400,
+      );
+    if (depDeploymentId === parentDeploymentId)
+      throw new ApiError(
+        "A deployment version cannot depend on its own deployment",
+        400,
+      );
+    const { versionSelector: selector } = edge;
+    if (selector.trim() === "")
+      throw new ApiError(
+        `Missing versionSelector for dependency ${depDeploymentId}`,
+        400,
+      );
+    if (!validResourceSelector(selector))
+      throw new ApiError(
+        `Invalid versionSelector CEL expression for dependency ${depDeploymentId}`,
+        400,
+      );
+  }
+};
+
+const assertDependencyDeploymentsExistInWorkspace = async (
+  tx: Tx,
+  workspaceId: string,
+  dependencyDeploymentIds: string[],
+) => {
+  if (dependencyDeploymentIds.length === 0) return;
+  const found = await tx
+    .select({ id: schema.deployment.id })
+    .from(schema.deployment)
+    .where(
+      and(
+        eq(schema.deployment.workspaceId, workspaceId),
+        inArray(schema.deployment.id, dependencyDeploymentIds),
+      ),
+    );
+  const foundIds = new Set(found.map((d) => d.id));
+  for (const id of dependencyDeploymentIds) {
+    if (!foundIds.has(id))
+      throw new ApiError(`Dependency deployment ${id} not found`, 404);
+  }
+};
+
+const insertDeploymentVersionOrThrowConflict = async (
+  tx: Tx,
+  data: typeof schema.deploymentVersion.$inferInsert,
+) => {
+  const insertedRows = await tx
+    .insert(schema.deploymentVersion)
+    .values(data)
+    .onConflictDoNothing()
+    .returning();
+  const inserted = insertedRows[0];
+  if (inserted == null)
+    throw new ApiError(
+      `Deployment version with tag "${data.tag}" already exists for this deployment`,
+      409,
+    );
+  return inserted;
+};
+
 const createDeploymentVersion: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
   "post"
@@ -385,37 +467,12 @@ const createDeploymentVersion: AsyncTypedHandler<
   const { body } = req;
   const { dependencies, ...versionFields } = body;
 
-  const dependencyEntries = Object.entries(dependencies ?? {});
-  if (dependencyEntries.length > 0) {
-    for (const [depDeploymentId, edge] of dependencyEntries) {
-      if (depDeploymentId === deploymentId)
-        throw new ApiError(
-          "A deployment version cannot depend on its own deployment",
-          400,
-        );
-      if (!validResourceSelector(edge.versionSelector))
-        throw new ApiError(
-          `Invalid versionSelector CEL expression for dependency ${depDeploymentId}`,
-          400,
-        );
-    }
+  await assertDeploymentExistsInWorkspace(workspaceId, deploymentId);
 
-    const dependencyDeploymentIds = dependencyEntries.map(([id]) => id);
-    const found = await db
-      .select({ id: schema.deployment.id })
-      .from(schema.deployment)
-      .where(
-        and(
-          eq(schema.deployment.workspaceId, workspaceId),
-          inArray(schema.deployment.id, dependencyDeploymentIds),
-        ),
-      );
-    const foundIds = new Set(found.map((d) => d.id));
-    for (const id of dependencyDeploymentIds) {
-      if (!foundIds.has(id))
-        throw new ApiError(`Dependency deployment ${id} not found`, 404);
-    }
-  }
+  const dependencyEntries = Object.entries(dependencies ?? {});
+  validateDependencyEntries(dependencyEntries, deploymentId);
+
+  const dependencyDeploymentIds = dependencyEntries.map(([id]) => id);
 
   const data = {
     ...versionFields,
@@ -429,14 +486,15 @@ const createDeploymentVersion: AsyncTypedHandler<
   };
 
   const version = await db.transaction(async (tx) => {
-    const inserted = await tx
-      .insert(schema.deploymentVersion)
-      .values(data)
-      .onConflictDoNothing()
-      .returning()
-      .then(takeFirst);
+    await assertDependencyDeploymentsExistInWorkspace(
+      tx,
+      workspaceId,
+      dependencyDeploymentIds,
+    );
 
-    if (dependencyEntries.length > 0)
+    const inserted = await insertDeploymentVersionOrThrowConflict(tx, data);
+
+    if (dependencyEntries.length > 0) {
       await tx.insert(schema.deploymentVersionDependency).values(
         dependencyEntries.map(([dependencyDeploymentId, edge]) => ({
           deploymentVersionId: inserted.id,
@@ -444,6 +502,7 @@ const createDeploymentVersion: AsyncTypedHandler<
           versionSelector: edge.versionSelector,
         })),
       );
+    }
 
     return inserted;
   });
