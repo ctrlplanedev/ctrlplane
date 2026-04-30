@@ -198,7 +198,6 @@ export const policyRulePlanValidationOpa = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     rego: text("rego").notNull(),
-    severity: text("severity").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
