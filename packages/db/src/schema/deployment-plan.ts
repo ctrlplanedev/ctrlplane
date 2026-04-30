@@ -208,12 +208,11 @@ export const policyRulePlanValidationOpa = pgTable(
 
 export const policyRulePlanValidationOpaRelations = relations(
   policyRulePlanValidationOpa,
-  ({ one, many }) => ({
+  ({ one }) => ({
     policy: one(policy, {
       fields: [policyRulePlanValidationOpa.policyId],
       references: [policy.id],
     }),
-    validations: many(deploymentPlanTargetResultValidation),
   }),
 );
 
@@ -242,10 +241,6 @@ export const deploymentPlanTargetResultValidationRelations = relations(
     result: one(deploymentPlanTargetResult, {
       fields: [deploymentPlanTargetResultValidation.resultId],
       references: [deploymentPlanTargetResult.id],
-    }),
-    rule: one(policyRulePlanValidationOpa, {
-      fields: [deploymentPlanTargetResultValidation.ruleId],
-      references: [policyRulePlanValidationOpa.id],
     }),
   }),
 );
