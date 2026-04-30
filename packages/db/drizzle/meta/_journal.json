@@ -1352,6 +1352,13 @@
       "when": 1777489197047,
       "tag": "0192_sharp_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 193,
+      "version": "7",
+      "when": 1777570024802,
+      "tag": "0193_adorable_paibok",
+      "breakpoints": true
     }
   ]
 }
