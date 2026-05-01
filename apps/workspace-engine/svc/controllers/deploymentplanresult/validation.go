@@ -27,6 +27,14 @@ func RunPlanValidation(
 
 	span.SetAttributes(attribute.String("result_id", result.ID.String()))
 
+	if dispatchCtx.Environment == nil || dispatchCtx.Deployment == nil ||
+		dispatchCtx.Resource == nil {
+		span.AddEvent(
+			"validation skipped: dispatch context missing environment, deployment, or resource",
+		)
+		return nil
+	}
+
 	target := &match.Target{
 		Deployment:  dispatchCtx.Deployment,
 		Environment: dispatchCtx.Environment,

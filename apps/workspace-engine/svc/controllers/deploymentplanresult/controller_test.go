@@ -45,6 +45,11 @@ func (m *mockAgent) Plan(
 type mockGetter struct {
 	result db.DeploymentPlanTargetResult
 	err    error
+
+	opaRules          []oapi.PolicyRule
+	opaRulesErr       error
+	currentVersion    *oapi.DeploymentVersion
+	currentVersionErr error
 }
 
 func (m *mockGetter) GetDeploymentPlanTargetResult(
@@ -73,14 +78,14 @@ func (m *mockGetter) GetMatchingPlanValidationOpaRules(
 	_ uuid.UUID,
 	_ *match.Target,
 ) ([]oapi.PolicyRule, error) {
-	return nil, nil
+	return m.opaRules, m.opaRulesErr
 }
 
 func (m *mockGetter) GetCurrentVersionForPlanTarget(
 	_ context.Context,
 	_ uuid.UUID,
 ) (*oapi.DeploymentVersion, error) {
-	return nil, nil
+	return m.currentVersion, m.currentVersionErr
 }
 
 type completedCall struct {
@@ -100,6 +105,9 @@ type mockSetter struct {
 
 	stateCalls []stateCall
 	stateErr   error
+
+	validationCalls []db.UpsertPlanValidationResultParams
+	validationErr   error
 }
 
 func (m *mockSetter) UpdateDeploymentPlanTargetResultCompleted(
@@ -127,9 +135,10 @@ func (m *mockSetter) UpdateDeploymentPlanTargetResultState(
 
 func (m *mockSetter) UpsertPlanValidationResult(
 	_ context.Context,
-	_ db.UpsertPlanValidationResultParams,
+	arg db.UpsertPlanValidationResultParams,
 ) error {
-	return nil
+	m.validationCalls = append(m.validationCalls, arg)
+	return m.validationErr
 }
 
 // --- helpers ---
