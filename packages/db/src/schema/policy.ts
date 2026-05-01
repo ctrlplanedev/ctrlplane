@@ -11,7 +11,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { policyRulePlanValidationOpa } from "./deployment-plan.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable(
@@ -295,6 +294,33 @@ export const policyRuleVersionSelectorRelations = relations(
   ({ one }) => ({
     policy: one(policy, {
       fields: [policyRuleVersionSelector.policyId],
+      references: [policy.id],
+    }),
+  }),
+);
+
+export const policyRulePlanValidationOpa = pgTable(
+  "policy_rule_plan_validation_opa",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    rego: text("rego").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index().on(t.policyId)],
+);
+
+export const policyRulePlanValidationOpaRelations = relations(
+  policyRulePlanValidationOpa,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRulePlanValidationOpa.policyId],
       references: [policy.id],
     }),
   }),
