@@ -91,6 +91,7 @@ local openapi = import '../lib/openapi.libsonnet';
       versionCooldown: openapi.schemaRef('VersionCooldownRule'),
       versionSelector: openapi.schemaRef('VersionSelectorRule'),
       retry: openapi.schemaRef('RetryRule'),
+      planValidationOpa: openapi.schemaRef('PlanValidationOpaRule'),
     },
   },
 
@@ -106,6 +107,7 @@ local openapi = import '../lib/openapi.libsonnet';
       versionCooldown: openapi.schemaRef('VersionCooldownRule'),
       versionSelector: openapi.schemaRef('VersionSelectorRule'),
       retry: openapi.schemaRef('RetryRule'),
+      planValidationOpa: openapi.schemaRef('PlanValidationOpaRule'),
     },
   },
 
@@ -125,6 +127,23 @@ local openapi = import '../lib/openapi.libsonnet';
       versionCooldown: openapi.schemaRef('VersionCooldownRule'),
       versionSelector: openapi.schemaRef('VersionSelectorRule'),
       retry: openapi.schemaRef('RetryRule'),
+      planValidationOpa: openapi.schemaRef('PlanValidationOpaRule'),
+    },
+  },
+
+  PlanValidationOpaRule: {
+    type: 'object',
+    required: ['name', 'rego'],
+    properties: {
+      name: {
+        type: 'string',
+        description: 'Human-readable rule name; used in check output to identify which rule produced a violation.',
+      },
+      description: { type: 'string' },
+      rego: {
+        type: 'string',
+        description: 'Rego v1 source code. Must define a `deny` rule set following the Conftest convention (deny contains msg if { ... }).',
+      },
     },
   },
 

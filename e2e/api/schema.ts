@@ -1199,6 +1199,7 @@ export interface components {
             deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
             environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
+            planValidationOpa?: components["schemas"]["PlanValidationOpaRule"];
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
@@ -1671,6 +1672,13 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        PlanValidationOpaRule: {
+            description?: string;
+            /** @description Human-readable rule name; used in check output to identify which rule produced a violation. */
+            name: string;
+            /** @description Rego v1 source code. Must define a `deny` rule set following the Conftest convention (deny contains msg if { ... }). */
+            rego: string;
+        };
         Policy: {
             createdAt: string;
             description?: string;
@@ -1695,6 +1703,7 @@ export interface components {
             environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id: string;
+            planValidationOpa?: components["schemas"]["PlanValidationOpaRule"];
             policyId: string;
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
@@ -2134,6 +2143,7 @@ export interface components {
             environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id?: string;
+            planValidationOpa?: components["schemas"]["PlanValidationOpaRule"];
             policyId?: string;
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];

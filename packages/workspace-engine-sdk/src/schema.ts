@@ -637,6 +637,27 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    PlanValidationOpaRule: {
+      description?: string;
+      /** @description Human-readable rule name; used in check output to identify which rule produced a violation. */
+      name: string;
+      /** @description Rego v1 source code. Must define a `deny` rule set following the Conftest convention (deny contains msg if { ... }). */
+      rego: string;
+    };
+    PlanValidationResult: {
+      /** Format: date-time */
+      evaluatedAt: string;
+      id: string;
+      passed: boolean;
+      /** @description ID of the deployment_plan_target_result this validation was run against. */
+      resultId: string;
+      /** @description Polymorphic rule id. Resolves to a specific rule type (e.g. PlanValidationOpaRule) known by the writing controller. */
+      ruleId: string;
+      violations: components["schemas"]["PlanValidationViolation"][];
+    };
+    PlanValidationViolation: {
+      message: string;
+    };
     Policy: {
       createdAt: string;
       description?: string;
@@ -666,6 +687,7 @@ export interface components {
       environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
       gradualRollout?: components["schemas"]["GradualRolloutRule"];
       id: string;
+      planValidationOpa?: components["schemas"]["PlanValidationOpaRule"];
       policyId: string;
       retry?: components["schemas"]["RetryRule"];
       rollback?: components["schemas"]["RollbackRule"];

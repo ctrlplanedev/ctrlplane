@@ -11,6 +11,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { policyRulePlanValidationOpa } from "./deployment-plan.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable(
@@ -51,6 +52,7 @@ export const policyRelations = relations(policy, ({ many }) => ({
   verificationRules: many(policyRuleVerification),
   versionCooldownRules: many(policyRuleVersionCooldown),
   versionSelectorRules: many(policyRuleVersionSelector),
+  planValidationOpaRules: many(policyRulePlanValidationOpa),
 }));
 
 export const policyRuleAnyApproval = pgTable("policy_rule_any_approval", {
