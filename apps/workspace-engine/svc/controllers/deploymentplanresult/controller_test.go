@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/policies/match"
 	"workspace-engine/pkg/reconcile"
 )
 
@@ -67,6 +68,21 @@ func (m *mockGetter) ListDeploymentPlanTargetResultsByTargetID(
 	return nil, nil
 }
 
+func (m *mockGetter) GetMatchingPlanValidationOpaRules(
+	_ context.Context,
+	_ uuid.UUID,
+	_ *match.Target,
+) ([]oapi.PolicyRule, error) {
+	return nil, nil
+}
+
+func (m *mockGetter) GetCurrentVersionForPlanTarget(
+	_ context.Context,
+	_ uuid.UUID,
+) (*oapi.DeploymentVersion, error) {
+	return nil, nil
+}
+
 type completedCall struct {
 	ID     uuid.UUID
 	Status db.DeploymentPlanTargetStatus
@@ -107,6 +123,13 @@ func (m *mockSetter) UpdateDeploymentPlanTargetResultState(
 		AgentState: arg.AgentState,
 	})
 	return m.stateErr
+}
+
+func (m *mockSetter) UpsertPlanValidationResult(
+	_ context.Context,
+	_ db.UpsertPlanValidationResultParams,
+) error {
+	return nil
 }
 
 // --- helpers ---

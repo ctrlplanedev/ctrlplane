@@ -458,6 +458,15 @@ type DeploymentPlanTargetResult struct {
 	CompletedAt     pgtype.Timestamptz
 }
 
+type DeploymentPlanTargetResultValidation struct {
+	ID          uuid.UUID
+	ResultID    uuid.UUID
+	RuleID      uuid.UUID
+	Passed      bool
+	Violations  []byte
+	EvaluatedAt pgtype.Timestamptz
+}
+
 type DeploymentVersion struct {
 	ID             uuid.UUID
 	Name           string
@@ -622,6 +631,15 @@ type PolicyRuleJobVerificationMetric struct {
 	SuccessThreshold pgtype.Int4
 	FailureCondition pgtype.Text
 	FailureThreshold pgtype.Int4
+}
+
+type PolicyRulePlanValidationOpa struct {
+	ID          uuid.UUID
+	PolicyID    uuid.UUID
+	Name        string
+	Description pgtype.Text
+	Rego        string
+	CreatedAt   pgtype.Timestamptz
 }
 
 type PolicyRuleRetry struct {

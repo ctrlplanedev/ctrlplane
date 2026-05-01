@@ -32,6 +32,7 @@ sql:
       - queries/deployment_plan.sql
       - queries/release_targets.sql
       - queries/variable_sets.sql
+      - queries/plan_validation.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
@@ -203,5 +204,10 @@ sql:
             go_type:
               type: "[]byte"
           - column: "deployment_plan_target_result.agent_state"
+            go_type:
+              type: "[]byte"
+
+          # DeploymentPlanTargetResultValidation
+          - column: "deployment_plan_target_result_validation.violations"
             go_type:
               type: "[]byte"
