@@ -95,6 +95,18 @@ func (s *PostgresSetter) CreateWorkflowRun(
 	return tx.Commit(ctx)
 }
 
+// mergeWorkflowJobAgentConfig builds the JobAgentConfig that ends up on a
+// workflow-triggered job. The runner row holds shared credentials (e.g.
+// serverUrl, apiKey); the per-job WorkflowJobAgent.Config holds the
+// per-invocation payload (e.g. template, name). Per-job values win on
+// conflict, mirroring the deployment flow's runner < deployment < version
+// precedence in jobeligibility.
+func mergeWorkflowJobAgentConfig(
+	runnerConfig, perJobConfig map[string]any,
+) oapi.JobAgentConfig {
+	return oapi.DeepMergeConfigs(runnerConfig, perJobConfig)
+}
+
 func (s *PostgresSetter) dispatchJobForAgent(
 	ctx context.Context,
 	queries *db.Queries,
@@ -107,7 +119,12 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	if err != nil {
 		return fmt.Errorf("parse job agent id: %w", err)
 	}
-	jobAgentConfig, err := json.Marshal(jobAgent.Config)
+	runner, err := queries.GetJobAgentByID(ctx, jobAgentIDUUID)
+	if err != nil {
+		return fmt.Errorf("get job agent runner: %w", err)
+	}
+	mergedConfig := mergeWorkflowJobAgentConfig(runner.Config, jobAgent.Config)
+	jobAgentConfig, err := json.Marshal(mergedConfig)
 	if err != nil {
 		return fmt.Errorf("marshal job agent config: %w", err)
 	}

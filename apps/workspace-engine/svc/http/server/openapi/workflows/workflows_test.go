@@ -155,6 +155,54 @@ func TestResolveInputs_EmptyWorkflowInputs(t *testing.T) {
 	assert.Equal(t, "value", resolved["extra"])
 }
 
+func TestMergeWorkflowJobAgentConfig_RunnerCredentialsPreserved(t *testing.T) {
+	runner := map[string]any{
+		"serverUrl": "https://argo.example",
+		"apiKey":    "secret",
+	}
+	perJob := map[string]any{
+		"template": "apiVersion: argoproj.io/v1alpha1",
+		"name":     "deploy",
+	}
+
+	merged := mergeWorkflowJobAgentConfig(runner, perJob)
+
+	assert.Equal(t, "https://argo.example", merged["serverUrl"])
+	assert.Equal(t, "secret", merged["apiKey"])
+	assert.Equal(t, "apiVersion: argoproj.io/v1alpha1", merged["template"])
+	assert.Equal(t, "deploy", merged["name"])
+}
+
+func TestMergeWorkflowJobAgentConfig_PerJobOverridesRunner(t *testing.T) {
+	runner := map[string]any{
+		"serverUrl": "https://shared.example",
+		"apiKey":    "secret",
+	}
+	perJob := map[string]any{
+		"serverUrl": "https://override.example",
+		"template":  "spec",
+	}
+
+	merged := mergeWorkflowJobAgentConfig(runner, perJob)
+
+	assert.Equal(t, "https://override.example", merged["serverUrl"])
+	assert.Equal(t, "secret", merged["apiKey"])
+	assert.Equal(t, "spec", merged["template"])
+}
+
+func TestMergeWorkflowJobAgentConfig_NilInputs(t *testing.T) {
+	merged := mergeWorkflowJobAgentConfig(nil, nil)
+	assert.Empty(t, merged)
+
+	runner := map[string]any{"serverUrl": "https://argo.example"}
+	merged = mergeWorkflowJobAgentConfig(runner, nil)
+	assert.Equal(t, "https://argo.example", merged["serverUrl"])
+
+	perJob := map[string]any{"template": "spec"}
+	merged = mergeWorkflowJobAgentConfig(nil, perJob)
+	assert.Equal(t, "spec", merged["template"])
+}
+
 func TestResolveInputs_ExtraProvidedInputsPassThrough(t *testing.T) {
 	workflow := &oapi.Workflow{
 		Inputs: []oapi.WorkflowInput{
