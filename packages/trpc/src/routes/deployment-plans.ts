@@ -41,6 +41,42 @@ const emptySummary = (): PlanSummary => ({
   unchanged: 0,
 });
 
+type ValidationCounts = { total: number; passed: number; failed: number };
+
+async function loadValidationCounts(
+  db: Parameters<
+    Parameters<typeof protectedProcedure.query>[0]
+  >[0]["ctx"]["db"],
+  resultIds: string[],
+): Promise<Map<string, ValidationCounts>> {
+  const out = new Map<string, ValidationCounts>();
+  if (resultIds.length === 0) return out;
+
+  const rows = await db
+    .select({
+      resultId: schema.deploymentPlanTargetResultValidation.resultId,
+      passed: schema.deploymentPlanTargetResultValidation.passed,
+      count: count(),
+    })
+    .from(schema.deploymentPlanTargetResultValidation)
+    .where(
+      inArray(schema.deploymentPlanTargetResultValidation.resultId, resultIds),
+    )
+    .groupBy(
+      schema.deploymentPlanTargetResultValidation.resultId,
+      schema.deploymentPlanTargetResultValidation.passed,
+    );
+
+  for (const row of rows) {
+    const c = out.get(row.resultId) ?? { total: 0, passed: 0, failed: 0 };
+    c.total += row.count;
+    if (row.passed) c.passed += row.count;
+    else c.failed += row.count;
+    out.set(row.resultId, c);
+  }
+  return out;
+}
+
 export const deploymentPlansRouter = router({
   list: protectedProcedure
     .meta({
@@ -204,6 +240,11 @@ export const deploymentPlansRouter = router({
         .where(eq(schema.deploymentPlanTarget.planId, input.planId))
         .orderBy(schema.environment.name, schema.resource.name);
 
+      const validationCounts = await loadValidationCounts(
+        ctx.db,
+        rows.map((r) => r.resultId),
+      );
+
       return {
         version: { tag: plan.versionTag, name: plan.versionName },
         items: rows.map((r) => {
@@ -225,9 +266,88 @@ export const deploymentPlansRouter = router({
             contentHash: r.contentHash,
             startedAt: r.startedAt,
             completedAt: r.completedAt,
+            validations: validationCounts.get(r.resultId) ?? {
+              total: 0,
+              passed: 0,
+              failed: 0,
+            },
           };
         }),
       };
+    }),
+
+  resultValidations: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .input(
+      z.object({
+        deploymentId: z.uuid(),
+        resultId: z.uuid(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const owner = await ctx.db
+        .select({ deploymentId: schema.deploymentPlan.deploymentId })
+        .from(schema.deploymentPlanTargetResult)
+        .innerJoin(
+          schema.deploymentPlanTarget,
+          eq(
+            schema.deploymentPlanTargetResult.targetId,
+            schema.deploymentPlanTarget.id,
+          ),
+        )
+        .innerJoin(
+          schema.deploymentPlan,
+          eq(schema.deploymentPlanTarget.planId, schema.deploymentPlan.id),
+        )
+        .where(eq(schema.deploymentPlanTargetResult.id, input.resultId))
+        .then(takeFirstOrNull);
+
+      if (owner == null || owner.deploymentId !== input.deploymentId)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Result not found",
+        });
+
+      const rows = await ctx.db
+        .select({
+          id: schema.deploymentPlanTargetResultValidation.id,
+          ruleId: schema.deploymentPlanTargetResultValidation.ruleId,
+          passed: schema.deploymentPlanTargetResultValidation.passed,
+          violations: schema.deploymentPlanTargetResultValidation.violations,
+          evaluatedAt: schema.deploymentPlanTargetResultValidation.evaluatedAt,
+          ruleName: schema.policyRulePlanValidationOpa.name,
+          ruleDescription: schema.policyRulePlanValidationOpa.description,
+        })
+        .from(schema.deploymentPlanTargetResultValidation)
+        .leftJoin(
+          schema.policyRulePlanValidationOpa,
+          eq(
+            schema.deploymentPlanTargetResultValidation.ruleId,
+            schema.policyRulePlanValidationOpa.id,
+          ),
+        )
+        .where(
+          eq(
+            schema.deploymentPlanTargetResultValidation.resultId,
+            input.resultId,
+          ),
+        )
+        .orderBy(schema.policyRulePlanValidationOpa.name);
+
+      return rows.map((r) => ({
+        id: r.id,
+        ruleId: r.ruleId,
+        ruleName: r.ruleName ?? "(unknown rule)",
+        ruleDescription: r.ruleDescription,
+        passed: r.passed,
+        violations: r.violations,
+        evaluatedAt: r.evaluatedAt,
+      }));
     }),
 
   resultDiff: protectedProcedure
