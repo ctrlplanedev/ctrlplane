@@ -156,11 +156,11 @@ func TestResolveInputs_EmptyWorkflowInputs(t *testing.T) {
 }
 
 func TestMergeWorkflowJobAgentConfig_RunnerCredentialsPreserved(t *testing.T) {
-	runner := map[string]any{
+	runner := oapi.JobAgentConfig{
 		"serverUrl": "https://argo.example",
 		"apiKey":    "secret",
 	}
-	perJob := map[string]any{
+	perJob := oapi.JobAgentConfig{
 		"template": "apiVersion: argoproj.io/v1alpha1",
 		"name":     "deploy",
 	}
@@ -174,11 +174,11 @@ func TestMergeWorkflowJobAgentConfig_RunnerCredentialsPreserved(t *testing.T) {
 }
 
 func TestMergeWorkflowJobAgentConfig_PerJobOverridesRunner(t *testing.T) {
-	runner := map[string]any{
+	runner := oapi.JobAgentConfig{
 		"serverUrl": "https://shared.example",
 		"apiKey":    "secret",
 	}
-	perJob := map[string]any{
+	perJob := oapi.JobAgentConfig{
 		"serverUrl": "https://override.example",
 		"template":  "spec",
 	}
@@ -194,11 +194,11 @@ func TestMergeWorkflowJobAgentConfig_NilInputs(t *testing.T) {
 	merged := mergeWorkflowJobAgentConfig(nil, nil)
 	assert.Empty(t, merged)
 
-	runner := map[string]any{"serverUrl": "https://argo.example"}
+	runner := oapi.JobAgentConfig{"serverUrl": "https://argo.example"}
 	merged = mergeWorkflowJobAgentConfig(runner, nil)
 	assert.Equal(t, "https://argo.example", merged["serverUrl"])
 
-	perJob := map[string]any{"template": "spec"}
+	perJob := oapi.JobAgentConfig{"template": "spec"}
 	merged = mergeWorkflowJobAgentConfig(nil, perJob)
 	assert.Equal(t, "spec", merged["template"])
 }

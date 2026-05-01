@@ -102,7 +102,7 @@ func (s *PostgresSetter) CreateWorkflowRun(
 // conflict, mirroring the deployment flow's runner < deployment < version
 // precedence in jobeligibility.
 func mergeWorkflowJobAgentConfig(
-	runnerConfig, perJobConfig map[string]any,
+	runnerConfig, perJobConfig oapi.JobAgentConfig,
 ) oapi.JobAgentConfig {
 	return oapi.DeepMergeConfigs(runnerConfig, perJobConfig)
 }
@@ -119,9 +119,19 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	if err != nil {
 		return fmt.Errorf("parse job agent id: %w", err)
 	}
+	workspaceIDUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return fmt.Errorf("parse workspace id: %w", err)
+	}
 	runner, err := queries.GetJobAgentByID(ctx, jobAgentIDUUID)
 	if err != nil {
-		return fmt.Errorf("get job agent runner: %w", err)
+		return fmt.Errorf("get job agent: %w", err)
+	}
+	if runner.WorkspaceID != workspaceIDUUID {
+		return fmt.Errorf(
+			"job agent %s does not belong to workspace %s",
+			jobAgentIDUUID, workspaceIDUUID,
+		)
 	}
 	mergedConfig := mergeWorkflowJobAgentConfig(runner.Config, jobAgent.Config)
 	jobAgentConfig, err := json.Marshal(mergedConfig)
