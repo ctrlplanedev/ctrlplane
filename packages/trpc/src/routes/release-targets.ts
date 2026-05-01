@@ -394,6 +394,10 @@ export const releaseTargetsRouter = router({
         versionTag: string;
         versionName: string;
         versionStatus: string;
+        versionCreatedAt: Date;
+        versionMessage: string | null;
+        versionMetadata: Record<string, string>;
+        deploymentId: string;
         environmentId: string;
         completedAt: Date | null;
       };
@@ -406,6 +410,9 @@ export const releaseTargetsRouter = router({
           versionTag: schema.deploymentVersion.tag,
           versionName: schema.deploymentVersion.name,
           versionStatus: schema.deploymentVersion.status,
+          versionCreatedAt: schema.deploymentVersion.createdAt,
+          versionMessage: schema.deploymentVersion.message,
+          versionMetadata: schema.deploymentVersion.metadata,
           environmentId: schema.release.environmentId,
           completedAt: schema.job.completedAt,
         })
@@ -437,6 +444,10 @@ export const releaseTargetsRouter = router({
           versionTag: row.versionTag,
           versionName: row.versionName,
           versionStatus: row.versionStatus,
+          versionCreatedAt: row.versionCreatedAt,
+          versionMessage: row.versionMessage,
+          versionMetadata: row.versionMetadata,
+          deploymentId: row.deploymentId,
           environmentId: row.environmentId,
           completedAt: row.completedAt,
         });
@@ -457,6 +468,10 @@ export const releaseTargetsRouter = router({
                   tag: cur.versionTag,
                   name: cur.versionName,
                   status: cur.versionStatus,
+                  deploymentId: cur.deploymentId,
+                  createdAt: cur.versionCreatedAt.toISOString(),
+                  message: cur.versionMessage,
+                  metadata: cur.versionMetadata,
                   environmentId: cur.environmentId,
                   completedAt: cur.completedAt?.toISOString() ?? null,
                 },
