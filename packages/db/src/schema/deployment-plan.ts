@@ -13,7 +13,6 @@ import {
 
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
-import { policy } from "./policy.js";
 import { release } from "./release.js";
 import { resource } from "./resource.js";
 import { workspace } from "./workspace.js";
@@ -184,33 +183,6 @@ export const deploymentPlanTargetVariableRelations = relations(
     target: one(deploymentPlanTarget, {
       fields: [deploymentPlanTargetVariable.targetId],
       references: [deploymentPlanTarget.id],
-    }),
-  }),
-);
-
-export const policyRulePlanValidationOpa = pgTable(
-  "policy_rule_plan_validation_opa",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    policyId: uuid("policy_id")
-      .notNull()
-      .references(() => policy.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    description: text("description"),
-    rego: text("rego").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => [index().on(t.policyId)],
-);
-
-export const policyRulePlanValidationOpaRelations = relations(
-  policyRulePlanValidationOpa,
-  ({ one }) => ({
-    policy: one(policy, {
-      fields: [policyRulePlanValidationOpa.policyId],
-      references: [policy.id],
     }),
   }),
 );

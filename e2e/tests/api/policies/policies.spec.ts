@@ -784,6 +784,105 @@ test.describe("Policy API", () => {
     });
   });
 
+  test("should create a policy with planValidationOpa rule", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `policy-opa-${faker.string.alphanumeric(8)}`;
+    const rego = `package ctrlplane.plan_validation
+
+import rego.v1
+
+deny contains msg if {
+    input.environment.name == "production"
+    msg := "production deploys require approval"
+}
+`;
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            planValidationOpa: {
+              name: "require-prod-approval",
+              description: "Production deploys must be approved",
+              rego,
+            },
+          },
+        ],
+      },
+    });
+
+    expect(createRes.response.status).toBe(202);
+    const policyId = createRes.data!.id;
+    const rules = createRes.data!.rules;
+    expect(rules).toHaveLength(1);
+    expect(rules[0]!.planValidationOpa).toEqual({
+      name: "require-prod-approval",
+      description: "Production deploys must be approved",
+      rego,
+    });
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      {
+        params: { path: { workspaceId: workspace.id, policyId } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.rules[0]!.planValidationOpa).toEqual({
+      name: "require-prod-approval",
+      description: "Production deploys must be approved",
+      rego,
+    });
+
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
+  });
+
+  test("should create a policy with planValidationOpa rule omitting description", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `policy-opa-min-${faker.string.alphanumeric(8)}`;
+    const rego = `package ctrlplane.plan_validation
+
+import rego.v1
+
+deny contains msg if {
+    msg := "always denied"
+}
+`;
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            planValidationOpa: { name: "always-deny", rego },
+          },
+        ],
+      },
+    });
+
+    expect(createRes.response.status).toBe(202);
+    const policyId = createRes.data!.id;
+    const rules = createRes.data!.rules;
+    expect(rules).toHaveLength(1);
+    expect(rules[0]!.planValidationOpa).toMatchObject({
+      name: "always-deny",
+      rego,
+    });
+    expect(rules[0]!.planValidationOpa?.description).toBeUndefined();
+
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
+  });
+
   test("should create a policy with environmentProgression rule", async ({
     api,
     workspace,

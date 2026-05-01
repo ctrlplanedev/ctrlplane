@@ -209,6 +209,9 @@
                "gradualRollout": {
                   "$ref": "#/components/schemas/GradualRolloutRule"
                },
+               "planValidationOpa": {
+                  "$ref": "#/components/schemas/PlanValidationOpaRule"
+               },
                "retry": {
                   "$ref": "#/components/schemas/RetryRule"
                },
@@ -1588,6 +1591,26 @@
             ],
             "type": "object"
          },
+         "PlanValidationOpaRule": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "name": {
+                  "description": "Human-readable rule name; used in check output to identify which rule produced a violation.",
+                  "type": "string"
+               },
+               "rego": {
+                  "description": "Rego v1 source code. Must define a `deny` rule set following the Conftest convention (deny contains msg if { ... }).",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "rego"
+            ],
+            "type": "object"
+         },
          "Policy": {
             "properties": {
                "createdAt": {
@@ -1664,6 +1687,9 @@
                },
                "id": {
                   "type": "string"
+               },
+               "planValidationOpa": {
+                  "$ref": "#/components/schemas/PlanValidationOpaRule"
                },
                "policyId": {
                   "type": "string"
@@ -2857,6 +2883,9 @@
                },
                "id": {
                   "type": "string"
+               },
+               "planValidationOpa": {
+                  "$ref": "#/components/schemas/PlanValidationOpaRule"
                },
                "policyId": {
                   "type": "string"

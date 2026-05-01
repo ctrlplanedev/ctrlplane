@@ -41,6 +41,9 @@ const deleteAllRulesForPolicy = async (tx: Tx, policyId: string) => {
   await tx
     .delete(schema.policyRuleVersionSelector)
     .where(eq(schema.policyRuleVersionSelector.policyId, policyId));
+  await tx
+    .delete(schema.policyRulePlanValidationOpa)
+    .where(eq(schema.policyRulePlanValidationOpa.policyId, policyId));
 };
 
 const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
@@ -128,6 +131,15 @@ const insertPolicyRules = async (tx: Tx, policyId: string, rules: any[]) => {
         description: rule.versionSelector.description,
         selector: rule.versionSelector.selector,
       });
+
+    if (rule.planValidationOpa != null)
+      await tx.insert(schema.policyRulePlanValidationOpa).values({
+        id: ruleId,
+        policyId,
+        name: rule.planValidationOpa.name,
+        description: rule.planValidationOpa.description,
+        rego: rule.planValidationOpa.rego,
+      });
   }
 };
 
@@ -142,6 +154,7 @@ const policyWithRules = {
   verificationRules: true,
   versionCooldownRules: true,
   versionSelectorRules: true,
+  planValidationOpaRules: true,
 } as const;
 
 type PolicyRow = NonNullable<
@@ -258,6 +271,15 @@ const formatPolicy = (p: PolicyRow) => {
       formatPolicyRule(r.id, r.policyId, r.createdAt, {
         versionSelector: {
           selector: r.selector,
+          ...(r.description != null && { description: r.description }),
+        },
+      }),
+    ),
+    ...p.planValidationOpaRules.map((r) =>
+      formatPolicyRule(r.id, r.policyId, r.createdAt, {
+        planValidationOpa: {
+          name: r.name,
+          rego: r.rego,
           ...(r.description != null && { description: r.description }),
         },
       }),
