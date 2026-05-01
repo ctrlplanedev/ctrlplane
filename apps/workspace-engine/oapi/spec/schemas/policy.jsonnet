@@ -55,6 +55,7 @@ local openapi = import '../lib/openapi.libsonnet';
       verification: openapi.schemaRef('VerificationRule'),
       versionCooldown: openapi.schemaRef('VersionCooldownRule'),
       rollback: openapi.schemaRef('RollbackRule'),
+      planValidationOpa: openapi.schemaRef('PlanValidationOpaRule'),
     },
   },
 

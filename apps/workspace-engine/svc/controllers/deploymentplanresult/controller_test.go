@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/jobagents"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/policies/match"
 	"workspace-engine/pkg/reconcile"
 )
 
@@ -44,6 +45,11 @@ func (m *mockAgent) Plan(
 type mockGetter struct {
 	result db.DeploymentPlanTargetResult
 	err    error
+
+	opaRules          []oapi.PolicyRule
+	opaRulesErr       error
+	currentVersion    *oapi.DeploymentVersion
+	currentVersionErr error
 }
 
 func (m *mockGetter) GetDeploymentPlanTargetResult(
@@ -67,6 +73,21 @@ func (m *mockGetter) ListDeploymentPlanTargetResultsByTargetID(
 	return nil, nil
 }
 
+func (m *mockGetter) GetMatchingPlanValidationOpaRules(
+	_ context.Context,
+	_ uuid.UUID,
+	_ *match.Target,
+) ([]oapi.PolicyRule, error) {
+	return m.opaRules, m.opaRulesErr
+}
+
+func (m *mockGetter) GetCurrentVersionForPlanTarget(
+	_ context.Context,
+	_ uuid.UUID,
+) (*oapi.DeploymentVersion, error) {
+	return m.currentVersion, m.currentVersionErr
+}
+
 type completedCall struct {
 	ID     uuid.UUID
 	Status db.DeploymentPlanTargetStatus
@@ -84,6 +105,9 @@ type mockSetter struct {
 
 	stateCalls []stateCall
 	stateErr   error
+
+	validationCalls []db.UpsertPlanValidationResultParams
+	validationErr   error
 }
 
 func (m *mockSetter) UpdateDeploymentPlanTargetResultCompleted(
@@ -107,6 +131,14 @@ func (m *mockSetter) UpdateDeploymentPlanTargetResultState(
 		AgentState: arg.AgentState,
 	})
 	return m.stateErr
+}
+
+func (m *mockSetter) UpsertPlanValidationResult(
+	_ context.Context,
+	arg db.UpsertPlanValidationResultParams,
+) error {
+	m.validationCalls = append(m.validationCalls, arg)
+	return m.validationErr
 }
 
 // --- helpers ---

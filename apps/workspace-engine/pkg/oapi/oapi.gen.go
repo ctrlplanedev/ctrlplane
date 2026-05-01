@@ -674,6 +674,36 @@ type ObjectValue struct {
 	Object map[string]interface{} `json:"object"`
 }
 
+// PlanValidationOpaRule defines model for PlanValidationOpaRule.
+type PlanValidationOpaRule struct {
+	Description *string `json:"description,omitempty"`
+
+	// Name Human-readable rule name; used in check output to identify which rule produced a violation.
+	Name string `json:"name"`
+
+	// Rego Rego v1 source code. Must define a `deny` rule set following the Conftest convention (deny contains msg if { ... }).
+	Rego string `json:"rego"`
+}
+
+// PlanValidationResult defines model for PlanValidationResult.
+type PlanValidationResult struct {
+	EvaluatedAt time.Time `json:"evaluatedAt"`
+	Id          string    `json:"id"`
+	Passed      bool      `json:"passed"`
+
+	// ResultId ID of the deployment_plan_target_result this validation was run against.
+	ResultId string `json:"resultId"`
+
+	// RuleId Polymorphic rule id. Resolves to a specific rule type (e.g. PlanValidationOpaRule) known by the writing controller.
+	RuleId     string                    `json:"ruleId"`
+	Violations []PlanValidationViolation `json:"violations"`
+}
+
+// PlanValidationViolation defines model for PlanValidationViolation.
+type PlanValidationViolation struct {
+	Message string `json:"message"`
+}
+
 // Policy defines model for Policy.
 type Policy struct {
 	CreatedAt   string  `json:"createdAt"`
@@ -708,6 +738,7 @@ type PolicyRule struct {
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
+	PlanValidationOpa      *PlanValidationOpaRule      `json:"planValidationOpa,omitempty"`
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Rollback               *RollbackRule               `json:"rollback,omitempty"`

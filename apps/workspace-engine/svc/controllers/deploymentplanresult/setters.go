@@ -16,4 +16,8 @@ type Setter interface {
 		ctx context.Context,
 		arg db.UpdateDeploymentPlanTargetResultStateParams,
 	) error
+	UpsertPlanValidationResult(
+		ctx context.Context,
+		arg db.UpsertPlanValidationResultParams,
+	) error
 }

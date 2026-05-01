@@ -183,6 +183,17 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, fmt.Errorf("save completed result: %w", err)
 	}
 
+	if validationErr := RunPlanValidation(
+		ctx,
+		c.getter,
+		c.setter,
+		result,
+		planResult,
+		dispatchCtx,
+	); validationErr != nil {
+		span.RecordError(validationErr)
+	}
+
 	if checkErr := MaybeUpdateTargetCheck(ctx, c.getter, resultID); checkErr != nil {
 		span.RecordError(checkErr)
 	}
