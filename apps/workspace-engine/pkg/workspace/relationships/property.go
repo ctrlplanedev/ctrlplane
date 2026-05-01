@@ -269,7 +269,7 @@ func getPropertyReflection(entity any, propertyPath []string) (*oapi.LiteralValu
 	}
 
 	v := reflect.ValueOf(entity)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 

@@ -9,7 +9,7 @@ import (
 
 func GetProperty(entity any, fieldName string) (reflect.Value, error) {
 	v := reflect.ValueOf(entity)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 

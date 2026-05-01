@@ -17,14 +17,11 @@ func createSleepMetric(successCondition string, failureCondition *string) *Verif
 		Count:            1,
 		SuccessCondition: successCondition,
 		FailureCondition: failureCondition,
-		FailureThreshold: int32Ptr(1),
+		FailureThreshold: new(int32(1)),
 		Provider:         json.RawMessage(`{"type":"sleep","durationSeconds":0}`),
 		Measurements:     []Measurement{},
 	}
 }
-
-//go:fix inline
-func int32Ptr(v int32) *int32 { return new(v) }
 
 func TestMeasure_SuccessConditionPasses_NoFailureCondition(t *testing.T) {
 	ctx := context.Background()
@@ -125,7 +122,7 @@ func TestMeasure_InvalidProvider(t *testing.T) {
 		IntervalSeconds:  1,
 		Count:            1,
 		SuccessCondition: "result.ok == true",
-		FailureThreshold: int32Ptr(1),
+		FailureThreshold: new(int32(1)),
 		Provider:         json.RawMessage(`{}`),
 		Measurements:     []Measurement{},
 	}

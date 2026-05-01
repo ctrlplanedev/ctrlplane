@@ -172,9 +172,6 @@ func reconcileItem(scopeID, kind string) reconcile.Item {
 	}
 }
 
-//go:fix inline
-func int32Ptr(i int32) *int32 { return new(i) }
-
 // ---------------------------------------------------------------------------
 // Controller.Process tests
 // ---------------------------------------------------------------------------
@@ -510,7 +507,7 @@ func TestReconcile_FailingMeasurement_NoThreshold_Stops(t *testing.T) {
 
 func TestReconcile_FailingMeasurement_WithThreshold_Continues(t *testing.T) {
 	m := newMetric("check", 5, "false")
-	m.FailureThreshold = int32Ptr(2)
+	m.FailureThreshold = new(int32(2))
 	getter, setter := setupMocks(m)
 
 	result, err := Reconcile(context.Background(), getter, setter, m.ID)
@@ -522,7 +519,7 @@ func TestReconcile_FailingMeasurement_WithThreshold_Continues(t *testing.T) {
 
 func TestReconcile_FailureThreshold_Exceeded_Stops(t *testing.T) {
 	m := newMetric("check", 5, "false")
-	m.FailureThreshold = int32Ptr(1)
+	m.FailureThreshold = new(int32(1))
 	m.Measurements = []metrics.Measurement{oldMeasurement(metrics.StatusFailed)}
 	getter, setter := setupMocks(m)
 
@@ -539,7 +536,7 @@ func TestReconcile_FailureThreshold_Exceeded_Stops(t *testing.T) {
 
 func TestReconcile_SuccessThreshold_MetBeforeCount_Completes(t *testing.T) {
 	m := newMetric("check", 10, "true")
-	m.SuccessThreshold = int32Ptr(2)
+	m.SuccessThreshold = new(int32(2))
 	m.Measurements = []metrics.Measurement{oldMeasurement(metrics.StatusPassed)}
 	getter, setter := setupMocks(m)
 
@@ -553,7 +550,7 @@ func TestReconcile_SuccessThreshold_MetBeforeCount_Completes(t *testing.T) {
 
 func TestReconcile_SuccessThreshold_NotYetMet_Requeues(t *testing.T) {
 	m := newMetric("check", 10, "true")
-	m.SuccessThreshold = int32Ptr(3)
+	m.SuccessThreshold = new(int32(3))
 	getter, setter := setupMocks(m)
 
 	result, err := Reconcile(context.Background(), getter, setter, m.ID)
@@ -564,8 +561,8 @@ func TestReconcile_SuccessThreshold_NotYetMet_Requeues(t *testing.T) {
 
 func TestReconcile_SuccessThreshold_BrokenByFailure_Resets(t *testing.T) {
 	m := newMetric("check", 10, "true")
-	m.SuccessThreshold = int32Ptr(3)
-	m.FailureThreshold = int32Ptr(5)
+	m.SuccessThreshold = new(int32(3))
+	m.FailureThreshold = new(int32(5))
 	m.Measurements = []metrics.Measurement{
 		oldMeasurement(metrics.StatusPassed),
 		oldMeasurement(metrics.StatusFailed),

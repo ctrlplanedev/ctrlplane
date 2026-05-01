@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -86,8 +87,8 @@ func (r *Runner) Run(ctx context.Context) error {
 	defer shutdownCancel()
 
 	var wg sync.WaitGroup
-	for i := len(r.services) - 1; i >= 0; i-- {
-		svc := r.services[i]
+	for _, v := range slices.Backward(r.services) {
+		svc := v
 		wg.Go(func() {
 			log.Info("Stopping service", "service", svc.Name())
 			if err := svc.Stop(shutdownCtx); err != nil {

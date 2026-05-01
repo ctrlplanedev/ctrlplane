@@ -277,9 +277,6 @@ func setupHappyPath(rt *ReleaseTarget, release *oapi.Release) (*mockGetter, *moc
 	return getter, setter
 }
 
-//go:fix inline
-func int32Ptr(v int32) *int32 { return new(v) }
-
 func scopeID(rt *ReleaseTarget) string {
 	return fmt.Sprintf("%s:%s:%s", rt.DeploymentID, rt.EnvironmentID, rt.ResourceID)
 }
@@ -429,7 +426,7 @@ func TestProcess_RequeueOnBackoff(t *testing.T) {
 		release:  release,
 		jobs:     []*oapi.Job{failedJob},
 		policies: []*oapi.Policy{
-			testPolicy(true, &oapi.RetryRule{MaxRetries: 3, BackoffSeconds: int32Ptr(120)}),
+			testPolicy(true, &oapi.RetryRule{MaxRetries: 3, BackoffSeconds: new(int32(120))}),
 		},
 		deployment:      deployment,
 		jobAgents:       map[string]*oapi.JobAgent{agent.Id: agent},
