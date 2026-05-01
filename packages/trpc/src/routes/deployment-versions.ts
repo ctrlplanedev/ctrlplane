@@ -272,6 +272,10 @@ export const deploymentVersionsRouter = router({
         tag: string;
         name: string;
         status: string;
+        deploymentId: string;
+        createdAt: string;
+        message: string | null;
+        metadata: Record<string, string>;
       };
       const currentReleaseKey = (
         depDeploymentId: string,
@@ -291,6 +295,9 @@ export const deploymentVersionsRouter = router({
             tag: schema.deploymentVersion.tag,
             name: schema.deploymentVersion.name,
             status: schema.deploymentVersion.status,
+            versionCreatedAt: schema.deploymentVersion.createdAt,
+            message: schema.deploymentVersion.message,
+            metadata: schema.deploymentVersion.metadata,
           })
           .from(schema.release)
           .innerJoin(
@@ -324,6 +331,10 @@ export const deploymentVersionsRouter = router({
             tag: row.tag,
             name: row.name,
             status: row.status,
+            deploymentId: row.deploymentId,
+            createdAt: row.versionCreatedAt.toISOString(),
+            message: row.message,
+            metadata: row.metadata,
           });
         }
       }

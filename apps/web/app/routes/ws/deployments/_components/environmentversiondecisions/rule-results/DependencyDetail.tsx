@@ -25,6 +25,10 @@ type CurrentVersion = {
   tag: string;
   name: string;
   status: string;
+  deploymentId: string;
+  createdAt: string;
+  message: string | null;
+  metadata: Record<string, string>;
 };
 
 type Target = {
@@ -60,6 +64,10 @@ function evalSelector(selector: string, version: CurrentVersion | null) {
           tag: version.tag,
           name: version.name,
           status: version.status,
+          deploymentId: version.deploymentId,
+          createdAt: version.createdAt,
+          message: version.message ?? "",
+          metadata: version.metadata ?? {},
         },
       }),
     );
