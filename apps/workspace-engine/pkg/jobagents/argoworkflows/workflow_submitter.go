@@ -18,6 +18,13 @@ import (
 // that calls the Argo Workflows REST API.
 type GoWorkflowSubmitter struct{}
 
+func argoBearerIfToken(token string) string {
+	if token == "" {
+		return ""
+	}
+	return "Bearer " + token
+}
+
 func (s *GoWorkflowSubmitter) SubmitWorkflow(
 	ctx context.Context,
 	serverAddr, apiKey string,
@@ -32,7 +39,7 @@ func (s *GoWorkflowSubmitter) SubmitWorkflow(
 			InsecureSkipVerify: insecureSkipVerify,
 		},
 		AuthSupplier: func() string {
-			return apiKey
+			return argoBearerIfToken(apiKey)
 		},
 	})
 	if err != nil {
