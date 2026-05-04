@@ -292,7 +292,12 @@ const getReleaseTargetStates: AsyncTypedHandler<
     .from(schema.releaseTargetDesiredRelease)
     .innerJoin(schema.computedDeploymentResource, deploymentMatch)
     .innerJoin(schema.computedEnvironmentResource, environmentMatch)
+    .innerJoin(
+      schema.resource,
+      eq(schema.resource.id, schema.releaseTargetDesiredRelease.resourceId),
+    )
     .where(filter)
+    .orderBy(schema.resource.identifier)
     .limit(limitVal)
     .offset(offsetVal);
 
