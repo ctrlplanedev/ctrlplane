@@ -132,13 +132,17 @@ function ResultsTableRow({
   result: Result;
   onOpenResult: (resultId: string, tab?: "diff" | "validations") => void;
 }) {
+  const hasChanges = result.hasChanges === true;
   const hasValidations = result.validations.total > 0;
-  const isClickable = result.hasChanges === true || hasValidations;
+  const isClickable = hasChanges || hasValidations;
+  const defaultTab = hasChanges ? "diff" : "validations";
   return (
     <TableRow
       className={cn("hover:bg-muted/50", isClickable && "cursor-pointer")}
       onClick={
-        isClickable ? () => onOpenResult(result.resultId, "diff") : undefined
+        isClickable
+          ? () => onOpenResult(result.resultId, defaultTab)
+          : undefined
       }
     >
       <TableCell>{result.environment.name}</TableCell>
