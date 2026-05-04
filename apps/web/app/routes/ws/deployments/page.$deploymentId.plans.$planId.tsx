@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
+import { useState } from "react";
 import { FileText } from "lucide-react";
 import { Link, useParams } from "react-router";
 
@@ -77,6 +78,38 @@ function ChangesCell({ result }: { result: Result }) {
   return <span className="text-muted-foreground">—</span>;
 }
 
+function ValidationsCell({
+  validations,
+  onClick,
+}: {
+  validations: Result["validations"];
+  onClick: () => void;
+}) {
+  if (validations.total === 0)
+    return <span className="text-muted-foreground">—</span>;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex items-center gap-2 text-xs hover:underline"
+    >
+      {validations.failed > 0 && (
+        <span className="text-red-600 dark:text-red-400">
+          {validations.failed} failed
+        </span>
+      )}
+      {validations.passed > 0 && (
+        <span className="text-muted-foreground">
+          {validations.passed} passed
+        </span>
+      )}
+    </button>
+  );
+}
+
 function ResultsTableHeader() {
   return (
     <TableHeader>
@@ -86,6 +119,7 @@ function ResultsTableHeader() {
         <TableHead className="font-medium">Agent</TableHead>
         <TableHead className="font-medium">Status</TableHead>
         <TableHead className="font-medium">Changes</TableHead>
+        <TableHead className="font-medium">Validations</TableHead>
       </TableRow>
     </TableHeader>
   );
@@ -93,16 +127,23 @@ function ResultsTableHeader() {
 
 function ResultsTableRow({
   result,
-  onViewDiff,
+  onOpenResult,
 }: {
   result: Result;
-  onViewDiff: (resultId: string) => void;
+  onOpenResult: (resultId: string, tab?: "diff" | "validations") => void;
 }) {
-  const isClickable = result.hasChanges === true;
+  const hasChanges = result.hasChanges === true;
+  const hasValidations = result.validations.total > 0;
+  const isClickable = hasChanges || hasValidations;
+  const defaultTab = hasChanges ? "diff" : "validations";
   return (
     <TableRow
       className={cn("hover:bg-muted/50", isClickable && "cursor-pointer")}
-      onClick={isClickable ? () => onViewDiff(result.resultId) : undefined}
+      onClick={
+        isClickable
+          ? () => onOpenResult(result.resultId, defaultTab)
+          : undefined
+      }
     >
       <TableCell>{result.environment.name}</TableCell>
       <TableCell>{result.resource.name}</TableCell>
@@ -112,6 +153,12 @@ function ResultsTableRow({
       </TableCell>
       <TableCell>
         <ChangesCell result={result} />
+      </TableCell>
+      <TableCell>
+        <ValidationsCell
+          validations={result.validations}
+          onClick={() => onOpenResult(result.resultId, "validations")}
+        />
       </TableCell>
     </TableRow>
   );
@@ -140,6 +187,7 @@ export default function DeploymentPlanDetail() {
   const { deployment } = useDeployment();
   const { planId } = useParams<{ planId: string }>();
   const { resultId, openResult, closeResult } = usePlanResultParam();
+  const [initialTab, setInitialTab] = useState<"diff" | "validations">("diff");
 
   const resultsQuery = trpc.deployment.plans.results.useQuery(
     { deploymentId: deployment.id, planId: planId! },
@@ -149,6 +197,14 @@ export default function DeploymentPlanDetail() {
   const version = resultsQuery.data?.version;
   const results = resultsQuery.data?.items ?? [];
   const activeResult = results.find((r) => r.resultId === resultId);
+
+  const handleOpenResult = (
+    id: string,
+    tab: "diff" | "validations" = "diff",
+  ) => {
+    setInitialTab(tab);
+    openResult(id);
+  };
 
   return (
     <>
@@ -201,7 +257,7 @@ export default function DeploymentPlanDetail() {
               <ResultsTableRow
                 key={r.resultId}
                 result={r}
-                onViewDiff={openResult}
+                onOpenResult={handleOpenResult}
               />
             ))}
           </TableBody>
@@ -213,6 +269,7 @@ export default function DeploymentPlanDetail() {
         resultId={resultId}
         title={activeResult ? resultTitle(activeResult) : ""}
         open={resultId != null}
+        initialTab={initialTab}
         onOpenChange={(o) => {
           if (!o) closeResult();
         }}
