@@ -252,17 +252,52 @@ const getReleaseTargetStates: AsyncTypedHandler<
     eq(schema.releaseTargetDesiredRelease.environmentId, environmentId),
   );
 
+  const deploymentMatch = and(
+    eq(
+      schema.computedDeploymentResource.deploymentId,
+      schema.releaseTargetDesiredRelease.deploymentId,
+    ),
+    eq(
+      schema.computedDeploymentResource.resourceId,
+      schema.releaseTargetDesiredRelease.resourceId,
+    ),
+  );
+
+  const environmentMatch = and(
+    eq(
+      schema.computedEnvironmentResource.environmentId,
+      schema.releaseTargetDesiredRelease.environmentId,
+    ),
+    eq(
+      schema.computedEnvironmentResource.resourceId,
+      schema.releaseTargetDesiredRelease.resourceId,
+    ),
+  );
+
   const [countResult] = await db
     .select({ total: count() })
     .from(schema.releaseTargetDesiredRelease)
+    .innerJoin(schema.computedDeploymentResource, deploymentMatch)
+    .innerJoin(schema.computedEnvironmentResource, environmentMatch)
     .where(filter);
 
   const total = countResult?.total ?? 0;
 
   const releaseTargets = await db
-    .select()
+    .select({
+      resourceId: schema.releaseTargetDesiredRelease.resourceId,
+      environmentId: schema.releaseTargetDesiredRelease.environmentId,
+      deploymentId: schema.releaseTargetDesiredRelease.deploymentId,
+    })
     .from(schema.releaseTargetDesiredRelease)
+    .innerJoin(schema.computedDeploymentResource, deploymentMatch)
+    .innerJoin(schema.computedEnvironmentResource, environmentMatch)
+    .innerJoin(
+      schema.resource,
+      eq(schema.resource.id, schema.releaseTargetDesiredRelease.resourceId),
+    )
     .where(filter)
+    .orderBy(schema.resource.identifier)
     .limit(limitVal)
     .offset(offsetVal);
 
