@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.3.0...v1.4.0) (2026-05-04)
+
+
+### Features
+
+* deployment dependencies evaluator ([#1081](https://github.com/ctrlplanedev/ctrlplane/issues/1081)) ([f461582](https://github.com/ctrlplanedev/ctrlplane/commit/f461582c1ee65648c8bc155178b46d6e1f5d1970))
+* opa plan validations in workspace engine ([#1094](https://github.com/ctrlplanedev/ctrlplane/issues/1094)) ([92c4212](https://github.com/ctrlplanedev/ctrlplane/commit/92c4212c55973b48d45f165fea7492191a1fa833))
+
+
+### Bug Fixes
+
+* **argo-workflows:** fix bug with apiTokens ([#1100](https://github.com/ctrlplanedev/ctrlplane/issues/1100)) ([52046a1](https://github.com/ctrlplanedev/ctrlplane/commit/52046a1e94dd383a4e65e6c2092efd6e25642139))
+* dont retrieve stale target states ([#1099](https://github.com/ctrlplanedev/ctrlplane/issues/1099)) ([368f930](https://github.com/ctrlplanedev/ctrlplane/commit/368f9301c251aa1809c625f32367a5365c6473b5))
+* lint ([9a0e3de](https://github.com/ctrlplanedev/ctrlplane/commit/9a0e3de1969b5840f45d4200ec8297546bec72f8))
+* merge runner config into workflow-triggered jobs ([#1098](https://github.com/ctrlplanedev/ctrlplane/issues/1098)) ([40c184e](https://github.com/ctrlplanedev/ctrlplane/commit/40c184e5ddae8ce719fddd5fccda86f0f85067d0))
+* version deps UI factors in metadata and created_at ([#1095](https://github.com/ctrlplanedev/ctrlplane/issues/1095)) ([34f2f77](https://github.com/ctrlplanedev/ctrlplane/commit/34f2f77d8bbf54dc0108ce0bababb356413193ae))
+
 ## [1.3.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.2.0...v1.3.0) (2026-04-28)
 
 
