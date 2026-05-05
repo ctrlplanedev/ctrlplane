@@ -2,6 +2,7 @@ package desiredrelease
 
 import (
 	"context"
+	"iter"
 
 	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
@@ -21,10 +22,25 @@ type Getter interface {
 
 	// ReleaseTargetExists(ctx context.Context, rt *ReleaseTarget) (bool, error)
 	GetReleaseTargetScope(ctx context.Context, rt *ReleaseTarget) (*evaluator.EvaluatorScope, error)
-	GetCandidateVersions(
+
+	// IterCandidateVersions yields deployable versions newest-first. The
+	// caller is expected to stop iterating once a deployable version is
+	// found, so the implementation must lazily page through history rather
+	// than buffering all versions up front.
+	//
+	// extraWhere is an optional list of SQL fragments that get AND-joined
+	// into the candidate query as a pushdown filter. Each fragment is
+	// expected to reference columns via the alias `version` (e.g.
+	// `version.tag = 'v1.2.3'`). Fragments must be safely escaped before
+	// reaching this method — they are concatenated into the SQL string
+	// directly. When the iterator can't push down (no fragments supplied,
+	// or the consumer doesn't extract any), it behaves identically to the
+	// non-pushdown path.
+	IterCandidateVersions(
 		ctx context.Context,
 		deploymentID uuid.UUID,
-	) ([]*oapi.DeploymentVersion, error)
+		extraWhere []string,
+	) iter.Seq2[*oapi.DeploymentVersion, error]
 
 	// GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)
 	// HasCurrentRelease(ctx context.Context, rt *ReleaseTarget) (bool, error)

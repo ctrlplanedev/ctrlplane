@@ -3,6 +3,7 @@ package policyeval
 import (
 	"context"
 	"errors"
+	"iter"
 	"testing"
 	"time"
 
@@ -13,6 +14,19 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentversiondependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 )
+
+// iterVersions yields the supplied versions in order with no error, so existing
+// table-driven tests built around slices keep their shape after FindDeployable
+// Version switched to iter.Seq2.
+func iterVersions(versions []*oapi.DeploymentVersion) iter.Seq2[*oapi.DeploymentVersion, error] {
+	return func(yield func(*oapi.DeploymentVersion, error) bool) {
+		for _, v := range versions {
+			if !yield(v, nil) {
+				return
+			}
+		}
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Mock evaluator
@@ -328,7 +342,7 @@ func TestFindDeployableVersion(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 		}
-		result, err := FindDeployableVersion(ctx, getter, rt, nil, evals, fullScope())
+		result, err := FindDeployableVersion(ctx, getter, rt, iterVersions(nil), evals, fullScope())
 		require.NoError(t, err)
 		assert.Nil(t, result.Version)
 		assert.Nil(t, result.NextTime)
@@ -339,7 +353,14 @@ func TestFindDeployableVersion(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 		}
-		result, err := FindDeployableVersion(ctx, getter, rt, versions, evals, fullScope())
+		result, err := FindDeployableVersion(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			evals,
+			fullScope(),
+		)
 		require.NoError(t, err)
 		require.NotNil(t, result.Version)
 		assert.Equal(t, "v1", result.Version.Id)
@@ -361,7 +382,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			ctx,
 			getter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{denyFirst},
 			fullScope(),
 		)
@@ -390,7 +411,7 @@ func TestFindDeployableVersion(t *testing.T) {
 				ctx,
 				getter,
 				rt,
-				versions,
+				iterVersions(versions),
 				[]evaluator.Evaluator{e},
 				fullScope(),
 			)
@@ -418,7 +439,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			ctx,
 			getter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)
@@ -435,7 +456,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			ctx,
 			getter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)
@@ -446,7 +467,14 @@ func TestFindDeployableVersion(t *testing.T) {
 
 	t.Run("no evaluators means every version is eligible", func(t *testing.T) {
 		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
-		result, err := FindDeployableVersion(ctx, getter, rt, versions, nil, fullScope())
+		result, err := FindDeployableVersion(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			nil,
+			fullScope(),
+		)
 		require.NoError(t, err)
 		require.NotNil(t, result.Version)
 		assert.Equal(t, "v1", result.Version.Id)
@@ -467,7 +495,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			ctx,
 			getter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)
@@ -488,7 +516,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			ctx,
 			getter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)
@@ -504,7 +532,14 @@ func TestFindDeployableVersion(t *testing.T) {
 		evals := []evaluator.Evaluator{
 			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
 		}
-		result, err := FindDeployableVersion(ctx, errGetter, rt, versions, evals, fullScope())
+		result, err := FindDeployableVersion(
+			ctx,
+			errGetter,
+			rt,
+			iterVersions(versions),
+			evals,
+			fullScope(),
+		)
 		require.Error(t, err)
 		assert.Nil(t, result)
 		assert.Contains(t, err.Error(), "get policy skips")
@@ -525,7 +560,7 @@ func TestFindDeployableVersion(t *testing.T) {
 			ctx,
 			getter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)
@@ -818,7 +853,7 @@ func TestFindDeployableVersion_PolicySkips(t *testing.T) {
 			ctx,
 			skipGetter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)
@@ -839,7 +874,7 @@ func TestFindDeployableVersion_PolicySkips(t *testing.T) {
 			ctx,
 			noSkipGetter,
 			rt,
-			versions,
+			iterVersions(versions),
 			[]evaluator.Evaluator{e},
 			fullScope(),
 		)

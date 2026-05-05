@@ -26,5 +26,16 @@ WHERE deployment_id = $1
 ORDER BY created_at DESC
 LIMIT COALESCE(sqlc.narg('limit')::int, 5000);
 
+-- name: ListDeployableVersionsByDeploymentIDAfter :many
+SELECT * FROM deployment_version
+WHERE deployment_id = $1
+  AND status NOT IN ('rejected', 'building')
+  AND (
+    sqlc.narg('after_created_at')::timestamptz IS NULL
+    OR (created_at, id) < (sqlc.narg('after_created_at')::timestamptz, sqlc.narg('after_id')::uuid)
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT $2;
+
 -- name: DeleteDeploymentVersion :exec
 DELETE FROM deployment_version WHERE id = $1;

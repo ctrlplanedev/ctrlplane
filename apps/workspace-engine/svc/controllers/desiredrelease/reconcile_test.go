@@ -2,6 +2,7 @@ package desiredrelease
 
 import (
 	"context"
+	"iter"
 	"testing"
 
 	"github.com/google/uuid"
@@ -44,11 +45,18 @@ func (m *mockReconcileGetter) GetReleaseTargetScope(
 	return m.scope, nil
 }
 
-func (m *mockReconcileGetter) GetCandidateVersions(
+func (m *mockReconcileGetter) IterCandidateVersions(
 	_ context.Context,
 	_ uuid.UUID,
-) ([]*oapi.DeploymentVersion, error) {
-	return m.versions, nil
+	_ []string,
+) iter.Seq2[*oapi.DeploymentVersion, error] {
+	return func(yield func(*oapi.DeploymentVersion, error) bool) {
+		for _, v := range m.versions {
+			if !yield(v, nil) {
+				return
+			}
+		}
+	}
 }
 
 func (m *mockReconcileGetter) GetPoliciesForReleaseTarget(

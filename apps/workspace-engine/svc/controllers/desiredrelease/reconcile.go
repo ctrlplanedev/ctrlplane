@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
@@ -30,7 +31,6 @@ type reconciler struct {
 	rt     *ReleaseTarget
 
 	scope    *evaluator.EvaluatorScope
-	versions []*oapi.DeploymentVersion
 	policies []*oapi.Policy
 	version  *oapi.DeploymentVersion
 	vars     map[string]oapi.LiteralValue
@@ -42,11 +42,6 @@ func (r *reconciler) loadInput(ctx context.Context) (err error) {
 		return fmt.Errorf("get release target scope: %w", err)
 	}
 
-	r.versions, err = r.getter.GetCandidateVersions(ctx, r.rt.DeploymentID)
-	if err != nil {
-		return fmt.Errorf("get candidate versions: %w", err)
-	}
-
 	r.policies, err = r.getter.GetPoliciesForReleaseTarget(ctx, r.rt.ToOAPI())
 	if err != nil {
 		return fmt.Errorf("get policies: %w", err)
@@ -56,21 +51,18 @@ func (r *reconciler) loadInput(ctx context.Context) (err error) {
 }
 
 // findDeployableVersion evaluates policy rules against candidate versions
-// (newest-first) and sets r.version to the first passing version. Returns
-// the earliest NextEvaluationTime when all versions are blocked.
+// (newest-first, streamed) and sets r.version to the first passing version.
+// Returns the earliest NextEvaluationTime when all versions are blocked.
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
-	if len(r.versions) == 0 {
-		return nil
-	}
-
 	oapiRT := r.rt.ToOAPI()
 	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
+	pushdown := collectPushdownClauses(r.policies)
 
 	result, err := policyeval.FindDeployableVersion(
 		ctx,
 		r.getter,
 		oapiRT,
-		r.versions,
+		r.getter.IterCandidateVersions(ctx, r.rt.DeploymentID, pushdown),
 		evals,
 		*r.scope,
 	)
@@ -139,7 +131,7 @@ func Reconcile(
 		return nil, recordErr(span, "load input", err)
 	}
 
-	log.Info("find deployable version", "versions", len(r.versions))
+	log.Info("find deployable version")
 
 	nextTime := r.findDeployableVersion(ctx)
 	if r.version == nil {
@@ -164,6 +156,53 @@ func Reconcile(
 
 	span.SetStatus(codes.Ok, "reconcile completed: release="+release.Id.String())
 	return &ReconcileResult{NextReconcileAt: nextTime}, nil
+}
+
+// collectPushdownClauses inspects a release target's policies for
+// versionselector rules and translates each into a SQL WHERE fragment via
+// versionselector.TryPushDown. Rules that can't be translated (selectors
+// referencing environment/resource/deployment, complex CEL, etc.) are
+// silently skipped — the runtime CEL evaluator still runs per-version, so
+// correctness is preserved; only the candidate-set narrowing is lost.
+//
+// The returned slice is sorted by clause text so concurrent reconciles
+// against the same deployment with the same selector set produce the same
+// singleflight cache key.
+func collectPushdownClauses(policies []*oapi.Policy) []string {
+	var clauses []string
+	for _, p := range policies {
+		if p == nil || !p.Enabled {
+			continue
+		}
+		for _, rule := range p.Rules {
+			if rule.VersionSelector == nil {
+				continue
+			}
+			clause, ok := versionselector.TryPushDown(rule.VersionSelector.Selector)
+			if !ok {
+				continue
+			}
+			clauses = append(clauses, clause)
+		}
+	}
+	if len(clauses) > 1 {
+		// Stable order so the singleflight key is deterministic across
+		// reconciles that see the same logical clause set.
+		sortStrings(clauses)
+	}
+	return clauses
+}
+
+// sortStrings is an in-place insertion sort. We use it instead of
+// sort.Strings to keep the import surface small for this hot path.
+func sortStrings(s []string) {
+	for i := 1; i < len(s); i++ {
+		j := i
+		for j > 0 && s[j-1] > s[j] {
+			s[j-1], s[j] = s[j], s[j-1]
+			j--
+		}
+	}
 }
 
 func recordErr(span trace.Span, msg string, err error) error {

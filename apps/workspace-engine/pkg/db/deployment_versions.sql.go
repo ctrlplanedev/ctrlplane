@@ -89,6 +89,62 @@ func (q *Queries) ListDeployableVersionsByDeploymentID(ctx context.Context, arg 
 	return items, nil
 }
 
+const listDeployableVersionsByDeploymentIDAfter = `-- name: ListDeployableVersionsByDeploymentIDAfter :many
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version
+WHERE deployment_id = $1
+  AND status NOT IN ('rejected', 'building')
+  AND (
+    $3::timestamptz IS NULL
+    OR (created_at, id) < ($3::timestamptz, $4::uuid)
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT $2
+`
+
+type ListDeployableVersionsByDeploymentIDAfterParams struct {
+	DeploymentID   uuid.UUID
+	Limit          int64
+	AfterCreatedAt pgtype.Timestamptz
+	AfterID        uuid.UUID
+}
+
+func (q *Queries) ListDeployableVersionsByDeploymentIDAfter(ctx context.Context, arg ListDeployableVersionsByDeploymentIDAfterParams) ([]DeploymentVersion, error) {
+	rows, err := q.db.Query(ctx, listDeployableVersionsByDeploymentIDAfter,
+		arg.DeploymentID,
+		arg.Limit,
+		arg.AfterCreatedAt,
+		arg.AfterID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeploymentVersion
+	for rows.Next() {
+		var i DeploymentVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Tag,
+			&i.Config,
+			&i.JobAgentConfig,
+			&i.DeploymentID,
+			&i.Metadata,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+			&i.WorkspaceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDeploymentVersionsByDeploymentID = `-- name: ListDeploymentVersionsByDeploymentID :many
 SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
 LIMIT COALESCE($2::int, 5000)

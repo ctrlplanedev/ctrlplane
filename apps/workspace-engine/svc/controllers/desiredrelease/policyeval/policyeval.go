@@ -4,10 +4,12 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"iter"
 	"slices"
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
@@ -104,6 +106,10 @@ type FindDeployableVersionResult struct {
 // the first one that passes every evaluator. When no version qualifies,
 // NextTime is the earliest NextEvaluationTime across all evaluations.
 //
+// The versions iterator is consumed lazily so callers can stream version
+// history without buffering it all in memory; iteration stops as soon as a
+// deployable version is found.
+//
 // Policy skips are fetched per candidate version via getter.GetPolicySkips.
 // Any evaluator whose RuleId matches a non-expired skip is automatically
 // bypassed.
@@ -111,7 +117,7 @@ func FindDeployableVersion(
 	ctx context.Context,
 	getter Getter,
 	rt *oapi.ReleaseTarget,
-	versions []*oapi.DeploymentVersion,
+	versions iter.Seq2[*oapi.DeploymentVersion, error],
 	evals []evaluator.Evaluator,
 	scope evaluator.EvaluatorScope,
 ) (*FindDeployableVersionResult, error) {
@@ -120,8 +126,16 @@ func FindDeployableVersion(
 
 	var earliest *time.Time
 	var allEvaluations []VersionedEvaluation
+	var found *oapi.DeploymentVersion
+	var iterErr error
+	var scanned int
 
-	for _, version := range versions {
+	for version, err := range versions {
+		if err != nil {
+			iterErr = fmt.Errorf("iter candidate versions: %w", err)
+			break
+		}
+		scanned++
 		scope.Version = version
 
 		skips, err := getter.GetPolicySkips(ctx, version.Id, rt.EnvironmentId, rt.ResourceId)
@@ -148,14 +162,20 @@ func FindDeployableVersion(
 		}
 
 		if eligible.Allowed() {
-			return &FindDeployableVersionResult{
-				Version:     version,
-				NextTime:    earliest,
-				Evaluations: allEvaluations,
-			}, nil
+			found = version
+			break
 		}
 	}
+	span.SetAttributes(
+		attribute.String("deployment.id", rt.DeploymentId),
+		attribute.Int("versions.scanned", scanned),
+		attribute.Bool("version.found", found != nil),
+	)
+	if iterErr != nil {
+		return nil, iterErr
+	}
 	return &FindDeployableVersionResult{
+		Version:     found,
 		NextTime:    earliest,
 		Evaluations: allEvaluations,
 	}, nil
