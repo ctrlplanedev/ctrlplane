@@ -68,7 +68,12 @@ const LoginEmailPassword: FC = () => {
       rememberMe: true,
       callbackURL: "/workspaces",
     });
-    if (error) setErrorMessage(error.message ?? "Failed to sign in");
+    if (error)
+      setErrorMessage(
+        error.code === "INVALID_EMAIL_OR_PASSWORD" && error.message
+          ? error.message
+          : "Failed to sign in",
+      );
   };
 
   return (
