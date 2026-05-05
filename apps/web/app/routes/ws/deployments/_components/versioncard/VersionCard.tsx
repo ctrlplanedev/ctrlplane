@@ -234,27 +234,39 @@ const formatJobStatus = (status: string) => {
 
 const FailedPopoverContent: React.FC<{
   targets: ReleaseTargetWithState[];
-}> = ({ targets }) => (
-  <div className="space-y-1.5">
-    <div className="font-medium">Failed deployments:</div>
-    {targets.map((rt) => (
-      <div key={rt.releaseTarget.resourceId} className="text-xs">
-        <span className="font-medium">{rt.resource.name}</span>
-        {rt.latestJob?.status && (
-          <span className="text-muted-foreground">
-            {" "}
-            — {formatJobStatus(rt.latestJob.status)}
-          </span>
-        )}
-        {rt.latestJob?.message && (
-          <div className="mt-0.5 text-muted-foreground">
-            {rt.latestJob.message}
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
-);
+}> = ({ targets }) => {
+  const { workspace } = useWorkspace();
+  const { deployment } = useDeployment();
+  return (
+    <div className="space-y-1.5">
+      <div className="font-medium">Failed deployments:</div>
+      {targets.map((rt) => (
+        <div key={rt.releaseTarget.resourceId} className="text-xs">
+          <Link
+            to={`/${workspace.slug}/deployments/${deployment.id}/release-targets?query=${encodeURIComponent(rt.resource.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {rt.resource.name}
+          </Link>
+          {rt.latestJob?.status && (
+            <span className="text-muted-foreground">
+              {" "}
+              — {formatJobStatus(rt.latestJob.status)}
+            </span>
+          )}
+          {rt.latestJob?.message && (
+            <div className="mt-0.5 text-muted-foreground">
+              {rt.latestJob.message}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const DeploymentIssues: React.FC<{
   pending: number;
