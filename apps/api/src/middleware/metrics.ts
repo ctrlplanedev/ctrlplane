@@ -2,6 +2,10 @@ import type { Counter } from "@opentelemetry/api";
 import type { Request, RequestHandler } from "express";
 import { metrics } from "@opentelemetry/api";
 
+// Clients in this set are tagged with their version (e.g. `ctrlc/1.2.3`);
+// everyone else is tagged with just the client name to keep cardinality bounded.
+const VERSIONED_CLIENT_ALLOWLIST = new Set(["ctrlc"]);
+
 const BROWSER_MATCHERS: Array<{ test: (ua: string) => boolean; name: string }> =
   [
     // Order matters: Edge / Opera UAs include "Chrome/" too, so they go first.
@@ -33,14 +37,14 @@ export const simplifyUserAgent = (
   // Generic "Mozilla/..." UA we don't recognize — still a browser-shape.
   if (trimmed.startsWith("Mozilla/")) return "browser-other";
 
-  // Most non-browser clients use the form "name/version ..." (curl, axios,
-  // okhttp, python-requests, our own SDK, etc.) — extract the leading product.
-  const firstToken = trimmed.split(/[/\s]/, 1)[0];
-  if (firstToken && /^[A-Za-z][A-Za-z0-9._-]{0,63}$/.test(firstToken)) {
-    return firstToken.toLowerCase();
-  }
-
-  return "other";
+  // Non-browser clients usually look like "name/version ..." — take the first
+  // product token, then split name/version.
+  const [rawName, version] = trimmed.split(/\s+/, 1)[0]!.split("/", 2);
+  const name = rawName?.toLowerCase();
+  if (!name || !/^[a-z][a-z0-9._-]{0,63}$/.test(name)) return "other";
+  return VERSIONED_CLIENT_ALLOWLIST.has(name) && version
+    ? `${name}/${version}`
+    : name;
 };
 
 const resolveRouteTemplate = (req: Request): string => {
