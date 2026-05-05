@@ -107,6 +107,28 @@ func mergeWorkflowJobAgentConfig(
 	return oapi.DeepMergeConfigs(runnerConfig, perJobConfig)
 }
 
+// buildJobDispatchContext returns a per-job copy of the base dispatch context
+// with the resolved JobAgent and merged JobAgentConfig populated. Dispatchers
+// (argo-workflow, argo-cd, github, …) read these fields off DispatchContext,
+// not off the Job row, so they must be set here before the context is
+// persisted alongside the job.
+func buildJobDispatchContext(
+	base *oapi.DispatchContext,
+	runner db.JobAgent,
+	mergedConfig oapi.JobAgentConfig,
+) *oapi.DispatchContext {
+	out := *base
+	out.JobAgent = oapi.JobAgent{
+		Id:          runner.ID.String(),
+		WorkspaceId: runner.WorkspaceID.String(),
+		Name:        runner.Name,
+		Type:        runner.Type,
+		Config:      runner.Config,
+	}
+	out.JobAgentConfig = mergedConfig
+	return &out
+}
+
 func (s *PostgresSetter) dispatchJobForAgent(
 	ctx context.Context,
 	queries *db.Queries,
@@ -138,7 +160,8 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	if err != nil {
 		return fmt.Errorf("marshal job agent config: %w", err)
 	}
-	dispatchContextJSON, err := json.Marshal(dispatchContext)
+	jobDispatchContext := buildJobDispatchContext(dispatchContext, runner, mergedConfig)
+	dispatchContextJSON, err := json.Marshal(jobDispatchContext)
 	if err != nil {
 		return fmt.Errorf("marshal dispatch context: %w", err)
 	}

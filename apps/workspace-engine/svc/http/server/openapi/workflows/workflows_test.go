@@ -3,8 +3,10 @@ package workflows
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 )
 
@@ -201,6 +203,52 @@ func TestMergeWorkflowJobAgentConfig_NilInputs(t *testing.T) {
 	perJob := oapi.JobAgentConfig{"template": "spec"}
 	merged = mergeWorkflowJobAgentConfig(nil, perJob)
 	assert.Equal(t, "spec", merged["template"])
+}
+
+func TestBuildJobDispatchContext_PopulatesAgentAndMergedConfig(t *testing.T) {
+	workflow := &oapi.Workflow{Id: uuid.New().String()}
+	inputs := map[string]any{"env": "prod"}
+	base := &oapi.DispatchContext{Workflow: workflow, Inputs: &inputs}
+
+	runnerID := uuid.New()
+	workspaceID := uuid.New()
+	runner := db.JobAgent{
+		ID:          runnerID,
+		WorkspaceID: workspaceID,
+		Name:        "argo-runner",
+		Type:        "argo-workflow",
+		Config:      oapi.JobAgentConfig{"serverUrl": "https://argo.example", "apiKey": "secret"},
+	}
+	merged := oapi.JobAgentConfig{
+		"serverUrl": "https://argo.example",
+		"apiKey":    "secret",
+		"template":  "tmpl",
+		"name":      "deploy",
+	}
+
+	got := buildJobDispatchContext(base, runner, merged)
+
+	assert.Equal(t, "https://argo.example", got.JobAgentConfig["serverUrl"])
+	assert.Equal(t, "secret", got.JobAgentConfig["apiKey"])
+	assert.Equal(t, "tmpl", got.JobAgentConfig["template"])
+	assert.Equal(t, runnerID.String(), got.JobAgent.Id)
+	assert.Equal(t, "argo-workflow", got.JobAgent.Type)
+	assert.Equal(t, workspaceID.String(), got.JobAgent.WorkspaceId)
+	assert.Equal(t, workflow, got.Workflow)
+	require.NotNil(t, got.Inputs)
+	assert.Equal(t, "prod", (*got.Inputs)["env"])
+}
+
+func TestBuildJobDispatchContext_DoesNotMutateBase(t *testing.T) {
+	base := &oapi.DispatchContext{Workflow: &oapi.Workflow{Id: uuid.New().String()}}
+	runner := db.JobAgent{ID: uuid.New(), WorkspaceID: uuid.New(), Type: "argo-workflow"}
+	merged := oapi.JobAgentConfig{"serverUrl": "https://argo.example"}
+
+	_ = buildJobDispatchContext(base, runner, merged)
+
+	assert.Empty(t, base.JobAgentConfig)
+	assert.Empty(t, base.JobAgent.Id)
+	assert.Empty(t, base.JobAgent.Type)
 }
 
 func TestResolveInputs_ExtraProvidedInputsPassThrough(t *testing.T) {
