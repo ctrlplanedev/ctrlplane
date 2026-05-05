@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { FC } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -50,7 +51,7 @@ const signInEmailPasswordSchema = z.object({
   password: z.string(),
 });
 
-function LoginEmailPassword() {
+const LoginEmailPassword: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const form = useForm<z.infer<typeof signInEmailPasswordSchema>>({
     resolver: zodResolver(signInEmailPasswordSchema),
@@ -121,7 +122,7 @@ function LoginEmailPassword() {
       </form>
     </Form>
   );
-}
+};
 
 export default function Login() {
   const authConfig = useAuthConfig();
