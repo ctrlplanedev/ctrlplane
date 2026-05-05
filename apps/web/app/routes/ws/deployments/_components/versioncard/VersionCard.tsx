@@ -245,6 +245,7 @@ const FailedPopoverContent: React.FC<{
           <Link
             to={`/${workspace.slug}/deployments/${deployment.id}/release-targets?query=${encodeURIComponent(rt.resource.name)}`}
             target="_blank"
+            rel="noopener noreferrer"
             className="font-medium hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
