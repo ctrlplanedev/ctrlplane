@@ -31,7 +31,7 @@ import { EnvironmentReleaseTargetsGroup } from "./_components/release-targets/En
 
 function useResource() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const query = searchParams.get("resource") ?? "";
+  const query = searchParams.get("query") ?? "";
   const [search, setSearch] = useState(query);
   const [searchDebounced, setSearchDebounced] = useState(search);
   useDebounce(
