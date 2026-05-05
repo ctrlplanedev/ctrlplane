@@ -241,14 +241,15 @@ const FailedPopoverContent: React.FC<{
     <div className="space-y-1.5">
       <div className="font-medium">Failed deployments:</div>
       {targets.map((rt) => (
-        <Link
-          key={rt.releaseTarget.resourceId}
-          to={`/${workspace.slug}/deployments/${deployment.id}/release-targets?query=${encodeURIComponent(rt.resource.name)}`}
-          target="_blank"
-          className="block text-xs hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="font-medium">{rt.resource.name}</span>
+        <div key={rt.releaseTarget.resourceId} className="text-xs">
+          <Link
+            to={`/${workspace.slug}/deployments/${deployment.id}/release-targets?query=${encodeURIComponent(rt.resource.name)}`}
+            target="_blank"
+            className="font-medium hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {rt.resource.name}
+          </Link>
           {rt.latestJob?.status && (
             <span className="text-muted-foreground">
               {" "}
@@ -260,7 +261,7 @@ const FailedPopoverContent: React.FC<{
               {rt.latestJob.message}
             </div>
           )}
-        </Link>
+        </div>
       ))}
     </div>
   );
