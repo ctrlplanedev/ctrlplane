@@ -3,14 +3,17 @@ package desiredrelease_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 	desiredrelease "workspace-engine/svc/controllers/desiredrelease"
 )
 
@@ -165,18 +168,30 @@ func newReleaseTarget(f *fixture) *desiredrelease.ReleaseTarget {
 	}
 }
 
-func TestPostgresGetter_GetCandidateVersions(t *testing.T) {
+func collectVersions(
+	t *testing.T,
+	getter *desiredrelease.PostgresGetter,
+	ctx context.Context,
+	deploymentID uuid.UUID,
+) []*oapi.DeploymentVersion {
+	t.Helper()
+	var out []*oapi.DeploymentVersion
+	for v, err := range getter.IterCandidateVersions(ctx, deploymentID, nil) {
+		require.NoError(t, err)
+		out = append(out, v)
+	}
+	return out
+}
+
+func TestPostgresGetter_IterCandidateVersions(t *testing.T) {
 	pool := requireTestDB(t)
 	f := setupFixture(t, pool)
 	ctx := context.Background()
 
 	getter := newGetter(pool)
 
-	t.Run("returns empty slice when no versions exist", func(t *testing.T) {
-		versions, err := getter.GetCandidateVersions(ctx, f.deploymentID)
-		require.NoError(t, err)
-		assert.NotNil(t, versions, "should return empty slice, not nil")
-		assert.Empty(t, versions)
+	t.Run("returns nothing when no versions exist", func(t *testing.T) {
+		assert.Empty(t, collectVersions(t, getter, ctx, f.deploymentID))
 	})
 
 	t.Run("returns only ready versions", func(t *testing.T) {
@@ -200,18 +215,54 @@ func TestPostgresGetter_GetCandidateVersions(t *testing.T) {
 			require.NoError(t, err, "insert version %s", tc.tag)
 		}
 
-		versions, err := getter.GetCandidateVersions(ctx, f.deploymentID)
-		require.NoError(t, err)
-
+		versions := collectVersions(t, getter, ctx, f.deploymentID)
 		assert.Len(t, versions, 1, "only 'ready' versions should be returned")
 		assert.Equal(t, readyID.String(), versions[0].Id)
 		assert.Equal(t, "v1.0.0", versions[0].Tag)
 	})
 
-	t.Run("returns empty slice for nonexistent deployment", func(t *testing.T) {
-		versions, err := getter.GetCandidateVersions(ctx, uuid.New())
-		require.NoError(t, err)
-		assert.Empty(t, versions)
+	t.Run("returns nothing for nonexistent deployment", func(t *testing.T) {
+		assert.Empty(t, collectVersions(t, getter, ctx, uuid.New()))
+	})
+
+	t.Run("paginates past batch size to reach older versions", func(t *testing.T) {
+		// Insert > batch size to confirm keyset pagination keeps walking
+		// rather than stopping at the first batch. Keep this comfortably
+		// above candidateVersionBatchSize (500) so the test exercises at
+		// least a second round trip.
+		const total = 750
+		base := time.Now().Add(-time.Hour)
+		var oldest uuid.UUID
+		for i := range total {
+			id := uuid.New()
+			if i == 0 {
+				oldest = id
+			}
+			_, err := pool.Exec(
+				ctx,
+				`INSERT INTO deployment_version (id, name, tag, deployment_id, status, workspace_id, created_at)
+				 VALUES ($1, $2, $3, $4, 'ready', $5, $6)`,
+				id,
+				fmt.Sprintf("v%d", i),
+				fmt.Sprintf("page-%d", i),
+				f.deploymentID,
+				f.workspaceID,
+				base.Add(time.Duration(i)*time.Second),
+			)
+			require.NoError(t, err)
+		}
+
+		versions := collectVersions(t, getter, ctx, f.deploymentID)
+		assert.GreaterOrEqual(t, len(versions), total)
+
+		var foundOldest bool
+		for _, v := range versions {
+			if v.Id == oldest.String() {
+				foundOldest = true
+				break
+			}
+		}
+		assert.True(t, foundOldest, "iterator should walk past first batch to reach oldest version")
 	})
 }
 

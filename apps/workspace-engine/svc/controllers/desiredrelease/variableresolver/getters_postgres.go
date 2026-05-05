@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/eval"
@@ -22,26 +21,6 @@ func NewPostgresGetter(queries *db.Queries) Getter {
 
 type PostgresGetter struct {
 	queries *db.Queries
-}
-
-func (g *PostgresGetter) GetCandidateVersions(
-	ctx context.Context,
-	deploymentID uuid.UUID,
-) ([]*oapi.DeploymentVersion, error) {
-	rows, err := db.GetQueries(ctx).
-		ListDeployableVersionsByDeploymentID(ctx, db.ListDeployableVersionsByDeploymentIDParams{
-			DeploymentID: deploymentID,
-			Limit:        pgtype.Int4{Int32: 500, Valid: true},
-		})
-	if err != nil {
-		return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
-	}
-
-	versions := make([]*oapi.DeploymentVersion, 0, len(rows))
-	for _, row := range rows {
-		versions = append(versions, db.ToOapiDeploymentVersion(row))
-	}
-	return versions, nil
 }
 
 func (g *PostgresGetter) GetApprovalRecords(

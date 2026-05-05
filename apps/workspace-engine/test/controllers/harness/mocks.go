@@ -3,6 +3,7 @@ package harness
 import (
 	"context"
 	"fmt"
+	"iter"
 	"strings"
 	"sync"
 	"time"
@@ -166,11 +167,18 @@ func (g *DesiredReleaseGetter) GetReleaseTargetScope(
 	return g.Scope, nil
 }
 
-func (g *DesiredReleaseGetter) GetCandidateVersions(
+func (g *DesiredReleaseGetter) IterCandidateVersions(
 	_ context.Context,
 	_ uuid.UUID,
-) ([]*oapi.DeploymentVersion, error) {
-	return g.Versions, nil
+	_ []string,
+) iter.Seq2[*oapi.DeploymentVersion, error] {
+	return func(yield func(*oapi.DeploymentVersion, error) bool) {
+		for _, v := range g.Versions {
+			if !yield(v, nil) {
+				return
+			}
+		}
+	}
 }
 
 func (g *DesiredReleaseGetter) GetPoliciesForReleaseTarget(
