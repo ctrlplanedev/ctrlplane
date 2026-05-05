@@ -30,6 +30,17 @@ if (metricsUrl) {
   });
 
   metrics.setGlobalMeterProvider(meterProvider);
+
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    process.on(signal, () => {
+      meterProvider
+        .shutdown()
+        .catch((err) =>
+          logger.error("meterProvider.shutdown error", { err }),
+        );
+    });
+  }
+
   logger.info(`OTel metrics enabled (endpoint: ${metricsUrl})`);
 } else {
   logger.info(
