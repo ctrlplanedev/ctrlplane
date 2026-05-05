@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { SiGoogle, SiOkta } from "@icons-pack/react-simple-icons";
 import { authClient } from "~/api/auth-client";
 import { useAuthConfig } from "~/api/auth-config";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -49,6 +51,7 @@ const signInEmailPasswordSchema = z.object({
 });
 
 function LoginEmailPassword() {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const form = useForm<z.infer<typeof signInEmailPasswordSchema>>({
     resolver: zodResolver(signInEmailPasswordSchema),
     defaultValues: {
@@ -57,17 +60,24 @@ function LoginEmailPassword() {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof signInEmailPasswordSchema>) => {
-    void authClient.signIn.email({
+  const onSubmit = async (data: z.infer<typeof signInEmailPasswordSchema>) => {
+    setErrorMessage(null);
+    const { error } = await authClient.signIn.email({
       ...data,
       rememberMe: true,
       callbackURL: "/workspaces",
     });
+    if (error) setErrorMessage(error.message ?? "Failed to sign in");
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
         <FormField
           control={form.control}
           name="email"
