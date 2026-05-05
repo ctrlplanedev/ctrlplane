@@ -162,7 +162,7 @@ func (g *PostgresGetter) IterCandidateVersions(
 				ctx, deploymentID, extraWhere, afterCreatedAt, afterID,
 			)
 			if err != nil {
-				yield(nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err))
+				yield(nil, err)
 				return
 			}
 			if len(rows) == 0 {
@@ -196,9 +196,13 @@ func (g *PostgresGetter) fetchFirstBatch(
 	extraWhere []string,
 ) ([]db.DeploymentVersion, error) {
 	key := deploymentID.String() + "|" + hashWhere(extraWhere)
+	// Detach the singleflight closure from the first caller's cancellation
+	// so one caller's ctx cancellation doesn't fail the shared query for
+	// every other waiter on the same key. Trace context is preserved.
+	qCtx := context.WithoutCancel(ctx)
 	v, err, _ := g.firstBatchSF.Do(key, func() (any, error) {
 		return queryCandidateVersionsBatch(
-			ctx, deploymentID, extraWhere, pgtype.Timestamptz{}, uuid.Nil,
+			qCtx, deploymentID, extraWhere, pgtype.Timestamptz{}, uuid.Nil,
 		)
 	})
 	if err != nil {
