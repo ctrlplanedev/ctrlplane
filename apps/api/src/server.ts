@@ -2,6 +2,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { requireAuth } from "@/middleware/auth.js";
 import { errorHandler } from "@/middleware/error-handler.js";
+import { metricsMiddleware } from "@/middleware/metrics.js";
 import { createV1Router } from "@/routes/index.js";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { toNodeHandler } from "better-auth/node";
@@ -66,6 +67,7 @@ const app = express()
   .use(express.urlencoded({ extended: true, limit: "100mb" }))
   .use(express.json({ limit: "100mb" }))
   .use(cookieParser())
+  .use(metricsMiddleware)
   .use(loggerMiddleware)
 
   // Health check endpoint (before OpenAPI validator)

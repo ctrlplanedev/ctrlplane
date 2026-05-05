@@ -37,6 +37,9 @@ export const env = createEnv({
     BASE_URL: z.string().optional(),
 
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
+    OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: z.string().optional(),
+    OTEL_SERVICE_NAME: z.string().default("ctrlplane-api"),
 
     AZURE_APP_CLIENT_ID: z.string().optional(),
 
