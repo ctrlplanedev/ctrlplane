@@ -1,3 +1,5 @@
+import "@/instrumentation.js";
+
 import { env } from "@/config.js";
 import { app } from "@/server.js";
 
