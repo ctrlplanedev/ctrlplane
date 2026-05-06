@@ -28,6 +28,7 @@
     "@octokit/auth-app": "catalog:",
     "@octokit/rest": "catalog:",
     "@octokit/types": "^13.5.0",
+    "@opentelemetry/api": "^1.9.0",
     "@t3-oss/env-core": "catalog:",
     "@trpc/server": "11.0.0-rc.364",
     "better-auth": "^1.4.6",
