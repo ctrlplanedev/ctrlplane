@@ -184,7 +184,7 @@ local openapi = import '../lib/openapi.libsonnet';
         description: 'CEL expression to match the environment(s) that must have a successful release before this environment can proceed.',
       },
 
-      minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },
+      minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100 },
       successStatuses: { type: 'array', items: openapi.schemaRef('JobStatus') },
 
       minimumSoakTimeMinutes: {
