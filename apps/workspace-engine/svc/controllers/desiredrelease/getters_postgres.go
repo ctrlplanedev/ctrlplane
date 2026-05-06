@@ -190,16 +190,19 @@ func (g *PostgresGetter) IterCandidateVersions(
 
 // fetchFirstBatch loads the newest candidateVersionBatchSize deployable
 // versions for a deployment, sharing the result across concurrent callers via
-// singleflight keyed by (deploymentID, hash(pushdownClauses)). Same selector
-// text always produces the same args, so hashing only the clauses is enough
-// to discriminate cache slots. The returned slice is immutable.
+// singleflight keyed by (deploymentID, hash(clauses), hash(args)). Two
+// selectors can compile to the same clause text but bind different values
+// (e.g. `tag == "v1"` and `tag == "v2"` both produce `tag = $5`), so the
+// args MUST participate in the key — otherwise concurrent reconciles for
+// different RTs of the same deployment would receive each other's results.
+// The returned slice is immutable.
 func (g *PostgresGetter) fetchFirstBatch(
 	ctx context.Context,
 	deploymentID uuid.UUID,
 	pushdownClauses []string,
 	pushdownArgs []any,
 ) ([]db.DeploymentVersion, error) {
-	key := deploymentID.String() + "|" + hashClauses(pushdownClauses)
+	key := deploymentID.String() + "|" + hashClauses(pushdownClauses) + ":" + hashArgs(pushdownArgs)
 	// Detach the singleflight closure from the first caller's cancellation
 	// so one caller's ctx cancellation doesn't fail the shared query for
 	// every other waiter on the same key. Trace context is preserved.
@@ -316,6 +319,26 @@ func hashClauses(clauses []string) string {
 	h := sha256.New()
 	for _, c := range clauses {
 		h.Write([]byte(c))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// hashArgs produces a stable cache-key suffix for a set of pushdown args.
+// Order matters and must match the clause-arg pairing exactly.
+//
+// The current celutil.SQLExtractor only emits string-typed args (CEL string
+// literals via extractValue), so fmt's %v gives a deterministic
+// representation. If future schema additions allow non-string types whose
+// %v rendering depends on map iteration order or other non-determinism, the
+// caller must pre-canonicalize before reaching this point.
+func hashArgs(args []any) string {
+	if len(args) == 0 {
+		return ""
+	}
+	h := sha256.New()
+	for _, a := range args {
+		fmt.Fprintf(h, "%v", a)
 		h.Write([]byte{0})
 	}
 	return hex.EncodeToString(h.Sum(nil))
