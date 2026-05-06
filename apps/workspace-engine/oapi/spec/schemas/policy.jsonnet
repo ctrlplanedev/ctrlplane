@@ -147,7 +147,7 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       dependsOnEnvironmentSelector: { type: 'string', description: 'CEL expression to determine if the environment progression rule should be used' },
 
-      minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },
+      minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100 },
       successStatuses: { type: 'array', items: openapi.schemaRef('JobStatus') },
 
       minimumSoakTimeMinutes: {

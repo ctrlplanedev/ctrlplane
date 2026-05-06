@@ -936,6 +936,47 @@ deny contains msg if {
     });
   });
 
+  test("should create a policy with environmentProgression rule omitting minimumSuccessPercentage", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `policy-envprog-nodefault-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST("/v1/workspaces/{workspaceId}/policies", {
+      params: { path: { workspaceId: workspace.id } },
+      body: {
+        name,
+        rules: [
+          {
+            environmentProgression: {
+              dependsOnEnvironmentSelector: 'environment.name == "staging"',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(createRes.response.status).toBe(202);
+    const policyId = createRes.data!.id;
+    const created = createRes.data!.rules[0]!.environmentProgression!;
+    expect(created.dependsOnEnvironmentSelector).toBe(
+      'environment.name == "staging"',
+    );
+    expect(created.minimumSuccessPercentage).toBeUndefined();
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/policies/{policyId}",
+      { params: { path: { workspaceId: workspace.id, policyId } } },
+    );
+    expect(getRes.response.status).toBe(200);
+    expect(
+      getRes.data!.rules[0]!.environmentProgression!.minimumSuccessPercentage,
+    ).toBeUndefined();
+
+    await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+      params: { path: { workspaceId: workspace.id, policyId } },
+    });
+  });
+
   test("should create a policy with multiple rules", async ({
     api,
     workspace,

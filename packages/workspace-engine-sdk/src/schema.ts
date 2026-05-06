@@ -414,11 +414,8 @@ export interface components {
        * @default 0
        */
       minimumSoakTimeMinutes: number;
-      /**
-       * Format: float
-       * @default 100
-       */
-      minimumSuccessPercentage: number;
+      /** Format: float */
+      minimumSuccessPercentage?: number;
       /**
        * @description If true, jobs must also have passed verification to count toward the success percentage
        * @default false

@@ -1493,11 +1493,8 @@ export interface components {
              * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.
              */
             minimumSoakTimeMinutes?: number;
-            /**
-             * Format: float
-             * @default 100
-             */
-            minimumSuccessPercentage: number;
+            /** Format: float */
+            minimumSuccessPercentage?: number;
             /**
              * @description If true, jobs must also have passed verification to count toward the success percentage
              * @default false
