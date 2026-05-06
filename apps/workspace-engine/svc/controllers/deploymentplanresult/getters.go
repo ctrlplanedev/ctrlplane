@@ -26,6 +26,11 @@ type Getter interface {
 		targetID uuid.UUID,
 	) ([]db.ListDeploymentPlanTargetResultsByTargetIDRow, error)
 
+	ListPlanValidationResultsByTargetID(
+		ctx context.Context,
+		targetID uuid.UUID,
+	) ([]db.ListPlanValidationResultsByTargetIDRow, error)
+
 	GetMatchingPlanValidationOpaRules(
 		ctx context.Context,
 		workspaceID uuid.UUID,

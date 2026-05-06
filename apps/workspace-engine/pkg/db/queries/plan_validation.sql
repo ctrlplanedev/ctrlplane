@@ -20,6 +20,19 @@ JOIN release rel ON rel.id = t.current_release_id
 JOIN deployment_version dv ON dv.id = rel.version_id
 WHERE t.id = $1;
 
+-- name: ListPlanValidationResultsByTargetID :many
+SELECT
+  v.result_id,
+  v.rule_id,
+  v.violations,
+  r.name AS rule_name
+FROM deployment_plan_target_result_validation v
+JOIN deployment_plan_target_result res ON res.id = v.result_id
+JOIN policy_rule_plan_validation_opa r ON r.id = v.rule_id
+WHERE res.target_id = $1
+  AND v.passed = false
+ORDER BY v.evaluated_at DESC;
+
 -- name: UpsertPlanValidationResult :exec
 INSERT INTO deployment_plan_target_result_validation (
   result_id, rule_id, passed, violations, evaluated_at

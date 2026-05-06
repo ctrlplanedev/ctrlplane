@@ -93,6 +93,52 @@ func TestAggregateResults_AdditionsDeletionsSumAcrossAgents(t *testing.T) {
 	assert.Equal(t, 2, agg.Deletions)
 }
 
+func TestAggregateResults_CountsValidationFailures(t *testing.T) {
+	withViolations := func(name string, v []ruleViolation) agentResult {
+		r := completedResult(name, false, "", "")
+		r.Violations = v
+		return r
+	}
+
+	results := []agentResult{
+		withViolations(
+			"a",
+			[]ruleViolation{{RuleName: "no-prod-on-friday", Messages: []string{"deny"}}},
+		),
+		withViolations("b", nil),
+		withViolations("c", []ruleViolation{
+			{RuleName: "rule1", Messages: []string{"x"}},
+			{RuleName: "rule2", Messages: []string{"y"}},
+		}),
+	}
+
+	agg := aggregateResults(results)
+
+	assert.Equal(
+		t,
+		2,
+		agg.ValidationFailures,
+		"counts results with at least one violation, not the total rule count",
+	)
+}
+
+func TestFormatAgentSection_RendersViolations(t *testing.T) {
+	r := completedResult("argo-1", true, "a\n", "b\n")
+	r.Violations = []ruleViolation{
+		{RuleName: "no-prod-on-friday", Messages: []string{"Deploys are blocked on Fridays"}},
+		{RuleName: "min-replicas", Messages: []string{"replicas must be >= 3", "got 1"}},
+	}
+
+	out := formatAgentSection(r)
+
+	assert.Contains(t, out, "**Policy violations:**")
+	assert.Contains(t, out, "`no-prod-on-friday`")
+	assert.Contains(t, out, "Deploys are blocked on Fridays")
+	assert.Contains(t, out, "`min-replicas`")
+	assert.Contains(t, out, "replicas must be >= 3")
+	assert.Contains(t, out, "got 1")
+}
+
 func TestCountDiffLines(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -176,6 +222,11 @@ func TestAggregate_CheckConclusion(t *testing.T) {
 			aggregate{Total: 2, Completed: 1, Unchanged: 1, Unsupported: 1},
 			"success",
 		},
+		{
+			"validation failure -> failure (overrides clean diff)",
+			aggregate{Total: 1, Completed: 1, Unchanged: 1, ValidationFailures: 1},
+			"failure",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -240,6 +291,28 @@ func TestAggregate_CheckTitle(t *testing.T) {
 			"all unsupported",
 			aggregate{Total: 2, Unsupported: 2},
 			"All agents unsupported",
+		},
+		{
+			"final with validation failures",
+			aggregate{
+				Total:              2,
+				Completed:          2,
+				Changed:            1,
+				Additions:          5,
+				Deletions:          2,
+				ValidationFailures: 2,
+			},
+			"+5 -2 (2 policy violations)",
+		},
+		{
+			"final with single validation failure (singular)",
+			aggregate{
+				Total:              1,
+				Completed:          1,
+				Unchanged:          1,
+				ValidationFailures: 1,
+			},
+			"+0 -0 (1 policy violation)",
 		},
 	}
 	for _, tc := range tests {

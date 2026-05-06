@@ -40,6 +40,13 @@ func (g *PostgresGetter) ListDeploymentPlanTargetResultsByTargetID(
 	return db.GetQueries(ctx).ListDeploymentPlanTargetResultsByTargetID(ctx, targetID)
 }
 
+func (g *PostgresGetter) ListPlanValidationResultsByTargetID(
+	ctx context.Context,
+	targetID uuid.UUID,
+) ([]db.ListPlanValidationResultsByTargetIDRow, error) {
+	return db.GetQueries(ctx).ListPlanValidationResultsByTargetID(ctx, targetID)
+}
+
 func (g *PostgresGetter) GetCurrentVersionForPlanTarget(
 	ctx context.Context,
 	planTargetID uuid.UUID,
