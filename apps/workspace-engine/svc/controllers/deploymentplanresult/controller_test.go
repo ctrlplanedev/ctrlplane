@@ -73,6 +73,13 @@ func (m *mockGetter) ListDeploymentPlanTargetResultsByTargetID(
 	return nil, nil
 }
 
+func (m *mockGetter) ListPlanValidationResultsByTargetID(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]db.ListPlanValidationResultsByTargetIDRow, error) {
+	return nil, nil
+}
+
 func (m *mockGetter) GetMatchingPlanValidationOpaRules(
 	_ context.Context,
 	_ uuid.UUID,

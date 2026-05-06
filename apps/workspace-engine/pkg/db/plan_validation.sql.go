@@ -93,6 +93,52 @@ func (q *Queries) ListPlanValidationOpaRulesForWorkspace(ctx context.Context, wo
 	return items, nil
 }
 
+const listPlanValidationResultsByTargetID = `-- name: ListPlanValidationResultsByTargetID :many
+SELECT
+  v.result_id,
+  v.rule_id,
+  v.violations,
+  r.name AS rule_name
+FROM deployment_plan_target_result_validation v
+JOIN deployment_plan_target_result res ON res.id = v.result_id
+JOIN policy_rule_plan_validation_opa r ON r.id = v.rule_id
+WHERE res.target_id = $1
+  AND v.passed = false
+ORDER BY v.evaluated_at DESC
+`
+
+type ListPlanValidationResultsByTargetIDRow struct {
+	ResultID   uuid.UUID
+	RuleID     uuid.UUID
+	Violations []byte
+	RuleName   string
+}
+
+func (q *Queries) ListPlanValidationResultsByTargetID(ctx context.Context, targetID uuid.UUID) ([]ListPlanValidationResultsByTargetIDRow, error) {
+	rows, err := q.db.Query(ctx, listPlanValidationResultsByTargetID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlanValidationResultsByTargetIDRow
+	for rows.Next() {
+		var i ListPlanValidationResultsByTargetIDRow
+		if err := rows.Scan(
+			&i.ResultID,
+			&i.RuleID,
+			&i.Violations,
+			&i.RuleName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertPlanValidationResult = `-- name: UpsertPlanValidationResult :exec
 INSERT INTO deployment_plan_target_result_validation (
   result_id, rule_id, passed, violations, evaluated_at

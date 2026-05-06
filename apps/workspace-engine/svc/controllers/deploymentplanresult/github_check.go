@@ -97,6 +97,7 @@ func (t targetContext) hasGitHubMetadata() bool {
 // agentResult is a denormalized, template-friendly view of a result row
 // with its dispatch context parsed for the agent's name/type.
 type agentResult struct {
+	ResultID   uuid.UUID
 	AgentName  string
 	AgentType  string
 	Status     db.DeploymentPlanTargetStatus
@@ -104,6 +105,13 @@ type agentResult struct {
 	Current    string
 	Proposed   string
 	Message    string
+	Violations []ruleViolation
+}
+
+// ruleViolation is a failed plan-validation rule attached to a result.
+type ruleViolation struct {
+	RuleName string
+	Messages []string
 }
 
 // agentResultFromRow builds an agentResult from a DB row. If the row's
@@ -131,6 +139,7 @@ func agentResultFromRow(
 	}
 
 	return agentResult{
+		ResultID:   row.ID,
 		AgentName:  agentName,
 		AgentType:  agentType,
 		Status:     row.Status,
@@ -144,14 +153,15 @@ func agentResultFromRow(
 // aggregate describes the overall state of all agents for one target.
 // Used to pick the check run's status, conclusion, and title.
 type aggregate struct {
-	Total       int
-	Completed   int
-	Errored     int
-	Unsupported int
-	Changed     int
-	Unchanged   int
-	Additions   int
-	Deletions   int
+	Total              int
+	Completed          int
+	Errored            int
+	Unsupported        int
+	Changed            int
+	Unchanged          int
+	Additions          int
+	Deletions          int
+	ValidationFailures int
 }
 
 func countDiffLines(current, proposed string) (int, int) {
@@ -195,6 +205,9 @@ func aggregateResults(results []agentResult) aggregate {
 		if r.HasChanges != nil && !*r.HasChanges {
 			a.Unchanged++
 		}
+		if len(r.Violations) > 0 {
+			a.ValidationFailures++
+		}
 	}
 	return a
 }
@@ -206,11 +219,11 @@ func (a aggregate) allDone() bool {
 }
 
 // shouldFinalize reports whether the check run should be set to
-// "completed" status. We finalize as soon as any agent errors so the
-// failure is surfaced on the PR immediately, or when all agents have
-// reached a terminal state.
+// "completed" status. We finalize as soon as any agent errors or any
+// plan-validation rule fails so the failure is surfaced on the PR
+// immediately, or when all agents have reached a terminal state.
 func (a aggregate) shouldFinalize() bool {
-	return a.Errored > 0 || a.allDone()
+	return a.Errored > 0 || a.ValidationFailures > 0 || a.allDone()
 }
 
 // checkStatus returns the GitHub "status" field for the check run.
@@ -224,7 +237,7 @@ func (a aggregate) checkStatus() string {
 // checkConclusion returns the GitHub "conclusion" field. Only
 // meaningful when shouldFinalize() is true.
 func (a aggregate) checkConclusion() string {
-	if a.Errored > 0 {
+	if a.Errored > 0 || a.ValidationFailures > 0 {
 		return "failure"
 	}
 	if a.Total > 0 && a.Unsupported == a.Total {
@@ -255,10 +268,25 @@ func (a aggregate) checkTitle() string {
 	}
 
 	diffSummary := fmt.Sprintf("+%d -%d", a.Additions, a.Deletions)
+	suffix := ""
 	if a.Errored > 0 {
-		return fmt.Sprintf("%s (%d errored)", diffSummary, a.Errored)
+		suffix += fmt.Sprintf(" (%d errored)", a.Errored)
 	}
-	return diffSummary
+	if a.ValidationFailures > 0 {
+		suffix += fmt.Sprintf(
+			" (%d policy violation%s)",
+			a.ValidationFailures,
+			plural(a.ValidationFailures),
+		)
+	}
+	return diffSummary + suffix
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }
 
 // formatAgentSection renders the markdown block for one agent in the
@@ -298,7 +326,21 @@ func formatAgentSection(r agentResult) string {
 	sb.WriteString("\n```diff\n")
 	sb.WriteString(diff)
 	sb.WriteString("```\n")
+	writeViolations(&sb, r.Violations)
 	return sb.String()
+}
+
+func writeViolations(sb *strings.Builder, violations []ruleViolation) {
+	if len(violations) == 0 {
+		return
+	}
+	sb.WriteString("\n**Policy violations:**\n")
+	for _, v := range violations {
+		fmt.Fprintf(sb, "\n- `%s`\n", v.RuleName)
+		for _, msg := range v.Messages {
+			fmt.Fprintf(sb, "  - %s\n", msg)
+		}
+	}
 }
 
 // truncateText trims s to fit within maxBytes (accounting for a trailing
@@ -538,6 +580,11 @@ func loadTargetContext(
 		return targetContext{}, nil, fmt.Errorf("list target results: %w", err)
 	}
 
+	violationsByResult, err := loadViolationsByResult(ctx, getter, tc.TargetID)
+	if err != nil {
+		return targetContext{}, nil, err
+	}
+
 	span := trace.SpanFromContext(ctx)
 	results := make([]agentResult, len(rows))
 	for i, r := range rows {
@@ -548,7 +595,51 @@ func loadTargetContext(
 				r.ID, parseErr,
 			))
 		}
+		result.Violations = violationsByResult[result.ResultID]
 		results[i] = result
 	}
 	return tc, results, nil
+}
+
+func loadViolationsByResult(
+	ctx context.Context,
+	getter Getter,
+	targetID uuid.UUID,
+) (map[uuid.UUID][]ruleViolation, error) {
+	rows, err := getter.ListPlanValidationResultsByTargetID(ctx, targetID)
+	if err != nil {
+		return nil, fmt.Errorf("list plan validation results: %w", err)
+	}
+
+	span := trace.SpanFromContext(ctx)
+	out := make(map[uuid.UUID][]ruleViolation, len(rows))
+	for _, r := range rows {
+		messages, parseErr := parseViolationMessages(r.Violations)
+		if parseErr != nil {
+			span.RecordError(fmt.Errorf(
+				"parse violations for rule %s: %w", r.RuleID, parseErr,
+			))
+			continue
+		}
+		out[r.ResultID] = append(out[r.ResultID], ruleViolation{
+			RuleName: r.RuleName,
+			Messages: messages,
+		})
+	}
+	return out, nil
+}
+
+func parseViolationMessages(raw []byte) ([]string, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var parsed []oapi.PlanValidationViolation
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return nil, err
+	}
+	messages := make([]string, len(parsed))
+	for i, v := range parsed {
+		messages[i] = v.Message
+	}
+	return messages, nil
 }
