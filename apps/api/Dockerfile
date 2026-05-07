@@ -7,7 +7,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME/bin:$PATH"
 
 RUN npm install -g turbo
-RUN npm install -g corepack@latest
+RUN npm install -g corepack@0.34.7
 RUN corepack enable pnpm
 
 WORKDIR /app
