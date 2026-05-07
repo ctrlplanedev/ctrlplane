@@ -63,7 +63,10 @@ func (s *Service) run(ctx context.Context) {
 				if ctx.Err() != nil {
 					return
 				}
-				slog.ErrorContext(ctx, "claim-cleanup: failed to release expired claims", "error", err)
+				slog.ErrorContext(ctx,
+					"claim-cleanup: failed to release expired claims",
+					"error", err,
+				)
 				continue
 			}
 			if released > 0 {

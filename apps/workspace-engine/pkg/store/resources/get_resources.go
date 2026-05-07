@@ -6,13 +6,12 @@ import (
 	"log/slog"
 	"time"
 
-	"workspace-engine/pkg/celutil"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
-
 	"github.com/google/cel-go/cel"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	"workspace-engine/pkg/celutil"
+	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/store/resources")
