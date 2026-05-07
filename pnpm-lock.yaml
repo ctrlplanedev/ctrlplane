@@ -156,6 +156,9 @@ importers:
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
+      '@opentelemetry/exporter-logs-otlp-http':
+        specifier: ^0.217.0
+        version: 0.217.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/exporter-metrics-otlp-http':
         specifier: ^0.217.0
         version: 0.217.0(@opentelemetry/api@1.9.0)
@@ -177,6 +180,9 @@ importers:
       '@opentelemetry/resources':
         specifier: ^2.7.1
         version: 2.7.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-logs':
+        specifier: ^0.217.0
+        version: 0.217.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-metrics':
         specifier: ^2.7.1
         version: 2.7.1(@opentelemetry/api@1.9.0)
