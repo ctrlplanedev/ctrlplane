@@ -7,6 +7,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
+import type { ArgoWorkflowPayload } from "./workflow.js";
 import { handleArgoWorkflow } from "./workflow.js";
 
 export const createArgoWorkflowRouter = (): Router =>
@@ -47,14 +48,14 @@ const handleWebhookRequest = async (req: Request, res: Response) => {
     return;
   }
 
-  const payload = req.body;
+  const payload = req.body as ArgoWorkflowPayload;
   logger.info("Argo webhook received", {
     jobAgentId: id,
-    workflowName: payload?.workflowName,
-    uid: payload?.uid,
-    phase: payload?.phase,
-    jobId: payload?.jobId,
-    eventType: payload?.eventType,
+    workflowName: payload.workflowName,
+    uid: payload.uid,
+    phase: payload.phase,
+    jobId: payload.jobId,
+    eventType: payload.eventType,
   });
   await handleArgoWorkflow(payload);
   res.status(200).send();

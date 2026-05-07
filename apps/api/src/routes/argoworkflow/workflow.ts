@@ -5,7 +5,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
-interface ArgoWorkflowPayload {
+export interface ArgoWorkflowPayload {
   workflowName: string;
   namespace: string;
   uid: string;
