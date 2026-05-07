@@ -4,7 +4,7 @@ FROM node:${NODE_VERSION}-alpine
 RUN apk add --no-cache libc6-compat python3 make g++ curl
 
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME/bin:$PATH"
 
 RUN npm install -g turbo
 RUN npm install -g corepack@latest
