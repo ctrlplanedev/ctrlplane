@@ -3,6 +3,7 @@ package argoworkflows
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/avast/retry-go"
-	"github.com/charmbracelet/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -104,7 +104,7 @@ func createWorkflowWithRetry(
 		retry.MaxDelay(10*time.Second),
 		retry.DelayType(retry.BackOffDelay),
 		retry.OnRetry(func(n uint, err error) {
-			log.Warn("Retrying ArgoWorkflow submission",
+			slog.Warn("Retrying ArgoWorkflow submission",
 				"attempt", n+1,
 				"error", err)
 		}),

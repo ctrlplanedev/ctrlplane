@@ -2,10 +2,11 @@ package db
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/config"
@@ -21,7 +22,8 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
 		cfg, err := pgxpool.ParseConfig(config.Global.PostgresURL)
 		if err != nil {
-			log.Fatal("Failed to parse database config:", err)
+			slog.Error("Failed to parse database config", "error", err)
+			os.Exit(1)
 		}
 
 		cfg.MaxConns = int32(config.Global.PostgresMaxPoolSize)
@@ -33,7 +35,8 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 
 		pool, err = pgxpool.NewWithConfig(ctx, cfg)
 		if err != nil {
-			log.Fatal("Failed to create database pool:", err)
+			slog.Error("Failed to create database pool", "error", err)
+			os.Exit(1)
 		}
 	})
 	return pool

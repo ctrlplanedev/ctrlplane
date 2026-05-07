@@ -3,15 +3,16 @@ package resources
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/google/cel-go/cel"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/google/cel-go/cel"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("workspace-engine/pkg/store/resources")
@@ -62,7 +63,7 @@ func (p *PostgresGetResources) GetResources(
 			baseQuery += " AND " + filter.Clause
 			args = append(args, filter.Args...)
 
-			log.Info("get resources optimization", "filter", filter.Clause)
+			slog.Info("get resources optimization", "filter", filter.Clause)
 		}
 	}
 

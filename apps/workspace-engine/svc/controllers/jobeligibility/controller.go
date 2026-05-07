@@ -3,9 +3,10 @@ package jobeligibility
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -80,12 +81,12 @@ func NewController(getter Getter, setter Setter) *Controller {
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 	kind := events.JobEligibilityKind
 	maxConcurrency := config.GetMaxConcurrency(kind)
-	log.Debug(
+	slog.Debug(
 		"Creating job eligibility reconcile worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -116,7 +117,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create job eligibility reconcile worker", "error", err)
+		slog.Error("Failed to create job eligibility reconcile worker", "error", err)
+		os.Exit(1)
 	}
 
 	_ = ctx

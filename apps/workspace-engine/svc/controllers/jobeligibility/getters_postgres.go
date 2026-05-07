@@ -3,8 +3,8 @@ package jobeligibility
 import (
 	"context"
 	"errors"
+	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -71,7 +71,7 @@ func (g *PostgresGetter) GetJobsForReleaseTarget(
 ) map[string]*oapi.Job {
 	deploymentID, err := uuid.Parse(releaseTarget.DeploymentId)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to parse deployment id",
 			"deploymentID",
 			releaseTarget.DeploymentId,
@@ -82,7 +82,7 @@ func (g *PostgresGetter) GetJobsForReleaseTarget(
 	}
 	environmentID, err := uuid.Parse(releaseTarget.EnvironmentId)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to parse environment id",
 			"environmentID",
 			releaseTarget.EnvironmentId,
@@ -93,7 +93,7 @@ func (g *PostgresGetter) GetJobsForReleaseTarget(
 	}
 	resourceID, err := uuid.Parse(releaseTarget.ResourceId)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to parse resource id",
 			"resourceID",
 			releaseTarget.ResourceId,
@@ -108,7 +108,7 @@ func (g *PostgresGetter) GetJobsForReleaseTarget(
 		ResourceID:    resourceID,
 	})
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to get jobs for release target",
 			"releaseTarget",
 			releaseTarget.Key(),
@@ -131,7 +131,7 @@ func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(
 ) map[string]*oapi.Job {
 	deploymentID, err := uuid.Parse(releaseTarget.DeploymentId)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to parse deployment id",
 			"deploymentID",
 			releaseTarget.DeploymentId,
@@ -142,7 +142,7 @@ func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(
 	}
 	environmentID, err := uuid.Parse(releaseTarget.EnvironmentId)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to parse environment id",
 			"environmentID",
 			releaseTarget.EnvironmentId,
@@ -153,7 +153,7 @@ func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(
 	}
 	resourceID, err := uuid.Parse(releaseTarget.ResourceId)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to parse resource id",
 			"resourceID",
 			releaseTarget.ResourceId,
@@ -170,7 +170,7 @@ func (g *PostgresGetter) GetJobsInProcessingStateForReleaseTarget(
 			Statuses:      []string{"in_progress", "action_required", "pending"},
 		})
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"failed to get jobs for release target",
 			"releaseTarget",
 			releaseTarget.Key(),

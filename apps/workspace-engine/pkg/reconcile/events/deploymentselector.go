@@ -2,8 +2,8 @@ package events
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/reconcile"
 )
 
@@ -35,7 +35,7 @@ func EnqueueManyDeploymentResourceselectorEval(
 	if len(params) == 0 {
 		return nil
 	}
-	log.Info("enqueueing deployment resourceselector evals", "count", len(params))
+	slog.Info("enqueueing deployment resourceselector evals", "count", len(params))
 	items := make([]reconcile.EnqueueParams, len(params))
 	for i, p := range params {
 		items[i] = reconcile.EnqueueParams{

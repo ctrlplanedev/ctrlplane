@@ -3,6 +3,7 @@ package argo
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	argocdapplication "github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/avast/retry-go"
-	"github.com/charmbracelet/log"
 )
 
 // GoApplicationUpserter is the production implementation of
@@ -64,7 +64,7 @@ func upsertWithRetry(
 		retry.MaxDelay(10*time.Second),
 		retry.DelayType(retry.BackOffDelay),
 		retry.OnRetry(func(n uint, err error) {
-			log.Warn("Retrying ArgoCD application upsert",
+			slog.Warn("Retrying ArgoCD application upsert",
 				"attempt", n+1,
 				"error", err)
 		}),

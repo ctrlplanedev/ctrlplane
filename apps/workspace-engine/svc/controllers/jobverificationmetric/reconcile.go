@@ -3,9 +3,9 @@ package jobverificationmetric
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -51,7 +51,7 @@ func Reconcile(
 		span.AddEvent("interval not yet elapsed, deferring",
 			trace.WithAttributes(attribute.String("remaining", remaining.String())),
 		)
-		log.Info("Interval not yet elapsed, deferring", "remaining", remaining)
+		slog.Info("Interval not yet elapsed, deferring", "remaining", remaining)
 		return &ReconcileResult{RequeueAfter: &remaining}, nil
 	}
 

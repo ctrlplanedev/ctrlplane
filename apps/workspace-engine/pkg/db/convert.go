@@ -3,8 +3,8 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"workspace-engine/pkg/oapi"
 )
@@ -474,12 +474,12 @@ func ToOapiFullRelease(row GetDesiredReleaseByReleaseTargetRow) *oapi.Release {
 	if len(row.Variables) > 0 {
 		var raw map[string]json.RawMessage
 		if err := json.Unmarshal(row.Variables, &raw); err != nil {
-			log.Error("failed to unmarshal release variables", "error", err)
+			slog.Error("failed to unmarshal release variables", "error", err)
 		} else {
 			for k, v := range raw {
 				var lv oapi.LiteralValue
 				if err := lv.UnmarshalJSON(v); err != nil {
-					log.Error("failed to unmarshal literal value", "key", k, "error", err)
+					slog.Error("failed to unmarshal literal value", "key", k, "error", err)
 					continue
 				}
 				variables[k] = lv

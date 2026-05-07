@@ -3,10 +3,10 @@ package reconcile
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/svc"
 )
 
@@ -131,7 +131,7 @@ func (w *Worker) Run(ctx context.Context) error {
 				LeaseDuration: w.cfg.LeaseDuration,
 			})
 			if err != nil {
-				log.Error("error claiming items", "error", err)
+				slog.Error("error claiming items", "error", err)
 			}
 			if err == nil && len(items) > 0 {
 				currentPoll = w.cfg.PollInterval
@@ -212,7 +212,7 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 	leaseWG.Wait()
 
 	if processErr != nil {
-		log.Error(
+		slog.Error(
 			"Error processing item",
 			"item",
 			item.ID,

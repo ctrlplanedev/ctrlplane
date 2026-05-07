@@ -51,3 +51,28 @@ func (t *teeHandler) WithGroup(name string) slog.Handler {
 	}
 	return &teeHandler{handlers: next}
 }
+
+type levelHandler struct {
+	handler slog.Handler
+	level   slog.Level
+}
+
+func newLevelHandler(level slog.Level, h slog.Handler) *levelHandler {
+	return &levelHandler{handler: h, level: level}
+}
+
+func (l *levelHandler) Enabled(_ context.Context, lvl slog.Level) bool {
+	return lvl >= l.level
+}
+
+func (l *levelHandler) Handle(ctx context.Context, r slog.Record) error {
+	return l.handler.Handle(ctx, r)
+}
+
+func (l *levelHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &levelHandler{handler: l.handler.WithAttrs(attrs), level: l.level}
+}
+
+func (l *levelHandler) WithGroup(name string) slog.Handler {
+	return &levelHandler{handler: l.handler.WithGroup(name), level: l.level}
+}

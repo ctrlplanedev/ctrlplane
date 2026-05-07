@@ -3,9 +3,9 @@ package terraformcloud
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
 )
@@ -83,7 +83,7 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 		cfg.webhookUrl,
 		webhookSecret,
 	); err != nil {
-		log.Warn("Failed to ensure notification config, continuing dispatch", "error", err)
+		slog.Warn("Failed to ensure notification config, continuing dispatch", "error", err)
 	}
 
 	if !cfg.triggerRunOnChange {
@@ -112,6 +112,6 @@ func (t *TFE) updateJobStatus(
 	metadata map[string]string,
 ) {
 	if err := t.setter.UpdateJob(ctx, jobID, status, message, metadata); err != nil {
-		log.Error("Failed to update job status", "jobID", jobID, "error", err)
+		slog.Error("Failed to update job status", "jobID", jobID, "error", err)
 	}
 }

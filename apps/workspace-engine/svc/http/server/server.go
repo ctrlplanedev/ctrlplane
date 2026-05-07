@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerfiles "github.com/swaggo/files"
@@ -88,7 +88,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 				errMsg = c.Errors.String()
 			}
 
-			log.Error("request",
+			slog.Error("request",
 				"method", method,
 				"path", path,
 				"status", statusCode,

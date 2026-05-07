@@ -3,8 +3,8 @@ package policies
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel"
@@ -121,13 +121,13 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 	for _, policy := range policies {
 		policyID, err := uuid.Parse(policy.Id)
 		if err != nil {
-			log.Error("failed to parse policy id", "policy_id", policy.Id, "error", err)
+			slog.Error("failed to parse policy id", "policy_id", policy.Id, "error", err)
 			continue
 		}
 		policyIDs = append(policyIDs, policyID)
 	}
 
-	log.Info(
+	slog.Info(
 		"setting policies for release target",
 		"policy_ids",
 		len(policyIDs),

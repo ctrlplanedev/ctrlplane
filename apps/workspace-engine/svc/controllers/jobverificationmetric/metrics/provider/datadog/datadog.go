@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"reflect"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
@@ -157,7 +157,7 @@ func (p *Provider) Measure(
 	duration := time.Since(startTime)
 
 	if err != nil {
-		log.Error("Datadog metric request failed", "site", resolved.Site, "error", err)
+		slog.Error("Datadog metric request failed", "site", resolved.Site, "error", err)
 		return time.Time{}, nil, err
 	}
 	defer resp.Body.Close()
@@ -169,19 +169,19 @@ func (p *Provider) Measure(
 
 	var rawJson any
 	if err := json.Unmarshal(respBody, &rawJson); err != nil {
-		log.Error("Failed to parse Datadog response", "body", string(respBody), "error", err)
+		slog.Error("Failed to parse Datadog response", "body", string(respBody), "error", err)
 		return time.Time{}, nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
 	var jsonResponse datadogResponseV2
 	if err := json.Unmarshal(respBody, &jsonResponse); err != nil {
-		log.Error("Failed to parse Datadog response", "body", string(respBody), "error", err)
+		slog.Error("Failed to parse Datadog response", "body", string(respBody), "error", err)
 		return time.Time{}, nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
 	queries, err := extractQueryValue(jsonResponse)
 	if err != nil {
-		log.Warn("Could not extract query values", "error", err)
+		slog.Warn("Could not extract query values", "error", err)
 	}
 
 	data := map[string]any{
@@ -193,7 +193,7 @@ func (p *Provider) Measure(
 		"queries":    queries,
 	}
 
-	log.Debug("Datadog metric measurement",
+	slog.Debug("Datadog metric measurement",
 		"site", resolved.Site,
 		"status", resp.StatusCode,
 		"duration", duration)

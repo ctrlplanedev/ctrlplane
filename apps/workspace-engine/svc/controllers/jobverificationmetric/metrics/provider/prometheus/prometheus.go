@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/prometheus/common/model"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
@@ -122,7 +122,7 @@ func (p *PrometheusProvider) Measure(
 	resp, err := client.Do(req)
 	duration := time.Since(startTime)
 	if err != nil {
-		log.Error(
+		slog.Error(
 			"Prometheus metric request failed",
 			"address",
 			resolvedProvider.Address,
@@ -143,7 +143,7 @@ func (p *PrometheusProvider) Measure(
 		return time.Time{}, nil, err
 	}
 
-	log.Debug("Prometheus metric measurement",
+	slog.Debug("Prometheus metric measurement",
 		"address", resolvedProvider.Address,
 		"query", resolvedProvider.Query,
 		"status", resp.StatusCode,
@@ -378,7 +378,7 @@ func buildResultData(
 
 	value, results, err := extractResults(promResp)
 	if err != nil {
-		log.Warn("Could not extract Prometheus result values", "error", err)
+		slog.Warn("Could not extract Prometheus result values", "error", err)
 	}
 
 	data["value"] = value
@@ -416,7 +416,7 @@ func extractVectorResults(raw json.RawMessage) (*float64, []map[string]any, erro
 	for i, v := range vectors {
 		val, err := parseScalarValue(v.Value[1])
 		if err != nil {
-			log.Warn("Could not parse vector value", "index", i, "error", err)
+			slog.Warn("Could not parse vector value", "index", i, "error", err)
 			continue
 		}
 		if primary == nil {
@@ -451,7 +451,7 @@ func extractMatrixResults(raw json.RawMessage) (*float64, []map[string]any, erro
 		lastPair := m.Values[len(m.Values)-1]
 		val, err := parseScalarValue(lastPair[1])
 		if err != nil {
-			log.Warn("Could not parse matrix value", "index", i, "error", err)
+			slog.Warn("Could not parse matrix value", "index", i, "error", err)
 			continue
 		}
 		if primary == nil {

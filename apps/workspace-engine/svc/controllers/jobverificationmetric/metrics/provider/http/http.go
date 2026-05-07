@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 )
 
@@ -109,7 +109,7 @@ func (p *Provider) Measure(
 	duration := time.Since(startTime)
 
 	if err != nil {
-		log.Error("HTTP metric request failed", "url", resolved.URL, "error", err)
+		slog.Error("HTTP metric request failed", "url", resolved.URL, "error", err)
 		return time.Time{}, nil, err
 	}
 	defer resp.Body.Close()
@@ -128,7 +128,7 @@ func (p *Provider) Measure(
 		"duration":   duration.Milliseconds(),
 	}
 
-	log.Debug("HTTP metric measurement",
+	slog.Debug("HTTP metric measurement",
 		"url", resolved.URL,
 		"status", resp.StatusCode,
 		"duration", duration)
