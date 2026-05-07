@@ -163,7 +163,7 @@ func initLogger() (func(), error) {
 
 	serviceName := config.Global.OTELServiceName
 	endpoint := stripScheme(config.Global.OTELExporterOTLPEndpoint)
-	level := parseLogLevel(config.Global.OTELLogLevel)
+	level := parseLogLevel(config.Global.LogLevel)
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(semconv.ServiceNameKey.String(serviceName)),
