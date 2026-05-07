@@ -183,7 +183,9 @@ func initLogger() (func(), error) {
 	}
 
 	lp := sdklog.NewLoggerProvider(
-		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
+		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter,
+			sdklog.WithExportInterval(5*time.Second),
+		)),
 		sdklog.WithResource(res),
 	)
 
