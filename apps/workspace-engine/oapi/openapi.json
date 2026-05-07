@@ -612,7 +612,6 @@
                   "type": "integer"
                },
                "minimumSuccessPercentage": {
-                  "default": 100,
                   "format": "float",
                   "maximum": 100,
                   "minimum": 0,

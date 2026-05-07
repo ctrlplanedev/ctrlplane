@@ -207,7 +207,9 @@ const formatPolicy = (p: PolicyRow) => {
             maximumAgeHours: r.maximumAgeHours,
           }),
           minimumSoakTimeMinutes: r.minimumSoakTimeMinutes,
-          minimumSuccessPercentage: r.minimumSuccessPercentage,
+          ...(r.minimumSuccessPercentage != null && {
+            minimumSuccessPercentage: r.minimumSuccessPercentage,
+          }),
           ...(r.successStatuses != null && {
             successStatuses: r.successStatuses,
           }),
