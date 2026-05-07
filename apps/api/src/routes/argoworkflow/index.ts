@@ -5,6 +5,7 @@ import { Router } from "express";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 import { handleArgoWorkflow } from "./workflow.js";
 
@@ -47,6 +48,14 @@ const handleWebhookRequest = async (req: Request, res: Response) => {
   }
 
   const payload = req.body;
+  logger.info("Argo webhook received", {
+    jobAgentId: id,
+    workflowName: payload?.workflowName,
+    uid: payload?.uid,
+    phase: payload?.phase,
+    jobId: payload?.jobId,
+    eventType: payload?.eventType,
+  });
   await handleArgoWorkflow(payload);
   res.status(200).send();
 };

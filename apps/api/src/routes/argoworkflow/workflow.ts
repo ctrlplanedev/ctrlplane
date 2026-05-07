@@ -1,7 +1,8 @@
-import { eq } from "@ctrlplane/db";
+import { and, eq, notInArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { enqueueAllReleaseTargetsDesiredVersion } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 interface ArgoWorkflowPayload {
@@ -16,9 +17,14 @@ interface ArgoWorkflowPayload {
   eventType: string;
 }
 
+// Argo Workflow phases: Pending | Running | Succeeded | Failed | Error.
+// Error covers controller/infra failures (timeouts, unschedulable pods, exit
+// handler crashes); ctrlplane has no separate enum value, so it folds into
+// Failure alongside user-code Failed.
 const statusMap: Record<string, JobStatus> = {
   Succeeded: JobStatus.Successful,
   Failed: JobStatus.Failure,
+  Error: JobStatus.Failure,
   Running: JobStatus.InProgress,
   Pending: JobStatus.Pending,
 };
@@ -26,21 +32,40 @@ const statusMap: Record<string, JobStatus> = {
 export const mapTriggerToStatus = (trigger: string): JobStatus | null =>
   statusMap[trigger] ?? null;
 
-export const getJobId = (payload: ArgoWorkflowPayload) =>
-  payload.jobId ?? payload.workflowName;
+export const getJobId = (payload: ArgoWorkflowPayload) => payload.jobId;
 
 export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
-  const { uid, phase, startedAt, finishedAt } = payload;
+  const { uid, phase, startedAt, finishedAt, workflowName } = payload;
 
   const jobId = getJobId(payload);
+  if (jobId == null) {
+    logger.warn("Argo webhook missing job-id label, ignoring", {
+      workflowName,
+      uid,
+      phase,
+    });
+    return;
+  }
 
-  const status = statusMap[phase] ?? null;
-  if (status == null) return;
+  const status = mapTriggerToStatus(phase);
+  if (status == null) {
+    logger.warn("Argo webhook with unmapped phase, ignoring", {
+      workflowName,
+      uid,
+      phase,
+      jobId,
+    });
+    return;
+  }
 
   const isCompleted = exitedStatus.includes(status);
   const completedAt =
     isCompleted && finishedAt != null ? new Date(finishedAt) : null;
 
+  // Filter on status NOT IN exitedStatus so a late-arriving non-terminal event
+  // (Running/Pending) cannot regress a job that already settled to a terminal
+  // state. The sensor fans out ~13 near-simultaneous fires per workflow; this
+  // makes the handler idempotent without a separate read+transaction.
   const [updated] = await db
     .update(schema.job)
     .set({
@@ -50,10 +75,32 @@ export const handleArgoWorkflow = async (payload: ArgoWorkflowPayload) => {
       completedAt,
       updatedAt: new Date(),
     })
-    .where(eq(schema.job.id, jobId))
+    .where(
+      and(
+        eq(schema.job.id, jobId),
+        notInArray(schema.job.status, exitedStatus),
+      ),
+    )
     .returning();
 
-  if (updated == null) return;
+  if (updated == null) {
+    logger.info("Argo webhook produced no update", {
+      workflowName,
+      uid,
+      phase,
+      jobId,
+      mappedStatus: status,
+    });
+    return;
+  }
+
+  logger.info("Argo webhook updated job", {
+    workflowName,
+    uid,
+    phase,
+    jobId,
+    mappedStatus: status,
+  });
 
   const result = await db
     .select({ workspaceId: schema.deployment.workspaceId })
