@@ -119,22 +119,24 @@ const candidateVersionColumns = `id, name, tag, config, job_agent_config, deploy
 //
 // The first batch is deduplicated via singleflight so a burst of concurrent
 // reconciles for release targets sharing a deployment collapses to one DB
-// round trip. The singleflight key includes a hash of extraWhere so consumers
-// applying different pushdown filters do not share results. Subsequent batches
-// (consumed only when the first 500 rows are exhausted without finding an
-// eligible version) are fetched independently.
+// round trip. The singleflight key includes a hash of pushdownClauses so
+// consumers applying different pushdown filters do not share results.
+// Subsequent batches (consumed only when the first 500 rows are exhausted
+// without finding an eligible version) are fetched independently.
 //
-// extraWhere fragments are inlined into the SQL via string concatenation. They
-// MUST come from a trusted source that emits already-escaped SQL — e.g. the
-// versionselector.TryPushDown helper, which uses cel2sql with verified literal
-// escaping. Never pass user-supplied raw strings here.
+// pushdownClauses are SQL WHERE fragments emitted by celutil.SQLExtractor
+// with `$N` placeholders that resolve against pushdownArgs starting at $5
+// ($1-$4 are reserved for deploymentID, limit, afterCreatedAt, afterID).
+// All values are passed as real query parameters — never inlined — so SQL
+// injection is structurally prevented.
 func (g *PostgresGetter) IterCandidateVersions(
 	ctx context.Context,
 	deploymentID uuid.UUID,
-	extraWhere []string,
+	pushdownClauses []string,
+	pushdownArgs []any,
 ) iter.Seq2[*oapi.DeploymentVersion, error] {
 	return func(yield func(*oapi.DeploymentVersion, error) bool) {
-		firstBatch, err := g.fetchFirstBatch(ctx, deploymentID, extraWhere)
+		firstBatch, err := g.fetchFirstBatch(ctx, deploymentID, pushdownClauses, pushdownArgs)
 		if err != nil {
 			yield(nil, err)
 			return
@@ -159,7 +161,7 @@ func (g *PostgresGetter) IterCandidateVersions(
 
 		for {
 			rows, err := queryCandidateVersionsBatch(
-				ctx, deploymentID, extraWhere, afterCreatedAt, afterID,
+				ctx, deploymentID, pushdownClauses, pushdownArgs, afterCreatedAt, afterID,
 			)
 			if err != nil {
 				yield(nil, err)
@@ -188,21 +190,26 @@ func (g *PostgresGetter) IterCandidateVersions(
 
 // fetchFirstBatch loads the newest candidateVersionBatchSize deployable
 // versions for a deployment, sharing the result across concurrent callers via
-// singleflight keyed by (deploymentID, hash(extraWhere)). The returned slice
-// is immutable: callers must not mutate it.
+// singleflight keyed by (deploymentID, hash(clauses), hash(args)). Two
+// selectors can compile to the same clause text but bind different values
+// (e.g. `tag == "v1"` and `tag == "v2"` both produce `tag = $5`), so the
+// args MUST participate in the key — otherwise concurrent reconciles for
+// different RTs of the same deployment would receive each other's results.
+// The returned slice is immutable.
 func (g *PostgresGetter) fetchFirstBatch(
 	ctx context.Context,
 	deploymentID uuid.UUID,
-	extraWhere []string,
+	pushdownClauses []string,
+	pushdownArgs []any,
 ) ([]db.DeploymentVersion, error) {
-	key := deploymentID.String() + "|" + hashWhere(extraWhere)
+	key := deploymentID.String() + "|" + hashClauses(pushdownClauses) + ":" + hashArgs(pushdownArgs)
 	// Detach the singleflight closure from the first caller's cancellation
 	// so one caller's ctx cancellation doesn't fail the shared query for
 	// every other waiter on the same key. Trace context is preserved.
 	qCtx := context.WithoutCancel(ctx)
 	v, err, _ := g.firstBatchSF.Do(key, func() (any, error) {
 		return queryCandidateVersionsBatch(
-			qCtx, deploymentID, extraWhere, pgtype.Timestamptz{}, uuid.Nil,
+			qCtx, deploymentID, pushdownClauses, pushdownArgs, pgtype.Timestamptz{}, uuid.Nil,
 		)
 	})
 	if err != nil {
@@ -217,10 +224,15 @@ func (g *PostgresGetter) fetchFirstBatch(
 // the column list and base WHERE are kept structurally identical to
 // ListDeployableVersionsByDeploymentIDAfter so future schema changes flow
 // through both paths in lockstep.
+//
+// The pushdown clauses use $N placeholders starting at $5; pushdownArgs are
+// appended to the base [$1=deploymentID, $2=limit, $3=afterCreatedAt,
+// $4=afterID] argument list in the same order.
 func queryCandidateVersionsBatch(
 	ctx context.Context,
 	deploymentID uuid.UUID,
-	extraWhere []string,
+	pushdownClauses []string,
+	pushdownArgs []any,
 	afterCreatedAt pgtype.Timestamptz,
 	afterID uuid.UUID,
 ) ([]db.DeploymentVersion, error) {
@@ -228,8 +240,8 @@ func queryCandidateVersionsBatch(
 	defer span.End()
 
 	pushdownCount := 0
-	for _, f := range extraWhere {
-		if f != "" {
+	for _, c := range pushdownClauses {
+		if c != "" {
 			pushdownCount++
 		}
 	}
@@ -237,11 +249,11 @@ func queryCandidateVersionsBatch(
 	var b strings.Builder
 	b.WriteString("SELECT ")
 	b.WriteString(candidateVersionColumns)
-	b.WriteString(` FROM deployment_version version
+	b.WriteString(` FROM deployment_version
 WHERE deployment_id = $1
   AND status NOT IN ('rejected', 'building')
   AND ($3::timestamptz IS NULL OR (created_at, id) < ($3::timestamptz, $4::uuid))`)
-	for _, frag := range extraWhere {
+	for _, frag := range pushdownClauses {
 		if frag == "" {
 			continue
 		}
@@ -251,13 +263,16 @@ WHERE deployment_id = $1
 	}
 	b.WriteString("\nORDER BY created_at DESC, id DESC\nLIMIT $2")
 
-	rows, err := db.GetPool(ctx).Query(
-		ctx, b.String(),
+	args := make([]any, 0, 4+len(pushdownArgs))
+	args = append(args,
 		deploymentID,
 		int64(candidateVersionBatchSize),
 		afterCreatedAt,
 		afterID,
 	)
+	args = append(args, pushdownArgs...)
+
+	rows, err := db.GetPool(ctx).Query(ctx, b.String(), args...)
 	if err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("list versions for deployment %s: %w", deploymentID, err)
@@ -294,16 +309,36 @@ WHERE deployment_id = $1
 	return out, nil
 }
 
-// hashWhere produces a stable cache-key suffix for a set of pushdown
-// fragments. Order matters — callers should pass fragments in canonical order
+// hashClauses produces a stable cache-key suffix for a set of pushdown
+// clauses. Order matters — callers should pass clauses in canonical order
 // if they want different orderings to share a cache slot.
-func hashWhere(extraWhere []string) string {
-	if len(extraWhere) == 0 {
+func hashClauses(clauses []string) string {
+	if len(clauses) == 0 {
 		return ""
 	}
 	h := sha256.New()
-	for _, frag := range extraWhere {
-		h.Write([]byte(frag))
+	for _, c := range clauses {
+		h.Write([]byte(c))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// hashArgs produces a stable cache-key suffix for a set of pushdown args.
+// Order matters and must match the clause-arg pairing exactly.
+//
+// The current celutil.SQLExtractor only emits string-typed args (CEL string
+// literals via extractValue), so fmt's %v gives a deterministic
+// representation. If future schema additions allow non-string types whose
+// %v rendering depends on map iteration order or other non-determinism, the
+// caller must pre-canonicalize before reaching this point.
+func hashArgs(args []any) string {
+	if len(args) == 0 {
+		return ""
+	}
+	h := sha256.New()
+	for _, a := range args {
+		fmt.Fprintf(h, "%v", a)
 		h.Write([]byte{0})
 	}
 	return hex.EncodeToString(h.Sum(nil))

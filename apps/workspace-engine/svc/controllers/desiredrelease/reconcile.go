@@ -56,13 +56,13 @@ func (r *reconciler) loadInput(ctx context.Context) (err error) {
 func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 	oapiRT := r.rt.ToOAPI()
 	evals := policyeval.CollectEvaluators(ctx, r.getter, oapiRT, r.policies)
-	pushdown := collectPushdownClauses(r.policies)
+	clauses, args := collectPushdownClauses(r.policies)
 
 	result, err := policyeval.FindDeployableVersion(
 		ctx,
 		r.getter,
 		oapiRT,
-		r.getter.IterCandidateVersions(ctx, r.rt.DeploymentID, pushdown),
+		r.getter.IterCandidateVersions(ctx, r.rt.DeploymentID, clauses, args),
 		evals,
 		*r.scope,
 	)
@@ -158,18 +158,23 @@ func Reconcile(
 	return &ReconcileResult{NextReconcileAt: nextTime}, nil
 }
 
+// pushdownBaseParam is the next available `$N` placeholder after the four
+// base parameters used by the candidate-version query (deploymentID, limit,
+// afterCreatedAt, afterID).
+const pushdownBaseParam = 5
+
 // collectPushdownClauses inspects a release target's policies for
-// versionselector rules and translates each into a SQL WHERE fragment via
-// versionselector.TryPushDown. Rules that can't be translated (selectors
-// referencing environment/resource/deployment, complex CEL, etc.) are
-// silently skipped — the runtime CEL evaluator still runs per-version, so
-// correctness is preserved; only the candidate-set narrowing is lost.
+// versionselector rules and translates each into a parameterized SQL WHERE
+// fragment via versionselector.TryPushDown. Rules that can't be translated
+// (selectors referencing environment/resource/deployment, OR composition,
+// non-string values, etc.) are silently skipped — the runtime CEL evaluator
+// still runs per-version, so correctness is preserved; only the
+// candidate-set narrowing is lost.
 //
-// The returned slice is sorted by clause text so concurrent reconciles
-// against the same deployment with the same selector set produce the same
-// singleflight cache key.
-func collectPushdownClauses(policies []*oapi.Policy) []string {
-	var clauses []string
+// Each fragment carries `$N` placeholders into the returned args slice, with
+// numbering picked up from where the previous fragment left off so all
+// fragments can be appended into the same query without collisions.
+func collectPushdownClauses(policies []*oapi.Policy) (clauses []string, args []any) {
 	for _, p := range policies {
 		if p == nil || !p.Enabled {
 			continue
@@ -178,31 +183,18 @@ func collectPushdownClauses(policies []*oapi.Policy) []string {
 			if rule.VersionSelector == nil {
 				continue
 			}
-			clause, ok := versionselector.TryPushDown(rule.VersionSelector.Selector)
+			clause, clauseArgs, ok := versionselector.TryPushDown(
+				rule.VersionSelector.Selector,
+				pushdownBaseParam+len(args),
+			)
 			if !ok {
 				continue
 			}
 			clauses = append(clauses, clause)
+			args = append(args, clauseArgs...)
 		}
 	}
-	if len(clauses) > 1 {
-		// Stable order so the singleflight key is deterministic across
-		// reconciles that see the same logical clause set.
-		sortStrings(clauses)
-	}
-	return clauses
-}
-
-// sortStrings is an in-place insertion sort. We use it instead of
-// sort.Strings to keep the import surface small for this hot path.
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		j := i
-		for j > 0 && s[j-1] > s[j] {
-			s[j-1], s[j] = s[j], s[j-1]
-			j--
-		}
-	}
+	return clauses, args
 }
 
 func recordErr(span trace.Span, msg string, err error) error {

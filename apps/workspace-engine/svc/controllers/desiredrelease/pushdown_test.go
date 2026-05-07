@@ -8,35 +8,39 @@ import (
 )
 
 func TestCollectPushdownClauses(t *testing.T) {
-	t.Run("nil policies → empty slice", func(t *testing.T) {
-		assert.Empty(t, collectPushdownClauses(nil))
+	t.Run("nil policies → empty result", func(t *testing.T) {
+		clauses, args := collectPushdownClauses(nil)
+		assert.Empty(t, clauses)
+		assert.Empty(t, args)
 	})
 
 	t.Run("disabled policy is skipped", func(t *testing.T) {
-		clauses := collectPushdownClauses([]*oapi.Policy{
+		clauses, args := collectPushdownClauses([]*oapi.Policy{
 			{
 				Enabled: false,
 				Rules: []oapi.PolicyRule{
-					{VersionSelector: &oapi.VersionSelectorRule{Selector: `version.tag == "x"`}},
+					{
+						VersionSelector: &oapi.VersionSelectorRule{
+							Selector: `version.tag == "x"`,
+						},
+					},
 				},
 			},
 		})
 		assert.Empty(t, clauses)
+		assert.Empty(t, args)
 	})
 
 	t.Run("rule without VersionSelector is skipped", func(t *testing.T) {
-		clauses := collectPushdownClauses([]*oapi.Policy{
-			{
-				Enabled: true,
-				Rules:   []oapi.PolicyRule{{}},
-			},
+		clauses, args := collectPushdownClauses([]*oapi.Policy{
+			{Enabled: true, Rules: []oapi.PolicyRule{{}}},
 		})
 		assert.Empty(t, clauses)
+		assert.Empty(t, args)
 	})
 
 	t.Run("untranslatable selector falls back silently", func(t *testing.T) {
-		// References environment, which our pushdown schema doesn't expose.
-		clauses := collectPushdownClauses([]*oapi.Policy{
+		clauses, args := collectPushdownClauses([]*oapi.Policy{
 			{
 				Enabled: true,
 				Rules: []oapi.PolicyRule{
@@ -48,11 +52,12 @@ func TestCollectPushdownClauses(t *testing.T) {
 				},
 			},
 		})
-		assert.Empty(t, clauses, "selectors that can't push down must produce no clause")
+		assert.Empty(t, clauses)
+		assert.Empty(t, args)
 	})
 
-	t.Run("translatable selector emits clause", func(t *testing.T) {
-		clauses := collectPushdownClauses([]*oapi.Policy{
+	t.Run("translatable selector emits clause + arg", func(t *testing.T) {
+		clauses, args := collectPushdownClauses([]*oapi.Policy{
 			{
 				Enabled: true,
 				Rules: []oapi.PolicyRule{
@@ -65,23 +70,55 @@ func TestCollectPushdownClauses(t *testing.T) {
 			},
 		})
 		assert.Len(t, clauses, 1)
-		assert.Contains(t, clauses[0], "v1.2.3")
+		assert.Contains(t, clauses[0], "tag =")
+		assert.Contains(t, clauses[0], "$5", "first pushdown arg lands at $5")
+		assert.Equal(t, []any{"v1.2.3"}, args)
 	})
 
-	t.Run("multiple translatable clauses returned in stable order", func(t *testing.T) {
-		policies := []*oapi.Policy{
+	t.Run("multiple translatable rules → consecutive placeholders", func(t *testing.T) {
+		clauses, args := collectPushdownClauses([]*oapi.Policy{
 			{
 				Enabled: true,
 				Rules: []oapi.PolicyRule{
-					{VersionSelector: &oapi.VersionSelectorRule{Selector: `version.tag == "z"`}},
-					{VersionSelector: &oapi.VersionSelectorRule{Selector: `version.tag == "a"`}},
+					{
+						VersionSelector: &oapi.VersionSelectorRule{
+							Selector: `version.tag == "x"`,
+						},
+					},
+					{
+						VersionSelector: &oapi.VersionSelectorRule{
+							Selector: `version.name == "y"`,
+						},
+					},
 				},
 			},
-		}
-		clauses1 := collectPushdownClauses(policies)
-		clauses2 := collectPushdownClauses(policies)
-		assert.Equal(t, clauses1, clauses2, "same input must produce identical output")
-		assert.Len(t, clauses1, 2)
-		assert.LessOrEqual(t, clauses1[0], clauses1[1], "clauses must be sorted")
+		})
+		assert.Len(t, clauses, 2)
+		assert.Contains(t, clauses[0], "$5")
+		assert.Contains(t, clauses[1], "$6", "second clause picks up after first arg")
+		assert.Equal(t, []any{"x", "y"}, args)
+	})
+
+	t.Run("untranslatable rules don't consume placeholder slots", func(t *testing.T) {
+		clauses, args := collectPushdownClauses([]*oapi.Policy{
+			{
+				Enabled: true,
+				Rules: []oapi.PolicyRule{
+					{
+						VersionSelector: &oapi.VersionSelectorRule{
+							Selector: `environment.name == "prod"`,
+						},
+					},
+					{
+						VersionSelector: &oapi.VersionSelectorRule{
+							Selector: `version.tag == "v1"`,
+						},
+					},
+				},
+			},
+		})
+		assert.Len(t, clauses, 1)
+		assert.Contains(t, clauses[0], "$5", "translatable clause still numbers from $5")
+		assert.Equal(t, []any{"v1"}, args)
 	})
 }

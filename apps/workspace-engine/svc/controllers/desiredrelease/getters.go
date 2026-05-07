@@ -28,18 +28,20 @@ type Getter interface {
 	// found, so the implementation must lazily page through history rather
 	// than buffering all versions up front.
 	//
-	// extraWhere is an optional list of SQL fragments that get AND-joined
-	// into the candidate query as a pushdown filter. Each fragment is
-	// expected to reference columns via the alias `version` (e.g.
-	// `version.tag = 'v1.2.3'`). Fragments must be safely escaped before
-	// reaching this method — they are concatenated into the SQL string
-	// directly. When the iterator can't push down (no fragments supplied,
-	// or the consumer doesn't extract any), it behaves identically to the
-	// non-pushdown path.
+	// pushdownClauses is an optional list of SQL WHERE fragments that get
+	// AND-joined into the candidate query. Each fragment is expected to
+	// reference unqualified deployment_version columns and contain `$N`
+	// placeholders that index into pushdownArgs starting at $5 (positions
+	// $1-$4 are reserved for deploymentID, limit, and the keyset cursor).
+	// Fragments come from celutil.SQLExtractor — they parameterize all
+	// values, so SQL injection is structurally prevented rather than
+	// relying on escaping. With no fragments supplied, the iterator
+	// behaves identically to the non-pushdown path.
 	IterCandidateVersions(
 		ctx context.Context,
 		deploymentID uuid.UUID,
-		extraWhere []string,
+		pushdownClauses []string,
+		pushdownArgs []any,
 	) iter.Seq2[*oapi.DeploymentVersion, error]
 
 	// GetApprovalRecords(ctx context.Context, versionID, environmentID string) ([]*oapi.UserApprovalRecord, error)

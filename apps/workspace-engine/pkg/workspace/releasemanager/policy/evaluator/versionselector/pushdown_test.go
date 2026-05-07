@@ -8,55 +8,62 @@ import (
 )
 
 // TestTryPushDown_SupportedShapes locks in which CEL expression shapes the
-// library currently translates. If any of these flip from ok=true to false on
-// a library upgrade, we want a loud test failure rather than silent loss of
-// the optimization.
+// in-house SQLExtractor currently translates. If any of these flip from
+// ok=true to false on a refactor of celutil, we want a loud test failure
+// rather than silent loss of the optimization.
 func TestTryPushDown_SupportedShapes(t *testing.T) {
 	cases := []struct {
-		name        string
-		selector    string
+		name     string
+		selector string
+		// First emitted SQL token after WHERE. Validates the column mapping
+		// landed on the right table column and that placeholders advance.
 		wantContain string
 	}{
-		{
-			name:        "literal equality",
-			selector:    `version.tag == "v1.2.3"`,
-			wantContain: "v1.2.3",
-		},
-		{
-			name:        "inequality",
-			selector:    `version.tag != "broken"`,
-			wantContain: "broken",
-		},
+		{name: "literal equality", selector: `version.tag == "v1.2.3"`, wantContain: "tag ="},
+		{name: "inequality", selector: `version.tag != "broken"`, wantContain: "tag !="},
 		{
 			name:        "boolean and",
 			selector:    `version.tag == "x" && version.name == "y"`,
 			wantContain: "AND",
 		},
 		{
-			name:        "boolean or",
-			selector:    `version.tag == "x" || version.tag == "y"`,
-			wantContain: "OR",
+			name:        "in list",
+			selector:    `version.tag in ["a", "b", "c"]`,
+			wantContain: "tag IN",
 		},
 		{
 			name:        "startsWith",
 			selector:    `version.tag.startsWith("v1.")`,
-			wantContain: "v1.",
+			wantContain: "tag LIKE",
+		},
+		{
+			name:        "metadata key access",
+			selector:    `version.metadata["env"] == "prod"`,
+			wantContain: "metadata->>",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			clause, ok := TryPushDown(tc.selector)
+			clause, args, ok := TryPushDown(tc.selector, 5)
 			if !ok {
-				t.Logf(
-					"selector did NOT push down (will fall back to runtime CEL): %q",
-					tc.selector,
-				)
-				return // capability gap, not a hard failure — optimization is best-effort
+				t.Fatalf("expected pushdown to succeed for %q", tc.selector)
 			}
-			t.Logf("selector=%q  →  SQL=%s", tc.selector, clause)
-			assert.Contains(t, clause, tc.wantContain,
-				"emitted SQL should mention the literal value somehow (escaped or parameterized)")
+			t.Logf("selector=%q  →  SQL=%s  args=%v", tc.selector, clause, args)
+			assert.Contains(t, clause, tc.wantContain)
+			assert.NotEmpty(t, args, "parameterized output must produce args")
+			// Parameterized values must not be inlined as SQL literals.
+			for _, a := range args {
+				if s, isStr := a.(string); isStr {
+					assert.NotContains(
+						t,
+						clause,
+						"'"+s+"'",
+						"value %q should be a parameter, not inlined",
+						s,
+					)
+				}
+			}
 		})
 	}
 }
@@ -69,60 +76,71 @@ func TestTryPushDown_FailsClosed(t *testing.T) {
 		`environment.name == "prod"`,
 		`resource.kind == "Server"`,
 		`deployment.name == "api"`,
-		`version.tag == "x" && environment.name == "prod"`,
 		``, // empty
 	}
 	for _, sel := range cases {
 		t.Run(sel, func(t *testing.T) {
-			_, ok := TryPushDown(sel)
+			clause, args, ok := TryPushDown(sel, 5)
 			assert.False(t, ok, "selector %q must NOT push down", sel)
+			assert.Empty(t, clause)
+			assert.Empty(t, args)
 		})
 	}
 }
 
-// TestTryPushDown_StringEscaping is the safety-critical test. If a user
-// stores a malicious string literal in a versionselector rule (an attacker
-// who has policy-write access already has way more than this — but defense
-// in depth), the emitted SQL must escape single quotes properly. This test
-// fails the build if cel2sql ever emits unescaped literals.
-func TestTryPushDown_StringEscaping(t *testing.T) {
-	malicious := `version.tag == "test'; DROP TABLE deployment_version; --"`
-	clause, ok := TryPushDown(malicious)
+// TestTryPushDown_PartialAndDoesPushSubset documents extractor behavior on
+// mixed selectors: top-level conjuncts that resolve are extracted, the rest
+// are silently dropped (runtime CEL still evaluates the full expression).
+func TestTryPushDown_PartialAndDoesPushSubset(t *testing.T) {
+	clause, args, ok := TryPushDown(`version.tag == "x" && environment.name == "prod"`, 5)
 	if !ok {
-		t.Skip("library refused malicious input — that's also acceptable")
+		t.Skip("extractor refused the mixed expression — also acceptable")
 	}
-	t.Logf("emitted SQL: %s", clause)
-
-	// Acceptable shapes (any one of these proves safe handling):
-	// 1. Doubled single quote:    'test''; DROP TABLE...'
-	// 2. Backslash escape:        'test\'; DROP TABLE...'
-	// 3. Postgres E-string:       E'test\'; DROP TABLE...'
-	// 4. Parameterized output:    $1, $2, etc. (no literal at all)
-	doubled := strings.Contains(clause, `''`)
-	backslash := strings.Contains(clause, `\'`)
-	parameterized := strings.Contains(clause, "$") && !strings.Contains(clause, "DROP")
-
-	safe := doubled || backslash || parameterized
-	assert.True(t, safe,
-		"emitted SQL must escape single quotes or parameterize literals; got: %q", clause)
-
-	// Critical: the unescaped attack pattern must NOT appear verbatim. If the
-	// library inlines `test'; DROP TABLE...` as-is, this assertion catches it.
-	assert.NotContains(t, clause, `test'; DROP TABLE`,
-		"raw single-quote injection pattern present in emitted SQL — UNSAFE")
+	t.Logf("clause=%s args=%v", clause, args)
+	assert.Contains(t, clause, "tag =", "version.tag conjunct should push down")
+	assert.NotContains(t, clause, "environment", "environment conjunct must not appear in SQL")
 }
 
-// TestTryPushDown_JSONBAccess documents whether metadata-key access works.
-// Result not asserted — just logged so we know if it's available without
-// extending the schema. Most version selectors don't use metadata, so this
-// being unsupported is acceptable for the POC.
-func TestTryPushDown_JSONBAccess(t *testing.T) {
-	clause, ok := TryPushDown(`version.metadata["env"] == "prod"`)
+// TestTryPushDown_NoInjection ensures the parameterized output never inlines
+// raw user input, even when the user crafts a malicious CEL string literal.
+// Because the in-house extractor parameterizes ALL string values, this is
+// structurally guaranteed — but we test it anyway as a regression guard.
+func TestTryPushDown_NoInjection(t *testing.T) {
+	malicious := `version.tag == "test'; DROP TABLE deployment_version; --"`
+	clause, args, ok := TryPushDown(malicious, 5)
 	if !ok {
-		t.Log(
-			"JSONB metadata access NOT supported by current schema — fine, scope to flat fields for now",
-		)
-		return
+		t.Fatal("expected literal-equality on version.tag to push down")
 	}
-	t.Logf("metadata access produced: %s", clause)
+	assert.NotContains(
+		t,
+		clause,
+		"DROP TABLE",
+		"raw payload must not appear in clause text",
+	)
+	assert.NotContains(t, clause, "test'", "single-quoted payload must not be inlined")
+
+	found := false
+	for _, a := range args {
+		if s, ok := a.(string); ok && strings.Contains(s, "DROP TABLE") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "the payload should land in args (parameterized), not the clause")
+}
+
+// TestTryPushDown_AdvancesParamNumbers verifies that successive Extract calls
+// using the running startParam produce non-overlapping placeholders.
+func TestTryPushDown_AdvancesParamNumbers(t *testing.T) {
+	clause1, args1, ok := TryPushDown(`version.tag == "a"`, 5)
+	if !ok {
+		t.Fatal("first extract should succeed")
+	}
+	clause2, args2, ok := TryPushDown(`version.name == "b"`, 5+len(args1))
+	if !ok {
+		t.Fatal("second extract should succeed")
+	}
+	t.Logf("clause1=%s args1=%v\nclause2=%s args2=%v", clause1, args1, clause2, args2)
+	assert.Contains(t, clause1, "$5")
+	assert.Contains(t, clause2, "$6")
 }

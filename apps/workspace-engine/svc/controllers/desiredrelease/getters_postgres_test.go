@@ -176,7 +176,7 @@ func collectVersions(
 ) []*oapi.DeploymentVersion {
 	t.Helper()
 	var out []*oapi.DeploymentVersion
-	for v, err := range getter.IterCandidateVersions(ctx, deploymentID, nil) {
+	for v, err := range getter.IterCandidateVersions(ctx, deploymentID, nil, nil) {
 		require.NoError(t, err)
 		out = append(out, v)
 	}

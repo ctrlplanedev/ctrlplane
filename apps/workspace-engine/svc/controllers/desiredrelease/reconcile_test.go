@@ -49,6 +49,7 @@ func (m *mockReconcileGetter) IterCandidateVersions(
 	_ context.Context,
 	_ uuid.UUID,
 	_ []string,
+	_ []any,
 ) iter.Seq2[*oapi.DeploymentVersion, error] {
 	return func(yield func(*oapi.DeploymentVersion, error) bool) {
 		for _, v := range m.versions {
