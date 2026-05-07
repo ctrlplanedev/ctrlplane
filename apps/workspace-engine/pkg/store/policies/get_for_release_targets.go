@@ -132,11 +132,11 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 		"policy_ids",
 		len(policyIDs),
 		"environment_id",
-		environmentID,
+		environmentID.String(),
 		"deployment_id",
-		deploymentID,
+		deploymentID.String(),
 		"resource_id",
-		resourceID,
+		resourceID.String(),
 	)
 	setPoliciesSpanCtx, setPoliciesSpan := tracer.Start(ctx, "SetPoliciesForReleaseTarget")
 	db.GetQueries(setPoliciesSpanCtx).
