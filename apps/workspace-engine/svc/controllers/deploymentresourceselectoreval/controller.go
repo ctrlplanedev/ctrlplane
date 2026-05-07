@@ -69,7 +69,14 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	for _, resource := range resources {
 		resourceIDUUID, err := uuid.Parse(resource.Id)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to parse resource id", "resource_id", resource.Id, "error", err)
+			slog.ErrorContext(
+				ctx,
+				"failed to parse resource id",
+				"resource_id",
+				resource.Id,
+				"error",
+				err,
+			)
 			continue
 		}
 		matchedIDs = append(matchedIDs, resourceIDUUID)

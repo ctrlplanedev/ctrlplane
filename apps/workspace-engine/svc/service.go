@@ -91,7 +91,14 @@ func (r *Runner) Run(ctx context.Context) error {
 		wg.Go(func() {
 			slog.InfoContext(shutdownCtx, "Stopping service", "service", svc.Name())
 			if err := svc.Stop(shutdownCtx); err != nil {
-				slog.ErrorContext(shutdownCtx, "Service stop error", "service", svc.Name(), "error", err)
+				slog.ErrorContext(
+					shutdownCtx,
+					"Service stop error",
+					"service",
+					svc.Name(),
+					"error",
+					err,
+				)
 			}
 		})
 	}

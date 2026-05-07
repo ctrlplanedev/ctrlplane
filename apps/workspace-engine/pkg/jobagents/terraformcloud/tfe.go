@@ -83,7 +83,12 @@ func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 		cfg.webhookUrl,
 		webhookSecret,
 	); err != nil {
-		slog.WarnContext(ctx, "Failed to ensure notification config, continuing dispatch", "error", err)
+		slog.WarnContext(
+			ctx,
+			"Failed to ensure notification config, continuing dispatch",
+			"error",
+			err,
+		)
 	}
 
 	if !cfg.triggerRunOnChange {

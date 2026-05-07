@@ -41,7 +41,12 @@ func Reconcile(
 		return nil, recordErr(span, "get desired release", err)
 	}
 	if release == nil {
-		slog.InfoContext(ctx, "no desired release for release target, skipping", "rt", rt.ToOAPI().Key())
+		slog.InfoContext(
+			ctx,
+			"no desired release for release target, skipping",
+			"rt",
+			rt.ToOAPI().Key(),
+		)
 		return &ReconcileResult{}, nil
 	}
 

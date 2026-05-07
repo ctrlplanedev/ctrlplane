@@ -169,13 +169,21 @@ func (p *Provider) Measure(
 
 	var rawJson any
 	if err := json.Unmarshal(respBody, &rawJson); err != nil {
-		slog.ErrorContext(ctx, "Failed to parse Datadog response", "body", string(respBody), "error", err)
+		slog.ErrorContext(ctx,
+			"Failed to parse Datadog response",
+			"body", string(respBody),
+			"error", err,
+		)
 		return time.Time{}, nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
 	var jsonResponse datadogResponseV2
 	if err := json.Unmarshal(respBody, &jsonResponse); err != nil {
-		slog.ErrorContext(ctx, "Failed to parse Datadog response", "body", string(respBody), "error", err)
+		slog.ErrorContext(ctx,
+			"Failed to parse Datadog response",
+			"body", string(respBody),
+			"error", err,
+		)
 		return time.Time{}, nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 

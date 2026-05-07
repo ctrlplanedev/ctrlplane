@@ -88,7 +88,11 @@ func prepareTmpApp(app *v1alpha1.Application, tmpName string) *v1alpha1.Applicat
 
 func (p *ArgoCDPlanner) deleteTmpApp(ctx context.Context, serverAddr, apiKey, name string) {
 	if err := p.deleter.DeleteApplication(ctx, serverAddr, apiKey, name); err != nil {
-		slog.WarnContext(ctx, "Failed to delete temporary plan application", "app", name, "error", err)
+		slog.WarnContext(ctx,
+			"Failed to delete temporary plan application",
+			"app", name,
+			"error", err,
+		)
 	}
 }
 

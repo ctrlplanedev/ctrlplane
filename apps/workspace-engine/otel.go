@@ -189,7 +189,10 @@ func initLogger() (func(), error) {
 		sdklog.WithResource(res),
 	)
 
-	otelHandler := newLevelHandler(level, otelslog.NewHandler(serviceName, otelslog.WithLoggerProvider(lp)))
+	otelHandler := newLevelHandler(
+		level,
+		otelslog.NewHandler(serviceName, otelslog.WithLoggerProvider(lp)),
+	)
 
 	stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 
