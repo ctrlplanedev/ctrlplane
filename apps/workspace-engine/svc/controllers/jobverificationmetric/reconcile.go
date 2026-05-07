@@ -51,7 +51,7 @@ func Reconcile(
 		span.AddEvent("interval not yet elapsed, deferring",
 			trace.WithAttributes(attribute.String("remaining", remaining.String())),
 		)
-		slog.Info("Interval not yet elapsed, deferring", "remaining", remaining)
+		slog.InfoContext(ctx, "Interval not yet elapsed, deferring", "remaining", remaining)
 		return &ReconcileResult{RequeueAfter: &remaining}, nil
 	}
 

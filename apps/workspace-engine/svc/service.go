@@ -63,7 +63,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	defer cancel()
 
 	for _, svc := range r.services {
-		slog.Info("Starting service", "service", svc.Name())
+		slog.InfoContext(ctx, "Starting service", "service", svc.Name())
 		if err := svc.Start(ctx); err != nil {
 			cancel()
 			return err
@@ -75,9 +75,9 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	select {
 	case sig := <-sigChan:
-		slog.Warn("Received signal, shutting down", "signal", sig)
+		slog.WarnContext(ctx, "Received signal, shutting down", "signal", sig)
 	case <-ctx.Done():
-		slog.Warn("Context cancelled, shutting down")
+		slog.WarnContext(ctx, "Context cancelled, shutting down")
 	}
 
 	cancel()
@@ -89,9 +89,9 @@ func (r *Runner) Run(ctx context.Context) error {
 	for _, v := range slices.Backward(r.services) {
 		svc := v
 		wg.Go(func() {
-			slog.Info("Stopping service", "service", svc.Name())
+			slog.InfoContext(shutdownCtx, "Stopping service", "service", svc.Name())
 			if err := svc.Stop(shutdownCtx); err != nil {
-				slog.Error("Service stop error", "service", svc.Name(), "error", err)
+				slog.ErrorContext(shutdownCtx, "Service stop error", "service", svc.Name(), "error", err)
 			}
 		})
 	}
@@ -104,9 +104,9 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	select {
 	case <-done:
-		slog.Info("All services stopped")
+		slog.InfoContext(shutdownCtx, "All services stopped")
 	case <-shutdownCtx.Done():
-		slog.Warn("Shutdown timeout exceeded, forcing exit")
+		slog.WarnContext(shutdownCtx, "Shutdown timeout exceeded, forcing exit")
 	}
 
 	return nil

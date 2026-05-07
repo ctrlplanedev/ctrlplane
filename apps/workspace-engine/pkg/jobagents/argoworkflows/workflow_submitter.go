@@ -104,7 +104,7 @@ func createWorkflowWithRetry(
 		retry.MaxDelay(10*time.Second),
 		retry.DelayType(retry.BackOffDelay),
 		retry.OnRetry(func(n uint, err error) {
-			slog.Warn("Retrying ArgoWorkflow submission",
+			slog.WarnContext(ctx, "Retrying ArgoWorkflow submission",
 				"attempt", n+1,
 				"error", err)
 		}),

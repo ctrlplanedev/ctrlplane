@@ -121,13 +121,13 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 	for _, policy := range policies {
 		policyID, err := uuid.Parse(policy.Id)
 		if err != nil {
-			slog.Error("failed to parse policy id", "policy_id", policy.Id, "error", err)
+			slog.ErrorContext(ctx, "failed to parse policy id", "policy_id", policy.Id, "error", err)
 			continue
 		}
 		policyIDs = append(policyIDs, policyID)
 	}
 
-	slog.Info(
+	slog.InfoContext(ctx,
 		"setting policies for release target",
 		"policy_ids",
 		len(policyIDs),

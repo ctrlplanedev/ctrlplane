@@ -131,7 +131,7 @@ func (w *Worker) Run(ctx context.Context) error {
 				LeaseDuration: w.cfg.LeaseDuration,
 			})
 			if err != nil {
-				slog.Error("error claiming items", "error", err)
+				slog.ErrorContext(ctx, "error claiming items", "error", err)
 			}
 			if err == nil && len(items) > 0 {
 				currentPoll = w.cfg.PollInterval
@@ -212,7 +212,7 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 	leaseWG.Wait()
 
 	if processErr != nil {
-		slog.Error(
+		slog.ErrorContext(ctx,
 			"Error processing item",
 			"item",
 			item.ID,

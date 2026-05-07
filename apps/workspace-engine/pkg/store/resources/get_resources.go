@@ -63,7 +63,7 @@ func (p *PostgresGetResources) GetResources(
 			baseQuery += " AND " + filter.Clause
 			args = append(args, filter.Args...)
 
-			slog.Info("get resources optimization", "filter", filter.Clause)
+			slog.InfoContext(ctx, "get resources optimization", "filter", filter.Clause)
 		}
 	}
 

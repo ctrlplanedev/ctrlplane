@@ -109,7 +109,7 @@ func (p *Provider) Measure(
 	duration := time.Since(startTime)
 
 	if err != nil {
-		slog.Error("HTTP metric request failed", "url", resolved.URL, "error", err)
+		slog.ErrorContext(ctx, "HTTP metric request failed", "url", resolved.URL, "error", err)
 		return time.Time{}, nil, err
 	}
 	defer resp.Body.Close()
@@ -128,7 +128,7 @@ func (p *Provider) Measure(
 		"duration":   duration.Milliseconds(),
 	}
 
-	slog.Debug("HTTP metric measurement",
+	slog.DebugContext(ctx, "HTTP metric measurement",
 		"url", resolved.URL,
 		"status", resp.StatusCode,
 		"duration", duration)

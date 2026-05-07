@@ -64,7 +64,7 @@ func upsertWithRetry(
 		retry.MaxDelay(10*time.Second),
 		retry.DelayType(retry.BackOffDelay),
 		retry.OnRetry(func(n uint, err error) {
-			slog.Warn("Retrying ArgoCD application upsert",
+			slog.WarnContext(ctx, "Retrying ArgoCD application upsert",
 				"attempt", n+1,
 				"error", err)
 		}),

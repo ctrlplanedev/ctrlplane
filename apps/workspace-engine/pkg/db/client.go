@@ -22,7 +22,7 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
 		cfg, err := pgxpool.ParseConfig(config.Global.PostgresURL)
 		if err != nil {
-			slog.Error("Failed to parse database config", "error", err)
+			slog.ErrorContext(ctx, "Failed to parse database config", "error", err)
 			os.Exit(1)
 		}
 
@@ -35,7 +35,7 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 
 		pool, err = pgxpool.NewWithConfig(ctx, cfg)
 		if err != nil {
-			slog.Error("Failed to create database pool", "error", err)
+			slog.ErrorContext(ctx, "Failed to create database pool", "error", err)
 			os.Exit(1)
 		}
 	})

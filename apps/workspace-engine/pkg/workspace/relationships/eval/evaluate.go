@@ -69,7 +69,7 @@ func EvaluateRule(
 
 	program, err := celEnv.Compile(rule.Cel)
 	if err != nil {
-		slog.Warn("Skipping rule with invalid CEL expression",
+		slog.WarnContext(ctx, "Skipping rule with invalid CEL expression",
 			"rule", rule.ID, "error", err)
 		return nil, nil
 	}
@@ -150,7 +150,7 @@ func EvaluateRules(
 	for _, rule := range rules {
 		matches, err := EvaluateRule(ctx, entity, &rule, allCandidates)
 		if err != nil {
-			slog.Warn("Skipping rule due to evaluation error",
+			slog.WarnContext(ctx, "Skipping rule due to evaluation error",
 				"rule", rule.ID, "error", err)
 			continue
 		}

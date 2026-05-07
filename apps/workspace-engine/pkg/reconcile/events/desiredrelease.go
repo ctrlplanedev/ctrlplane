@@ -42,7 +42,7 @@ func EnqueueManyDesiredRelease(
 	if len(params) == 0 {
 		return nil
 	}
-	slog.Info("enqueueing desired release", "count", len(params))
+	slog.InfoContext(ctx, "enqueueing desired release", "count", len(params))
 	items := make([]reconcile.EnqueueParams, len(params))
 	for i, p := range params {
 		items[i] = reconcile.EnqueueParams{

@@ -122,7 +122,7 @@ func (p *PrometheusProvider) Measure(
 	resp, err := client.Do(req)
 	duration := time.Since(startTime)
 	if err != nil {
-		slog.Error(
+		slog.ErrorContext(ctx,
 			"Prometheus metric request failed",
 			"address",
 			resolvedProvider.Address,
@@ -143,7 +143,7 @@ func (p *PrometheusProvider) Measure(
 		return time.Time{}, nil, err
 	}
 
-	slog.Debug("Prometheus metric measurement",
+	slog.DebugContext(ctx, "Prometheus metric measurement",
 		"address", resolvedProvider.Address,
 		"query", resolvedProvider.Query,
 		"status", resp.StatusCode,

@@ -35,7 +35,7 @@ func EnqueueManyDeploymentResourceselectorEval(
 	if len(params) == 0 {
 		return nil
 	}
-	slog.Info("enqueueing deployment resourceselector evals", "count", len(params))
+	slog.InfoContext(ctx, "enqueueing deployment resourceselector evals", "count", len(params))
 	items := make([]reconcile.EnqueueParams, len(params))
 	for i, p := range params {
 		items[i] = reconcile.EnqueueParams{

@@ -41,7 +41,7 @@ func Reconcile(
 		return nil, recordErr(span, "get desired release", err)
 	}
 	if release == nil {
-		slog.Info("no desired release for release target, skipping", "rt", rt.ToOAPI().Key())
+		slog.InfoContext(ctx, "no desired release for release target, skipping", "rt", rt.ToOAPI().Key())
 		return &ReconcileResult{}, nil
 	}
 
@@ -51,7 +51,7 @@ func Reconcile(
 	}
 	if len(activeJobs) > 0 {
 		span.SetAttributes(attribute.Int("active_jobs", len(activeJobs)))
-		slog.Info("release target has active jobs, requeueing",
+		slog.InfoContext(ctx, "release target has active jobs, requeueing",
 			"rt", rt.ToOAPI().Key(),
 			"activeJobs", len(activeJobs),
 		)

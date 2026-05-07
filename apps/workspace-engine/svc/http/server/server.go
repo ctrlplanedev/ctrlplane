@@ -88,7 +88,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 				errMsg = c.Errors.String()
 			}
 
-			slog.Error("request",
+			slog.ErrorContext(c.Request.Context(), "request",
 				"method", method,
 				"path", path,
 				"status", statusCode,
