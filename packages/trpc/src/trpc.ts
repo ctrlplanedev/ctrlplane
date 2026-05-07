@@ -1,5 +1,6 @@
 import type { Session } from "@ctrlplane/auth/server";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
+import { SpanStatusCode, trace } from "@opentelemetry/api";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod/v4";
@@ -43,7 +44,27 @@ const t = initTRPC
   });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
+
+const tracer = trace.getTracer("@ctrlplane/trpc");
+
+const tracingMiddleware = t.middleware(({ path, type, next }) =>
+  tracer.startActiveSpan(`trpc.${type} ${path}`, async (span) => {
+    span.setAttribute("trpc.path", path);
+    span.setAttribute("trpc.type", type);
+    try {
+      const result = await next();
+      if (!result.ok) {
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        span.setAttribute("trpc.error_code", result.error.code);
+      }
+      return result;
+    } finally {
+      span.end();
+    }
+  }),
+);
+
+export const publicProcedure = t.procedure.use(tracingMiddleware);
 
 const authnProcedure = publicProcedure.use(({ ctx, next }) => {
   if (ctx.session == null) throw new TRPCError({ code: "UNAUTHORIZED" });
