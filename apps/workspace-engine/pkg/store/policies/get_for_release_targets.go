@@ -133,14 +133,11 @@ func (p *PostgresGetPoliciesForReleaseTarget) GetPoliciesForReleaseTarget(
 
 	slog.InfoContext(ctx,
 		"setting policies for release target",
-		"policy_ids",
-		len(policyIDs),
-		"environment_id",
-		environmentID.String(),
-		"deployment_id",
-		deploymentID.String(),
-		"resource_id",
-		resourceID.String(),
+		"policy_count", len(policyIDs),
+		"policy_ids", fmt.Sprint(policyIDs),
+		"environment_id", environmentID.String(),
+		"deployment_id", deploymentID.String(),
+		"resource_id", resourceID.String(),
 	)
 	setPoliciesSpanCtx, setPoliciesSpan := tracer.Start(ctx, "SetPoliciesForReleaseTarget")
 	db.GetQueries(setPoliciesSpanCtx).

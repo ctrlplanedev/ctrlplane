@@ -122,7 +122,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		slog.Error("Failed to create policy eval reconcile worker", "error", err)
+		slog.ErrorContext(ctx, "Failed to create policy eval reconcile worker", "error", err)
 		os.Exit(1)
 	}
 

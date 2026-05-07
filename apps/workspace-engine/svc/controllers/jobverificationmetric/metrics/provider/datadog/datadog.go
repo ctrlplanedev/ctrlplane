@@ -157,7 +157,7 @@ func (p *Provider) Measure(
 	duration := time.Since(startTime)
 
 	if err != nil {
-		slog.ErrorContext(ctx, "Datadog metric request failed", "site", resolved.Site, "error", err)
+		slog.ErrorContext(ctx, "Datadog metric request failed", "site", site, "error", err)
 		return time.Time{}, nil, err
 	}
 	defer resp.Body.Close()
