@@ -40,7 +40,7 @@ func (p *PostgresGetters) GetReleaseTargetsForResource(
 ) []*oapi.ReleaseTarget {
 	rows, err := p.queries.GetReleaseTargetsForResource(ctx, uuid.MustParse(resourceID))
 	if err != nil {
-		slog.Error(
+		slog.ErrorContext(ctx,
 			"failed to get release targets for resource",
 			"resourceID",
 			resourceID,
@@ -77,7 +77,7 @@ func (p *PostgresGetters) GetCurrentlyDeployedVersion(
 	)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			slog.Error(
+			slog.ErrorContext(ctx,
 				"failed to get current release for release target",
 				"releaseTarget",
 				rt.Key(),

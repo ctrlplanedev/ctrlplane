@@ -3,10 +3,10 @@ package pprof
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/svc"
 )
 
@@ -31,9 +31,9 @@ func (s *Service) Start(_ context.Context) error {
 	}
 
 	go func() {
-		log.Info("pprof server listening", "address", s.addr)
+		slog.Info("pprof server listening", "address", s.addr)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error("pprof ListenAndServe error", "error", err)
+			slog.Error("pprof ListenAndServe error", "error", err)
 		}
 	}()
 

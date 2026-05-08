@@ -3,9 +3,10 @@ package jobverificationmetric
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -61,12 +62,12 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 
 	maxConcurrency := config.GetMaxConcurrency(JobVerificationMetricKind)
-	log.Debug(
+	slog.Debug(
 		"Creating job verification metric reconcile worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -93,7 +94,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create verification reconcile worker", "error", err)
+		slog.Error("Failed to create verification reconcile worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

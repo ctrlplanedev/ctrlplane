@@ -3,11 +3,12 @@ package relationshipeval
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -184,12 +185,12 @@ func NewController(getter Getter, setter Setter) *Controller {
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 	kind := events.RelationshipEvalKind
 	maxConcurrency := config.GetMaxConcurrency(kind)
-	log.Debug(
+	slog.Debug(
 		"Creating relationship eval worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -214,7 +215,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create relationship eval worker", "error", err)
+		slog.Error("Failed to create relationship eval worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

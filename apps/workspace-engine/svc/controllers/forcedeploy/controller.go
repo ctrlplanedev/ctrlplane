@@ -3,9 +3,10 @@ package forcedeploy
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -71,8 +72,8 @@ func NewController(getter Getter, setter Setter) *Controller {
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 
 	kind := events.ForceDeployKind
@@ -96,7 +97,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 
 	worker, err := reconcile.NewWorker(kind, queue, controller, nodeConfig)
 	if err != nil {
-		log.Fatal("Failed to create force deploy reconcile worker", "error", err)
+		slog.Error("Failed to create force deploy reconcile worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

@@ -3,9 +3,10 @@ package http
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/config"
 	"workspace-engine/svc"
@@ -38,9 +39,10 @@ func (s *Service) Start(_ context.Context) error {
 	}
 
 	go func() {
-		log.Info("HTTP server listening", "address", addr)
+		slog.Info("HTTP server listening", "address", addr)
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("HTTP ListenAndServe error", "error", err)
+			slog.Error("HTTP ListenAndServe error", "error", err)
+			os.Exit(1)
 		}
 	}()
 

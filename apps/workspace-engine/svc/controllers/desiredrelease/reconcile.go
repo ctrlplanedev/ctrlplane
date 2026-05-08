@@ -3,9 +3,9 @@ package desiredrelease
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -67,7 +67,7 @@ func (r *reconciler) findDeployableVersion(ctx context.Context) *time.Time {
 		*r.scope,
 	)
 	if err != nil {
-		log.Error("find deployable version", "error", err)
+		slog.ErrorContext(ctx, "find deployable version", "error", err)
 		return nil
 	}
 
@@ -118,7 +118,7 @@ func Reconcile(
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
 	defer span.End()
 
-	log.Info("reconcile", "workspaceID", workspaceID, "rt", rt)
+	slog.InfoContext(ctx, "reconcile", "workspaceID", workspaceID, "rt", rt)
 
 	workspaceIDUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
@@ -131,7 +131,7 @@ func Reconcile(
 		return nil, recordErr(span, "load input", err)
 	}
 
-	log.Info("find deployable version")
+	slog.InfoContext(ctx, "find deployable version")
 
 	nextTime := r.findDeployableVersion(ctx)
 	if r.version == nil {

@@ -3,9 +3,10 @@ package policyeval
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -88,12 +89,12 @@ func NewController(getter Getter, setter Setter) *Controller {
 // New creates a production-ready policy eval worker backed by Postgres.
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 	kind := events.PolicyEvalKind
 	maxConcurrency := config.GetMaxConcurrency(kind)
-	log.Debug(
+	slog.Debug(
 		"Creating policy eval reconcile worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -121,7 +122,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create policy eval reconcile worker", "error", err)
+		slog.ErrorContext(ctx, "Failed to create policy eval reconcile worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

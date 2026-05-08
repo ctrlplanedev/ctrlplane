@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
@@ -31,6 +33,13 @@ var (
 )
 
 func main() {
+	cleanupLogger, err := initLogger()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to init logger: %v\n", err)
+		os.Exit(1)
+	}
+	defer cleanupLogger()
+
 	cleanupTracer, _ := initTracer()
 	defer cleanupTracer()
 
@@ -73,15 +82,15 @@ func main() {
 			continue
 		}
 
-		log.Info("Adding service", "name", s.Name())
+		slog.Info("Adding service", "name", s.Name())
 		runner.Add(s)
 	}
 
-	log.Info("Enabled services", "services", enabled)
+	slog.Info("Enabled services", "services", enabled)
 
 	if err := runner.Run(ctx); err != nil {
-		log.Error("Runner failed", "error", err)
+		slog.Error("Runner failed", "error", err)
 	}
 
-	log.Info("Workspace engine shut down")
+	slog.Info("Workspace engine shut down")
 }

@@ -2,9 +2,9 @@ package claimcleanup
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
@@ -63,11 +63,14 @@ func (s *Service) run(ctx context.Context) {
 				if ctx.Err() != nil {
 					return
 				}
-				log.Error("claim-cleanup: failed to release expired claims", "error", err)
+				slog.ErrorContext(ctx,
+					"claim-cleanup: failed to release expired claims",
+					"error", err,
+				)
 				continue
 			}
 			if released > 0 {
-				log.Info("claim-cleanup: released expired claims", "count", released)
+				slog.InfoContext(ctx, "claim-cleanup: released expired claims", "count", released)
 			}
 		}
 	}

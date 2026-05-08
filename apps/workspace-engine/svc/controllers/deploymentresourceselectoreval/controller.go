@@ -3,9 +3,10 @@ package deploymentresourceselectoreval
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -68,7 +69,14 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 	for _, resource := range resources {
 		resourceIDUUID, err := uuid.Parse(resource.Id)
 		if err != nil {
-			log.Error("failed to parse resource id", "resource_id", resource.Id, "error", err)
+			slog.ErrorContext(
+				ctx,
+				"failed to parse resource id",
+				"resource_id",
+				resource.Id,
+				"error",
+				err,
+			)
 			continue
 		}
 		matchedIDs = append(matchedIDs, resourceIDUUID)
@@ -124,12 +132,12 @@ func NewController(getter Getter, setter Setter, queue reconcile.Queue) *Control
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 	kind := events.DeploymentResourceselectorEvalKind
 	maxConcurrency := config.GetMaxConcurrency(kind)
-	log.Debug(
+	slog.Debug(
 		"Creating deployment resourceselector eval worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -157,7 +165,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create deployment resourceselector eval worker", "error", err)
+		slog.Error("Failed to create deployment resourceselector eval worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

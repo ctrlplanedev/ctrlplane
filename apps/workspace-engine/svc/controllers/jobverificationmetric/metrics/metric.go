@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider"
 	"workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/datadog"
 	httpProvider "workspace-engine/svc/controllers/jobverificationmetric/metrics/provider/http"
@@ -62,7 +62,7 @@ func Measure(
 	if hasFailureCondition {
 		failureEvaluator, err := NewEvaluator(*metric.FailureCondition)
 		if err != nil {
-			log.Error("Failed to create failure evaluator", "error", err)
+			slog.ErrorContext(ctx, "Failed to create failure evaluator", "error", err)
 			return Measurement{}, err
 		}
 
@@ -90,7 +90,7 @@ func Measure(
 
 	successEvaluator, err := NewEvaluator(metric.SuccessCondition)
 	if err != nil {
-		log.Error("Failed to create success evaluator", "error", err)
+		slog.ErrorContext(ctx, "Failed to create success evaluator", "error", err)
 		return Measurement{}, err
 	}
 

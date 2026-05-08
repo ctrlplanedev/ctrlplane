@@ -31,6 +31,7 @@ type Config struct {
 
 	OTELServiceName          string `default:"ctrlplane/workspace-engine" envconfig:"OTEL_SERVICE_NAME"`
 	OTELExporterOTLPEndpoint string `default:"localhost:4318"             envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	LogLevel                 string `default:"INFO"                       envconfig:"LOG_LEVEL"`
 
 	GithubBotAppID      string `default:"" envconfig:"GITHUB_BOT_APP_ID"`
 	GithubBotPrivateKey string `default:"" envconfig:"GITHUB_BOT_PRIVATE_KEY"`

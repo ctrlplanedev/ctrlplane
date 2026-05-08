@@ -2,14 +2,13 @@ package svc
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"slices"
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/charmbracelet/log"
 )
 
 // Service represents a long-running subsystem of the workspace-engine (HTTP
@@ -64,7 +63,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	defer cancel()
 
 	for _, svc := range r.services {
-		log.Info("Starting service", "service", svc.Name())
+		slog.InfoContext(ctx, "Starting service", "service", svc.Name())
 		if err := svc.Start(ctx); err != nil {
 			cancel()
 			return err
@@ -76,9 +75,9 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	select {
 	case sig := <-sigChan:
-		log.Warn("Received signal, shutting down", "signal", sig)
+		slog.WarnContext(ctx, "Received signal, shutting down", "signal", sig)
 	case <-ctx.Done():
-		log.Warn("Context cancelled, shutting down")
+		slog.WarnContext(ctx, "Context cancelled, shutting down")
 	}
 
 	cancel()
@@ -90,9 +89,16 @@ func (r *Runner) Run(ctx context.Context) error {
 	for _, v := range slices.Backward(r.services) {
 		svc := v
 		wg.Go(func() {
-			log.Info("Stopping service", "service", svc.Name())
+			slog.InfoContext(shutdownCtx, "Stopping service", "service", svc.Name())
 			if err := svc.Stop(shutdownCtx); err != nil {
-				log.Error("Service stop error", "service", svc.Name(), "error", err)
+				slog.ErrorContext(
+					shutdownCtx,
+					"Service stop error",
+					"service",
+					svc.Name(),
+					"error",
+					err,
+				)
 			}
 		})
 	}
@@ -105,9 +111,9 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	select {
 	case <-done:
-		log.Info("All services stopped")
+		slog.InfoContext(shutdownCtx, "All services stopped")
 	case <-shutdownCtx.Done():
-		log.Warn("Shutdown timeout exceeded, forcing exit")
+		slog.WarnContext(shutdownCtx, "Shutdown timeout exceeded, forcing exit")
 	}
 
 	return nil

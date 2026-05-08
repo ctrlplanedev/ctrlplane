@@ -3,8 +3,8 @@ package events
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"github.com/charmbracelet/log"
 	"workspace-engine/pkg/reconcile"
 )
 
@@ -42,7 +42,7 @@ func EnqueueManyJobEligibility(
 	if len(params) == 0 {
 		return nil
 	}
-	log.Info("enqueueing job eligibility", "count", len(params))
+	slog.InfoContext(ctx, "enqueueing job eligibility", "count", len(params))
 	items := make([]reconcile.EnqueueParams, len(params))
 	for i, p := range params {
 		items[i] = reconcile.EnqueueParams{

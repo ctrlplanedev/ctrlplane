@@ -3,9 +3,9 @@ package eval
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -69,8 +69,8 @@ func EvaluateRule(
 
 	program, err := celEnv.Compile(rule.Cel)
 	if err != nil {
-		log.Warn("Skipping rule with invalid CEL expression",
-			"rule", rule.ID, "error", err)
+		slog.WarnContext(ctx, "Skipping rule with invalid CEL expression",
+			"rule", rule.ID.String(), "error", err)
 		return nil, nil
 	}
 
@@ -150,8 +150,8 @@ func EvaluateRules(
 	for _, rule := range rules {
 		matches, err := EvaluateRule(ctx, entity, &rule, allCandidates)
 		if err != nil {
-			log.Warn("Skipping rule due to evaluation error",
-				"rule", rule.ID, "error", err)
+			slog.WarnContext(ctx, "Skipping rule due to evaluation error",
+				"rule", rule.ID.String(), "error", err)
 			continue
 		}
 		allMatches = append(allMatches, matches...)

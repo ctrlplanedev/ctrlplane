@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -203,13 +204,13 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 
 	kind := events.DeploymentPlanTargetResultKind
 	maxConcurrency := config.GetMaxConcurrency(kind)
-	log.Debug(
+	slog.Debug(
 		"Creating deployment plan result reconcile worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -238,7 +239,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create deployment plan result reconcile worker", "error", err)
+		slog.Error("Failed to create deployment plan result reconcile worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

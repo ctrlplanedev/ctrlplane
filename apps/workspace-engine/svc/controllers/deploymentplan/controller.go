@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -253,13 +254,13 @@ func (c *Controller) processTarget(
 
 func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	if pgxPool == nil {
-		log.Fatal("Failed to get pgx pool")
-		panic("failed to get pgx pool")
+		slog.Error("Failed to get pgx pool")
+		os.Exit(1)
 	}
 
 	kind := events.DeploymentPlanKind
 	maxConcurrency := config.GetMaxConcurrency(kind)
-	log.Debug(
+	slog.Debug(
 		"Creating deployment plan reconcile worker",
 		"maxConcurrency", maxConcurrency,
 	)
@@ -290,7 +291,8 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		nodeConfig,
 	)
 	if err != nil {
-		log.Fatal("Failed to create deployment plan reconcile worker", "error", err)
+		slog.Error("Failed to create deployment plan reconcile worker", "error", err)
+		os.Exit(1)
 	}
 
 	return worker

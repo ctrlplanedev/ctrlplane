@@ -6,12 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
-	"github.com/charmbracelet/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	sigsyaml "sigs.k8s.io/yaml"
@@ -88,7 +88,11 @@ func prepareTmpApp(app *v1alpha1.Application, tmpName string) *v1alpha1.Applicat
 
 func (p *ArgoCDPlanner) deleteTmpApp(ctx context.Context, serverAddr, apiKey, name string) {
 	if err := p.deleter.DeleteApplication(ctx, serverAddr, apiKey, name); err != nil {
-		log.Warn("Failed to delete temporary plan application", "app", name, "error", err)
+		slog.WarnContext(ctx,
+			"Failed to delete temporary plan application",
+			"app", name,
+			"error", err,
+		)
 	}
 }
 

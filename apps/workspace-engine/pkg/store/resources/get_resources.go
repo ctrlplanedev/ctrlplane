@@ -3,9 +3,9 @@ package resources
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/cel-go/cel"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -62,7 +62,7 @@ func (p *PostgresGetResources) GetResources(
 			baseQuery += " AND " + filter.Clause
 			args = append(args, filter.Args...)
 
-			log.Info("get resources optimization", "filter", filter.Clause)
+			slog.InfoContext(ctx, "get resources optimization", "filter", filter.Clause)
 		}
 	}
 

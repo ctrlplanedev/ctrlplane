@@ -3,13 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
+	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -69,7 +74,7 @@ func initTracer() (func(), error) {
 
 	otel.SetTracerProvider(tp)
 
-	log.Info("OpenTelemetry tracing initialized",
+	slog.Info("OpenTelemetry tracing initialized",
 		"service", serviceName,
 		"endpoint", endpoint)
 
@@ -77,7 +82,7 @@ func initTracer() (func(), error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := tp.Shutdown(ctx); err != nil {
-			log.Error("Failed to shutdown tracer provider", "error", err)
+			slog.Error("Failed to shutdown tracer provider", "error", err)
 		}
 	}, nil
 }
@@ -126,7 +131,7 @@ func initMetrics() (func(), error) {
 		return nil, fmt.Errorf("failed to start runtime metrics: %w", err)
 	}
 
-	log.Info("OpenTelemetry metrics initialized",
+	slog.Info("OpenTelemetry metrics initialized",
 		"service", serviceName,
 		"endpoint", endpoint,
 		"export_interval", "10s")
@@ -135,7 +140,74 @@ func initMetrics() (func(), error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := mp.Shutdown(ctx); err != nil {
-			log.Error("Failed to shutdown meter provider", "error", err)
+			slog.Error("Failed to shutdown meter provider", "error", err)
+		}
+	}, nil
+}
+
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToUpper(strings.TrimSpace(s)) {
+	case "DEBUG":
+		return slog.LevelDebug
+	case "WARN", "WARNING":
+		return slog.LevelWarn
+	case "ERROR":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
+func initLogger() (func(), error) {
+	ctx := context.Background()
+
+	serviceName := config.Global.OTELServiceName
+	endpoint := stripScheme(config.Global.OTELExporterOTLPEndpoint)
+	level := parseLogLevel(config.Global.LogLevel)
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(semconv.ServiceNameKey.String(serviceName)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	opts := []otlploghttp.Option{otlploghttp.WithInsecure()}
+	if endpoint != "" {
+		opts = append(opts, otlploghttp.WithEndpoint(endpoint))
+	}
+
+	exporter, err := otlploghttp.New(ctx, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OTLP log exporter: %w", err)
+	}
+
+	lp := sdklog.NewLoggerProvider(
+		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter,
+			sdklog.WithExportInterval(5*time.Second),
+		)),
+		sdklog.WithResource(res),
+	)
+
+	otelHandler := newLevelHandler(
+		level,
+		otelslog.NewHandler(serviceName, otelslog.WithLoggerProvider(lp)),
+	)
+
+	stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+
+	slog.SetDefault(slog.New(newTeeHandler(stderrHandler, otelHandler)))
+
+	slog.Info("OpenTelemetry logging initialized",
+		"service", serviceName,
+		"endpoint", endpoint,
+		"level", level.String())
+
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := lp.Shutdown(ctx); err != nil {
+			slog.Error("Failed to shutdown logger provider", "error", err)
 		}
 	}, nil
 }
