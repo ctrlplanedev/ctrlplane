@@ -639,8 +639,8 @@ func TestIsRetryableError(t *testing.T) {
 		{"permission denied", fmt.Errorf("permission denied"), false},
 		{"context deadline exceeded sentinel", context.DeadlineExceeded, true},
 		{
-			"context deadline exceeded wrapped",
-			fmt.Errorf("rpc error: code = DeadlineExceeded desc = context deadline exceeded"),
+			"context deadline exceeded grpc status",
+			status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
 			true,
 		},
 	}
