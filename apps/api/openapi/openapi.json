@@ -21,6 +21,26 @@
             ],
             "type": "string"
          },
+         "AwsSecretsManagerConfig": {
+            "properties": {
+               "accessKeyId": {
+                  "description": "Optional static AWS access key id. Omit to use the workspace-engine instance role.",
+                  "type": "string"
+               },
+               "region": {
+                  "description": "AWS region.",
+                  "type": "string"
+               },
+               "secretAccessKey": {
+                  "description": "Optional static AWS secret access key.",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "region"
+            ],
+            "type": "object"
+         },
          "BooleanValue": {
             "type": "boolean"
          },
@@ -1049,6 +1069,34 @@
             "required": [
                "jobAgent",
                "jobAgentConfig"
+            ],
+            "type": "object"
+         },
+         "DopplerConfig": {
+            "properties": {
+               "serviceToken": {
+                  "description": "Doppler service token (dp.st.<...>).",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "serviceToken"
+            ],
+            "type": "object"
+         },
+         "EnvConfig": {
+            "properties": {
+               "allowedKeys": {
+                  "description": "Explicit allowlist of environment variable names this provider may expose.",
+                  "items": {
+                     "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+               }
+            },
+            "required": [
+               "allowedKeys"
             ],
             "type": "object"
          },
@@ -2430,6 +2478,80 @@
             ],
             "type": "object"
          },
+         "SecretProvider": {
+            "description": "Secret provider metadata. The encrypted configuration is never returned.",
+            "properties": {
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "format": "uuid",
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "$ref": "#/components/schemas/SecretProviderType"
+               },
+               "updatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "format": "uuid",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "name",
+               "type",
+               "createdAt",
+               "updatedAt"
+            ],
+            "type": "object"
+         },
+         "SecretProviderConfig": {
+            "description": "Provider-specific configuration. Shape depends on the provider type.",
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/AwsSecretsManagerConfig"
+               },
+               {
+                  "$ref": "#/components/schemas/DopplerConfig"
+               },
+               {
+                  "$ref": "#/components/schemas/EnvConfig"
+               }
+            ]
+         },
+         "SecretProviderRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
+         "SecretProviderType": {
+            "description": "Type of secret provider.",
+            "enum": [
+               "aws_secrets_manager",
+               "doppler",
+               "env"
+            ],
+            "type": "string"
+         },
          "SensitiveValue": {
             "properties": {
                "valueHash": {
@@ -3052,6 +3174,26 @@
                "name",
                "version",
                "kind"
+            ],
+            "type": "object"
+         },
+         "UpsertSecretProviderRequest": {
+            "properties": {
+               "config": {
+                  "$ref": "#/components/schemas/SecretProviderConfig"
+               },
+               "name": {
+                  "description": "Workspace-unique name used to reference the provider from variable values.",
+                  "type": "string"
+               },
+               "type": {
+                  "$ref": "#/components/schemas/SecretProviderType"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "config"
             ],
             "type": "object"
          },
@@ -8701,6 +8843,227 @@
             "tags": [
                "Resources"
             ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/secret-providers": {
+         "get": {
+            "description": "Returns the metadata of every secret provider configured in the workspace. Encrypted configurations are never returned.",
+            "operationId": "listSecretProviders",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/SecretProvider"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "List secret providers"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/secret-providers/{providerId}": {
+         "delete": {
+            "description": "Variable values that reference this provider will fail to resolve until they are updated or the provider is recreated.",
+            "operationId": "requestSecretProviderDeletion",
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SecretProviderRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Secret provider deleted"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Delete a secret provider"
+         },
+         "get": {
+            "operationId": "getSecretProvider",
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SecretProvider"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get a secret provider"
+         },
+         "parameters": [
+            {
+               "description": "ID of the workspace",
+               "in": "path",
+               "name": "workspaceId",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               }
+            },
+            {
+               "description": "ID of the secret provider",
+               "in": "path",
+               "name": "providerId",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               }
+            }
+         ],
+         "put": {
+            "description": "Creates or updates a secret provider. The config is encrypted at rest before persistence.",
+            "operationId": "requestSecretProviderUpsert",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertSecretProviderRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SecretProviderRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert a secret provider"
          }
       },
       "/v1/workspaces/{workspaceId}/systems": {

@@ -916,6 +916,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/secret-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List secret providers
+         * @description Returns the metadata of every secret provider configured in the workspace. Encrypted configurations are never returned.
+         */
+        get: operations["listSecretProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/secret-providers/{providerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the secret provider */
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        /** Get a secret provider */
+        get: operations["getSecretProvider"];
+        /**
+         * Upsert a secret provider
+         * @description Creates or updates a secret provider. The config is encrypted at rest before persistence.
+         */
+        put: operations["requestSecretProviderUpsert"];
+        post?: never;
+        /**
+         * Delete a secret provider
+         * @description Variable values that reference this provider will fail to resolve until they are updated or the provider is recreated.
+         */
+        delete: operations["requestSecretProviderDeletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/systems": {
         parameters: {
             query?: never;
@@ -1125,6 +1175,14 @@ export interface components {
         };
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
+        AwsSecretsManagerConfig: {
+            /** @description Optional static AWS access key id. Omit to use the workspace-engine instance role. */
+            accessKeyId?: string;
+            /** @description AWS region. */
+            region: string;
+            /** @description Optional static AWS secret access key. */
+            secretAccessKey?: string;
+        };
         BooleanValue: boolean;
         CreateDeploymentPlanRequest: {
             /** @description Arbitrary key-value metadata for the plan (e.g. GitHub PR links, CI run URLs) */
@@ -1492,6 +1550,14 @@ export interface components {
             workflow?: components["schemas"]["Workflow"];
             workflowJob?: components["schemas"]["WorkflowJob"];
             workflowRun?: components["schemas"]["WorkflowRun"];
+        };
+        DopplerConfig: {
+            /** @description Doppler service token (dp.st.<...>). */
+            serviceToken: string;
+        };
+        EnvConfig: {
+            /** @description Explicit allowlist of environment variable names this provider may expose. */
+            allowedKeys: string[];
         };
         Environment: {
             /** Format: date-time */
@@ -1978,6 +2044,30 @@ export interface components {
             /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
             retryOnStatuses?: components["schemas"]["JobStatus"][];
         };
+        /** @description Secret provider metadata. The encrypted configuration is never returned. */
+        SecretProvider: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            type: components["schemas"]["SecretProviderType"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            workspaceId: string;
+        };
+        /** @description Provider-specific configuration. Shape depends on the provider type. */
+        SecretProviderConfig: components["schemas"]["AwsSecretsManagerConfig"] | components["schemas"]["DopplerConfig"] | components["schemas"]["EnvConfig"];
+        SecretProviderRequestAccepted: {
+            id: string;
+            message: string;
+        };
+        /**
+         * @description Type of secret provider.
+         * @enum {string}
+         */
+        SecretProviderType: "aws_secrets_manager" | "doppler" | "env";
         SensitiveValue: {
             valueHash: string;
         };
@@ -2202,6 +2292,12 @@ export interface components {
                 [key: string]: unknown;
             };
             version: string;
+        };
+        UpsertSecretProviderRequest: {
+            config: components["schemas"]["SecretProviderConfig"];
+            /** @description Workspace-unique name used to reference the provider from variable values. */
+            name: string;
+            type: components["schemas"]["SecretProviderType"];
         };
         UpsertSystemRequest: {
             description?: string;
@@ -5660,6 +5756,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReleaseTarget"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listSecretProviders: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["SecretProvider"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSecretProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the secret provider */
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretProvider"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestSecretProviderUpsert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the secret provider */
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertSecretProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretProviderRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestSecretProviderDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the secret provider */
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Secret provider deleted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretProviderRequestAccepted"];
                 };
             };
             /** @description Invalid request */
