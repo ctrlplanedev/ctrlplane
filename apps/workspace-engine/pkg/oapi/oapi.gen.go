@@ -1156,6 +1156,18 @@ type RuleEvaluation struct {
 // RuleEvaluationActionType Type of action required
 type RuleEvaluationActionType string
 
+// SecretReferenceValue defines model for SecretReferenceValue.
+type SecretReferenceValue struct {
+	// SecretKey Secret key within the provider
+	SecretKey string `json:"secretKey"`
+
+	// SecretPath Optional provider-specific path components
+	SecretPath *[]string `json:"secretPath,omitempty"`
+
+	// SecretProvider Workspace-unique secret_provider.name
+	SecretProvider string `json:"secretProvider"`
+}
+
 // SensitiveValue defines model for SensitiveValue.
 type SensitiveValue struct {
 	ValueHash string `json:"valueHash"`
@@ -2304,6 +2316,32 @@ func (t *Value) FromSensitiveValue(v SensitiveValue) error {
 
 // MergeSensitiveValue performs a merge with any union data inside the Value, using the provided SensitiveValue
 func (t *Value) MergeSensitiveValue(v SensitiveValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecretReferenceValue returns the union data inside the Value as a SecretReferenceValue
+func (t Value) AsSecretReferenceValue() (SecretReferenceValue, error) {
+	var body SecretReferenceValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecretReferenceValue overwrites any union data inside the Value as the provided SecretReferenceValue
+func (t *Value) FromSecretReferenceValue(v SecretReferenceValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecretReferenceValue performs a merge with any union data inside the Value, using the provided SecretReferenceValue
+func (t *Value) MergeSecretReferenceValue(v SecretReferenceValue) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

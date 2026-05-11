@@ -94,11 +94,15 @@ func (g *PostgresGetter) GetWorkspaceByID(
 }
 
 type PostgresVarResolver struct {
-	getter variableresolver.Getter
+	getter         variableresolver.Getter
+	secretResolver variableresolver.SecretResolver
 }
 
-func NewPostgresVarResolver(getter variableresolver.Getter) *PostgresVarResolver {
-	return &PostgresVarResolver{getter: getter}
+func NewPostgresVarResolver(
+	getter variableresolver.Getter,
+	secretResolver variableresolver.SecretResolver,
+) *PostgresVarResolver {
+	return &PostgresVarResolver{getter: getter, secretResolver: secretResolver}
 }
 
 func (r *PostgresVarResolver) Resolve(
@@ -106,5 +110,12 @@ func (r *PostgresVarResolver) Resolve(
 	scope *variableresolver.Scope,
 	deploymentID, resourceID string,
 ) (map[string]oapi.LiteralValue, error) {
-	return variableresolver.Resolve(ctx, r.getter, scope, deploymentID, resourceID)
+	return variableresolver.Resolve(
+		ctx,
+		r.getter,
+		r.secretResolver,
+		scope,
+		deploymentID,
+		resourceID,
+	)
 }

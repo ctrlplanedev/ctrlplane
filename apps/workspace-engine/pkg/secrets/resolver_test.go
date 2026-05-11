@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync/atomic"
 	"testing"
@@ -65,7 +66,10 @@ func (p *mockProvider) Resolve(_ context.Context, ref SecretReference) (string, 
 func newResolver(t *testing.T, store ProviderConfigStore, provider Provider) *Resolver {
 	t.Helper()
 	reg := NewRegistry()
-	reg.Register(provider.Type(), func(_ map[string]any) (Provider, error) { return provider, nil })
+	reg.Register(
+		provider.Type(),
+		func(_ json.RawMessage) (Provider, error) { return provider, nil },
+	)
 	return NewResolver(store, reg, NewCache(time.Minute))
 }
 
@@ -77,7 +81,7 @@ func TestResolverHappyPath(t *testing.T) {
 				WorkspaceID: ws,
 				Name:        "doppler-prod",
 				Type:        "doppler",
-				Config:      map[string]any{"serviceToken": "dp.st.test"},
+				Config:      json.RawMessage(`{"serviceToken":"dp.st.test"}`),
 			},
 		},
 	}
@@ -108,7 +112,7 @@ func TestResolverCacheHitsSkipStore(t *testing.T) {
 				WorkspaceID: ws,
 				Name:        "doppler-prod",
 				Type:        "doppler",
-				Config:      map[string]any{},
+				Config:      json.RawMessage(`{}`),
 			},
 		},
 	}
@@ -139,7 +143,7 @@ func TestResolverInvalidationForcesRefetch(t *testing.T) {
 				WorkspaceID: ws,
 				Name:        "doppler-prod",
 				Type:        "doppler",
-				Config:      map[string]any{},
+				Config:      json.RawMessage(`{}`),
 			},
 		},
 	}
@@ -187,7 +191,7 @@ func TestResolverNoFactoryRegistered(t *testing.T) {
 				WorkspaceID: ws,
 				Name:        "unknown",
 				Type:        "vault",
-				Config:      map[string]any{},
+				Config:      json.RawMessage(`{}`),
 			},
 		},
 	}
@@ -207,7 +211,7 @@ func TestResolverProviderErrorPropagates(t *testing.T) {
 				WorkspaceID: ws,
 				Name:        "doppler-prod",
 				Type:        "doppler",
-				Config:      map[string]any{},
+				Config:      json.RawMessage(`{}`),
 			},
 		},
 	}

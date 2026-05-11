@@ -2,14 +2,19 @@ package env
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"workspace-engine/pkg/secrets"
 )
 
-func newTestProvider(t *testing.T, cfg map[string]any, envVars map[string]string) *Provider {
+func newTestProvider(t *testing.T, cfg Config, envVars map[string]string) *Provider {
 	t.Helper()
-	p, err := Factory(cfg)
+	raw, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	p, err := Factory(raw)
 	if err != nil {
 		t.Fatalf("Factory: %v", err)
 	}
@@ -23,7 +28,7 @@ func newTestProvider(t *testing.T, cfg map[string]any, envVars map[string]string
 
 func TestResolveHappyPath(t *testing.T) {
 	p := newTestProvider(t,
-		map[string]any{"allowedKeys": []any{"FOO", "BAR"}},
+		Config{AllowedKeys: []string{"FOO", "BAR"}},
 		map[string]string{"FOO": "value-foo"},
 	)
 	got, err := p.Resolve(context.Background(), secrets.SecretReference{Key: "FOO"})
@@ -37,7 +42,7 @@ func TestResolveHappyPath(t *testing.T) {
 
 func TestResolveRejectsNotInAllowlist(t *testing.T) {
 	p := newTestProvider(t,
-		map[string]any{"allowedKeys": []any{"FOO"}},
+		Config{AllowedKeys: []string{"FOO"}},
 		map[string]string{"FOO": "x", "BAR": "y"},
 	)
 	if _, err := p.Resolve(context.Background(), secrets.SecretReference{Key: "BAR"}); err == nil {
@@ -47,7 +52,7 @@ func TestResolveRejectsNotInAllowlist(t *testing.T) {
 
 func TestResolveMissingEnvVar(t *testing.T) {
 	p := newTestProvider(t,
-		map[string]any{"allowedKeys": []any{"FOO"}},
+		Config{AllowedKeys: []string{"FOO"}},
 		map[string]string{},
 	)
 	if _, err := p.Resolve(context.Background(), secrets.SecretReference{Key: "FOO"}); err == nil {
@@ -58,17 +63,17 @@ func TestResolveMissingEnvVar(t *testing.T) {
 func TestFactoryRejectsBadConfigs(t *testing.T) {
 	cases := []struct {
 		name string
-		cfg  map[string]any
+		raw  string
 	}{
-		{"missing", map[string]any{}},
-		{"wrong type", map[string]any{"allowedKeys": "FOO"}},
-		{"empty list", map[string]any{"allowedKeys": []any{}}},
-		{"non-string entry", map[string]any{"allowedKeys": []any{"FOO", 42}}},
-		{"empty string entry", map[string]any{"allowedKeys": []any{""}}},
+		{"not json", `not-json`},
+		{"missing", `{}`},
+		{"wrong type", `{"allowedKeys":"FOO"}`},
+		{"empty list", `{"allowedKeys":[]}`},
+		{"empty string entry", `{"allowedKeys":[""]}`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if _, err := Factory(c.cfg); err == nil {
+			if _, err := Factory([]byte(c.raw)); err == nil {
 				t.Fatal("expected error")
 			}
 		})

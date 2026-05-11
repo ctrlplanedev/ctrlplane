@@ -7,6 +7,7 @@ package secrets
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
@@ -34,18 +35,19 @@ type Provider interface {
 	Resolve(ctx context.Context, ref SecretReference) (string, error)
 }
 
-// ProviderConfig is the decrypted view of a secret_provider row.
+// ProviderConfig is the decrypted view of a secret_provider row. Config is
+// the raw decrypted JSON payload; each provider's factory unmarshals it into
+// a typed struct that lives next to the provider implementation.
 type ProviderConfig struct {
 	ID          uuid.UUID
 	WorkspaceID uuid.UUID
 	Name        string
 	Type        string
-	// Config is the decrypted JSON payload, shape determined by Type.
-	Config map[string]any
+	Config      json.RawMessage
 }
 
-// ProviderFactory constructs a Provider from a decrypted config.
-type ProviderFactory func(cfg map[string]any) (Provider, error)
+// ProviderFactory constructs a Provider from the decrypted config payload.
+type ProviderFactory func(cfg json.RawMessage) (Provider, error)
 
 // ProviderConfigStore loads and decrypts secret_provider rows.
 type ProviderConfigStore interface {

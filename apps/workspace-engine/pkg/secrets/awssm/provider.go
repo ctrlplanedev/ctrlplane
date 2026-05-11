@@ -7,11 +7,12 @@
 //	          "arn:aws:secretsmanager:us-east-1:123:secret:prod/db-AbCdEf")
 //	Key:      optional. If empty, the full SecretString is returned. If set,
 //	          the SecretString is treated as JSON and the named field is
-//	          extracted via gjson.
+//	          extracted via gjson (dotted paths supported).
 package awssm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,6 +24,28 @@ import (
 )
 
 const Type = "aws_secrets_manager"
+
+// Config is the decrypted config payload for an aws_secrets_manager row.
+// AccessKeyID + SecretAccessKey are both optional, but if one is set the
+// other must be too. When both are absent the SDK's default credential chain
+// is used (IRSA / instance role / shared config / env).
+type Config struct {
+	Region          string `json:"region"`
+	AccessKeyID     string `json:"accessKeyId,omitempty"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty"`
+}
+
+func (c Config) validate() error {
+	if c.Region == "" {
+		return fmt.Errorf("awssm provider: region is required")
+	}
+	if (c.AccessKeyID == "") != (c.SecretAccessKey == "") {
+		return fmt.Errorf(
+			"awssm provider: accessKeyId and secretAccessKey must both be set or both omitted",
+		)
+	}
+	return nil
+}
 
 // secretsClient is the subset of secretsmanager.Client the provider uses.
 // Tests substitute a fake implementation; production uses the real SDK client.
@@ -38,63 +61,37 @@ type Provider struct {
 	client secretsClient
 }
 
-// Factory matches secrets.ProviderFactory. The decrypted config supports:
-//
-//	region            (required)
-//	accessKeyId       (optional)
-//	secretAccessKey   (optional)
-//
-// When the static credentials are absent, the SDK default credential chain is
-// used (instance role, IRSA, etc).
-func Factory(cfg map[string]any) (secrets.Provider, error) {
-	region, ok := cfg["region"].(string)
-	if !ok || region == "" {
-		return nil, fmt.Errorf("awssm provider: region is required")
+// Factory matches secrets.ProviderFactory.
+func Factory(raw json.RawMessage) (secrets.Provider, error) {
+	var cfg Config
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		return nil, fmt.Errorf("awssm provider: parse config: %w", err)
 	}
-	awsCfg, err := buildAWSConfig(context.Background(), region, cfg)
+	if err := cfg.validate(); err != nil {
+		return nil, err
+	}
+	awsCfg, err := buildAWSConfig(context.Background(), cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Provider{client: secretsmanager.NewFromConfig(awsCfg)}, nil
 }
 
-func buildAWSConfig(
-	ctx context.Context,
-	region string,
-	cfg map[string]any,
-) (aws.Config, error) {
-	loadOpts := []func(*awsconfig.LoadOptions) error{awsconfig.WithRegion(region)}
-
-	accessKeyID, hasAK := stringField(cfg, "accessKeyId")
-	secretKey, hasSK := stringField(cfg, "secretAccessKey")
-	switch {
-	case hasAK && hasSK:
+func buildAWSConfig(ctx context.Context, cfg Config) (aws.Config, error) {
+	loadOpts := []func(*awsconfig.LoadOptions) error{awsconfig.WithRegion(cfg.Region)}
+	if cfg.AccessKeyID != "" && cfg.SecretAccessKey != "" {
 		loadOpts = append(
 			loadOpts,
 			awsconfig.WithCredentialsProvider(
-				credentials.NewStaticCredentialsProvider(accessKeyID, secretKey, ""),
+				credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
 			),
 		)
-	case hasAK != hasSK:
-		return aws.Config{}, fmt.Errorf(
-			"awssm provider: accessKeyId and secretAccessKey must both be set or both omitted",
-		)
 	}
-
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, loadOpts...)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("awssm provider: load AWS config: %w", err)
 	}
 	return awsCfg, nil
-}
-
-func stringField(cfg map[string]any, key string) (string, bool) {
-	v, ok := cfg[key]
-	if !ok {
-		return "", false
-	}
-	s, ok := v.(string)
-	return s, ok && s != ""
 }
 
 func (*Provider) Type() string { return Type }

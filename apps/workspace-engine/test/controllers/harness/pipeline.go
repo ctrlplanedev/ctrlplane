@@ -150,7 +150,7 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 	releaseSetter.Agents = sc.JobAgents
 
 	selectorCtrl := selectoreval.NewController(selectorGetter, selectorSetter, qs.shared)
-	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter)
+	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter, nil)
 
 	sel := "true"
 	jobDispatchGetter := &JobDispatchGetter{

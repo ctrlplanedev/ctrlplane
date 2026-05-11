@@ -324,7 +324,17 @@ func flattenVariableValue(r VariableValueAggRow) (oapi.Value, error) {
 			return v, err
 		}
 	case "secret_ref":
-		return v, fmt.Errorf("secret_ref variable values are not yet supported")
+		sr := oapi.SecretReferenceValue{
+			SecretProvider: derefString(r.SecretProvider),
+			SecretKey:      derefString(r.SecretKey),
+		}
+		if len(r.SecretPath) > 0 {
+			path := append([]string(nil), r.SecretPath...)
+			sr.SecretPath = &path
+		}
+		if err := v.FromSecretReferenceValue(sr); err != nil {
+			return v, err
+		}
 	default:
 		return v, fmt.Errorf("unknown variable_value kind: %q", r.Kind)
 	}

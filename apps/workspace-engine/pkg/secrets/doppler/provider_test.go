@@ -2,6 +2,7 @@ package doppler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +13,8 @@ import (
 
 func newTestProvider(t *testing.T, srv *httptest.Server) *Provider {
 	t.Helper()
-	p, err := Factory(map[string]any{"serviceToken": "dp.st.test1234567890"})
+	raw, _ := json.Marshal(Config{ServiceToken: "dp.st.test1234567890"})
+	p, err := Factory(raw)
 	if err != nil {
 		t.Fatalf("Factory: %v", err)
 	}
@@ -140,16 +142,16 @@ func TestParsePath(t *testing.T) {
 func TestFactoryRejectsBadConfigs(t *testing.T) {
 	cases := []struct {
 		name string
-		cfg  map[string]any
+		raw  string
 	}{
-		{"missing", map[string]any{}},
-		{"wrong type", map[string]any{"serviceToken": 123}},
-		{"empty", map[string]any{"serviceToken": ""}},
-		{"bad prefix", map[string]any{"serviceToken": "not-a-doppler-token"}},
+		{"not json", `not-json`},
+		{"missing", `{}`},
+		{"empty", `{"serviceToken":""}`},
+		{"bad prefix", `{"serviceToken":"not-a-doppler-token"}`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if _, err := Factory(c.cfg); err == nil {
+			if _, err := Factory([]byte(c.raw)); err == nil {
 				t.Fatal("expected error")
 			}
 		})

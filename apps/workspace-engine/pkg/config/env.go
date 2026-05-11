@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -53,6 +54,13 @@ type Config struct {
 
 	// Whether to enable dry run for workflow jobs.
 	DryRunEnabled bool `default:"false" envconfig:"DRY_RUN_ENABLED"`
+
+	// Symmetric key used to encrypt/decrypt secret_provider.config rows.
+	// Must match @ctrlplane/secrets in the TypeScript layer (64 hex chars).
+	VariablesAes256Key string `default:"" envconfig:"VARIABLES_AES_256_KEY"`
+
+	// TTL for the secrets resolver value cache.
+	SecretsCacheTTL time.Duration `default:"5m" envconfig:"SECRETS_CACHE_TTL"`
 }
 
 // GetMaxConcurrency returns the max concurrency for a given service kind.

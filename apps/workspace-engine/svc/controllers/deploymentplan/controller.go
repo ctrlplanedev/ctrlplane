@@ -20,6 +20,7 @@ import (
 	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
+	"workspace-engine/pkg/secrets"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/svc"
 	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
@@ -252,7 +253,11 @@ func (c *Controller) processTarget(
 	return nil
 }
 
-func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
+func New(
+	workerID string,
+	pgxPool *pgxpool.Pool,
+	secretResolver *secrets.Resolver,
+) svc.Service {
 	if pgxPool == nil {
 		slog.Error("Failed to get pgx pool")
 		os.Exit(1)
@@ -281,7 +286,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 	controller := &Controller{
 		getter:      &PostgresGetter{},
 		setter:      &PostgresSetter{queue: enqueueQueue},
-		varResolver: NewPostgresVarResolver(variableresolver.NewPostgresGetter(q)),
+		varResolver: NewPostgresVarResolver(variableresolver.NewPostgresGetter(q), secretResolver),
 	}
 
 	worker, err := reconcile.NewWorker(

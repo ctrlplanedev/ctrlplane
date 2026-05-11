@@ -2507,6 +2507,30 @@
             ],
             "type": "object"
          },
+         "SecretReferenceValue": {
+            "properties": {
+               "secretKey": {
+                  "description": "Secret key within the provider",
+                  "type": "string"
+               },
+               "secretPath": {
+                  "description": "Optional provider-specific path components",
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "secretProvider": {
+                  "description": "Workspace-unique secret_provider.name",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "secretProvider",
+               "secretKey"
+            ],
+            "type": "object"
+         },
          "SensitiveValue": {
             "properties": {
                "valueHash": {
@@ -2730,6 +2754,9 @@
                },
                {
                   "$ref": "#/components/schemas/SensitiveValue"
+               },
+               {
+                  "$ref": "#/components/schemas/SecretReferenceValue"
                }
             ]
          },

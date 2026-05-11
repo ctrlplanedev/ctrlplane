@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/secrets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
@@ -26,9 +27,10 @@ type ReconcileResult struct {
 type reconciler struct {
 	workspaceID uuid.UUID
 
-	getter Getter
-	setter Setter
-	rt     *ReleaseTarget
+	getter         Getter
+	setter         Setter
+	secretResolver *secrets.Resolver
+	rt             *ReleaseTarget
 
 	scope    *evaluator.EvaluatorScope
 	policies []*oapi.Policy
@@ -83,7 +85,7 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 		Environment: r.scope.Environment,
 	}
 	vars, err := variableresolver.Resolve(
-		ctx, r.getter, varScope,
+		ctx, r.getter, r.secretResolver, varScope,
 		r.rt.DeploymentID.String(), r.rt.ResourceID.String(),
 	)
 	if err != nil {
@@ -113,6 +115,7 @@ func Reconcile(
 	workspaceID string,
 	getter Getter,
 	setter Setter,
+	secretResolver *secrets.Resolver,
 	rt *ReleaseTarget,
 ) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
@@ -124,7 +127,13 @@ func Reconcile(
 	if err != nil {
 		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
-	r := &reconciler{workspaceID: workspaceIDUUID, getter: getter, setter: setter, rt: rt}
+	r := &reconciler{
+		workspaceID:    workspaceIDUUID,
+		getter:         getter,
+		setter:         setter,
+		secretResolver: secretResolver,
+		rt:             rt,
+	}
 	r.rt.WorkspaceID = r.workspaceID
 
 	if err := r.loadInput(ctx); err != nil {

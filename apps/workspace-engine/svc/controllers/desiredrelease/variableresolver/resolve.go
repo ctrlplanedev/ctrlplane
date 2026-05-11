@@ -45,6 +45,7 @@ type Scope struct {
 func Resolve(
 	ctx context.Context,
 	getter Getter,
+	secretResolver SecretResolver,
 	scope *Scope,
 	deploymentID, resourceID string,
 ) (map[string]oapi.LiteralValue, error) {
@@ -112,6 +113,8 @@ func Resolve(
 		if lv := resolveFromResource(
 			ctx,
 			resolver,
+			secretResolver,
+			wsID,
 			resourceID,
 			key,
 			resourceVars,
@@ -126,6 +129,8 @@ func Resolve(
 		if lv := resolveFromValues(
 			ctx,
 			resolver,
+			secretResolver,
+			wsID,
 			resourceID,
 			dv.Values,
 			scope.Resource,
@@ -141,6 +146,8 @@ func Resolve(
 			key,
 			filteredVariableSets,
 			resolver,
+			secretResolver,
+			wsID,
 			resourceID,
 			entity,
 		); lv != nil {
@@ -248,6 +255,8 @@ func (r *realtimeResolver) ResolveRelated(
 func resolveFromResource(
 	ctx context.Context,
 	resolver RelatedEntityResolver,
+	secretResolver SecretResolver,
+	workspaceID uuid.UUID,
 	resourceID string,
 	key string,
 	resourceVars map[string][]oapi.ResourceVariable,
@@ -278,7 +287,15 @@ func resolveFromResource(
 	})
 
 	for _, rv := range matched {
-		lv, err := ResolveValue(ctx, resolver, resourceID, entity, &rv.Value)
+		lv, err := ResolveValue(
+			ctx,
+			resolver,
+			secretResolver,
+			workspaceID,
+			resourceID,
+			entity,
+			&rv.Value,
+		)
 		if err == nil && lv != nil {
 			return lv
 		}
@@ -291,6 +308,8 @@ func resolveFromResource(
 func resolveFromValues(
 	ctx context.Context,
 	resolver RelatedEntityResolver,
+	secretResolver SecretResolver,
+	workspaceID uuid.UUID,
 	resourceID string,
 	values []oapi.DeploymentVariableValue,
 	resource *oapi.Resource,
@@ -316,7 +335,15 @@ func resolveFromValues(
 	})
 
 	for _, v := range matched {
-		lv, err := ResolveValue(ctx, resolver, resourceID, entity, &v.Value)
+		lv, err := ResolveValue(
+			ctx,
+			resolver,
+			secretResolver,
+			workspaceID,
+			resourceID,
+			entity,
+			&v.Value,
+		)
 		if err == nil && lv != nil {
 			return lv
 		}
@@ -329,13 +356,23 @@ func resolveFromVariableSets(
 	key string,
 	variableSets []oapi.VariableSetWithVariables,
 	resolver RelatedEntityResolver,
+	secretResolver SecretResolver,
+	workspaceID uuid.UUID,
 	resourceID string,
 	entity *oapi.RelatableEntity,
 ) *oapi.LiteralValue {
 	for _, vs := range variableSets {
 		for _, v := range vs.Variables {
 			if v.Key == key {
-				lv, err := ResolveValue(ctx, resolver, resourceID, entity, &v.Value)
+				lv, err := ResolveValue(
+					ctx,
+					resolver,
+					secretResolver,
+					workspaceID,
+					resourceID,
+					entity,
+					&v.Value,
+				)
 				if err == nil && lv != nil {
 					return lv
 				}

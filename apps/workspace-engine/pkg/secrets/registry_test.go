@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -16,10 +17,10 @@ func (s *stubProvider) Resolve(_ context.Context, _ SecretReference) (string, er
 
 func TestRegistryBuildAndTypes(t *testing.T) {
 	r := NewRegistry()
-	r.Register("doppler", func(_ map[string]any) (Provider, error) {
+	r.Register("doppler", func(_ json.RawMessage) (Provider, error) {
 		return &stubProvider{name: "doppler"}, nil
 	})
-	r.Register("aws_secrets_manager", func(_ map[string]any) (Provider, error) {
+	r.Register("aws_secrets_manager", func(_ json.RawMessage) (Provider, error) {
 		return &stubProvider{name: "aws_secrets_manager"}, nil
 	})
 
@@ -28,7 +29,7 @@ func TestRegistryBuildAndTypes(t *testing.T) {
 		t.Fatalf("expected 2 registered types, got %d (%v)", len(types), types)
 	}
 
-	p, err := r.Build(&ProviderConfig{Type: "doppler", Config: map[string]any{}})
+	p, err := r.Build(&ProviderConfig{Type: "doppler", Config: json.RawMessage(`{}`)})
 	if err != nil {
 		t.Fatalf("Build doppler: %v", err)
 	}
@@ -39,7 +40,7 @@ func TestRegistryBuildAndTypes(t *testing.T) {
 
 func TestRegistryUnknownTypeFails(t *testing.T) {
 	r := NewRegistry()
-	_, err := r.Build(&ProviderConfig{Type: "vault", Config: map[string]any{}})
+	_, err := r.Build(&ProviderConfig{Type: "vault", Config: json.RawMessage(`{}`)})
 	if err == nil {
 		t.Fatal("expected error for unregistered type")
 	}
@@ -48,10 +49,10 @@ func TestRegistryUnknownTypeFails(t *testing.T) {
 func TestRegistryFactoryErrorPropagates(t *testing.T) {
 	r := NewRegistry()
 	wantErr := errors.New("bad config")
-	r.Register("doppler", func(_ map[string]any) (Provider, error) {
+	r.Register("doppler", func(_ json.RawMessage) (Provider, error) {
 		return nil, wantErr
 	})
-	_, err := r.Build(&ProviderConfig{Type: "doppler", Config: map[string]any{}})
+	_, err := r.Build(&ProviderConfig{Type: "doppler", Config: json.RawMessage(`{}`)})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("expected wrapped wantErr, got %v", err)
 	}

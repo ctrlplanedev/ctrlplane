@@ -26,7 +26,23 @@ const (
 	Type           = "doppler"
 	defaultBaseURL = "https://api.doppler.com"
 	defaultTimeout = 10 * time.Second
+	tokenPrefix    = "dp.st."
 )
+
+// Config is the decrypted config payload for a doppler provider row.
+type Config struct {
+	ServiceToken string `json:"serviceToken"`
+}
+
+func (c Config) validate() error {
+	if c.ServiceToken == "" {
+		return fmt.Errorf("doppler provider: serviceToken is required")
+	}
+	if !strings.HasPrefix(c.ServiceToken, tokenPrefix) {
+		return fmt.Errorf("doppler provider: serviceToken must start with %q", tokenPrefix)
+	}
+	return nil
+}
 
 type Provider struct {
 	serviceToken string
@@ -35,20 +51,16 @@ type Provider struct {
 }
 
 // Factory matches secrets.ProviderFactory.
-func Factory(cfg map[string]any) (secrets.Provider, error) {
-	tokenRaw, ok := cfg["serviceToken"]
-	if !ok {
-		return nil, fmt.Errorf("doppler provider: missing serviceToken")
+func Factory(raw json.RawMessage) (secrets.Provider, error) {
+	var cfg Config
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		return nil, fmt.Errorf("doppler provider: parse config: %w", err)
 	}
-	token, ok := tokenRaw.(string)
-	if !ok || token == "" {
-		return nil, fmt.Errorf("doppler provider: serviceToken must be a non-empty string")
-	}
-	if !strings.HasPrefix(token, "dp.st.") {
-		return nil, fmt.Errorf("doppler provider: serviceToken must start with %q", "dp.st.")
+	if err := cfg.validate(); err != nil {
+		return nil, err
 	}
 	return &Provider{
-		serviceToken: token,
+		serviceToken: cfg.ServiceToken,
 		baseURL:      defaultBaseURL,
 		client:       &http.Client{Timeout: defaultTimeout},
 	}, nil

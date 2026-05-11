@@ -2,6 +2,7 @@ package awssm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -28,6 +29,15 @@ func (f *fakeClient) GetSecretValue(
 	return f.out, nil
 }
 
+func mustMarshal(t *testing.T, cfg Config) json.RawMessage {
+	t.Helper()
+	raw, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	return raw
+}
+
 func TestResolveReturnsRawSecretStringWhenKeyEmpty(t *testing.T) {
 	fc := &fakeClient{
 		out: &secretsmanager.GetSecretValueOutput{
@@ -51,7 +61,9 @@ func TestResolveReturnsRawSecretStringWhenKeyEmpty(t *testing.T) {
 func TestResolveExtractsJSONFieldByKey(t *testing.T) {
 	fc := &fakeClient{
 		out: &secretsmanager.GetSecretValueOutput{
-			SecretString: aws.String(`{"username":"app","password":"hunter2","nested":{"k":"v"}}`),
+			SecretString: aws.String(
+				`{"username":"app","password":"hunter2","nested":{"k":"v"}}`,
+			),
 		},
 	}
 	p := &Provider{client: fc}
@@ -125,23 +137,22 @@ func TestResolveUpstreamErrorPropagates(t *testing.T) {
 func TestFactoryRejectsBadConfigs(t *testing.T) {
 	cases := []struct {
 		name string
-		cfg  map[string]any
+		raw  json.RawMessage
 	}{
-		{"missing region", map[string]any{}},
-		{"empty region", map[string]any{"region": ""}},
-		{"region wrong type", map[string]any{"region": 1}},
+		{"not json", json.RawMessage(`not-json`)},
+		{"missing region", mustMarshal(t, Config{})},
 		{
 			"partial creds (key only)",
-			map[string]any{"region": "us-east-1", "accessKeyId": "AKIA..."},
+			mustMarshal(t, Config{Region: "us-east-1", AccessKeyID: "AKIA..."}),
 		},
 		{
 			"partial creds (secret only)",
-			map[string]any{"region": "us-east-1", "secretAccessKey": "secret"},
+			mustMarshal(t, Config{Region: "us-east-1", SecretAccessKey: "secret"}),
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if _, err := Factory(c.cfg); err == nil {
+			if _, err := Factory(c.raw); err == nil {
 				t.Fatal("expected error")
 			}
 		})
@@ -149,17 +160,17 @@ func TestFactoryRejectsBadConfigs(t *testing.T) {
 }
 
 func TestFactoryAcceptsRegionOnly(t *testing.T) {
-	if _, err := Factory(map[string]any{"region": "us-east-1"}); err != nil {
+	if _, err := Factory(mustMarshal(t, Config{Region: "us-east-1"})); err != nil {
 		t.Fatalf("Factory: %v", err)
 	}
 }
 
 func TestFactoryAcceptsStaticCreds(t *testing.T) {
-	if _, err := Factory(map[string]any{
-		"region":          "us-east-1",
-		"accessKeyId":     "AKIAIOSFODNN7EXAMPLE",
-		"secretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-	}); err != nil {
+	if _, err := Factory(mustMarshal(t, Config{
+		Region:          "us-east-1",
+		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
+		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+	})); err != nil {
 		t.Fatalf("Factory: %v", err)
 	}
 }

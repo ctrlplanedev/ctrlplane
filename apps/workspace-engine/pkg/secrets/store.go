@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -86,15 +85,11 @@ func (s *PostgresStore) toProviderConfig(row db.SecretProvider) (*ProviderConfig
 	if err != nil {
 		return nil, fmt.Errorf("secrets: decrypt config for %q: %w", row.Name, err)
 	}
-	cfg := make(map[string]any)
-	if err := json.Unmarshal([]byte(plaintext), &cfg); err != nil {
-		return nil, fmt.Errorf("secrets: parse decrypted config for %q: %w", row.Name, err)
-	}
 	return &ProviderConfig{
 		ID:          row.ID,
 		WorkspaceID: row.WorkspaceID,
 		Name:        row.Name,
 		Type:        string(row.Type),
-		Config:      cfg,
+		Config:      []byte(plaintext),
 	}, nil
 }
