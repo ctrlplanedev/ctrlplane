@@ -174,14 +174,14 @@ func (m *mockVarResolver) Resolve(
 	_ context.Context,
 	_ *variableresolver.Scope,
 	_, _ string,
-) (map[string]oapi.LiteralValue, error) {
+) (map[string]oapi.LiteralValue, []string, error) {
 	if m.err != nil {
-		return nil, m.err
+		return nil, nil, m.err
 	}
 	if m.variables == nil {
-		return map[string]oapi.LiteralValue{}, nil
+		return map[string]oapi.LiteralValue{}, nil, nil
 	}
-	return m.variables, nil
+	return m.variables, nil, nil
 }
 
 // --- helpers ---

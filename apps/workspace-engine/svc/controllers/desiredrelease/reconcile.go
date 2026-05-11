@@ -32,10 +32,11 @@ type reconciler struct {
 	secretResolver *secrets.Resolver
 	rt             *ReleaseTarget
 
-	scope    *evaluator.EvaluatorScope
-	policies []*oapi.Policy
-	version  *oapi.DeploymentVersion
-	vars     map[string]oapi.LiteralValue
+	scope         *evaluator.EvaluatorScope
+	policies      []*oapi.Policy
+	version       *oapi.DeploymentVersion
+	vars          map[string]oapi.LiteralValue
+	sensitiveVars []string
 }
 
 func (r *reconciler) loadInput(ctx context.Context) (err error) {
@@ -84,7 +85,7 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 		Deployment:  r.scope.Deployment,
 		Environment: r.scope.Environment,
 	}
-	vars, err := variableresolver.Resolve(
+	vars, sensitive, err := variableresolver.Resolve(
 		ctx, r.getter, r.secretResolver, varScope,
 		r.rt.DeploymentID.String(), r.rt.ResourceID.String(),
 	)
@@ -92,6 +93,7 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 		return err
 	}
 	r.vars = vars
+	r.sensitiveVars = sensitive
 	return nil
 }
 
@@ -100,7 +102,7 @@ func (r *reconciler) persistNoDesiredRelease(ctx context.Context) error {
 }
 
 func (r *reconciler) persistRelease(ctx context.Context) (*oapi.Release, error) {
-	release := buildRelease(r.rt, r.version, r.vars)
+	release := buildRelease(r.rt, r.version, r.vars, r.sensitiveVars)
 	if err := r.setter.SetDesiredRelease(ctx, r.rt, release); err != nil {
 		return nil, err
 	}

@@ -196,7 +196,7 @@ func TestResolveValue_Literal_String(t *testing.T) {
 	scope := newScope()
 	val := literalStringValue("hello")
 	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		emptyResolver,
 		nil,
@@ -215,7 +215,7 @@ func TestResolveValue_Literal_Int(t *testing.T) {
 	scope := newScope()
 	val := literalIntValue(42)
 	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		emptyResolver,
 		nil,
@@ -234,7 +234,7 @@ func TestResolveValue_Literal_Bool(t *testing.T) {
 	scope := newScope()
 	val := literalBoolValue(true)
 	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		emptyResolver,
 		nil,
@@ -274,7 +274,7 @@ func TestResolveValue_Reference_ResourceName(t *testing.T) {
 	}
 
 	val := referenceValue("database", "name")
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		resolver,
 		nil,
@@ -310,7 +310,7 @@ func TestResolveValue_Reference_ResourceMetadata(t *testing.T) {
 	}
 
 	val := referenceValue("network", "metadata", "cidr")
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		resolver,
 		nil,
@@ -341,7 +341,7 @@ func TestResolveValue_Reference_DeploymentName(t *testing.T) {
 	}
 
 	val := referenceValue("parent-deployment", "name")
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		resolver,
 		nil,
@@ -371,7 +371,7 @@ func TestResolveValue_Reference_EnvironmentName(t *testing.T) {
 	}
 
 	val := referenceValue("env", "name")
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		resolver,
 		nil,
@@ -390,7 +390,7 @@ func TestResolveValue_Reference_NotFound(t *testing.T) {
 	scope := newScope()
 	entity := makeResourceEntity(scope.Resource)
 	val := referenceValue("nonexistent", "name")
-	_, err := ResolveValue(
+	_, _, err := ResolveValue(
 		context.Background(),
 		emptyResolver,
 		nil,
@@ -424,7 +424,7 @@ func TestResolveValue_Reference_BadPath(t *testing.T) {
 	}
 
 	val := referenceValue("database", "metadata", "missing_key")
-	_, err := ResolveValue(
+	_, _, err := ResolveValue(
 		context.Background(),
 		resolver,
 		nil,
@@ -481,7 +481,7 @@ func TestResolve_ResourceVariableSelectorPriority(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -523,7 +523,7 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -563,7 +563,7 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -603,7 +603,7 @@ func TestResolve_DefaultValueFallback(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -637,7 +637,7 @@ func TestResolve_NoMatchNoDefault_KeyAbsent(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -688,7 +688,7 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -890,7 +890,7 @@ func TestResolve_DeploymentVarValue_DefaultAndSelectorGatedOverride(t *testing.T
 				candidates:   candidates,
 			}
 
-			resolved, err := Resolve(
+			resolved, _, err := Resolve(
 				context.Background(),
 				getter,
 				nil,
@@ -923,7 +923,7 @@ func TestResolve_MultipleVariables(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -951,7 +951,7 @@ func TestResolve_MultipleVariables(t *testing.T) {
 func TestResolve_NoDeploymentVars_EmptyMap(t *testing.T) {
 	scope := newScope()
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		emptyGetter,
 		nil,
@@ -1033,7 +1033,7 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1115,7 +1115,7 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1213,7 +1213,7 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1263,7 +1263,7 @@ func TestResolve_ResourceVarRefFails_FallsToDeploymentValue(t *testing.T) {
 		rules: []eval.Rule{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1298,7 +1298,7 @@ func TestResolveValue_Reference_ResourceConfig(t *testing.T) {
 	}
 
 	val := referenceValue("self", "config", "networking", "vpc_id")
-	lv, err := ResolveValue(
+	lv, _, err := ResolveValue(
 		context.Background(),
 		resolver,
 		nil,
@@ -1323,7 +1323,7 @@ func TestResolveValue_Sensitive_ReturnsError(t *testing.T) {
 	_ = v.FromSensitiveValue(oapi.SensitiveValue{ValueHash: "abc123"})
 
 	entity := makeResourceEntity(scope.Resource)
-	_, err := ResolveValue(
+	_, _, err := ResolveValue(
 		context.Background(),
 		emptyResolver,
 		nil,
@@ -1394,7 +1394,7 @@ func TestResolve_VariableSet_SimpleInjection(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1445,7 +1445,7 @@ func TestResolve_VariableSet_DoesNotOverwriteResourceVar(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1496,7 +1496,7 @@ func TestResolve_VariableSet_DoesNotOverwriteDeploymentVarValue(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1557,7 +1557,7 @@ func TestResolve_VariableSet_HighestPriorityWins(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,
@@ -1602,7 +1602,7 @@ func TestResolve_VariableSet_UnrelatedDoNotMatch(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
 		nil,

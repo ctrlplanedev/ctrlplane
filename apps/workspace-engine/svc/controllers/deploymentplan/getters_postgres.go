@@ -109,7 +109,7 @@ func (r *PostgresVarResolver) Resolve(
 	ctx context.Context,
 	scope *variableresolver.Scope,
 	deploymentID, resourceID string,
-) (map[string]oapi.LiteralValue, error) {
+) (map[string]oapi.LiteralValue, []string, error) {
 	return variableresolver.Resolve(
 		ctx,
 		r.getter,

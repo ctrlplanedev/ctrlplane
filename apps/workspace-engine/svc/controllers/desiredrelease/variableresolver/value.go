@@ -30,6 +30,10 @@ type SecretResolver interface {
 // path on the matched entity. Secret references are fetched through the
 // SecretResolver and returned as string literals. Sensitive values without a
 // concrete provider reference remain unresolvable.
+//
+// The boolean return is true when the resolved value originated from a
+// secret_ref. Callers use it to populate release.EncryptedVariables so that
+// downstream consumers can mark the value as sensitive in logs and UI.
 func ResolveValue(
 	ctx context.Context,
 	resolver RelatedEntityResolver,
@@ -38,26 +42,31 @@ func ResolveValue(
 	resourceID string,
 	entity *oapi.RelatableEntity,
 	value *oapi.Value,
-) (*oapi.LiteralValue, error) {
+) (*oapi.LiteralValue, bool, error) {
 	ctx, span := tracer.Start(ctx, "variableresolver.ResolveValue")
 	defer span.End()
 
 	valueType, err := value.GetType()
 	if err != nil {
-		return nil, fmt.Errorf("determine value type: %w", err)
+		return nil, false, fmt.Errorf("determine value type: %w", err)
 	}
 
 	switch valueType {
 	case "literal":
-		return resolveLiteral(value)
+		lv, err := resolveLiteral(value)
+		return lv, false, err
 	case "reference":
-		return resolveReference(ctx, resolver, value, entity)
+		lv, err := resolveReference(ctx, resolver, value, entity)
+		return lv, false, err
 	case "secret_ref":
-		return resolveSecretReference(ctx, secretResolver, workspaceID, value)
+		lv, err := resolveSecretReference(ctx, secretResolver, workspaceID, value)
+		return lv, err == nil, err
 	case "sensitive":
-		return nil, fmt.Errorf("sensitive values are not resolved by the variable resolver")
+		return nil, false, fmt.Errorf(
+			"sensitive values are not resolved by the variable resolver",
+		)
 	default:
-		return nil, fmt.Errorf("unsupported value type: %s", valueType)
+		return nil, false, fmt.Errorf("unsupported value type: %s", valueType)
 	}
 }
 

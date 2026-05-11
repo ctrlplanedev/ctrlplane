@@ -192,12 +192,15 @@ func (c *Controller) processTarget(
 		Deployment:  deployment,
 		Environment: env,
 	}
-	variables, err := c.varResolver.Resolve(
+	variables, sensitiveKeys, err := c.varResolver.Resolve(
 		ctx, scope,
 		plan.DeploymentID.String(), target.ResourceID.String(),
 	)
 	if err != nil {
 		return fmt.Errorf("resolve variables: %w", err)
+	}
+	if sensitiveKeys == nil {
+		sensitiveKeys = []string{}
 	}
 
 	release := &oapi.Release{
@@ -210,7 +213,7 @@ func (c *Controller) processTarget(
 		},
 		Variables:          variables,
 		Version:            *version,
-		EncryptedVariables: []string{},
+		EncryptedVariables: sensitiveKeys,
 	}
 
 	for i := range matchedAgents {
