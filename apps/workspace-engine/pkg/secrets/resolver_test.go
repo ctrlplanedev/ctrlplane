@@ -70,7 +70,7 @@ func newResolver(t *testing.T, store ProviderConfigStore, provider Provider) *Re
 		provider.Type(),
 		func(_ json.RawMessage) (Provider, error) { return provider, nil },
 	)
-	return NewResolver(store, reg, NewCache(time.Minute))
+	return NewResolver(store, reg, NewCache(time.Minute), NewProviderCache(time.Minute))
 }
 
 func TestResolverHappyPath(t *testing.T) {
@@ -164,6 +164,130 @@ func TestResolverInvalidationForcesRefetch(t *testing.T) {
 	}
 }
 
+func TestResolverProviderInstanceCachedAcrossRefs(t *testing.T) {
+	// Two distinct SecretReferences sharing a provider should construct the
+	// Provider once. With only the value cache (and no provider cache),
+	// every distinct ref would re-decrypt and re-build.
+	ws := uuid.New()
+	store := &mockStore{
+		configs: map[string]*ProviderConfig{
+			"aws-prod": {
+				WorkspaceID: ws,
+				Name:        "aws-prod",
+				Type:        "aws_secrets_manager",
+				Config:      json.RawMessage(`{}`),
+			},
+		},
+	}
+	provider := &mockProvider{t: "aws_secrets_manager", resolveVal: "x"}
+	factoryCalls := 0
+	reg := NewRegistry()
+	reg.Register("aws_secrets_manager", func(_ json.RawMessage) (Provider, error) {
+		factoryCalls++
+		return provider, nil
+	})
+	r := NewResolver(store, reg, NewCache(time.Minute), NewProviderCache(time.Minute))
+
+	refA := SecretReference{Provider: "aws-prod", Path: "prod/db", Key: "password"}
+	refB := SecretReference{Provider: "aws-prod", Path: "prod/db", Key: "username"}
+	if _, err := r.Resolve(context.Background(), ws, refA); err != nil {
+		t.Fatalf("Resolve A: %v", err)
+	}
+	if _, err := r.Resolve(context.Background(), ws, refB); err != nil {
+		t.Fatalf("Resolve B: %v", err)
+	}
+
+	if got := store.getCalls.Load(); got != 1 {
+		t.Fatalf("store.Get called %d times, want 1 (second ref should reuse cached provider)", got)
+	}
+	if factoryCalls != 1 {
+		t.Fatalf("factory called %d times, want 1", factoryCalls)
+	}
+	if got := len(provider.resolveRefs); got != 2 {
+		t.Fatalf("provider.Resolve called %d times, want 2 (one per distinct value ref)", got)
+	}
+}
+
+func TestResolverInvalidationDropsProviderInstance(t *testing.T) {
+	ws := uuid.New()
+	store := &mockStore{
+		configs: map[string]*ProviderConfig{
+			"aws-prod": {
+				WorkspaceID: ws,
+				Name:        "aws-prod",
+				Type:        "aws_secrets_manager",
+				Config:      json.RawMessage(`{}`),
+			},
+		},
+	}
+	provider := &mockProvider{t: "aws_secrets_manager", resolveVal: "x"}
+	factoryCalls := 0
+	reg := NewRegistry()
+	reg.Register("aws_secrets_manager", func(_ json.RawMessage) (Provider, error) {
+		factoryCalls++
+		return provider, nil
+	})
+	r := NewResolver(store, reg, NewCache(time.Minute), NewProviderCache(time.Minute))
+
+	ref := SecretReference{Provider: "aws-prod", Path: "prod/db", Key: "password"}
+	if _, err := r.Resolve(context.Background(), ws, ref); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	r.InvalidateProvider(ws, "aws-prod")
+	if _, err := r.Resolve(context.Background(), ws, ref); err != nil {
+		t.Fatalf("Resolve after invalidation: %v", err)
+	}
+
+	if got := store.getCalls.Load(); got != 2 {
+		t.Fatalf(
+			"store.Get called %d times, want 2 (invalidation forces re-decrypt)",
+			got,
+		)
+	}
+	if factoryCalls != 2 {
+		t.Fatalf("factory called %d times, want 2 after invalidation", factoryCalls)
+	}
+}
+
+func TestResolverProviderCacheDisabledWhenNil(t *testing.T) {
+	ws := uuid.New()
+	store := &mockStore{
+		configs: map[string]*ProviderConfig{
+			"aws-prod": {
+				WorkspaceID: ws,
+				Name:        "aws-prod",
+				Type:        "aws_secrets_manager",
+				Config:      json.RawMessage(`{}`),
+			},
+		},
+	}
+	provider := &mockProvider{t: "aws_secrets_manager", resolveVal: "x"}
+	factoryCalls := 0
+	reg := NewRegistry()
+	reg.Register("aws_secrets_manager", func(_ json.RawMessage) (Provider, error) {
+		factoryCalls++
+		return provider, nil
+	})
+	// Disable both caches: every Resolve must hit store + factory.
+	r := NewResolver(store, reg, nil, nil)
+
+	refA := SecretReference{Provider: "aws-prod", Path: "prod/db", Key: "password"}
+	refB := SecretReference{Provider: "aws-prod", Path: "prod/db", Key: "username"}
+	if _, err := r.Resolve(context.Background(), ws, refA); err != nil {
+		t.Fatalf("Resolve A: %v", err)
+	}
+	if _, err := r.Resolve(context.Background(), ws, refB); err != nil {
+		t.Fatalf("Resolve B: %v", err)
+	}
+
+	if got := store.getCalls.Load(); got != 2 {
+		t.Fatalf("store.Get called %d times, want 2 with caches off", got)
+	}
+	if factoryCalls != 2 {
+		t.Fatalf("factory called %d times, want 2 with caches off", factoryCalls)
+	}
+}
+
 func TestResolverRejectsEmptyRefFields(t *testing.T) {
 	store := &mockStore{}
 	provider := &mockProvider{t: "doppler"}
@@ -195,7 +319,7 @@ func TestResolverNoFactoryRegistered(t *testing.T) {
 			},
 		},
 	}
-	r := NewResolver(store, NewRegistry(), NewCache(time.Minute))
+	r := NewResolver(store, NewRegistry(), NewCache(time.Minute), NewProviderCache(time.Minute))
 
 	_, err := r.Resolve(context.Background(), ws, SecretReference{Provider: "unknown", Key: "K"})
 	if err == nil {

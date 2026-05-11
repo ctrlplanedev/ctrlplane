@@ -61,6 +61,12 @@ type Config struct {
 
 	// TTL for the secrets resolver value cache.
 	SecretsCacheTTL time.Duration `default:"5m" envconfig:"SECRETS_CACHE_TTL"`
+
+	// TTL for the secrets resolver provider-instance cache (constructed
+	// Provider objects, e.g. AWS SDK clients). A longer TTL is appropriate
+	// here than the value cache because provider configs change rarely
+	// while individual secret values may be rotated more often.
+	SecretsProviderCacheTTL time.Duration `default:"30m" envconfig:"SECRETS_PROVIDER_CACHE_TTL"`
 }
 
 // GetMaxConcurrency returns the max concurrency for a given service kind.

@@ -120,5 +120,6 @@ func newSecretResolver(ctx context.Context) *secrets.Resolver {
 		store,
 		providers.NewDefaultRegistry(),
 		secrets.NewCache(config.Global.SecretsCacheTTL),
+		secrets.NewProviderCache(config.Global.SecretsProviderCacheTTL),
 	)
 }
