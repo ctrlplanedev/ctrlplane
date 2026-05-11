@@ -106,6 +106,22 @@ LEFT JOIN release_variable rv ON rv.release_id = r.id
 WHERE rtr.resource_id = $1 AND rtr.environment_id = $2 AND rtr.deployment_id = $3
 GROUP BY r.id, dv.id;
 
+-- name: GetCurrentVersionIDByReleaseTarget :one
+-- Returns the version_id of the latest successful release for a release target.
+-- Lightweight variant of GetCurrentReleaseByReleaseTarget for callers that
+-- only need the version identifier (e.g., gradual rollout short-circuit).
+SELECT r.version_id
+FROM release r
+JOIN release_job rj ON rj.release_id = r.id
+JOIN job j ON j.id = rj.job_id
+WHERE r.resource_id = @resource_id
+  AND r.environment_id = @environment_id
+  AND r.deployment_id = @deployment_id
+  AND j.status = 'successful'
+  AND j.completed_at IS NOT NULL
+ORDER BY j.completed_at DESC
+LIMIT 1;
+
 -- name: GetCurrentReleaseByReleaseTarget :one
 -- Returns the release associated with the latest successful job for a release target,
 -- including version and variables.

@@ -183,6 +183,36 @@ func (q *Queries) GetCurrentReleaseByReleaseTarget(ctx context.Context, arg GetC
 	return i, err
 }
 
+const getCurrentVersionIDByReleaseTarget = `-- name: GetCurrentVersionIDByReleaseTarget :one
+SELECT r.version_id
+FROM release r
+JOIN release_job rj ON rj.release_id = r.id
+JOIN job j ON j.id = rj.job_id
+WHERE r.resource_id = $1
+  AND r.environment_id = $2
+  AND r.deployment_id = $3
+  AND j.status = 'successful'
+  AND j.completed_at IS NOT NULL
+ORDER BY j.completed_at DESC
+LIMIT 1
+`
+
+type GetCurrentVersionIDByReleaseTargetParams struct {
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+}
+
+// Returns the version_id of the latest successful release for a release target.
+// Lightweight variant of GetCurrentReleaseByReleaseTarget for callers that
+// only need the version identifier (e.g., gradual rollout short-circuit).
+func (q *Queries) GetCurrentVersionIDByReleaseTarget(ctx context.Context, arg GetCurrentVersionIDByReleaseTargetParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getCurrentVersionIDByReleaseTarget, arg.ResourceID, arg.EnvironmentID, arg.DeploymentID)
+	var version_id uuid.UUID
+	err := row.Scan(&version_id)
+	return version_id, err
+}
+
 const getDesiredReleaseByReleaseTarget = `-- name: GetDesiredReleaseByReleaseTarget :one
 SELECT
     r.id, r.resource_id, r.environment_id, r.deployment_id, r.version_id, r.created_at,

@@ -97,6 +97,12 @@ func (m *mockGetter) GetApprovalRecords(
 func (m *mockGetter) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget) (bool, error) {
 	return false, nil
 }
+func (m *mockGetter) GetCurrentVersionID(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (*string, error) {
+	return nil, nil
+}
 func (m *mockGetter) GetPolicySkips(_ context.Context, _, _, _ string) ([]*oapi.PolicySkip, error) {
 	return m.policySkips, m.policySkipsErr
 }

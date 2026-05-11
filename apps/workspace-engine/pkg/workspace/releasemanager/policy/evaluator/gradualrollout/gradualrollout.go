@@ -357,6 +357,19 @@ func (e *GradualRolloutEvaluator) Evaluate(
 			WithDetail("error", err.Error())
 	}
 
+	currentVersionID, err := e.getters.GetCurrentVersionID(ctx, releaseTarget)
+	if err != nil {
+		return results.
+			NewDeniedResult(fmt.Sprintf("Failed to get current version: %v", err)).
+			WithDetail("error", err.Error())
+	}
+	if currentVersionID != nil && *currentVersionID == version.Id {
+		return results.
+			NewAllowedResult("Resource already on this version; gradual rollout does not revert").
+			WithDetail("resource", resource).
+			WithDetail("current_version_id", version.Id)
+	}
+
 	releaseTargets, err := e.getReleaseTargets(ctx, environment, version)
 	if err != nil {
 		return results.

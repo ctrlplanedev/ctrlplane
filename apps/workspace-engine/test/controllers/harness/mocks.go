@@ -151,6 +151,11 @@ type DesiredReleaseGetter struct {
 
 	// HasCurrentReleaseFn allows per-release-target logic when set.
 	HasCurrentReleaseFn func(rt *oapi.ReleaseTarget) bool
+
+	CurrentVersionID *string
+
+	// CurrentVersionIDFn allows per-release-target logic when set.
+	CurrentVersionIDFn func(rt *oapi.ReleaseTarget) *string
 }
 
 func (g *DesiredReleaseGetter) ReleaseTargetExists(
@@ -207,6 +212,16 @@ func (g *DesiredReleaseGetter) HasCurrentRelease(
 		return g.HasCurrentReleaseFn(rt), nil
 	}
 	return g.HasRelease, nil
+}
+
+func (g *DesiredReleaseGetter) GetCurrentVersionID(
+	_ context.Context,
+	rt *oapi.ReleaseTarget,
+) (*string, error) {
+	if g.CurrentVersionIDFn != nil {
+		return g.CurrentVersionIDFn(rt), nil
+	}
+	return g.CurrentVersionID, nil
 }
 
 func (g *DesiredReleaseGetter) GetCurrentRelease(
