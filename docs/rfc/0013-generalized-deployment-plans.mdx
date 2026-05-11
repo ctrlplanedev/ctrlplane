@@ -1,0 +1,264 @@
+---
+title: "RFC 0013: Generalized Deployment Plans"
+---
+
+| Category | Status                            | Created    | Author           |
+| -------- | --------------------------------- | ---------- | ---------------- |
+| Engine   | <Badge color="gray">Draft</Badge> | 2026-05-11 | Aditya Choudhari |
+
+## Summary
+
+A `deployment_plan` today is implicitly scoped to a single trigger: a newly
+published version. Generalize it so that any change affecting a deployment —
+version published, deployment config edited, variable or selector change — can
+trigger a plan, reusing the same pipeline (fan-out, agent `Plan`, diff,
+GitHub check). Mechanically: plans become point-in-time snapshots, and the API
+caller decides which release targets are in scope.
+
+This RFC is intentionally scoped to deployment-level plans. Resource-level and
+environment-level plans are out of scope here; see Open Questions for the
+broader-generalization alternative.
+
+## Motivation
+
+RFC 0002 (`Plannable` interface) and RFC 0004 (dry-run plans) already built
+most of what's needed:
+
+- Agents implement `Plannable` and return `(Current, Proposed)`.
+- The `deploymentplanresult` controller persists, validates, and broadcasts
+  diffs.
+- GitHub check rendering keys off entity metadata
+  (`version.metadata["github/owner"|"github/repo"|"git/sha"]`), not a `kind`
+  field. The dispatch is already data-driven.
+
+What's missing is the ability to trigger plans for anything other than a new
+version. Concretely, the request in #1075:
+
+> Before releasing changes **to the deployment** it would be nice to see what
+> the Application CR looks like, similar to the dry-run previews.
+
+Today this is impossible because two assumptions in the schema and stage-1
+controller bake in "the trigger is a new version":
+
+1. `deployment_plan` has five `NOT NULL` `version_*` columns and nothing else
+   is snapshotted; the deployment is re-read live during fan-out.
+2. Stage-1 resolves release targets live via `GetReleaseTargets(deployment_id)`,
+   so the caller cannot scope a plan to specific targets.
+
+The pipeline below stage-1 — dispatch context construction, agent `Plan`
+invocation, result persistence, validation, GitHub check upsert — is already
+trigger-agnostic. The fix is upstream.
+
+## Proposal
+
+### A plan is a snapshot
+
+A plan is a point-in-time, immutable capture of the inputs it was created
+against. All snapshot fields are non-nullable; stage-1 never reads live state.
+
+```sql
+CREATE TABLE deployment_plan (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    version_snapshot    JSONB NOT NULL,
+    deployment_snapshot JSONB NOT NULL,  -- new
+    metadata     JSONB NOT NULL DEFAULT '{}',
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    expires_at   TIMESTAMPTZ NOT NULL
+);
+```
+
+`version_snapshot` subsumes today's five `version_*` columns into one JSONB
+blob. `deployment_snapshot` is the new field that unblocks deployment-edit
+previews — the deployment as the caller wants it considered for this plan
+(current state for a version-published trigger, draft state for a
+deployment-edit preview).
+
+The snapshot grows column-by-column as new triggers arrive. A future
+variable-change trigger might add a `variables_overlay` field; a selector
+trigger might add a `target_selector_snapshot`. Each addition is local: no new
+tables, no breaking changes to stage-1 or stage-2.
+
+### The caller scopes the targets
+
+Release targets are pre-inserted by the caller, not resolved live in stage-1.
+This is what enables single-target previews (variable change for one resource)
+and full-deployment previews (deployment edit affecting all RTs) to share one
+pipeline.
+
+```http
+POST /v1/workspaces/{ws}/deployments/{deploymentId}/plan
+{
+  "version_snapshot":    { /* version blob (currently deployed or proposed) */ },
+  "deployment_snapshot": { /* deployment blob (current or draft) */ },
+  "targets": [
+    { "environment_id": "...", "resource_id": "..." }
+  ],
+  "metadata": {
+    "trigger/type": "deployment_edit_preview",
+    "github/owner": "...", "github/repo": "...", "git/sha": "..."
+  }
+}
+```
+
+The endpoint inserts the plan row and `deployment_plan_target` rows in a
+single transaction, then enqueues. Stage-1's only job becomes: read the
+pre-inserted targets, build `DispatchContext` from the snapshots, insert
+`deployment_plan_target_result` rows, enqueue stage-2 work items.
+
+| Trigger                          | Caller-supplied targets                                  | Snapshot pattern                              |
+| -------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
+| Version published (today)        | all RTs of the deployment                                | proposed version, current deployment          |
+| Deployment-edit preview (#1075)  | all RTs of the deployment                                | current version, draft deployment             |
+| Variable change for one resource | only RTs involving that resource (future scope)          | current version, current deployment, overlays |
+| Selector change preview          | RTs newly matching / no longer matching (future scope)   | current version, draft deployment             |
+
+Today's version-published flow becomes a thin wrapper: resolve all RTs, build
+the snapshot, insert plan + targets in one transaction, enqueue.
+
+### Broadcasts stay metadata-driven
+
+No change required. `MaybeUpdateTargetCheck` already reads
+`github/{owner,repo}` and `git/sha` from version metadata; the same lookup
+works against any snapshot or `plan.metadata`. The right behavior falls out:
+
+- Version-published plan → version metadata carries the CI SHA → check posts
+  on that SHA.
+- GitOps-managed deployment edit → deployment metadata carries the PR SHA →
+  check posts on the deployment PR's SHA.
+- Manual UI preview with no GitHub metadata anywhere → no check posted, just
+  UI diff.
+
+The engine has no `kind` switch; broadcast destinations are inferred from
+metadata present in the plan's snapshots. New notification targets (Slack,
+PagerDuty, etc.) are a new metadata key plus a handler — no engine changes.
+
+### Stage-1 simplifies
+
+```text
+- read pre-inserted deployment_plan_target rows  (no GetReleaseTargets call)
+- for each (target × matched agent):
+    build DispatchContext from version_snapshot + deployment_snapshot + target
+    INSERT deployment_plan_target_result
+    enqueue stage-2 work item
+```
+
+Variable resolution is intentionally left unaddressed in this RFC — see Open
+Questions.
+
+## Migration
+
+- **Schema.** Add `version_snapshot JSONB` and `deployment_snapshot JSONB`
+  columns to `deployment_plan`. Backfill existing rows from current state:
+  `version_snapshot` from the five `version_*` columns (a clean transform);
+  `deployment_snapshot` by reading the deployment by `deployment_id` and
+  freezing whatever it looks like at migration time.
+- **Backfill accuracy.** The `deployment_snapshot` backfill is technically
+  inaccurate for in-flight plans whose deployment has been edited since
+  plan-create. This is acceptable: plans have a bounded `expires_at`, all
+  pre-migration plans drain quickly, and the new model only needs to be
+  correct going forward.
+- **Stage-1 controller.** Swap `GetReleaseTargets` for `GetPlanTargets`. Remove
+  the live `GetDeployment` read. Variable resolution behavior is undecided —
+  see Open Questions.
+- **API handler.** `createDeploymentPlan` becomes "resolve targets and
+  snapshots, freeze both in one transaction, then enqueue." The version-publish
+  caller is unchanged externally; only the handler's internals shift.
+- **No agent changes.** `Plannable` and `DispatchContext` are unchanged.
+- **No reconciler / promotion lifecycle changes.**
+
+## Open Questions
+
+### 1. How generic should the plan model be? *(headline question)*
+
+Two scopes are possible. This RFC proposes **B**.
+
+| | **A. Fully generic `plan`** | **B. Deployment-scoped `deployment_plan`** (proposed) |
+| - | - | - |
+| Tables | one `plan` table, polymorphic across triggers | `deployment_plan` now; `resource_plan` / `environment_plan` as future siblings only when needed |
+| Snapshot location | all five snapshots at target level | version + deployment at plan level; env + resource + vars at target level |
+| Cross-deployment plans | natural (one env change = one plan with N targets across deployments) | not supported; would require a new plan kind |
+| Blob duplication | yes — every target row duplicates deployment + version snapshots | none for today's case (one deployment, one version per plan) |
+| Stage-1 controllers | one, forever | one per plan kind (deferred) |
+| UI clarity | "why did this plan exist?" lives in metadata | encoded in the table — "Deployment Plans" / "Resource Plans" / "Environment Plans" tabs in the UI |
+| Lift now | larger schema change, snapshot rework | minimal — two new JSONB columns, one controller path simplified |
+| Risk | over-design for triggers we don't yet have | divergence between kinds if not held to a shared `plan_target_result` shape |
+
+**Recommendation: B.** Three reasons:
+
+1. The concrete ask (#1075) is deployment-scoped. Solving the actual problem
+   is a two-column schema change plus a stage-1 cleanup. A doesn't solve
+   anything more here.
+2. The mental model "plans are typed by what changed" matches how users
+   describe the problem ("show me the plan for my deployment edit") and makes
+   the UI naturally self-documenting.
+3. Future resource- and environment-level plans, when their triggers
+   materialize, will have their own snapshot shapes that we don't yet know.
+   Designing them speculatively risks getting the shape wrong; growing into
+   them with concrete requirements is cheaper.
+
+The constraint that keeps B from painting us into a corner: all plan-kind
+stage-1 controllers must produce identical `deployment_plan_target_result`
+rows (or a shared `plan_target_result` table) so stage-2 stays unified. That's
+the seam where premature divergence would actually hurt.
+
+### 2. How should variable resolution work if plans are point-in-time snapshots?
+
+The resolver (`variableresolver`) lives in the engine, depends on workspace
+state (variable sets, secret refs, selector matches), and is non-trivial to
+relocate. But if a plan is meant to be a deterministic point-in-time
+capture, "live variable resolution at fan-out time" is in tension with the
+snapshot model — variable sets or secrets could change between plan-create
+and stage-1 run.
+
+Three shapes worth considering:
+
+- **(a)** *Resolve at plan-create, snapshot the resolved variables.* Fully
+  deterministic; matches the snapshot ethos. Cost: API layer either takes a
+  dependency on `variableresolver` or makes an RPC to the engine to resolve.
+- **(b)** *Resolve at fan-out, against snapshotted entities only.* Lighter;
+  most inputs to resolution (deployment, env, resource) are already
+  snapshotted, so the only non-determinism comes from variable sets and
+  secrets changing mid-flight — a small window given `expires_at`.
+- **(c)** *Status quo — resolve live against current state.* Simplest but
+  breaks the snapshot invariant; results depend on when stage-1 runs.
+
+#1075 is satisfied by any of these. The decision can be deferred until a
+trigger (e.g. resource-variable-change preview) actually forces the choice,
+but worth flagging now since the snapshot framing makes the trade-off
+visible.
+
+### 3. Trigger metadata key
+
+We need a convention for recording why a plan exists. Two natural homes:
+
+- **(a)** Convention-only `trigger/type` key inside `plan.metadata`. No
+  schema cost; querying by trigger means JSONB extraction.
+- **(b)** Explicit `trigger_type TEXT` column on `deployment_plan` with an
+  enum of known triggers. Easy to index, filter, and aggregate in the UI;
+  adds enum-maintenance overhead.
+
+A weak preference for (b) given B's UI motivation — the table needs to be
+filterable by trigger type for the UI tabs to work cleanly.
+
+## Adjacent Considerations
+
+Not blocking for this RFC; surfaced here because they'll matter once the
+generalized model is in use.
+
+### Plan deduplication
+
+If a deployment is edited ten times in thirty seconds (e.g. a UI preview that
+fires on each keystroke), do we create ten plans? Per-deployment debounce in
+the API layer, supersedes-previous semantics that cancel older incomplete
+plans, or no dedup and let the UI handle it. Probably not worth solving until
+the first abusive call pattern shows up.
+
+### Result retention per trigger
+
+Preview-style plans (UI scratch previews) probably want shorter `expires_at`
+than rollout plans (version publishes that the GitHub check links to).
+Retention could be derived from `trigger/type`, accepted per request, or kept
+uniform. Uniform is fine until storage actually grows uncomfortably.
