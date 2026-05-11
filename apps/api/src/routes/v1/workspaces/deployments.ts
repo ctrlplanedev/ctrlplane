@@ -1,11 +1,11 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
+import type { Tx } from "@ctrlplane/db";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { evaluate } from "cel-js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import type { Tx } from "@ctrlplane/db";
 import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
@@ -328,8 +328,14 @@ async function listDeploymentVersionsMatchingCel(
 ) {
   const orderBy =
     order === "asc"
-      ? asc(schema.deploymentVersion.createdAt)
-      : desc(schema.deploymentVersion.createdAt);
+      ? [
+          asc(schema.deploymentVersion.createdAt),
+          asc(schema.deploymentVersion.tag),
+        ]
+      : [
+          desc(schema.deploymentVersion.createdAt),
+          desc(schema.deploymentVersion.tag),
+        ];
 
   const pageEnd = offset + limit;
   const items: (typeof schema.deploymentVersion.$inferSelect)[] = [];
@@ -341,7 +347,7 @@ async function listDeploymentVersionsMatchingCel(
       .select()
       .from(schema.deploymentVersion)
       .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-      .orderBy(orderBy)
+      .orderBy(...orderBy)
       .limit(CEL_BATCH_SIZE)
       .offset(scanned);
     if (batch.length === 0) break;
@@ -362,17 +368,25 @@ const listDeploymentVersions: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
   "get"
 > = async (req, res) => {
-  const { deploymentId } = req.params;
+  const { workspaceId, deploymentId } = req.params;
   const limit = req.query.limit ?? 50;
   const offset = req.query.offset ?? 0;
   const order = req.query.order ?? "desc";
   const { cel } = req.query;
 
+  await assertDeploymentExistsInWorkspace(workspaceId, deploymentId);
+
   if (cel == null) {
     const orderBy =
       order === "asc"
-        ? asc(schema.deploymentVersion.createdAt)
-        : desc(schema.deploymentVersion.createdAt);
+        ? [
+            asc(schema.deploymentVersion.createdAt),
+            asc(schema.deploymentVersion.tag),
+          ]
+        : [
+            desc(schema.deploymentVersion.createdAt),
+            desc(schema.deploymentVersion.tag),
+          ];
 
     const { total } = await db
       .select({ total: count() })
@@ -384,7 +398,7 @@ const listDeploymentVersions: AsyncTypedHandler<
       .select()
       .from(schema.deploymentVersion)
       .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-      .orderBy(orderBy)
+      .orderBy(...orderBy)
       .limit(limit)
       .offset(offset);
 
