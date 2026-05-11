@@ -1458,12 +1458,14 @@ func TestGradualRolloutEvaluator_AlreadyOnVersion_AllowsRegardlessOfCurve(t *tes
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	ts := newTestSetup(5, baseTime)
 
-	// Pretend the resource at position 4 (whose curve slot is at t+240s) is
-	// already on this version because it advanced during an override.
+	// Mock all resources as already on this version (simulates the override-
+	// induced advancement). The mock is global per-test, so every release target
+	// reports the same current version — that's fine; we only assert on the one
+	// resource whose curve slot the test actually cares about.
 	ts.mock.currentVersionID = &ts.version.Id
 
-	// Current time is 30 seconds in — only position 0 should be "on the curve."
-	// Position 4 would normally be Pending.
+	// Current time is 30 seconds in — without the short-circuit, position 4's
+	// curve slot is at t+240s and would return Pending.
 	thirtySecLater := baseTime.Add(30 * time.Second)
 	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := ts.eval(rule, func() time.Time { return thirtySecLater })

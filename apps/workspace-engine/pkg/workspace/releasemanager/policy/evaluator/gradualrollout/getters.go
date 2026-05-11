@@ -126,9 +126,9 @@ func (p *PostgresGetters) GetCurrentVersionID(
 	if err != nil {
 		return nil, err
 	}
-	row, err := p.queries.GetCurrentReleaseByReleaseTarget(
+	versionID, err := p.queries.GetCurrentVersionIDByReleaseTarget(
 		ctx,
-		db.GetCurrentReleaseByReleaseTargetParams{
+		db.GetCurrentVersionIDByReleaseTargetParams{
 			ResourceID:    resourceID,
 			EnvironmentID: environmentID,
 			DeploymentID:  deploymentID,
@@ -140,7 +140,7 @@ func (p *PostgresGetters) GetCurrentVersionID(
 		}
 		return nil, err
 	}
-	s := row.VersionID.String()
+	s := versionID.String()
 	return &s, nil
 }
 
