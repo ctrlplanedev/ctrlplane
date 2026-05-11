@@ -17,12 +17,13 @@ import (
 
 // mockGetters implements the full Getters interface for testing.
 type mockGetters struct {
-	resources       map[string]*oapi.Resource
-	releaseTargets  []*oapi.ReleaseTarget
-	policies        []*oapi.Policy
-	policySkips     []*oapi.PolicySkip
-	hasRelease      bool
-	approvalRecords []*oapi.UserApprovalRecord
+	resources        map[string]*oapi.Resource
+	releaseTargets   []*oapi.ReleaseTarget
+	policies         []*oapi.Policy
+	policySkips      []*oapi.PolicySkip
+	hasRelease       bool
+	currentVersionID *string
+	approvalRecords  []*oapi.UserApprovalRecord
 
 	environments   map[string]*oapi.Environment
 	deployments    map[string]*oapi.Deployment
@@ -151,6 +152,13 @@ func (m *mockGetters) GetPolicySkips(
 
 func (m *mockGetters) HasCurrentRelease(_ context.Context, _ *oapi.ReleaseTarget) (bool, error) {
 	return m.hasRelease, nil
+}
+
+func (m *mockGetters) GetCurrentVersionID(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (*string, error) {
+	return m.currentVersionID, nil
 }
 
 func (m *mockGetters) GetJobsForEnvironmentAndVersion(
@@ -1434,6 +1442,70 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 			i,
 		)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Tests: Already-on-version short-circuit (rollback prevention)
+// ---------------------------------------------------------------------------
+
+// Scenario: a resource advanced to version V while a policy override was active.
+// The override has now expired. Without the short-circuit, gradual rollout
+// would re-evaluate the curve, find this resource's slot hasn't been reached,
+// return Pending, and the desired-release loop would fall back to V-1 — rolling
+// the resource back. With the short-circuit, evaluating V against a resource
+// already on V returns Allowed regardless of the curve.
+func TestGradualRolloutEvaluator_AlreadyOnVersion_AllowsRegardlessOfCurve(t *testing.T) {
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	ts := newTestSetup(5, baseTime)
+
+	// Pretend the resource at position 4 (whose curve slot is at t+240s) is
+	// already on this version because it advanced during an override.
+	ts.mock.currentVersionID = &ts.version.Id
+
+	// Current time is 30 seconds in — only position 0 should be "on the curve."
+	// Position 4 would normally be Pending.
+	thirtySecLater := baseTime.Add(30 * time.Second)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := ts.eval(rule, func() time.Time { return thirtySecLater })
+
+	result := eval.Evaluate(ts.ctx, ts.scope(4))
+	assert.True(
+		t,
+		result.Allowed,
+		"resource already on this version should be allowed regardless of curve position",
+	)
+}
+
+// A resource on a DIFFERENT version (e.g., the prior version) must still be
+// gated by the curve — the short-circuit must not leak into the normal case.
+func TestGradualRolloutEvaluator_OnDifferentVersion_CurveStillGates(t *testing.T) {
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	ts := newTestSetup(5, baseTime)
+
+	priorVersionID := uuid.New().String()
+	ts.mock.currentVersionID = &priorVersionID
+
+	thirtySecLater := baseTime.Add(30 * time.Second)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := ts.eval(rule, func() time.Time { return thirtySecLater })
+
+	result := eval.Evaluate(ts.ctx, ts.scope(4))
+	assert.False(t, result.Allowed, "resource not yet on candidate version must wait for its slot")
+}
+
+// No prior release at all: evaluator falls through to normal curve evaluation.
+func TestGradualRolloutEvaluator_NoCurrentVersion_CurveStillGates(t *testing.T) {
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	ts := newTestSetup(5, baseTime)
+
+	ts.mock.currentVersionID = nil // never deployed
+
+	thirtySecLater := baseTime.Add(30 * time.Second)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := ts.eval(rule, func() time.Time { return thirtySecLater })
+
+	result := eval.Evaluate(ts.ctx, ts.scope(4))
+	assert.False(t, result.Allowed, "first-time deploys must still respect the curve")
 }
 
 // ---------------------------------------------------------------------------

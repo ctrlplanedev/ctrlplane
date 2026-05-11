@@ -126,6 +126,13 @@ func (m *mockReconcileGetter) HasCurrentRelease(
 	return false, nil
 }
 
+func (m *mockReconcileGetter) GetCurrentVersionID(
+	_ context.Context,
+	_ *oapi.ReleaseTarget,
+) (*string, error) {
+	return nil, nil
+}
+
 func (m *mockReconcileGetter) GetEnvironment(
 	_ context.Context,
 	_ string,
