@@ -316,6 +316,48 @@ function filterDeploymentVersions(
   });
 }
 
+const CEL_BATCH_SIZE = 500;
+const CEL_MAX_SCAN = 100_000;
+
+async function listDeploymentVersionsMatchingCel(
+  deploymentId: string,
+  cel: string,
+  order: "asc" | "desc",
+  offset: number,
+  limit: number,
+) {
+  const orderBy =
+    order === "asc"
+      ? asc(schema.deploymentVersion.createdAt)
+      : desc(schema.deploymentVersion.createdAt);
+
+  const pageEnd = offset + limit;
+  const items: (typeof schema.deploymentVersion.$inferSelect)[] = [];
+  let scanned = 0;
+  let matched = 0;
+
+  while (scanned < CEL_MAX_SCAN) {
+    const batch = await db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
+      .orderBy(orderBy)
+      .limit(CEL_BATCH_SIZE)
+      .offset(scanned);
+    if (batch.length === 0) break;
+
+    for (const version of filterDeploymentVersions(batch, cel)) {
+      if (matched >= offset && matched < pageEnd) items.push(version);
+      matched++;
+    }
+
+    scanned += batch.length;
+    if (batch.length < CEL_BATCH_SIZE) break;
+  }
+
+  return { items, total: matched };
+}
+
 const listDeploymentVersions: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
   "get"
@@ -326,12 +368,12 @@ const listDeploymentVersions: AsyncTypedHandler<
   const order = req.query.order ?? "desc";
   const { cel } = req.query;
 
-  const orderBy =
-    order === "asc"
-      ? asc(schema.deploymentVersion.createdAt)
-      : desc(schema.deploymentVersion.createdAt);
-
   if (cel == null) {
+    const orderBy =
+      order === "asc"
+        ? asc(schema.deploymentVersion.createdAt)
+        : desc(schema.deploymentVersion.createdAt);
+
     const { total } = await db
       .select({ total: count() })
       .from(schema.deploymentVersion)
@@ -358,20 +400,17 @@ const listDeploymentVersions: AsyncTypedHandler<
   if (!validResourceSelector(cel))
     throw new ApiError("Invalid CEL expression", 400);
 
-  // CEL is evaluated in-memory, so cap the candidate set to bound cost.
-  // Filtering applies to the 1000 most-recent (or oldest, for asc) versions.
-  const candidates = await db
-    .select()
-    .from(schema.deploymentVersion)
-    .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-    .orderBy(orderBy)
-    .limit(1000);
-
-  const filtered = filterDeploymentVersions(candidates, cel);
+  const { items, total } = await listDeploymentVersionsMatchingCel(
+    deploymentId,
+    cel,
+    order,
+    offset,
+    limit,
+  );
 
   res.status(200).json({
-    items: filtered.slice(offset, offset + limit).map(formatDeploymentVersion),
-    total: filtered.length,
+    items: items.map(formatDeploymentVersion),
+    total,
     limit,
     offset,
   });
