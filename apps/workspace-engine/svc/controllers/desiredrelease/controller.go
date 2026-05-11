@@ -20,6 +20,7 @@ import (
 	"workspace-engine/pkg/store/policies"
 	"workspace-engine/pkg/store/releasetargets"
 	"workspace-engine/svc"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/desiredrelease")
@@ -29,7 +30,7 @@ type Controller struct {
 	getter         Getter
 	queries        *db.Queries
 	setter         Setter
-	secretResolver *secrets.Resolver
+	secretResolver variableresolver.SecretResolver
 }
 
 // Process implements [reconcile.Processor].
@@ -98,7 +99,11 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 // NewController creates a Controller with the given dependencies.
 // Use this constructor in tests to inject mock implementations.
-func NewController(getter Getter, setter Setter, secretResolver *secrets.Resolver) *Controller {
+func NewController(
+	getter Getter,
+	setter Setter,
+	secretResolver variableresolver.SecretResolver,
+) *Controller {
 	return &Controller{getter: getter, setter: setter, secretResolver: secretResolver}
 }
 

@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/relationships/eval"
 	selectoreval "workspace-engine/svc/controllers/deploymentresourceselectoreval"
 	"workspace-engine/svc/controllers/desiredrelease"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 	"workspace-engine/svc/controllers/jobdispatch"
 )
 
@@ -79,6 +80,8 @@ type ScenarioState struct {
 	ResourceVars      map[string][]oapi.ResourceVariable
 	RelationshipRules []eval.Rule
 	Candidates        map[string][]eval.EntityData
+
+	SecretResolver variableresolver.SecretResolver
 }
 
 type ResourceDef struct {
@@ -150,7 +153,7 @@ func NewTestPipeline(t *testing.T, opts ...PipelineOption) *TestPipeline {
 	releaseSetter.Agents = sc.JobAgents
 
 	selectorCtrl := selectoreval.NewController(selectorGetter, selectorSetter, qs.shared)
-	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter, nil)
+	releaseCtrl := desiredrelease.NewController(releaseGetter, releaseSetter, sc.SecretResolver)
 
 	sel := "true"
 	jobDispatchGetter := &JobDispatchGetter{
@@ -226,6 +229,16 @@ func (p *TestPipeline) ProcessDesiredReleases() int {
 		p.t.Fatalf("process desired releases: %v", err)
 	}
 	return res.Processed
+}
+
+// ProcessDesiredReleasesErr claims and processes all pending desired-release
+// items and returns the processor error without failing the test. Use this
+// in tests that assert a controller-level failure (e.g. secret resolution
+// outage blocks the release).
+func (p *TestPipeline) ProcessDesiredReleasesErr() error {
+	p.t.Helper()
+	_, err := DrainQueue(context.Background(), p.releaseQueue, p.releaseCtrl)
+	return err
 }
 
 // ProcessJobDispatches claims and processes all pending job-dispatch items.

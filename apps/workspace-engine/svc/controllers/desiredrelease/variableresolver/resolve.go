@@ -2,6 +2,7 @@ package variableresolver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -113,7 +114,7 @@ func Resolve(
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
 
-		if lv, sensitive := resolveFromResource(
+		lv, sensitive, err := resolveFromResource(
 			ctx,
 			resolver,
 			secretResolver,
@@ -123,7 +124,13 @@ func Resolve(
 			resourceVars,
 			scope.Resource,
 			entity,
-		); lv != nil {
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve variable from resource failed")
+			return nil, nil, fmt.Errorf("resolve variable %q: %w", key, err)
+		}
+		if lv != nil {
 			resolved[key] = *lv
 			if sensitive {
 				sensitiveKeys = append(sensitiveKeys, key)
@@ -132,7 +139,7 @@ func Resolve(
 			continue
 		}
 
-		if lv, sensitive := resolveFromValues(
+		lv, sensitive, err = resolveFromValues(
 			ctx,
 			resolver,
 			secretResolver,
@@ -141,7 +148,13 @@ func Resolve(
 			dv.Values,
 			scope.Resource,
 			entity,
-		); lv != nil {
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve variable from values failed")
+			return nil, nil, fmt.Errorf("resolve variable %q: %w", key, err)
+		}
+		if lv != nil {
 			resolved[key] = *lv
 			if sensitive {
 				sensitiveKeys = append(sensitiveKeys, key)
@@ -150,7 +163,7 @@ func Resolve(
 			continue
 		}
 
-		if lv, sensitive := resolveFromVariableSets(
+		lv, sensitive, err = resolveFromVariableSets(
 			ctx,
 			key,
 			filteredVariableSets,
@@ -159,7 +172,13 @@ func Resolve(
 			wsID,
 			resourceID,
 			entity,
-		); lv != nil {
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve variable from variable sets failed")
+			return nil, nil, fmt.Errorf("resolve variable %q: %w", key, err)
+		}
+		if lv != nil {
 			resolved[key] = *lv
 			if sensitive {
 				sensitiveKeys = append(sensitiveKeys, key)
@@ -167,7 +186,6 @@ func Resolve(
 			fromVariableSet++
 			continue
 		}
-
 	}
 
 	span.SetAttributes(
@@ -275,10 +293,10 @@ func resolveFromResource(
 	resourceVars map[string][]oapi.ResourceVariable,
 	resource *oapi.Resource,
 	entity *oapi.RelatableEntity,
-) (*oapi.LiteralValue, bool) {
+) (*oapi.LiteralValue, bool, error) {
 	candidates, ok := resourceVars[key]
 	if !ok || len(candidates) == 0 {
-		return nil, false
+		return nil, false, nil
 	}
 
 	matched := make([]oapi.ResourceVariable, 0, len(candidates))
@@ -292,7 +310,7 @@ func resolveFromResource(
 		}
 	}
 	if len(matched) == 0 {
-		return nil, false
+		return nil, false, nil
 	}
 
 	sort.Slice(matched, func(i, j int) bool {
@@ -309,11 +327,14 @@ func resolveFromResource(
 			entity,
 			&rv.Value,
 		)
+		if errors.Is(err, ErrSecretResolution) {
+			return nil, false, err
+		}
 		if err == nil && lv != nil {
-			return lv, sensitive
+			return lv, sensitive, nil
 		}
 	}
-	return nil, false
+	return nil, false, nil
 }
 
 // resolveFromValues finds the highest-priority deployment variable value
@@ -327,7 +348,7 @@ func resolveFromValues(
 	values []oapi.DeploymentVariableValue,
 	resource *oapi.Resource,
 	entity *oapi.RelatableEntity,
-) (*oapi.LiteralValue, bool) {
+) (*oapi.LiteralValue, bool, error) {
 	matched := make([]oapi.DeploymentVariableValue, 0, len(values))
 	for _, v := range values {
 		if v.ResourceSelector == nil {
@@ -340,7 +361,7 @@ func resolveFromValues(
 		}
 	}
 	if len(matched) == 0 {
-		return nil, false
+		return nil, false, nil
 	}
 
 	sort.Slice(matched, func(i, j int) bool {
@@ -357,11 +378,14 @@ func resolveFromValues(
 			entity,
 			&v.Value,
 		)
+		if errors.Is(err, ErrSecretResolution) {
+			return nil, false, err
+		}
 		if err == nil && lv != nil {
-			return lv, sensitive
+			return lv, sensitive, nil
 		}
 	}
-	return nil, false
+	return nil, false, nil
 }
 
 func resolveFromVariableSets(
@@ -373,7 +397,7 @@ func resolveFromVariableSets(
 	workspaceID uuid.UUID,
 	resourceID string,
 	entity *oapi.RelatableEntity,
-) (*oapi.LiteralValue, bool) {
+) (*oapi.LiteralValue, bool, error) {
 	for _, vs := range variableSets {
 		for _, v := range vs.Variables {
 			if v.Key == key {
@@ -386,13 +410,16 @@ func resolveFromVariableSets(
 					entity,
 					&v.Value,
 				)
+				if errors.Is(err, ErrSecretResolution) {
+					return nil, false, err
+				}
 				if err == nil && lv != nil {
-					return lv, sensitive
+					return lv, sensitive, nil
 				}
 			}
 		}
 	}
-	return nil, false
+	return nil, false, nil
 }
 
 func filterVariableSets(

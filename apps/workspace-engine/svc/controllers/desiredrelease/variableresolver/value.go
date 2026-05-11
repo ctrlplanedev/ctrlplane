@@ -2,6 +2,7 @@ package variableresolver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -9,6 +10,12 @@ import (
 	"workspace-engine/pkg/secrets"
 	"workspace-engine/pkg/workspace/relationships"
 )
+
+// ErrSecretResolution is wrapped by every error originating from secret_ref
+// resolution so the priority-cascade helpers can distinguish a transient
+// candidate-skip (literal/reference) from a fatal upstream failure that must
+// block the release.
+var ErrSecretResolution = errors.New("secret resolution failed")
 
 // RelatedEntityResolver resolves a reference name to the matched related
 // entities for a resource. Implementations may evaluate relationship rules
@@ -77,11 +84,14 @@ func resolveSecretReference(
 	value *oapi.Value,
 ) (*oapi.LiteralValue, error) {
 	if secretResolver == nil {
-		return nil, fmt.Errorf("secret_ref encountered but no SecretResolver configured")
+		return nil, fmt.Errorf(
+			"%w: no SecretResolver configured (VARIABLES_AES_256_KEY unset?)",
+			ErrSecretResolution,
+		)
 	}
 	srv, err := value.AsSecretReferenceValue()
 	if err != nil {
-		return nil, fmt.Errorf("extract secret reference value: %w", err)
+		return nil, fmt.Errorf("%w: extract secret reference value: %w", ErrSecretResolution, err)
 	}
 	ref := secrets.SecretReference{
 		Provider: srv.SecretProvider,
@@ -99,7 +109,8 @@ func resolveSecretReference(
 	plaintext, err := secretResolver.Resolve(ctx, workspaceID, ref)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"resolve secret %s/%s/%s: %w",
+			"%w: %s/%s/%s: %w",
+			ErrSecretResolution,
 			ref.Provider,
 			ref.Path,
 			ref.Key,

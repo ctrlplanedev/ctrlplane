@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/secrets"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
@@ -29,7 +28,7 @@ type reconciler struct {
 
 	getter         Getter
 	setter         Setter
-	secretResolver *secrets.Resolver
+	secretResolver variableresolver.SecretResolver
 	rt             *ReleaseTarget
 
 	scope         *evaluator.EvaluatorScope
@@ -117,7 +116,7 @@ func Reconcile(
 	workspaceID string,
 	getter Getter,
 	setter Setter,
-	secretResolver *secrets.Resolver,
+	secretResolver variableresolver.SecretResolver,
 	rt *ReleaseTarget,
 ) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
