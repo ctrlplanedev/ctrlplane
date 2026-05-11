@@ -15,20 +15,30 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 )
 
-func parseReleaseTargetUUIDs(rt *oapi.ReleaseTarget) (uuid.UUID, uuid.UUID, uuid.UUID, error) {
+type ReleaseTargetIDs struct {
+	EnvironmentID uuid.UUID
+	ResourceID    uuid.UUID
+	DeploymentID  uuid.UUID
+}
+
+func parseReleaseTargetUUIDs(rt *oapi.ReleaseTarget) (ReleaseTargetIDs, error) {
 	resourceID, err := uuid.Parse(rt.ResourceId)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, uuid.Nil, fmt.Errorf("parse resource id: %w", err)
+		return ReleaseTargetIDs{}, fmt.Errorf("parse resource id: %w", err)
 	}
 	environmentID, err := uuid.Parse(rt.EnvironmentId)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, uuid.Nil, fmt.Errorf("parse environment id: %w", err)
+		return ReleaseTargetIDs{}, fmt.Errorf("parse environment id: %w", err)
 	}
 	deploymentID, err := uuid.Parse(rt.DeploymentId)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, uuid.Nil, fmt.Errorf("parse deployment id: %w", err)
+		return ReleaseTargetIDs{}, fmt.Errorf("parse deployment id: %w", err)
 	}
-	return resourceID, environmentID, deploymentID, nil
+	return ReleaseTargetIDs{
+		EnvironmentID: environmentID,
+		ResourceID:    resourceID,
+		DeploymentID:  deploymentID,
+	}, nil
 }
 
 type approvalGetters = approval.Getters
@@ -122,16 +132,16 @@ func (p *PostgresGetters) GetCurrentVersionID(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
 ) (*string, error) {
-	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(releaseTarget)
+	ids, err := parseReleaseTargetUUIDs(releaseTarget)
 	if err != nil {
 		return nil, err
 	}
 	versionID, err := p.queries.GetCurrentVersionIDByReleaseTarget(
 		ctx,
 		db.GetCurrentVersionIDByReleaseTargetParams{
-			ResourceID:    resourceID,
-			EnvironmentID: environmentID,
-			DeploymentID:  deploymentID,
+			ResourceID:    ids.ResourceID,
+			EnvironmentID: ids.EnvironmentID,
+			DeploymentID:  ids.DeploymentID,
 		},
 	)
 	if err != nil {
@@ -148,16 +158,16 @@ func (p *PostgresGetters) HasCurrentRelease(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
 ) (bool, error) {
-	resourceID, environmentID, deploymentID, err := parseReleaseTargetUUIDs(releaseTarget)
+	ids, err := parseReleaseTargetUUIDs(releaseTarget)
 	if err != nil {
 		return false, err
 	}
 	releases, err := p.queries.ListReleasesByReleaseTarget(
 		ctx,
 		db.ListReleasesByReleaseTargetParams{
-			ResourceID:    resourceID,
-			EnvironmentID: environmentID,
-			DeploymentID:  deploymentID,
+			ResourceID:    ids.ResourceID,
+			EnvironmentID: ids.EnvironmentID,
+			DeploymentID:  ids.DeploymentID,
 		},
 	)
 	if err != nil {
