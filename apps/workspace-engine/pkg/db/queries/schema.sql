@@ -547,3 +547,16 @@ CREATE TABLE deployment_plan_target_result_validation (
     evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (result_id, rule_id)
 );
+
+CREATE TYPE secret_provider_type AS ENUM ('aws_secrets_manager', 'doppler', 'env');
+
+CREATE TABLE secret_provider (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    type secret_provider_type NOT NULL,
+    config BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (workspace_id, name)
+);
