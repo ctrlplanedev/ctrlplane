@@ -2,6 +2,7 @@ package argo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -76,6 +77,9 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
 	errStr := err.Error()
 	return strings.Contains(errStr, "502") ||
 		strings.Contains(errStr, "503") ||
@@ -85,7 +89,8 @@ func isRetryableError(err error) bool {
 		strings.Contains(errStr, "timeout") ||
 		strings.Contains(errStr, "temporarily unavailable") ||
 		strings.Contains(errStr, "EOF") ||
-		strings.Contains(errStr, "Unavailable")
+		strings.Contains(errStr, "Unavailable") ||
+		strings.Contains(errStr, "context deadline exceeded")
 }
 
 // GoApplicationDeleter is the production implementation of

@@ -637,6 +637,12 @@ func TestIsRetryableError(t *testing.T) {
 		{"Unavailable", fmt.Errorf("Unavailable"), true},
 		{"not found", fmt.Errorf("application not found"), false},
 		{"permission denied", fmt.Errorf("permission denied"), false},
+		{"context deadline exceeded sentinel", context.DeadlineExceeded, true},
+		{
+			"context deadline exceeded wrapped",
+			fmt.Errorf("rpc error: code = DeadlineExceeded desc = context deadline exceeded"),
+			true,
+		},
 	}
 
 	for _, tt := range tests {
