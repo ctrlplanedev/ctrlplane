@@ -114,4 +114,51 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
+
+  DeploymentVersionWithDependencies: {
+    type: 'object',
+    required: [
+      'id',
+      'name',
+      'tag',
+      'config',
+      'jobAgentConfig',
+      'deploymentId',
+      'status',
+      'createdAt',
+      'dependencies',
+    ],
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+      tag: { type: 'string' },
+      config: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      jobAgentConfig: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      deploymentId: { type: 'string' },
+      status: openapi.schemaRef('DeploymentVersionStatus'),
+      message: { type: 'string' },
+      createdAt: { type: 'string', format: 'date-time' },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
+      dependencies: {
+        type: 'object',
+        description: "Map of dependency deployment ID to its CEL version selector evaluated against that deployment's current release on the same resource.",
+        additionalProperties: {
+          type: 'object',
+          required: ['versionSelector'],
+          properties: {
+            versionSelector: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
 }

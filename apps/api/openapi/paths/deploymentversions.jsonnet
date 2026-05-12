@@ -13,7 +13,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.orderParam(),
         openapi.celParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentVersion'))
+      responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentVersionWithDependencies'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
