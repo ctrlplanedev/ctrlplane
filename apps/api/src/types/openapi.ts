@@ -1432,6 +1432,31 @@ export interface components {
         };
         /** @enum {string} */
         DeploymentVersionStatus: "unspecified" | "building" | "ready" | "failed" | "rejected";
+        DeploymentVersionWithDependencies: {
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Map of dependency deployment ID to its CEL version selector evaluated against that deployment's current release on the same resource. */
+            dependencies: {
+                [key: string]: {
+                    versionSelector: string;
+                };
+            };
+            deploymentId: string;
+            id: string;
+            jobAgentConfig: {
+                [key: string]: unknown;
+            };
+            message?: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            status: components["schemas"]["DeploymentVersionStatus"];
+            tag: string;
+        };
         DeploymentWindowRule: {
             /**
              * @description If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
@@ -3610,7 +3635,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["DeploymentVersion"][];
+                        items: components["schemas"]["DeploymentVersionWithDependencies"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

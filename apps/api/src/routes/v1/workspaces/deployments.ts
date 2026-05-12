@@ -6,7 +6,7 @@ import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { and, asc, count, desc, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, count, eq, inArray, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   enqueueDeploymentPlan,
@@ -59,6 +59,55 @@ const formatDeploymentVersion = (
   message: ver.message ?? undefined,
   createdAt: ver.createdAt.toISOString(),
   metadata: ver.metadata,
+});
+
+type DependencyMap = Record<string, { versionSelector: string }>;
+
+type VersionWithDepsRow = typeof schema.deploymentVersion.$inferSelect & {
+  dependencies: DependencyMap;
+};
+
+const selectVersionsWithDeps = async (
+  whereSql: ReturnType<typeof sql>,
+  orderBySql: ReturnType<typeof sql>,
+  limit: number,
+  offset: number,
+) => {
+  const result = await db.execute<VersionWithDepsRow>(sql`
+    SELECT
+      v.id,
+      v.name,
+      v.tag,
+      v.config,
+      v.job_agent_config AS "jobAgentConfig",
+      v.deployment_id AS "deploymentId",
+      v.status,
+      v.message,
+      v.created_at AS "createdAt",
+      v.metadata,
+      COALESCE(
+        (SELECT jsonb_object_agg(
+           d.dependency_deployment_id,
+           jsonb_build_object('versionSelector', d.version_selector)
+         )
+         FROM deployment_version_dependency d
+         WHERE d.deployment_version_id = v.id),
+        '{}'::jsonb
+      ) AS dependencies
+    FROM deployment_version v
+    WHERE ${whereSql}
+    ORDER BY ${orderBySql}
+    LIMIT ${limit} OFFSET ${offset}
+  `);
+  return result.rows.map((row) => ({
+    ...row,
+    createdAt: new Date(row.createdAt),
+  }));
+};
+
+const formatVersionWithDeps = (row: VersionWithDepsRow) => ({
+  ...formatDeploymentVersion(row),
+  dependencies: row.dependencies,
 });
 
 const listDeployments: AsyncTypedHandler<
@@ -304,9 +353,9 @@ const deleteDeployment: AsyncTypedHandler<
 };
 
 function filterDeploymentVersions(
-  versions: (typeof schema.deploymentVersion.$inferSelect)[],
+  versions: VersionWithDepsRow[],
   cel: string,
-) {
+): VersionWithDepsRow[] {
   return versions.filter((version) => {
     try {
       return evaluate(cel, { version });
@@ -326,30 +375,22 @@ async function listDeploymentVersionsMatchingCel(
   offset: number,
   limit: number,
 ) {
-  const orderBy =
-    order === "asc"
-      ? [
-          asc(schema.deploymentVersion.createdAt),
-          asc(schema.deploymentVersion.tag),
-        ]
-      : [
-          desc(schema.deploymentVersion.createdAt),
-          desc(schema.deploymentVersion.tag),
-        ];
+  const dir = order === "asc" ? sql`ASC` : sql`DESC`;
+  const orderBySql = sql`v.created_at ${dir}, v.tag ${dir}`;
+  const whereSql = sql`v.deployment_id = ${deploymentId}`;
 
   const pageEnd = offset + limit;
-  const items: (typeof schema.deploymentVersion.$inferSelect)[] = [];
+  const items: VersionWithDepsRow[] = [];
   let scanned = 0;
   let matched = 0;
 
   while (scanned < CEL_MAX_SCAN) {
-    const batch = await db
-      .select()
-      .from(schema.deploymentVersion)
-      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-      .orderBy(...orderBy)
-      .limit(CEL_BATCH_SIZE)
-      .offset(scanned);
+    const batch = await selectVersionsWithDeps(
+      whereSql,
+      orderBySql,
+      CEL_BATCH_SIZE,
+      scanned,
+    );
     if (batch.length === 0) break;
 
     for (const version of filterDeploymentVersions(batch, cel)) {
@@ -377,16 +418,7 @@ const listDeploymentVersions: AsyncTypedHandler<
   await assertDeploymentExistsInWorkspace(workspaceId, deploymentId);
 
   if (cel == null) {
-    const orderBy =
-      order === "asc"
-        ? [
-            asc(schema.deploymentVersion.createdAt),
-            asc(schema.deploymentVersion.tag),
-          ]
-        : [
-            desc(schema.deploymentVersion.createdAt),
-            desc(schema.deploymentVersion.tag),
-          ];
+    const dir = order === "asc" ? sql`ASC` : sql`DESC`;
 
     const { total } = await db
       .select({ total: count() })
@@ -394,16 +426,15 @@ const listDeploymentVersions: AsyncTypedHandler<
       .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
       .then(takeFirst);
 
-    const versions = await db
-      .select()
-      .from(schema.deploymentVersion)
-      .where(eq(schema.deploymentVersion.deploymentId, deploymentId))
-      .orderBy(...orderBy)
-      .limit(limit)
-      .offset(offset);
+    const versions = await selectVersionsWithDeps(
+      sql`v.deployment_id = ${deploymentId}`,
+      sql`v.created_at ${dir}, v.tag ${dir}`,
+      limit,
+      offset,
+    );
 
     res.status(200).json({
-      items: versions.map(formatDeploymentVersion),
+      items: versions.map(formatVersionWithDeps),
       total,
       limit,
       offset,
@@ -423,7 +454,7 @@ const listDeploymentVersions: AsyncTypedHandler<
   );
 
   res.status(200).json({
-    items: items.map(formatDeploymentVersion),
+    items: items.map(formatVersionWithDeps),
     total,
     limit,
     offset,

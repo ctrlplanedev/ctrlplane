@@ -886,6 +886,73 @@
             ],
             "type": "string"
          },
+         "DeploymentVersionWithDependencies": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "dependencies": {
+                  "additionalProperties": {
+                     "properties": {
+                        "versionSelector": {
+                           "type": "string"
+                        }
+                     },
+                     "required": [
+                        "versionSelector"
+                     ],
+                     "type": "object"
+                  },
+                  "description": "Map of dependency deployment ID to its CEL version selector evaluated against that deployment's current release on the same resource.",
+                  "type": "object"
+               },
+               "deploymentId": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "message": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/DeploymentVersionStatus"
+               },
+               "tag": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "tag",
+               "config",
+               "jobAgentConfig",
+               "deploymentId",
+               "status",
+               "createdAt",
+               "dependencies"
+            ],
+            "type": "object"
+         },
          "DeploymentWindowRule": {
             "properties": {
                "allowWindow": {
@@ -5389,7 +5456,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/DeploymentVersion"
+                                    "$ref": "#/components/schemas/DeploymentVersionWithDependencies"
                                  },
                                  "type": "array"
                               },

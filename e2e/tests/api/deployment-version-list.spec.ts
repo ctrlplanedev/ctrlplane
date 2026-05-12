@@ -439,4 +439,67 @@ test.describe("Deployment Version List API (CEL paging)", () => {
     expect(res.data!.total).toBe(5);
     expect(res.data!.items.every((v) => v.tag.includes(`-a-`))).toBe(true);
   });
+
+  test("returns dependencies map per version", async ({ api, workspace }) => {
+    const suffix = faker.string.alphanumeric(8);
+    const targetDeployment = await createDeployment(
+      api,
+      workspace.id,
+      `vl-deps-target-${suffix}`,
+    );
+    const dependencyDeployment = await createDeployment(
+      api,
+      workspace.id,
+      `vl-deps-dep-${suffix}`,
+    );
+
+    const versionWithDeps = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId: targetDeployment },
+        },
+        body: {
+          name: `${suffix}-with-dep`,
+          tag: `${suffix}-with-dep`,
+          status: "ready",
+          dependencies: {
+            [dependencyDeployment]: { versionSelector: "version.tag != ''" },
+          },
+        },
+      },
+    );
+    expect(versionWithDeps.response.status).toBe(200);
+
+    const versionWithoutDeps = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId: targetDeployment },
+        },
+        body: {
+          name: `${suffix}-no-dep`,
+          tag: `${suffix}-no-dep`,
+          status: "ready",
+        },
+      },
+    );
+    expect(versionWithoutDeps.response.status).toBe(200);
+
+    const res = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+      {
+        params: {
+          path: { workspaceId: workspace.id, deploymentId: targetDeployment },
+        },
+      },
+    );
+
+    expect(res.response.status).toBe(200);
+    const byTag = new Map(res.data!.items.map((v) => [v.tag, v]));
+    expect(byTag.get(`${suffix}-with-dep`)!.dependencies).toEqual({
+      [dependencyDeployment]: { versionSelector: "version.tag != ''" },
+    });
+    expect(byTag.get(`${suffix}-no-dep`)!.dependencies).toEqual({});
+  });
 });
