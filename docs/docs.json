@@ -165,7 +165,7 @@
               "rfc/0010-variable-storage",
               "rfc/0011-github-releases",
               "rfc/0012-github-installations",
-              "rfc/0013-generalized-deployment-plans"
+              "rfc/0013-multi-kind-plan-results"
             ]
           }
         ]

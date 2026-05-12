@@ -1,0 +1,176 @@
+---
+title: "RFC 0013: Multi-Kind Plan Results"
+---
+
+| Category | Status                            | Created    | Author           |
+| -------- | --------------------------------- | ---------- | ---------------- |
+| Engine   | <Badge color="gray">Draft</Badge> | 2026-05-12 | Aditya Choudhari |
+
+## Summary
+
+A job agent's `Plan` returns a single `(current, proposed)` diff today, stored
+in one result row per agent invocation. Generalize so an agent can return
+multiple labeled diffs per invocation, distinguished by a new `kind` column.
+This unblocks #1075 (surface the rendered ArgoCD Application CR alongside the
+existing rendered manifest diff) and gives future agents a uniform shape for
+shipping multiple kinds of output.
+
+## Motivation
+
+Issue #1075 asks for the rendered ArgoCD Application CR to be shown in plan
+output. The CR is already computed by the planner today (`proposedApp` at
+`argocd_plan.go:111`) — used to create a temp Application, then discarded
+after the downstream manifest diff is extracted.
+
+More broadly, there's no shape in the current model for an agent to express
+"I have multiple distinct diffs the deployer should review." The `Plannable`
+interface and `deployment_plan_target_result` are 1:1.
+
+## Proposal
+
+### Storage
+
+Add a `kind` column. Each agent invocation produces N rows, one per kind.
+
+```sql
+ALTER TABLE deployment_plan_target_result
+  ADD COLUMN kind TEXT NOT NULL DEFAULT '';
+```
+
+Single statement. Existing rows get `''`; new rows specify a kind explicitly
+or fall back to `''`. Section vocabulary is agent-defined — the schema
+doesn't enumerate kinds.
+
+```text
+deployment_plan_target  (one RT)
+  ├─ result (kind="manifest", agent=argo-cd)   current/proposed = rendered manifests
+  ├─ result (kind="cr",       agent=argo-cd)   current/proposed = Application CR YAML
+  └─ result (kind="plan",     agent=tfc)       current/proposed = TF plan output
+```
+
+### Plan interface
+
+`Plannable.Plan` returns `[]PlanResult`. Each result carries a `Kind`.
+
+```go
+type PlanResult struct {
+    Kind        string
+    Current     string
+    Proposed    string
+    HasChanges  bool
+    ContentHash string
+    Status, Message, State, CompletedAt   // unchanged
+}
+
+Plan(ctx, dispatchCtx, state) ([]PlanResult, error)
+```
+
+The ArgoCD planner emits two results — `manifest` (existing flow) and `cr`
+(marshal `proposedApp` + fetch current Application from ArgoCD by name). TFC
+emits one (`plan`). Agents that don't implement `Plannable` are skipped as
+today. All kinds for an invocation complete together; if any is incomplete,
+the agent returns `CompletedAt == nil` and the worker requeues per the
+existing pattern.
+
+### Stage-2 controller
+
+The work-queue item still represents one agent invocation. Stage-1 inserts
+one row (the work item's anchor). Stage-2 calls `Plan`, gets `[]PlanResult`,
+writes the first result into the anchor row and inserts additional rows for
+the remaining kinds. Validation runs once across all rows for the invocation.
+
+### Validation: one run per invocation against flat input
+
+Validation runs once per agent invocation, not per row. The OPA input is
+built by combining all kind-rows into a flat shape:
+
+```json
+{
+  "manifest":   { "current": <parsed>, "proposed": <parsed>, "has_changes": true },
+  "cr":         { "current": <parsed>, "proposed": <parsed>, "has_changes": true },
+  "agent_type": "argo-cd",
+  "deployment": { ... }, "environment": { ... }, "resource": { ... },
+  "proposed_version": { ... }, "current_version": { ... }
+}
+```
+
+Rules self-select via `input.manifest.proposed` / `input.cr.proposed`. No
+DB-layer routing, no per-rule `applies_to_kind` declaration. Reserved
+top-level keys — `agent_type`, `deployment`, `environment`, `resource`,
+`proposed_version`, `current_version` — are documented; agents shouldn't use
+these as section names.
+
+Violations attach to the anchor row (the original stage-1 row). The
+`deployment_plan_target_result_validation` schema is unchanged.
+
+### Aggregation: kind → agent → target
+
+Rows are kind-level. Aggregates are agent-level. Target totals roll up over
+agents — same as today, just one extra rollup step.
+
+```text
+target
+  └─ agent
+       ├─ kind "manifest"   ← row
+       └─ kind "cr"         ← row
+```
+
+Per-agent rollup:
+
+| Field        | Rule across the agent's kinds                                       |
+| ------------ | ------------------------------------------------------------------- |
+| `status`     | worst kind wins (`errored` > `computing` > `unsupported` > `completed`) |
+| `hasChanges` | OR across kinds                                                     |
+
+`aggregateResults` then runs over agent states. Existing target-level counts
+(`Total`, `Completed`, `Errored`, `Changed`, …) keep their semantics — they
+just source from agent rollups instead of raw rows.
+
+### UI
+
+- **Plan results table:** the existing Changes column shows the total
+  `+N -M` summed across all kinds for the row. A new column surfaces the
+  number of diff kinds for that row (e.g. `2` for an ArgoCD row producing
+  manifest + CR), so the deployer knows there's more than one diff behind
+  the row before clicking in.
+- **Detail modal:** when a row is opened, the modal contains a select whose
+  options are populated dynamically from whatever kinds the agent returned
+  for that release target. Picking an option renders that kind's diff.
+  Single-kind rows show the select with one option (or hide it entirely).
+
+### GitHub check rendering
+
+`formatAgentSection` iterates the agent's kinds and renders each as its own
+labeled `diff` block. `aggregate.checkTitle` follows the worst-kind / OR
+rules above. Existing `MaybeUpdateTargetCheck` flow is otherwise unchanged.
+
+## Migration
+
+- One ALTER adds `kind TEXT NOT NULL DEFAULT ''`.
+- Existing rows keep `kind=''`. The renderer maps `''` → "Manifest" for
+  legacy display (existing rows are all manifest diffs by construction).
+- No production validation rules depend on the current flat OPA input shape,
+  so the input restructure has no rule breakage.
+- Other Plannable agents (TFC, TestRunner) wrap their existing single
+  `PlanResult` in a one-element slice and set `Kind` to a chosen string.
+
+## Out of scope
+
+- Plan triggers other than version publish (no `deployment_plan` snapshot
+  rework, no resource/environment plan kinds).
+- Stage-1 controller fan-out, variable resolution, release-target snapshot.
+- Anything beyond plan-result diff content.
+
+## Open Questions
+
+1. **Per-kind vs invocation-level violation attribution.** Validation runs
+   once per invocation with all sections visible, so a violation logically
+   describes the whole invocation. UI displays violations at the agent
+   level. Could be revisited if rule authors want to tag violations with a
+   specific kind for per-section display (e.g. "this denial is about the CR,
+   not the manifest"). Default: invocation-level for v1.
+
+2. **Backfill legacy `kind=''` rows or leave them.** Backfilling existing
+   rows to `kind='manifest'` is more honest but costs a single UPDATE.
+   Leaving them as `''` works but requires the renderer to special-case
+   legacy. Lean: leave as `''`; rows drain quickly via `expires_at`.
