@@ -309,7 +309,7 @@ function filterDeploymentVersions(
 ) {
   return versions.filter((version) => {
     try {
-      return evaluate(cel, { deploymentVersion: version });
+      return evaluate(cel, { version });
     } catch {
       return false;
     }
