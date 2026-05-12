@@ -96,7 +96,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
         params: {
           path: { workspaceId: workspace.id, deploymentId },
           query: {
-            cel: `deploymentVersion.metadata.match == "yes"`,
+            cel: `version.metadata.match == "yes"`,
             limit: 10,
             offset: 0,
             order: "asc",
@@ -150,7 +150,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
         params: {
           path: { workspaceId: workspace.id, deploymentId },
           query: {
-            cel: `deploymentVersion.metadata.match == "yes"`,
+            cel: `version.metadata.match == "yes"`,
             limit: 10,
             offset: 740,
             order: "asc",
@@ -198,7 +198,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
         params: {
           path: { workspaceId: workspace.id, deploymentId },
           query: {
-            cel: `deploymentVersion.metadata.special == "yes"`,
+            cel: `version.metadata.special == "yes"`,
             limit: 20,
             offset: 0,
           },
@@ -238,7 +238,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
         params: {
           path: { workspaceId: workspace.id, deploymentId },
           query: {
-            cel: `deploymentVersion.metadata.nonexistent == "x"`,
+            cel: `version.metadata.nonexistent == "x"`,
           },
         },
       },
@@ -277,7 +277,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
         params: {
           path: { workspaceId: workspace.id, deploymentId },
           query: {
-            cel: `deploymentVersion.metadata.match == "yes"`,
+            cel: `version.metadata.match == "yes"`,
             limit: 3,
           },
         },
@@ -320,7 +320,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
         params: {
           path: { workspaceId: workspace.id, deploymentId },
           query: {
-            cel: `deploymentVersion.metadata.match == "yes"`,
+            cel: `version.metadata.match == "yes"`,
             limit: 3,
             order: "asc",
           },
@@ -430,7 +430,7 @@ test.describe("Deployment Version List API (CEL paging)", () => {
       {
         params: {
           path: { workspaceId: workspace.id, deploymentId: deployA },
-          query: { cel: `deploymentVersion.metadata.batch == "${suffix}"` },
+          query: { cel: `version.metadata.batch == "${suffix}"` },
         },
       },
     );
