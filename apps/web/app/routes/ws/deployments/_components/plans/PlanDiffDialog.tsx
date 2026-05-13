@@ -38,7 +38,7 @@ export function PlanDiffDialog() {
 
   const diffQuery = trpc.deployment.plans.resultDiff.useQuery(
     { deploymentId: deployment.id, resultId: resultId ?? "" },
-    { enabled: resultId != null },
+    { enabled: resultId != null && tab === "diff" },
   );
 
   const sectionNames = unionSectionNames(

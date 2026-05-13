@@ -30,8 +30,9 @@ export function extractPlanSections(stream: string): PlanSection[] {
   const docs = tryParseYamlStream(stream);
   if (docs == null) return [{ name: "Rendered Manifests", content: stream }];
 
-  const cr = docs.filter(isArgoApplication);
-  const manifests = docs.filter((d) => !isArgoApplication(d));
+  const firstIsCR = docs.length > 0 && isArgoApplication(docs[0]);
+  const cr = firstIsCR ? [docs[0]] : [];
+  const manifests = firstIsCR ? docs.slice(1) : docs;
 
   return [
     ...(cr.length > 0
