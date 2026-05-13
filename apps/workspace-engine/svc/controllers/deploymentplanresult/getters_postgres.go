@@ -115,6 +115,7 @@ func newRegistry() *jobagents.Registry {
 			&argo.GoApplicationUpserter{},
 			&argo.GoApplicationDeleter{},
 			&argo.GoManifestGetter{},
+			&argo.GoApplicationGetter{},
 		),
 	)
 	registry.Register(testrunner.New(nil))

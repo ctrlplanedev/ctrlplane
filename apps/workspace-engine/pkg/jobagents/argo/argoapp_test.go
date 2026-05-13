@@ -106,6 +106,20 @@ func (m *mockManifestGetter) GetManifests(
 	return nil, nil
 }
 
+type mockApplicationGetter struct {
+	fn func(ctx context.Context, serverAddr, apiKey, appName string) (*v1alpha1.Application, error)
+}
+
+func (m *mockApplicationGetter) GetApplication(
+	ctx context.Context,
+	serverAddr, apiKey, appName string,
+) (*v1alpha1.Application, error) {
+	if m.fn != nil {
+		return m.fn(ctx, serverAddr, apiKey, appName)
+	}
+	return nil, nil
+}
+
 // --- helpers ---
 
 func testJob() *oapi.Job {
@@ -332,11 +346,33 @@ func planManifestGetter(current, proposed []string) *mockManifestGetter {
 	}
 }
 
+func planAppGetter(dispatchCtx *oapi.DispatchContext) *mockApplicationGetter {
+	return &mockApplicationGetter{
+		fn: func(_ context.Context, _, _, _ string) (*v1alpha1.Application, error) {
+			_, _, template, err := ParseJobAgentConfig(dispatchCtx.JobAgentConfig)
+			if err != nil {
+				return nil, err
+			}
+			app, err := TemplateApplication(dispatchCtx, template)
+			if err != nil {
+				return nil, err
+			}
+			MakeApplicationK8sCompatible(app)
+			return app, nil
+		},
+	}
+}
+
 func TestPlan_HasChanges(t *testing.T) {
 	current := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
 	proposed := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":3}}`}
 
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(current, proposed),
+		&mockApplicationGetter{},
+	)
 
 	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -349,7 +385,12 @@ func TestPlan_HasChanges(t *testing.T) {
 func TestPlan_NoChanges(t *testing.T) {
 	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"},"spec":{"replicas":1}}`}
 
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(manifests, manifests))
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(manifests, manifests),
+		planAppGetter(testDispatchCtx()),
+	)
 
 	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -368,7 +409,12 @@ func TestPlan_MultipleManifests(t *testing.T) {
 		`{"kind":"Service","metadata":{"name":"web"}}`,
 	}
 
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(current, proposed),
+		&mockApplicationGetter{},
+	)
 
 	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -377,11 +423,114 @@ func TestPlan_MultipleManifests(t *testing.T) {
 	assert.Contains(t, result.Proposed, "---\n")
 }
 
+func TestPlan_ProposedAlwaysContainsApplicationCR(t *testing.T) {
+	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"}}`}
+
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(manifests, manifests),
+		&mockApplicationGetter{},
+	)
+
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(result.Proposed, "apiVersion: argoproj.io/v1alpha1\n"),
+		"proposed should begin with the Application CR")
+	assert.Contains(t, result.Proposed, "kind: Application")
+	crEnd := strings.Index(result.Proposed, "\n---\n")
+	deploymentIdx := strings.Index(result.Proposed, "kind: Deployment")
+	require.GreaterOrEqual(t, crEnd, 0, "expected `---` separator between CR and manifests")
+	require.GreaterOrEqual(t, deploymentIdx, 0, "expected manifest content after separator")
+	assert.Less(t, crEnd, deploymentIdx, "CR should come before manifests in the stream")
+}
+
+func TestPlan_CurrentContainsApplicationCR_WhenLiveAppExists(t *testing.T) {
+	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"}}`}
+
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(manifests, manifests),
+		planAppGetter(testDispatchCtx()),
+	)
+
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(result.Current, "apiVersion: argoproj.io/v1alpha1\n"),
+		"current should begin with the live Application CR")
+}
+
+func TestPlan_CurrentOmitsCR_OnFirstDeploy(t *testing.T) {
+	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"}}`}
+
+	// mockApplicationGetter defaults to returning (nil, nil) — represents
+	// a release target whose Application doesn't exist in ArgoCD yet.
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(manifests, manifests),
+		&mockApplicationGetter{},
+	)
+
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	assert.NotContains(t, result.Current, "apiVersion: argoproj.io/v1alpha1",
+		"first-time deploys should have no CR on the current side")
+	assert.True(t, result.HasChanges,
+		"adding the Application CR should register as a change")
+}
+
+func TestPlan_CurrentApplicationNotFound_IsNotFatal(t *testing.T) {
+	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"}}`}
+	getter := &mockApplicationGetter{
+		fn: func(_ context.Context, _, _, _ string) (*v1alpha1.Application, error) {
+			return nil, status.Error(codes.NotFound, "application not found")
+		},
+	}
+
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(manifests, manifests),
+		getter,
+	)
+
+	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
+	require.NoError(t, err)
+	assert.NotContains(t, result.Current, "apiVersion: argoproj.io/v1alpha1")
+}
+
+func TestPlan_CurrentApplicationError_IsFatal(t *testing.T) {
+	manifests := []string{`{"kind":"Deployment","metadata":{"name":"app"}}`}
+	getter := &mockApplicationGetter{
+		fn: func(_ context.Context, _, _, _ string) (*v1alpha1.Application, error) {
+			return nil, fmt.Errorf("argocd unavailable")
+		},
+	}
+
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(manifests, manifests),
+		getter,
+	)
+
+	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get current application")
+}
+
 func TestPlan_ContentHashDeterministic(t *testing.T) {
 	current := []string{`{"kind":"ConfigMap","metadata":{"name":"cfg"}}`}
 	proposed := []string{`{"kind":"ConfigMap","metadata":{"name":"cfg"},"data":{"k":"v"}}`}
 
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(current, proposed),
+		&mockApplicationGetter{},
+	)
 
 	r1, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -393,7 +542,12 @@ func TestPlan_ContentHashDeterministic(t *testing.T) {
 }
 
 func TestPlan_BadConfig(t *testing.T) {
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, &mockManifestGetter{})
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		&mockManifestGetter{},
+		&mockApplicationGetter{},
+	)
 	dctx := testDispatchCtx()
 	dctx.JobAgentConfig = oapi.JobAgentConfig{}
 
@@ -406,6 +560,7 @@ func TestPlan_UpsertFailure(t *testing.T) {
 		&mockUpserter{err: fmt.Errorf("conflict")},
 		&mockDeleter{},
 		&mockManifestGetter{},
+		&mockApplicationGetter{},
 	)
 
 	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
@@ -422,7 +577,7 @@ func TestPlan_GetProposedManifestsFailure_ReturnsIncomplete(t *testing.T) {
 			return []string{"manifest"}, nil
 		},
 	}
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter, &mockApplicationGetter{})
 
 	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -448,7 +603,7 @@ func TestPlan_GetCurrentManifestsNotFound_FirstVersion(t *testing.T) {
 		},
 	}
 	deleter := &mockDeleter{}
-	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter, &mockApplicationGetter{})
 
 	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -474,7 +629,7 @@ func TestPlan_GetCurrentManifestsFailure(t *testing.T) {
 			return nil, fmt.Errorf("current app not found")
 		},
 	}
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter, &mockApplicationGetter{})
 
 	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
@@ -487,7 +642,7 @@ func TestPlan_EmptyManifests_ReturnsIncomplete(t *testing.T) {
 			return nil, nil
 		},
 	}
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, getter, &mockApplicationGetter{})
 
 	result, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -512,7 +667,7 @@ func TestPlan_ManifestTimeout_Exhausted_WithError(t *testing.T) {
 		},
 	}
 	deleter := &mockDeleter{}
-	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter, &mockApplicationGetter{})
 
 	expired := time.Now().Add(-manifestTimeout - time.Second)
 	state, _ := json.Marshal(argoPlanState{
@@ -535,7 +690,7 @@ func TestPlan_ManifestTimeout_Exhausted_EmptyManifests(t *testing.T) {
 		},
 	}
 	deleter := &mockDeleter{}
-	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter, &mockApplicationGetter{})
 
 	expired := time.Now().Add(-manifestTimeout - time.Second)
 	state, _ := json.Marshal(argoPlanState{
@@ -554,7 +709,12 @@ func TestPlan_ManifestTimeout_Exhausted_EmptyManifests(t *testing.T) {
 func TestPlan_ManifestTimeout_SucceedsBeforeExpiry(t *testing.T) {
 	current := []string{`{"kind":"Deployment"}`}
 	proposed := []string{`{"kind":"Deployment","spec":{"replicas":2}}`}
-	p := NewArgoCDPlanner(&mockUpserter{}, &mockDeleter{}, planManifestGetter(current, proposed))
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		&mockDeleter{},
+		planManifestGetter(current, proposed),
+		&mockApplicationGetter{},
+	)
 
 	recent := time.Now().Add(-30 * time.Second)
 	state, _ := json.Marshal(argoPlanState{
@@ -574,7 +734,12 @@ func TestPlan_DeletesTemporaryAppOnSuccess(t *testing.T) {
 	proposed := []string{`{"kind":"Deployment","spec":{"replicas":2}}`}
 	deleter := &mockDeleter{}
 
-	p := NewArgoCDPlanner(&mockUpserter{}, deleter, planManifestGetter(current, proposed))
+	p := NewArgoCDPlanner(
+		&mockUpserter{},
+		deleter,
+		planManifestGetter(current, proposed),
+		&mockApplicationGetter{},
+	)
 
 	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.NoError(t, err)
@@ -595,7 +760,7 @@ func TestPlan_CurrentManifestError_DeletesTmpApp(t *testing.T) {
 		},
 	}
 
-	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter)
+	p := NewArgoCDPlanner(&mockUpserter{}, deleter, getter, &mockApplicationGetter{})
 
 	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)
 	require.Error(t, err)
@@ -612,6 +777,7 @@ func TestPlan_DeleteNotCalledOnUpsertFailure(t *testing.T) {
 		&mockUpserter{err: fmt.Errorf("conflict")},
 		deleter,
 		&mockManifestGetter{},
+		&mockApplicationGetter{},
 	)
 
 	_, err := p.Plan(context.Background(), testDispatchCtx(), nil)

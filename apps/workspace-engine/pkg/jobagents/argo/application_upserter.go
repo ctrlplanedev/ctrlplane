@@ -151,3 +151,27 @@ func (g *GoManifestGetter) GetManifests(
 	}
 	return resp.Manifests, nil
 }
+
+// GoApplicationGetter is the production implementation of
+// ApplicationGetter that calls the ArgoCD API.
+type GoApplicationGetter struct{}
+
+func (g *GoApplicationGetter) GetApplication(
+	ctx context.Context,
+	serverAddr, apiKey, appName string,
+) (*v1alpha1.Application, error) {
+	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
+		ServerAddr: serverAddr,
+		AuthToken:  apiKey,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create ArgoCD client: %w", err)
+	}
+	ioCloser, appClient, err := client.NewApplicationClient()
+	if err != nil {
+		return nil, fmt.Errorf("create application client: %w", err)
+	}
+	defer ioCloser.Close()
+
+	return appClient.Get(ctx, &argocdapplication.ApplicationQuery{Name: &appName})
+}
