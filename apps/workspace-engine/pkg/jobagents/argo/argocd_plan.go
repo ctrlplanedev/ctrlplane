@@ -14,10 +14,37 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sigsyaml "sigs.k8s.io/yaml"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
 )
+
+// normalizeApplicationForDiff zeroes server-managed and operational fields
+// and pins TypeMeta so the live Application from ArgoCD and a freshly-templated
+// proposed Application can be diffed cleanly. Without that, the diff is
+// dominated by managedFields, status, creationTimestamp, etc. that aren't
+// user intent — and the live Application returned by ArgoCD's typed client
+// has empty TypeMeta, which would otherwise show as a phantom diff against
+// the YAML-templated proposed.
+func normalizeApplicationForDiff(app *v1alpha1.Application) *v1alpha1.Application {
+	if app == nil {
+		return nil
+	}
+	cp := app.DeepCopy()
+	cp.TypeMeta = metav1.TypeMeta{
+		APIVersion: "argoproj.io/v1alpha1",
+		Kind:       "Application",
+	}
+	cp.ObjectMeta.ManagedFields = nil
+	cp.ObjectMeta.CreationTimestamp = metav1.Time{}
+	cp.ObjectMeta.Generation = 0
+	cp.ObjectMeta.ResourceVersion = ""
+	cp.ObjectMeta.UID = ""
+	cp.Status = v1alpha1.ApplicationStatus{}
+	cp.Operation = nil
+	return cp
+}
 
 const (
 	planLabelKey     = "ctrlplane.dev/plan"
@@ -31,9 +58,10 @@ var _ types.Plannable = (*ArgoCDPlanner)(nil)
 // application, comparing its rendered manifests to the current application,
 // and cleaning up. It implements [types.Plannable].
 type ArgoCDPlanner struct {
-	upserter       ApplicationUpserter
-	deleter        ApplicationDeleter
-	manifestGetter ManifestGetter
+	upserter          ApplicationUpserter
+	deleter           ApplicationDeleter
+	manifestGetter    ManifestGetter
+	applicationGetter ApplicationGetter
 }
 
 // NewArgoCDPlanner creates an ArgoCDPlanner with the given dependencies.
@@ -41,11 +69,13 @@ func NewArgoCDPlanner(
 	upserter ApplicationUpserter,
 	deleter ApplicationDeleter,
 	manifestGetter ManifestGetter,
+	applicationGetter ApplicationGetter,
 ) *ArgoCDPlanner {
 	return &ArgoCDPlanner{
-		upserter:       upserter,
-		deleter:        deleter,
-		manifestGetter: manifestGetter,
+		upserter:          upserter,
+		deleter:           deleter,
+		manifestGetter:    manifestGetter,
+		applicationGetter: applicationGetter,
 	}
 }
 
@@ -197,6 +227,14 @@ func (p *ArgoCDPlanner) Plan(
 		currentManifests = nil
 	}
 
+	currentApp, err := p.applicationGetter.GetApplication(ctx, serverAddr, apiKey, originalName)
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, fmt.Errorf("get current application: %w", err)
+		}
+		currentApp = nil
+	}
+
 	for i, m := range proposedManifests {
 		proposedManifests[i] = strings.ReplaceAll(m, s.TmpAppName, originalName)
 	}
@@ -204,8 +242,24 @@ func (p *ArgoCDPlanner) Plan(
 	sort.Strings(currentManifests)
 	sort.Strings(proposedManifests)
 
-	current := strings.Join(jsonManifestsToYAML(currentManifests), "---\n")
-	proposed := strings.Join(jsonManifestsToYAML(proposedManifests), "---\n")
+	proposedCRYAML, err := sigsyaml.Marshal(normalizeApplicationForDiff(proposedApp))
+	if err != nil {
+		return nil, fmt.Errorf("marshal proposed application: %w", err)
+	}
+	proposedDocs := append(
+		[]string{string(proposedCRYAML)},
+		jsonManifestsToYAML(proposedManifests)...)
+	proposed := strings.Join(proposedDocs, "---\n")
+
+	currentDocs := jsonManifestsToYAML(currentManifests)
+	if currentApp != nil {
+		currentCRYAML, err := sigsyaml.Marshal(normalizeApplicationForDiff(currentApp))
+		if err != nil {
+			return nil, fmt.Errorf("marshal current application: %w", err)
+		}
+		currentDocs = append([]string{string(currentCRYAML)}, currentDocs...)
+	}
+	current := strings.Join(currentDocs, "---\n")
 
 	hasChanges := current != proposed
 	contentHash := sha256.Sum256([]byte(current + proposed))

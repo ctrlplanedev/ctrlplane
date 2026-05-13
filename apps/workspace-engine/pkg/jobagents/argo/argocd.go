@@ -53,6 +53,14 @@ type ManifestGetter interface {
 	GetManifests(ctx context.Context, serverAddr, apiKey, appName string) ([]string, error)
 }
 
+// ApplicationGetter fetches an ArgoCD Application by name.
+type ApplicationGetter interface {
+	GetApplication(
+		ctx context.Context,
+		serverAddr, apiKey, appName string,
+	) (*v1alpha1.Application, error)
+}
+
 var (
 	_ types.Dispatchable = &ArgoApplication{}
 	_ types.Verifiable   = &ArgoApplication{}

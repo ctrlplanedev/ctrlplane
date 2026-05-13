@@ -1,18 +1,8 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
-import { useState } from "react";
 import { FileText } from "lucide-react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "~/components/ui/breadcrumb";
-import { Separator } from "~/components/ui/separator";
-import { SidebarTrigger } from "~/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -21,10 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
 import { useDeployment } from "./_components/DeploymentProvider";
-import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
+import { PlanDetailPageHeader } from "./_components/plans/PlanDetailPageHeader";
 import { PlanDiffDialog } from "./_components/plans/PlanDiffDialog";
 import { PlanStatusBadge } from "./_components/plans/PlanStatusBadge";
 import { usePlanResultParam } from "./_hooks/usePlanResultParam";
@@ -37,10 +26,6 @@ export function meta() {
 }
 
 type Result = RouterOutputs["deployment"]["plans"]["results"]["items"][number];
-
-function resultTitle(result: Result) {
-  return `${result.environment.name} · ${result.resource.name} · ${result.agent.name}`;
-}
 
 function DiffStats({
   stats,
@@ -183,69 +168,20 @@ function NoResults() {
 }
 
 export default function DeploymentPlanDetail() {
-  const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
   const { planId } = useParams<{ planId: string }>();
-  const { resultId, openResult, closeResult } = usePlanResultParam();
-  const [initialTab, setInitialTab] = useState<"diff" | "validations">("diff");
+  const { openResult } = usePlanResultParam();
 
   const resultsQuery = trpc.deployment.plans.results.useQuery(
     { deploymentId: deployment.id, planId: planId! },
     { enabled: !!planId, refetchInterval: 5000 },
   );
 
-  const version = resultsQuery.data?.version;
   const results = resultsQuery.data?.items ?? [];
-  const activeResult = results.find((r) => r.resultId === resultId);
-
-  const handleOpenResult = (
-    id: string,
-    tab: "diff" | "validations" = "diff",
-  ) => {
-    setInitialTab(tab);
-    openResult(id);
-  };
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
-        <div className="flex items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <Link to={`/${workspace.slug}/deployments`}>Deployments</Link>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <Link to={`/${workspace.slug}/deployments/${deployment.id}`}>
-                  {deployment.name}
-                </Link>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <Link
-                  to={`/${workspace.slug}/deployments/${deployment.id}/plans`}
-                >
-                  Plans
-                </Link>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbPage className="max-w-xs truncate font-mono">
-                {version?.name ?? version?.tag ?? planId}
-              </BreadcrumbPage>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <DeploymentsNavbarTabs />
-        </div>
-      </header>
+      <PlanDetailPageHeader />
 
       {results.length === 0 && !resultsQuery.isLoading ? (
         <NoResults />
@@ -257,23 +193,14 @@ export default function DeploymentPlanDetail() {
               <ResultsTableRow
                 key={r.resultId}
                 result={r}
-                onOpenResult={handleOpenResult}
+                onOpenResult={openResult}
               />
             ))}
           </TableBody>
         </Table>
       )}
 
-      <PlanDiffDialog
-        deploymentId={deployment.id}
-        resultId={resultId}
-        title={activeResult ? resultTitle(activeResult) : ""}
-        open={resultId != null}
-        initialTab={initialTab}
-        onOpenChange={(o) => {
-          if (!o) closeResult();
-        }}
-      />
+      <PlanDiffDialog />
     </>
   );
 }
