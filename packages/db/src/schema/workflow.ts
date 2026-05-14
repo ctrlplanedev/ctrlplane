@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, unique, uuid } from "drizzle-orm/pg-core";
 
 import { job } from "./job.js";
 import { workspace } from "./workspace.js";
@@ -10,18 +10,23 @@ export type WorkflowJobAgent = {
   selector: string;
 };
 
-export const workflow = pgTable("workflow", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  inputs: jsonb("inputs").notNull().default("[]"),
-  jobAgents: jsonb("job_agents")
-    .default("[]")
-    .$type<Array<WorkflowJobAgent>>()
-    .notNull(),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspace.id, { onDelete: "cascade" }),
-});
+export const workflow = pgTable(
+  "workflow",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    inputs: jsonb("inputs").notNull().default("[]"),
+    jobAgents: jsonb("job_agents")
+      .default("[]")
+      .$type<Array<WorkflowJobAgent>>()
+      .notNull(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+  },
+  (t) => [unique().on(t.workspaceId, t.slug)],
+);
 
 export const workflowRun = pgTable("workflow_run", {
   id: uuid("id").primaryKey().defaultRandom(),

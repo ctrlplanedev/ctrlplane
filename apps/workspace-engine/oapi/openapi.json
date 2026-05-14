@@ -3035,11 +3035,15 @@
                },
                "name": {
                   "type": "string"
+               },
+               "slug": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
+               "slug",
                "inputs",
                "jobs"
             ],

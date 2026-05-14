@@ -326,6 +326,10 @@
                },
                "name": {
                   "type": "string"
+               },
+               "slug": {
+                  "description": "URL-safe identifier unique within the workspace. Derived from name if omitted.",
+                  "type": "string"
                }
             },
             "required": [
@@ -2679,6 +2683,10 @@
                },
                "name": {
                   "type": "string"
+               },
+               "slug": {
+                  "description": "URL-safe identifier unique within the workspace.",
+                  "type": "string"
                }
             },
             "required": [
@@ -3417,11 +3425,15 @@
                },
                "name": {
                   "type": "string"
+               },
+               "slug": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
+               "slug",
                "inputs",
                "jobAgents"
             ],

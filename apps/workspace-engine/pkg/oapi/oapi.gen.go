@@ -1432,6 +1432,7 @@ type Workflow struct {
 	Inputs []WorkflowInput    `json:"inputs"`
 	Jobs   []WorkflowJobAgent `json:"jobs"`
 	Name   string             `json:"name"`
+	Slug   string             `json:"slug"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.

@@ -115,6 +115,7 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'inputs', 'jobAgents'],
     properties: {
       name: { type: 'string' },
+      slug: { type: 'string', description: 'URL-safe identifier unique within the workspace. Derived from name if omitted.' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),
@@ -131,6 +132,7 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'inputs', 'jobAgents'],
     properties: {
       name: { type: 'string' },
+      slug: { type: 'string', description: 'URL-safe identifier unique within the workspace.' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),
@@ -144,10 +146,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Workflow: {
     type: 'object',
-    required: ['id', 'name', 'inputs', 'jobAgents'],
+    required: ['id', 'name', 'slug', 'inputs', 'jobAgents'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
+      slug: { type: 'string' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),

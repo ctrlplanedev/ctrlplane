@@ -841,6 +841,7 @@ type VariableValue struct {
 type Workflow struct {
 	ID          uuid.UUID
 	Name        string
+	Slug        string
 	Inputs      []byte
 	JobAgents   []byte
 	WorkspaceID uuid.UUID

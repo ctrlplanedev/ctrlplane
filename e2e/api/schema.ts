@@ -1236,6 +1236,8 @@ export interface components {
             inputs: components["schemas"]["WorkflowInput"][];
             jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
             name: string;
+            /** @description URL-safe identifier unique within the workspace. Derived from name if omitted. */
+            slug?: string;
         };
         CreateWorkflowJobAgent: {
             /** @description Configuration for the job agent */
@@ -2069,6 +2071,8 @@ export interface components {
             inputs: components["schemas"]["WorkflowInput"][];
             jobAgents: components["schemas"]["CreateWorkflowJobAgent"][];
             name: string;
+            /** @description URL-safe identifier unique within the workspace. */
+            slug?: string;
         };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -2334,6 +2338,7 @@ export interface components {
             inputs: components["schemas"]["WorkflowInput"][];
             jobAgents: components["schemas"]["WorkflowJobAgent"][];
             name: string;
+            slug: string;
         };
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
         WorkflowBooleanInput: {
