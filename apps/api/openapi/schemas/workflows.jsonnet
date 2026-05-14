@@ -175,6 +175,26 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  WorkflowSlugConflictResponse: {
+    type: 'object',
+    required: ['message', 'code', 'details'],
+    properties: {
+      message: { type: 'string' },
+      code: { type: 'string', enum: ['DUPLICATE_SLUG'] },
+      details: {
+        type: 'object',
+        required: ['slug'],
+        properties: {
+          slug: { type: 'string', description: 'The slug that collided.' },
+          existingWorkflowId: {
+            type: 'string',
+            description: 'UUID of the workflow that already uses this slug, if known.',
+          },
+        },
+      },
+    },
+  },
+
   WorkflowJob: {
     type: 'object',
     required: ['id', 'workflowId', 'index', 'ref', 'config'],

@@ -1,6 +1,7 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler, NotFoundError } from "@/types/api.js";
 import { Router } from "express";
+import { z } from "zod";
 
 import { and, count, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -12,6 +13,59 @@ const slugifyWorkflowName = (name: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+const slugSchema = z
+  .string()
+  .min(1)
+  .max(100)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "must be lowercase alphanumerics separated by single hyphens");
+
+const resolveSlug = (provided: string | undefined, name: string) => {
+  if (provided != null) {
+    const result = slugSchema.safeParse(provided);
+    if (!result.success)
+      throw new ApiError(
+        `Invalid slug: ${result.error.issues[0]?.message ?? "invalid format"}`,
+        400,
+        "INVALID_SLUG",
+      );
+    return provided;
+  }
+
+  const derived = slugifyWorkflowName(name);
+  const derivedResult = slugSchema.safeParse(derived);
+  if (!derivedResult.success)
+    throw new ApiError(
+      `Could not derive a valid slug from name: ${derivedResult.error.issues[0]?.message ?? "invalid format"}. Pass an explicit slug.`,
+      400,
+      "INVALID_SLUG",
+    );
+  return derived;
+};
+
+const throwOnSlugConflict = async (
+  workspaceId: string,
+  slug: string,
+  error: unknown,
+) => {
+  if ((error as { code?: string }).code !== "23505") throw error;
+  const existing = await db
+    .select({ id: schema.workflow.id })
+    .from(schema.workflow)
+    .where(
+      and(
+        eq(schema.workflow.workspaceId, workspaceId),
+        eq(schema.workflow.slug, slug),
+      ),
+    )
+    .then(takeFirstOrNull);
+  throw new ApiError(
+    `Workflow slug '${slug}' already exists in this workspace`,
+    409,
+    "DUPLICATE_SLUG",
+    { slug, existingWorkflowId: existing?.id },
+  );
+};
 
 const listWorkflows: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/workflows",
@@ -51,12 +105,14 @@ const createWorkflow: AsyncTypedHandler<
   "post"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const slug = req.body.slug ?? slugifyWorkflowName(req.body.name);
+  const slug = resolveSlug(req.body.slug, req.body.name);
+
   const created = await db
     .insert(schema.workflow)
     .values({ ...req.body, slug, workspaceId })
     .returning()
-    .then(takeFirst);
+    .then(takeFirst)
+    .catch((error) => throwOnSlugConflict(workspaceId, slug, error));
 
   const { id, name, inputs, jobAgents } = created;
   res.status(201).json({ id, name, slug, inputs, jobAgents });
@@ -84,11 +140,44 @@ const getWorkflow: AsyncTypedHandler<
   res.json({ id, name, slug, inputs, jobAgents });
 };
 
+const getWorkflowBySlug: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/workflows/slug/{slug}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, slug } = req.params;
+  const workflow = await db
+    .select()
+    .from(schema.workflow)
+    .where(
+      and(
+        eq(schema.workflow.slug, slug),
+        eq(schema.workflow.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (workflow == null) throw new NotFoundError("Workflow not found");
+
+  const { id, name, inputs, jobAgents } = workflow;
+  res.json({ id, name, slug, inputs, jobAgents });
+};
+
 const updateWorkflow: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
   "put"
 > = async (req, res) => {
   const { workflowId, workspaceId } = req.params;
+
+  if (req.body.slug != null) {
+    const result = slugSchema.safeParse(req.body.slug);
+    if (!result.success)
+      throw new ApiError(
+        `Invalid slug: ${result.error.issues[0]?.message ?? "invalid format"}`,
+        400,
+        "INVALID_SLUG",
+      );
+  }
+
   const updated = await db
     .update(schema.workflow)
     .set(req.body)
@@ -99,7 +188,12 @@ const updateWorkflow: AsyncTypedHandler<
       ),
     )
     .returning()
-    .then(takeFirstOrNull);
+    .then(takeFirstOrNull)
+    .catch((error) => {
+      if (req.body.slug != null)
+        return throwOnSlugConflict(workspaceId, req.body.slug, error);
+      throw error;
+    });
 
   if (updated == null) throw new NotFoundError("Workflow not found");
 
@@ -153,9 +247,48 @@ const createWorkflowRun: AsyncTypedHandler<
   res.status(201).json(data);
 };
 
+const createWorkflowRunBySlug: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/workflows/slug/{slug}/runs",
+  "post"
+> = async (req, res) => {
+  const { workspaceId, slug } = req.params;
+
+  const workflow = await db
+    .select({ id: schema.workflow.id })
+    .from(schema.workflow)
+    .where(
+      and(
+        eq(schema.workflow.slug, slug),
+        eq(schema.workflow.workspaceId, workspaceId),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (workflow == null) throw new NotFoundError("Workflow not found");
+
+  const { data, error } = await getClientFor().POST(
+    "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs",
+    {
+      params: { path: { workspaceId, workflowId: workflow.id } },
+      body: { inputs: req.body.inputs },
+    },
+  );
+
+  if (error != null)
+    throw new ApiError(
+      error.error ?? "Failed to create workflow run",
+      400,
+      "WORKFLOW_RUN_ERROR",
+    );
+
+  res.status(201).json(data);
+};
+
 export const workflowsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listWorkflows))
   .post("/", asyncHandler(createWorkflow))
+  .get("/slug/:slug", asyncHandler(getWorkflowBySlug))
+  .post("/slug/:slug/runs", asyncHandler(createWorkflowRunBySlug))
   .get("/:workflowId", asyncHandler(getWorkflow))
   .put("/:workflowId", asyncHandler(updateWorkflow))
   .delete("/:workflowId", asyncHandler(deleteWorkflow))
