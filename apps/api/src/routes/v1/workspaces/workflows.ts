@@ -7,6 +7,12 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
+const slugifyWorkflowName = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 const listWorkflows: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/workflows",
   "get"
@@ -29,9 +35,10 @@ const listWorkflows: AsyncTypedHandler<
     .limit(limit)
     .offset(offset);
 
-  const items = rows.map(({ id, name, inputs, jobAgents }) => ({
+  const items = rows.map(({ id, name, slug, inputs, jobAgents }) => ({
     id,
     name,
+    slug,
     inputs,
     jobAgents,
   }));
@@ -44,14 +51,15 @@ const createWorkflow: AsyncTypedHandler<
   "post"
 > = async (req, res) => {
   const { workspaceId } = req.params;
+  const slug = req.body.slug ?? slugifyWorkflowName(req.body.name);
   const created = await db
     .insert(schema.workflow)
-    .values({ ...req.body, workspaceId })
+    .values({ ...req.body, slug, workspaceId })
     .returning()
     .then(takeFirst);
 
   const { id, name, inputs, jobAgents } = created;
-  res.status(201).json({ id, name, inputs, jobAgents });
+  res.status(201).json({ id, name, slug, inputs, jobAgents });
 };
 
 const getWorkflow: AsyncTypedHandler<
@@ -72,8 +80,8 @@ const getWorkflow: AsyncTypedHandler<
 
   if (workflow == null) throw new NotFoundError("Workflow not found");
 
-  const { id, name, inputs, jobAgents } = workflow;
-  res.json({ id, name, inputs, jobAgents });
+  const { id, name, slug, inputs, jobAgents } = workflow;
+  res.json({ id, name, slug, inputs, jobAgents });
 };
 
 const updateWorkflow: AsyncTypedHandler<
@@ -95,8 +103,8 @@ const updateWorkflow: AsyncTypedHandler<
 
   if (updated == null) throw new NotFoundError("Workflow not found");
 
-  const { id, name, inputs, jobAgents } = updated;
-  res.status(202).json({ id, name, inputs, jobAgents });
+  const { id, name, slug, inputs, jobAgents } = updated;
+  res.status(202).json({ id, name, slug, inputs, jobAgents });
 };
 
 const deleteWorkflow: AsyncTypedHandler<
@@ -117,8 +125,8 @@ const deleteWorkflow: AsyncTypedHandler<
 
   if (deleted == null) throw new NotFoundError("Workflow not found");
 
-  const { id, name, inputs, jobAgents } = deleted;
-  res.status(202).json({ id, name, inputs, jobAgents });
+  const { id, name, slug, inputs, jobAgents } = deleted;
+  res.status(202).json({ id, name, slug, inputs, jobAgents });
 };
 
 const createWorkflowRun: AsyncTypedHandler<
