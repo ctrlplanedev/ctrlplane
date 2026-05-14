@@ -13,6 +13,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/jobs"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 const requeueDelay = 5 * time.Second
@@ -26,6 +27,7 @@ func Reconcile(
 	workspaceID string,
 	getter Getter,
 	setter Setter,
+	secretResolver variableresolver.SecretResolver,
 	rt *ReleaseTarget,
 ) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "forcedeploy.Reconcile")
@@ -69,6 +71,7 @@ func Reconcile(
 		workspaceUUID,
 		getter,
 		setter,
+		secretResolver,
 		rt,
 		release,
 	); err != nil {
@@ -84,6 +87,7 @@ func buildAndDispatchJob(
 	workspaceID uuid.UUID,
 	getter Getter,
 	setter Setter,
+	secretResolver variableresolver.SecretResolver,
 	rt *ReleaseTarget,
 	release *oapi.Release,
 ) error {
@@ -131,7 +135,7 @@ func buildAndDispatchJob(
 		)
 	}
 
-	factory := jobs.NewFactoryFromGetters(getter)
+	factory := jobs.NewFactoryWithSecrets(getter, secretResolver)
 	for i := range matchedAgents {
 		agent := &matchedAgents[i]
 		agent.Config = oapi.DeepMergeConfigs(

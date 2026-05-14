@@ -400,16 +400,19 @@ type DispatchContext struct {
 	Environment *Environment `json:"environment,omitempty"`
 
 	// Inputs Resolved input values for the workflow run.
-	Inputs         *map[string]interface{}  `json:"inputs,omitempty"`
-	JobAgent       JobAgent                 `json:"jobAgent"`
-	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
-	Release        *Release                 `json:"release,omitempty"`
-	Resource       *Resource                `json:"resource,omitempty"`
-	Variables      *map[string]LiteralValue `json:"variables,omitempty"`
-	Version        *DeploymentVersion       `json:"version,omitempty"`
-	Workflow       *Workflow                `json:"workflow,omitempty"`
-	WorkflowJob    *WorkflowJob             `json:"workflowJob,omitempty"`
-	WorkflowRun    *WorkflowRun             `json:"workflowRun,omitempty"`
+	Inputs         *map[string]interface{} `json:"inputs,omitempty"`
+	JobAgent       JobAgent                `json:"jobAgent"`
+	JobAgentConfig JobAgentConfig          `json:"jobAgentConfig"`
+
+	// JobAgentVariables Variables scoped to the dispatching job agent. Resolved at dispatch time and referenced from agent-config templates as {{ .jobAgentVariables.<key> }}.
+	JobAgentVariables *map[string]LiteralValue `json:"jobAgentVariables,omitempty"`
+	Release           *Release                 `json:"release,omitempty"`
+	Resource          *Resource                `json:"resource,omitempty"`
+	Variables         *map[string]LiteralValue `json:"variables,omitempty"`
+	Version           *DeploymentVersion       `json:"version,omitempty"`
+	Workflow          *Workflow                `json:"workflow,omitempty"`
+	WorkflowJob       *WorkflowJob             `json:"workflowJob,omitempty"`
+	WorkflowRun       *WorkflowRun             `json:"workflowRun,omitempty"`
 }
 
 // EntityRelation defines model for EntityRelation.

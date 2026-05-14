@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 type ReconcileResult struct {
@@ -24,9 +25,10 @@ type ReconcileResult struct {
 type reconciler struct {
 	workspaceID uuid.UUID
 
-	getter Getter
-	setter Setter
-	rt     *ReleaseTarget
+	getter         Getter
+	setter         Setter
+	secretResolver variableresolver.SecretResolver
+	rt             *ReleaseTarget
 
 	release  *oapi.Release
 	policies []*oapi.Policy
@@ -151,7 +153,7 @@ func (r *reconciler) createFailureJob(
 ) error {
 	now := time.Now()
 
-	factory := jobs.NewFactoryFromGetters(r.getter)
+	factory := jobs.NewFactoryWithSecrets(r.getter, r.secretResolver)
 	deploymentID, err := uuid.Parse(r.release.ReleaseTarget.DeploymentId)
 	if err != nil {
 		return fmt.Errorf("parse deployment id: %w", err)
@@ -278,7 +280,7 @@ func (r *reconciler) buildAndDispatchJob(ctx context.Context) error {
 			agent.Config, deployment.JobAgentConfig, r.release.Version.JobAgentConfig,
 		)
 
-		job, err := jobs.NewFactoryFromGetters(r.getter).
+		job, err := jobs.NewFactoryWithSecrets(r.getter, r.secretResolver).
 			CreateJobForRelease(ctx, r.release, agent)
 		if err != nil {
 			return recordErr(span, "build job", err)
@@ -303,6 +305,7 @@ func Reconcile(
 	workspaceID string,
 	getter Getter,
 	setter Setter,
+	secretResolver variableresolver.SecretResolver,
 	rt *ReleaseTarget,
 ) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "jobeligibility.Reconcile")
@@ -313,7 +316,13 @@ func Reconcile(
 		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
 
-	r := &reconciler{workspaceID: workspaceIDUUID, getter: getter, setter: setter, rt: rt}
+	r := &reconciler{
+		workspaceID:    workspaceIDUUID,
+		getter:         getter,
+		setter:         setter,
+		secretResolver: secretResolver,
+		rt:             rt,
+	}
 	r.rt.WorkspaceID = r.workspaceID
 
 	if err := r.loadInput(ctx); err != nil {

@@ -288,19 +288,20 @@ func TestResolverProviderCacheDisabledWhenNil(t *testing.T) {
 	}
 }
 
-func TestResolverRejectsEmptyRefFields(t *testing.T) {
+func TestResolverRejectsEmptyProvider(t *testing.T) {
+	// Empty Provider is always invalid — there's nothing to look up. Empty
+	// Key is provider-specific (awssm treats it as "return raw") and is
+	// validated inside the Provider impl, not at the Resolver level.
 	store := &mockStore{}
 	provider := &mockProvider{t: "doppler"}
 	r := newResolver(t, store, provider)
 
-	cases := []SecretReference{
-		{Provider: "", Key: "K"},
-		{Provider: "p", Key: ""},
-	}
-	for _, c := range cases {
-		if _, err := r.Resolve(context.Background(), uuid.New(), c); err == nil {
-			t.Fatalf("expected error for ref %+v", c)
-		}
+	if _, err := r.Resolve(
+		context.Background(),
+		uuid.New(),
+		SecretReference{Provider: "", Key: "K"},
+	); err == nil {
+		t.Fatal("expected error for empty Provider")
 	}
 	if got := store.getCalls.Load(); got != 0 {
 		t.Fatalf("store should not be hit for invalid refs, got %d calls", got)

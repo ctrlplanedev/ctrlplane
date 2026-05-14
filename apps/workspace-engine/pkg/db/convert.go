@@ -362,6 +362,23 @@ func ToOapiDeploymentVariable(
 	return v
 }
 
+// ToOapiJobAgentVariable maps a job_agent-scoped variable row to the same
+// oapi.DeploymentVariable shape used by deployment variables, so the
+// variableresolver can run a single resolution pipeline regardless of scope.
+// DeploymentId is left empty since the variable does not belong to one.
+func ToOapiJobAgentVariable(
+	row ListVariablesWithValuesByJobAgentIDRow,
+) oapi.DeploymentVariable {
+	v := oapi.DeploymentVariable{
+		Id:  row.ID.String(),
+		Key: row.Key,
+	}
+	if row.Description.Valid {
+		v.Description = &row.Description.String
+	}
+	return v
+}
+
 func ToOapiDeploymentVariableValueFromAgg(
 	r VariableValueAggRow,
 ) (oapi.DeploymentVariableValue, error) {

@@ -88,6 +88,13 @@ func (m *mockReconcileGetter) GetResourceVariables(
 	return m.resourceVar, nil
 }
 
+func (m *mockReconcileGetter) GetJobAgentVariables(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.DeploymentVariableWithValues, error) {
+	return nil, nil
+}
+
 func (m *mockReconcileGetter) GetRelationshipRules(
 	_ context.Context,
 	_ uuid.UUID,

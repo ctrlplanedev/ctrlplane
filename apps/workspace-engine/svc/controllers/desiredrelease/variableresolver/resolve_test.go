@@ -31,9 +31,11 @@ func (m *mockResolver) ResolveRelated(
 // mock Getter (for Resolve tests)
 // ---------------------------------------------------------------------------
 
+// mockGetter is the in-memory variableresolver.Getter used by these tests.
 type mockGetter struct {
 	deploymentVars []oapi.DeploymentVariableWithValues
 	resourceVars   map[string][]oapi.ResourceVariable
+	jobAgentVars   []oapi.DeploymentVariableWithValues
 	variableSets   []oapi.VariableSetWithVariables
 	rules          []eval.Rule
 	candidates     map[string][]eval.EntityData
@@ -75,6 +77,13 @@ func (m *mockGetter) GetResourceVariables(
 	_ string,
 ) (map[string][]oapi.ResourceVariable, error) {
 	return m.resourceVars, nil
+}
+
+func (m *mockGetter) GetJobAgentVariables(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.DeploymentVariableWithValues, error) {
+	return m.jobAgentVars, nil
 }
 
 func (m *mockGetter) GetVariableSetsWithVariables(

@@ -338,7 +338,7 @@ func TestNewReleaseTarget_NonUUIDLast(t *testing.T) {
 func TestProcess_InvalidScopeID(t *testing.T) {
 	getter := &mockGetter{}
 	setter := &mockSetter{}
-	ctrl := NewController(getter, setter)
+	ctrl := NewController(getter, setter, nil)
 
 	item := reconcile.Item{
 		ID:          1,
@@ -356,7 +356,7 @@ func TestProcess_ReleaseTargetNotFound(t *testing.T) {
 	rt := testRT()
 	getter := &mockGetter{rtExists: false}
 	setter := &mockSetter{}
-	ctrl := NewController(getter, setter)
+	ctrl := NewController(getter, setter, nil)
 
 	item := reconcile.Item{
 		ID:          1,
@@ -374,7 +374,7 @@ func TestProcess_ReleaseTargetExistsCheckFails(t *testing.T) {
 	rt := testRT()
 	getter := &mockGetter{rtExistsErr: fmt.Errorf("db error")}
 	setter := &mockSetter{}
-	ctrl := NewController(getter, setter)
+	ctrl := NewController(getter, setter, nil)
 
 	item := reconcile.Item{
 		ID:          1,
@@ -394,7 +394,7 @@ func TestProcess_ReconcileError(t *testing.T) {
 		releaseErr: fmt.Errorf("release fetch failed"),
 	}
 	setter := &mockSetter{}
-	ctrl := NewController(getter, setter)
+	ctrl := NewController(getter, setter, nil)
 
 	item := reconcile.Item{
 		ID:          1,
@@ -433,7 +433,7 @@ func TestProcess_RequeueOnBackoff(t *testing.T) {
 		workspaceAgents: []oapi.JobAgent{*agent},
 	}
 	setter := &mockSetter{}
-	ctrl := NewController(getter, setter)
+	ctrl := NewController(getter, setter, nil)
 
 	item := reconcile.Item{
 		ID:          1,
@@ -456,7 +456,7 @@ func TestReconcile_NoDesiredRelease(t *testing.T) {
 	getter := &mockGetter{release: nil}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.NextReconcileAt)
@@ -468,7 +468,7 @@ func TestReconcile_GetDesiredReleaseFails(t *testing.T) {
 	getter := &mockGetter{releaseErr: fmt.Errorf("db down")}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get desired release")
 }
@@ -483,7 +483,7 @@ func TestReconcile_GetPoliciesFails(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get policies for release target")
 }
@@ -493,7 +493,7 @@ func TestReconcile_InvalidWorkspaceID(t *testing.T) {
 	getter := &mockGetter{}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), "not-a-uuid", getter, setter, rt)
+	_, err := Reconcile(context.Background(), "not-a-uuid", getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parse workspace id")
 }
@@ -503,7 +503,7 @@ func TestReconcile_HappyPath_CreatesAndDispatchesJob(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.NextReconcileAt)
@@ -540,6 +540,7 @@ func TestReconcile_ActiveJobBlocks(t *testing.T) {
 				rt.WorkspaceID.String(),
 				getter,
 				setter,
+				nil,
 				rt,
 			)
 			require.NoError(t, err)
@@ -582,6 +583,7 @@ func TestReconcile_TerminalStatusDoesNotBlock(t *testing.T) {
 				rt.WorkspaceID.String(),
 				getter,
 				setter,
+				nil,
 				rt,
 			)
 			require.NoError(t, err)
@@ -607,7 +609,7 @@ func TestReconcile_ActiveJobFromDifferentReleaseStillBlocks(t *testing.T) {
 	getter.jobs = []*oapi.Job{activeJob}
 	getter.processingJobs = []*oapi.Job{activeJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "an active job from a different release should still block")
 	assert.Nil(t, result.NextReconcileAt)
@@ -624,7 +626,7 @@ func TestReconcile_NoPolicyNoJobs_FirstAttemptAllowed(t *testing.T) {
 	getter.jobs = []*oapi.Job{}
 	getter.policies = []*oapi.Policy{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	require.Len(t, setter.createdJobs, 1, "first attempt should be allowed")
@@ -656,6 +658,7 @@ func TestReconcile_NoPolicyOneCompletedJob_Denied(t *testing.T) {
 				rt.WorkspaceID.String(),
 				getter,
 				setter,
+				nil,
 				rt,
 			)
 			require.NoError(t, err)
@@ -681,7 +684,7 @@ func TestReconcile_PolicyMaxRetries3_NoFailures_Allowed(t *testing.T) {
 	getter.policies = []*oapi.Policy{testPolicy(true, &oapi.RetryRule{MaxRetries: 3})}
 	getter.jobs = []*oapi.Job{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Nil(t, result.NextReconcileAt)
@@ -703,7 +706,7 @@ func TestReconcile_PolicyMaxRetries3_AtLimit_Allowed(t *testing.T) {
 	}
 	getter.jobs = jobs
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -730,7 +733,7 @@ func TestReconcile_PolicyMaxRetries3_Exceeded_Denied(t *testing.T) {
 	}
 	getter.jobs = jobs
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "exceeding maxRetries should deny job creation")
 	assert.Nil(t, result.NextReconcileAt)
@@ -745,7 +748,7 @@ func TestReconcile_PolicyMaxRetries0_OneAttemptOnly(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "maxRetries=0 should only allow one attempt")
 	assert.Nil(t, result.NextReconcileAt)
@@ -777,7 +780,7 @@ func TestReconcile_ExplicitRetryOnStatuses_OnlyCountsThose(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{cancelledJob, failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -805,7 +808,7 @@ func TestReconcile_DefaultRetryOnStatuses_MaxRetriesGT0(t *testing.T) {
 	)
 	getter.jobs = []*oapi.Job{successfulJob, failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -829,7 +832,7 @@ func TestReconcile_DefaultRetryOnStatuses_MaxRetries0_SuccessfulCounts(t *testin
 	)
 	getter.jobs = []*oapi.Job{successfulJob}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(
 		t,
@@ -855,7 +858,7 @@ func TestReconcile_DifferentReleaseBreaksRetryChain(t *testing.T) {
 	oldJob := testJobForRelease(oldRelease, oapi.JobStatusFailure, time.Now().Add(-30*time.Second))
 	getter.jobs = []*oapi.Job{oldJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -886,7 +889,7 @@ func TestReconcile_LinearBackoff_WithinWindow_Denied(t *testing.T) {
 		completedAt.Add(-time.Second), completedAt)
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "should not create job during backoff window")
 	require.NotNil(t, result.NextReconcileAt, "should schedule requeue")
@@ -913,7 +916,7 @@ func TestReconcile_LinearBackoff_PastWindow_Allowed(t *testing.T) {
 		completedAt.Add(-time.Second), completedAt)
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1, "should create job after backoff window")
 	assert.Nil(t, result.NextReconcileAt)
@@ -952,7 +955,7 @@ func TestReconcile_ExponentialBackoff_SecondAttempt(t *testing.T) {
 	)
 	getter.jobs = []*oapi.Job{job2, job1} // newest first
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "should be in exponential backoff (20s, only 4s elapsed)")
 	require.NotNil(t, result.NextReconcileAt)
@@ -986,7 +989,7 @@ func TestReconcile_ExponentialBackoff_WithMaxCap(t *testing.T) {
 	jobs[0].CompletedAt = &recentCompleted
 	getter.jobs = jobs
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(
 		t,
@@ -1013,7 +1016,7 @@ func TestReconcile_DisabledPolicyIgnored(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(
 		t,
@@ -1038,7 +1041,7 @@ func TestReconcile_FirstEnabledPolicyRetryRuleWins(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(
 		t,
@@ -1063,7 +1066,7 @@ func TestReconcile_DisabledPolicySkipped_EnabledUsed(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -1088,7 +1091,7 @@ func TestReconcile_PolicyWithNoRetryRule_SkippedToNextPolicy(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Minute))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1, "should use second policy's retry rule")
 	assert.Nil(t, result.NextReconcileAt)
@@ -1103,7 +1106,7 @@ func TestReconcile_CreatedJobHasPendingStatus(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusPending, setter.createdJobs[0].Status)
@@ -1114,7 +1117,7 @@ func TestReconcile_CreatedJobHasCorrectReleaseID(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, release.Id.String(), setter.createdJobs[0].ReleaseId)
@@ -1125,7 +1128,7 @@ func TestReconcile_CreatedJobHasDispatchContext(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 
@@ -1146,7 +1149,7 @@ func TestReconcile_CreatedJobHasValidUUID(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 
@@ -1160,7 +1163,7 @@ func TestReconcile_NoJobAgentSelector_CreatesFailureJob(t *testing.T) {
 	getter, setter := setupHappyPath(rt, release)
 	getter.deployment.JobAgentSelector = ""
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -1173,7 +1176,7 @@ func TestReconcile_NilJobAgentSelector_CreatesFailureJob(t *testing.T) {
 	getter, setter := setupHappyPath(rt, release)
 	getter.deployment.JobAgentSelector = ""
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -1186,7 +1189,7 @@ func TestReconcile_NoMatchingAgents_CreatesFailureJob(t *testing.T) {
 	getter, setter := setupHappyPath(rt, release)
 	getter.workspaceAgents = []oapi.JobAgent{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -1234,7 +1237,7 @@ func TestReconcile_NoMatchingAgents_IncludesMissingKeyDiagnostic(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -1274,7 +1277,7 @@ func TestReconcile_MultipleJobAgents_CreatesMultipleJobs(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Nil(t, result.NextReconcileAt)
 	require.Len(t, setter.createdJobs, 2, "should create one job per agent")
@@ -1301,7 +1304,7 @@ func TestReconcile_GetDeploymentFails_Error(t *testing.T) {
 	getter.deploymentErr = fmt.Errorf("deployment not found")
 	getter.deployment = nil
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get deployment")
 }
@@ -1313,7 +1316,7 @@ func TestReconcile_GetEnvironmentFails_Error(t *testing.T) {
 	getter.environmentErr = fmt.Errorf("env not found")
 	getter.environment = nil
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get environment")
 }
@@ -1325,7 +1328,7 @@ func TestReconcile_GetResourceFails_Error(t *testing.T) {
 	getter.resourceErr = fmt.Errorf("resource not found")
 	getter.resource = nil
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get resource")
 }
@@ -1336,7 +1339,7 @@ func TestReconcile_CreateJobFails_Error(t *testing.T) {
 	getter, setter := setupHappyPath(rt, release)
 	setter.createJobErr = fmt.Errorf("create failed")
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "create job")
 	assert.Empty(t, setter.enqueueCalls, "should not enqueue when job creation fails")
@@ -1348,7 +1351,7 @@ func TestReconcile_EnqueueFails_Error(t *testing.T) {
 	getter, setter := setupHappyPath(rt, release)
 	setter.enqueueErr = fmt.Errorf("enqueue failed")
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "enqueue job dispatch")
 }
@@ -1368,7 +1371,7 @@ func TestReconcile_JobsSortedByCreatedAt(t *testing.T) {
 	newer := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-1*time.Minute))
 	getter.jobs = []*oapi.Job{old, newer} // intentionally out of order
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -1396,7 +1399,7 @@ func TestReconcile_BackoffUsesCompletedAtWhenAvailable(t *testing.T) {
 	failedJob := testJobWithCompletion(release, oapi.JobStatusFailure, createdAt, completedAt)
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Empty(t, setter.createdJobs, "should use completedAt for backoff timing, not createdAt")
 	require.NotNil(t, result.NextReconcileAt)
@@ -1414,7 +1417,7 @@ func TestReconcile_NoBackoffWhenBackoffSecondsNil(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Second))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1, "without backoff configured, retry should be immediate")
 	assert.Nil(t, result.NextReconcileAt)
@@ -1434,7 +1437,7 @@ func TestReconcile_NoBackoffWhenBackoffSecondsZero(t *testing.T) {
 	failedJob := testJobForRelease(release, oapi.JobStatusFailure, time.Now().Add(-time.Second))
 	getter.jobs = []*oapi.Job{failedJob}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1, "backoffSeconds=0 should not delay retry")
 	assert.Nil(t, result.NextReconcileAt)
@@ -1460,7 +1463,7 @@ func TestReconcile_MixedJobStatuses_ConsecutiveCounting(t *testing.T) {
 	j4 := testJobForRelease(release, oapi.JobStatusFailure, now.Add(-40*time.Second))
 	getter.jobs = []*oapi.Job{j1, j2, j3, j4}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(
 		t,
@@ -1476,7 +1479,7 @@ func TestReconcile_EnqueueCalledWithCorrectWorkspaceID(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := setupHappyPath(rt, release)
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.enqueueCalls, 1)
 	assert.Equal(t, rt.WorkspaceID.String(), setter.enqueueCalls[0].WorkspaceID)
@@ -1489,7 +1492,7 @@ func TestReconcile_NoJobsNoPolices_FirstAttempt(t *testing.T) {
 	getter.jobs = []*oapi.Job{}
 	getter.policies = []*oapi.Policy{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Nil(t, result.NextReconcileAt)
@@ -1557,7 +1560,7 @@ func TestReconcile_JobAgentConfig_DeepMergesThreeLevels(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 
@@ -1636,7 +1639,7 @@ func TestReconcile_SelectorMatchesSpecificAgent(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1, "should create exactly one job for the matched agent")
 	assert.Equal(t, target.Id, setter.createdJobs[0].JobAgentId)
@@ -1697,7 +1700,7 @@ func TestReconcile_SelectorByType_MatchesMultiple(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 2, "should create jobs for both argo-cd agents")
 
@@ -1743,7 +1746,7 @@ func TestReconcile_SelectorFalse_NoAgentsMatched(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -1794,7 +1797,7 @@ func TestReconcile_SelectorByName_MatchesSingle(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, prod.Id, setter.createdJobs[0].JobAgentId)
@@ -1856,7 +1859,7 @@ func TestReconcile_ResourceAwareSelector_MatchesAgentByResourceConfig(t *testing
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, argoUS.Id, setter.createdJobs[0].JobAgentId)
@@ -1906,7 +1909,7 @@ func TestReconcile_ResourceAwareSelector_NoMatch(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -1963,7 +1966,7 @@ func TestReconcile_ResourceAwareSelector_MatchesByMetadata(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, agentProd.Id, setter.createdJobs[0].JobAgentId)
@@ -2029,7 +2032,7 @@ func TestReconcile_ResourceAwareSelector_MultipleAgentsMatch(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 2)
 
@@ -2097,7 +2100,7 @@ func TestReconcile_ResourceAwareSelector_MixedWithJobAgentFields(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, argoUS.Id, setter.createdJobs[0].JobAgentId)
@@ -2143,7 +2146,7 @@ func TestReconcile_ResourceAwareSelector_MissingResourceConfigKey(t *testing.T) 
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	require.Len(t, setter.createdJobs, 1)
 	assert.Equal(t, oapi.JobStatusInvalidJobAgent, setter.createdJobs[0].Status)
@@ -2174,7 +2177,7 @@ func TestReconcile_ResourceAwareSelector_GetResourceFails(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get resource")
 }
