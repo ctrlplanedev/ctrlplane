@@ -36,11 +36,11 @@ func normalizeApplicationForDiff(app *v1alpha1.Application) *v1alpha1.Applicatio
 		APIVersion: "argoproj.io/v1alpha1",
 		Kind:       "Application",
 	}
-	cp.ObjectMeta.ManagedFields = nil
-	cp.ObjectMeta.CreationTimestamp = metav1.Time{}
-	cp.ObjectMeta.Generation = 0
-	cp.ObjectMeta.ResourceVersion = ""
-	cp.ObjectMeta.UID = ""
+	cp.ManagedFields = nil
+	cp.CreationTimestamp = metav1.Time{}
+	cp.Generation = 0
+	cp.ResourceVersion = ""
+	cp.UID = ""
 	cp.Status = v1alpha1.ApplicationStatus{}
 	cp.Operation = nil
 	return cp
