@@ -15,6 +15,7 @@ type cacheKey struct {
 	Provider    string
 	Path        string
 	Key         string
+	Version     string
 }
 
 type cacheEntry struct {
@@ -48,6 +49,7 @@ func keyFor(workspaceID uuid.UUID, ref SecretReference) cacheKey {
 		Provider:    ref.Provider,
 		Path:        ref.Path,
 		Key:         ref.Key,
+		Version:     ref.Version,
 	}
 }
 

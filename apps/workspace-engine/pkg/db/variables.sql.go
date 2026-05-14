@@ -33,7 +33,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )
@@ -107,7 +108,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )
@@ -186,7 +188,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )
@@ -265,7 +268,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )

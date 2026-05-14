@@ -82,6 +82,9 @@ func (p *Provider) Resolve(ctx context.Context, ref secrets.SecretReference) (st
 	q.Set("project", project)
 	q.Set("config", config)
 	q.Set("name", ref.Key)
+	if ref.Version != "" {
+		q.Set("accept_secret_version", ref.Version)
+	}
 	u.RawQuery = q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)

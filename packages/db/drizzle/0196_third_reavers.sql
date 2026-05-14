@@ -1,0 +1,1 @@
+ALTER TABLE "variable_value" ADD COLUMN "secret_version" text;

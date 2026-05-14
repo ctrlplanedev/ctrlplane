@@ -2530,6 +2530,10 @@
                "secretProvider": {
                   "description": "Workspace-unique secret_provider.name",
                   "type": "string"
+               },
+               "secretVersion": {
+                  "description": "Optional provider-specific version pin. For AWS Secrets Manager this maps to VersionId (uuid form) or VersionStage (AWSCURRENT/AWSPREVIOUS). For Doppler this maps to accept_secret_version. Empty means latest.",
+                  "type": "string"
                }
             },
             "required": [

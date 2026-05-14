@@ -84,6 +84,31 @@ func TestCacheInvalidateProvider(t *testing.T) {
 	}
 }
 
+func TestCacheKeysDistinguishVersions(t *testing.T) {
+	c := NewCache(time.Minute)
+	ws := uuid.New()
+
+	c.Set(ws, SecretReference{Provider: "p", Path: "x", Key: "K", Version: ""}, "latest")
+	c.Set(ws, SecretReference{Provider: "p", Path: "x", Key: "K", Version: "v1"}, "pinned-v1")
+	c.Set(ws, SecretReference{Provider: "p", Path: "x", Key: "K", Version: "v2"}, "pinned-v2")
+
+	if v, _ := c.Get(ws, SecretReference{Provider: "p", Path: "x", Key: "K"}); v != "latest" {
+		t.Fatalf("latest: got %q want latest", v)
+	}
+	if v, _ := c.Get(
+		ws,
+		SecretReference{Provider: "p", Path: "x", Key: "K", Version: "v1"},
+	); v != "pinned-v1" {
+		t.Fatalf("v1: got %q want pinned-v1", v)
+	}
+	if v, _ := c.Get(
+		ws,
+		SecretReference{Provider: "p", Path: "x", Key: "K", Version: "v2"},
+	); v != "pinned-v2" {
+		t.Fatalf("v2: got %q want pinned-v2", v)
+	}
+}
+
 func TestCacheKeysDistinguishPaths(t *testing.T) {
 	c := NewCache(time.Minute)
 	ws := uuid.New()

@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -96,6 +97,22 @@ func buildAWSConfig(ctx context.Context, cfg Config) (aws.Config, error) {
 
 func (*Provider) Type() string { return Type }
 
+// isVersionStage returns true if version names a Secrets Manager
+// VersionStage label rather than a VersionId. AWS-defined stages are
+// AWSCURRENT, AWSPREVIOUS, and AWSPENDING; user-defined stages can be any
+// label up to 64 characters but cannot start with "AWS" unless they are
+// the AWS-defined ones above. We treat any value that starts with "AWS"
+// (case-insensitive) as a stage; UUIDs and other arbitrary identifiers
+// fall through to VersionId. Callers can also opt-in with a sentinel
+// prefix "stage:" (e.g. "stage:my-custom-stage") for user-defined stages.
+func isVersionStage(version string) bool {
+	const stagePrefix = "stage:"
+	if strings.HasPrefix(version, stagePrefix) {
+		return true
+	}
+	return strings.HasPrefix(strings.ToUpper(version), "AWS")
+}
+
 func (p *Provider) Resolve(ctx context.Context, ref secrets.SecretReference) (string, error) {
 	if ref.Path == "" {
 		return "", fmt.Errorf(
@@ -103,9 +120,22 @@ func (p *Provider) Resolve(ctx context.Context, ref secrets.SecretReference) (st
 		)
 	}
 
-	out, err := p.client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
+	input := &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(ref.Path),
-	})
+	}
+	if ref.Version != "" {
+		// AWS Secrets Manager distinguishes VersionId (a UUID identifying a
+		// specific historical version) from VersionStage (a label like
+		// AWSCURRENT or AWSPREVIOUS). All-uppercase labels starting with
+		// "AWS" are treated as stages; everything else as a version id.
+		if isVersionStage(ref.Version) {
+			input.VersionStage = aws.String(strings.TrimPrefix(ref.Version, "stage:"))
+		} else {
+			input.VersionId = aws.String(ref.Version)
+		}
+	}
+
+	out, err := p.client.GetSecretValue(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("awssm provider: GetSecretValue %s: %w", ref.Path, err)
 	}

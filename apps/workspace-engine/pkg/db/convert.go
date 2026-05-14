@@ -302,6 +302,7 @@ type VariableValueAggRow struct {
 	SecretProvider   *string         `json:"secretProvider"`
 	SecretKey        *string         `json:"secretKey"`
 	SecretPath       []string        `json:"secretPath"`
+	SecretVersion    *string         `json:"secretVersion"`
 }
 
 func flattenVariableValue(r VariableValueAggRow) (oapi.Value, error) {
@@ -331,6 +332,10 @@ func flattenVariableValue(r VariableValueAggRow) (oapi.Value, error) {
 		if len(r.SecretPath) > 0 {
 			path := append([]string(nil), r.SecretPath...)
 			sr.SecretPath = &path
+		}
+		if r.SecretVersion != nil && *r.SecretVersion != "" {
+			version := *r.SecretVersion
+			sr.SecretVersion = &version
 		}
 		if err := v.FromSecretReferenceValue(sr); err != nil {
 			return v, err

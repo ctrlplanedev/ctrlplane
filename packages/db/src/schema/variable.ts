@@ -128,6 +128,7 @@ export const variableValue = pgTable(
     secretProvider: text("secret_provider"),
     secretKey: text("secret_key"),
     secretPath: text("secret_path").array(),
+    secretVersion: text("secret_version"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

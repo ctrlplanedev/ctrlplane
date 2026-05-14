@@ -1373,6 +1373,13 @@
       "when": 1778514718456,
       "tag": "0195_unique_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 196,
+      "version": "7",
+      "when": 1778763395165,
+      "tag": "0196_third_reavers",
+      "breakpoints": true
     }
   ]
 }

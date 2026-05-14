@@ -106,6 +106,9 @@ func resolveSecretReference(
 			ref.Path += "/" + (*srv.SecretPath)[i]
 		}
 	}
+	if srv.SecretVersion != nil {
+		ref.Version = *srv.SecretVersion
+	}
 	plaintext, err := secretResolver.Resolve(ctx, workspaceID, ref)
 	if err != nil {
 		return nil, fmt.Errorf(

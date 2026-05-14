@@ -21,6 +21,11 @@ type SecretReference struct {
 	// Key identifies the secret within Path. Some providers ignore Path and
 	// use Key alone (e.g. env).
 	Key string
+	// Version optionally pins to a specific provider-side version. Empty
+	// means "latest" — awssm reads AWSCURRENT, Doppler the latest published
+	// version. When set: awssm uses VersionId (uuid form) or VersionStage
+	// (AWSCURRENT/AWSPREVIOUS), Doppler uses accept_secret_version.
+	Version string
 }
 
 // Provider resolves a SecretReference against an external secret store.

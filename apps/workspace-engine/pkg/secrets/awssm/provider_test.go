@@ -58,6 +58,84 @@ func TestResolveReturnsRawSecretStringWhenKeyEmpty(t *testing.T) {
 	}
 }
 
+func TestResolveVersionId(t *testing.T) {
+	fc := &fakeClient{
+		out: &secretsmanager.GetSecretValueOutput{SecretString: aws.String("v")},
+	}
+	p := &Provider{client: fc}
+
+	_, err := p.Resolve(context.Background(), secrets.SecretReference{
+		Path:    "prod/db",
+		Version: "ab12cd34-ef56-7890-abcd-ef1234567890",
+	})
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if fc.in.VersionId == nil || *fc.in.VersionId != "ab12cd34-ef56-7890-abcd-ef1234567890" {
+		t.Fatalf("expected VersionId to be set, got %+v", fc.in.VersionId)
+	}
+	if fc.in.VersionStage != nil {
+		t.Fatalf("VersionStage must not be set for a UUID version, got %q", *fc.in.VersionStage)
+	}
+}
+
+func TestResolveVersionStageAWSCURRENT(t *testing.T) {
+	fc := &fakeClient{
+		out: &secretsmanager.GetSecretValueOutput{SecretString: aws.String("v")},
+	}
+	p := &Provider{client: fc}
+
+	_, err := p.Resolve(context.Background(), secrets.SecretReference{
+		Path:    "prod/db",
+		Version: "AWSCURRENT",
+	})
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if fc.in.VersionStage == nil || *fc.in.VersionStage != "AWSCURRENT" {
+		t.Fatalf("expected VersionStage=AWSCURRENT, got %+v", fc.in.VersionStage)
+	}
+	if fc.in.VersionId != nil {
+		t.Fatalf("VersionId must not be set for a stage, got %q", *fc.in.VersionId)
+	}
+}
+
+func TestResolveVersionUserStageWithPrefix(t *testing.T) {
+	fc := &fakeClient{
+		out: &secretsmanager.GetSecretValueOutput{SecretString: aws.String("v")},
+	}
+	p := &Provider{client: fc}
+
+	_, err := p.Resolve(context.Background(), secrets.SecretReference{
+		Path:    "prod/db",
+		Version: "stage:custom-pin",
+	})
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if fc.in.VersionStage == nil || *fc.in.VersionStage != "custom-pin" {
+		t.Fatalf("expected VersionStage=custom-pin, got %+v", fc.in.VersionStage)
+	}
+}
+
+func TestResolveNoVersionPassthrough(t *testing.T) {
+	fc := &fakeClient{
+		out: &secretsmanager.GetSecretValueOutput{SecretString: aws.String("v")},
+	}
+	p := &Provider{client: fc}
+
+	_, err := p.Resolve(context.Background(), secrets.SecretReference{Path: "prod/db"})
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if fc.in.VersionId != nil {
+		t.Fatalf("VersionId must be nil when no version specified")
+	}
+	if fc.in.VersionStage != nil {
+		t.Fatalf("VersionStage must be nil when no version specified")
+	}
+}
+
 func TestResolveExtractsJSONFieldByKey(t *testing.T) {
 	fc := &fakeClient{
 		out: &secretsmanager.GetSecretValueOutput{

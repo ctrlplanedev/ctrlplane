@@ -90,6 +90,46 @@ func TestResolveEmptyValue(t *testing.T) {
 	}
 }
 
+func TestResolveVersionPin(t *testing.T) {
+	var captured string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		captured = r.URL.Query().Get("accept_secret_version")
+		_, _ = w.Write([]byte(`{"value":{"computed":"x","raw":"x"}}`))
+	}))
+	defer srv.Close()
+
+	p := newTestProvider(t, srv)
+	_, err := p.Resolve(context.Background(), secrets.SecretReference{
+		Path:    "backend/prod",
+		Key:     "TOKEN",
+		Version: "42",
+	})
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if captured != "42" {
+		t.Fatalf("expected accept_secret_version=42, got %q", captured)
+	}
+}
+
+func TestResolveNoVersionOmitsQuery(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Has("accept_secret_version") {
+			t.Errorf("accept_secret_version must not be present, got %v", r.URL.Query())
+		}
+		_, _ = w.Write([]byte(`{"value":{"computed":"x","raw":"x"}}`))
+	}))
+	defer srv.Close()
+
+	p := newTestProvider(t, srv)
+	if _, err := p.Resolve(
+		context.Background(),
+		secrets.SecretReference{Path: "p/c", Key: "K"},
+	); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+}
+
 func TestResolveFallsBackToRaw(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"value":{"computed":"","raw":"raw-val"}}`))

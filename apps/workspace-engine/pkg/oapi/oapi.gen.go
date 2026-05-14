@@ -1169,6 +1169,9 @@ type SecretReferenceValue struct {
 
 	// SecretProvider Workspace-unique secret_provider.name
 	SecretProvider string `json:"secretProvider"`
+
+	// SecretVersion Optional provider-specific version pin. For AWS Secrets Manager this maps to VersionId (uuid form) or VersionStage (AWSCURRENT/AWSPREVIOUS). For Doppler this maps to accept_secret_version. Empty means latest.
+	SecretVersion *string `json:"secretVersion,omitempty"`
 }
 
 // SensitiveValue defines model for SensitiveValue.

@@ -517,6 +517,7 @@ CREATE TABLE variable_value (
     secret_provider TEXT,
     secret_key TEXT,
     secret_path TEXT[],
+    secret_version TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

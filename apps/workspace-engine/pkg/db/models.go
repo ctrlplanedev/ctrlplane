@@ -887,6 +887,7 @@ type VariableValue struct {
 	SecretProvider   pgtype.Text
 	SecretKey        pgtype.Text
 	SecretPath       []string
+	SecretVersion    pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 }

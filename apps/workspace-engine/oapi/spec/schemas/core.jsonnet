@@ -95,6 +95,10 @@ local openapi = import '../lib/openapi.libsonnet';
         items: { type: 'string' },
         description: 'Optional provider-specific path components',
       },
+      secretVersion: {
+        type: 'string',
+        description: 'Optional provider-specific version pin. For AWS Secrets Manager this maps to VersionId (uuid form) or VersionStage (AWSCURRENT/AWSPREVIOUS). For Doppler this maps to accept_secret_version. Empty means latest.',
+      },
     },
   },
 
