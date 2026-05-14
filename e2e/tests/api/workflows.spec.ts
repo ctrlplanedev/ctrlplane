@@ -45,7 +45,7 @@ test.describe("Workflow API", () => {
     workspace,
   }) => {
     const name = `Workflow ${faker.string.alphanumeric(8)}`;
-    const slug = `wf-${faker.string.alphanumeric(8)}`;
+    const slug = `wf-${faker.string.alphanumeric({ length: 8, casing: "lower" })}`;
     const createRes = await api.POST(
       "/v1/workspaces/{workspaceId}/workflows",
       {
@@ -147,7 +147,7 @@ test.describe("Workflow API", () => {
     expect(createRes.response.status).toBe(201);
     const workflowId = createRes.data!.id;
 
-    const newSlug = `renamed-${faker.string.alphanumeric(8)}`;
+    const newSlug = `renamed-${faker.string.alphanumeric({ length: 8, casing: "lower" })}`;
     const updateRes = await api.PUT(
       "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
       {
@@ -173,7 +173,7 @@ test.describe("Workflow API", () => {
 
   test("should get a workflow by slug", async ({ api, workspace }) => {
     const name = `By Slug ${faker.string.alphanumeric(8)}`;
-    const slug = `by-slug-${faker.string.alphanumeric(8)}`;
+    const slug = `by-slug-${faker.string.alphanumeric({ length: 8, casing: "lower" })}`;
     const createRes = await api.POST(
       "/v1/workspaces/{workspaceId}/workflows",
       {
@@ -222,7 +222,7 @@ test.describe("Workflow API", () => {
     api,
     workspace,
   }) => {
-    const slug = `dup-${faker.string.alphanumeric(8)}`;
+    const slug = `dup-${faker.string.alphanumeric({ length: 8, casing: "lower" })}`;
     const firstRes = await api.POST(
       "/v1/workspaces/{workspaceId}/workflows",
       {
@@ -268,8 +268,8 @@ test.describe("Workflow API", () => {
     api,
     workspace,
   }) => {
-    const slugA = `dup-upd-a-${faker.string.alphanumeric(8)}`;
-    const slugB = `dup-upd-b-${faker.string.alphanumeric(8)}`;
+    const slugA = `dup-upd-a-${faker.string.alphanumeric({ length: 8, casing: "lower" })}`;
+    const slugB = `dup-upd-b-${faker.string.alphanumeric({ length: 8, casing: "lower" })}`;
 
     const [resA, resB] = await Promise.all([
       api.POST("/v1/workspaces/{workspaceId}/workflows", {
