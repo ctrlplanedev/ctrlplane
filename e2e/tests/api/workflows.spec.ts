@@ -1,7 +1,10 @@
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
+import type { components } from "../../api/schema";
 import { test } from "../fixtures";
+
+type WorkflowSlugConflict = components["schemas"]["WorkflowSlugConflictResponse"];
 
 const slugifyWorkflowName = (name: string) =>
   name
@@ -248,6 +251,12 @@ test.describe("Workflow API", () => {
       },
     );
     expect(dupRes.response.status).toBe(409);
+    const dupErr = dupRes.error as WorkflowSlugConflict;
+    expect(dupErr.code).toBe("DUPLICATE_SLUG");
+    expect(dupErr.details).toMatchObject({
+      slug,
+      existingWorkflowId: firstId,
+    });
 
     await api.DELETE(
       "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
@@ -300,6 +309,12 @@ test.describe("Workflow API", () => {
       },
     );
     expect(renameRes.response.status).toBe(409);
+    const renameErr = renameRes.error as WorkflowSlugConflict;
+    expect(renameErr.code).toBe("DUPLICATE_SLUG");
+    expect(renameErr.details).toMatchObject({
+      slug: slugA,
+      existingWorkflowId: idA,
+    });
 
     await Promise.all([
       api.DELETE("/v1/workspaces/{workspaceId}/workflows/{workflowId}", {

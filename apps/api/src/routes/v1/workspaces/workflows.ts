@@ -33,9 +33,10 @@ const resolveSlug = (provided: string | undefined, name: string) => {
   }
 
   const derived = slugifyWorkflowName(name);
-  if (derived === "")
+  const derivedResult = slugSchema.safeParse(derived);
+  if (!derivedResult.success)
     throw new ApiError(
-      "Could not derive slug from name; name must contain at least one alphanumeric character or pass an explicit slug",
+      `Could not derive a valid slug from name: ${derivedResult.error.issues[0]?.message ?? "invalid format"}. Pass an explicit slug.`,
       400,
       "INVALID_SLUG",
     );
@@ -188,9 +189,11 @@ const updateWorkflow: AsyncTypedHandler<
     )
     .returning()
     .then(takeFirstOrNull)
-    .catch((error) =>
-      throwOnSlugConflict(workspaceId, req.body.slug ?? "", error),
-    );
+    .catch((error) => {
+      if (req.body.slug != null)
+        return throwOnSlugConflict(workspaceId, req.body.slug, error);
+      throw error;
+    });
 
   if (updated == null) throw new NotFoundError("Workflow not found");
 

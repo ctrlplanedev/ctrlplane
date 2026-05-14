@@ -33,7 +33,16 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       responses: openapi.createdResponse(openapi.schemaRef('Workflow'))
                  + openapi.badRequestResponse()
-                 + openapi.conflictResponse('Workflow slug already exists in this workspace'),
+                 + {
+                   '409': {
+                     description: 'Workflow slug already exists in this workspace',
+                     content: {
+                       'application/json': {
+                         schema: openapi.schemaRef('WorkflowSlugConflictResponse'),
+                       },
+                     },
+                   },
+                 },
     },
   },
   '/v1/workspaces/{workspaceId}/workflows/slug/{slug}': {
@@ -118,7 +127,16 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.acceptedResponse(openapi.schemaRef('Workflow'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse()
-                 + openapi.conflictResponse('Workflow slug already exists in this workspace'),
+                 + {
+                   '409': {
+                     description: 'Workflow slug already exists in this workspace',
+                     content: {
+                       'application/json': {
+                         schema: openapi.schemaRef('WorkflowSlugConflictResponse'),
+                       },
+                     },
+                   },
+                 },
     },
     delete: {
       tags: ['Workflows'],

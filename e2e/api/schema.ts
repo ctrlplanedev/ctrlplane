@@ -2450,6 +2450,17 @@ export interface components {
             /** @enum {string} */
             type: "array";
         };
+        WorkflowSlugConflictResponse: {
+            /** @enum {string} */
+            code: "DUPLICATE_SLUG";
+            details: {
+                /** @description UUID of the workflow that already uses this slug, if known. */
+                existingWorkflowId?: string;
+                /** @description The slug that collided. */
+                slug: string;
+            };
+            message: string;
+        };
         WorkflowStringInput: {
             default?: string;
             key: string;
@@ -6474,7 +6485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["WorkflowSlugConflictResponse"];
                 };
             };
         };
@@ -6668,7 +6679,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["WorkflowSlugConflictResponse"];
                 };
             };
         };
