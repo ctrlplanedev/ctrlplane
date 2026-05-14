@@ -168,6 +168,201 @@ test.describe("Workflow API", () => {
     );
   });
 
+  test("should get a workflow by slug", async ({ api, workspace }) => {
+    const name = `By Slug ${faker.string.alphanumeric(8)}`;
+    const slug = `by-slug-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug, inputs: [], jobAgents: [] },
+      },
+    );
+    expect(createRes.response.status).toBe(201);
+    const workflowId = createRes.data!.id;
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/workflows/slug/{slug}",
+      { params: { path: { workspaceId: workspace.id, slug } } },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.id).toBe(workflowId);
+    expect(getRes.data!.slug).toBe(slug);
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+      { params: { path: { workspaceId: workspace.id, workflowId } } },
+    );
+  });
+
+  test("should return 404 when getting a workflow by a non-existent slug", async ({
+    api,
+    workspace,
+  }) => {
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/workflows/slug/{slug}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            slug: `missing-${faker.string.alphanumeric(12)}`,
+          },
+        },
+      },
+    );
+
+    expect(getRes.response.status).toBe(404);
+  });
+
+  test("should reject creating a workflow with a duplicate slug in the same workspace", async ({
+    api,
+    workspace,
+  }) => {
+    const slug = `dup-${faker.string.alphanumeric(8)}`;
+    const firstRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `First ${faker.string.alphanumeric(8)}`,
+          slug,
+          inputs: [],
+          jobAgents: [],
+        },
+      },
+    );
+    expect(firstRes.response.status).toBe(201);
+    const firstId = firstRes.data!.id;
+
+    const dupRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `Second ${faker.string.alphanumeric(8)}`,
+          slug,
+          inputs: [],
+          jobAgents: [],
+        },
+      },
+    );
+    expect(dupRes.response.status).toBe(409);
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+      { params: { path: { workspaceId: workspace.id, workflowId: firstId } } },
+    );
+  });
+
+  test("should reject updating a workflow to a duplicate slug in the same workspace", async ({
+    api,
+    workspace,
+  }) => {
+    const slugA = `dup-upd-a-${faker.string.alphanumeric(8)}`;
+    const slugB = `dup-upd-b-${faker.string.alphanumeric(8)}`;
+
+    const [resA, resB] = await Promise.all([
+      api.POST("/v1/workspaces/{workspaceId}/workflows", {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `A ${faker.string.alphanumeric(8)}`,
+          slug: slugA,
+          inputs: [],
+          jobAgents: [],
+        },
+      }),
+      api.POST("/v1/workspaces/{workspaceId}/workflows", {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `B ${faker.string.alphanumeric(8)}`,
+          slug: slugB,
+          inputs: [],
+          jobAgents: [],
+        },
+      }),
+    ]);
+    expect(resA.response.status).toBe(201);
+    expect(resB.response.status).toBe(201);
+    const idA = resA.data!.id;
+    const idB = resB.data!.id;
+
+    const renameRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+      {
+        params: { path: { workspaceId: workspace.id, workflowId: idB } },
+        body: {
+          name: `B renamed`,
+          slug: slugA,
+          inputs: [],
+          jobAgents: [],
+        },
+      },
+    );
+    expect(renameRes.response.status).toBe(409);
+
+    await Promise.all([
+      api.DELETE("/v1/workspaces/{workspaceId}/workflows/{workflowId}", {
+        params: { path: { workspaceId: workspace.id, workflowId: idA } },
+      }),
+      api.DELETE("/v1/workspaces/{workspaceId}/workflows/{workflowId}", {
+        params: { path: { workspaceId: workspace.id, workflowId: idB } },
+      }),
+    ]);
+  });
+
+  test("should reject creating a workflow with an invalid slug", async ({
+    api,
+    workspace,
+  }) => {
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `Invalid ${faker.string.alphanumeric(8)}`,
+          slug: "Not A Valid Slug!",
+          inputs: [],
+          jobAgents: [],
+        },
+      },
+    );
+    expect(createRes.response.status).toBe(400);
+  });
+
+  test("should reject creating a workflow when the name slugifies to an empty string", async ({
+    api,
+    workspace,
+  }) => {
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name: "!!!", inputs: [], jobAgents: [] },
+      },
+    );
+    expect(createRes.response.status).toBe(400);
+  });
+
+  test("should return 404 when running a workflow by a non-existent slug", async ({
+    api,
+    workspace,
+  }) => {
+    const runRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows/slug/{slug}/runs",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            slug: `missing-${faker.string.alphanumeric(12)}`,
+          },
+        },
+        body: { inputs: {} },
+      },
+    );
+    expect(runRes.response.status).toBe(404);
+  });
+
   test("should delete a workflow", async ({ api, workspace }) => {
     const name = `Delete ${faker.string.alphanumeric(8)}`;
     const createRes = await api.POST(

@@ -31,8 +31,57 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('Workflow')) +
-                 openapi.badRequestResponse(),
+      responses: openapi.createdResponse(openapi.schemaRef('Workflow'))
+                 + openapi.badRequestResponse()
+                 + openapi.conflictResponse('Workflow slug already exists in this workspace'),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/workflows/slug/{slug}': {
+    get: {
+      tags: ['Workflows'],
+      summary: 'Get a workflow by slug',
+      operationId: 'getWorkflowBySlug',
+      description: 'Gets a workflow by its slug within the workspace.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.stringParam('slug', 'Slug of the workflow'),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('Workflow'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/workflows/slug/{slug}/runs': {
+    post: {
+      tags: ['Workflows'],
+      summary: 'Create a workflow run by slug',
+      operationId: 'createWorkflowRunBySlug',
+      description: 'Creates a new run for a workflow identified by slug.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.stringParam('slug', 'Slug of the workflow'),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['inputs'],
+              properties: {
+                inputs: {
+                  type: 'object',
+                  additionalProperties: true,
+                  description: 'Input values for the workflow run.',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: openapi.createdResponse(openapi.schemaRef('WorkflowRun'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/workflows/{workflowId}': {
@@ -68,7 +117,8 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('Workflow'))
                  + openapi.notFoundResponse()
-                 + openapi.badRequestResponse(),
+                 + openapi.badRequestResponse()
+                 + openapi.conflictResponse('Workflow slug already exists in this workspace'),
     },
     delete: {
       tags: ['Workflows'],

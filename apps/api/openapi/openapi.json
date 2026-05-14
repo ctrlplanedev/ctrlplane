@@ -9854,9 +9854,163 @@
                      }
                   },
                   "description": "Invalid request"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Workflow slug already exists in this workspace"
                }
             },
             "summary": "Create a workflow",
+            "tags": [
+               "Workflows"
+            ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/workflows/slug/{slug}": {
+         "get": {
+            "description": "Gets a workflow by its slug within the workspace.",
+            "operationId": "getWorkflowBySlug",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Slug of the workflow",
+                  "in": "path",
+                  "name": "slug",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Workflow"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get a workflow by slug",
+            "tags": [
+               "Workflows"
+            ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/workflows/slug/{slug}/runs": {
+         "post": {
+            "description": "Creates a new run for a workflow identified by slug.",
+            "operationId": "createWorkflowRunBySlug",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Slug of the workflow",
+                  "in": "path",
+                  "name": "slug",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "inputs": {
+                              "additionalProperties": true,
+                              "description": "Input values for the workflow run.",
+                              "type": "object"
+                           }
+                        },
+                        "required": [
+                           "inputs"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "201": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/WorkflowRun"
+                        }
+                     }
+                  },
+                  "description": "Resource created successfully"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Create a workflow run by slug",
             "tags": [
                "Workflows"
             ]
@@ -10046,6 +10200,16 @@
                      }
                   },
                   "description": "Resource not found"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Workflow slug already exists in this workspace"
                }
             },
             "summary": "Update a workflow",
