@@ -1,6 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { customType } from "drizzle-orm/pg-core";
 import {
+  customType,
   pgEnum,
   pgTable,
   text,
