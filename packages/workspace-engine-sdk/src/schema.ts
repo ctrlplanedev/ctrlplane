@@ -1326,6 +1326,7 @@ export interface components {
       inputs: components["schemas"]["WorkflowInput"][];
       jobs: components["schemas"]["WorkflowJobAgent"][];
       name: string;
+      slug: string;
     };
     WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"];
     WorkflowBooleanInput: {

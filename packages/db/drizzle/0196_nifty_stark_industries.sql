@@ -9,5 +9,6 @@ CREATE TABLE "secret_provider" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "variable_value" ADD COLUMN "secret_version" text;--> statement-breakpoint
 ALTER TABLE "secret_provider" ADD CONSTRAINT "secret_provider_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "secret_provider_workspace_name_uniq" ON "secret_provider" USING btree ("workspace_id","name");

@@ -14,10 +14,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Workflow: {
     type: 'object',
-    required: ['id', 'name', 'inputs', 'jobs'],
+    required: ['id', 'name', 'slug', 'inputs', 'jobs'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
+      slug: { type: 'string' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),

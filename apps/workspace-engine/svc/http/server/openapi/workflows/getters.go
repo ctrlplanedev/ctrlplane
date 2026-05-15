@@ -60,6 +60,7 @@ func (g *PostgresGetter) GetWorkflowByID(
 	return &oapi.Workflow{
 		Id:     workflowRow.ID.String(),
 		Name:   workflowRow.Name,
+		Slug:   workflowRow.Slug,
 		Inputs: inputs,
 		Jobs:   jobs,
 	}, nil

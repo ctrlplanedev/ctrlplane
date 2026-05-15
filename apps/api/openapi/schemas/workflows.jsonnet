@@ -115,6 +115,7 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'inputs', 'jobAgents'],
     properties: {
       name: { type: 'string' },
+      slug: { type: 'string', description: 'URL-safe identifier unique within the workspace. Derived from name if omitted.' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),
@@ -131,6 +132,7 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'inputs', 'jobAgents'],
     properties: {
       name: { type: 'string' },
+      slug: { type: 'string', description: 'URL-safe identifier unique within the workspace.' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),
@@ -144,10 +146,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Workflow: {
     type: 'object',
-    required: ['id', 'name', 'inputs', 'jobAgents'],
+    required: ['id', 'name', 'slug', 'inputs', 'jobAgents'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
+      slug: { type: 'string' },
       inputs: {
         type: 'array',
         items: openapi.schemaRef('WorkflowInput'),
@@ -168,6 +171,26 @@ local openapi = import '../lib/openapi.libsonnet';
       inputs: {
         type: 'object',
         additionalProperties: true,
+      },
+    },
+  },
+
+  WorkflowSlugConflictResponse: {
+    type: 'object',
+    required: ['message', 'code', 'details'],
+    properties: {
+      message: { type: 'string' },
+      code: { type: 'string', enum: ['DUPLICATE_SLUG'] },
+      details: {
+        type: 'object',
+        required: ['slug'],
+        properties: {
+          slug: { type: 'string', description: 'The slug that collided.' },
+          existingWorkflowId: {
+            type: 'string',
+            description: 'UUID of the workflow that already uses this slug, if known.',
+          },
+        },
       },
     },
   },

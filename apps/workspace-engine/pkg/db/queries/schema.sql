@@ -264,9 +264,11 @@ CREATE TABLE user_approval_record (
 CREATE TABLE workflow (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    slug TEXT NOT NULL,
     inputs JSONB NOT NULL DEFAULT '[]',
     job_agents JSONB NOT NULL DEFAULT '[]',
-    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    UNIQUE (workspace_id, slug)
 );
 
 CREATE TABLE workflow_run (

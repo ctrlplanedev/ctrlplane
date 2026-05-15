@@ -1,6 +1,6 @@
 {
-  "id": "d057e185-cd6f-46eb-8210-23cf3df48a31",
-  "prevId": "3efa7aef-401a-4c31-ad08-524dbe24d098",
+  "id": "c5e22694-bed0-4626-bdbe-ae62620520de",
+  "prevId": "3eefe300-c0c8-409f-aec5-22f254b1ff59",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5601,6 +5601,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "inputs": {
           "name": "inputs",
           "type": "jsonb",
@@ -5639,7 +5645,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "workflow_workspace_id_slug_unique": {
+          "name": "workflow_workspace_id_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "workspace_id",
+            "slug"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

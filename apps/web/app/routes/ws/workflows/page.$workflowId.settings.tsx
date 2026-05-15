@@ -98,6 +98,8 @@ export default function WorkflowSettingsPage() {
         <div className="grid grid-cols-[100px_1fr] gap-y-2 text-sm">
           <span className="text-muted-foreground">Name</span>
           <span>{workflow.name}</span>
+          <span className="text-muted-foreground">Slug</span>
+          <span className="font-mono text-xs">{workflow.slug}</span>
           <span className="text-muted-foreground">ID</span>
           <span className="font-mono text-xs">{workflow.id}</span>
         </div>

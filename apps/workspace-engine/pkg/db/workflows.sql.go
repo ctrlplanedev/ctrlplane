@@ -12,7 +12,7 @@ import (
 )
 
 const getWorkflowByID = `-- name: GetWorkflowByID :one
-SELECT id, name, inputs, job_agents, workspace_id FROM workflow WHERE id = $1
+SELECT id, name, slug, inputs, job_agents, workspace_id FROM workflow WHERE id = $1
 `
 
 func (q *Queries) GetWorkflowByID(ctx context.Context, id uuid.UUID) (Workflow, error) {
@@ -21,6 +21,7 @@ func (q *Queries) GetWorkflowByID(ctx context.Context, id uuid.UUID) (Workflow, 
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.Slug,
 		&i.Inputs,
 		&i.JobAgents,
 		&i.WorkspaceID,
