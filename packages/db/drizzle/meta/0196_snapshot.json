@@ -5292,10 +5292,7 @@
         "workflow_workspace_id_slug_unique": {
           "name": "workflow_workspace_id_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "slug"
-          ]
+          "columns": ["workspace_id", "slug"]
         }
       },
       "policies": {},
