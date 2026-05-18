@@ -178,6 +178,68 @@ test.describe("Deployment API", () => {
     );
   });
 
+  test("should return resourceSelector verbatim when written as 'false'", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `deploy-rs-false-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: name, resourceSelector: "false" },
+      },
+    );
+    expect(createRes.response.status).toBe(202);
+    const deploymentId = createRes.data!.id;
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: { path: { workspaceId: workspace.id, deploymentId } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.deployment.resourceSelector).toBe("false");
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
+  test("should default resourceSelector to 'false' when omitted on create", async ({
+    api,
+    workspace,
+  }) => {
+    const name = `deploy-rs-omit-${faker.string.alphanumeric(8)}`;
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/deployments",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { name, slug: name },
+      },
+    );
+    expect(createRes.response.status).toBe(202);
+    const deploymentId = createRes.data!.id;
+
+    const getRes = await api.GET(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      {
+        params: { path: { workspaceId: workspace.id, deploymentId } },
+      },
+    );
+
+    expect(getRes.response.status).toBe(200);
+    expect(getRes.data!.deployment.resourceSelector).toBe("false");
+
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+      { params: { path: { workspaceId: workspace.id, deploymentId } } },
+    );
+  });
+
   test("should create a deployment with a custom jobAgentSelector", async ({
     api,
     workspace,

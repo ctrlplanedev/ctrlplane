@@ -22,7 +22,7 @@ import { listDeploymentVariablesByDeploymentRouter } from "./deployment-variable
 const PLAN_TTL_MS = 60 * 60 * 1000;
 
 const parseSelector = (raw: string | null | undefined): string | undefined => {
-  if (raw == null || raw === "false") return undefined;
+  if (raw == null) return undefined;
   return raw;
 };
 
