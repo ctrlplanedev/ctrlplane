@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.4.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.3.0...v1.4.0) (2026-05-18)
+
+
+### Features
+
+* deployment dependencies evaluator ([#1081](https://github.com/ctrlplanedev/ctrlplane/issues/1081)) ([f461582](https://github.com/ctrlplanedev/ctrlplane/commit/f461582c1ee65648c8bc155178b46d6e1f5d1970))
+* **metrics:** Add OTEL to api ([#1110](https://github.com/ctrlplanedev/ctrlplane/issues/1110)) ([3088fee](https://github.com/ctrlplanedev/ctrlplane/commit/3088feed203c67d4edc30ae40194fa70840a6b82))
+* opa plan validations in workspace engine ([#1094](https://github.com/ctrlplanedev/ctrlplane/issues/1094)) ([92c4212](https://github.com/ctrlplanedev/ctrlplane/commit/92c4212c55973b48d45f165fea7492191a1fa833))
+* release target eligible versions v1 endpoint ([#1143](https://github.com/ctrlplanedev/ctrlplane/issues/1143)) ([1a373c3](https://github.com/ctrlplanedev/ctrlplane/commit/1a373c3c8662f1b630f681ca5a6a8efd9b025601))
+* show diff of current vs proposed rendered argo CR ([#1126](https://github.com/ctrlplanedev/ctrlplane/issues/1126)) ([d3d417a](https://github.com/ctrlplanedev/ctrlplane/commit/d3d417ab8a2484eae5e22017c97166ceaeb1cf58))
+
+
+### Bug Fixes
+
+* **argo-workflows:** fix bug with apiTokens ([#1100](https://github.com/ctrlplanedev/ctrlplane/issues/1100)) ([52046a1](https://github.com/ctrlplanedev/ctrlplane/commit/52046a1e94dd383a4e65e6c2092efd6e25642139))
+* **argo-workflows:** handle Error phase webhook events ([#1112](https://github.com/ctrlplanedev/ctrlplane/issues/1112)) ([c3e738f](https://github.com/ctrlplanedev/ctrlplane/commit/c3e738fe4bd17f87996e9a0230066725e27f4245))
+* dont retrieve stale target states ([#1099](https://github.com/ctrlplanedev/ctrlplane/issues/1099)) ([368f930](https://github.com/ctrlplanedev/ctrlplane/commit/368f9301c251aa1809c625f32367a5365c6473b5))
+* fetch newest workflow runs in ui query ([#1140](https://github.com/ctrlplanedev/ctrlplane/issues/1140)) ([96a87ca](https://github.com/ctrlplanedev/ctrlplane/commit/96a87ca5f0f7c61f56bc27849ad96faea73760ca))
+* if candidate version is already rolled out gradual rollout evaluator short circuits ([#1116](https://github.com/ctrlplanedev/ctrlplane/issues/1116)) ([eba2906](https://github.com/ctrlplanedev/ctrlplane/commit/eba29063582a350f0af1bb0e8cce2552983ad438))
+* lint ([cbd36ee](https://github.com/ctrlplanedev/ctrlplane/commit/cbd36eeedcf1caa57f602270f68938135cfb4198))
+* lint ([9a0e3de](https://github.com/ctrlplanedev/ctrlplane/commit/9a0e3de1969b5840f45d4200ec8297546bec72f8))
+* merge runner config into workflow-triggered jobs ([#1098](https://github.com/ctrlplanedev/ctrlplane/issues/1098)) ([40c184e](https://github.com/ctrlplanedev/ctrlplane/commit/40c184e5ddae8ce719fddd5fccda86f0f85067d0))
+* pin corepack and add /pnpm/bin to PATH ([#1115](https://github.com/ctrlplanedev/ctrlplane/issues/1115)) ([e42a401](https://github.com/ctrlplanedev/ctrlplane/commit/e42a4017ac06508c5983bc8bb9d7d9dd8e1961ae))
+* propagate job context to argo workflow job ([#1103](https://github.com/ctrlplanedev/ctrlplane/issues/1103)) ([46b08f5](https://github.com/ctrlplanedev/ctrlplane/commit/46b08f5194cb6846b2238fa14058e56d8b677c66))
+* register rfc ([0adc54d](https://github.com/ctrlplanedev/ctrlplane/commit/0adc54dfde85dfda540dde23a0e3555819df442a))
+* version deps UI factors in metadata and created_at ([#1095](https://github.com/ctrlplanedev/ctrlplane/issues/1095)) ([34f2f77](https://github.com/ctrlplanedev/ctrlplane/commit/34f2f77d8bbf54dc0108ce0bababb356413193ae))
+* version list endpoint respects limit param ([#1119](https://github.com/ctrlplanedev/ctrlplane/issues/1119)) ([c2fd344](https://github.com/ctrlplanedev/ctrlplane/commit/c2fd344391c9517b2f7980110ad2333c95b49b1c))
+
+
+### Performance Improvements
+
+* **desiredrelease:** paginate vs iterator and versionselector to SQL ([#1105](https://github.com/ctrlplanedev/ctrlplane/issues/1105)) ([c32246b](https://github.com/ctrlplanedev/ctrlplane/commit/c32246b75e177bc0689195a403d01f9b5e0748c3))
+
 ## [1.3.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.2.0...v1.3.0) (2026-04-28)
 
 
