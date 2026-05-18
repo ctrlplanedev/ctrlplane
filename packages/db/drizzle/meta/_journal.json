@@ -1373,6 +1373,13 @@
       "when": 1778768912269,
       "tag": "0195_left_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 196,
+      "version": "7",
+      "when": 1778870463416,
+      "tag": "0196_nifty_stark_industries",
+      "breakpoints": true
     }
   ]
 }

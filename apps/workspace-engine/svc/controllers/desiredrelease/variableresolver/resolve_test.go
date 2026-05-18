@@ -31,9 +31,11 @@ func (m *mockResolver) ResolveRelated(
 // mock Getter (for Resolve tests)
 // ---------------------------------------------------------------------------
 
+// mockGetter is the in-memory variableresolver.Getter used by these tests.
 type mockGetter struct {
 	deploymentVars []oapi.DeploymentVariableWithValues
 	resourceVars   map[string][]oapi.ResourceVariable
+	jobAgentVars   []oapi.DeploymentVariableWithValues
 	variableSets   []oapi.VariableSetWithVariables
 	rules          []eval.Rule
 	candidates     map[string][]eval.EntityData
@@ -75,6 +77,13 @@ func (m *mockGetter) GetResourceVariables(
 	_ string,
 ) (map[string][]oapi.ResourceVariable, error) {
 	return m.resourceVars, nil
+}
+
+func (m *mockGetter) GetJobAgentVariables(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.DeploymentVariableWithValues, error) {
+	return m.jobAgentVars, nil
 }
 
 func (m *mockGetter) GetVariableSetsWithVariables(
@@ -196,7 +205,15 @@ func TestResolveValue_Literal_String(t *testing.T) {
 	scope := newScope()
 	val := literalStringValue("hello")
 	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		emptyResolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -207,7 +224,15 @@ func TestResolveValue_Literal_Int(t *testing.T) {
 	scope := newScope()
 	val := literalIntValue(42)
 	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		emptyResolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	i, err := lv.AsIntegerValue()
 	require.NoError(t, err)
@@ -218,7 +243,15 @@ func TestResolveValue_Literal_Bool(t *testing.T) {
 	scope := newScope()
 	val := literalBoolValue(true)
 	entity := makeResourceEntity(scope.Resource)
-	lv, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		emptyResolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	b, err := lv.AsBooleanValue()
 	require.NoError(t, err)
@@ -250,7 +283,15 @@ func TestResolveValue_Reference_ResourceName(t *testing.T) {
 	}
 
 	val := referenceValue("database", "name")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		resolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -278,7 +319,15 @@ func TestResolveValue_Reference_ResourceMetadata(t *testing.T) {
 	}
 
 	val := referenceValue("network", "metadata", "cidr")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		resolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -301,7 +350,15 @@ func TestResolveValue_Reference_DeploymentName(t *testing.T) {
 	}
 
 	val := referenceValue("parent-deployment", "name")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		resolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -323,7 +380,15 @@ func TestResolveValue_Reference_EnvironmentName(t *testing.T) {
 	}
 
 	val := referenceValue("env", "name")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		resolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -334,7 +399,15 @@ func TestResolveValue_Reference_NotFound(t *testing.T) {
 	scope := newScope()
 	entity := makeResourceEntity(scope.Resource)
 	val := referenceValue("nonexistent", "name")
-	_, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, &val)
+	_, _, err := ResolveValue(
+		context.Background(),
+		emptyResolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
@@ -360,7 +433,15 @@ func TestResolveValue_Reference_BadPath(t *testing.T) {
 	}
 
 	val := referenceValue("database", "metadata", "missing_key")
-	_, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	_, _, err := ResolveValue(
+		context.Background(),
+		resolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
@@ -409,9 +490,10 @@ func TestResolve_ResourceVariableSelectorPriority(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -450,9 +532,10 @@ func TestResolve_ResourceVarWins(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -489,9 +572,10 @@ func TestResolve_DeploymentVariableValueUsedWhenNoResourceVar(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -528,9 +612,10 @@ func TestResolve_DefaultValueFallback(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -561,9 +646,10 @@ func TestResolve_NoMatchNoDefault_KeyAbsent(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -611,9 +697,10 @@ func TestResolve_HighestPriorityValueWins(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -812,9 +899,10 @@ func TestResolve_DeploymentVarValue_DefaultAndSelectorGatedOverride(t *testing.T
 				candidates:   candidates,
 			}
 
-			resolved, err := Resolve(
+			resolved, _, err := Resolve(
 				context.Background(),
 				getter,
+				nil,
 				scope,
 				scope.Deployment.Id,
 				scope.Resource.Id,
@@ -844,9 +932,10 @@ func TestResolve_MultipleVariables(t *testing.T) {
 		resourceVars: map[string][]oapi.ResourceVariable{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -871,9 +960,10 @@ func TestResolve_MultipleVariables(t *testing.T) {
 func TestResolve_NoDeploymentVars_EmptyMap(t *testing.T) {
 	scope := newScope()
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		emptyGetter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -952,9 +1042,10 @@ func TestResolve_ResourceVar_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1033,9 +1124,10 @@ func TestResolve_DeploymentVarValue_WithReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1130,9 +1222,10 @@ func TestResolve_MixedLiteralAndReference(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1179,9 +1272,10 @@ func TestResolve_ResourceVarRefFails_FallsToDeploymentValue(t *testing.T) {
 		rules: []eval.Rule{},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1213,7 +1307,15 @@ func TestResolveValue_Reference_ResourceConfig(t *testing.T) {
 	}
 
 	val := referenceValue("self", "config", "networking", "vpc_id")
-	lv, err := ResolveValue(context.Background(), resolver, scope.Resource.Id, &entity, &val)
+	lv, _, err := ResolveValue(
+		context.Background(),
+		resolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		&val,
+	)
 	require.NoError(t, err)
 	s, err := lv.AsStringValue()
 	require.NoError(t, err)
@@ -1230,7 +1332,15 @@ func TestResolveValue_Sensitive_ReturnsError(t *testing.T) {
 	_ = v.FromSensitiveValue(oapi.SensitiveValue{ValueHash: "abc123"})
 
 	entity := makeResourceEntity(scope.Resource)
-	_, err := ResolveValue(context.Background(), emptyResolver, scope.Resource.Id, &entity, v)
+	_, _, err := ResolveValue(
+		context.Background(),
+		emptyResolver,
+		nil,
+		uuid.Nil,
+		scope.Resource.Id,
+		&entity,
+		v,
+	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "sensitive")
 }
@@ -1293,9 +1403,10 @@ func TestResolve_VariableSet_SimpleInjection(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1343,9 +1454,10 @@ func TestResolve_VariableSet_DoesNotOverwriteResourceVar(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1393,9 +1505,10 @@ func TestResolve_VariableSet_DoesNotOverwriteDeploymentVarValue(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1453,9 +1566,10 @@ func TestResolve_VariableSet_HighestPriorityWins(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,
@@ -1497,9 +1611,10 @@ func TestResolve_VariableSet_UnrelatedDoNotMatch(t *testing.T) {
 		},
 	}
 
-	resolved, err := Resolve(
+	resolved, _, err := Resolve(
 		context.Background(),
 		getter,
+		nil,
 		scope,
 		scope.Deployment.Id,
 		scope.Resource.Id,

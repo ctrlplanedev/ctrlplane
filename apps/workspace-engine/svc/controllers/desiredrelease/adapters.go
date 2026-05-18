@@ -10,7 +10,11 @@ func buildRelease(
 	rt *ReleaseTarget,
 	version *oapi.DeploymentVersion,
 	variables map[string]oapi.LiteralValue,
+	sensitiveKeys []string,
 ) *oapi.Release {
+	if sensitiveKeys == nil {
+		sensitiveKeys = []string{}
+	}
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  rt.DeploymentID.String(),
@@ -19,7 +23,7 @@ func buildRelease(
 		},
 		Version:            *version,
 		Variables:          variables,
-		EncryptedVariables: []string{},
+		EncryptedVariables: sensitiveKeys,
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
 }

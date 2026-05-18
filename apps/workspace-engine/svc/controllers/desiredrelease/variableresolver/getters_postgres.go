@@ -124,6 +124,41 @@ func (g *PostgresGetter) GetDeploymentVariables(
 	return result, nil
 }
 
+func (g *PostgresGetter) GetJobAgentVariables(
+	ctx context.Context,
+	jobAgentID uuid.UUID,
+) ([]oapi.DeploymentVariableWithValues, error) {
+	q := db.GetQueries(ctx)
+
+	rows, err := q.ListVariablesWithValuesByJobAgentID(ctx, jobAgentID)
+	if err != nil {
+		return nil, fmt.Errorf("list job_agent variables for %s: %w", jobAgentID, err)
+	}
+
+	result := make([]oapi.DeploymentVariableWithValues, 0, len(rows))
+	for _, row := range rows {
+		var aggs []db.VariableValueAggRow
+		if err := json.Unmarshal(row.Values, &aggs); err != nil {
+			return nil, fmt.Errorf("unmarshal values for variable %s: %w", row.ID, err)
+		}
+
+		oapiValues := make([]oapi.DeploymentVariableValue, 0, len(aggs))
+		for _, a := range aggs {
+			val, err := db.ToOapiDeploymentVariableValueFromAgg(a)
+			if err != nil {
+				return nil, fmt.Errorf("map value %s: %w", a.ID, err)
+			}
+			oapiValues = append(oapiValues, val)
+		}
+
+		result = append(result, oapi.DeploymentVariableWithValues{
+			Variable: db.ToOapiJobAgentVariable(row),
+			Values:   oapiValues,
+		})
+	}
+	return result, nil
+}
+
 func (g *PostgresGetter) GetResourceVariables(
 	ctx context.Context,
 	resourceID string,

@@ -262,9 +262,10 @@ func TestFlattenVariableValue_Ref(t *testing.T) {
 	assert.Equal(t, []string{"host"}, rv.Path)
 }
 
-func TestFlattenVariableValue_SecretRefUnsupported(t *testing.T) {
+func TestFlattenVariableValue_SecretRef(t *testing.T) {
 	provider := "vault"
 	key := "kv/data/prod/db"
+	path := []string{"backend", "production"}
 	agg := VariableValueAggRow{
 		ID:             uuid.New(),
 		VariableID:     uuid.New(),
@@ -272,9 +273,16 @@ func TestFlattenVariableValue_SecretRefUnsupported(t *testing.T) {
 		Kind:           "secret_ref",
 		SecretProvider: &provider,
 		SecretKey:      &key,
+		SecretPath:     path,
 	}
-	_, err := flattenVariableValue(agg)
-	require.Error(t, err)
+	v, err := flattenVariableValue(agg)
+	require.NoError(t, err)
+	srv, err := v.AsSecretReferenceValue()
+	require.NoError(t, err)
+	assert.Equal(t, provider, srv.SecretProvider)
+	assert.Equal(t, key, srv.SecretKey)
+	require.NotNil(t, srv.SecretPath)
+	assert.Equal(t, path, *srv.SecretPath)
 }
 
 func TestToOapiDeploymentVariableValueFromAgg_CELSelector(t *testing.T) {

@@ -495,6 +495,13 @@
                "jobAgentConfig": {
                   "$ref": "#/components/schemas/JobAgentConfig"
                },
+               "jobAgentVariables": {
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/LiteralValue"
+                  },
+                  "description": "Variables scoped to the dispatching job agent. Resolved at dispatch time and referenced from agent-config templates as {{ .jobAgentVariables.<key> }}.",
+                  "type": "object"
+               },
                "release": {
                   "$ref": "#/components/schemas/Release"
                },
@@ -2507,6 +2514,34 @@
             ],
             "type": "object"
          },
+         "SecretReferenceValue": {
+            "properties": {
+               "secretKey": {
+                  "description": "Secret key within the provider",
+                  "type": "string"
+               },
+               "secretPath": {
+                  "description": "Optional provider-specific path components",
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "secretProvider": {
+                  "description": "Workspace-unique secret_provider.name",
+                  "type": "string"
+               },
+               "secretVersion": {
+                  "description": "Optional provider-specific version pin. For AWS Secrets Manager this maps to VersionId (uuid form) or VersionStage (AWSCURRENT/AWSPREVIOUS). For Doppler this maps to accept_secret_version. Empty means latest.",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "secretProvider",
+               "secretKey"
+            ],
+            "type": "object"
+         },
          "SensitiveValue": {
             "properties": {
                "valueHash": {
@@ -2730,6 +2765,9 @@
                },
                {
                   "$ref": "#/components/schemas/SensitiveValue"
+               },
+               {
+                  "$ref": "#/components/schemas/SecretReferenceValue"
                }
             ]
          },

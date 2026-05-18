@@ -255,6 +255,13 @@ func (g *DesiredReleaseGetter) GetResourceVariables(
 	return g.ResourceVars, nil
 }
 
+func (g *DesiredReleaseGetter) GetJobAgentVariables(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.DeploymentVariableWithValues, error) {
+	return nil, nil
+}
+
 func (g *DesiredReleaseGetter) GetRelationshipRules(
 	_ context.Context,
 	_ uuid.UUID,

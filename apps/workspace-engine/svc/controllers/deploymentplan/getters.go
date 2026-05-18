@@ -27,11 +27,13 @@ type Getter interface {
 	GetWorkspaceByID(ctx context.Context, id uuid.UUID) (db.Workspace, error)
 }
 
-// VarResolver resolves deployment variables for a release target.
+// VarResolver resolves deployment variables for a release target. The second
+// return is the list of variable keys whose value originated from a
+// secret_ref — used to populate release.EncryptedVariables.
 type VarResolver interface {
 	Resolve(
 		ctx context.Context,
 		scope *variableresolver.Scope,
 		deploymentID, resourceID string,
-	) (map[string]oapi.LiteralValue, error)
+	) (map[string]oapi.LiteralValue, []string, error)
 }

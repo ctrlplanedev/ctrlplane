@@ -88,6 +88,13 @@ func (m *mockReconcileGetter) GetResourceVariables(
 	return m.resourceVar, nil
 }
 
+func (m *mockReconcileGetter) GetJobAgentVariables(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]oapi.DeploymentVariableWithValues, error) {
+	return nil, nil
+}
+
 func (m *mockReconcileGetter) GetRelationshipRules(
 	_ context.Context,
 	_ uuid.UUID,
@@ -338,7 +345,7 @@ func TestReconcile_NoVersions(t *testing.T) {
 	}
 	setter := &mockReconcileSetter{}
 
-	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.NextReconcileAt)
@@ -358,7 +365,7 @@ func TestReconcile_AllPoliciesAllow(t *testing.T) {
 	}
 	setter := &mockReconcileSetter{}
 
-	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.NextReconcileAt)
@@ -394,7 +401,7 @@ func TestReconcile_PolicyDeniesAllVersions(t *testing.T) {
 	}
 	setter := &mockReconcileSetter{}
 
-	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -420,7 +427,7 @@ func TestReconcile_SelectsFirstPassingVersion(t *testing.T) {
 	}
 	setter := &mockReconcileSetter{}
 
-	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -460,7 +467,7 @@ func TestReconcile_AllVersionsDenied_NoRelease(t *testing.T) {
 	}
 	setter := &mockReconcileSetter{}
 
-	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 	assert.Nil(t, result.NextReconcileAt)
 	assert.Empty(t, setter.releases, "no version should pass the approval gate")
@@ -479,7 +486,7 @@ func TestReconcile_UpsertsEvaluationsForPassingVersion(t *testing.T) {
 	}
 	setter := &mockReconcileSetter{}
 
-	_, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, rt)
+	_, err := Reconcile(ctx, rt.WorkspaceID.String(), getter, setter, nil, rt)
 	require.NoError(t, err)
 
 	require.Len(t, setter.releases, 1, "version should pass with no policies")

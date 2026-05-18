@@ -94,6 +94,14 @@ func (j *Job) IsInTerminalState() bool {
 }
 
 func (v *Value) GetType() (string, error) {
+	// Try SecretReferenceValue first — its required field set is the most
+	// specific so a positive match leaves no ambiguity.
+	if srv, err := v.AsSecretReferenceValue(); err == nil {
+		if srv.SecretProvider != "" && srv.SecretKey != "" {
+			return "secret_ref", nil
+		}
+	}
+
 	// Try ReferenceValue - check that required fields are present
 	if rv, err := v.AsReferenceValue(); err == nil {
 		if rv.Reference != "" && rv.Path != nil {

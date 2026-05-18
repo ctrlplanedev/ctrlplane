@@ -2,6 +2,7 @@ package variableresolver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -33,7 +34,9 @@ type Scope struct {
 	Environment *oapi.Environment
 }
 
-// Resolve computes the final set of variables for a release target.
+// Resolve computes the final set of variables for a release target. The
+// second return is the list of variable keys whose value originated from a
+// secret_ref — used to populate release.EncryptedVariables.
 //
 // Resolution priority (per variable key):
 //  1. Resource variable with matching key (highest priority)
@@ -45,9 +48,10 @@ type Scope struct {
 func Resolve(
 	ctx context.Context,
 	getter Getter,
+	secretResolver SecretResolver,
 	scope *Scope,
 	deploymentID, resourceID string,
-) (map[string]oapi.LiteralValue, error) {
+) (map[string]oapi.LiteralValue, []string, error) {
 	ctx, span := tracer.Start(ctx, "variableresolver.Resolve")
 	defer span.End()
 
@@ -60,32 +64,32 @@ func Resolve(
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "get deployment variables failed")
-		return nil, fmt.Errorf("get deployment variables: %w", err)
+		return nil, nil, fmt.Errorf("get deployment variables: %w", err)
 	}
 	span.SetAttributes(attribute.Int("deployment_variables.count", len(deploymentVars)))
 
 	if len(deploymentVars) == 0 {
-		return map[string]oapi.LiteralValue{}, nil
+		return map[string]oapi.LiteralValue{}, nil, nil
 	}
 
 	resourceVars, err := getter.GetResourceVariables(ctx, resourceID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "get resource variables failed")
-		return nil, fmt.Errorf("get resource variables: %w", err)
+		return nil, nil, fmt.Errorf("get resource variables: %w", err)
 	}
 	span.SetAttributes(attribute.Int("resource_variables.count", len(resourceVars)))
 
 	wsID, err := uuid.Parse(scope.Resource.WorkspaceId)
 	if err != nil {
-		return nil, fmt.Errorf("parse workspace id: %w", err)
+		return nil, nil, fmt.Errorf("parse workspace id: %w", err)
 	}
 
 	variableSets, err := getter.GetVariableSetsWithVariables(ctx, wsID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "get variable sets with variables failed")
-		return nil, fmt.Errorf("get variable sets with variables: %w", err)
+		return nil, nil, fmt.Errorf("get variable sets with variables: %w", err)
 	}
 	span.SetAttributes(attribute.Int("variable_sets.count", len(variableSets)))
 
@@ -96,7 +100,7 @@ func Resolve(
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "get relationship rules failed")
-		return nil, fmt.Errorf("get relationship rules: %w", err)
+		return nil, nil, fmt.Errorf("get relationship rules: %w", err)
 	}
 
 	resolver := newRealtimeResolver(getter, scope.Resource, wsID, rules)
@@ -104,51 +108,84 @@ func Resolve(
 	entity := NewResourceEntity(scope.Resource)
 
 	resolved := make(map[string]oapi.LiteralValue, len(deploymentVars))
+	var sensitiveKeys []string
 	var fromResource, fromValue, fromVariableSet int
 
 	for _, dv := range deploymentVars {
 		key := dv.Variable.Key
 
-		if lv := resolveFromResource(
+		lv, sensitive, err := resolveFromResource(
 			ctx,
 			resolver,
+			secretResolver,
+			wsID,
 			resourceID,
 			key,
 			resourceVars,
 			scope.Resource,
 			entity,
-		); lv != nil {
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve variable from resource failed")
+			return nil, nil, fmt.Errorf("resolve variable %q: %w", key, err)
+		}
+		if lv != nil {
 			resolved[key] = *lv
+			if sensitive {
+				sensitiveKeys = append(sensitiveKeys, key)
+			}
 			fromResource++
 			continue
 		}
 
-		if lv := resolveFromValues(
+		lv, sensitive, err = resolveFromValues(
 			ctx,
 			resolver,
+			secretResolver,
+			wsID,
 			resourceID,
 			dv.Values,
 			scope.Resource,
 			entity,
-		); lv != nil {
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve variable from values failed")
+			return nil, nil, fmt.Errorf("resolve variable %q: %w", key, err)
+		}
+		if lv != nil {
 			resolved[key] = *lv
+			if sensitive {
+				sensitiveKeys = append(sensitiveKeys, key)
+			}
 			fromValue++
 			continue
 		}
 
-		if lv := resolveFromVariableSets(
+		lv, sensitive, err = resolveFromVariableSets(
 			ctx,
 			key,
 			filteredVariableSets,
 			resolver,
+			secretResolver,
+			wsID,
 			resourceID,
 			entity,
-		); lv != nil {
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resolve variable from variable sets failed")
+			return nil, nil, fmt.Errorf("resolve variable %q: %w", key, err)
+		}
+		if lv != nil {
 			resolved[key] = *lv
+			if sensitive {
+				sensitiveKeys = append(sensitiveKeys, key)
+			}
 			fromVariableSet++
 			continue
 		}
-
 	}
 
 	span.SetAttributes(
@@ -156,8 +193,9 @@ func Resolve(
 		attribute.Int("resolved.from_resource", fromResource),
 		attribute.Int("resolved.from_value", fromValue),
 		attribute.Int("resolved.from_variable_set", fromVariableSet),
+		attribute.Int("resolved.sensitive", len(sensitiveKeys)),
 	)
-	return resolved, nil
+	return resolved, sensitiveKeys, nil
 }
 
 // realtimeResolver evaluates relationship rules in realtime to resolve
@@ -248,15 +286,17 @@ func (r *realtimeResolver) ResolveRelated(
 func resolveFromResource(
 	ctx context.Context,
 	resolver RelatedEntityResolver,
+	secretResolver SecretResolver,
+	workspaceID uuid.UUID,
 	resourceID string,
 	key string,
 	resourceVars map[string][]oapi.ResourceVariable,
 	resource *oapi.Resource,
 	entity *oapi.RelatableEntity,
-) *oapi.LiteralValue {
+) (*oapi.LiteralValue, bool, error) {
 	candidates, ok := resourceVars[key]
 	if !ok || len(candidates) == 0 {
-		return nil
+		return nil, false, nil
 	}
 
 	matched := make([]oapi.ResourceVariable, 0, len(candidates))
@@ -270,7 +310,7 @@ func resolveFromResource(
 		}
 	}
 	if len(matched) == 0 {
-		return nil
+		return nil, false, nil
 	}
 
 	sort.Slice(matched, func(i, j int) bool {
@@ -278,12 +318,23 @@ func resolveFromResource(
 	})
 
 	for _, rv := range matched {
-		lv, err := ResolveValue(ctx, resolver, resourceID, entity, &rv.Value)
+		lv, sensitive, err := ResolveValue(
+			ctx,
+			resolver,
+			secretResolver,
+			workspaceID,
+			resourceID,
+			entity,
+			&rv.Value,
+		)
+		if errors.Is(err, ErrSecretResolution) {
+			return nil, false, err
+		}
 		if err == nil && lv != nil {
-			return lv
+			return lv, sensitive, nil
 		}
 	}
-	return nil
+	return nil, false, nil
 }
 
 // resolveFromValues finds the highest-priority deployment variable value
@@ -291,11 +342,13 @@ func resolveFromResource(
 func resolveFromValues(
 	ctx context.Context,
 	resolver RelatedEntityResolver,
+	secretResolver SecretResolver,
+	workspaceID uuid.UUID,
 	resourceID string,
 	values []oapi.DeploymentVariableValue,
 	resource *oapi.Resource,
 	entity *oapi.RelatableEntity,
-) *oapi.LiteralValue {
+) (*oapi.LiteralValue, bool, error) {
 	matched := make([]oapi.DeploymentVariableValue, 0, len(values))
 	for _, v := range values {
 		if v.ResourceSelector == nil {
@@ -308,7 +361,7 @@ func resolveFromValues(
 		}
 	}
 	if len(matched) == 0 {
-		return nil
+		return nil, false, nil
 	}
 
 	sort.Slice(matched, func(i, j int) bool {
@@ -316,12 +369,23 @@ func resolveFromValues(
 	})
 
 	for _, v := range matched {
-		lv, err := ResolveValue(ctx, resolver, resourceID, entity, &v.Value)
+		lv, sensitive, err := ResolveValue(
+			ctx,
+			resolver,
+			secretResolver,
+			workspaceID,
+			resourceID,
+			entity,
+			&v.Value,
+		)
+		if errors.Is(err, ErrSecretResolution) {
+			return nil, false, err
+		}
 		if err == nil && lv != nil {
-			return lv
+			return lv, sensitive, nil
 		}
 	}
-	return nil
+	return nil, false, nil
 }
 
 func resolveFromVariableSets(
@@ -329,20 +393,33 @@ func resolveFromVariableSets(
 	key string,
 	variableSets []oapi.VariableSetWithVariables,
 	resolver RelatedEntityResolver,
+	secretResolver SecretResolver,
+	workspaceID uuid.UUID,
 	resourceID string,
 	entity *oapi.RelatableEntity,
-) *oapi.LiteralValue {
+) (*oapi.LiteralValue, bool, error) {
 	for _, vs := range variableSets {
 		for _, v := range vs.Variables {
 			if v.Key == key {
-				lv, err := ResolveValue(ctx, resolver, resourceID, entity, &v.Value)
+				lv, sensitive, err := ResolveValue(
+					ctx,
+					resolver,
+					secretResolver,
+					workspaceID,
+					resourceID,
+					entity,
+					&v.Value,
+				)
+				if errors.Is(err, ErrSecretResolution) {
+					return nil, false, err
+				}
 				if err == nil && lv != nil {
-					return lv
+					return lv, sensitive, nil
 				}
 			}
 		}
 	}
-	return nil
+	return nil, false, nil
 }
 
 func filterVariableSets(
