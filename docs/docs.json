@@ -169,6 +169,19 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Architecture",
+        "icon": "diagram-project",
+        "groups": [
+          {
+            "group": "System",
+            "pages": [
+              "architecture/overview",
+              "architecture/workspace-engine"
+            ]
+          }
+        ]
       }
     ],
     "global": {
