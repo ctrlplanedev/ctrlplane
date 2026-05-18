@@ -926,6 +926,186 @@ func TestBuildSkipSet(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// ListDeployableVersions tests
+// ---------------------------------------------------------------------------
+
+func TestListDeployableVersions(t *testing.T) {
+	ctx := context.Background()
+	getter := &mockGetter{}
+	rt := &oapi.ReleaseTarget{EnvironmentId: "env-1", ResourceId: "r-1", DeploymentId: "d-1"}
+
+	versionIDs := func(versions []*oapi.DeploymentVersion) []string {
+		ids := make([]string, len(versions))
+		for i, v := range versions {
+			ids[i] = v.Id
+		}
+		return ids
+	}
+
+	t.Run("returns empty for empty versions", func(t *testing.T) {
+		evals := []evaluator.Evaluator{
+			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
+		}
+		got, err := ListDeployableVersions(ctx, getter, rt, iterVersions(nil), evals, fullScope())
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+
+	t.Run("returns all versions when every evaluator allows", func(t *testing.T) {
+		versions := []*oapi.DeploymentVersion{version("v1"), version("v2"), version("v3")}
+		evals := []evaluator.Evaluator{
+			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
+		}
+		got, err := ListDeployableVersions(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			evals,
+			fullScope(),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"v1", "v2", "v3"}, versionIDs(got))
+	})
+
+	t.Run("excludes denied versions and preserves iteration order", func(t *testing.T) {
+		e := &conditionalEvaluator{
+			scopeFields: evaluator.ScopeVersion,
+			fn: func(_ context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+				if scope.Version.Id == "v2" {
+					return denyResult()
+				}
+				return allowResult()
+			},
+		}
+		versions := []*oapi.DeploymentVersion{version("v1"), version("v2"), version("v3")}
+		got, err := ListDeployableVersions(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			[]evaluator.Evaluator{e},
+			fullScope(),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"v1", "v3"}, versionIDs(got))
+	})
+
+	t.Run("iterates every version, does not short-circuit on first allowed", func(t *testing.T) {
+		var seen []string
+		e := &conditionalEvaluator{
+			scopeFields: evaluator.ScopeVersion,
+			fn: func(_ context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+				seen = append(seen, scope.Version.Id)
+				return allowResult()
+			},
+		}
+		versions := []*oapi.DeploymentVersion{version("v1"), version("v2"), version("v3")}
+		got, err := ListDeployableVersions(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			[]evaluator.Evaluator{e},
+			fullScope(),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"v1", "v2", "v3"}, seen, "evaluator must be called for every version")
+		assert.Equal(t, []string{"v1", "v2", "v3"}, versionIDs(got))
+	})
+
+	t.Run("returns empty when every version is denied", func(t *testing.T) {
+		evals := []evaluator.Evaluator{
+			&mockEvaluator{result: denyResult(), scopeFields: evaluator.ScopeVersion},
+		}
+		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
+		got, err := ListDeployableVersions(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			evals,
+			fullScope(),
+		)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+
+	t.Run("no evaluators means every version is eligible", func(t *testing.T) {
+		versions := []*oapi.DeploymentVersion{version("v1"), version("v2")}
+		got, err := ListDeployableVersions(
+			ctx,
+			getter,
+			rt,
+			iterVersions(versions),
+			nil,
+			fullScope(),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"v1", "v2"}, versionIDs(got))
+	})
+
+	t.Run("policy skip lets an otherwise-denied version through", func(t *testing.T) {
+		skipGetter := &mockGetter{
+			policySkips: []*oapi.PolicySkip{
+				{Id: "skip-1", RuleId: "rule-1", VersionId: "v1", CreatedAt: time.Now()},
+			},
+		}
+		e := &mockEvaluator{
+			result:      denyResult(),
+			scopeFields: evaluator.ScopeVersion,
+			ruleID:      "rule-1",
+		}
+		versions := []*oapi.DeploymentVersion{version("v1")}
+		got, err := ListDeployableVersions(
+			ctx,
+			skipGetter,
+			rt,
+			iterVersions(versions),
+			[]evaluator.Evaluator{e},
+			fullScope(),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"v1"}, versionIDs(got))
+	})
+
+	t.Run("returns error when GetPolicySkips fails", func(t *testing.T) {
+		errGetter := &mockGetter{policySkipsErr: errors.New("db connection failed")}
+		versions := []*oapi.DeploymentVersion{version("v1")}
+		evals := []evaluator.Evaluator{
+			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
+		}
+		got, err := ListDeployableVersions(
+			ctx,
+			errGetter,
+			rt,
+			iterVersions(versions),
+			evals,
+			fullScope(),
+		)
+		require.Error(t, err)
+		assert.Nil(t, got)
+		assert.Contains(t, err.Error(), "get policy skips")
+	})
+
+	t.Run("returns error when iterator yields an error", func(t *testing.T) {
+		failingIter := func(yield func(*oapi.DeploymentVersion, error) bool) {
+			if !yield(version("v1"), nil) {
+				return
+			}
+			yield(nil, errors.New("iter blew up"))
+		}
+		evals := []evaluator.Evaluator{
+			&mockEvaluator{result: allowResult(), scopeFields: evaluator.ScopeVersion},
+		}
+		got, err := ListDeployableVersions(ctx, getter, rt, failingIter, evals, fullScope())
+		require.Error(t, err)
+		assert.Nil(t, got)
+		assert.Contains(t, err.Error(), "iter candidate versions")
+	})
+}
+
+// ---------------------------------------------------------------------------
 // Conditional evaluator (version-dependent mock)
 // ---------------------------------------------------------------------------
 

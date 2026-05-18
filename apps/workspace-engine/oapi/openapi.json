@@ -3584,6 +3584,130 @@
             "summary": "List deployments"
          }
       },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions": {
+         "post": {
+            "description": "Returns deployment versions that currently pass every policy rule for this release target. An optional CEL filter narrows the result; pagination is applied to the filtered set. Use the \"version\" variable in the CEL expression to access version properties.",
+            "operationId": "listEligibleVersionsForReleaseTarget",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Key of the release target",
+                  "in": "path",
+                  "name": "releaseTargetKey",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "filter": {
+                              "description": "CEL expression to filter eligible versions. Defaults to \"true\" (all eligible versions).",
+                              "type": "string"
+                           }
+                        },
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/DeploymentVersion"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Eligible versions for the release target"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List versions eligible for a release target"
+         }
+      },
       "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
          "get": {
             "operationId": "getReleaseTargetState",

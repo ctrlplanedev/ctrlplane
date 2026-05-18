@@ -90,6 +90,39 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions': {
+    post: {
+      summary: 'List versions eligible for a release target',
+      operationId: 'listEligibleVersionsForReleaseTarget',
+      description: 'Returns deployment versions that currently pass every policy rule for this release target. An optional CEL filter narrows the result; pagination is applied to the filtered set. Use the "version" variable in the CEL expression to access version properties.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.releaseTargetKeyParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                filter: {
+                  type: 'string',
+                  description: 'CEL expression to filter eligible versions. Defaults to "true" (all eligible versions).',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentVersion'), 'Eligible versions for the release target')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/release-targets/resource-preview': {
     post: {
       summary: 'Preview release targets for a resource',
