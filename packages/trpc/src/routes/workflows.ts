@@ -157,11 +157,26 @@ export const workflowsRouter = router({
         z.object({
           workspaceId: z.uuid(),
           workflowId: z.string().uuid(),
-          limit: z.number().min(1).max(1000).default(100),
+          limit: z.number().min(1).max(1000).default(500),
           offset: z.number().min(0).default(0),
         }),
       )
       .query(async ({ ctx, input }) => {
+        const newestRunIds = ctx.db
+          .select({ id: schema.workflowRun.id })
+          .from(schema.workflowRun)
+          .leftJoin(
+            schema.workflowJob,
+            eq(schema.workflowJob.workflowRunId, schema.workflowRun.id),
+          )
+          .leftJoin(schema.job, eq(schema.job.id, schema.workflowJob.jobId))
+          .where(eq(schema.workflowRun.workflowId, input.workflowId))
+          .groupBy(schema.workflowRun.id)
+          .orderBy(sql`min(${schema.job.createdAt}) desc nulls last`)
+          .limit(input.limit)
+          .offset(input.offset)
+          .as("newest_runs");
+
         const rows = await ctx.db
           .select({
             runId: schema.workflowRun.id,
@@ -170,15 +185,16 @@ export const workflowsRouter = router({
             jobStatus: schema.job.status,
             jobCreatedAt: schema.job.createdAt,
           })
-          .from(schema.workflowRun)
+          .from(newestRunIds)
+          .innerJoin(
+            schema.workflowRun,
+            eq(schema.workflowRun.id, newestRunIds.id),
+          )
           .leftJoin(
             schema.workflowJob,
             eq(schema.workflowJob.workflowRunId, schema.workflowRun.id),
           )
-          .leftJoin(schema.job, eq(schema.job.id, schema.workflowJob.jobId))
-          .where(eq(schema.workflowRun.workflowId, input.workflowId))
-          .limit(input.limit)
-          .offset(input.offset);
+          .leftJoin(schema.job, eq(schema.job.id, schema.workflowJob.jobId));
 
         return _.chain(rows)
           .groupBy("runId")
