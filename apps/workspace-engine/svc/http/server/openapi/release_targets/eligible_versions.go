@@ -1,10 +1,12 @@
 package release_targets
 
 import (
+	"iter"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/cel-go/cel"
 	"github.com/google/uuid"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/db"
@@ -14,6 +16,40 @@ import (
 	"workspace-engine/svc/controllers/desiredrelease"
 	"workspace-engine/svc/controllers/desiredrelease/policyeval"
 )
+
+// filterVersionsByCEL wraps a candidate-version iterator with a CEL predicate
+// so policy evaluation only runs on versions the user is actually searching
+// for. Per-version eval errors (post-Compile runtime issues) skip silently —
+// malformed expressions are caught at compile time before this is called.
+func filterVersionsByCEL(
+	in iter.Seq2[*oapi.DeploymentVersion, error],
+	prg cel.Program,
+) iter.Seq2[*oapi.DeploymentVersion, error] {
+	return func(yield func(*oapi.DeploymentVersion, error) bool) {
+		for v, err := range in {
+			if err != nil {
+				if !yield(nil, err) {
+					return
+				}
+				continue
+			}
+			vMap, mapErr := celutil.EntityToMap(v)
+			if mapErr != nil {
+				if !yield(nil, mapErr) {
+					return
+				}
+				continue
+			}
+			ok, evalErr := celutil.EvalBool(prg, map[string]any{"version": vMap})
+			if evalErr != nil || !ok {
+				continue
+			}
+			if !yield(v, nil) {
+				return
+			}
+		}
+	}
+}
 
 func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 	c *gin.Context,
@@ -51,11 +87,10 @@ func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 		WithStandardExtensions().
 		BuildCached(12 * time.Hour)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build CEL env: " + err.Error()})
-		return
-	}
-	if err := celEnv.Validate(filter); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid filter expression: " + err.Error()})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "failed to build CEL env: " + err.Error()},
+		)
 		return
 	}
 	prg, err := celEnv.Compile(filter)
@@ -80,7 +115,10 @@ func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 
 	exists, err := getter.ReleaseTargetExists(ctx, drt)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "check release target exists: " + err.Error()})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "check release target exists: " + err.Error()},
+		)
 		return
 	}
 	if !exists {
@@ -90,7 +128,10 @@ func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 
 	scope, err := getter.GetReleaseTargetScope(ctx, drt)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "get release target scope: " + err.Error()})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "get release target scope: " + err.Error()},
+		)
 		return
 	}
 
@@ -102,29 +143,18 @@ func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 	}
 
 	evals := policyeval.CollectEvaluators(ctx, getter, oapiRT, rtPolicies)
-	versions := getter.IterCandidateVersions(ctx, drt.DeploymentID, nil, nil)
+	versions := filterVersionsByCEL(
+		getter.IterCandidateVersions(ctx, drt.DeploymentID, nil, nil),
+		prg,
+	)
 
-	eligible, err := policyeval.ListDeployableVersions(ctx, getter, oapiRT, versions, evals, *scope)
+	filtered, err := policyeval.ListDeployableVersions(ctx, getter, oapiRT, versions, evals, *scope)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "list deployable versions: " + err.Error()})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "list deployable versions: " + err.Error()},
+		)
 		return
-	}
-
-	filtered := make([]*oapi.DeploymentVersion, 0, len(eligible))
-	for _, v := range eligible {
-		vMap, err := celutil.EntityToMap(v)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "convert version: " + err.Error()})
-			return
-		}
-		ok, err := celutil.EvalBool(prg, map[string]any{"version": vMap})
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "evaluate filter: " + err.Error()})
-			return
-		}
-		if ok {
-			filtered = append(filtered, v)
-		}
 	}
 
 	limit := 50
@@ -134,6 +164,10 @@ func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 	offset := 0
 	if params.Offset != nil {
 		offset = *params.Offset
+	}
+	if limit < 0 || offset < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "limit and offset must be non-negative"})
+		return
 	}
 
 	total := len(filtered)

@@ -1010,7 +1010,12 @@ func TestListDeployableVersions(t *testing.T) {
 			fullScope(),
 		)
 		require.NoError(t, err)
-		assert.Equal(t, []string{"v1", "v2", "v3"}, seen, "evaluator must be called for every version")
+		assert.Equal(
+			t,
+			[]string{"v1", "v2", "v3"},
+			seen,
+			"evaluator must be called for every version",
+		)
 		assert.Equal(t, []string{"v1", "v2", "v3"}, versionIDs(got))
 	})
 
