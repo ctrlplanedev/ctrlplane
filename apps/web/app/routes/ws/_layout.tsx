@@ -29,6 +29,7 @@ import {
 import { authClient } from "~/api/auth-client";
 import { trpc } from "~/api/trpc";
 import { useTheme } from "~/components/ThemeProvider";
+import { VersionBadge } from "~/components/VersionBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -242,6 +243,7 @@ export default function WorkspaceLayout() {
 
         <SidebarFooter>
           {viewer != null && <UserNav viewer={viewer} />}
+          <VersionBadge />
         </SidebarFooter>
       </Sidebar>
 
