@@ -78,6 +78,8 @@ jobs:
           file: ${{ inputs.dockerfile }}
           platforms: ${{ inputs.platform }}
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
 
       - name: Build and Push
         uses: docker/build-push-action@v6
@@ -88,6 +90,8 @@ jobs:
           file: ${{ inputs.dockerfile }}
           platforms: ${{ inputs.platform }}
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
 
       - name: Summary
         env:

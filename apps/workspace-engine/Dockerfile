@@ -17,9 +17,11 @@ RUN go mod download
 # Copy rest of source code
 COPY . .
 
+ARG VERSION=dev
+
 # Build the binary with CGO enabled (required for confluent-kafka-go)
 # The vendored librdkafka will be statically linked
-RUN CGO_ENABLED=1 GOOS=linux go build -o engine .
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "-X workspace-engine/pkg/version.Version=$VERSION" -o engine .
 
 # Final stage - use Debian slim for glibc compatibility
 FROM debian:bookworm-slim
