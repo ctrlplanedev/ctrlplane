@@ -36,6 +36,8 @@ export const env = createEnv({
 
     BASE_URL: z.string().optional(),
 
+    CTRLPLANE_VERSION: z.string().default("dev"),
+
     OTEL_SERVICE_NAME: z.string().default("ctrlplane/api"),
     OTEL_EXPORTER_OTLP_ENDPOINT: z
       .string()
