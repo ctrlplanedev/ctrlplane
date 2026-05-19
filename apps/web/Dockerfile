@@ -38,6 +38,8 @@ COPY apps/web/package.json ./apps/web/package.json
 RUN pnpm install --frozen-lockfile
 COPY . .
 
+ARG VERSION=dev
+ENV VITE_CTRLPLANE_VERSION=$VERSION
 RUN turbo build --filter=...@ctrlplane/web
 
 RUN addgroup --system --gid 1001 nodejs
