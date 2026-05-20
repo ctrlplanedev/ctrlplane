@@ -50,8 +50,8 @@ type NodeConfig struct {
 	LeaseHeartbeat  time.Duration
 	MaxConcurrency  int
 	MaxRetryBackoff time.Duration
-	MaxAttempts int32
-	Hooks       Hooks
+	MaxAttempts     int32
+	Hooks           Hooks
 }
 
 func (c NodeConfig) Concurrency() int {

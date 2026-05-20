@@ -72,7 +72,10 @@ func (f *fakeQueue) Retry(ctx context.Context, params RetryParams) error {
 	return nil
 }
 
-func (f *fakeQueue) AckPermanentFailure(ctx context.Context, params AckPermanentFailureParams) error {
+func (f *fakeQueue) AckPermanentFailure(
+	ctx context.Context,
+	params AckPermanentFailureParams,
+) error {
 	return nil
 }
 

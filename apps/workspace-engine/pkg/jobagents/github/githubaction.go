@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 )
 
 var tracer = otel.Tracer("workspace-engine/jobagents/github")
@@ -47,12 +48,15 @@ func (a *GithubAction) Type() string {
 
 func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
 	if job.DispatchContext == nil {
-		return fmt.Errorf("job %s has no dispatch context", job.Id)
+		return reconcile.NonRetryable(
+			ErrTypeMissingDispatchContext,
+			fmt.Errorf("job %s has no dispatch context", job.Id),
+		)
 	}
 
 	cfg, err := ParseJobAgentConfig(ctx, job.DispatchContext.JobAgentConfig)
 	if err != nil {
-		return fmt.Errorf("failed to parse job agent config: %w", err)
+		return reconcile.NonRetryable(ErrTypeInvalidJobAgentConfig, err)
 	}
 
 	ref := "main"

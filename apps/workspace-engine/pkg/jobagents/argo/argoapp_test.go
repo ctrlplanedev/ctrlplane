@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 )
 
 // --- mocks ---
@@ -189,7 +190,11 @@ func TestDispatch_BadConfig(t *testing.T) {
 
 	err := a.Dispatch(context.Background(), job)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse job agent config")
+
+	var rerr *reconcile.Error
+	require.ErrorAs(t, err, &rerr)
+	assert.Equal(t, ErrTypeInvalidJobAgentConfig, rerr.Type)
+	assert.True(t, rerr.NonRetryable)
 }
 
 func TestParseJobAgentConfig(t *testing.T) {
