@@ -1,6 +1,9 @@
 package reconcile
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	ErrMissingWorkspaceID    = errors.New("workqueue: workspace_id must not be empty")
@@ -16,3 +19,48 @@ var (
 	ErrInvalidRetryBackoff   = errors.New("workqueue: retry backoff must be positive")
 	ErrClaimNotOwned         = errors.New("workqueue: item is not currently claimed by worker")
 )
+
+// Error is the typed error contract returned by processors. The dispatcher
+// fills in Type and NonRetryable based on its domain knowledge; the worker
+// reads NonRetryable to decide whether to retry or permanently fail the item.
+//
+// Type is an opaque string chosen by the emitting package (e.g.
+// "argo.TemplateRenderError"). It is recorded on the work item for diagnostics
+// and surfaced to dashboards/alerts.
+type Error struct {
+	Type         string
+	NonRetryable bool
+	Cause        error
+}
+
+func (e *Error) Error() string {
+	if e.Cause == nil {
+		return e.Type
+	}
+	return fmt.Sprintf("%s: %v", e.Type, e.Cause)
+}
+
+func (e *Error) Unwrap() error {
+	return e.Cause
+}
+
+func NonRetryable(typ string, cause error) *Error {
+	return &Error{Type: typ, NonRetryable: true, Cause: cause}
+}
+
+func Retryable(typ string, cause error) *Error {
+	return &Error{Type: typ, NonRetryable: false, Cause: cause}
+}
+
+func IsNonRetryable(err error) bool {
+	var rerr *Error
+	return errors.As(err, &rerr) && rerr.NonRetryable
+}
+
+func ErrorType(err error) string {
+	var rerr *Error
+	if errors.As(err, &rerr) {
+		return rerr.Type
+	}
+	return ""
+}

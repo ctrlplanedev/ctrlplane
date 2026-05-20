@@ -220,9 +220,26 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 			item.ScopeType,
 			"scopeID",
 			item.ScopeID,
+			"errorType",
+			ErrorType(processErr),
 			"error",
 			processErr,
 		)
+
+		capHit := w.cfg.MaxAttempts > 0 && item.AttemptCount+1 >= w.cfg.MaxAttempts
+		if IsNonRetryable(processErr) || capHit {
+			permErr := w.queue.AckPermanentFailure(ctx, AckPermanentFailureParams{
+				ItemID:    item.ID,
+				WorkerID:  w.cfg.WorkerID,
+				ErrorType: ErrorType(processErr),
+				LastError: processErr.Error(),
+			})
+			if permErr != nil && w.cfg.Hooks.OnDropped != nil {
+				w.cfg.Hooks.OnDropped(item, permErr)
+			}
+			return
+		}
+
 		retryErr := w.queue.Retry(ctx, RetryParams{
 			ItemID:       item.ID,
 			WorkerID:     w.cfg.WorkerID,

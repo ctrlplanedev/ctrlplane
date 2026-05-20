@@ -15,6 +15,7 @@ type Queue interface {
 	ExtendLease(ctx context.Context, params ExtendLeaseParams) error
 	AckSuccess(ctx context.Context, params AckSuccessParams) (AckSuccessResult, error)
 	Retry(ctx context.Context, params RetryParams) error
+	AckPermanentFailure(ctx context.Context, params AckPermanentFailureParams) error
 }
 
 // Result holds the outcome of processing a work item.
@@ -49,7 +50,8 @@ type NodeConfig struct {
 	LeaseHeartbeat  time.Duration
 	MaxConcurrency  int
 	MaxRetryBackoff time.Duration
-	Hooks           Hooks
+	MaxAttempts int32
+	Hooks       Hooks
 }
 
 func (c NodeConfig) Concurrency() int {
@@ -126,6 +128,13 @@ type RetryParams struct {
 	WorkerID     string
 	LastError    string
 	RetryBackoff time.Duration
+}
+
+type AckPermanentFailureParams struct {
+	ItemID    int64
+	WorkerID  string
+	ErrorType string
+	LastError string
 }
 
 type Item struct {

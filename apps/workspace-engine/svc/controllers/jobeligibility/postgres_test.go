@@ -58,6 +58,10 @@ func (q *mockQueue) Retry(_ context.Context, _ reconcile.RetryParams) error {
 	return nil
 }
 
+func (q *mockQueue) AckPermanentFailure(_ context.Context, _ reconcile.AckPermanentFailureParams) error {
+	return nil
+}
+
 var _ reconcile.Queue = (*mockQueue)(nil)
 
 // ===========================================================================

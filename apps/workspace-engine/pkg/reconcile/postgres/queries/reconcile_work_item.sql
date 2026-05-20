@@ -172,6 +172,26 @@ SET
 FROM expired AS e
 WHERE s.id = e.id;
 
+-- name: AckPermanentlyFailedReconcileWorkItem :one
+-- Delete a permanently-failed work item owned by the caller. The Type and
+-- LastError are recorded on the row's final state implicitly via prior retry
+-- updates (caller has already observed them); we just remove the row so it
+-- stops cycling through the queue.
+WITH target_scope AS (
+  SELECT s.id
+  FROM reconcile_work_scope AS s
+  WHERE s.id = sqlc.arg(id)
+    AND s.claimed_by = sqlc.arg(claimed_by)
+), deleted_scope AS (
+  DELETE FROM reconcile_work_scope AS s
+  USING target_scope AS t
+  WHERE s.id = t.id
+  RETURNING s.id
+)
+SELECT
+  EXISTS (SELECT 1 FROM target_scope) AS owned,
+  EXISTS (SELECT 1 FROM deleted_scope) AS deleted;
+
 -- name: RetryReconcileWorkItem :one
 -- Increment attempt count, record error, set backoff, and release claim.
 WITH target_scope AS (
