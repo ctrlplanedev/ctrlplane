@@ -3,6 +3,7 @@ import { fileURLToPath } from "url";
 import { requireAuth } from "@/middleware/auth.js";
 import { errorHandler } from "@/middleware/error-handler.js";
 import { createV1Router } from "@/routes/index.js";
+import { versionHandler } from "@/routes/version.js";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { toNodeHandler } from "better-auth/node";
 import cookieParser from "cookie-parser";
@@ -27,7 +28,7 @@ const specFile = join(__dirname, "../openapi/openapi.json");
 const oapiValidatorMiddleware = OpenApiValidator.middleware({
   apiSpec: specFile,
   validateRequests: true,
-  ignorePaths: /\/api\/(auth|argo|trpc|github|tfe|ui|healthz)/,
+  ignorePaths: /\/api\/(auth|argo|trpc|github|tfe|ui|healthz|version)/,
 });
 
 const trpcMiddleware = trpcExpress.createExpressMiddleware({
@@ -72,6 +73,7 @@ const app = express()
   .get("/api/healthz", (_, res) => {
     res.status(200).send({ status: "ok" });
   })
+  .get("/api/version", versionHandler)
 
   .use(oapiValidatorMiddleware)
 

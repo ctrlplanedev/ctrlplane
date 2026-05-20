@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 )
 
 // ----- Mocks -----
@@ -200,7 +201,10 @@ func TestDispatch_InvalidConfig_ReturnsError(t *testing.T) {
 	err := a.Dispatch(context.Background(), job)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse job agent config")
+	var rerr *reconcile.Error
+	require.ErrorAs(t, err, &rerr)
+	assert.Equal(t, ErrTypeInvalidJobAgentConfig, rerr.Type)
+	assert.True(t, rerr.NonRetryable)
 	assert.Empty(t, wf.getCalls(), "should not dispatch on invalid config")
 }
 

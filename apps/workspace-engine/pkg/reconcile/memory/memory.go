@@ -273,6 +273,30 @@ func (q *Queue) AckSuccess(
 	return reconcile.AckSuccessResult{Deleted: true}, nil
 }
 
+func (q *Queue) AckPermanentFailure(
+	ctx context.Context,
+	params reconcile.AckPermanentFailureParams,
+) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if params.WorkerID == "" {
+		return reconcile.ErrMissingWorkerID
+	}
+
+	q.backend.mu.Lock()
+	defer q.backend.mu.Unlock()
+
+	s, ok := q.backend.scopes[params.ItemID]
+	if !ok || s.ClaimedBy != params.WorkerID {
+		return reconcile.ErrClaimNotOwned
+	}
+
+	delete(q.backend.scopes, s.ID)
+	delete(q.backend.scopeIndex, makeScopeKey(s.WorkspaceID, s.Kind, s.ScopeType, s.ScopeID))
+	return nil
+}
+
 func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 	if err := ctx.Err(); err != nil {
 		return err

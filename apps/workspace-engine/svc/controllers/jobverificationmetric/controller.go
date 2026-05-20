@@ -80,6 +80,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		LeaseHeartbeat:  10 * time.Second,
 		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 30 * time.Second,
+		MaxAttempts:     20,
 	}
 
 	queue := postgres.NewForKinds(pgxPool, JobVerificationMetricKind)

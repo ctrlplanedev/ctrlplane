@@ -161,6 +161,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		LeaseHeartbeat:  5 * time.Second,
 		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
+		MaxAttempts:     20,
 	}
 	controller := &Controller{
 		getter:     &PostgresGetter{},

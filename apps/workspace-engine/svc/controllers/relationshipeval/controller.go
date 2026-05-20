@@ -203,6 +203,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		LeaseHeartbeat:  10 * time.Second,
 		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
+		MaxAttempts:     20,
 	}
 	controller := &Controller{
 		getter: &PostgresGetter{},

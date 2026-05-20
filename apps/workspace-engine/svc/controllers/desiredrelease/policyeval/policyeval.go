@@ -181,6 +181,54 @@ func FindDeployableVersion(
 	}, nil
 }
 
+// ListDeployableVersions iterates candidate versions and returns every version
+// that passes the full evaluator set for the given release target. Unlike
+// FindDeployableVersion it does not short-circuit on the first allowed version;
+// callers receive the complete eligible set in iteration order.
+func ListDeployableVersions(
+	ctx context.Context,
+	getter Getter,
+	rt *oapi.ReleaseTarget,
+	versions iter.Seq2[*oapi.DeploymentVersion, error],
+	evals []evaluator.Evaluator,
+	scope evaluator.EvaluatorScope,
+) ([]*oapi.DeploymentVersion, error) {
+	_, span := tracer.Start(ctx, "ListDeployableVersions")
+	defer span.End()
+
+	var eligible []*oapi.DeploymentVersion
+	var scanned int
+
+	for version, err := range versions {
+		if err != nil {
+			return nil, fmt.Errorf("iter candidate versions: %w", err)
+		}
+		scanned++
+		scope.Version = version
+
+		skips, err := getter.GetPolicySkips(ctx, version.Id, rt.EnvironmentId, rt.ResourceId)
+		if err != nil {
+			return nil, fmt.Errorf("get policy skips: %w", err)
+		}
+
+		evaluations, err := evaluateVersion(ctx, evals, scope, skips)
+		if err != nil {
+			return nil, fmt.Errorf("evaluate version: %w", err)
+		}
+
+		if evaluations.Allowed() {
+			eligible = append(eligible, version)
+		}
+	}
+
+	span.SetAttributes(
+		attribute.String("deployment.id", rt.DeploymentId),
+		attribute.Int("versions.scanned", scanned),
+		attribute.Int("versions.eligible", len(eligible)),
+	)
+	return eligible, nil
+}
+
 // buildSkipSet returns the set of rule IDs that have a non-expired policy skip.
 func buildSkipSet(skips []*oapi.PolicySkip) map[string]oapi.PolicySkip {
 	set := make(map[string]oapi.PolicySkip, len(skips))

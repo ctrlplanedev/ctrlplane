@@ -21,6 +21,7 @@
     "test:deployment-version-list": "pnpm exec playwright test --project=api-tests tests/api/deployment-version-list.spec.ts",
     "test:deployment-version-list:heavy": "RUN_HEAVY_TESTS=1 pnpm exec playwright test --project=api-tests tests/api/deployment-version-list.spec.ts",
     "test:release-targets": "pnpm exec playwright test tests/api/release-targets.spec.ts",
+    "test:release-target-eligible-versions": "pnpm exec playwright test --project=api-tests tests/api/release-target-eligible-versions.spec.ts",
     "test:yaml": "pnpm exec playwright test tests/api/yaml-import.spec.ts",
     "test:yaml-prefixed": "pnpm exec playwright test tests/api/random-prefix-yaml.spec.ts",
     "test:yaml-template": "pnpm exec playwright test tests/api/template-yaml.spec.ts",

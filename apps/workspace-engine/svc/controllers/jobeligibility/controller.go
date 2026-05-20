@@ -109,6 +109,7 @@ func New(
 		LeaseHeartbeat:  5 * time.Second,
 		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
+		MaxAttempts:     20,
 	}
 
 	ctx := context.Background()

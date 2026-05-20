@@ -236,6 +236,34 @@ const getReleaseTargetState: AsyncTypedHandler<
   res.status(200).json(data);
 };
 
+const listEligibleVersionsForReleaseTarget: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions",
+  "post"
+> = async (req, res) => {
+  const { workspaceId, releaseTargetKey } = req.params;
+  const { limit, offset } = req.query;
+  const { filter } = req.body;
+
+  const { data, error, response } = await getClientFor(workspaceId).POST(
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions",
+    {
+      params: {
+        path: { workspaceId, releaseTargetKey },
+        query: { limit, offset },
+      },
+      body: { filter },
+    },
+  );
+
+  if (error != null)
+    throw new ApiError(
+      error.error ?? "Failed to list eligible versions",
+      response.status >= 400 && response.status < 500 ? response.status : 502,
+    );
+
+  res.status(200).json(data);
+};
+
 const getReleaseTargetStates: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/release-targets/state",
   "post"
@@ -436,7 +464,11 @@ const previewReleaseTargetsForResource: AsyncTypedHandler<
 const releaseTargetKeyRouter = Router({ mergeParams: true })
   .get("/jobs", asyncHandler(getReleaseTargetJobs))
   .get("/desired-release", asyncHandler(getReleaseTargetDesiredRelease))
-  .get("/state", asyncHandler(getReleaseTargetState));
+  .get("/state", asyncHandler(getReleaseTargetState))
+  .post(
+    "/eligible-versions",
+    asyncHandler(listEligibleVersionsForReleaseTarget),
+  );
 
 export const releaseTargetsRouter = Router({ mergeParams: true })
   .post("/state", asyncHandler(getReleaseTargetStates))

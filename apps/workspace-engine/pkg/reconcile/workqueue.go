@@ -15,6 +15,7 @@ type Queue interface {
 	ExtendLease(ctx context.Context, params ExtendLeaseParams) error
 	AckSuccess(ctx context.Context, params AckSuccessParams) (AckSuccessResult, error)
 	Retry(ctx context.Context, params RetryParams) error
+	AckPermanentFailure(ctx context.Context, params AckPermanentFailureParams) error
 }
 
 // Result holds the outcome of processing a work item.
@@ -49,6 +50,7 @@ type NodeConfig struct {
 	LeaseHeartbeat  time.Duration
 	MaxConcurrency  int
 	MaxRetryBackoff time.Duration
+	MaxAttempts     int32
 	Hooks           Hooks
 }
 
@@ -78,6 +80,9 @@ func (c NodeConfig) Validate() error {
 	}
 	if c.MaxConcurrency <= 0 {
 		return ErrInvalidMaxConcurrency
+	}
+	if c.MaxAttempts < 0 {
+		return ErrInvalidMaxAttempts
 	}
 	return nil
 }
@@ -126,6 +131,16 @@ type RetryParams struct {
 	WorkerID     string
 	LastError    string
 	RetryBackoff time.Duration
+}
+
+// AckPermanentFailureParams describes a permanently-failed work item: a
+// non-retryable error returned by the processor, or an item that has exceeded
+// its retry attempt cap. The row is deleted; diagnostic state (error type,
+// message) is captured at the call site via the permanent_failures metric and
+// any preceding Retry-recorded last_error.
+type AckPermanentFailureParams struct {
+	ItemID   int64
+	WorkerID string
 }
 
 type Item struct {

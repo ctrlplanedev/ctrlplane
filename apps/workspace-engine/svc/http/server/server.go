@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/version"
 	"workspace-engine/svc/http/server/openapi"
 )
 
@@ -65,6 +66,7 @@ func (s *Server) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
 		"service": "workspace-engine",
+		"version": version.Version,
 	})
 }
 

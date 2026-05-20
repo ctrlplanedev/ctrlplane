@@ -7,6 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"workspace-engine/svc"
 )
 
@@ -26,6 +29,8 @@ type Worker struct {
 	processor Processor
 	cfg       NodeConfig
 
+	permanentFailures metric.Int64Counter
+
 	mu     sync.Mutex
 	cancel context.CancelFunc
 	done   chan error
@@ -44,11 +49,22 @@ func NewWorker(name string, queue Queue, processor Processor, cfg NodeConfig) (*
 	if name == "" {
 		name = "workqueue-worker"
 	}
+
+	pfCounter, err := otel.Meter("workspace-engine/reconcile").Int64Counter(
+		"reconcile.queue.permanent_failures",
+		metric.WithDescription("Work items moved to the permanent-failure path, by kind, error_type, and cause"),
+		metric.WithUnit("{items}"),
+	)
+	if err != nil {
+		slog.Warn("failed to create permanent_failures counter", "error", err)
+	}
+
 	return &Worker{
-		name:      name,
-		queue:     queue,
-		processor: processor,
-		cfg:       cfg,
+		name:              name,
+		queue:             queue,
+		processor:         processor,
+		cfg:               cfg,
+		permanentFailures: pfCounter,
 	}, nil
 }
 
@@ -220,9 +236,38 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 			item.ScopeType,
 			"scopeID",
 			item.ScopeID,
+			"errorType",
+			ErrorType(processErr),
 			"error",
 			processErr,
 		)
+
+		capHit := w.cfg.MaxAttempts > 0 && item.AttemptCount+1 >= w.cfg.MaxAttempts
+		if IsNonRetryable(processErr) || capHit {
+			permErr := w.queue.AckPermanentFailure(ctx, AckPermanentFailureParams{
+				ItemID:   item.ID,
+				WorkerID: w.cfg.WorkerID,
+			})
+			if permErr != nil {
+				if w.cfg.Hooks.OnDropped != nil {
+					w.cfg.Hooks.OnDropped(item, permErr)
+				}
+				return
+			}
+			if w.permanentFailures != nil {
+				cause := "non_retryable"
+				if capHit {
+					cause = "max_attempts"
+				}
+				w.permanentFailures.Add(ctx, 1, metric.WithAttributes(
+					attribute.String("kind", item.Kind),
+					attribute.String("error_type", ErrorType(processErr)),
+					attribute.String("cause", cause),
+				))
+			}
+			return
+		}
+
 		retryErr := w.queue.Retry(ctx, RetryParams{
 			ItemID:       item.ID,
 			WorkerID:     w.cfg.WorkerID,

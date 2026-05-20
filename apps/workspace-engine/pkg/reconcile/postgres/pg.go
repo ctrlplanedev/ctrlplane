@@ -370,6 +370,30 @@ func (q *Queue) CleanupExpiredClaims(ctx context.Context) (int64, error) {
 	return total, nil
 }
 
+func (q *Queue) AckPermanentFailure(
+	ctx context.Context,
+	params reconcile.AckPermanentFailureParams,
+) error {
+	if params.WorkerID == "" {
+		return reconcile.ErrMissingWorkerID
+	}
+
+	result, err := q.queries.AckPermanentlyFailedReconcileWorkItem(
+		ctx,
+		sqldb.AckPermanentlyFailedReconcileWorkItemParams{
+			ID:        params.ItemID,
+			ClaimedBy: pgtype.Text{String: params.WorkerID, Valid: true},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("ack permanent failure: %w", err)
+	}
+	if !result.Owned {
+		return reconcile.ErrClaimNotOwned
+	}
+	return nil
+}
+
 func (q *Queue) Retry(ctx context.Context, params reconcile.RetryParams) error {
 	if params.WorkerID == "" {
 		return reconcile.ErrMissingWorkerID

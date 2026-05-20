@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 	"workspace-engine/pkg/templatefuncs"
 )
 
@@ -102,17 +103,20 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 	dispatchCtx := job.DispatchContext
 	if dispatchCtx == nil {
-		return fmt.Errorf("job %s has no dispatch context", job.Id)
+		return reconcile.NonRetryable(
+			ErrTypeMissingDispatchContext,
+			fmt.Errorf("job %s has no dispatch context", job.Id),
+		)
 	}
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := ParseJobAgentConfig(jobAgentConfig)
 	if err != nil {
-		return fmt.Errorf("failed to parse job agent config: %w", err)
+		return reconcile.NonRetryable(ErrTypeInvalidJobAgentConfig, err)
 	}
 
 	app, err := TemplateApplication(dispatchCtx, template)
 	if err != nil {
-		return fmt.Errorf("failed to generate application from template: %w", err)
+		return reconcile.NonRetryable(ErrTypeTemplateRender, err)
 	}
 
 	MakeApplicationK8sCompatible(app)

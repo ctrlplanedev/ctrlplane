@@ -1563,6 +1563,21 @@ type ListDeploymentsParams struct {
 	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
+// ListEligibleVersionsForReleaseTargetJSONBody defines parameters for ListEligibleVersionsForReleaseTarget.
+type ListEligibleVersionsForReleaseTargetJSONBody struct {
+	// Filter CEL expression to filter eligible versions. Defaults to "true" (all eligible versions).
+	Filter *string `json:"filter,omitempty"`
+}
+
+// ListEligibleVersionsForReleaseTargetParams defines parameters for ListEligibleVersionsForReleaseTarget.
+type ListEligibleVersionsForReleaseTargetParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ComputeAggergateJSONBody defines parameters for ComputeAggergate.
 type ComputeAggergateJSONBody struct {
 	// Filter CEL expression to filter resources. Defaults to "true" (all resources).
@@ -1599,6 +1614,9 @@ type CreateWorkflowRunJSONBody struct {
 
 // ValidateResourceSelectorJSONRequestBody defines body for ValidateResourceSelector for application/json ContentType.
 type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
+
+// ListEligibleVersionsForReleaseTargetJSONRequestBody defines body for ListEligibleVersionsForReleaseTarget for application/json ContentType.
+type ListEligibleVersionsForReleaseTargetJSONRequestBody ListEligibleVersionsForReleaseTargetJSONBody
 
 // ComputeAggergateJSONRequestBody defines body for ComputeAggergate for application/json ContentType.
 type ComputeAggergateJSONRequestBody ComputeAggergateJSONBody
@@ -2562,6 +2580,9 @@ type ServerInterface interface {
 	// List deployments
 	// (GET /v1/workspaces/{workspaceId}/deployments)
 	ListDeployments(c *gin.Context, workspaceId string, params ListDeploymentsParams)
+	// List versions eligible for a release target
+	// (POST /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions)
+	ListEligibleVersionsForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string, params ListEligibleVersionsForReleaseTargetParams)
 	// Get the state of a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state)
 	GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string)
@@ -2719,6 +2740,58 @@ func (siw *ServerInterfaceWrapper) ListDeployments(c *gin.Context) {
 	}
 
 	siw.Handler.ListDeployments(c, workspaceId, params)
+}
+
+// ListEligibleVersionsForReleaseTarget operation middleware
+func (siw *ServerInterfaceWrapper) ListEligibleVersionsForReleaseTarget(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEligibleVersionsForReleaseTargetParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListEligibleVersionsForReleaseTarget(c, workspaceId, releaseTargetKey, params)
 }
 
 // GetReleaseTargetState operation middleware
@@ -2886,6 +2959,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/jobs/:jobId/verification-status", wrapper.GetJobVerificationStatus)
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/eligible-versions", wrapper.ListEligibleVersionsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/state", wrapper.GetReleaseTargetState)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/aggregates", wrapper.ComputeAggergate)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
