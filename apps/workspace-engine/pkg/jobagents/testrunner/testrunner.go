@@ -8,6 +8,7 @@ import (
 
 	"workspace-engine/pkg/jobagents/types"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 )
 
 var _ types.Dispatchable = &TestRunner{}
@@ -42,7 +43,7 @@ func (t *TestRunner) Type() string {
 func (t *TestRunner) Dispatch(ctx context.Context, job *oapi.Job) error {
 	cfg, err := job.GetTestRunnerJobAgentConfig()
 	if err != nil {
-		return err
+		return reconcile.NonRetryable(ErrTypeInvalidJobAgentConfig, err)
 	}
 
 	delay := t.getDelay(cfg)

@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	argo_workflows "workspace-engine/pkg/jobagents/argoworkflows"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/reconcile"
 )
 
 // ----- Mocks -----
@@ -259,7 +260,10 @@ func TestDispatch_InvalidConfig_ReturnsError(t *testing.T) {
 	err := a.Dispatch(context.Background(), job)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse job agent config")
+	var rerr *reconcile.Error
+	require.ErrorAs(t, err, &rerr)
+	assert.Equal(t, argo_workflows.ErrTypeInvalidJobAgentConfig, rerr.Type)
+	assert.True(t, rerr.NonRetryable)
 	assert.Empty(t, sub.getCalls())
 }
 

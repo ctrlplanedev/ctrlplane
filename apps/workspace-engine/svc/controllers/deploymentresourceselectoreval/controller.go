@@ -150,6 +150,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 		LeaseHeartbeat:  5 * time.Second,
 		MaxConcurrency:  maxConcurrency,
 		MaxRetryBackoff: 10 * time.Second,
+		MaxAttempts:     20,
 	}
 	queue := postgres.NewForKinds(pgxPool, kind)
 	ctx := context.Background()

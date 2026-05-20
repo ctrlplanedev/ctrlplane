@@ -12,6 +12,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const ackPermanentlyFailedReconcileWorkItem = `-- name: AckPermanentlyFailedReconcileWorkItem :one
+WITH target_scope AS (
+  SELECT s.id
+  FROM reconcile_work_scope AS s
+  WHERE s.id = $1
+    AND s.claimed_by = $2
+), deleted_scope AS (
+  DELETE FROM reconcile_work_scope AS s
+  USING target_scope AS t
+  WHERE s.id = t.id
+  RETURNING s.id
+)
+SELECT
+  EXISTS (SELECT 1 FROM target_scope) AS owned,
+  EXISTS (SELECT 1 FROM deleted_scope) AS deleted
+`
+
+type AckPermanentlyFailedReconcileWorkItemParams struct {
+	ID        int64
+	ClaimedBy pgtype.Text
+}
+
+type AckPermanentlyFailedReconcileWorkItemRow struct {
+	Owned   bool
+	Deleted bool
+}
+
+// Delete a permanently-failed work item owned by the caller. Diagnostic state
+// for the failure is captured via the reconcile.queue.permanent_failures
+// counter (tagged by kind / error_type / cause) — durable per-item diagnostics
+// will live in a future dead-letter table; for now the row is removed so it
+// stops cycling through the queue.
+func (q *Queries) AckPermanentlyFailedReconcileWorkItem(ctx context.Context, arg AckPermanentlyFailedReconcileWorkItemParams) (AckPermanentlyFailedReconcileWorkItemRow, error) {
+	row := q.db.QueryRow(ctx, ackPermanentlyFailedReconcileWorkItem, arg.ID, arg.ClaimedBy)
+	var i AckPermanentlyFailedReconcileWorkItemRow
+	err := row.Scan(&i.Owned, &i.Deleted)
+	return i, err
+}
+
 const batchUpsertReconcileWorkScopes = `-- name: BatchUpsertReconcileWorkScopes :exec
 INSERT INTO reconcile_work_scope (
   workspace_id, kind, scope_type, scope_id, event_ts, priority, not_before,

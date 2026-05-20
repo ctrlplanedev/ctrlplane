@@ -100,6 +100,13 @@ func (m *mockQueue) AckSuccess(
 }
 func (m *mockQueue) Retry(context.Context, reconcile.RetryParams) error { return nil }
 
+func (m *mockQueue) AckPermanentFailure(
+	context.Context,
+	reconcile.AckPermanentFailureParams,
+) error {
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
