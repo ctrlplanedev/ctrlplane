@@ -81,6 +81,9 @@ func (c NodeConfig) Validate() error {
 	if c.MaxConcurrency <= 0 {
 		return ErrInvalidMaxConcurrency
 	}
+	if c.MaxAttempts < 0 {
+		return ErrInvalidMaxAttempts
+	}
 	return nil
 }
 
@@ -130,11 +133,14 @@ type RetryParams struct {
 	RetryBackoff time.Duration
 }
 
+// AckPermanentFailureParams describes a permanently-failed work item: a
+// non-retryable error returned by the processor, or an item that has exceeded
+// its retry attempt cap. The row is deleted; diagnostic state (error type,
+// message) is captured at the call site via the permanent_failures metric and
+// any preceding Retry-recorded last_error.
 type AckPermanentFailureParams struct {
-	ItemID    int64
-	WorkerID  string
-	ErrorType string
-	LastError string
+	ItemID   int64
+	WorkerID string
 }
 
 type Item struct {

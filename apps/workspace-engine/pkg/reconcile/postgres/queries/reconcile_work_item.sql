@@ -173,9 +173,10 @@ FROM expired AS e
 WHERE s.id = e.id;
 
 -- name: AckPermanentlyFailedReconcileWorkItem :one
--- Delete a permanently-failed work item owned by the caller. The Type and
--- LastError are recorded on the row's final state implicitly via prior retry
--- updates (caller has already observed them); we just remove the row so it
+-- Delete a permanently-failed work item owned by the caller. Diagnostic state
+-- for the failure is captured via the reconcile.queue.permanent_failures
+-- counter (tagged by kind / error_type / cause) — durable per-item diagnostics
+-- will live in a future dead-letter table; for now the row is removed so it
 -- stops cycling through the queue.
 WITH target_scope AS (
   SELECT s.id

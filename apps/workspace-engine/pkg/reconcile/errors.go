@@ -17,7 +17,10 @@ var (
 	)
 	ErrInvalidMaxConcurrency = errors.New("workqueue: max concurrency must be positive")
 	ErrInvalidRetryBackoff   = errors.New("workqueue: retry backoff must be positive")
-	ErrClaimNotOwned         = errors.New("workqueue: item is not currently claimed by worker")
+	ErrInvalidMaxAttempts    = errors.New(
+		"workqueue: max attempts must be non-negative (0 means uncapped)",
+	)
+	ErrClaimNotOwned = errors.New("workqueue: item is not currently claimed by worker")
 )
 
 // Error is the typed error contract returned by processors. The dispatcher
@@ -25,8 +28,10 @@ var (
 // reads NonRetryable to decide whether to retry or permanently fail the item.
 //
 // Type is an opaque string chosen by the emitting package (e.g.
-// "argo.TemplateRenderError"). It is recorded on the work item for diagnostics
-// and surfaced to dashboards/alerts.
+// "argo.TemplateRenderError"). It is used as the error_type attribute on the
+// reconcile.queue.permanent_failures counter, and is embedded into last_error
+// (via Error.Error()) on Retry, but is not durably persisted once an item is
+// permanently failed (the row is deleted).
 type Error struct {
 	Type         string
 	NonRetryable bool

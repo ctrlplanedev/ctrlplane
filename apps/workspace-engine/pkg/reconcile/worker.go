@@ -245,10 +245,8 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 		capHit := w.cfg.MaxAttempts > 0 && item.AttemptCount+1 >= w.cfg.MaxAttempts
 		if IsNonRetryable(processErr) || capHit {
 			permErr := w.queue.AckPermanentFailure(ctx, AckPermanentFailureParams{
-				ItemID:    item.ID,
-				WorkerID:  w.cfg.WorkerID,
-				ErrorType: ErrorType(processErr),
-				LastError: processErr.Error(),
+				ItemID:   item.ID,
+				WorkerID: w.cfg.WorkerID,
 			})
 			if permErr != nil {
 				if w.cfg.Hooks.OnDropped != nil {

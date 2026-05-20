@@ -40,6 +40,11 @@ func (t *TFE) Type() string {
 
 func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatchCtx := job.DispatchContext
+	if dispatchCtx == nil {
+		err := fmt.Errorf("job %s has no dispatch context", job.Id)
+		t.updateJobStatus(ctx, job.Id, oapi.JobStatusFailure, err.Error(), nil)
+		return reconcile.NonRetryable(ErrTypeMissingDispatchContext, err)
+	}
 	cfg, err := parseJobAgentConfig(dispatchCtx.JobAgentConfig)
 	if err != nil {
 		t.updateJobStatus(ctx, job.Id, oapi.JobStatusFailure,

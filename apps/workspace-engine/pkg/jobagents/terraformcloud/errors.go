@@ -1,6 +1,7 @@
 package terraformcloud
 
 const (
-	ErrTypeInvalidJobAgentConfig = "terraformcloud.InvalidJobAgentConfig"
-	ErrTypeTemplateRender        = "terraformcloud.TemplateRenderError"
+	ErrTypeMissingDispatchContext = "terraformcloud.MissingDispatchContext"
+	ErrTypeInvalidJobAgentConfig  = "terraformcloud.InvalidJobAgentConfig"
+	ErrTypeTemplateRender         = "terraformcloud.TemplateRenderError"
 )

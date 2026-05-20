@@ -14,14 +14,17 @@ type fakeQueue struct {
 	extendFn     func(context.Context, ExtendLeaseParams) error
 	ackFn        func(context.Context, AckSuccessParams) (AckSuccessResult, error)
 	retryFn      func(context.Context, RetryParams) error
+	ackPermFn    func(context.Context, AckPermanentFailureParams) error
 	claimCalls   atomic.Int64
 	extendCalls  atomic.Int64
 	ackCalls     atomic.Int64
 	retryCalls   atomic.Int64
+	ackPermCalls atomic.Int64
 	lastClaim    ClaimParams
 	lastRetry    RetryParams
 	lastAck      AckSuccessParams
 	lastExtend   ExtendLeaseParams
+	lastAckPerm  AckPermanentFailureParams
 	lastClaimMux sync.Mutex
 }
 
@@ -76,6 +79,13 @@ func (f *fakeQueue) AckPermanentFailure(
 	ctx context.Context,
 	params AckPermanentFailureParams,
 ) error {
+	f.ackPermCalls.Add(1)
+	f.lastClaimMux.Lock()
+	f.lastAckPerm = params
+	f.lastClaimMux.Unlock()
+	if f.ackPermFn != nil {
+		return f.ackPermFn(ctx, params)
+	}
 	return nil
 }
 
@@ -420,6 +430,76 @@ func TestProcessClaimedItemBranches(t *testing.T) {
 		w.processClaimedItem(context.Background(), item)
 		if dropped.Load() != 1 {
 			t.Fatalf("expected dropped hook once, got %d", dropped.Load())
+		}
+	})
+
+	t.Run("non-retryable error permanent-fails", func(t *testing.T) {
+		cfg4 := cfg
+		q := &fakeQueue{}
+		w, _ := NewWorker(
+			"workqueue-worker",
+			q,
+			fakeProcessor{
+				fn: func(context.Context, Item) (Result, error) {
+					return Result{}, NonRetryable("test.PermanentError", errors.New("boom"))
+				},
+			},
+			cfg4,
+		)
+		w.processClaimedItem(context.Background(), item)
+		if q.ackPermCalls.Load() != 1 {
+			t.Fatalf("expected AckPermanentFailure called once, got %d", q.ackPermCalls.Load())
+		}
+		if q.retryCalls.Load() != 0 {
+			t.Fatalf("expected Retry NOT called, got %d", q.retryCalls.Load())
+		}
+	})
+
+	t.Run("attempt cap permanent-fails", func(t *testing.T) {
+		cfg5 := cfg
+		cfg5.MaxAttempts = 3
+		q := &fakeQueue{}
+		w, _ := NewWorker(
+			"workqueue-worker",
+			q,
+			fakeProcessor{
+				fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("fail") },
+			},
+			cfg5,
+		)
+		w.processClaimedItem(
+			context.Background(),
+			Item{ID: 8, AttemptCount: 2, UpdatedAt: time.Now()},
+		)
+		if q.ackPermCalls.Load() != 1 {
+			t.Fatalf("expected AckPermanentFailure called once, got %d", q.ackPermCalls.Load())
+		}
+		if q.retryCalls.Load() != 0 {
+			t.Fatalf("expected Retry NOT called, got %d", q.retryCalls.Load())
+		}
+	})
+
+	t.Run("untyped error under cap retries", func(t *testing.T) {
+		cfg6 := cfg
+		cfg6.MaxAttempts = 20
+		q := &fakeQueue{}
+		w, _ := NewWorker(
+			"workqueue-worker",
+			q,
+			fakeProcessor{
+				fn: func(context.Context, Item) (Result, error) { return Result{}, errors.New("transient") },
+			},
+			cfg6,
+		)
+		w.processClaimedItem(
+			context.Background(),
+			Item{ID: 9, AttemptCount: 1, UpdatedAt: time.Now()},
+		)
+		if q.retryCalls.Load() != 1 {
+			t.Fatalf("expected Retry called once, got %d", q.retryCalls.Load())
+		}
+		if q.ackPermCalls.Load() != 0 {
+			t.Fatalf("expected AckPermanentFailure NOT called, got %d", q.ackPermCalls.Load())
 		}
 	})
 }
