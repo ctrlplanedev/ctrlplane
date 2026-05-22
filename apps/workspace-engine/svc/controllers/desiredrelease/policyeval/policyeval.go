@@ -182,9 +182,9 @@ func FindDeployableVersion(
 }
 
 // FilterEvaluatorsByRuleID returns evaluators whose RuleId is not in excludeIDs.
-// When excludeIDs is empty, the input slice is returned unchanged. The returned
-// slice does not share backing storage with the input, so the caller can use it
-// without worrying about hidden mutation.
+// The function never mutates the input slice. When excludeIDs is empty the
+// input is returned as-is (shared backing storage); otherwise a freshly
+// allocated slice is returned.
 func FilterEvaluatorsByRuleID(
 	evals []evaluator.Evaluator,
 	excludeIDs []string,
