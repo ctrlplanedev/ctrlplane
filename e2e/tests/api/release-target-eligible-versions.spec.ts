@@ -211,6 +211,71 @@ test.describe("Release Target Eligible Versions API", () => {
     }
   });
 
+  test("excludeRuleIds bypasses a versionSelector pin, returning all versions", async ({
+    api,
+    workspace,
+  }) => {
+    await insertVersions(workspace.id, [
+      { tag: "v1.0.0" },
+      { tag: "v1.1.0" },
+      { tag: "v2.0.0" },
+    ]);
+
+    const policyRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/policies",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `evt-pin-${faker.string.alphanumeric(8)}`,
+          selector: "true",
+          rules: [
+            {
+              versionSelector: {
+                selector: 'version.tag == "v2.0.0"',
+                description: "pin to v2.0.0",
+              },
+            },
+          ],
+        },
+      },
+    );
+    expect(policyRes.response.status).toBe(202);
+    const policyId = policyRes.data!.id;
+    const ruleId = policyRes.data!.rules[0]!.id;
+
+    try {
+      const pinned = await api.POST(
+        "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions",
+        {
+          params: { path: { workspaceId: workspace.id, releaseTargetKey } },
+          body: {},
+        },
+      );
+      expect(pinned.response.status).toBe(200);
+      expect(pinned.data!.total).toBe(1);
+      expect(pinned.data!.items.map((v) => v.tag)).toEqual(["v2.0.0"]);
+
+      const unpinned = await api.POST(
+        "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions",
+        {
+          params: { path: { workspaceId: workspace.id, releaseTargetKey } },
+          body: { excludeRuleIds: [ruleId] },
+        },
+      );
+      expect(unpinned.response.status).toBe(200);
+      expect(unpinned.data!.total).toBe(3);
+      expect(unpinned.data!.items.map((v) => v.tag).sort()).toEqual([
+        "v1.0.0",
+        "v1.1.0",
+        "v2.0.0",
+      ]);
+    } finally {
+      await api.DELETE("/v1/workspaces/{workspaceId}/policies/{policyId}", {
+        params: { path: { workspaceId: workspace.id, policyId } },
+      });
+    }
+  });
+
   test("CEL filter narrows the eligible set", async ({ api, workspace }) => {
     await insertVersions(workspace.id, [
       { tag: "v1.0.0" },

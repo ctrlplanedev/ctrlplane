@@ -1111,6 +1111,82 @@ func TestListDeployableVersions(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// FilterEvaluatorsByRuleID tests
+// ---------------------------------------------------------------------------
+
+func TestFilterEvaluatorsByRuleID(t *testing.T) {
+	ruleIDs := func(evals []evaluator.Evaluator) []string {
+		ids := make([]string, len(evals))
+		for i, e := range evals {
+			ids[i] = e.RuleId()
+		}
+		return ids
+	}
+
+	build := func(ids ...string) []evaluator.Evaluator {
+		out := make([]evaluator.Evaluator, len(ids))
+		for i, id := range ids {
+			out[i] = &mockEvaluator{ruleID: id}
+		}
+		return out
+	}
+
+	t.Run("nil exclude list returns input unchanged", func(t *testing.T) {
+		evals := build("rule-1", "rule-2")
+		got := FilterEvaluatorsByRuleID(evals, nil)
+		assert.Equal(t, []string{"rule-1", "rule-2"}, ruleIDs(got))
+	})
+
+	t.Run("empty exclude list returns input unchanged", func(t *testing.T) {
+		evals := build("rule-1", "rule-2")
+		got := FilterEvaluatorsByRuleID(evals, []string{})
+		assert.Equal(t, []string{"rule-1", "rule-2"}, ruleIDs(got))
+	})
+
+	t.Run("no matches returns input unchanged", func(t *testing.T) {
+		evals := build("rule-1", "rule-2")
+		got := FilterEvaluatorsByRuleID(evals, []string{"rule-x", "rule-y"})
+		assert.Equal(t, []string{"rule-1", "rule-2"}, ruleIDs(got))
+	})
+
+	t.Run("drops a single matching evaluator", func(t *testing.T) {
+		evals := build("rule-1", "rule-2", "rule-3")
+		got := FilterEvaluatorsByRuleID(evals, []string{"rule-2"})
+		assert.Equal(t, []string{"rule-1", "rule-3"}, ruleIDs(got))
+	})
+
+	t.Run("drops multiple matching evaluators preserving order", func(t *testing.T) {
+		evals := build("a", "b", "c", "d", "e")
+		got := FilterEvaluatorsByRuleID(evals, []string{"b", "d"})
+		assert.Equal(t, []string{"a", "c", "e"}, ruleIDs(got))
+	})
+
+	t.Run("when every evaluator matches, returns empty", func(t *testing.T) {
+		evals := build("rule-1", "rule-2")
+		got := FilterEvaluatorsByRuleID(evals, []string{"rule-1", "rule-2"})
+		assert.Empty(t, got)
+	})
+
+	t.Run("duplicate exclude IDs are no-ops", func(t *testing.T) {
+		evals := build("rule-1", "rule-2", "rule-3")
+		got := FilterEvaluatorsByRuleID(evals, []string{"rule-2", "rule-2", "rule-2"})
+		assert.Equal(t, []string{"rule-1", "rule-3"}, ruleIDs(got))
+	})
+
+	t.Run("empty evaluator input returns empty regardless of exclude list", func(t *testing.T) {
+		got := FilterEvaluatorsByRuleID(nil, []string{"rule-1"})
+		assert.Empty(t, got)
+	})
+
+	t.Run("does not mutate the input slice", func(t *testing.T) {
+		evals := build("rule-1", "rule-2", "rule-3")
+		_ = FilterEvaluatorsByRuleID(evals, []string{"rule-2"})
+		assert.Equal(t, []string{"rule-1", "rule-2", "rule-3"}, ruleIDs(evals),
+			"caller-owned slice must be left intact for safe reuse")
+	})
+}
+
+// ---------------------------------------------------------------------------
 // Conditional evaluator (version-dependent mock)
 // ---------------------------------------------------------------------------
 
