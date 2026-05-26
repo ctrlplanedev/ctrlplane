@@ -375,6 +375,74 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 	}
 }
 
+// Regression: AckSuccess must delete the row even when a heartbeat has
+// advanced updated_at past the claim snapshot. A previous version of the
+// DELETE required updated_at <= claim time, which silently broke Ack for any
+// item whose Process exceeded one heartbeat tick.
+func TestQueue_AckSucceedsAfterHeartbeat(t *testing.T) {
+	pool := requireDB(t)
+	queue := New(pool)
+	workspaceID := uuid.NewString()
+	t.Cleanup(func() { cleanupWorkspaceItems(t, pool, workspaceID) })
+
+	ctx := context.Background()
+
+	err := queue.Enqueue(ctx, reconcile.EnqueueParams{
+		WorkspaceID: workspaceID,
+		Kind:        "deploymentresourceselectoreval",
+		ScopeType:   "deployment",
+		ScopeID:     uuid.NewString(),
+		NotBefore:   time.Now().Add(-1 * time.Second),
+	})
+	if err != nil {
+		t.Fatalf("enqueue failed: %v", err)
+	}
+
+	items, err := queue.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     1,
+		WorkerID:      "worker-a",
+		LeaseDuration: 5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("claim failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 claimed item, got %d", len(items))
+	}
+	item := items[0]
+
+	if err := queue.ExtendLease(ctx, reconcile.ExtendLeaseParams{
+		ItemID:        item.ID,
+		WorkerID:      "worker-a",
+		LeaseDuration: 5 * time.Second,
+	}); err != nil {
+		t.Fatalf("extend lease failed: %v", err)
+	}
+
+	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
+		ItemID:   item.ID,
+		WorkerID: "worker-a",
+	})
+	if err != nil {
+		t.Fatalf("ack failed after heartbeat: %v", err)
+	}
+	if !ack.Deleted {
+		t.Fatalf("expected Deleted=true after heartbeat, got %+v", ack)
+	}
+
+	claimedAgain, err := queue.Claim(ctx, reconcile.ClaimParams{
+		BatchSize:     1,
+		WorkerID:      "worker-a",
+		LeaseDuration: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("re-claim failed: %v", err)
+	}
+	if len(claimedAgain) != 0 {
+		t.Fatalf("expected queue empty after ack, got %d items", len(claimedAgain))
+	}
+}
+
 func TestQueue_FilteredClaimAndRetry(t *testing.T) {
 	pool := requireDB(t)
 	workspaceID := uuid.NewString()
