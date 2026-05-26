@@ -352,9 +352,8 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 	}
 
 	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-		ItemID:           item.ID,
-		WorkerID:         "worker-a",
-		ClaimedUpdatedAt: item.UpdatedAt,
+		ItemID:   item.ID,
+		WorkerID: "worker-a",
 	})
 	if err != nil {
 		t.Fatalf("ack failed: %v", err)
@@ -577,9 +576,8 @@ func TestQueue_ValidationAndOwnershipErrors(t *testing.T) {
 		t.Fatalf("expected ErrMissingWorkerID, got %v", err)
 	}
 	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-		ItemID:           123456,
-		WorkerID:         "w",
-		ClaimedUpdatedAt: time.Now(),
+		ItemID:   123456,
+		WorkerID: "w",
 	}); !errors.Is(err, reconcile.ErrClaimNotOwned) {
 		t.Fatalf("expected ErrClaimNotOwned for unknown ack item, got %v", err)
 	}
@@ -643,9 +641,8 @@ func TestQueue_DatabaseErrorPaths(t *testing.T) {
 	}
 
 	if _, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-		ItemID:           1,
-		WorkerID:         "w",
-		ClaimedUpdatedAt: time.Now(),
+		ItemID:   1,
+		WorkerID: "w",
 	}); err == nil {
 		t.Fatal("expected ack db error on closed pool")
 	}
@@ -737,9 +734,8 @@ func TestQueue_ClaimAndAck(t *testing.T) {
 	}
 
 	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-		ItemID:           items[0].ID,
-		WorkerID:         "worker-a",
-		ClaimedUpdatedAt: items[0].UpdatedAt,
+		ItemID:   items[0].ID,
+		WorkerID: "worker-a",
 	})
 	if err != nil {
 		t.Fatalf("ack item failed: %v", err)

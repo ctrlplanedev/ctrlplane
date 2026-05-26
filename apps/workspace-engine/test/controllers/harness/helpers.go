@@ -73,9 +73,8 @@ func DrainQueue(
 			}
 
 			_, _ = queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-				ItemID:           item.ID,
-				WorkerID:         testWorkerID,
-				ClaimedUpdatedAt: item.UpdatedAt,
+				ItemID:   item.ID,
+				WorkerID: testWorkerID,
 			})
 			res.Processed++
 		}

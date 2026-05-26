@@ -334,7 +334,6 @@ WITH target_scope AS (
   DELETE FROM reconcile_work_scope AS s
   USING target_scope AS t
   WHERE s.id = t.id
-    AND s.updated_at <= $3
   RETURNING s.id
 )
 SELECT
@@ -345,7 +344,6 @@ SELECT
 type DeleteClaimedReconcileWorkItemParams struct {
 	ID        int64
 	ClaimedBy pgtype.Text
-	UpdatedAt pgtype.Timestamptz
 }
 
 type DeleteClaimedReconcileWorkItemRow struct {
@@ -353,10 +351,13 @@ type DeleteClaimedReconcileWorkItemRow struct {
 	Deleted bool
 }
 
-// Delete the scope row if it is still owned by the caller and unchanged since
-// the claim snapshot. Returns ownership and deletion status.
+// Delete the scope row if it is still owned by the caller. Ownership is
+// the only invariant we check; a prior version also required updated_at to
+// match the claim snapshot, but our own lease heartbeat advances updated_at
+// mid-processing, so that guard silently broke deletion for any item whose
+// processing exceeded one heartbeat tick.
 func (q *Queries) DeleteClaimedReconcileWorkItem(ctx context.Context, arg DeleteClaimedReconcileWorkItemParams) (DeleteClaimedReconcileWorkItemRow, error) {
-	row := q.db.QueryRow(ctx, deleteClaimedReconcileWorkItem, arg.ID, arg.ClaimedBy, arg.UpdatedAt)
+	row := q.db.QueryRow(ctx, deleteClaimedReconcileWorkItem, arg.ID, arg.ClaimedBy)
 	var i DeleteClaimedReconcileWorkItemRow
 	err := row.Scan(&i.Owned, &i.Deleted)
 	return i, err

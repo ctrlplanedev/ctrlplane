@@ -126,8 +126,11 @@ WHERE id = sqlc.arg(id)
   AND claimed_by = sqlc.arg(claimed_by);
 
 -- name: DeleteClaimedReconcileWorkItem :one
--- Delete the scope row if it is still owned by the caller and unchanged since
--- the claim snapshot. Returns ownership and deletion status.
+-- Delete the scope row if it is still owned by the caller. Ownership is
+-- the only invariant we check; a prior version also required updated_at to
+-- match the claim snapshot, but our own lease heartbeat advances updated_at
+-- mid-processing, so that guard silently broke deletion for any item whose
+-- processing exceeded one heartbeat tick.
 WITH target_scope AS (
   SELECT s.id
   FROM reconcile_work_scope AS s
@@ -137,7 +140,6 @@ WITH target_scope AS (
   DELETE FROM reconcile_work_scope AS s
   USING target_scope AS t
   WHERE s.id = t.id
-    AND s.updated_at <= sqlc.arg(updated_at)
   RETURNING s.id
 )
 SELECT

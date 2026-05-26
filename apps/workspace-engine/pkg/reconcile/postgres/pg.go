@@ -341,7 +341,6 @@ func (q *Queue) AckSuccess(
 		sqldb.DeleteClaimedReconcileWorkItemParams{
 			ID:        params.ItemID,
 			ClaimedBy: pgtype.Text{String: params.WorkerID, Valid: true},
-			UpdatedAt: pgtype.Timestamptz{Time: params.ClaimedUpdatedAt, Valid: true},
 		},
 	)
 	if err != nil {
