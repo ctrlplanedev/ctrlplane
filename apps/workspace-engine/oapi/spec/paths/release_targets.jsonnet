@@ -61,6 +61,11 @@ local openapi = import '../lib/openapi.libsonnet';
                   type: 'string',
                   description: 'CEL expression to filter eligible versions. Defaults to "true" (all eligible versions).',
                 },
+                excludeRuleIds: {
+                  type: 'array',
+                  items: { type: 'string', format: 'uuid' },
+                  description: 'Policy rule IDs to skip during evaluation. Useful when a caller wants to ignore a specific constraint (for example, a versionSelector pin) while still respecting every other rule.',
+                },
               },
             },
           },

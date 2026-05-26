@@ -142,7 +142,19 @@ func (rt *ReleaseTargets) ListEligibleVersionsForReleaseTarget(
 		return
 	}
 
-	evals := policyeval.CollectEvaluators(ctx, getter, oapiRT, rtPolicies)
+	var excludeRuleIDs []string
+	if body.ExcludeRuleIds != nil {
+		excludeRuleIDs = make([]string, len(*body.ExcludeRuleIds))
+		for i, id := range *body.ExcludeRuleIds {
+			excludeRuleIDs[i] = id.String()
+		}
+	}
+
+	evals := policyeval.FilterEvaluatorsByRuleID(
+		policyeval.CollectEvaluators(ctx, getter, oapiRT, rtPolicies),
+		excludeRuleIDs,
+	)
+
 	versions := filterVersionsByCEL(
 		getter.IterCandidateVersions(ctx, drt.DeploymentID, nil, nil),
 		prg,

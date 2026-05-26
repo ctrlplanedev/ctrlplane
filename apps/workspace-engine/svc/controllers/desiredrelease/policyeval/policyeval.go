@@ -181,6 +181,30 @@ func FindDeployableVersion(
 	}, nil
 }
 
+// FilterEvaluatorsByRuleID returns evaluators whose RuleId is not in excludeIDs.
+// The function never mutates the input slice. When excludeIDs is empty the
+// input is returned as-is (shared backing storage); otherwise a freshly
+// allocated slice is returned.
+func FilterEvaluatorsByRuleID(
+	evals []evaluator.Evaluator,
+	excludeIDs []string,
+) []evaluator.Evaluator {
+	if len(excludeIDs) == 0 {
+		return evals
+	}
+	excludeSet := make(map[string]struct{}, len(excludeIDs))
+	for _, id := range excludeIDs {
+		excludeSet[id] = struct{}{}
+	}
+	kept := make([]evaluator.Evaluator, 0, len(evals))
+	for _, e := range evals {
+		if _, skip := excludeSet[e.RuleId()]; !skip {
+			kept = append(kept, e)
+		}
+	}
+	return kept
+}
+
 // ListDeployableVersions iterates candidate versions and returns every version
 // that passes the full evaluator set for the given release target. Unlike
 // FindDeployableVersion it does not short-circuit on the first allowed version;

@@ -1565,6 +1565,9 @@ type ListDeploymentsParams struct {
 
 // ListEligibleVersionsForReleaseTargetJSONBody defines parameters for ListEligibleVersionsForReleaseTarget.
 type ListEligibleVersionsForReleaseTargetJSONBody struct {
+	// ExcludeRuleIds Policy rule IDs to skip during evaluation. Useful when a caller wants to ignore a specific constraint (for example, a versionSelector pin) while still respecting every other rule.
+	ExcludeRuleIds *[]openapi_types.UUID `json:"excludeRuleIds,omitempty"`
+
 	// Filter CEL expression to filter eligible versions. Defaults to "true" (all eligible versions).
 	Filter *string `json:"filter,omitempty"`
 }

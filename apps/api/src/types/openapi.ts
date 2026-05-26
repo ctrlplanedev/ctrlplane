@@ -5120,6 +5120,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description Policy rule IDs to skip during evaluation. Useful when a caller wants to ignore a specific constraint (for example, a versionSelector pin) while still respecting every other rule. */
+                    excludeRuleIds?: string[];
                     /** @description CEL expression to filter eligible versions. Defaults to "true" (all eligible versions). */
                     filter?: string;
                 };

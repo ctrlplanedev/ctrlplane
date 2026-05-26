@@ -242,7 +242,7 @@ const listEligibleVersionsForReleaseTarget: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, releaseTargetKey } = req.params;
   const { limit, offset } = req.query;
-  const { filter } = req.body;
+  const { filter, excludeRuleIds } = req.body;
 
   const { data, error, response } = await getClientFor(workspaceId).POST(
     "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/eligible-versions",
@@ -251,7 +251,7 @@ const listEligibleVersionsForReleaseTarget: AsyncTypedHandler<
         path: { workspaceId, releaseTargetKey },
         query: { limit, offset },
       },
-      body: { filter },
+      body: { filter, excludeRuleIds },
     },
   );
 
