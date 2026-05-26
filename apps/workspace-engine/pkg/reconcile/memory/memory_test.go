@@ -45,9 +45,8 @@ func TestQueue_EnqueueClaimAckLifecycle(t *testing.T) {
 	}
 
 	ack, err := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
-		ItemID:           items[0].ID,
-		WorkerID:         "worker-a",
-		ClaimedUpdatedAt: items[0].UpdatedAt,
+		ItemID:   items[0].ID,
+		WorkerID: "worker-a",
 	})
 	if err != nil {
 		t.Fatalf("ack failed: %v", err)

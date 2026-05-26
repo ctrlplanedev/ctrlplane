@@ -264,7 +264,7 @@ func (q *Queue) AckSuccess(
 	defer q.backend.mu.Unlock()
 
 	s, ok := q.backend.scopes[params.ItemID]
-	if !ok || s.ClaimedBy != params.WorkerID || s.UpdatedAt.After(params.ClaimedUpdatedAt) {
+	if !ok || s.ClaimedBy != params.WorkerID {
 		return reconcile.AckSuccessResult{}, reconcile.ErrClaimNotOwned
 	}
 

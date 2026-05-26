@@ -117,9 +117,8 @@ type ExtendLeaseParams struct {
 }
 
 type AckSuccessParams struct {
-	ItemID           int64
-	WorkerID         string
-	ClaimedUpdatedAt time.Time
+	ItemID   int64
+	WorkerID string
 }
 
 type AckSuccessResult struct {

@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -500,6 +501,38 @@ func TestProcessClaimedItemBranches(t *testing.T) {
 		}
 		if q.ackPermCalls.Load() != 0 {
 			t.Fatalf("expected AckPermanentFailure NOT called, got %d", q.ackPermCalls.Load())
+		}
+	})
+
+	// Safety net: if AckSuccess ever returns Owned=true with Deleted=false
+	// (which the current SQL shouldn't allow, but a future regression might),
+	// the worker must surface it via OnDropped rather than silently calling
+	// OnProcessed as if all is well.
+	t.Run("ack owned but not deleted fires OnDropped", func(t *testing.T) {
+		var dropped atomic.Int64
+		var processed atomic.Int64
+		var droppedErr error
+		cfg7 := cfg
+		cfg7.Hooks.OnDropped = func(_ Item, err error) {
+			dropped.Add(1)
+			droppedErr = err
+		}
+		cfg7.Hooks.OnProcessed = func(Item) { processed.Add(1) }
+		q := &fakeQueue{
+			ackFn: func(context.Context, AckSuccessParams) (AckSuccessResult, error) {
+				return AckSuccessResult{Deleted: false}, nil
+			},
+		}
+		w, _ := NewWorker("workqueue-worker", q, fakeProcessor{}, cfg7)
+		w.processClaimedItem(context.Background(), item)
+		if dropped.Load() != 1 {
+			t.Fatalf("expected OnDropped called once, got %d", dropped.Load())
+		}
+		if processed.Load() != 0 {
+			t.Fatalf("expected OnProcessed NOT called, got %d", processed.Load())
+		}
+		if droppedErr == nil || !strings.Contains(droppedErr.Error(), "Deleted=false") {
+			t.Fatalf("expected error mentioning Deleted=false, got %v", droppedErr)
 		}
 	})
 }

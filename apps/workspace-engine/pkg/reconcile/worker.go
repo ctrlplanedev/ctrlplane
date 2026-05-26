@@ -286,14 +286,29 @@ func (w *Worker) processClaimedItem(ctx context.Context, item Item) {
 		return
 	}
 
-	_, ackErr := w.queue.AckSuccess(ctx, AckSuccessParams{
-		ItemID:           item.ID,
-		WorkerID:         w.cfg.WorkerID,
-		ClaimedUpdatedAt: item.UpdatedAt,
+	ackResult, ackErr := w.queue.AckSuccess(ctx, AckSuccessParams{
+		ItemID:   item.ID,
+		WorkerID: w.cfg.WorkerID,
 	})
 	if ackErr != nil {
 		if w.cfg.Hooks.OnDropped != nil {
 			w.cfg.Hooks.OnDropped(item, ackErr)
+		}
+		return
+	}
+	if !ackResult.Deleted {
+		slog.ErrorContext(ctx,
+			"ack reported ownership but did not delete row — row will be re-claimed",
+			"item", item.ID,
+			"kind", item.Kind,
+			"scopeType", item.ScopeType,
+			"scopeID", item.ScopeID,
+		)
+		if w.cfg.Hooks.OnDropped != nil {
+			w.cfg.Hooks.OnDropped(
+				item,
+				fmt.Errorf("ack success returned Deleted=false for item %d", item.ID),
+			)
 		}
 		return
 	}
