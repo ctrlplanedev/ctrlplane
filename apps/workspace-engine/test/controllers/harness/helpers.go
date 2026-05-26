@@ -2,6 +2,7 @@ package harness
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"workspace-engine/pkg/reconcile"
@@ -72,10 +73,16 @@ func DrainQueue(
 				})
 			}
 
-			_, _ = queue.AckSuccess(ctx, reconcile.AckSuccessParams{
+			ackResult, ackErr := queue.AckSuccess(ctx, reconcile.AckSuccessParams{
 				ItemID:   item.ID,
 				WorkerID: testWorkerID,
 			})
+			if ackErr != nil {
+				return res, ackErr
+			}
+			if !ackResult.Deleted {
+				return res, fmt.Errorf("ack reported owned but did not delete item %d", item.ID)
+			}
 			res.Processed++
 		}
 	}
