@@ -1,0 +1,365 @@
+---
+title: "RFC 0014: Pull-Based Job Agent API"
+---
+
+| Category   | Status                            | Created    | Author            |
+| ---------- | --------------------------------- | ---------- | ----------------- |
+| Job Agents | <Badge color="gray">Draft</Badge> | 2026-06-02 | Aditya Choudhari  |
+
+## Summary
+
+Provide a REST API that lets an external provider act as a job agent by
+**pulling** the jobs assigned to it, executing them, and reporting status back —
+rather than ctrlplane pushing work into the provider's environment.
+
+The work is split into two parts:
+
+- **V1** delivers the pull contract: an agent polls for the next job, claims it
+  atomically (at most once), runs it, and reports status. A new `queued` job
+  status marks a job as claimable.
+- **V2** adds crash recovery: a lease, a heartbeat endpoint, and a reaper that
+  returns abandoned jobs to the queue. V2 is purely additive — V1 is shippable
+  and useful on its own.
+
+## Motivation
+
+Ctrlplane's existing job agents are **push / dispatch-style**. The workspace
+engine initiates execution inside the agent's system: ArgoCD syncs an
+Application, GitHub Actions runs a workflow, Terraform Cloud applies a plan. In
+each case ctrlplane reaches outbound into the agent's environment.
+
+This does not fit an external provider that:
+
+- cannot (or should not) be reached inbound by ctrlplane, and
+- wants to integrate generically over HTTP rather than through a bespoke,
+  per-system integration.
+
+There is currently no generic way for such a provider to pull the jobs assigned
+to its job agent and run them. This RFC adds that path while reusing the
+existing job model, status-reporting endpoint, and verification flow.
+
+## Proposal
+
+### Model: producer / consumer
+
+A push agent's dispatch step both *produces* the job and *delivers* it (fires
+the workflow). A pull agent splits these:
+
+- ctrlplane **produces** the job and marks it claimable.
+- the external agent **consumes** it by polling, claiming, and running it.
+
+The job row in Postgres is the queue. The dispatch controller is the producer;
+the agent's poll is the delivery.
+
+### Job status: `queued`
+
+A new value `queued` is added to the `job_status` enum
+(`packages/db/src/schema/job.ts`). It means: ctrlplane has finished preparing
+the job, and it is available for an agent to claim.
+
+```sql
+ALTER TYPE job_status ADD VALUE 'queued' AFTER 'pending';
+```
+
+The lifecycle for a pull-agent job:
+
+```text
+queued ───claim (poll)───► in_progress ───report───► successful / failure
+```
+
+`queued` is semantically distinct from the existing states:
+
+- `pending` — created, not yet processed by the dispatch controller.
+- `queued` — prepared, waiting for an agent to claim it.
+- `in_progress` — claimed by an agent and executing.
+
+The new value must be mirrored everywhere the enum is represented: the
+`@ctrlplane/validators` job statuses, the `dbToOapiStatus` / `oapiToDbStatus`
+maps in `apps/api/src/routes/v1/workspaces/jobs.ts`, the OpenAPI `JobStatus`
+schema, and the workspace-engine `oapi` enum plus its sqlc mappings.
+
+### Agent type: `http-pull`
+
+A new agent type `http-pull` is registered in the workspace engine's job agent
+registry (`apps/workspace-engine/pkg/jobagents/`, registered in
+`apps/workspace-engine/svc/controllers/jobdispatch/controller.go`). It
+implements `types.Dispatchable`. Its `Dispatch` does not push to an external
+system; it transitions the job to `queued`:
+
+```go
+package httppull
+
+var _ types.Dispatchable = &HttpPull{}
+
+func (a *HttpPull) Type() string { return "http-pull" }
+
+func (a *HttpPull) Dispatch(ctx context.Context, job *oapi.Job) error {
+    return a.setter.UpdateJob(ctx, job.Id, oapi.JobStatusQueued, "", nil)
+}
+```
+
+This keeps the dispatch pipeline uniform. Eligibility and the dispatch
+controller are otherwise **unchanged**: a job is created `pending`, enqueued for
+dispatch, the controller creates verification specs as it does for every agent,
+and the `Dispatch` call marks the job `queued` instead of pushing.
+
+### Verifications
+
+Verifications are created by the dispatch controller at dispatch time, exactly
+as they are for the ArgoCD and Terraform Cloud agents. No change is made to the
+verification flow. As with those agents, verification metrics begin measuring
+when created rather than when execution starts. For `http-pull` this means
+measurements can begin before an agent claims the job; this matches existing
+behavior and is accepted for V1. See Open Questions.
+
+### Claim endpoint (V1)
+
+```
+GET /v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs/next
+```
+
+Returns the next claimable job for the agent and marks it claimed, or returns
+empty if none are available. Added to
+`apps/api/src/routes/v1/workspaces/job-agents.ts`.
+
+The claim is a single atomic statement. Postgres row locking — not the
+transaction boundary — provides the at-most-once guarantee:
+
+```sql
+UPDATE job
+SET status = 'in_progress', started_at = now()
+WHERE id = (
+  SELECT id FROM job
+  WHERE status = 'queued' AND job_agent_id = $1
+  ORDER BY created_at
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED
+)
+RETURNING *;
+```
+
+`FOR UPDATE SKIP LOCKED` ensures two overlapping requests claim different jobs
+rather than the same one. This is the same pattern the reconcile work queue
+already uses (`ClaimReconcileWorkItems`).
+
+### Job payload
+
+The claim response returns the job as-is. The job's `dispatch_context` column
+is a self-contained execution snapshot already populated at job creation —
+deployment, environment, resource, release, version, resolved inputs, and
+variables. No joins or additional assembly are required; the existing
+`toJobResponse` shape already emits `jobAgentConfig` and `dispatchContext`.
+
+Note: `dispatch_context` includes resolved variable values. Secret-flagged
+variables are therefore returned to the external agent in the response. This
+data otherwise never leaves ctrlplane for push agents. The endpoint must be
+served over TLS; per-agent authentication is addressed under V2.
+
+### Status reporting
+
+Status reporting reuses the existing endpoint:
+
+```
+PUT /v1/workspaces/{workspaceId}/jobs/{jobId}/status
+```
+
+It already records the status, sets `completed_at` on terminal states, and
+enqueues a desired-release evaluation to advance the release. No new endpoint is
+required for V1.
+
+### Authentication (V1)
+
+V1 uses the existing `x-api-key` authentication and verifies that the target job
+agent belongs to the authenticated workspace. Per-agent credentials are
+addressed under V2.
+
+### Concurrency
+
+The issue identifies two failure modes. V1 addresses the first; V2 addresses the
+second.
+
+1. **Double-pickup** — handled by the atomic claim above. A job is handed out at
+   most once, even under overlapping requests or client retries.
+2. **Crash mid-job** — not handled in V1. If an agent claims a job and dies, the
+   job remains `in_progress`. Recovery is a manual transition back to `queued`
+   (the same transition V2 automates). V2 adds automatic recovery.
+
+### V1 implementation surface
+
+| Area              | Change                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| `job_status` enum | add `queued` (schema + migration, validators, API status maps, OpenAPI, oapi/sqlc)  |
+| Agent type        | new `http-pull` package; `Dispatch` sets `queued`; register in `jobdispatch`        |
+| Claim endpoint    | `GET .../job-agents/{id}/jobs/next` with `FOR UPDATE SKIP LOCKED`; OpenAPI path      |
+| Status reporting  | reuse `PUT .../jobs/{jobId}/status`                                                  |
+| Eligibility       | unchanged                                                                           |
+| Dispatch flow     | unchanged except the `http-pull` `Dispatch` body                                    |
+| Auth              | reuse `x-api-key` + workspace ownership check                                        |
+
+## V2: Lease, Heartbeat, and Reclaim (add-on)
+
+V2 adds crash recovery. It is additive in the strongest sense: a new table, two
+endpoints, and a periodic sweep. **The `job` table is not modified at all** —
+the `queued` enum value was already added in V1.
+
+### Claim table
+
+Lease state lives in a dedicated `job_claim` table rather than as columns on
+`job`:
+
+```sql
+CREATE TABLE job_claim (
+  job_id           uuid PRIMARY KEY REFERENCES job(id) ON DELETE CASCADE,
+  job_agent_id     uuid NOT NULL,
+  claimed_at       timestamptz NOT NULL DEFAULT now(),
+  claim_expires_at timestamptz NOT NULL,
+  claim_id         uuid NOT NULL DEFAULT gen_random_uuid()
+);
+```
+
+The job's `status` remains the state machine — the claim still flips
+`queued → in_progress` on `job` — but the lease lifecycle and the high-frequency
+heartbeat writes are isolated to this narrow table. The motivation is write
+locality: heartbeats are the most frequent write in this feature (every in-flight
+job, every interval), and `job` is a hot, heavily-joined table with several
+indexes and an `updated_at` trigger. Keeping heartbeats off `job` avoids index
+churn and MVCC bloat on the read path. `claim_id` is a fencing token, populated
+for free.
+
+### Lease
+
+The claim records lease state in `job_claim` in the same statement that flips
+the job to `in_progress`, using a CTE so it remains a single atomic operation:
+
+```sql
+WITH claimed AS (
+  UPDATE job SET status = 'in_progress', started_at = now()
+  WHERE id = (
+    SELECT id FROM job
+    WHERE status = 'queued' AND job_agent_id = $1
+    ORDER BY created_at LIMIT 1
+    FOR UPDATE SKIP LOCKED
+  )
+  RETURNING id
+)
+INSERT INTO job_claim (job_id, job_agent_id, claim_expires_at)
+SELECT id, $1, now() + make_interval(secs => $lease_seconds) FROM claimed
+RETURNING *;
+```
+
+The lease is a liveness window, not an execution deadline. A job may run far
+longer than the lease as long as the agent keeps the claim alive. The claim
+response advertises `lease_seconds` so the agent can choose a heartbeat interval.
+
+### Heartbeat
+
+```
+POST /v1/workspaces/{workspaceId}/jobs/{jobId}/heartbeat
+```
+
+Extends the lease. This touches only `job_claim`, never `job`:
+
+```sql
+UPDATE job_claim
+SET claim_expires_at = now() + make_interval(secs => $lease_seconds)
+WHERE job_id = $1;
+```
+
+The agent calls this periodically while executing. The interval is the agent's
+choice (a fraction of the advertised lease); the server does not store it.
+
+### Reaper
+
+A periodic sweep returns abandoned claims to the queue — deleting the expired
+claim and flipping the job back to `queued` in one statement:
+
+```sql
+WITH expired AS (
+  DELETE FROM job_claim WHERE claim_expires_at < now() RETURNING job_id
+)
+UPDATE job SET status = 'queued'
+WHERE id IN (SELECT job_id FROM expired) AND status = 'in_progress';
+```
+
+Expiry is detected by this sweep, not by an event at the exact expiry time. The
+sweep mirrors the reconcile queue's `CleanupExpiredClaims`.
+
+Reclaim is **opt-in by construction**: only jobs that have a `job_claim` row are
+ever swept. A job claimed without recording lease state — or any V1-era agent
+that never engages the lease protocol — has no claim row and is never reclaimed,
+preserving V1 behavior after V2 ships. When a job reaches a terminal status, its
+`job_claim` row is removed.
+
+### Reclaim and double-run
+
+When a lease expires, the job returns to `queued` and becomes claimable again.
+The reaper cannot distinguish a crashed agent from one that is alive but quiet
+for longer than the lease, so a long pause can cause a job to be reclaimed and
+run twice. A generous lease relative to the heartbeat interval reduces this
+window but does not close it.
+
+If exactly-once execution is required, the `claim_id` fencing token is returned
+on claim, echoed by the agent on heartbeat and status, and a write carrying a
+stale `claim_id` (one whose claim row was already reclaimed and superseded) is
+rejected. The token exists in the schema from the start; enforcing it is
+optional.
+
+### V2 implementation surface
+
+| Area             | Change                                                                      |
+| ---------------- | --------------------------------------------------------------------------- |
+| `job` schema     | none — `job` is not modified                                                |
+| `job_claim`      | new table (single `CREATE TABLE`, no change to `job`)                       |
+| Claim            | record `job_claim` row in the claim CTE; return `lease_seconds` + `claim_id`|
+| Heartbeat        | new `POST .../jobs/{jobId}/heartbeat`, writes only `job_claim`; OpenAPI path |
+| Reaper           | periodic sweep deleting expired claims and returning jobs to `queued`       |
+| Terminal status  | remove the `job_claim` row when a job reaches a terminal state              |
+| Optional         | per-agent lease config, `claim_id` fencing enforcement, per-agent tokens    |
+
+## Migration
+
+- V1 adds the `queued` value to the `job_status` enum. V2 adds a new `job_claim`
+  table and does not modify `job`. Both are additive; existing jobs are
+  unaffected.
+- The dispatch controller, eligibility logic, and promotion lifecycle are
+  unchanged except for recognizing the `queued` status and the `http-pull`
+  agent's `Dispatch` body.
+- The status-reporting endpoint is reused unchanged. The claim endpoint (V1) and
+  heartbeat endpoint (V2) are new and do not alter existing endpoints.
+- The V2 reaper only acts on jobs that have a `job_claim` row, so introducing it
+  does not change the behavior of any agent that does not heartbeat.
+
+## Open Questions
+
+1. **Long-poll vs. plain poll.** V1 can return immediately when no job is
+   available. A long-poll variant (hold the request open until a job appears or
+   a timeout elapses, bounded by a server-enforced maximum) reduces idle polling
+   and is a candidate for V2. Backpressure and fairness limits on held
+   connections are open.
+
+2. **Verification timing.** Verifications begin measuring when created (at
+   dispatch), which for a pull agent can precede the claim by an unbounded
+   queue wait. For long verification windows this is harmless; a short window
+   could complete before the agent claims the job. If this becomes a problem,
+   verification creation can be moved to the claim transition, or measurement
+   can be gated on the job reaching `in_progress`. Deferred until needed.
+
+3. **Lease configuration.** Should the lease duration be per-agent
+   (`job_agent.config`, bounded) or a single global default? A global default is
+   the V2 starting point; per-agent is a later refinement for agents with
+   different reliability characteristics.
+
+## AI Generated Questions
+
+1. **Agent registration.** A job is only routed to an agent that already exists
+   and is matched by a deployment's `jobAgentSelector`. Should an external agent
+   be able to self-register its `job_agent` row and credentials via the API, or
+   must agents be pre-provisioned by an operator?
+
+2. **Per-agent authentication.** V1 reuses `x-api-key`. V2 should issue a
+   per-agent credential at registration so an agent authenticates as itself and
+   can claim only its own jobs. What is the token model and rotation story?
+
+3. **Fencing.** Should V2 include a fencing token from the start, or add it only
+   if double-run under lease expiry proves to be a real problem for the
+   workloads pull agents run?
