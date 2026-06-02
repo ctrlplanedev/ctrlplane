@@ -39,6 +39,10 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { Dependencies } from "./_components/release-targets/Dependencies";
+import {
+  SkipRuleButton,
+  TargetSkips,
+} from "./_components/release-targets/PolicySkipActions";
 
 function parseReleaseTargetKey(key: string) {
   if (key.length !== 110) return null;
@@ -241,6 +245,8 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{evaluation.message}</span>
           <StatusBadge evaluation={evaluation} />
+          <div className="grow" />
+          {!evaluation.allowed && <SkipRuleButton target={evaluation} />}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -341,6 +347,7 @@ function VersionGroup({
   const allPassing = items.every((e) => e.evaluation.allowed);
   const hasBlocking = items.some((e) => !e.evaluation.allowed);
   const versionLabel = version.name || version.tag;
+  const target = items[0]?.evaluation;
 
   const policyGroups = useMemo(() => {
     const grouped = _.groupBy(items, (item) => item.policy?.id ?? "unknown");
@@ -380,6 +387,13 @@ function VersionGroup({
           })}
         </span>
       </div>
+      {target != null && (
+        <TargetSkips
+          environmentId={target.environmentId}
+          resourceId={target.resourceId}
+          versionId={target.versionId}
+        />
+      )}
       <div className="space-y-4">
         {policyGroups.map(({ policyId, policy, evaluations }) =>
           policy != null ? (
