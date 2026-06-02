@@ -240,6 +240,20 @@ Run automated checks after deployment:
 
 See [Verification](./verification) for detailed configuration options.
 
+### Plan Validation Rule
+
+Run OPA/Rego policies against a deployment plan to preview proposed changes.
+This rule is **non-blocking** — it reports violations but does not gate
+deployments.
+
+| API Field                      | Terraform Attribute       | Description                       |
+| ------------------------------ | ------------------------- | --------------------------------- |
+| `planValidationOpa.name`       | `plan_validation_opa.name`        | Rule name shown in violations |
+| `planValidationOpa.description`| `plan_validation_opa.description` | Human-readable description    |
+| `planValidationOpa.rego`       | `plan_validation_opa.rego`        | Rego v1 source code           |
+
+See [Plan Validation](./plan-validation) for details.
+
 ## Terraform Provider Reference
 
 The Terraform provider supports the following policy blocks:
@@ -253,6 +267,7 @@ The Terraform provider supports the following policy blocks:
 | `deployment_window`        | Time-based deployment scheduling               |
 | `version_cooldown`         | Batch frequent releases                        |
 | `verification`             | Automated health checks                        |
+| `plan_validation_opa`      | OPA/Rego plan validation (non-blocking preview)|
 
 <Note>
   `retry` and `version_selector` are not yet available in the Terraform
