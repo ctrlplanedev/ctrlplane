@@ -283,6 +283,49 @@ func (ns NullJobVerificationTriggerOn) Value() (driver.Value, error) {
 	return string(ns.JobVerificationTriggerOn), nil
 }
 
+type SecretProviderType string
+
+const (
+	SecretProviderTypeAwsSecretsManager SecretProviderType = "aws_secrets_manager"
+	SecretProviderTypeDoppler           SecretProviderType = "doppler"
+	SecretProviderTypeEnv               SecretProviderType = "env"
+)
+
+func (e *SecretProviderType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SecretProviderType(s)
+	case string:
+		*e = SecretProviderType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SecretProviderType: %T", src)
+	}
+	return nil
+}
+
+type NullSecretProviderType struct {
+	SecretProviderType SecretProviderType
+	Valid              bool // Valid is true if SecretProviderType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSecretProviderType) Scan(value interface{}) error {
+	if value == nil {
+		ns.SecretProviderType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SecretProviderType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSecretProviderType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SecretProviderType), nil
+}
+
 type VariableScope string
 
 const (
@@ -761,6 +804,16 @@ type ResourceProvider struct {
 	Metadata    map[string]string
 }
 
+type SecretProvider struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Type        SecretProviderType
+	Config      []byte
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
 type System struct {
 	ID          uuid.UUID
 	Name        string
@@ -834,6 +887,7 @@ type VariableValue struct {
 	SecretProvider   pgtype.Text
 	SecretKey        pgtype.Text
 	SecretPath       []string
+	SecretVersion    pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 }

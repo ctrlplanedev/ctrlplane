@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/secrets"
+	"workspace-engine/pkg/secrets/providers"
 	"workspace-engine/svc"
 	"workspace-engine/svc/claimcleanup"
 	"workspace-engine/svc/controllers/deploymentplan"
@@ -49,21 +51,23 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	secretResolver := newSecretResolver(ctx)
+
 	allServices := []svc.Service{
 		pprof.New(pprof.DefaultAddr(config.Global.PprofPort)),
 		httpsvc.New(config.Global, db.GetPool(ctx)),
 		claimcleanup.New(db.GetPool(ctx), 30*time.Second),
 
-		deploymentplan.New(WorkerID, db.GetPool(ctx)),
+		deploymentplan.New(WorkerID, db.GetPool(ctx), secretResolver),
 		deploymentplanresult.New(WorkerID, db.GetPool(ctx)),
 		deploymentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
 		environmentresourceselectoreval.New(WorkerID, db.GetPool(ctx)),
-		forcedeploy.New(WorkerID, db.GetPool(ctx)),
+		forcedeploy.New(WorkerID, db.GetPool(ctx), secretResolver),
 		jobdispatch.New(WorkerID, db.GetPool(ctx)),
-		jobeligibility.New(WorkerID, db.GetPool(ctx)),
+		jobeligibility.New(WorkerID, db.GetPool(ctx), secretResolver),
 		jobverificationmetric.New(WorkerID, db.GetPool(ctx)),
 		relationshipeval.New(WorkerID, db.GetPool(ctx)),
-		desiredrelease.New(WorkerID, db.GetPool(ctx)),
+		desiredrelease.New(WorkerID, db.GetPool(ctx), secretResolver),
 		policyeval.New(WorkerID, db.GetPool(ctx)),
 	}
 
@@ -93,4 +97,29 @@ func main() {
 	}
 
 	slog.Info("Workspace engine shut down")
+}
+
+// newSecretResolver wires the components needed to resolve secret_ref
+// variable values. If VARIABLES_AES_256_KEY is unset the resolver is nil and
+// any secret_ref encountered during reconciliation will block release
+// dispatch with a clear error.
+func newSecretResolver(ctx context.Context) *secrets.Resolver {
+	keyHex := config.Global.VariablesAes256Key
+	if keyHex == "" {
+		slog.Warn(
+			"VARIABLES_AES_256_KEY is unset; secret_ref variable values will fail to resolve",
+		)
+		return nil
+	}
+	store, err := secrets.NewPostgresStoreFromKey(db.GetQueries(ctx), keyHex)
+	if err != nil {
+		slog.Error("Failed to construct secret store", "error", err)
+		os.Exit(1)
+	}
+	return secrets.NewResolver(
+		store,
+		providers.NewDefaultRegistry(),
+		secrets.NewCache(config.Global.SecretsCacheTTL),
+		secrets.NewProviderCache(config.Global.SecretsProviderCacheTTL),
+	)
 }

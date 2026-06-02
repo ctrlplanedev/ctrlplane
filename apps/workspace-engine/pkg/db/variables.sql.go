@@ -33,7 +33,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )
@@ -107,7 +108,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )
@@ -162,6 +164,86 @@ func (q *Queries) ListVariablesWithValuesByDeploymentID(ctx context.Context, dep
 	return items, nil
 }
 
+const listVariablesWithValuesByJobAgentID = `-- name: ListVariablesWithValuesByJobAgentID :many
+SELECT
+  v.id,
+  v.scope,
+  v.deployment_id,
+  v.resource_id,
+  v.job_agent_id,
+  v.key,
+  v.is_sensitive,
+  v.description,
+  COALESCE(
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', vv.id,
+          'variableId', vv.variable_id,
+          'resourceSelector', vv.resource_selector,
+          'priority', vv.priority,
+          'kind', vv.kind,
+          'literalValue', vv.literal_value,
+          'refKey', vv.ref_key,
+          'refPath', vv.ref_path,
+          'secretProvider', vv.secret_provider,
+          'secretKey', vv.secret_key,
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
+        )
+        ORDER BY vv.priority DESC, vv.id ASC
+      )
+      FROM variable_value vv
+      WHERE vv.variable_id = v.id
+    ),
+    '[]'::json
+  ) AS values
+FROM variable v
+WHERE v.scope = 'job_agent' AND v.job_agent_id = $1
+`
+
+type ListVariablesWithValuesByJobAgentIDRow struct {
+	ID           uuid.UUID
+	Scope        VariableScope
+	DeploymentID uuid.UUID
+	ResourceID   uuid.UUID
+	JobAgentID   uuid.UUID
+	Key          string
+	IsSensitive  bool
+	Description  pgtype.Text
+	Values       []byte
+}
+
+func (q *Queries) ListVariablesWithValuesByJobAgentID(ctx context.Context, jobAgentID uuid.UUID) ([]ListVariablesWithValuesByJobAgentIDRow, error) {
+	rows, err := q.db.Query(ctx, listVariablesWithValuesByJobAgentID, jobAgentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListVariablesWithValuesByJobAgentIDRow
+	for rows.Next() {
+		var i ListVariablesWithValuesByJobAgentIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Scope,
+			&i.DeploymentID,
+			&i.ResourceID,
+			&i.JobAgentID,
+			&i.Key,
+			&i.IsSensitive,
+			&i.Description,
+			&i.Values,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listVariablesWithValuesByResourceID = `-- name: ListVariablesWithValuesByResourceID :many
 SELECT
   v.id,
@@ -186,7 +268,8 @@ SELECT
           'refPath', vv.ref_path,
           'secretProvider', vv.secret_provider,
           'secretKey', vv.secret_key,
-          'secretPath', vv.secret_path
+          'secretPath', vv.secret_path,
+          'secretVersion', vv.secret_version
         )
         ORDER BY vv.priority DESC, vv.id ASC
       )

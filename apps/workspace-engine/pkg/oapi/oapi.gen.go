@@ -400,16 +400,19 @@ type DispatchContext struct {
 	Environment *Environment `json:"environment,omitempty"`
 
 	// Inputs Resolved input values for the workflow run.
-	Inputs         *map[string]interface{}  `json:"inputs,omitempty"`
-	JobAgent       JobAgent                 `json:"jobAgent"`
-	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
-	Release        *Release                 `json:"release,omitempty"`
-	Resource       *Resource                `json:"resource,omitempty"`
-	Variables      *map[string]LiteralValue `json:"variables,omitempty"`
-	Version        *DeploymentVersion       `json:"version,omitempty"`
-	Workflow       *Workflow                `json:"workflow,omitempty"`
-	WorkflowJob    *WorkflowJob             `json:"workflowJob,omitempty"`
-	WorkflowRun    *WorkflowRun             `json:"workflowRun,omitempty"`
+	Inputs         *map[string]interface{} `json:"inputs,omitempty"`
+	JobAgent       JobAgent                `json:"jobAgent"`
+	JobAgentConfig JobAgentConfig          `json:"jobAgentConfig"`
+
+	// JobAgentVariables Variables scoped to the dispatching job agent. Resolved at dispatch time and referenced from agent-config templates as {{ .jobAgentVariables.<key> }}.
+	JobAgentVariables *map[string]LiteralValue `json:"jobAgentVariables,omitempty"`
+	Release           *Release                 `json:"release,omitempty"`
+	Resource          *Resource                `json:"resource,omitempty"`
+	Variables         *map[string]LiteralValue `json:"variables,omitempty"`
+	Version           *DeploymentVersion       `json:"version,omitempty"`
+	Workflow          *Workflow                `json:"workflow,omitempty"`
+	WorkflowJob       *WorkflowJob             `json:"workflowJob,omitempty"`
+	WorkflowRun       *WorkflowRun             `json:"workflowRun,omitempty"`
 }
 
 // EntityRelation defines model for EntityRelation.
@@ -1155,6 +1158,21 @@ type RuleEvaluation struct {
 
 // RuleEvaluationActionType Type of action required
 type RuleEvaluationActionType string
+
+// SecretReferenceValue defines model for SecretReferenceValue.
+type SecretReferenceValue struct {
+	// SecretKey Secret key within the provider
+	SecretKey string `json:"secretKey"`
+
+	// SecretPath Optional provider-specific path components
+	SecretPath *[]string `json:"secretPath,omitempty"`
+
+	// SecretProvider Workspace-unique secret_provider.name
+	SecretProvider string `json:"secretProvider"`
+
+	// SecretVersion Optional provider-specific version pin. For AWS Secrets Manager this maps to VersionId (uuid form) or VersionStage (AWSCURRENT/AWSPREVIOUS). For Doppler this maps to accept_secret_version. Empty means latest.
+	SecretVersion *string `json:"secretVersion,omitempty"`
+}
 
 // SensitiveValue defines model for SensitiveValue.
 type SensitiveValue struct {
@@ -2326,6 +2344,32 @@ func (t *Value) FromSensitiveValue(v SensitiveValue) error {
 
 // MergeSensitiveValue performs a merge with any union data inside the Value, using the provided SensitiveValue
 func (t *Value) MergeSensitiveValue(v SensitiveValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecretReferenceValue returns the union data inside the Value as a SecretReferenceValue
+func (t Value) AsSecretReferenceValue() (SecretReferenceValue, error) {
+	var body SecretReferenceValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecretReferenceValue overwrites any union data inside the Value as the provided SecretReferenceValue
+func (t *Value) FromSecretReferenceValue(v SecretReferenceValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecretReferenceValue performs a merge with any union data inside the Value, using the provided SecretReferenceValue
+func (t *Value) MergeSecretReferenceValue(v SecretReferenceValue) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

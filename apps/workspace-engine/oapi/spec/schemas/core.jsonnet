@@ -74,11 +74,40 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  // SecretReferenceValue identifies a secret stored in an external provider.
+  // Resolution is performed at release time by the secrets resolver and the
+  // returned value flows through release.Variables as a LiteralValue. The
+  // plaintext is never persisted on the resolved Value.
+  SecretReferenceValue: {
+    type: 'object',
+    required: ['secretProvider', 'secretKey'],
+    properties: {
+      secretProvider: {
+        type: 'string',
+        description: 'Workspace-unique secret_provider.name',
+      },
+      secretKey: {
+        type: 'string',
+        description: 'Secret key within the provider',
+      },
+      secretPath: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Optional provider-specific path components',
+      },
+      secretVersion: {
+        type: 'string',
+        description: 'Optional provider-specific version pin. For AWS Secrets Manager this maps to VersionId (uuid form) or VersionStage (AWSCURRENT/AWSPREVIOUS). For Doppler this maps to accept_secret_version. Empty means latest.',
+      },
+    },
+  },
+
   Value: {
     oneOf: [
       openapi.schemaRef('LiteralValue'),
       openapi.schemaRef('ReferenceValue'),
       openapi.schemaRef('SensitiveValue'),
+      openapi.schemaRef('SecretReferenceValue'),
     ],
   },
 

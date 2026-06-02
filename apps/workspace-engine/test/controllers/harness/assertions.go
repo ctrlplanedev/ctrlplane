@@ -93,6 +93,16 @@ func (p *TestPipeline) ReleaseVariables(t *testing.T, idx int) map[string]oapi.L
 	return p.ReleaseSetter.Releases[idx].Variables
 }
 
+// AssertReleaseEncryptedVariables asserts the set of variable keys marked as
+// originating from a secret_ref on the release at the given index. Order is
+// not significant.
+func (p *TestPipeline) AssertReleaseEncryptedVariables(t *testing.T, idx int, keys ...string) {
+	t.Helper()
+	require.Greater(t, len(p.ReleaseSetter.Releases), idx,
+		"release index %d out of range (have %d)", idx, len(p.ReleaseSetter.Releases))
+	assert.ElementsMatch(t, keys, p.ReleaseSetter.Releases[idx].EncryptedVariables)
+}
+
 // ---------------------------------------------------------------------------
 // Job assertions
 // ---------------------------------------------------------------------------

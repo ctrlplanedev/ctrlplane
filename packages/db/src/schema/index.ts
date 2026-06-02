@@ -30,3 +30,4 @@ export * from "./relationships.js";
 export * from "./job-agent.js";
 export * from "./variable-set.js";
 export * from "./variable.js";
+export * from "./secret-provider.js";

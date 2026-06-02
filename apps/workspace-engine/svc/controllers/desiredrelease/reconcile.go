@@ -26,14 +26,16 @@ type ReconcileResult struct {
 type reconciler struct {
 	workspaceID uuid.UUID
 
-	getter Getter
-	setter Setter
-	rt     *ReleaseTarget
+	getter         Getter
+	setter         Setter
+	secretResolver variableresolver.SecretResolver
+	rt             *ReleaseTarget
 
-	scope    *evaluator.EvaluatorScope
-	policies []*oapi.Policy
-	version  *oapi.DeploymentVersion
-	vars     map[string]oapi.LiteralValue
+	scope         *evaluator.EvaluatorScope
+	policies      []*oapi.Policy
+	version       *oapi.DeploymentVersion
+	vars          map[string]oapi.LiteralValue
+	sensitiveVars []string
 }
 
 func (r *reconciler) loadInput(ctx context.Context) (err error) {
@@ -82,14 +84,15 @@ func (r *reconciler) resolveVariables(ctx context.Context) error {
 		Deployment:  r.scope.Deployment,
 		Environment: r.scope.Environment,
 	}
-	vars, err := variableresolver.Resolve(
-		ctx, r.getter, varScope,
+	vars, sensitive, err := variableresolver.Resolve(
+		ctx, r.getter, r.secretResolver, varScope,
 		r.rt.DeploymentID.String(), r.rt.ResourceID.String(),
 	)
 	if err != nil {
 		return err
 	}
 	r.vars = vars
+	r.sensitiveVars = sensitive
 	return nil
 }
 
@@ -98,7 +101,7 @@ func (r *reconciler) persistNoDesiredRelease(ctx context.Context) error {
 }
 
 func (r *reconciler) persistRelease(ctx context.Context) (*oapi.Release, error) {
-	release := buildRelease(r.rt, r.version, r.vars)
+	release := buildRelease(r.rt, r.version, r.vars, r.sensitiveVars)
 	if err := r.setter.SetDesiredRelease(ctx, r.rt, release); err != nil {
 		return nil, err
 	}
@@ -113,6 +116,7 @@ func Reconcile(
 	workspaceID string,
 	getter Getter,
 	setter Setter,
+	secretResolver variableresolver.SecretResolver,
 	rt *ReleaseTarget,
 ) (*ReconcileResult, error) {
 	ctx, span := tracer.Start(ctx, "desiredrelease.Reconcile")
@@ -124,7 +128,13 @@ func Reconcile(
 	if err != nil {
 		return nil, fmt.Errorf("parse workspace id: %w", err)
 	}
-	r := &reconciler{workspaceID: workspaceIDUUID, getter: getter, setter: setter, rt: rt}
+	r := &reconciler{
+		workspaceID:    workspaceIDUUID,
+		getter:         getter,
+		setter:         setter,
+		secretResolver: secretResolver,
+		rt:             rt,
+	}
 	r.rt.WorkspaceID = r.workspaceID
 
 	if err := r.loadInput(ctx); err != nil {

@@ -33,6 +33,7 @@ sql:
       - queries/release_targets.sql
       - queries/variable_sets.sql
       - queries/plan_validation.sql
+      - queries/secret_providers.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:

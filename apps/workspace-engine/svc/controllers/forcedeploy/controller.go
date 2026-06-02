@@ -16,14 +16,16 @@ import (
 	"workspace-engine/pkg/reconcile/events"
 	"workspace-engine/pkg/reconcile/postgres"
 	"workspace-engine/svc"
+	"workspace-engine/svc/controllers/desiredrelease/variableresolver"
 )
 
 var tracer = otel.Tracer("workspace-engine/svc/controllers/forcedeploy")
 var _ reconcile.Processor = (*Controller)(nil)
 
 type Controller struct {
-	getter Getter
-	setter Setter
+	getter         Getter
+	setter         Setter
+	secretResolver variableresolver.SecretResolver
 }
 
 func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcile.Result, error) {
@@ -50,7 +52,7 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	result, err := Reconcile(ctx, item.WorkspaceID, c.getter, c.setter, rt)
+	result, err := Reconcile(ctx, item.WorkspaceID, c.getter, c.setter, c.secretResolver, rt)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -66,11 +68,19 @@ func (c *Controller) Process(ctx context.Context, item reconcile.Item) (reconcil
 
 // NewController creates a Controller with the given dependencies.
 // Use this constructor in tests to inject mock implementations.
-func NewController(getter Getter, setter Setter) *Controller {
-	return &Controller{getter: getter, setter: setter}
+func NewController(
+	getter Getter,
+	setter Setter,
+	secretResolver variableresolver.SecretResolver,
+) *Controller {
+	return &Controller{getter: getter, setter: setter, secretResolver: secretResolver}
 }
 
-func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
+func New(
+	workerID string,
+	pgxPool *pgxpool.Pool,
+	secretResolver variableresolver.SecretResolver,
+) svc.Service {
 	if pgxPool == nil {
 		slog.Error("Failed to get pgx pool")
 		os.Exit(1)
@@ -92,8 +102,9 @@ func New(workerID string, pgxPool *pgxpool.Pool) svc.Service {
 
 	queue := postgres.NewForKinds(pgxPool, kind)
 	controller := &Controller{
-		getter: &PostgresGetter{},
-		setter: &PostgresSetter{},
+		getter:         &PostgresGetter{},
+		setter:         &PostgresSetter{},
+		secretResolver: secretResolver,
 	}
 
 	worker, err := reconcile.NewWorker(kind, queue, controller, nodeConfig)

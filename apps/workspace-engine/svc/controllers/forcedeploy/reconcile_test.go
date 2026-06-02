@@ -193,7 +193,7 @@ func TestReconcile_HappyPath_CreatesJobAndEnqueuesDispatch(t *testing.T) {
 	release := testRelease(rt)
 	getter, setter := defaultMocks(rt, release)
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 
 	require.NoError(t, err)
 	assert.Zero(t, result.RequeueAfter)
@@ -215,7 +215,7 @@ func TestReconcile_HappyPath_WithCompletedJob(t *testing.T) {
 	// are not included.
 	getter.activeJobs = []*oapi.Job{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 
 	require.NoError(t, err)
 	assert.Zero(t, result.RequeueAfter)
@@ -230,7 +230,7 @@ func TestReconcile_NoDesiredRelease_Noop(t *testing.T) {
 	}
 	setter := &mockSetter{}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 
 	require.NoError(t, err)
 	assert.Zero(t, result.RequeueAfter)
@@ -254,7 +254,7 @@ func TestReconcile_ActiveJobExists_Requeues(t *testing.T) {
 		},
 	}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 
 	require.NoError(t, err)
 	assert.Equal(t, requeueDelay, result.RequeueAfter)
@@ -278,7 +278,7 @@ func TestReconcile_ActivePendingJob_Requeues(t *testing.T) {
 		},
 	}
 
-	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, rt)
+	result, err := Reconcile(context.Background(), rt.WorkspaceID.String(), getter, setter, nil, rt)
 
 	require.NoError(t, err)
 	assert.Equal(t, requeueDelay, result.RequeueAfter)
@@ -301,7 +301,7 @@ func TestProcess_ActiveJob_ReturnsRequeueResult(t *testing.T) {
 		},
 	}
 
-	ctrl := NewController(getter, setter)
+	ctrl := NewController(getter, setter, nil)
 	item := reconcile.Item{
 		ID:          1,
 		WorkspaceID: rt.WorkspaceID.String(),

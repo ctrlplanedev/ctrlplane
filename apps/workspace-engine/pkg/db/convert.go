@@ -302,6 +302,7 @@ type VariableValueAggRow struct {
 	SecretProvider   *string         `json:"secretProvider"`
 	SecretKey        *string         `json:"secretKey"`
 	SecretPath       []string        `json:"secretPath"`
+	SecretVersion    *string         `json:"secretVersion"`
 }
 
 func flattenVariableValue(r VariableValueAggRow) (oapi.Value, error) {
@@ -324,7 +325,21 @@ func flattenVariableValue(r VariableValueAggRow) (oapi.Value, error) {
 			return v, err
 		}
 	case "secret_ref":
-		return v, fmt.Errorf("secret_ref variable values are not yet supported")
+		sr := oapi.SecretReferenceValue{
+			SecretProvider: derefString(r.SecretProvider),
+			SecretKey:      derefString(r.SecretKey),
+		}
+		if len(r.SecretPath) > 0 {
+			path := append([]string(nil), r.SecretPath...)
+			sr.SecretPath = &path
+		}
+		if r.SecretVersion != nil && *r.SecretVersion != "" {
+			version := *r.SecretVersion
+			sr.SecretVersion = &version
+		}
+		if err := v.FromSecretReferenceValue(sr); err != nil {
+			return v, err
+		}
 	default:
 		return v, fmt.Errorf("unknown variable_value kind: %q", r.Kind)
 	}
@@ -345,6 +360,23 @@ func ToOapiDeploymentVariable(
 		Id:           row.ID.String(),
 		DeploymentId: row.DeploymentID.String(),
 		Key:          row.Key,
+	}
+	if row.Description.Valid {
+		v.Description = &row.Description.String
+	}
+	return v
+}
+
+// ToOapiJobAgentVariable maps a job_agent-scoped variable row to the same
+// oapi.DeploymentVariable shape used by deployment variables, so the
+// variableresolver can run a single resolution pipeline regardless of scope.
+// DeploymentId is left empty since the variable does not belong to one.
+func ToOapiJobAgentVariable(
+	row ListVariablesWithValuesByJobAgentIDRow,
+) oapi.DeploymentVariable {
+	v := oapi.DeploymentVariable{
+		Id:  row.ID.String(),
+		Key: row.Key,
 	}
 	if row.Description.Valid {
 		v.Description = &row.Description.String

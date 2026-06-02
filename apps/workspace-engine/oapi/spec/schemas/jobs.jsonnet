@@ -66,6 +66,11 @@ local JobPropertyKeys = std.objectFields(Job.properties);
         type: 'object',
         additionalProperties: openapi.schemaRef('LiteralValue'),
       },
+      jobAgentVariables: {
+        type: 'object',
+        additionalProperties: openapi.schemaRef('LiteralValue'),
+        description: 'Variables scoped to the dispatching job agent. Resolved at dispatch time and referenced from agent-config templates as {{ .jobAgentVariables.<key> }}.',
+      },
     },
   },
 

@@ -20,6 +20,10 @@ type Getter interface {
 		ctx context.Context,
 		resourceID string,
 	) (map[string][]oapi.ResourceVariable, error)
+	GetJobAgentVariables(
+		ctx context.Context,
+		jobAgentID uuid.UUID,
+	) ([]oapi.DeploymentVariableWithValues, error)
 	GetVariableSetsWithVariables(
 		ctx context.Context,
 		workspaceID uuid.UUID,
