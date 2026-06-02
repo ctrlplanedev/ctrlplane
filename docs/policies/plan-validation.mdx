@@ -67,7 +67,7 @@ resource "ctrlplane_policy" "no_destroy_in_prod" {
 
   plan_validation_opa {
     name        = "no-resource-deletions"
-    description = "Block plans that delete or replace resources"
+    description = "Flag plans that delete resources"
     rego        = <<-EOT
       package ctrlplane
 
@@ -97,7 +97,7 @@ curl -X POST https://api.ctrlplane.com/v1/workspaces/{workspaceId}/policies \
       {
         "planValidationOpa": {
           "name": "no-resource-deletions",
-          "description": "Block plans that delete or replace resources",
+          "description": "Flag plans that delete resources",
           "rego": "package ctrlplane\n\nimport rego.v1\n\ndeny contains msg if {\n  input.agentType == \"terraform-cloud\"\n  plan := json.unmarshal(input.proposed)\n  change := plan.resource_changes[_]\n  change.change.actions[_] == \"delete\"\n  msg := sprintf(\"resource %q would be deleted\", [change.address])\n}"
         }
       }
@@ -147,10 +147,10 @@ deny contains msg if {
   `sprintf`, regex, etc.) to parse and inspect the plan.
 
 <Warning>
-  Invalid Rego (syntax errors) causes validation for that result to fail to
-  evaluate. Test your policies with the
-  [OPA playground](https://play.openpolicyagent.org/) or `opa eval` before
-  saving them.
+  If a policy contains invalid Rego (for example, a syntax error), it cannot be
+  evaluated and no validation result is recorded for that plan. Test your
+  policies with the [OPA playground](https://play.openpolicyagent.org/) or
+  `opa eval` before saving them.
 </Warning>
 
 ## The `input` document
@@ -179,7 +179,7 @@ fields:
 
 ## Examples
 
-### Block resource deletions in a Terraform plan
+### Flag resource deletions in a Terraform plan
 
 ```rego
 package ctrlplane
