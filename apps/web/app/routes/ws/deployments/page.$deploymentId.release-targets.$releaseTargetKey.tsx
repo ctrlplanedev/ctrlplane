@@ -40,9 +40,8 @@ import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { Dependencies } from "./_components/release-targets/Dependencies";
 import {
-  isSkipDetails,
-  RemoveSkipButton,
   SkipRuleButton,
+  TargetSkips,
 } from "./_components/release-targets/PolicySkipActions";
 
 function parseReleaseTargetKey(key: string) {
@@ -237,11 +236,7 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
   const approvalDetails = isApprovalDetails(evaluation.details)
     ? evaluation.details
     : null;
-  const skipDetails = isSkipDetails(evaluation.details)
-    ? evaluation.details
-    : null;
-  const hasSpecialDetails =
-    windowDetails != null || approvalDetails != null || skipDetails != null;
+  const hasSpecialDetails = windowDetails != null || approvalDetails != null;
 
   return (
     <div className="flex items-start gap-3 rounded-md border p-3">
@@ -251,11 +246,7 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
           <span className="text-sm font-medium">{evaluation.message}</span>
           <StatusBadge evaluation={evaluation} />
           <div className="grow" />
-          {skipDetails != null ? (
-            <RemoveSkipButton skipId={skipDetails.skip_id} />
-          ) : (
-            !evaluation.allowed && <SkipRuleButton target={evaluation} />
-          )}
+          {!evaluation.allowed && <SkipRuleButton target={evaluation} />}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -356,6 +347,7 @@ function VersionGroup({
   const allPassing = items.every((e) => e.evaluation.allowed);
   const hasBlocking = items.some((e) => !e.evaluation.allowed);
   const versionLabel = version.name || version.tag;
+  const target = items[0]?.evaluation;
 
   const policyGroups = useMemo(() => {
     const grouped = _.groupBy(items, (item) => item.policy?.id ?? "unknown");
@@ -395,6 +387,13 @@ function VersionGroup({
           })}
         </span>
       </div>
+      {target != null && (
+        <TargetSkips
+          environmentId={target.environmentId}
+          resourceId={target.resourceId}
+          versionId={target.versionId}
+        />
+      )}
       <div className="space-y-4">
         {policyGroups.map(({ policyId, policy, evaluations }) =>
           policy != null ? (

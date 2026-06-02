@@ -313,7 +313,6 @@ func evaluateVersion(
 				WithRuleId(eval.RuleId()).
 				WithMessage(fmt.Sprintf("Policy skipped: %s", skip.Reason)).
 				WithSatisfiedAt(skip.CreatedAt).
-				WithDetail("skip_id", skip.Id).
 				WithDetail("skip_reason", skip.Reason).
 				WithDetail("skip_expires_at", skip.ExpiresAt)
 

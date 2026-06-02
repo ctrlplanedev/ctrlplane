@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { ShieldOff, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -11,27 +12,15 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { useDeployment } from "../DeploymentProvider";
 
-export type SkipDetails = {
-  skip_id: string;
-  skip_reason: string;
-  skip_expires_at: string | null;
-};
-
-export function isSkipDetails(details: unknown): details is SkipDetails {
-  if (details == null || typeof details !== "object") return false;
-  const d = details as Record<string, unknown>;
-  return typeof d.skip_id === "string";
-}
-
-export function RemoveSkipButton({ skipId }: { skipId: string }) {
+function RemoveSkipButton({ skipId }: { skipId: string }) {
   const { workspace } = useWorkspace();
   const utils = trpc.useUtils();
 
   const deleteSkip = trpc.policySkips.delete.useMutation({
     onSuccess: () => {
       toast.success("Skip removal queued for this release target");
+      utils.policySkips.forTarget.invalidate();
       utils.releaseTargets.evaluations.invalidate();
     },
     onError: (error) =>
@@ -52,6 +41,45 @@ export function RemoveSkipButton({ skipId }: { skipId: string }) {
   );
 }
 
+type TargetSkipsProps = {
+  environmentId: string;
+  resourceId: string;
+  versionId: string;
+};
+
+export function TargetSkips({
+  environmentId,
+  resourceId,
+  versionId,
+}: TargetSkipsProps) {
+  const { data: skips = [] } = trpc.policySkips.forTarget.useQuery({
+    environmentId,
+    resourceId,
+    versionId,
+  });
+
+  if (skips.length === 0) return null;
+
+  return (
+    <div className="space-y-2 rounded-lg border border-dashed p-4">
+      <p className="text-sm font-medium">Active skips</p>
+      {skips.map((skip) => (
+        <div key={skip.id} className="flex items-center gap-2">
+          <span className="text-sm">{skip.policyName ?? "Unknown policy"}</span>
+          <span className="text-xs text-muted-foreground">
+            {skip.reason}
+            {skip.expiresAt != null
+              ? ` · expires ${format(new Date(skip.expiresAt), "MMM d, yyyy h:mm a")}`
+              : ""}
+          </span>
+          <div className="grow" />
+          <RemoveSkipButton skipId={skip.id} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 type SkipTarget = {
   environmentId: string;
   resourceId: string;
@@ -61,7 +89,6 @@ type SkipTarget = {
 
 export function SkipRuleButton({ target }: { target: SkipTarget }) {
   const { workspace } = useWorkspace();
-  const { deployment } = useDeployment();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
   const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
@@ -69,6 +96,7 @@ export function SkipRuleButton({ target }: { target: SkipTarget }) {
   const createSkip = trpc.policySkips.createForTarget.useMutation({
     onSuccess: () => {
       toast.success("Skip queued for this release target");
+      utils.policySkips.forTarget.invalidate();
       utils.releaseTargets.evaluations.invalidate();
       setOpen(false);
       setExpiresAt(undefined);
@@ -111,7 +139,6 @@ export function SkipRuleButton({ target }: { target: SkipTarget }) {
           onClick={() =>
             createSkip.mutate({
               workspaceId: workspace.id,
-              deploymentId: deployment.id,
               environmentId: target.environmentId,
               resourceId: target.resourceId,
               versionId: target.versionId,

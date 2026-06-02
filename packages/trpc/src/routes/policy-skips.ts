@@ -1,7 +1,14 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   enqueueDesiredRelease,
   enqueueReleaseTargetsForEnvironment,
@@ -75,12 +82,58 @@ export const policySkipsRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const { environmentId, resourceId, versionId } = input;
-      return ctx.db.query.policySkip.findMany({
+      const skips = await ctx.db.query.policySkip.findMany({
         where: and(
           eq(schema.policySkip.environmentId, environmentId),
           eq(schema.policySkip.resourceId, resourceId),
           eq(schema.policySkip.versionId, versionId),
         ),
+      });
+      if (skips.length === 0) return [];
+
+      const ruleIds = [...new Set(skips.map((s) => s.ruleId))];
+      const ruleTables = [
+        schema.policyRuleAnyApproval,
+        schema.policyRuleDeploymentDependency,
+        schema.policyRuleDeploymentWindow,
+        schema.policyRuleEnvironmentProgression,
+        schema.policyRuleGradualRollout,
+        schema.policyRuleRetry,
+        schema.policyRuleRollback,
+        schema.policyRuleVerification,
+        schema.policyRuleVersionCooldown,
+        schema.policyRuleVersionSelector,
+        schema.policyRulePlanValidationOpa,
+      ] as const;
+
+      const unions = ruleTables.map(
+        (t) =>
+          sql`SELECT ${t.id} AS rule_id, ${t.policyId} AS policy_id FROM ${t} WHERE ${inArray(t.id, ruleIds)}`,
+      );
+      const ruleRows = await ctx.db.execute<{
+        rule_id: string;
+        policy_id: string;
+      }>(sql.join(unions, sql` UNION ALL `));
+
+      const ruleToPolicyId = new Map(
+        ruleRows.rows.map((r) => [r.rule_id, r.policy_id]),
+      );
+      const policyIds = [...new Set(ruleRows.rows.map((r) => r.policy_id))];
+
+      const policyNameById = new Map<string, string>();
+      if (policyIds.length > 0) {
+        const policies = await ctx.db
+          .select({ id: schema.policy.id, name: schema.policy.name })
+          .from(schema.policy)
+          .where(inArray(schema.policy.id, policyIds));
+        for (const p of policies) policyNameById.set(p.id, p.name);
+      }
+
+      return skips.map((skip) => {
+        const policyId = ruleToPolicyId.get(skip.ruleId);
+        const policyName =
+          policyId != null ? (policyNameById.get(policyId) ?? null) : null;
+        return { ...skip, policyName };
       });
     }),
 
@@ -88,7 +141,6 @@ export const policySkipsRouter = router({
     .input(
       z.object({
         workspaceId: z.string(),
-        deploymentId: z.string(),
         environmentId: z.string(),
         resourceId: z.string(),
         versionId: z.string(),
@@ -98,15 +150,20 @@ export const policySkipsRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const {
-        workspaceId,
-        deploymentId,
-        environmentId,
-        resourceId,
-        versionId,
-        ruleId,
-        expiresAt,
-      } = input;
+      const { workspaceId, environmentId, resourceId, versionId, ruleId } =
+        input;
+
+      const version = await ctx.db
+        .select({ deploymentId: schema.deploymentVersion.deploymentId })
+        .from(schema.deploymentVersion)
+        .where(eq(schema.deploymentVersion.id, versionId))
+        .then(takeFirstOrNull);
+
+      if (version == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Version not found",
+        });
 
       const skip = await ctx.db
         .insert(schema.policySkip)
@@ -116,7 +173,7 @@ export const policySkipsRouter = router({
           resourceId,
           versionId,
           ruleId,
-          expiresAt,
+          expiresAt: input.expiresAt,
           reason: input.reason ?? "Skipped by user",
         })
         .returning()
@@ -124,7 +181,7 @@ export const policySkipsRouter = router({
 
       await enqueueDesiredRelease(ctx.db, {
         workspaceId,
-        deploymentId,
+        deploymentId: version.deploymentId,
         environmentId,
         resourceId,
       });
