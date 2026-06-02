@@ -92,7 +92,8 @@
               "policies/version-selector",
               "policies/version-cooldown",
               "policies/deployment-window",
-              "policies/retry"
+              "policies/retry",
+              "policies/plan-validation"
             ]
           },
           {
