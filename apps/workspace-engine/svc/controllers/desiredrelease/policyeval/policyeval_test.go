@@ -833,6 +833,30 @@ func TestEvaluateVersion_PolicySkips(t *testing.T) {
 		require.Len(t, result, 1)
 		assert.Nil(t, result[0].NextEvaluationTime)
 	})
+
+	// The release-target UI's "Remove skip" button reads skip_id from the
+	// evaluation details to know which skip to delete.
+	t.Run("skipped evaluation exposes skip_id in details", func(t *testing.T) {
+		e := &mockEvaluator{
+			result:      denyResult(),
+			scopeFields: evaluator.ScopeVersion,
+			ruleID:      "rule-1",
+		}
+		skips := []*oapi.PolicySkip{
+			{
+				Id:        "skip-1",
+				RuleId:    "rule-1",
+				VersionId: "v-1",
+				Reason:    "hotfix",
+				CreatedAt: time.Now(),
+			},
+		}
+		result, err := evaluateVersion(ctx, []evaluator.Evaluator{e}, fullScope(), skips)
+		require.NoError(t, err)
+		require.Len(t, result, 1)
+		assert.Equal(t, "skip-1", result[0].Details["skip_id"])
+		assert.Equal(t, "hotfix", result[0].Details["skip_reason"])
+	})
 }
 
 // ---------------------------------------------------------------------------

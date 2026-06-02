@@ -467,6 +467,61 @@ func TestPolicySkip_MultipleVersions_OnlyTargetedVersionUnblocked(t *testing.T) 
 }
 
 // ---------------------------------------------------------------------------
+// Resource-scoped skip: bypass only the targeted release target
+// ---------------------------------------------------------------------------
+
+func TestPolicySkip_ResourceScoped_OnlyTargetResourceBypassed(t *testing.T) {
+	deploymentID := uuid.New()
+	environmentID := uuid.New()
+	resource1ID := uuid.New()
+	resource2ID := uuid.New()
+	ruleID := uuid.New().String()
+	versionID := uuid.New().String()
+
+	p := NewTestPipeline(t,
+		WithDeployment(DeploymentSelector("true"), DeploymentID(deploymentID)),
+		WithEnvironment(EnvironmentName("production"), EnvironmentID(environmentID)),
+		WithResource(ResourceName("srv-1"), ResourceKind("Server"), ResourceID(resource1ID)),
+		WithResource(ResourceName("srv-2"), ResourceKind("Server"), ResourceID(resource2ID)),
+		WithVersion(VersionTag("v1.0.0"), VersionID(versionID)),
+		WithPolicy(
+			PolicySelector("true"),
+			PolicyEnabled(true),
+			WithPolicyRule(
+				PolicyRuleID(ruleID),
+				WithApprovalRule(1),
+			),
+		),
+	)
+
+	// Emulate the DB's resource filter: the skip is scoped to srv-1 only, so
+	// GetPolicySkips returns it for resource1 and nothing for resource2. This
+	// mirrors the production query's `resource_id IS NULL OR resource_id = $3`.
+	p.ReleaseGetter.PolicySkipsFn = func(_, _, resourceID string) []*oapi.PolicySkip {
+		if resourceID != resource1ID.String() {
+			return nil
+		}
+		return []*oapi.PolicySkip{{
+			Id:         uuid.New().String(),
+			RuleId:     ruleID,
+			VersionId:  versionID,
+			ResourceId: &resourceID,
+			Reason:     "hotfix one cluster",
+			CreatedAt:  time.Now(),
+			CreatedBy:  "admin",
+		}}
+	}
+
+	p.Run()
+
+	// Only srv-1 is unblocked; srv-2's approval rule still blocks it.
+	p.AssertReleaseCount(t, 1)
+	p.AssertReleaseVersion(t, 0, "v1.0.0")
+	assert.Equal(t, resource1ID.String(), p.Releases()[0].ReleaseTarget.ResourceId,
+		"only the resource-scoped target should be released")
+}
+
+// ---------------------------------------------------------------------------
 // Two-phase: verify block, then add skip and verify release
 // ---------------------------------------------------------------------------
 

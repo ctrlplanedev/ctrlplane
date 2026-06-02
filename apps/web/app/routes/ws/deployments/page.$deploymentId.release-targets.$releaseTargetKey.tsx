@@ -39,6 +39,11 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { Dependencies } from "./_components/release-targets/Dependencies";
+import {
+  isSkipDetails,
+  RemoveSkipButton,
+  SkipRuleButton,
+} from "./_components/release-targets/PolicySkipActions";
 
 function parseReleaseTargetKey(key: string) {
   if (key.length !== 110) return null;
@@ -232,7 +237,11 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
   const approvalDetails = isApprovalDetails(evaluation.details)
     ? evaluation.details
     : null;
-  const hasSpecialDetails = windowDetails != null || approvalDetails != null;
+  const skipDetails = isSkipDetails(evaluation.details)
+    ? evaluation.details
+    : null;
+  const hasSpecialDetails =
+    windowDetails != null || approvalDetails != null || skipDetails != null;
 
   return (
     <div className="flex items-start gap-3 rounded-md border p-3">
@@ -241,6 +250,12 @@ function EvalRow({ evaluation }: { evaluation: Evaluation }) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{evaluation.message}</span>
           <StatusBadge evaluation={evaluation} />
+          <div className="grow" />
+          {skipDetails != null ? (
+            <RemoveSkipButton skipId={skipDetails.skip_id} />
+          ) : (
+            !evaluation.allowed && <SkipRuleButton target={evaluation} />
+          )}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
