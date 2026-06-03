@@ -14,9 +14,10 @@ rather than ctrlplane pushing work into the provider's environment.
 
 The work is split into two parts:
 
-- **V1** delivers the pull contract: an agent polls for the next job, claims it
+- **V1** delivers the pull contract: an agent polls for queued jobs, claims one
   atomically (at most once), runs it, and reports status. A new `queued` job
-  status marks a job as claimable.
+  status marks a job as claimable. Polling is a side-effect-free list; a separate
+  claim call transitions the job and returns its execution context.
 - **V2** adds crash recovery: a lease, a heartbeat endpoint, and a reaper that
   returns abandoned jobs to the queue. V2 is purely additive — V1 is shippable
   and useful on its own.
@@ -49,7 +50,7 @@ the workflow). A pull agent splits these:
 - the external agent **consumes** it by polling, claiming, and running it.
 
 The job row in Postgres is the queue. The dispatch controller is the producer;
-the agent's poll is the delivery.
+the agent's poll discovers work and its claim takes delivery.
 
 ### Job status: `queued`
 
@@ -112,48 +113,66 @@ when created rather than when execution starts. For `http-pull` this means
 measurements can begin before an agent claims the job; this matches existing
 behavior and is accepted for V1. See Open Questions.
 
+### Poll endpoint (V1)
+
+```
+GET /v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs?status=queued
+```
+
+Returns all jobs for the agent in the requested status. This is a plain,
+side-effect-free poll: it lists what is claimable but claims nothing. The agent
+picks a job from the list and claims it with a separate call. Added to
+`apps/api/src/routes/v1/workspaces/job-agents.ts`.
+
+The list response is intentionally lightweight — job id, deployment,
+environment, resource, and `created_at` — and **omits `dispatch_context`**.
+Resolved variables (including secret-flagged ones) are not returned here, so a
+poll never broadcasts secrets for every queued job to every agent. Context is
+returned only on claim, and only to the agent that wins it.
+
 ### Claim endpoint (V1)
 
 ```
-GET /v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs/next
+POST /v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs/{jobId}/claim
 ```
 
-Returns the next claimable job for the agent and marks it claimed, or returns
-empty if none are available. Added to
-`apps/api/src/routes/v1/workspaces/job-agents.ts`.
+Atomically transitions a specific job `queued → in_progress` and returns the
+full job, including `dispatch_context`. Because the poll has no side effects,
+this is the single mutating step that hands a job to an agent.
 
-The claim is a single atomic statement. Postgres row locking — not the
-transaction boundary — provides the at-most-once guarantee:
+The claim is a conditional update guarded on the current status. Postgres row
+locking — not the transaction boundary — provides the at-most-once guarantee:
 
 ```sql
 UPDATE job
 SET status = 'in_progress', started_at = now()
-WHERE id = (
-  SELECT id FROM job
-  WHERE status = 'queued' AND job_agent_id = $1
-  ORDER BY created_at
-  LIMIT 1
-  FOR UPDATE SKIP LOCKED
-)
+WHERE id = $1 AND status = 'queued' AND job_agent_id = $2
 RETURNING *;
 ```
 
-`FOR UPDATE SKIP LOCKED` ensures two overlapping requests claim different jobs
-rather than the same one. This is the same pattern the reconcile work queue
-already uses (`ClaimReconcileWorkItems`).
+If two agents claim the same job id concurrently, the row lock serializes them
+and only the first still sees `status = 'queued'`; the second matches zero rows
+and receives `409 Conflict`. No `SELECT ... FOR UPDATE SKIP LOCKED` scan is
+needed because the agent names the job id explicitly — the `status = 'queued'`
+predicate does the work the locking scan did in the next-job design. The
+reconcile work queue uses the same conditional-claim shape
+(`ClaimReconcileWorkItems`).
 
 ### Job payload
 
-The claim response returns the job as-is. The job's `dispatch_context` column
-is a self-contained execution snapshot already populated at job creation —
-deployment, environment, resource, release, version, resolved inputs, and
-variables. No joins or additional assembly are required; the existing
-`toJobResponse` shape already emits `jobAgentConfig` and `dispatchContext`.
+The **claim** response returns the job as-is; the **poll** response omits it.
+The job's `dispatch_context` column is a self-contained execution snapshot
+already populated at job creation — deployment, environment, resource, release,
+version, resolved inputs, and variables. No joins or additional assembly are
+required; the existing `toJobResponse` shape already emits `jobAgentConfig` and
+`dispatchContext`.
 
-Note: `dispatch_context` includes resolved variable values. Secret-flagged
-variables are therefore returned to the external agent in the response. This
-data otherwise never leaves ctrlplane for push agents. The endpoint must be
-served over TLS; per-agent authentication is addressed under V2.
+Note: `dispatch_context` includes resolved variable values, so secret-flagged
+variables are returned to the external agent. Returning context only on claim —
+not on poll — limits this exposure to the one job the agent actually runs,
+rather than every queued job a poll would list. This data otherwise never leaves
+ctrlplane for push agents. The endpoint must be served over TLS; per-agent
+authentication is addressed under V2.
 
 ### Status reporting
 
@@ -178,8 +197,9 @@ addressed under V2.
 The issue identifies two failure modes. V1 addresses the first; V2 addresses the
 second.
 
-1. **Double-pickup** — handled by the atomic claim above. A job is handed out at
-   most once, even under overlapping requests or client retries.
+1. **Double-pickup** — handled by the conditional claim above. A job is handed
+   out at most once, even under overlapping claims or client retries; losers get
+   `409 Conflict`.
 2. **Crash mid-job** — not handled in V1. If an agent claims a job and dies, the
    job remains `in_progress`. Recovery is a manual transition back to `queued`
    (the same transition V2 automates). V2 adds automatic recovery.
@@ -190,7 +210,8 @@ second.
 | ----------------- | ----------------------------------------------------------------------------------- |
 | `job_status` enum | add `queued` (schema + migration, validators, API status maps, OpenAPI, oapi/sqlc)  |
 | Agent type        | new `http-pull` package; `Dispatch` sets `queued`; register in `jobdispatch`        |
-| Claim endpoint    | `GET .../job-agents/{id}/jobs/next` with `FOR UPDATE SKIP LOCKED`; OpenAPI path      |
+| Poll endpoint     | `GET .../job-agents/{id}/jobs?status=queued`; lists queued jobs, no context; OpenAPI |
+| Claim endpoint    | `POST .../job-agents/{id}/jobs/{jobId}/claim`; conditional `queued→in_progress`, returns context; OpenAPI |
 | Status reporting  | reuse `PUT .../jobs/{jobId}/status`                                                  |
 | Eligibility       | unchanged                                                                           |
 | Dispatch flow     | unchanged except the `http-pull` `Dispatch` body                                    |
@@ -234,16 +255,11 @@ the job to `in_progress`, using a CTE so it remains a single atomic operation:
 ```sql
 WITH claimed AS (
   UPDATE job SET status = 'in_progress', started_at = now()
-  WHERE id = (
-    SELECT id FROM job
-    WHERE status = 'queued' AND job_agent_id = $1
-    ORDER BY created_at LIMIT 1
-    FOR UPDATE SKIP LOCKED
-  )
+  WHERE id = $1 AND status = 'queued' AND job_agent_id = $2
   RETURNING id
 )
 INSERT INTO job_claim (job_id, job_agent_id, claim_expires_at)
-SELECT id, $1, now() + make_interval(secs => $lease_seconds) FROM claimed
+SELECT id, $2, now() + make_interval(secs => $lease_seconds) FROM claimed
 RETURNING *;
 ```
 
@@ -324,18 +340,19 @@ optional.
 - The dispatch controller, eligibility logic, and promotion lifecycle are
   unchanged except for recognizing the `queued` status and the `http-pull`
   agent's `Dispatch` body.
-- The status-reporting endpoint is reused unchanged. The claim endpoint (V1) and
-  heartbeat endpoint (V2) are new and do not alter existing endpoints.
+- The status-reporting endpoint is reused unchanged. The poll and claim
+  endpoints (V1) and heartbeat endpoint (V2) are new and do not alter existing
+  endpoints.
 - The V2 reaper only acts on jobs that have a `job_claim` row, so introducing it
   does not change the behavior of any agent that does not heartbeat.
 
 ## Open Questions
 
-1. **Long-poll vs. plain poll.** V1 can return immediately when no job is
-   available. A long-poll variant (hold the request open until a job appears or
-   a timeout elapses, bounded by a server-enforced maximum) reduces idle polling
-   and is a candidate for V2. Backpressure and fairness limits on held
-   connections are open.
+1. **Long-poll vs. plain poll.** V1 uses a plain poll: the list endpoint returns
+   immediately with the current set of queued jobs (possibly empty). A long-poll
+   variant (hold the request open until a job appears or a timeout elapses,
+   bounded by a server-enforced maximum) reduces idle polling and is a candidate
+   for V2. Backpressure and fairness limits on held connections are open.
 
 2. **Verification timing.** Verifications begin measuring when created (at
    dispatch), which for a pull agent can precede the claim by an unbounded
