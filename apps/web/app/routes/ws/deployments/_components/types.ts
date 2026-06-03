@@ -17,7 +17,8 @@ export type JobStatus =
   | "invalid_job_agent"
   | "invalid_integration"
   | "external_run_not_found"
-  | "successful";
+  | "successful"
+  | "queued";
 
 export type DeploymentVersion = {
   id: string;

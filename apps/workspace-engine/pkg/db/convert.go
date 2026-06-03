@@ -691,6 +691,7 @@ var oapiToDBJobStatus = map[oapi.JobStatus]JobStatus{
 	oapi.JobStatusInvalidJobAgent:     JobStatusInvalidJobAgent,
 	oapi.JobStatusInvalidIntegration:  JobStatusInvalidIntegration,
 	oapi.JobStatusExternalRunNotFound: JobStatusExternalRunNotFound,
+	oapi.JobStatusQueued:              JobStatusQueued,
 }
 
 var dbToOapiJobStatus = map[JobStatus]oapi.JobStatus{
@@ -704,6 +705,7 @@ var dbToOapiJobStatus = map[JobStatus]oapi.JobStatus{
 	JobStatusInvalidJobAgent:     oapi.JobStatusInvalidJobAgent,
 	JobStatusInvalidIntegration:  oapi.JobStatusInvalidIntegration,
 	JobStatusExternalRunNotFound: oapi.JobStatusExternalRunNotFound,
+	JobStatusQueued:              oapi.JobStatusQueued,
 }
 
 func ToDBJobStatus(s oapi.JobStatus) JobStatus {

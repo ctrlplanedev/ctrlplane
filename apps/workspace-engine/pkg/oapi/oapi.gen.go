@@ -81,6 +81,7 @@ const (
 	JobStatusInvalidIntegration  JobStatus = "invalidIntegration"
 	JobStatusInvalidJobAgent     JobStatus = "invalidJobAgent"
 	JobStatusPending             JobStatus = "pending"
+	JobStatusQueued              JobStatus = "queued"
 	JobStatusSkipped             JobStatus = "skipped"
 	JobStatusSuccessful          JobStatus = "successful"
 )

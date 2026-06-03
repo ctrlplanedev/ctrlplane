@@ -1373,6 +1373,13 @@
       "when": 1778768912269,
       "tag": "0195_left_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 196,
+      "version": "7",
+      "when": 1780501089794,
+      "tag": "0196_violet_green_goblin",
+      "breakpoints": true
     }
   ]
 }

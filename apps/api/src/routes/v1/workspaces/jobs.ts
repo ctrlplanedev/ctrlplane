@@ -7,7 +7,7 @@ import { db } from "@ctrlplane/db/client";
 import { enqueueDesiredRelease } from "@ctrlplane/db/reconcilers";
 import * as schema from "@ctrlplane/db/schema";
 
-const dbToOapiStatus: Record<string, string> = {
+export const dbToOapiStatus: Record<string, string> = {
   cancelled: "cancelled",
   skipped: "skipped",
   in_progress: "inProgress",
@@ -18,9 +18,10 @@ const dbToOapiStatus: Record<string, string> = {
   invalid_integration: "invalidIntegration",
   external_run_not_found: "externalRunNotFound",
   successful: "successful",
+  queued: "queued",
 };
 
-const oapiToDbStatus: Record<string, string> = {
+export const oapiToDbStatus: Record<string, string> = {
   cancelled: "cancelled",
   skipped: "skipped",
   inProgress: "in_progress",
@@ -31,9 +32,10 @@ const oapiToDbStatus: Record<string, string> = {
   invalidIntegration: "invalid_integration",
   externalRunNotFound: "external_run_not_found",
   successful: "successful",
+  queued: "queued",
 };
 
-const getMetadataForJobs = async (jobIds: string[]) => {
+export const getMetadataForJobs = async (jobIds: string[]) => {
   if (jobIds.length === 0) return new Map<string, Record<string, string>>();
 
   const rows = await db
@@ -50,10 +52,11 @@ const getMetadataForJobs = async (jobIds: string[]) => {
   return map;
 };
 
-const toJobResponse = (
+export const toJobResponse = (
   j: typeof schema.job.$inferSelect,
   releaseId: string | null,
   metadata: Record<string, string>,
+  includeDispatchContext = true,
 ) => ({
   id: j.id,
   releaseId: releaseId ?? "",
@@ -67,9 +70,10 @@ const toJobResponse = (
   ...(j.message != null && { message: j.message }),
   ...(j.startedAt != null && { startedAt: j.startedAt.toISOString() }),
   ...(j.completedAt != null && { completedAt: j.completedAt.toISOString() }),
-  ...(Object.keys(j.dispatchContext).length > 0 && {
-    dispatchContext: j.dispatchContext,
-  }),
+  ...(includeDispatchContext &&
+    Object.keys(j.dispatchContext).length > 0 && {
+      dispatchContext: j.dispatchContext,
+    }),
 });
 
 const getJobs: AsyncTypedHandler<

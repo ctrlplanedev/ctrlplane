@@ -49,6 +49,8 @@ export const getJobStatusColor = (status: JobStatus) => {
       return "bg-red-500/10 text-red-600 border-red-500/20";
     case "pending":
       return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    case "queued":
+      return "bg-purple-500/10 text-purple-600 border-purple-500/20";
     case "cancelled":
       return "bg-neutral-500/10 text-neutral-600 border-neutral-500/20";
     default:
@@ -65,6 +67,8 @@ export const getJobStatusIcon = (status: JobStatus) => {
     case "failure":
       return <XCircle className="h-4 w-4" />;
     case "pending":
+      return <Clock className="h-4 w-4" />;
+    case "queued":
       return <Clock className="h-4 w-4" />;
     case "cancelled":
       return <Pause className="h-4 w-4" />;

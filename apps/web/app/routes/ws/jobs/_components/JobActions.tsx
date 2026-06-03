@@ -48,6 +48,7 @@ const JOB_STATUSES: JobStatus[] = [
   "invalid_integration",
   "external_run_not_found",
   "successful",
+  "queued",
 ];
 
 function CopyJobIdAction({

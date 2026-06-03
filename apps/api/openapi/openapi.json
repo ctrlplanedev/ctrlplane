@@ -1392,7 +1392,8 @@
                "invalidJobAgent",
                "invalidIntegration",
                "externalRunNotFound",
-               "successful"
+               "successful",
+               "queued"
             ],
             "type": "string"
          },
@@ -6310,6 +6311,211 @@
                }
             },
             "summary": "Upsert a job agent"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs": {
+         "get": {
+            "description": "Returns the jobs assigned to a job agent, optionally filtered by status.",
+            "operationId": "listJobAgentJobs",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Filter jobs by status",
+                  "in": "query",
+                  "name": "status",
+                  "required": false,
+                  "schema": {
+                     "$ref": "#/components/schemas/JobStatus"
+                  }
+               },
+               {
+                  "description": "Include the dispatch context on each job. It can be large, so it is omitted by default.",
+                  "in": "query",
+                  "name": "includeDispatchContext",
+                  "required": false,
+                  "schema": {
+                     "default": false,
+                     "type": "boolean"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Job"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List jobs for a job agent"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs/{jobId}/claim": {
+         "post": {
+            "description": "Atomically claims a queued job for the job agent, transitioning it to in progress. Returns 409 if the job is no longer available to claim.",
+            "operationId": "claimJob",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Job"
+                        }
+                     }
+                  },
+                  "description": "Job claimed"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               },
+               "409": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Job is not available to claim"
+               }
+            },
+            "summary": "Claim a job"
          }
       },
       "/v1/workspaces/{workspaceId}/jobs": {

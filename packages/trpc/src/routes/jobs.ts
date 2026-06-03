@@ -131,6 +131,7 @@ export const jobsRouter = router({
           "invalid_integration",
           "external_run_not_found",
           "successful",
+          "queued",
         ]),
       }),
     )

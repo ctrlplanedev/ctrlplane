@@ -573,7 +573,8 @@ export interface components {
       | "invalidJobAgent"
       | "invalidIntegration"
       | "externalRunNotFound"
-      | "successful";
+      | "successful"
+      | "queued";
     JobSummary: {
       id: string;
       /** @description External links extracted from job metadata */
