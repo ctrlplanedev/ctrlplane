@@ -946,7 +946,8 @@
                "invalidJobAgent",
                "invalidIntegration",
                "externalRunNotFound",
-               "successful"
+               "successful",
+               "queued"
             ],
             "type": "string"
          },

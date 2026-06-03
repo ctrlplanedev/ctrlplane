@@ -18,6 +18,7 @@ export const JobStatusDisplayName: Record<string, string> = {
   invalid_integration: "Invalid Integration",
   external_run_not_found: "External Run Not Found",
   successful: "Successful",
+  queued: "Queued",
 };
 
 // Basic job status badge component with color mapping
@@ -43,6 +44,8 @@ const JobStatusBadgeColor: Record<string, string> = {
     "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800",
   successful:
     "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800",
+  queued:
+    "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800",
 };
 
 function JobStatusBadgeInner({

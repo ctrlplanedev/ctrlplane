@@ -29,6 +29,7 @@ export const jobStatus = pgEnum("job_status", [
   "invalid_integration",
   "external_run_not_found",
   "successful",
+  "queued",
 ]);
 
 export const jobReason = pgEnum("job_reason", [

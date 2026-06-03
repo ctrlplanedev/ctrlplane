@@ -82,6 +82,7 @@ local JobPropertyKeys = std.objectFields(Job.properties);
       'invalidIntegration',
       'externalRunNotFound',
       'successful',
+      'queued',
     ],
   },
 
