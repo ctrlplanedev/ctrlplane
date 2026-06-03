@@ -28,6 +28,7 @@
     "test:systems": "pnpm exec playwright test tests/systems.spec.ts",
     "test:workflows": "pnpm exec playwright test tests/api/workflows.spec.ts",
     "test:job-agent-pull": "pnpm exec playwright test --project=api-tests tests/api/job-agent-pull.spec.ts",
+    "test:job-status-update": "pnpm exec playwright test --project=api-tests tests/api/job-status-update.spec.ts",
     "seed": "tsx seed.ts",
     "clean": "rm -rf .turbo node_modules",
     "show-report": "pnpm exec playwright show-report",

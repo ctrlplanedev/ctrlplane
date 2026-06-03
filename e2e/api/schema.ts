@@ -4517,7 +4517,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["JobStatus"];
+                "application/json": {
+                    status: components["schemas"]["JobStatus"];
+                };
             };
         };
         responses: {

@@ -6704,7 +6704,15 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/JobStatus"
+                        "type": "object",
+                        "required": [
+                           "status"
+                        ],
+                        "properties": {
+                           "status": {
+                              "$ref": "#/components/schemas/JobStatus"
+                           }
+                        }
                      }
                   }
                },
