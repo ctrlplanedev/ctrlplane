@@ -31,7 +31,7 @@ test.describe("Job Status Update API", () => {
 
     const deployment = await db
       .insert(schema.deployment)
-      .values({ name: `status-deploy-${suffix}`, workspaceId })
+      .values({ name: `status-deploy-${suffix}`, description: "", workspaceId })
       .returning()
       .then((rows) => rows[0]!);
     const resource = await db
