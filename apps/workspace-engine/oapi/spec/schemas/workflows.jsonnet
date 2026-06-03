@@ -55,6 +55,33 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  WorkflowRunJob: {
+    type: 'object',
+    required: ['jobId', 'jobAgentId'],
+    properties: {
+      jobId: { type: 'string', description: 'Job id; poll its status via GET /v1/workspaces/{workspaceId}/jobs/{jobId}' },
+      jobAgentId: { type: 'string', description: 'Job agent the job was dispatched to' },
+    },
+  },
+
+  WorkflowRunResult: {
+    type: 'object',
+    required: ['id', 'workflowId', 'inputs', 'jobs'],
+    properties: {
+      id: { type: 'string', description: 'Workflow run id' },
+      workflowId: { type: 'string' },
+      inputs: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      jobs: {
+        type: 'array',
+        description: 'Jobs created and dispatched for this run',
+        items: openapi.schemaRef('WorkflowRunJob'),
+      },
+    },
+  },
+
   WorkflowStringInput: {
     type: 'object',
     required: ['key', 'type'],
