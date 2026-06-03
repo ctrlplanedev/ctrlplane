@@ -66,5 +66,5 @@ func TestImplementsDispatchable(t *testing.T) {
 	var _ interface {
 		Type() string
 		Dispatch(ctx context.Context, job *oapi.Job) error
-	} = &HttpPull{}
+	} = &HTTPPull{}
 }

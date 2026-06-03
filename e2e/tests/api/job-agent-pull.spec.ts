@@ -56,7 +56,12 @@ test.describe("Job Agent Pull API", () => {
     api: ApiClient,
     workspaceId: string,
     jobAgentId: string,
-    query: { status?: "queued"; includeDispatchContext?: boolean } = {},
+    query: {
+      status?: "queued";
+      includeDispatchContext?: boolean;
+      limit?: number;
+      offset?: number;
+    } = {},
   ) =>
     api.GET("/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs", {
       params: { path: { workspaceId, jobAgentId }, query },
@@ -151,6 +156,62 @@ test.describe("Job Agent Pull API", () => {
   }) => {
     const res = await listJobs(api, workspace.id, uuidv4());
     expect(res.response.status).toBe(404);
+  });
+
+  test("returns an empty list when the agent has no queued jobs", async ({
+    api,
+    workspace,
+  }) => {
+    const agentId = await createAgent(api, workspace.id);
+
+    const res = await listJobs(api, workspace.id, agentId, { status: "queued" });
+
+    expect(res.response.status).toBe(200);
+    expect(res.data!.items).toHaveLength(0);
+    expect(res.data!.total).toBe(0);
+  });
+
+  test("returns all queued jobs and paginates with limit and offset", async ({
+    api,
+    workspace,
+  }) => {
+    const agentId = await createAgent(api, workspace.id);
+    const seeded = [
+      await seedJob(agentId, "queued"),
+      await seedJob(agentId, "queued"),
+      await seedJob(agentId, "queued"),
+    ];
+
+    const all = await listJobs(api, workspace.id, agentId, { status: "queued" });
+    expect(all.response.status).toBe(200);
+    expect(all.data!.total).toBe(3);
+    expect(all.data!.items.map((j) => j.id).sort()).toEqual(
+      [...seeded].sort(),
+    );
+
+    const firstPage = await listJobs(api, workspace.id, agentId, {
+      status: "queued",
+      limit: 2,
+      offset: 0,
+    });
+    expect(firstPage.data!.items).toHaveLength(2);
+    expect(firstPage.data!.total).toBe(3);
+    expect(firstPage.data!.limit).toBe(2);
+    expect(firstPage.data!.offset).toBe(0);
+
+    const secondPage = await listJobs(api, workspace.id, agentId, {
+      status: "queued",
+      limit: 2,
+      offset: 2,
+    });
+    expect(secondPage.data!.items).toHaveLength(1);
+    expect(secondPage.data!.total).toBe(3);
+
+    const allIds = [
+      ...firstPage.data!.items.map((j) => j.id),
+      ...secondPage.data!.items.map((j) => j.id),
+    ].sort();
+    expect(allIds).toEqual([...seeded].sort());
   });
 
   // ---------- Claiming ----------
