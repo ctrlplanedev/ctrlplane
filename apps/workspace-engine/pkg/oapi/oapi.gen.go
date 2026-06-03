@@ -1517,6 +1517,26 @@ type WorkflowRun struct {
 	WorkflowId string                 `json:"workflowId"`
 }
 
+// WorkflowRunJob defines model for WorkflowRunJob.
+type WorkflowRunJob struct {
+	// JobAgentId Job agent the job was dispatched to
+	JobAgentId string `json:"jobAgentId"`
+
+	// JobId Job id; poll its status via GET /v1/workspaces/{workspaceId}/jobs/{jobId}
+	JobId string `json:"jobId"`
+}
+
+// WorkflowRunResult defines model for WorkflowRunResult.
+type WorkflowRunResult struct {
+	// Id Workflow run id
+	Id     string                 `json:"id"`
+	Inputs map[string]interface{} `json:"inputs"`
+
+	// Jobs Jobs created and dispatched for this run
+	Jobs       []WorkflowRunJob `json:"jobs"`
+	WorkflowId string           `json:"workflowId"`
+}
+
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
 	Default *string                 `json:"default,omitempty"`

@@ -3241,6 +3241,52 @@
             ],
             "type": "object"
          },
+         "WorkflowRunJob": {
+            "properties": {
+               "jobAgentId": {
+                  "description": "Job agent the job was dispatched to",
+                  "type": "string"
+               },
+               "jobId": {
+                  "description": "Job id; poll its status via GET /v1/workspaces/{workspaceId}/jobs/{jobId}",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "jobId",
+               "jobAgentId"
+            ],
+            "type": "object"
+         },
+         "WorkflowRunResult": {
+            "properties": {
+               "id": {
+                  "description": "Workflow run id",
+                  "type": "string"
+               },
+               "inputs": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobs": {
+                  "description": "Jobs created and dispatched for this run",
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowRunJob"
+                  },
+                  "type": "array"
+               },
+               "workflowId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "inputs",
+               "jobs"
+            ],
+            "type": "object"
+         },
          "WorkflowStringInput": {
             "properties": {
                "default": {
@@ -4037,7 +4083,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowRun"
+                           "$ref": "#/components/schemas/WorkflowRunResult"
                         }
                      }
                   },

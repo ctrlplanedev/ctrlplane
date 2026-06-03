@@ -94,15 +94,16 @@ func (w *Workflows) CreateWorkflowRun(
 		return
 	}
 
-	if err := w.setter.CreateWorkflowRun(
+	result, err := w.setter.CreateWorkflowRun(
 		c.Request.Context(),
 		workspaceId,
 		workflow,
 		inputs,
-	); err != nil {
+	)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Workflow run created"})
+	c.JSON(http.StatusOK, result)
 }

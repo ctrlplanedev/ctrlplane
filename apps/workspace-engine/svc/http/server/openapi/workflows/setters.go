@@ -20,7 +20,7 @@ type Setter interface {
 		workspaceID string,
 		workflow *oapi.Workflow,
 		inputs map[string]any,
-	) error
+	) (*oapi.WorkflowRunResult, error)
 }
 
 var _ Setter = &PostgresSetter{}
@@ -48,17 +48,17 @@ func (s *PostgresSetter) CreateWorkflowRun(
 	workspaceID string,
 	workflow *oapi.Workflow,
 	inputs map[string]any,
-) error {
+) (*oapi.WorkflowRunResult, error) {
 	dispatchContext := s.buildDispatchContext(workflow, inputs)
 
 	workflowIDUUID, err := uuid.Parse(workflow.Id)
 	if err != nil {
-		return fmt.Errorf("parse workflow id: %w", err)
+		return nil, fmt.Errorf("parse workflow id: %w", err)
 	}
 
 	tx, err := db.GetPool(ctx).Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
+		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
@@ -69,30 +69,42 @@ func (s *PostgresSetter) CreateWorkflowRun(
 		Inputs:     inputs,
 	})
 	if err != nil {
-		return fmt.Errorf("insert workflow run: %w", err)
+		return nil, fmt.Errorf("insert workflow run: %w", err)
 	}
 
+	jobs := make([]oapi.WorkflowRunJob, 0, len(workflow.Jobs))
 	for _, jobAgent := range workflow.Jobs {
 		isMatchingSelector, err := selector.Match(ctx, jobAgent.Selector, *dispatchContext)
 		if err != nil {
-			return fmt.Errorf("match selector: %w", err)
+			return nil, fmt.Errorf("match selector: %w", err)
 		}
 		if !isMatchingSelector {
 			continue
 		}
-		if err := s.dispatchJobForAgent(
+		job, err := s.dispatchJobForAgent(
 			ctx,
 			queries,
 			jobAgent,
 			workflowRun.ID,
 			dispatchContext,
 			workspaceID,
-		); err != nil {
-			return err
+		)
+		if err != nil {
+			return nil, err
 		}
+		jobs = append(jobs, job)
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return &oapi.WorkflowRunResult{
+		Id:         workflowRun.ID.String(),
+		WorkflowId: workflow.Id,
+		Inputs:     inputs,
+		Jobs:       jobs,
+	}, nil
 }
 
 // mergeWorkflowJobAgentConfig builds the JobAgentConfig that ends up on a
@@ -136,21 +148,21 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	workflowRunID uuid.UUID,
 	dispatchContext *oapi.DispatchContext,
 	workspaceID string,
-) error {
+) (oapi.WorkflowRunJob, error) {
 	jobAgentIDUUID, err := uuid.Parse(jobAgent.Ref)
 	if err != nil {
-		return fmt.Errorf("parse job agent id: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("parse job agent id: %w", err)
 	}
 	workspaceIDUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return fmt.Errorf("parse workspace id: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("parse workspace id: %w", err)
 	}
 	runner, err := queries.GetJobAgentByID(ctx, jobAgentIDUUID)
 	if err != nil {
-		return fmt.Errorf("get job agent: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("get job agent: %w", err)
 	}
 	if runner.WorkspaceID != workspaceIDUUID {
-		return fmt.Errorf(
+		return oapi.WorkflowRunJob{}, fmt.Errorf(
 			"job agent %s does not belong to workspace %s",
 			jobAgentIDUUID, workspaceIDUUID,
 		)
@@ -158,12 +170,12 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	mergedConfig := mergeWorkflowJobAgentConfig(runner.Config, jobAgent.Config)
 	jobAgentConfig, err := json.Marshal(mergedConfig)
 	if err != nil {
-		return fmt.Errorf("marshal job agent config: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("marshal job agent config: %w", err)
 	}
 	jobDispatchContext := buildJobDispatchContext(dispatchContext, runner, mergedConfig)
 	dispatchContextJSON, err := json.Marshal(jobDispatchContext)
 	if err != nil {
-		return fmt.Errorf("marshal dispatch context: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("marshal dispatch context: %w", err)
 	}
 
 	now := pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true}
@@ -178,14 +190,14 @@ func (s *PostgresSetter) dispatchJobForAgent(
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}); err != nil {
-		return fmt.Errorf("insert job: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("insert job: %w", err)
 	}
 
 	if _, err := queries.InsertWorkflowJob(ctx, db.InsertWorkflowJobParams{
 		WorkflowRunID: workflowRunID,
 		JobID:         jobID,
 	}); err != nil {
-		return fmt.Errorf("insert workflow job: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("insert workflow job: %w", err)
 	}
 
 	if err := s.queue.Enqueue(ctx, reconcile.EnqueueParams{
@@ -194,8 +206,11 @@ func (s *PostgresSetter) dispatchJobForAgent(
 		ScopeType:   "job",
 		ScopeID:     jobID.String(),
 	}); err != nil {
-		return fmt.Errorf("enqueue job dispatch: %w", err)
+		return oapi.WorkflowRunJob{}, fmt.Errorf("enqueue job dispatch: %w", err)
 	}
 
-	return nil
+	return oapi.WorkflowRunJob{
+		JobId:      jobID.String(),
+		JobAgentId: jobAgentIDUUID.String(),
+	}, nil
 }
