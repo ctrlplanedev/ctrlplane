@@ -56,4 +56,50 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs': {
+    get: {
+      summary: 'List jobs for a job agent',
+      operationId: 'listJobAgentJobs',
+      description: 'Returns the jobs assigned to a job agent, optionally filtered by status.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.jobAgentIdParam(),
+        {
+          name: 'status',
+          'in': 'query',
+          required: false,
+          description: 'Filter jobs by status',
+          schema: openapi.schemaRef('JobStatus'),
+        },
+        {
+          name: 'includeDispatchContext',
+          'in': 'query',
+          required: false,
+          description: 'Include the dispatch context on each job. It can be large, so it is omitted by default.',
+          schema: { type: 'boolean', default: false },
+        },
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Job'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs/{jobId}/claim': {
+    post: {
+      summary: 'Claim a job',
+      operationId: 'claimJob',
+      description: 'Atomically claims a queued job for the job agent, transitioning it to in progress. Returns 409 if the job is no longer available to claim.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.jobAgentIdParam(),
+        openapi.jobIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('Job'), 'Job claimed')
+                 + openapi.conflictResponse('Job is not available to claim')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

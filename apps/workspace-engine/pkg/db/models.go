@@ -159,6 +159,7 @@ const (
 	JobStatusInvalidIntegration  JobStatus = "invalid_integration"
 	JobStatusExternalRunNotFound JobStatus = "external_run_not_found"
 	JobStatusSuccessful          JobStatus = "successful"
+	JobStatusQueued              JobStatus = "queued"
 )
 
 func (e *JobStatus) Scan(src interface{}) error {

@@ -303,7 +303,7 @@ CREATE TABLE computed_environment_resource (
 CREATE TYPE job_status AS ENUM (
     'cancelled', 'skipped', 'in_progress', 'action_required', 'pending',
     'failure', 'invalid_job_agent', 'invalid_integration',
-    'external_run_not_found', 'successful'
+    'external_run_not_found', 'successful', 'queued'
 );
 
 CREATE TYPE job_reason AS ENUM (

@@ -12,6 +12,7 @@ export enum JobStatus {
   InvalidJobAgent = "invalid_job_agent",
   InvalidIntegration = "invalid_integration",
   ExternalRunNotFound = "external_run_not_found",
+  Queued = "queued",
 }
 
 export type JobStatusType = `${JobStatus}`;
@@ -27,6 +28,7 @@ export const JobStatusReadable = {
   [JobStatus.InvalidJobAgent]: "Invalid job agent",
   [JobStatus.InvalidIntegration]: "Invalid integration",
   [JobStatus.ExternalRunNotFound]: "External run not found",
+  [JobStatus.Queued]: "Queued",
 };
 
 export const JobStatusOapi = {
@@ -40,6 +42,7 @@ export const JobStatusOapi = {
   [JobStatus.InvalidJobAgent]: "invalidJobAgent",
   [JobStatus.InvalidIntegration]: "invalidIntegration",
   [JobStatus.ExternalRunNotFound]: "externalRunNotFound",
+  [JobStatus.Queued]: "queued",
 } as const;
 
 export const activeStatus = [JobStatus.InProgress, JobStatus.ActionRequired];

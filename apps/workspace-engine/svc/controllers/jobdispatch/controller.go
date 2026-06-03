@@ -17,6 +17,7 @@ import (
 	"workspace-engine/pkg/jobagents/argo"
 	argoworkflow "workspace-engine/pkg/jobagents/argoworkflows"
 	"workspace-engine/pkg/jobagents/github"
+	"workspace-engine/pkg/jobagents/httppull"
 	"workspace-engine/pkg/jobagents/terraformcloud"
 	"workspace-engine/pkg/jobagents/testrunner"
 	"workspace-engine/pkg/oapi"
@@ -136,6 +137,7 @@ func New(workerID string, pgxPool *pgxpool.Pool) *reconcile.Worker {
 		),
 	)
 	dispatcher.Register(testrunner.New(pgSetter))
+	dispatcher.Register(httppull.New(pgSetter))
 	dispatcher.Register(
 		github.New(&github.GoGitHubWorkflowDispatcher{}, pgSetter),
 	)
