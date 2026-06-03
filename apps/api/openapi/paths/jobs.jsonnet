@@ -57,7 +57,13 @@ local openapi = import '../lib/openapi.libsonnet';
         required: true,
         content: {
           'application/json': {
-            schema: openapi.schemaRef('JobStatus'),
+            schema: {
+              type: 'object',
+              required: ['status'],
+              properties: {
+                status: openapi.schemaRef('JobStatus'),
+              },
+            },
           },
         },
       },

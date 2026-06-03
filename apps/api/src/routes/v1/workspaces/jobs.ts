@@ -257,7 +257,7 @@ const updateJobStatus: AsyncTypedHandler<
   "put"
 > = async (req, res) => {
   const { workspaceId, jobId } = req.params;
-  const { body: oapiStatus } = req;
+  const { status: oapiStatus } = req.body;
 
   const dbStatus = oapiToDbStatus[oapiStatus as string];
   if (dbStatus == null) throw new ApiError("Invalid job status", 400);
