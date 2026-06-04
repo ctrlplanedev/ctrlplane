@@ -11,6 +11,12 @@ import (
 	"workspace-engine/pkg/reconcile/postgres"
 )
 
+// resourceSelectorInputKey is the reserved input key whose value is a CEL
+// expression selecting the resources a run fans out over. One set of jobs is
+// dispatched per matched resource. Absent or empty means a single, non-fanned-
+// out run.
+const resourceSelectorInputKey = "resourceSelector"
+
 type Workflows struct {
 	getter Getter
 	setter Setter
@@ -76,7 +82,9 @@ func (w *Workflows) CreateWorkflowRun(
 	workspaceId string,
 	workflowId string,
 ) {
-	workflow, err := w.getter.GetWorkflowByID(c.Request.Context(), workflowId)
+	ctx := c.Request.Context()
+
+	workflow, err := w.getter.GetWorkflowByID(ctx, workflowId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -94,12 +102,32 @@ func (w *Workflows) CreateWorkflowRun(
 		return
 	}
 
-	result, err := w.setter.CreateWorkflowRun(
-		c.Request.Context(),
-		workspaceId,
-		workflow,
-		inputs,
+	resourceSelector, _ := inputs[resourceSelectorInputKey].(string)
+	resources, err := w.getter.GetResourcesMatching(ctx, workspaceId, resourceSelector)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	runners, err := w.getter.GetJobAgentsByRef(ctx, workspaceId, workflow.Jobs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	dispatches, err := planDispatches(
+		ctx,
+		buildDispatchContext(workflow, inputs),
+		resources,
+		workflow.Jobs,
+		runners,
 	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := w.setter.PersistWorkflowRun(ctx, workspaceId, workflow.Id, inputs, dispatches)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -9,6 +10,109 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 )
+
+func TestGetResourcesMatching_EmptySelectorReturnsSingleNil(t *testing.T) {
+	getter := &PostgresGetter{}
+	resources, err := getter.GetResourcesMatching(context.Background(), uuid.New().String(), "")
+
+	require.NoError(t, err)
+	require.Len(t, resources, 1)
+	assert.Nil(t, resources[0])
+}
+
+const argoRoutingSelector = "resource.config.argo.server.contains(jobAgent.config.serverUrl)"
+
+func resourceOnServer(name, server string) *oapi.Resource {
+	return &oapi.Resource{
+		Id:   uuid.New().String(),
+		Name: name,
+		Config: map[string]any{
+			"argo": map[string]any{"server": server},
+		},
+	}
+}
+
+func argoAgent(serverURL string) (oapi.WorkflowJobAgent, db.JobAgent) {
+	ref := uuid.New()
+	agent := oapi.WorkflowJobAgent{
+		Ref:      ref.String(),
+		Name:     "delete-on-" + serverURL,
+		Selector: argoRoutingSelector,
+		Config:   map[string]any{},
+	}
+	runner := db.JobAgent{
+		ID:     ref,
+		Config: oapi.JobAgentConfig{"serverUrl": serverURL},
+	}
+	return agent, runner
+}
+
+func TestPlanDispatches_RoutesEachResourceToItsServer(t *testing.T) {
+	prodAgent, prodRunner := argoAgent("argocd.prod.example.com")
+	stagingAgent, stagingRunner := argoAgent("argocd.staging.example.com")
+
+	resources := []*oapi.Resource{
+		resourceOnServer("r1", "https://argocd.prod.example.com"),
+		resourceOnServer("r2", "https://argocd.prod.example.com"),
+		resourceOnServer("r3", "https://argocd.staging.example.com"),
+	}
+	runners := map[string]db.JobAgent{
+		prodAgent.Ref:    prodRunner,
+		stagingAgent.Ref: stagingRunner,
+	}
+	base := &oapi.DispatchContext{Workflow: &oapi.Workflow{Id: uuid.New().String()}}
+
+	dispatches, err := planDispatches(
+		context.Background(), base, resources,
+		[]oapi.WorkflowJobAgent{prodAgent, stagingAgent}, runners,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, dispatches, 3) // each resource matches exactly one server
+
+	for _, d := range dispatches {
+		server := d.dispatchCtx.Resource.Config["argo"].(map[string]any)["server"].(string)
+		serverURL := d.runner.Config["serverUrl"].(string)
+		assert.Contains(t, server, serverURL, "resource routed to the wrong server")
+	}
+}
+
+func TestPlanDispatches_NoMatchingServerYieldsNoDispatches(t *testing.T) {
+	prodAgent, prodRunner := argoAgent("argocd.prod.example.com")
+
+	resources := []*oapi.Resource{resourceOnServer("r1", "https://argocd.other.example.com")}
+	runners := map[string]db.JobAgent{prodAgent.Ref: prodRunner}
+	base := &oapi.DispatchContext{Workflow: &oapi.Workflow{Id: uuid.New().String()}}
+
+	dispatches, err := planDispatches(
+		context.Background(), base, resources,
+		[]oapi.WorkflowJobAgent{prodAgent}, runners,
+	)
+
+	require.NoError(t, err)
+	assert.Empty(t, dispatches)
+}
+
+func TestPlanDispatches_NilResourceRunsGateOnce(t *testing.T) {
+	ref := uuid.New()
+	agent := oapi.WorkflowJobAgent{
+		Ref:      ref.String(),
+		Name:     "always",
+		Selector: "true",
+		Config:   map[string]any{},
+	}
+	runners := map[string]db.JobAgent{ref.String(): {ID: ref}}
+	base := &oapi.DispatchContext{Workflow: &oapi.Workflow{Id: uuid.New().String()}}
+
+	dispatches, err := planDispatches(
+		context.Background(), base,
+		[]*oapi.Resource{nil}, []oapi.WorkflowJobAgent{agent}, runners,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, dispatches, 1)
+	assert.Nil(t, dispatches[0].dispatchCtx.Resource)
+}
 
 func stringInput(key string, def *string) oapi.WorkflowInput {
 	var input oapi.WorkflowInput

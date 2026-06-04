@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
+import { v4 as uuidv4 } from "uuid";
 
 import type { components } from "../../api/schema";
 import { test } from "../fixtures";
@@ -401,5 +402,143 @@ test.describe("Workflow API", () => {
       { params: { path: { workspaceId: workspace.id, workflowId } } },
     );
     expect(getRes.response.status).toBe(404);
+  });
+
+  test("should fan a run out to one job per matched resource, routed by server", async ({
+    api,
+    workspace,
+  }) => {
+    const suffix = faker.string.alphanumeric(8);
+    const prodServer = `argocd-prod-${suffix}.example.com`;
+    const stagingServer = `argocd-staging-${suffix}.example.com`;
+    const kind = `ArgoApp${suffix}`;
+    const routingSelector =
+      "resource.config.argo.server.contains(jobAgent.config.serverUrl)";
+
+    // Two registered job agents, each holding one server's URL in its config —
+    // the selector routes each resource to the agent whose serverUrl it matches.
+    const prodAgentId = uuidv4();
+    const stagingAgentId = uuidv4();
+    for (const [jobAgentId, serverUrl] of [
+      [prodAgentId, prodServer],
+      [stagingAgentId, stagingServer],
+    ] as const) {
+      const agentRes = await api.PUT(
+        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
+        {
+          params: { path: { workspaceId: workspace.id, jobAgentId } },
+          body: {
+            name: `argo-${jobAgentId.slice(0, 8)}`,
+            type: "argo-cd",
+            config: { serverUrl },
+          },
+        },
+      );
+      expect(agentRes.response.status).toBe(202);
+    }
+
+    const providerName = `wf-fanout-${suffix}`;
+    const providerRes = await api.PUT(
+      "/v1/workspaces/{workspaceId}/resource-providers",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: { id: uuidv4(), name: providerName },
+      },
+    );
+    expect(providerRes.response.status).toBe(202);
+    const providerId = providerRes.data!.id;
+
+    let workflowId: string | undefined;
+    try {
+      const resource = (label: string, server: string) => ({
+        createdAt: new Date().toISOString(),
+        identifier: `${kind}-${label}-${suffix}`,
+        name: `${kind}-${label}`,
+        kind,
+        version: "1.0.0",
+        config: { argo: { server: `https://${server}` } },
+        metadata: {},
+      });
+      const setRes = await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: {
+            resources: [
+              resource("a", prodServer),
+              resource("b", prodServer),
+              resource("c", stagingServer),
+            ],
+          },
+        },
+      );
+      expect(setRes.response.status).toBe(202);
+
+      // Barrier: ensure the three resources are queryable before the run.
+      const listRes = await api.GET(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}/resources",
+        { params: { path: { workspaceId: workspace.id, name: providerName } } },
+      );
+      expect(listRes.data!.items).toHaveLength(3);
+
+      const createRes = await api.POST(
+        "/v1/workspaces/{workspaceId}/workflows",
+        {
+          params: { path: { workspaceId: workspace.id } },
+          body: {
+            name: `Delete Argo ${suffix}`,
+            inputs: [
+              {
+                key: "resourceSelector",
+                type: "string",
+                default: `resource.kind == '${kind}'`,
+              },
+            ],
+            jobAgents: [
+              { name: "prod", ref: prodAgentId, config: {}, selector: routingSelector },
+              { name: "staging", ref: stagingAgentId, config: {}, selector: routingSelector },
+            ],
+          },
+        },
+      );
+      expect(createRes.response.status).toBe(201);
+      workflowId = createRes.data!.id;
+
+      const runRes = await api.POST(
+        "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs",
+        {
+          params: { path: { workspaceId: workspace.id, workflowId } },
+          body: { inputs: {} },
+        },
+      );
+      expect(runRes.response.status).toBe(201);
+
+      const jobs = runRes.data!.jobs;
+      expect(jobs).toHaveLength(3); // one per matched resource
+
+      const jobsPerAgent = jobs.reduce<Record<string, number>>((acc, job) => {
+        acc[job.jobAgentId] = (acc[job.jobAgentId] ?? 0) + 1;
+        return acc;
+      }, {});
+      expect(jobsPerAgent[prodAgentId]).toBe(2); // two prod resources
+      expect(jobsPerAgent[stagingAgentId]).toBe(1); // one staging resource
+    } finally {
+      if (workflowId != null)
+        await api.DELETE(
+          "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+          { params: { path: { workspaceId: workspace.id, workflowId } } },
+        );
+      await api.PUT(
+        "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
+        {
+          params: { path: { workspaceId: workspace.id, providerId } },
+          body: { resources: [] },
+        },
+      );
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+        { params: { path: { workspaceId: workspace.id, name: providerName } } },
+      );
+    }
   });
 });
