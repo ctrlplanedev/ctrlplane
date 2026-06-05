@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/store/resources"
 )
 
 type Getter interface {
@@ -80,27 +80,8 @@ func (g *PostgresGetter) GetResourcesMatching(
 	if sel == "" {
 		return []*oapi.Resource{nil}, nil
 	}
-
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("parse workspace id: %w", err)
-	}
-
-	rows, err := db.GetQueries(ctx).ListResourcesByWorkspaceID(ctx, workspaceUUID)
-	if err != nil {
-		return nil, fmt.Errorf("list resources: %w", err)
-	}
-
-	all := make([]*oapi.Resource, 0, len(rows))
-	for _, row := range rows {
-		all = append(all, db.ToOapiResource(db.GetResourceByIDRow(row)))
-	}
-
-	matched, err := selector.Filter(ctx, sel, all)
-	if err != nil {
-		return nil, fmt.Errorf("filter resources: %w", err)
-	}
-	return matched, nil
+	store := &resources.PostgresGetResources{}
+	return store.GetResources(ctx, workspaceID, resources.GetResourcesOptions{CEL: sel})
 }
 
 func (g *PostgresGetter) GetJobAgentsByRef(

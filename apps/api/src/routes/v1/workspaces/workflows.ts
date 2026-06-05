@@ -8,6 +8,32 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
+import { validResourceSelector } from "../valid-selector.js";
+
+const RESOURCE_SELECTOR_INPUT_KEY = "resourceSelector";
+
+type WorkflowCelBody = {
+  jobAgents?: { name?: string; selector?: string | null }[];
+  inputs?: { key?: string; default?: unknown; selector?: { default?: unknown } | null }[];
+};
+
+const assertValidWorkflowCel = (body: WorkflowCelBody) => {
+  const check = (expr: unknown, label: string) => {
+    if (typeof expr !== "string" || expr.trim() === "") return;
+    if (!validResourceSelector(expr))
+      throw new ApiError(`Invalid CEL expression for ${label}`, 400, "INVALID_CEL");
+  };
+
+  for (const agent of body.jobAgents ?? [])
+    check(agent.selector, `job agent '${agent.name ?? "?"}'`);
+
+  for (const input of body.inputs ?? []) {
+    if (input.key === RESOURCE_SELECTOR_INPUT_KEY)
+      check(input.default, `input '${input.key}'`);
+    check(input.selector?.default, `input '${input.key ?? "?"}' selector`);
+  }
+};
+
 const slugifyWorkflowName = (name: string) =>
   name
     .toLowerCase()
@@ -105,6 +131,7 @@ const createWorkflow: AsyncTypedHandler<
   "post"
 > = async (req, res) => {
   const { workspaceId } = req.params;
+  assertValidWorkflowCel(req.body);
   const slug = resolveSlug(req.body.slug, req.body.name);
 
   const created = await db
@@ -167,6 +194,7 @@ const updateWorkflow: AsyncTypedHandler<
   "put"
 > = async (req, res) => {
   const { workflowId, workspaceId } = req.params;
+  assertValidWorkflowCel(req.body);
 
   if (req.body.slug != null) {
     const result = slugSchema.safeParse(req.body.slug);

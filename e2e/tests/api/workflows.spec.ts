@@ -404,6 +404,121 @@ test.describe("Workflow API", () => {
     expect(getRes.response.status).toBe(404);
   });
 
+  test("should reject creating a workflow with an invalid CEL job agent selector", async ({
+    api,
+    workspace,
+  }) => {
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `Bad CEL ${faker.string.alphanumeric(8)}`,
+          inputs: [],
+          jobAgents: [
+            { name: "agent", ref: uuidv4(), config: {}, selector: "((( not valid" },
+          ],
+        },
+      },
+    );
+    expect(createRes.response.status).toBe(400);
+  });
+
+  test("should reject creating a workflow with an invalid CEL resourceSelector input", async ({
+    api,
+    workspace,
+  }) => {
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `Bad CEL ${faker.string.alphanumeric(8)}`,
+          inputs: [
+            { key: "resourceSelector", type: "string", default: "((( not valid" },
+          ],
+          jobAgents: [],
+        },
+      },
+    );
+    expect(createRes.response.status).toBe(400);
+  });
+
+  test("should reject updating a workflow with an invalid CEL job agent selector", async ({
+    api,
+    workspace,
+  }) => {
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `Update CEL ${faker.string.alphanumeric(8)}`,
+          inputs: [],
+          jobAgents: [{ name: "agent", ref: uuidv4(), config: {}, selector: "true" }],
+        },
+      },
+    );
+    expect(createRes.response.status).toBe(201);
+    const workflowId = createRes.data!.id;
+
+    try {
+      const updateRes = await api.PUT(
+        "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+        {
+          params: { path: { workspaceId: workspace.id, workflowId } },
+          body: {
+            name: createRes.data!.name,
+            inputs: [],
+            jobAgents: [
+              { name: "agent", ref: uuidv4(), config: {}, selector: "((( not valid" },
+            ],
+          },
+        },
+      );
+      expect(updateRes.response.status).toBe(400);
+    } finally {
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+        { params: { path: { workspaceId: workspace.id, workflowId } } },
+      );
+    }
+  });
+
+  test("should accept a workflow with a valid CEL job agent selector", async ({
+    api,
+    workspace,
+  }) => {
+    const createRes = await api.POST(
+      "/v1/workspaces/{workspaceId}/workflows",
+      {
+        params: { path: { workspaceId: workspace.id } },
+        body: {
+          name: `Good CEL ${faker.string.alphanumeric(8)}`,
+          inputs: [],
+          jobAgents: [
+            {
+              name: "agent",
+              ref: uuidv4(),
+              config: {},
+              selector:
+                "resource.config.argo.server.contains(jobAgent.config.serverUrl)",
+            },
+          ],
+        },
+      },
+    );
+    expect(createRes.response.status).toBe(201);
+    await api.DELETE(
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}",
+      {
+        params: {
+          path: { workspaceId: workspace.id, workflowId: createRes.data!.id },
+        },
+      },
+    );
+  });
+
   test("should fan a run out to one job per matched resource, routed by server", async ({
     api,
     workspace,

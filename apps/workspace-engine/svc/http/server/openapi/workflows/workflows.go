@@ -102,7 +102,17 @@ func (w *Workflows) CreateWorkflowRun(
 		return
 	}
 
-	resourceSelector, _ := inputs[resourceSelectorInputKey].(string)
+	resourceSelector := ""
+	if raw, ok := inputs[resourceSelectorInputKey]; ok {
+		sel, isString := raw.(string)
+		if !isString {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("%s must be a string", resourceSelectorInputKey),
+			})
+			return
+		}
+		resourceSelector = sel
+	}
 	resources, err := w.getter.GetResourcesMatching(ctx, workspaceId, resourceSelector)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
