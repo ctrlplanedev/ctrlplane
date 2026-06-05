@@ -77,6 +77,11 @@ local JobPropertyKeys = std.objectFields(Job.properties);
       workflowJob: openapi.schemaRef('WorkflowJob'),
       workflowRun: openapi.schemaRef('WorkflowRun'),
       version: openapi.schemaRef('DeploymentVersion'),
+      inputs: {
+        type: 'object',
+        additionalProperties: true,
+        description: 'Resolved input values for a workflow run.',
+      },
       variables: {
         type: 'object',
         additionalProperties: openapi.schemaRef('LiteralValue'),

@@ -1019,6 +1019,11 @@
                "environment": {
                   "$ref": "#/components/schemas/Environment"
                },
+               "inputs": {
+                  "additionalProperties": true,
+                  "description": "Resolved input values for a workflow run.",
+                  "type": "object"
+               },
                "jobAgent": {
                   "$ref": "#/components/schemas/JobAgent"
                },
