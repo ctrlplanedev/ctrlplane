@@ -77,6 +77,47 @@ func TestPlanDispatches_RoutesEachResourceToItsServer(t *testing.T) {
 	}
 }
 
+func TestPlanDispatches_RoutesOnMergedPerJobConfig(t *testing.T) {
+	// One shared agent with no serverUrl of its own; each job entry supplies
+	// its serverUrl via per-job config. Routing must see the merged config.
+	ref := uuid.New()
+	runner := db.JobAgent{ID: ref, Config: oapi.JobAgentConfig{}}
+	runners := map[string]db.JobAgent{ref.String(): runner}
+
+	entry := func(name, serverURL string) oapi.WorkflowJobAgent {
+		return oapi.WorkflowJobAgent{
+			Ref:      ref.String(),
+			Name:     name,
+			Config:   map[string]any{"serverUrl": serverURL},
+			Selector: argoRoutingSelector,
+		}
+	}
+
+	resources := []*oapi.Resource{
+		resourceOnServer("r1", "https://argocd.prod.example.com"),
+		resourceOnServer("r2", "https://argocd.staging.example.com"),
+	}
+	base := &oapi.DispatchContext{Workflow: &oapi.Workflow{Id: uuid.New().String()}}
+
+	dispatches, err := planDispatches(
+		context.Background(), base, resources,
+		[]oapi.WorkflowJobAgent{
+			entry("prod", "argocd.prod.example.com"),
+			entry("staging", "argocd.staging.example.com"),
+		},
+		runners,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, dispatches, 2) // r1 → prod entry, r2 → staging entry
+
+	for _, d := range dispatches {
+		server := d.dispatchCtx.Resource.Config["argo"].(map[string]any)["server"].(string)
+		serverURL := d.mergedConfig["serverUrl"].(string)
+		assert.Contains(t, server, serverURL, "resource routed to the wrong per-job entry")
+	}
+}
+
 func TestPlanDispatches_NoMatchingServerYieldsNoDispatches(t *testing.T) {
 	prodAgent, prodRunner := argoAgent("argocd.prod.example.com")
 
