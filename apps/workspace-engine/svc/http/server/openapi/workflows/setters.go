@@ -11,15 +11,15 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/reconcile"
-	"workspace-engine/pkg/selector"
 )
 
 type Setter interface {
-	CreateWorkflowRun(
+	PersistWorkflowRun(
 		ctx context.Context,
 		workspaceID string,
-		workflow *oapi.Workflow,
+		workflowID string,
 		inputs map[string]any,
+		dispatches []plannedDispatch,
 	) (*oapi.WorkflowRunResult, error)
 }
 
@@ -33,25 +33,14 @@ func NewPostgresSetter(queue reconcile.Queue) *PostgresSetter {
 	return &PostgresSetter{queue: queue}
 }
 
-func (s *PostgresSetter) buildDispatchContext(
-	workflow *oapi.Workflow,
-	inputs map[string]any,
-) *oapi.DispatchContext {
-	return &oapi.DispatchContext{
-		Workflow: workflow,
-		Inputs:   &inputs,
-	}
-}
-
-func (s *PostgresSetter) CreateWorkflowRun(
+func (s *PostgresSetter) PersistWorkflowRun(
 	ctx context.Context,
 	workspaceID string,
-	workflow *oapi.Workflow,
+	workflowID string,
 	inputs map[string]any,
+	dispatches []plannedDispatch,
 ) (*oapi.WorkflowRunResult, error) {
-	dispatchContext := s.buildDispatchContext(workflow, inputs)
-
-	workflowIDUUID, err := uuid.Parse(workflow.Id)
+	workflowIDUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, fmt.Errorf("parse workflow id: %w", err)
 	}
@@ -72,23 +61,9 @@ func (s *PostgresSetter) CreateWorkflowRun(
 		return nil, fmt.Errorf("insert workflow run: %w", err)
 	}
 
-	jobs := make([]oapi.WorkflowRunJob, 0, len(workflow.Jobs))
-	for _, jobAgent := range workflow.Jobs {
-		isMatchingSelector, err := selector.Match(ctx, jobAgent.Selector, *dispatchContext)
-		if err != nil {
-			return nil, fmt.Errorf("match selector: %w", err)
-		}
-		if !isMatchingSelector {
-			continue
-		}
-		job, err := s.dispatchJobForAgent(
-			ctx,
-			queries,
-			jobAgent,
-			workflowRun.ID,
-			dispatchContext,
-			workspaceID,
-		)
+	jobs := make([]oapi.WorkflowRunJob, 0, len(dispatches))
+	for _, d := range dispatches {
+		job, err := insertJob(ctx, queries, d, workflowRun.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -99,81 +74,36 @@ func (s *PostgresSetter) CreateWorkflowRun(
 		return nil, fmt.Errorf("commit transaction: %w", err)
 	}
 
+	for _, job := range jobs {
+		if err := s.queue.Enqueue(ctx, reconcile.EnqueueParams{
+			WorkspaceID: workspaceID,
+			Kind:        "job-dispatch",
+			ScopeType:   "job",
+			ScopeID:     job.JobId,
+		}); err != nil {
+			return nil, fmt.Errorf("enqueue job dispatch: %w", err)
+		}
+	}
+
 	return &oapi.WorkflowRunResult{
 		Id:         workflowRun.ID.String(),
-		WorkflowId: workflow.Id,
+		WorkflowId: workflowID,
 		Inputs:     inputs,
 		Jobs:       jobs,
 	}, nil
 }
 
-// mergeWorkflowJobAgentConfig builds the JobAgentConfig that ends up on a
-// workflow-triggered job. The runner row holds shared credentials (e.g.
-// serverUrl, apiKey); the per-job WorkflowJobAgent.Config holds the
-// per-invocation payload (e.g. template, name). Per-job values win on
-// conflict, mirroring the deployment flow's runner < deployment < version
-// precedence in jobeligibility.
-func mergeWorkflowJobAgentConfig(
-	runnerConfig, perJobConfig oapi.JobAgentConfig,
-) oapi.JobAgentConfig {
-	return oapi.DeepMergeConfigs(runnerConfig, perJobConfig)
-}
-
-// buildJobDispatchContext returns a per-job copy of the base dispatch context
-// with the resolved JobAgent and merged JobAgentConfig populated. Dispatchers
-// (argo-workflow, argo-cd, github, …) read these fields off DispatchContext,
-// not off the Job row, so they must be set here before the context is
-// persisted alongside the job.
-func buildJobDispatchContext(
-	base *oapi.DispatchContext,
-	runner db.JobAgent,
-	mergedConfig oapi.JobAgentConfig,
-) *oapi.DispatchContext {
-	out := *base
-	out.JobAgent = oapi.JobAgent{
-		Id:          runner.ID.String(),
-		WorkspaceId: runner.WorkspaceID.String(),
-		Name:        runner.Name,
-		Type:        runner.Type,
-		Config:      runner.Config,
-	}
-	out.JobAgentConfig = mergedConfig
-	return &out
-}
-
-func (s *PostgresSetter) dispatchJobForAgent(
+func insertJob(
 	ctx context.Context,
 	queries *db.Queries,
-	jobAgent oapi.WorkflowJobAgent,
+	d plannedDispatch,
 	workflowRunID uuid.UUID,
-	dispatchContext *oapi.DispatchContext,
-	workspaceID string,
 ) (oapi.WorkflowRunJob, error) {
-	jobAgentIDUUID, err := uuid.Parse(jobAgent.Ref)
-	if err != nil {
-		return oapi.WorkflowRunJob{}, fmt.Errorf("parse job agent id: %w", err)
-	}
-	workspaceIDUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return oapi.WorkflowRunJob{}, fmt.Errorf("parse workspace id: %w", err)
-	}
-	runner, err := queries.GetJobAgentByID(ctx, jobAgentIDUUID)
-	if err != nil {
-		return oapi.WorkflowRunJob{}, fmt.Errorf("get job agent: %w", err)
-	}
-	if runner.WorkspaceID != workspaceIDUUID {
-		return oapi.WorkflowRunJob{}, fmt.Errorf(
-			"job agent %s does not belong to workspace %s",
-			jobAgentIDUUID, workspaceIDUUID,
-		)
-	}
-	mergedConfig := mergeWorkflowJobAgentConfig(runner.Config, jobAgent.Config)
-	jobAgentConfig, err := json.Marshal(mergedConfig)
+	jobAgentConfig, err := json.Marshal(d.mergedConfig)
 	if err != nil {
 		return oapi.WorkflowRunJob{}, fmt.Errorf("marshal job agent config: %w", err)
 	}
-	jobDispatchContext := buildJobDispatchContext(dispatchContext, runner, mergedConfig)
-	dispatchContextJSON, err := json.Marshal(jobDispatchContext)
+	dispatchContextJSON, err := json.Marshal(d.dispatchCtx)
 	if err != nil {
 		return oapi.WorkflowRunJob{}, fmt.Errorf("marshal dispatch context: %w", err)
 	}
@@ -184,7 +114,7 @@ func (s *PostgresSetter) dispatchJobForAgent(
 	if err := queries.InsertJob(ctx, db.InsertJobParams{
 		ID:              jobID,
 		Status:          db.JobStatusPending,
-		JobAgentID:      pgtype.UUID{Bytes: jobAgentIDUUID, Valid: true},
+		JobAgentID:      pgtype.UUID{Bytes: d.runner.ID, Valid: true},
 		JobAgentConfig:  jobAgentConfig,
 		DispatchContext: dispatchContextJSON,
 		CreatedAt:       now,
@@ -200,17 +130,8 @@ func (s *PostgresSetter) dispatchJobForAgent(
 		return oapi.WorkflowRunJob{}, fmt.Errorf("insert workflow job: %w", err)
 	}
 
-	if err := s.queue.Enqueue(ctx, reconcile.EnqueueParams{
-		WorkspaceID: workspaceID,
-		Kind:        "job-dispatch",
-		ScopeType:   "job",
-		ScopeID:     jobID.String(),
-	}); err != nil {
-		return oapi.WorkflowRunJob{}, fmt.Errorf("enqueue job dispatch: %w", err)
-	}
-
 	return oapi.WorkflowRunJob{
 		JobId:      jobID.String(),
-		JobAgentId: jobAgentIDUUID.String(),
+		JobAgentId: d.runner.ID.String(),
 	}, nil
 }

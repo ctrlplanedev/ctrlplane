@@ -88,7 +88,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('WorkflowRun'))
+      responses: openapi.createdResponse(openapi.schemaRef('WorkflowRunResult'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
@@ -180,7 +180,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('WorkflowRun'))
+      responses: openapi.createdResponse(openapi.schemaRef('WorkflowRunResult'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

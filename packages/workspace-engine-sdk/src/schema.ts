@@ -1413,6 +1413,22 @@ export interface components {
       };
       workflowId: string;
     };
+    WorkflowRunJob: {
+      /** @description Job agent the job was dispatched to */
+      jobAgentId: string;
+      /** @description Job id; poll its status via GET /v1/workspaces/{workspaceId}/jobs/{jobId} */
+      jobId: string;
+    };
+    WorkflowRunResult: {
+      /** @description Workflow run id */
+      id: string;
+      inputs: {
+        [key: string]: unknown;
+      };
+      /** @description Jobs created and dispatched for this run */
+      jobs: components["schemas"]["WorkflowRunJob"][];
+      workflowId: string;
+    };
     WorkflowStringInput: {
       default?: string;
       key: string;
@@ -1868,7 +1884,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["WorkflowRun"];
+          "application/json": components["schemas"]["WorkflowRunResult"];
         };
       };
       /** @description Invalid request */
