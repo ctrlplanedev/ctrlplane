@@ -43,11 +43,13 @@ func planDispatches(
 			runner := runners[jobAgent.Ref]
 			mergedConfig := mergeWorkflowJobAgentConfig(runner.Config, jobAgent.Config)
 			dispatchCtx := buildJobDispatchContext(&resourceCtx, runner, mergedConfig)
+			matchAgent := dispatchCtx.JobAgent
+			matchAgent.Config = mergedConfig
 
 			matched, err := selector.MatchJobAgentsWithResource(
 				ctx,
 				jobAgent.Selector,
-				[]oapi.JobAgent{dispatchCtx.JobAgent},
+				[]oapi.JobAgent{matchAgent},
 				matchResource,
 			)
 			if err != nil {
