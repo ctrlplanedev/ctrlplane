@@ -1583,6 +1583,10 @@ export interface components {
         DispatchContext: {
             deployment?: components["schemas"]["Deployment"];
             environment?: components["schemas"]["Environment"];
+            /** @description Resolved input values for a workflow run. */
+            inputs?: {
+                [key: string]: unknown;
+            };
             jobAgent: components["schemas"]["JobAgent"];
             jobAgentConfig: components["schemas"]["JobAgentConfig"];
             release?: components["schemas"]["Release"];

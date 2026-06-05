@@ -28172,6 +28172,7 @@ async function run() {
         workspace: { id: job.workspaceId },
         environment: dispatchContext?.environment,
         deployment: dispatchContext?.deployment,
+        input: dispatchContext?.inputs,
     };
     setOutputsRecursively(null, ghActionsJobObject);
     const missingOutputs = requiredOutputs.filter((output) => !outputTracker.has(output));
