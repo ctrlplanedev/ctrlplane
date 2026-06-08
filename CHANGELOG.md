@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.4.0...v1.5.0) (2026-06-08)
+
+
+### Features
+
+* add resource scoped policy skips ([#1154](https://github.com/ctrlplanedev/ctrlplane/issues/1154)) ([64452ae](https://github.com/ctrlplanedev/ctrlplane/commit/64452ae70dc72d54db58d6778d70b4c02670a63e))
+* fan out workflow jobs with resource selector input ([#1161](https://github.com/ctrlplanedev/ctrlplane/issues/1161)) ([5e617b8](https://github.com/ctrlplanedev/ctrlplane/commit/5e617b814e1b11de3d45783e8b7f8b3018b33fb7))
+* pull based job agents ([#1157](https://github.com/ctrlplanedev/ctrlplane/issues/1157)) ([1433cb9](https://github.com/ctrlplanedev/ctrlplane/commit/1433cb932d84bd13824ef4dffa703e8b4ca4d1b8))
+* Return job ids when workflows are created (closes: [#1155](https://github.com/ctrlplanedev/ctrlplane/issues/1155)) ([#1156](https://github.com/ctrlplanedev/ctrlplane/issues/1156)) ([2c3e031](https://github.com/ctrlplanedev/ctrlplane/commit/2c3e031c2da472fa5e14f9a89a5e90a84198538b))
+
+
+### Bug Fixes
+
+* wrap job status update request body in an object ([#1159](https://github.com/ctrlplanedev/ctrlplane/issues/1159)) ([b9832f8](https://github.com/ctrlplanedev/ctrlplane/commit/b9832f8e2270110887bd9d9f40109d0347fbd7b8))
+
 ## [1.4.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.3.0...v1.4.0) (2026-05-22)
 
 
