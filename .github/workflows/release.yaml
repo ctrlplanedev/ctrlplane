@@ -13,6 +13,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.semantic-release.outputs.release_created }}
+      tag_name: ${{ steps.semantic-release.outputs.tag_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,19 +27,26 @@ jobs:
         with:
           go-version: "1.26"
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Release
         id: semantic-release
         uses: googleapis/release-please-action@v4
         with:
           release-type: simple
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Tag Images
         if: ${{ steps.semantic-release.outputs.release_created }}
         run: |
           VERSION=${{ steps.semantic-release.outputs.tag_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
   build-app:
     name: Build API App
