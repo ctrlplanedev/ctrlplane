@@ -98,6 +98,7 @@ jobs:
     with:
       image-name: ctrlplane/workspace-engine
       dockerfile: apps/workspace-engine/Dockerfile
+      context: apps/workspace-engine
       platform: "linux/amd64"
       tags: |
         type=semver,pattern={{version}},value=${{ needs.release.outputs.tag_name }}
