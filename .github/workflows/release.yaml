@@ -13,6 +13,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.semantic-release.outputs.release_created }}
+      tag_name: ${{ steps.semantic-release.outputs.tag_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
