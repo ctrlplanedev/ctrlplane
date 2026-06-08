@@ -66,4 +66,4 @@ ENV PORT=8081
 
 WORKDIR /app/apps/api/dist/src/
 
-CMD ["node", "index.js"]
+CMD ["node", "--import", "./instrumentation.js", "index.js"]
