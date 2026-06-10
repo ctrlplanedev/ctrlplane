@@ -2,55 +2,46 @@ import { addHours } from "date-fns";
 
 export type ExpiryOption = { id: string; label: string; value: Date | null };
 
-function parseDate(value: unknown): Date | null {
-  if (typeof value !== "string") return null;
-  const date = new Date(value);
+export type RuleEvaluation = {
+  ruleId: string;
+  details: unknown;
+  nextEvaluationAt?: Date | string | null;
+};
+
+type RuleBasedExpiry = { label: string; value: Date };
+
+function toDate(value: unknown): Date | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(value as string | number);
   return isNaN(date.getTime()) ? null : date;
 }
 
-export function isGradualRolloutDetails(details: unknown): boolean {
-  if (details == null || typeof details !== "object") return false;
-  return (
-    "target_rollout_position" in details || "target_rollout_time" in details
-  );
-}
-
-export function maxRolloutTime(
-  evaluations: { ruleId: string; details: unknown }[],
-  ruleId: string,
-): Date | null {
-  let latest: Date | null = null;
-  for (const evaluation of evaluations) {
-    if (evaluation.ruleId !== ruleId) continue;
-    const details = evaluation.details as { target_rollout_time?: unknown };
-    const time = parseDate(details.target_rollout_time);
-    if (time == null) continue;
-    if (latest == null || time > latest) latest = time;
-  }
-  return latest;
-}
-
-function ruleBasedOption(
+function ruleBasedExpiry(
   details: unknown,
   nextEvaluationAt: Date | null,
-  gradualMaxTime: Date | null,
   now: Date,
-): { label: string; value: Date } | null {
-  if (isGradualRolloutDetails(details))
-    return gradualMaxTime != null && gradualMaxTime > now
-      ? { label: "Until rollout completes", value: gradualMaxTime }
-      : null;
-
+): RuleBasedExpiry | null {
   const d = (details ?? {}) as {
+    target_rollout_position?: unknown;
+    target_rollout_time?: unknown;
     next_window_start?: unknown;
     next_deployment_time?: unknown;
   };
 
-  const windowOpen = parseDate(d.next_window_start);
+  const isGradualRollout =
+    d.target_rollout_position != null || d.target_rollout_time != null;
+  if (isGradualRollout) {
+    const rolloutTime = toDate(d.target_rollout_time);
+    return rolloutTime != null && rolloutTime > now
+      ? { label: "Until rollout completes", value: rolloutTime }
+      : null;
+  }
+
+  const windowOpen = toDate(d.next_window_start);
   if (windowOpen != null && windowOpen > now)
     return { label: "Until deploy window opens", value: windowOpen };
 
-  const cooldownEnd = parseDate(d.next_deployment_time);
+  const cooldownEnd = toDate(d.next_deployment_time);
   if (cooldownEnd != null && cooldownEnd > now)
     return { label: "Until cooldown ends", value: cooldownEnd };
 
@@ -60,27 +51,42 @@ function ruleBasedOption(
   return null;
 }
 
-export function buildExpiryOptions(args: {
-  details: unknown;
-  nextEvaluationAt: Date | null;
-  gradualMaxTime: Date | null;
-  now: Date;
-}): ExpiryOption[] {
-  const { details, nextEvaluationAt, gradualMaxTime, now } = args;
-  const ruleBased = ruleBasedOption(
-    details,
-    nextEvaluationAt,
-    gradualMaxTime,
-    now,
-  );
+// `evaulate` returns evaluations across every resource for the rule with no
+// guaranteed ordering, and each resource clears the rule at a different time.
+// Take the latest so a single skip covers the whole set.
+function latestRuleBasedExpiry(
+  evaluations: RuleEvaluation[],
+  now: Date,
+): RuleBasedExpiry | null {
+  let latest: RuleBasedExpiry | null = null;
+  for (const evaluation of evaluations) {
+    const candidate = ruleBasedExpiry(
+      evaluation.details,
+      toDate(evaluation.nextEvaluationAt),
+      now,
+    );
+    if (candidate == null) continue;
+    if (latest == null || candidate.value > latest.value) latest = candidate;
+  }
+  return latest;
+}
+
+export function expiryOptionsForRule(
+  evaluations: RuleEvaluation[],
+  ruleId: string | undefined,
+  now: Date,
+): ExpiryOption[] {
+  const ruleBased =
+    ruleId == null
+      ? null
+      : latestRuleBasedExpiry(
+          evaluations.filter((evaluation) => evaluation.ruleId === ruleId),
+          now,
+        );
 
   const options: ExpiryOption[] = [];
   if (ruleBased != null)
-    options.push({
-      id: "rule",
-      label: ruleBased.label,
-      value: ruleBased.value,
-    });
+    options.push({ id: "rule", label: ruleBased.label, value: ruleBased.value });
   for (const hours of [6, 12, 24])
     options.push({
       id: `${hours}h`,
@@ -89,27 +95,4 @@ export function buildExpiryOptions(args: {
     });
   options.push({ id: "none", label: "No expiration", value: null });
   return options;
-}
-
-export type RuleEvaluation = {
-  ruleId: string;
-  details: unknown;
-  nextEvaluationAt?: Date | string | null;
-};
-
-export function expiryOptionsForRule(
-  evaluations: RuleEvaluation[],
-  ruleId: string | undefined,
-  now: Date,
-): ExpiryOption[] {
-  const ruleEvaluations = evaluations.filter((e) => e.ruleId === ruleId);
-  const first = ruleEvaluations[0];
-  return buildExpiryOptions({
-    details: first.details ?? null,
-    nextEvaluationAt:
-      first.nextEvaluationAt != null ? new Date(first.nextEvaluationAt) : null,
-    gradualMaxTime:
-      ruleId != null ? maxRolloutTime(ruleEvaluations, ruleId) : null,
-    now,
-  });
 }
