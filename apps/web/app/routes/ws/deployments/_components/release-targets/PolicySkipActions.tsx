@@ -5,13 +5,14 @@ import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
-import { DateTimePicker } from "~/components/ui/datetime-picker";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { ExpirySelect } from "./ExpirySelect";
+import { expiryOptionsForRule } from "./skip-expiry";
 
 function RemoveSkipButton({ skipId }: { skipId: string }) {
   const { workspace } = useWorkspace();
@@ -87,11 +88,55 @@ type SkipTarget = {
   ruleId: string;
 };
 
+function SkipExpiryForm({
+  target,
+  isPending,
+  onSubmit,
+}: {
+  target: SkipTarget;
+  isPending: boolean;
+  onSubmit: (expiresAt: Date | undefined) => void;
+}) {
+  const [now] = useState(() => new Date());
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+
+  const { data: evaluations = [] } = trpc.deploymentVersions.evaulate.useQuery({
+    versionId: target.versionId,
+    environmentId: target.environmentId,
+  });
+  const options = expiryOptionsForRule(evaluations, target.ruleId, now);
+  const selected = options.find((o) => o.id === selectedId) ?? options[0];
+  const expiresAt = selected?.value ?? undefined;
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <p className="text-sm font-medium">Skip this rule</p>
+        <p className="text-xs text-muted-foreground">
+          Bypass this policy rule for this release target only.
+        </p>
+      </div>
+      <ExpirySelect
+        options={options}
+        selectedId={selected?.id}
+        onChange={setSelectedId}
+      />
+      <Button
+        size="sm"
+        className="w-full"
+        disabled={isPending}
+        onClick={() => onSubmit(expiresAt)}
+      >
+        Add skip
+      </Button>
+    </div>
+  );
+}
+
 export function SkipRuleButton({ target }: { target: SkipTarget }) {
   const { workspace } = useWorkspace();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
-  const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
 
   const createSkip = trpc.policySkips.createForTarget.useMutation({
     onSuccess: () => {
@@ -99,7 +144,6 @@ export function SkipRuleButton({ target }: { target: SkipTarget }) {
       utils.policySkips.forTarget.invalidate();
       utils.releaseTargets.evaluations.invalidate();
       setOpen(false);
-      setExpiresAt(undefined);
     },
     onError: (error) =>
       toast.error("Failed to skip rule", { description: error.message }),
@@ -117,26 +161,11 @@ export function SkipRuleButton({ target }: { target: SkipTarget }) {
           Skip for this target
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 space-y-3">
-        <div className="space-y-1">
-          <p className="text-sm font-medium">Skip this rule</p>
-          <p className="text-xs text-muted-foreground">
-            Bypass this policy rule for this release target only.
-          </p>
-        </div>
-        <div className="space-y-1">
-          <span className="text-xs font-medium">Expires at (optional)</span>
-          <DateTimePicker
-            value={expiresAt}
-            onChange={setExpiresAt}
-            placeholder=""
-          />
-        </div>
-        <Button
-          size="sm"
-          className="w-full"
-          disabled={createSkip.isPending}
-          onClick={() =>
+      <PopoverContent align="end" className="w-72">
+        <SkipExpiryForm
+          target={target}
+          isPending={createSkip.isPending}
+          onSubmit={(expiresAt) =>
             createSkip.mutate({
               workspaceId: workspace.id,
               environmentId: target.environmentId,
@@ -146,9 +175,7 @@ export function SkipRuleButton({ target }: { target: SkipTarget }) {
               expiresAt,
             })
           }
-        >
-          Add skip
-        </Button>
+        />
       </PopoverContent>
     </Popover>
   );
