@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.5.0...v1.6.0) (2026-06-10)
+
+
+### Features
+
+* suggest bounded expirations for policy skips in ui ([#1170](https://github.com/ctrlplanedev/ctrlplane/issues/1170)) ([66e0888](https://github.com/ctrlplanedev/ctrlplane/commit/66e0888e94016296c5e22cdc58fc62617e187a8a))
+
 ## [1.5.0](https://github.com/ctrlplanedev/ctrlplane/compare/v1.4.0...v1.5.0) (2026-06-08)
 
 
